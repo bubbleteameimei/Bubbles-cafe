@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useRef, useEffect, useState } from 'react';
 
 interface AudioContextType {
@@ -13,11 +12,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    audioRef.current = new Audio('/assets/whispering_wind.mp3');
-    if (audioRef.current) {
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.2;
+    try {
+      audioRef.current = new Audio('/assets/whispering_wind.mp3');
+      if (audioRef.current) {
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.2;
+
+        // Add error event listener
+        audioRef.current.addEventListener('error', (e) => {
+          console.error('Audio playback error:', (e.target as HTMLAudioElement).error);
+          setIsPlaying(false);
+        });
+      }
+    } catch (err) {
+      console.error("Error initializing audio:", err);
     }
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -26,14 +36,27 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const toggleAudio = () => {
+  const toggleAudio = async () => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play().catch(err => console.error("Audio playback failed:", err));
+      try {
+        if (isPlaying) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+        } else {
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => setIsPlaying(true))
+              .catch(err => {
+                console.error("Audio playback failed:", err);
+                setIsPlaying(false);
+              });
+          }
+        }
+      } catch (err) {
+        console.error("Toggle audio error:", err);
+        setIsPlaying(false);
       }
-      setIsPlaying(!isPlaying);
     }
   };
 

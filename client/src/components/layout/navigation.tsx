@@ -1,11 +1,13 @@
 import { useLocation } from "wouter";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { useAudio } from "@/components/effects/audio";
 
 export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
+  const { isPlaying, toggleAudio } = useAudio();
 
   return (
     <header className="border-b border-border">
@@ -39,25 +41,27 @@ export default function Navigation() {
             </a>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={useAudio().toggleAudio}
-            className="mr-2"
-          >
-            {useAudio().isPlaying ? (
-              <Volume2 className="h-5 w-5" />
-            ) : (
-              <VolumeX className="h-5 w-5" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleAudio}
+              className="mr-2"
+            >
+              {isPlaying ? (
+                <Volume2 className="h-5 w-5" />
+              ) : (
+                <VolumeX className="h-5 w-5" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </nav>
     </header>
