@@ -5,7 +5,7 @@ import {
   posts, comments, readingProgress
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Posts
@@ -16,6 +16,7 @@ export interface IStorage {
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
+  getRecentComments(): Promise<Comment[]>;
   createComment(comment: InsertComment): Promise<Comment>;
 
   // Reading Progress
@@ -44,6 +45,10 @@ export class DatabaseStorage implements IStorage {
 
   async getComments(postId: number): Promise<Comment[]> {
     return await db.select().from(comments).where(eq(comments.postId, postId));
+  }
+
+  async getRecentComments(): Promise<Comment[]> {
+    return await db.select().from(comments).orderBy(desc(comments.id)).limit(10);
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {

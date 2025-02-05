@@ -26,6 +26,12 @@ export function registerRoutes(app: Express): Server {
     res.json(post);
   });
 
+  // Get recent comments across all posts
+  app.get("/api/posts/comments/recent", async (_req, res) => {
+    const comments = await storage.getRecentComments();
+    res.json(comments);
+  });
+
   // Get comments for post
   app.get("/api/posts/:postId/comments", async (req, res) => {
     const comments = await storage.getComments(parseInt(req.params.postId));

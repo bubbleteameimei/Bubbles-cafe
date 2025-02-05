@@ -24,6 +24,12 @@ export default function Navigation() {
           >
             Secret Stories
           </a>
+          <a 
+            href="/about"
+            className={location === "/about" ? "text-primary" : "text-muted-foreground hover:text-primary"}
+          >
+            About
+          </a>
         </div>
 
         <Button
