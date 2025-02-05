@@ -13,6 +13,7 @@ import Post from "./pages/post";
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import NotFound from "./pages/not-found";
+import Privacy from "./pages/privacy";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -38,7 +39,7 @@ function App() {
                 <Route path="/" component={Home} />
                 <Route path="/post/:slug" component={Post} />
                 <Route path="/secret" component={Secret} />
-                <Route path="/about" component={About} />
+                <Route path="/privacy" component={Privacy} />
                 <Route component={NotFound} />
               </Switch>
               <aside className="hidden lg:block">
