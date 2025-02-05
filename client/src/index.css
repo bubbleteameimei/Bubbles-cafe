@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    /* Dark mode colors (Gothic & Arcane Blend) */
-    --background: 0 0% 10%;      /* #1a1a1a */
-    --foreground: 43 31% 83%;    /* #e3dbc5 */
-    --card: 0 0% 13%;           /* Slightly lighter than background */
+    /* Dark mode colors (Refined Gothic & Arcane Blend) */
+    --background: 220 14% 12%;    /* #191c23 - Deeper blue-tinted charcoal */
+    --foreground: 43 31% 83%;    /* #e3dbc5 - Warm parchment */
+    --card: 220 14% 15%;         /* #1e2229 - Slightly lighter than background */
     --card-foreground: 43 31% 83%;
-    --popover: 0 0% 10%;
+    --popover: 220 14% 12%;
     --popover-foreground: 43 31% 83%;
-    --primary: 345 100% 24%;     /* #7b001c */
+    --primary: 345 85% 35%;      /* #af0026 - Rich crimson */
     --primary-foreground: 43 31% 83%;
-    --secondary: 27 33% 22%;     /* #4b3825 */
-    --secondary-foreground: 43 47% 60%;  /* #c4a76d */
-    --muted: 27 33% 22%;
-    --muted-foreground: 43 47% 60%;
-    --accent: 27 33% 22%;
-    --accent-foreground: 43 47% 60%;
+    --secondary: 27 33% 25%;     /* #574232 - Rich oak brown */
+    --secondary-foreground: 43 47% 65%;  /* #cdb07c - Brighter gold */
+    --muted: 27 33% 25%;
+    --muted-foreground: 43 47% 65%;
+    --accent: 27 33% 25%;
+    --accent-foreground: 43 47% 65%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 43 31% 83%;
-    --border: 27 33% 22%;
-    --input: 27 33% 22%;
-    --ring: 43 47% 60%;
+    --border: 27 33% 25%;
+    --input: 27 33% 25%;
+    --ring: 43 47% 65%;
     --radius: 0.75rem;
 
     /* Increased font size variables for fluid typography */
