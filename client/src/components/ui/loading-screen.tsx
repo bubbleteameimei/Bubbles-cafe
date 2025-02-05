@@ -4,7 +4,7 @@ export function LoadingScreen() {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
       <motion.div
-        className="flex flex-col items-center"
+        className="flex flex-col items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -19,11 +19,14 @@ export function LoadingScreen() {
           Loading content, please wait...
         </div>
 
-        <style jsx>{`
+        <style>{`
           .loader {
             width: 80px;
             height: 50px;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .loader-text {
@@ -35,6 +38,8 @@ export function LoadingScreen() {
             animation: text_713 3.5s ease both infinite;
             font-size: .8rem;
             letter-spacing: 1px;
+            text-transform: lowercase;
+            font-family: var(--font-mono);
           }
 
           .load {
@@ -47,6 +52,7 @@ export function LoadingScreen() {
             position: absolute;
             transform: translateX(64px);
             animation: loading_713 3.5s ease both infinite;
+            box-shadow: 0 0 10px var(--primary);
           }
 
           .load::before {
@@ -54,7 +60,8 @@ export function LoadingScreen() {
             content: "";
             width: 100%;
             height: 100%;
-            background-color: color-mix(in srgb, var(--primary) 80%, transparent);
+            background-color: var(--primary);
+            opacity: 0.5;
             border-radius: inherit;
             animation: loading2_713 3.5s ease both infinite;
           }
