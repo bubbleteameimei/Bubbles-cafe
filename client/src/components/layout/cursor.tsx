@@ -5,13 +5,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Cursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [visible, setVisible] = useState(false);
+  const [visible] = useState(true);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     const updatePosition = (x: number, y: number) => {
       setPosition({ x, y });
-      setVisible(true);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -24,13 +23,8 @@ export default function Cursor() {
       }
     };
 
-    const handleTouchEnd = () => {
-      setVisible(false);
-    };
-
     if (isMobile) {
       window.addEventListener("touchmove", handleTouchMove);
-      window.addEventListener("touchend", handleTouchEnd);
     } else {
       window.addEventListener("mousemove", handleMouseMove);
     }
@@ -38,14 +32,11 @@ export default function Cursor() {
     return () => {
       if (isMobile) {
         window.removeEventListener("touchmove", handleTouchMove);
-        window.removeEventListener("touchend", handleTouchEnd);
       } else {
         window.removeEventListener("mousemove", handleMouseMove);
       }
     };
   }, [isMobile]);
-
-  if (!visible && isMobile) return null;
 
   return (
     <motion.div
