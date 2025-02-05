@@ -1,8 +1,11 @@
 import { 
   type Post, type InsertPost,
   type Comment, type InsertComment,
-  type ReadingProgress, type InsertProgress
+  type ReadingProgress, type InsertProgress,
+  posts, comments, readingProgress
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Posts
@@ -10,69 +13,57 @@ export interface IStorage {
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   getSecretPosts(): Promise<Post[]>;
-  
+
   // Comments
   getComments(postId: number): Promise<Comment[]>;
   createComment(comment: InsertComment): Promise<Comment>;
-  
+
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
   updateProgress(progress: InsertProgress): Promise<ReadingProgress>;
 }
 
-export class MemStorage implements IStorage {
-  private posts: Map<number, Post>;
-  private comments: Map<number, Comment>;
-  private progress: Map<number, ReadingProgress>;
-  private currentIds: { [key: string]: number };
-
-  constructor() {
-    this.posts = new Map();
-    this.comments = new Map();
-    this.progress = new Map();
-    this.currentIds = { post: 1, comment: 1, progress: 1 };
-  }
-
+export class DatabaseStorage implements IStorage {
   async getPosts(): Promise<Post[]> {
-    return Array.from(this.posts.values()).filter(p => !p.isSecret);
+    return await db.select().from(posts).where(eq(posts.isSecret, false));
   }
 
   async getSecretPosts(): Promise<Post[]> {
-    return Array.from(this.posts.values()).filter(p => p.isSecret);
+    return await db.select().from(posts).where(eq(posts.isSecret, true));
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
-    return Array.from(this.posts.values()).find(p => p.slug === slug);
+    const [post] = await db.select().from(posts).where(eq(posts.slug, slug));
+    return post;
   }
 
   async createPost(post: InsertPost): Promise<Post> {
-    const id = this.currentIds.post++;
-    const newPost = { ...post, id };
-    this.posts.set(id, newPost);
+    const [newPost] = await db.insert(posts).values(post).returning();
     return newPost;
   }
 
   async getComments(postId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values()).filter(c => c.postId === postId);
+    return await db.select().from(comments).where(eq(comments.postId, postId));
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const id = this.currentIds.comment++;
-    const newComment = { ...comment, id };
-    this.comments.set(id, newComment);
+    const [newComment] = await db.insert(comments).values(comment).returning();
     return newComment;
   }
 
   async getProgress(postId: number): Promise<ReadingProgress | undefined> {
-    return Array.from(this.progress.values()).find(p => p.postId === postId);
+    const [progress] = await db.select()
+      .from(readingProgress)
+      .where(eq(readingProgress.postId, postId));
+    return progress;
   }
 
   async updateProgress(progress: InsertProgress): Promise<ReadingProgress> {
-    const id = this.currentIds.progress++;
-    const newProgress = { ...progress, id };
-    this.progress.set(id, newProgress);
+    const [newProgress] = await db.insert(readingProgress)
+      .values(progress)
+      .returning();
     return newProgress;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
