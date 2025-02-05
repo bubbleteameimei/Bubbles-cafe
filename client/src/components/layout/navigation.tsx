@@ -33,6 +33,12 @@ export default function Navigation() {
               Home
             </a>
             <a 
+              href="/stories"
+              className={location === "/stories" ? "text-primary" : "text-muted-foreground hover:text-primary"}
+            >
+              Stories
+            </a>
+            <a 
               href="/secret"
               className={location === "/secret" ? "text-primary" : "text-muted-foreground hover:text-primary"}
             >
