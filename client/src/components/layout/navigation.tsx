@@ -42,6 +42,18 @@ export default function Navigation() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={useAudio().toggleAudio}
+            className="mr-2"
+          >
+            {useAudio().isPlaying ? (
+              <Volume2 className="h-5 w-5" />
+            ) : (
+              <VolumeX className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

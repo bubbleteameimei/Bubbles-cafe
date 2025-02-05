@@ -13,7 +13,8 @@ import NotFound from "./pages/not-found";
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <AudioProvider>
+      <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
         <Navigation />
         <main className="container mx-auto px-4 py-8 flex-grow">
@@ -34,6 +35,7 @@ function App() {
         <Toaster />
       </div>
     </QueryClientProvider>
+    </AudioProvider>
   );
 }
 
