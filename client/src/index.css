@@ -26,34 +26,58 @@
     --radius: 0.5rem;
   }
 
-  .dark {
-    --background: 267 30% 3%;
-    --foreground: 267 30% 98%;
-    --card: 267 30% 5%;
-    --card-foreground: 267 30% 98%;
-    --popover: 267 30% 3%;
-    --popover-foreground: 267 30% 98%;
-    --primary: 267 84% 81%;
-    --primary-foreground: 267 30% 3%;
-    --secondary: 267 30% 15%;
-    --secondary-foreground: 267 30% 98%;
-    --muted: 267 30% 15%;
-    --muted-foreground: 267 20% 70%;
-    --accent: 267 30% 15%;
-    --accent-foreground: 267 30% 98%;
-    --destructive: 0 62.8% 30.6%;
+  .light {
+    --background: 267 30% 98%;
+    --foreground: 267 30% 10%;
+    --card: 267 30% 95%;
+    --card-foreground: 267 30% 10%;
+    --popover: 267 30% 98%;
+    --popover-foreground: 267 30% 10%;
+    --primary: 267 70% 50%;
+    --primary-foreground: 267 30% 98%;
+    --secondary: 267 30% 90%;
+    --secondary-foreground: 267 30% 10%;
+    --muted: 267 30% 90%;
+    --muted-foreground: 267 20% 40%;
+    --accent: 267 30% 90%;
+    --accent-foreground: 267 30% 10%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 267 30% 98%;
-    --border: 267 30% 15%;
-    --input: 267 30% 15%;
-    --ring: 267 84% 81%;
-  }
-
-  * {
-    cursor: none;
+    --border: 267 30% 85%;
+    --input: 267 30% 85%;
+    --ring: 267 70% 50%;
   }
 
   html {
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Click effect styles */
+  button, a {
+    position: relative;
+    overflow: hidden;
+  }
+
+  button::after, a::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, var(--primary) 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .3s, opacity .5s;
+  }
+
+  button:active::after, a:active::after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
   }
 }
 

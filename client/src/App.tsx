@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "./lib/queryClient";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
-import Cursor from "./components/layout/cursor";
 import Home from "./pages/home";
 import Post from "./pages/post";
 import Secret from "./pages/secret";
@@ -14,7 +13,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <Cursor />
         <Navigation />
         <main className="container mx-auto px-4 py-8 flex-grow">
           <Switch>
