@@ -17,7 +17,7 @@ export default function Cursor() {
     <motion.div
       className="fixed top-0 left-0 w-8 h-8 pointer-events-none z-50"
       animate={{ x: position.x - 16, y: position.y - 16 }}
-      transition={{ type: "spring", damping: 30 }}
+      transition={{ type: "tween", duration: 0.1 }} // Faster response
     >
       <svg
         width="32"
@@ -29,7 +29,7 @@ export default function Cursor() {
         <path
           d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 25.5C9.097 27.5 3.5 21.903 3.5 15S9.097 2.5 16 2.5 28.5 8.097 28.5 15 22.903 27.5 16 27.5z"
           fill="currentColor"
-          fillOpacity="0.5"
+          fillOpacity="0.7"
         />
       </svg>
     </motion.div>
