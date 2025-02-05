@@ -6,56 +6,58 @@
 
 @layer base {
   :root {
-    --background: 230 15% 10%;
-    --foreground: 230 15% 95%;
-    --card: 230 15% 12%;
-    --card-foreground: 230 15% 95%;
-    --popover: 230 15% 10%;
-    --popover-foreground: 230 15% 95%;
-    --primary: 280 70% 60%;
-    --primary-foreground: 230 15% 95%;
-    --secondary: 230 15% 20%;
-    --secondary-foreground: 267 30% 98%;
-    --muted: 267 30% 15%;
-    --muted-foreground: 267 20% 70%;
-    --accent: 300 30% 15%;
-    --accent-foreground: 267 30% 98%;
+    /* Dark mode colors (Gothic & Arcane Blend) */
+    --background: 0 0% 10%;      /* #1a1a1a */
+    --foreground: 43 31% 83%;    /* #e3dbc5 */
+    --card: 0 0% 13%;           /* Slightly lighter than background */
+    --card-foreground: 43 31% 83%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 43 31% 83%;
+    --primary: 345 100% 24%;     /* #7b001c */
+    --primary-foreground: 43 31% 83%;
+    --secondary: 27 33% 22%;     /* #4b3825 */
+    --secondary-foreground: 43 47% 60%;  /* #c4a76d */
+    --muted: 27 33% 22%;
+    --muted-foreground: 43 47% 60%;
+    --accent: 27 33% 22%;
+    --accent-foreground: 43 47% 60%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 267 30% 98%;
-    --border: 267 30% 15%;
-    --input: 267 30% 15%;
-    --ring: 284 84% 81%;
+    --destructive-foreground: 43 31% 83%;
+    --border: 27 33% 22%;
+    --input: 27 33% 22%;
+    --ring: 43 47% 60%;
     --radius: 0.75rem;
 
-    /* Font size variables for fluid typography */
-    --font-size-base: clamp(1rem, 1.5vw, 1.125rem);
-    --font-size-lg: clamp(1.125rem, 2vw, 1.25rem);
-    --font-size-xl: clamp(1.25rem, 2.5vw, 1.5rem);
-    --font-size-2xl: clamp(1.5rem, 3vw, 1.875rem);
-    --font-size-3xl: clamp(1.875rem, 3.5vw, 2.25rem);
-    --font-size-4xl: clamp(2.25rem, 4vw, 3rem);
+    /* Increased font size variables for fluid typography */
+    --font-size-base: clamp(1.125rem, 1.75vw, 1.25rem);
+    --font-size-lg: clamp(1.25rem, 2.25vw, 1.375rem);
+    --font-size-xl: clamp(1.375rem, 2.75vw, 1.625rem);
+    --font-size-2xl: clamp(1.625rem, 3.25vw, 2rem);
+    --font-size-3xl: clamp(2rem, 3.75vw, 2.375rem);
+    --font-size-4xl: clamp(2.375rem, 4.25vw, 3.25rem);
   }
 
   .light {
-    --background: 267 30% 98%;
-    --foreground: 267 30% 3%;
-    --card: 267 30% 95%;
-    --card-foreground: 267 30% 3%;
-    --popover: 267 30% 98%;
-    --popover-foreground: 267 30% 3%;
-    --primary: 284 70% 50%;
-    --primary-foreground: 267 30% 98%;
-    --secondary: 267 30% 90%;
-    --secondary-foreground: 267 30% 3%;
-    --muted: 267 30% 90%;
-    --muted-foreground: 267 30% 40%;
-    --accent: 300 30% 90%;
-    --accent-foreground: 267 30% 3%;
+    /* Light mode colors (Elegant & Aged Aesthetic) */
+    --background: 43 71% 93%;    /* #faf3e0 */
+    --foreground: 27 8% 17%;     /* #2e2a26 */
+    --card: 43 71% 95%;
+    --card-foreground: 27 8% 17%;
+    --popover: 43 71% 93%;
+    --popover-foreground: 27 8% 17%;
+    --primary: 354 50% 37%;      /* #8c2f39 */
+    --primary-foreground: 43 71% 93%;
+    --secondary: 19 43% 34%;     /* #793b32 */
+    --secondary-foreground: 43 71% 93%;
+    --muted: 19 43% 34%;
+    --muted-foreground: 43 31% 55%;  /* #b79a64 */
+    --accent: 19 43% 34%;
+    --accent-foreground: 43 71% 93%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 267 30% 98%;
-    --border: 267 30% 85%;
-    --input: 267 30% 85%;
-    --ring: 284 70% 50%;
+    --destructive-foreground: 43 71% 93%;
+    --border: 19 43% 34%;
+    --input: 19 43% 34%;
+    --ring: 354 50% 37%;
   }
 
   body {
@@ -68,18 +70,15 @@
     letter-spacing: 0.01em;
   }
 
-  /* Improved focus styles for accessibility */
   *:focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Skip to main content link for keyboard users */
   .skip-to-content {
     @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
            focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
   }
 
-  /* Heading styles with fluid typography */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
     @apply font-bold tracking-tight;
@@ -92,7 +91,6 @@
   h5 { font-size: var(--font-size-lg); }
   h6 { font-size: var(--font-size-base); }
 
-  /* Improved prose styles for story content */
   .prose {
     @apply text-foreground;
     font-size: var(--font-size-base);
@@ -107,7 +105,6 @@
     font-style: italic;
   }
 
-  /* Story content container with improved readability */
   .story-content {
     @apply prose prose-invert mx-auto;
     max-width: 65ch;
@@ -136,13 +133,11 @@
     backdrop-filter: blur(2px);
   }
 
-  /* Gothic menu with improved contrast */
   .gothic-menu {
     @apply border-2 border-primary bg-background/95 backdrop-blur-md;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
-  /* Loading animation styles */
   .loading-skull {
     @apply w-16 h-16 mx-auto mb-4;
     animation: pulse 2s infinite;
@@ -154,7 +149,6 @@
     100% { opacity: 0.3; transform: scale(0.95); }
   }
 
-  /* Improved link styles with proper hover states */
   .nav-link {
     @apply relative transition-colors duration-200;
   }
