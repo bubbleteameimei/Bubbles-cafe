@@ -2,6 +2,8 @@ import { storage } from "./storage";
 import { XMLParser } from "fast-xml-parser";
 import fs from "fs/promises";
 import path from "path";
+import { db } from "./db";
+import { posts } from "@shared/schema";
 
 async function parseWordPressXML() {
   const xmlContent = await fs.readFile(

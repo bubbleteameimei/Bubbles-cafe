@@ -11,20 +11,20 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get secret posts
-  app.get("/api/posts/secret", async (_req, res) => {
+  app.get("/api/secret-posts", async (_req, res) => {
     const posts = await storage.getSecretPosts();
     res.json(posts);
   });
 
   // Unlock secret post
-  app.post("/api/posts/:postId/unlock", async (req, res) => {
-    const result = insertSecretProgressSchema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ message: "Invalid unlock attempt" });
-      return;
+  app.post("/api/unlock-secret", async (req, res) => {
+    const { postId, code } = req.body;
+    try {
+      const progress = await storage.unlockSecretPost({ postId, code });
+      res.json(progress);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid code" });
     }
-    const progress = await storage.unlockSecretPost(result.data);
-    res.json(progress);
   });
 
   // Get single post
