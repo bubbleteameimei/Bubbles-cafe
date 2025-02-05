@@ -27,29 +27,31 @@ export default function About() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Card className="mb-8">
+      <Card className="mb-8 backdrop-blur-sm bg-card/90">
         <CardHeader>
           <CardTitle>About Me</CardTitle>
         </CardHeader>
-        <CardContent className="prose prose-invert">
-          <p>
-            Vanessa here. Writing stories is one of my big passions. Fluent in English and Chinese. 
-            I'm a big fan of horror themed stories and existential dread.
-          </p>
-          <p>
-            I don't like making FAQs so if you have anything you need to ask or comment about 
-            please leave a comment below or drop me an email with the form. I will try to reply ASAP. 
-            If you do not hear back from me within a week, feel free to send another message.
-          </p>
-          <p className="text-lg font-semibold">
-            PLEASE DO NOT REPOST ANY OF MY STORIES TO ANY OTHER SITE FOR PROFIT. 
-            RETRANSLATING MY STORIES INTO ANOTHER LANGUAGE IS ALLOWED, 
-            HOWEVER PLEASE USE AT YOUR OWN DISCRETION.
-          </p>
+        <CardContent>
+          <div className="space-y-4 text-foreground">
+            <p>
+              Vanessa here. Writing stories is one of my big passions. Fluent in English and Chinese. 
+              I'm a big fan of horror themed stories and existential dread.
+            </p>
+            <p>
+              I don't like making FAQs so if you have anything you need to ask or comment about 
+              please leave a comment below or drop me an email with the form. I will try to reply ASAP. 
+              If you do not hear back from me within a week, feel free to send another message.
+            </p>
+            <p className="font-bold text-primary">
+              PLEASE DO NOT REPOST ANY OF MY STORIES TO ANY OTHER SITE FOR PROFIT. 
+              RETRANSLATING MY STORIES INTO ANOTHER LANGUAGE IS ALLOWED, 
+              HOWEVER PLEASE USE AT YOUR OWN DISCRETION.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="backdrop-blur-sm bg-card/90">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
@@ -71,7 +73,7 @@ export default function About() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="email"
@@ -84,7 +86,7 @@ export default function About() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="message"

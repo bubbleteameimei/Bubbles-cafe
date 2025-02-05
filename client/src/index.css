@@ -12,19 +12,19 @@
     --card-foreground: 267 30% 98%;
     --popover: 267 30% 3%;
     --popover-foreground: 267 30% 98%;
-    --primary: 267 84% 81%;
+    --primary: 284 84% 81%;
     --primary-foreground: 267 30% 3%;
     --secondary: 267 30% 15%;
     --secondary-foreground: 267 30% 98%;
     --muted: 267 30% 15%;
     --muted-foreground: 267 20% 70%;
-    --accent: 267 30% 15%;
+    --accent: 300 30% 15%;
     --accent-foreground: 267 30% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 267 30% 98%;
     --border: 267 30% 15%;
     --input: 267 30% 15%;
-    --ring: 267 84% 81%;
+    --ring: 284 84% 81%;
     --radius: 0.75rem;
   }
 
@@ -35,19 +35,19 @@
     --card-foreground: 267 30% 3%;
     --popover: 267 30% 98%;
     --popover-foreground: 267 30% 3%;
-    --primary: 267 70% 50%;
+    --primary: 284 70% 50%;
     --primary-foreground: 267 30% 98%;
     --secondary: 267 30% 90%;
     --secondary-foreground: 267 30% 3%;
     --muted: 267 30% 90%;
     --muted-foreground: 267 30% 40%;
-    --accent: 267 30% 90%;
+    --accent: 300 30% 90%;
     --accent-foreground: 267 30% 3%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 267 30% 98%;
     --border: 267 30% 85%;
     --input: 267 30% 85%;
-    --ring: 267 70% 50%;
+    --ring: 284 70% 50%;
   }
 
   body {
@@ -70,7 +70,7 @@
     @apply mb-6;
   }
 
-  .prose em {
+  .prose i {
     @apply italic;
   }
 }
@@ -107,5 +107,16 @@
 
   .light .story-content {
     @apply prose;
+  }
+
+  .loading-skull {
+    @apply w-16 h-16 mx-auto mb-4;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0.3; transform: scale(0.95); }
   }
 }
