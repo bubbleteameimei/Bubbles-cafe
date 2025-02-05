@@ -1,23 +1,66 @@
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Cursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [visible, setVisible] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    const updatePosition = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
+    const updatePosition = (x: number, y: number) => {
+      setPosition({ x, y });
+      setVisible(true);
     };
 
-    window.addEventListener("mousemove", updatePosition);
-    return () => window.removeEventListener("mousemove", updatePosition);
-  }, []);
+    const handleMouseMove = (e: MouseEvent) => {
+      updatePosition(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) {
+        updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setVisible(false);
+    };
+
+    if (isMobile) {
+      window.addEventListener("touchmove", handleTouchMove);
+      window.addEventListener("touchend", handleTouchEnd);
+    } else {
+      window.addEventListener("mousemove", handleMouseMove);
+    }
+
+    return () => {
+      if (isMobile) {
+        window.removeEventListener("touchmove", handleTouchMove);
+        window.removeEventListener("touchend", handleTouchEnd);
+      } else {
+        window.removeEventListener("mousemove", handleMouseMove);
+      }
+    };
+  }, [isMobile]);
+
+  if (!visible && isMobile) return null;
 
   return (
     <motion.div
       className="fixed top-0 left-0 w-8 h-8 pointer-events-none z-50"
-      animate={{ x: position.x - 16, y: position.y - 16 }}
-      transition={{ type: "tween", duration: 0.1 }} // Faster response
+      animate={{ 
+        x: position.x - 16,
+        y: position.y - 16,
+        scale: visible ? 1 : 0,
+        opacity: visible ? 0.7 : 0 
+      }}
+      transition={{ 
+        type: "spring",
+        damping: 25,
+        stiffness: 250
+      }}
     >
       <svg
         width="32"
@@ -26,11 +69,7 @@ export default function Cursor() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 25.5C9.097 27.5 3.5 21.903 3.5 15S9.097 2.5 16 2.5 28.5 8.097 28.5 15 22.903 27.5 16 27.5z"
-          fill="currentColor"
-          fillOpacity="0.7"
-        />
+        <circle cx="16" cy="16" r="15" stroke="currentColor" strokeWidth="2" />
       </svg>
     </motion.div>
   );
