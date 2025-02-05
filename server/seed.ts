@@ -18,6 +18,9 @@ async function parseWordPressXML() {
   const data = parser.parse(xmlContent);
   const items = data.rss.channel.item;
 
+  // Clear existing posts first
+  await db.delete(posts);
+
   for (const item of items) {
     if (item["wp:post_type"] === "post") {
       // Process content to match WordPress formatting

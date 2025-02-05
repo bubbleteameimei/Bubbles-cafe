@@ -31,7 +31,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(err => console.error("Audio playback failed:", err));
       }
       setIsPlaying(!isPlaying);
     }
