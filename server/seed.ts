@@ -20,20 +20,31 @@ async function parseWordPressXML() {
 
   for (const item of items) {
     if (item["wp:post_type"] === "post") {
-      // Remove WordPress specific tags from content
+      // Process content to match WordPress formatting
       const content = item["content:encoded"]
         .replace(/<!-- wp:paragraph -->/g, "")
         .replace(/<!-- \/wp:paragraph -->/g, "")
         .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
         .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-        .replace(/<\/?p>/g, "\n\n")
+        // Keep <p> tags for proper spacing
+        .replace(/<p>/g, "\n")
+        .replace(/<\/p>/g, "\n")
+        // Preserve italics
+        .replace(/<em>/g, "_")
+        .replace(/<\/em>/g, "_")
         .trim();
 
-      const excerpt = content.split("\n")[0];
+      // Create proper paragraphs
+      const formattedContent = content
+        .split("\n\n")
+        .filter(p => p.trim())
+        .join("\n\n");
+
+      const excerpt = formattedContent.split("\n")[0];
 
       await storage.createPost({
         title: item.title,
-        content: content,
+        content: formattedContent,
         excerpt: excerpt,
         slug: item["wp:post_name"],
         isSecret: false

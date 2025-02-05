@@ -30,19 +30,19 @@
 
   .light {
     --background: 267 30% 98%;
-    --foreground: 267 30% 10%;
+    --foreground: 267 30% 3%;
     --card: 267 30% 95%;
-    --card-foreground: 267 30% 10%;
+    --card-foreground: 267 30% 3%;
     --popover: 267 30% 98%;
-    --popover-foreground: 267 30% 10%;
+    --popover-foreground: 267 30% 3%;
     --primary: 267 70% 50%;
     --primary-foreground: 267 30% 98%;
     --secondary: 267 30% 90%;
-    --secondary-foreground: 267 30% 10%;
+    --secondary-foreground: 267 30% 3%;
     --muted: 267 30% 90%;
-    --muted-foreground: 267 20% 40%;
+    --muted-foreground: 267 30% 40%;
     --accent: 267 30% 90%;
-    --accent-foreground: 267 30% 10%;
+    --accent-foreground: 267 30% 3%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 267 30% 98%;
     --border: 267 30% 85%;
@@ -53,38 +53,25 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'IM Fell English', serif;
+    font-size: 1.125rem;
+    line-height: 1.75;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
+    @apply font-bold;
   }
 
-  /* Click effect styles */
-  button, a {
-    position: relative;
-    overflow: hidden;
+  .prose {
+    @apply text-foreground;
   }
 
-  button::after, a::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    background-image: radial-gradient(circle, var(--primary) 10%, transparent 10.01%);
-    background-repeat: no-repeat;
-    background-position: 50%;
-    transform: scale(10, 10);
-    opacity: 0;
-    transition: transform .3s, opacity .5s;
+  .prose p {
+    @apply mb-6;
   }
 
-  button:active::after, a:active::after {
-    transform: scale(0, 0);
-    opacity: .3;
-    transition: 0s;
+  .prose em {
+    @apply italic;
   }
 }
 
@@ -111,5 +98,14 @@
     border: 2px solid theme('colors.primary');
     background-color: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(4px);
+  }
+
+  .story-content {
+    @apply prose prose-invert mx-auto;
+    max-width: 65ch;
+  }
+
+  .light .story-content {
+    @apply prose;
   }
 }
