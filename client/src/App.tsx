@@ -38,7 +38,6 @@ function App() {
               <Switch>
                 <Route path="/" component={Home} />
                 <Route path="/post/:slug" component={Post} />
-                <Route path="/stories" component={Stories} />
                 <Route path="/secret" component={Secret} />
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/about" component={About} />
