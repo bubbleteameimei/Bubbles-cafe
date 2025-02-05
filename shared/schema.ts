@@ -8,14 +8,16 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   excerpt: text("excerpt").notNull(),
   isSecret: boolean("is_secret").default(false).notNull(),
-  slug: text("slug").notNull().unique()
+  slug: text("slug").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull(),
   content: text("content").notNull(),
-  author: text("author").notNull()
+  author: text("author").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 export const readingProgress = pgTable("reading_progress", {
@@ -24,8 +26,8 @@ export const readingProgress = pgTable("reading_progress", {
   progress: integer("progress").notNull().default(0)
 });
 
-export const insertPostSchema = createInsertSchema(posts).omit({ id: true });
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true });
+export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 
 export type Post = typeof posts.$inferSelect;

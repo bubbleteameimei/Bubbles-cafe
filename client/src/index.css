@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Playfair+Display:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,7 +25,7 @@
     --border: 267 30% 15%;
     --input: 267 30% 15%;
     --ring: 267 84% 81%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .light {
@@ -48,8 +50,13 @@
     --ring: 267 70% 50%;
   }
 
-  html {
-    font-feature-settings: "rlig" 1, "calt" 1;
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IM Fell English', serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
   }
 
   /* Click effect styles */
@@ -81,14 +88,28 @@
   }
 }
 
-@layer utilities {
-  .step {
-    counter-increment: step;
+@layer components {
+  .stained-glass-header {
+    background-image: url('/assets/stained-glass.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
   }
 
-  .step:before {
-    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
-    @apply ml-[-50px] mt-[-4px];
-    content: counter(step);
+  .stained-glass-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .gothic-menu {
+    border: 2px solid theme('colors.primary');
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
   }
 }
