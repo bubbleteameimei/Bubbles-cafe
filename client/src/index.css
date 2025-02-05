@@ -53,8 +53,26 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'IM Fell English', serif;
-    font-size: 1.125rem;
+    font-size: clamp(1rem, 2vw, 1.125rem);
     line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+      mix-blend-mode: normal;
+    }
+
+    ::view-transition-old(root) {
+      z-index: 1;
+    }
+
+    ::view-transition-new(root) {
+      z-index: 2;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -72,6 +90,12 @@
 
   .prose em, .prose i {
     font-style: italic;
+  }
+
+  .story-content {
+    @apply prose prose-invert mx-auto;
+    max-width: 65ch;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
   }
 }
 

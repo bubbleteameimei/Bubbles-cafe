@@ -14,7 +14,7 @@ import NotFound from "./pages/not-found";
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
         <Navigation />
         <main className="container mx-auto px-4 py-8 flex-grow">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
