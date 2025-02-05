@@ -2,7 +2,8 @@ import {
   type Post, type InsertPost,
   type Comment, type InsertComment,
   type ReadingProgress, type InsertProgress,
-  posts, comments, readingProgress
+  type SecretProgress, type InsertSecretProgress,
+  posts, comments, readingProgress, secretProgress
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -13,6 +14,7 @@ export interface IStorage {
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   getSecretPosts(): Promise<Post[]>;
+  unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
@@ -41,6 +43,13 @@ export class DatabaseStorage implements IStorage {
   async createPost(post: InsertPost): Promise<Post> {
     const [newPost] = await db.insert(posts).values(post).returning();
     return newPost;
+  }
+
+  async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {
+    const [newProgress] = await db.insert(secretProgress)
+      .values(progress)
+      .returning();
+    return newProgress;
   }
 
   async getComments(postId: number): Promise<Comment[]> {

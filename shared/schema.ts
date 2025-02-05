@@ -8,6 +8,9 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   excerpt: text("excerpt").notNull(),
   isSecret: boolean("is_secret").default(false).notNull(),
+  secretKey: text("secret_key"),
+  secretHint: text("secret_hint"),
+  revealCondition: text("reveal_condition"),
   slug: text("slug").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -26,13 +29,23 @@ export const readingProgress = pgTable("reading_progress", {
   progress: integer("progress").notNull().default(0)
 });
 
+export const secretProgress = pgTable("secret_progress", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  discoveryDate: timestamp("discovery_date").defaultNow().notNull(),
+  unlockedBy: text("unlocked_by").notNull()
+});
+
 export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
+export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type ReadingProgress = typeof readingProgress.$inferSelect;
+export type SecretProgress = typeof secretProgress.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
+export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;

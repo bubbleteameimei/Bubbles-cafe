@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCommentSchema, insertProgressSchema } from "@shared/schema";
+import { insertCommentSchema, insertProgressSchema, insertSecretProgressSchema } from "@shared/schema";
 
 export function registerRoutes(app: Express): Server {
   // Get all public posts
@@ -14,6 +14,17 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts/secret", async (_req, res) => {
     const posts = await storage.getSecretPosts();
     res.json(posts);
+  });
+
+  // Unlock secret post
+  app.post("/api/posts/:postId/unlock", async (req, res) => {
+    const result = insertSecretProgressSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ message: "Invalid unlock attempt" });
+      return;
+    }
+    const progress = await storage.unlockSecretPost(result.data);
+    res.json(progress);
   });
 
   // Get single post
