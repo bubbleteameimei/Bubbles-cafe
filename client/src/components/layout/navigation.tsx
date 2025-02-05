@@ -11,7 +11,7 @@ export default function Navigation() {
     <nav className="border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-6">
-          <a href="/" className="text-xl font-bold">Horror Blog</a>
+          <a href="/" className="text-xl font-bold">Bubble's Cafe</a>
           <a 
             href="/" 
             className={location === "/" ? "text-primary" : "text-muted-foreground hover:text-primary"}
