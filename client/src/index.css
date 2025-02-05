@@ -26,6 +26,14 @@
     --input: 267 30% 15%;
     --ring: 284 84% 81%;
     --radius: 0.75rem;
+
+    /* Font size variables for fluid typography */
+    --font-size-base: clamp(1rem, 1.5vw, 1.125rem);
+    --font-size-lg: clamp(1.125rem, 2vw, 1.25rem);
+    --font-size-xl: clamp(1.25rem, 2.5vw, 1.5rem);
+    --font-size-2xl: clamp(1.5rem, 3vw, 1.875rem);
+    --font-size-3xl: clamp(1.875rem, 3.5vw, 2.25rem);
+    --font-size-4xl: clamp(2.25rem, 4vw, 3rem);
   }
 
   .light {
@@ -53,35 +61,42 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'IM Fell English', serif;
-    font-size: clamp(1rem, 2vw, 1.125rem);
+    font-size: var(--font-size-base);
     line-height: 1.75;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    letter-spacing: 0.01em;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-      animation: none;
-      mix-blend-mode: normal;
-    }
-
-    ::view-transition-old(root) {
-      z-index: 1;
-    }
-
-    ::view-transition-new(root) {
-      z-index: 2;
-    }
+  /* Improved focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
+  /* Skip to main content link for keyboard users */
+  .skip-to-content {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
+           focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
+  }
+
+  /* Heading styles with fluid typography */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
-    @apply font-bold;
+    @apply font-bold tracking-tight;
   }
 
+  h1 { font-size: var(--font-size-4xl); }
+  h2 { font-size: var(--font-size-3xl); }
+  h3 { font-size: var(--font-size-2xl); }
+  h4 { font-size: var(--font-size-xl); }
+  h5 { font-size: var(--font-size-lg); }
+  h6 { font-size: var(--font-size-base); }
+
+  /* Improved prose styles for story content */
   .prose {
     @apply text-foreground;
+    font-size: var(--font-size-base);
+    line-height: 1.8;
   }
 
   .prose p {
@@ -92,10 +107,16 @@
     font-style: italic;
   }
 
+  /* Story content container with improved readability */
   .story-content {
     @apply prose prose-invert mx-auto;
     max-width: 65ch;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    font-size: var(--font-size-lg);
+    line-height: 1.8;
+  }
+
+  .light .story-content {
+    @apply prose;
   }
 }
 
@@ -110,29 +131,18 @@
   .stained-glass-header::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
   }
 
+  /* Gothic menu with improved contrast */
   .gothic-menu {
-    border: 2px solid theme('colors.primary');
-    background-color: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
+    @apply border-2 border-primary bg-background/95 backdrop-blur-md;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
-  .story-content {
-    @apply prose prose-invert mx-auto;
-    max-width: 65ch;
-  }
-
-  .light .story-content {
-    @apply prose;
-  }
-
+  /* Loading animation styles */
   .loading-skull {
     @apply w-16 h-16 mx-auto mb-4;
     animation: pulse 2s infinite;
@@ -142,5 +152,19 @@
     0% { opacity: 0.3; transform: scale(0.95); }
     50% { opacity: 1; transform: scale(1.05); }
     100% { opacity: 0.3; transform: scale(0.95); }
+  }
+
+  /* Improved link styles with proper hover states */
+  .nav-link {
+    @apply relative transition-colors duration-200;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-200;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
   }
 }
