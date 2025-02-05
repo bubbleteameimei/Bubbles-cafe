@@ -77,7 +77,7 @@ export default function Home() {
                 {currentPost.content.split('\n\n').map((paragraph, index) => (
                   <p key={index} className="mb-6">
                     {paragraph.trim().split('_').map((text, i) => 
-                      i % 2 === 0 ? text : <i key={i}>{text}</i>
+                      i % 2 === 0 ? text : <i>{text}</i> // Changed to <i>
                     )}
                   </p>
                 ))}
@@ -96,7 +96,8 @@ export default function Home() {
               </TooltipTrigger>
               <TooltipContent>Previous Story</TooltipContent>
             </Tooltip>
-
+          </TooltipProvider>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="icon" onClick={randomize}>
@@ -105,7 +106,8 @@ export default function Home() {
               </TooltipTrigger>
               <TooltipContent>Random Story</TooltipContent>
             </Tooltip>
-
+          </TooltipProvider>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="icon" onClick={goToNext}>

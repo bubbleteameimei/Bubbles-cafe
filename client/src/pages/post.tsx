@@ -14,7 +14,7 @@ export default function PostPage() {
   });
 
   if (isLoading) {
-    return <Skeleton className="h-[400px] w-full" />;
+    return <LoadingScreen />;
   }
 
   if (!post) {

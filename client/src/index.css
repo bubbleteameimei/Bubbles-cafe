@@ -6,15 +6,15 @@
 
 @layer base {
   :root {
-    --background: 267 30% 3%;
-    --foreground: 267 30% 98%;
-    --card: 267 30% 5%;
-    --card-foreground: 267 30% 98%;
-    --popover: 267 30% 3%;
-    --popover-foreground: 267 30% 98%;
-    --primary: 284 84% 81%;
-    --primary-foreground: 267 30% 3%;
-    --secondary: 267 30% 15%;
+    --background: 230 15% 10%;
+    --foreground: 230 15% 95%;
+    --card: 230 15% 12%;
+    --card-foreground: 230 15% 95%;
+    --popover: 230 15% 10%;
+    --popover-foreground: 230 15% 95%;
+    --primary: 280 70% 60%;
+    --primary-foreground: 230 15% 95%;
+    --secondary: 230 15% 20%;
     --secondary-foreground: 267 30% 98%;
     --muted: 267 30% 15%;
     --muted-foreground: 267 20% 70%;
@@ -70,8 +70,8 @@
     @apply mb-6;
   }
 
-  .prose i {
-    @apply italic;
+  .prose em, .prose i {
+    font-style: italic;
   }
 }
 
