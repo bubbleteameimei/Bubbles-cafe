@@ -40,6 +40,7 @@ function App() {
                 <Route path="/post/:slug" component={Post} />
                 <Route path="/secret" component={Secret} />
                 <Route path="/privacy" component={Privacy} />
+                <Route path="/about" component={About} />
                 <Route component={NotFound} />
               </Switch>
               <aside className="hidden lg:block">
