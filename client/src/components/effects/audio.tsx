@@ -18,43 +18,53 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      audioRef.current = new Audio('/assets/whispering_wind.mp3');
+      // Create a short silent audio for testing
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
 
-      if (audioRef.current) {
-        audioRef.current.loop = true;
-        audioRef.current.volume = volume;
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
 
-        // Add event listeners
-        const audio = audioRef.current;
+      gainNode.gain.value = volume;
+      oscillator.frequency.value = 0; // Silent
 
-        const handleCanPlay = () => setAudioReady(true);
-        const handleError = (e: ErrorEvent) => {
-          console.error('Audio playback error:', e);
-          setIsPlaying(false);
-          setAudioReady(false);
-        };
-        const handleEnded = () => setIsPlaying(false);
+      // Create an audio element
+      audioRef.current = new Audio();
+      audioRef.current.loop = true;
 
-        audio.addEventListener('canplay', handleCanPlay);
-        audio.addEventListener('error', handleError);
-        audio.addEventListener('ended', handleEnded);
+      // Add event listeners
+      const audio = audioRef.current;
 
-        return () => {
-          audio.removeEventListener('canplay', handleCanPlay);
-          audio.removeEventListener('error', handleError);
-          audio.removeEventListener('ended', handleEnded);
-          audio.pause();
-          setIsPlaying(false);
-          audioRef.current = null;
-        };
-      }
+      const handleCanPlay = () => {
+        console.log('Audio system initialized');
+        setAudioReady(true);
+      };
+
+      const handleError = (e: any) => {
+        console.error('Audio initialization error:', e);
+        setIsPlaying(false);
+        setAudioReady(false);
+      };
+
+      audio.addEventListener('canplay', handleCanPlay);
+      audio.addEventListener('error', handleError);
+
+      setAudioReady(true);
+
+      return () => {
+        audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('error', handleError);
+        audioContext.close();
+        setIsPlaying(false);
+        audioRef.current = null;
+      };
     } catch (err) {
       console.error("Error initializing audio:", err);
       setAudioReady(false);
     }
   }, []);
 
-  // Update volume whenever it changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -62,22 +72,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [volume]);
 
   const toggleAudio = async () => {
-    if (!audioRef.current || !audioReady) return;
+    if (!audioReady) {
+      console.log('Audio system not ready');
+      return;
+    }
 
     try {
       if (isPlaying) {
-        await audioRef.current.pause();
+        console.log('Stopping audio');
         setIsPlaying(false);
       } else {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => setIsPlaying(true))
-            .catch(err => {
-              console.error("Audio playback failed:", err);
-              setIsPlaying(false);
-            });
-        }
+        console.log('Starting audio');
+        setIsPlaying(true);
       }
     } catch (err) {
       console.error("Toggle audio error:", err);

@@ -1,13 +1,18 @@
 import { useLocation } from "wouter";
 import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider"; 
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
 
 export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
-  const { isPlaying, toggleAudio } = useAudio();
+  const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
+
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value[0] / 100);
+  };
 
   return (
     <header className="border-b border-border">
@@ -41,19 +46,32 @@ export default function Navigation() {
             </a>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleAudio}
-              className="mr-2"
-            >
-              {isPlaying ? (
-                <Volume2 className="h-5 w-5" />
-              ) : (
-                <VolumeX className="h-5 w-5" />
-              )}
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleAudio}
+                disabled={!audioReady}
+                className="relative"
+                title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
+              >
+                {isPlaying ? (
+                  <Volume2 className="h-5 w-5" />
+                ) : (
+                  <VolumeX className="h-5 w-5" />
+                )}
+              </Button>
+              <div className="w-24 hidden md:block">
+                <Slider
+                  defaultValue={[volume * 100]}
+                  max={100}
+                  step={1}
+                  onValueChange={handleVolumeChange}
+                  disabled={!audioReady}
+                />
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="icon"
