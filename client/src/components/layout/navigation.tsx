@@ -13,18 +13,31 @@ import {
 } from "@/components/ui/navigation-menu";
 import { useState, useCallback, memo } from "react";
 
-const NavLink = memo(({ href, isActive, children }: { 
+const NavLink = memo(({ href, isActive, children, preventRedirect }: { 
   href: string; 
   isActive: boolean; 
   children: React.ReactNode;
-}) => (
-  <a
-    href={href}
-    className={`nav-link ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-  >
-    {children}
-  </a>
-));
+  preventRedirect?: boolean;
+}) => {
+  const [, setLocation] = useLocation();
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Always prevent default behavior
+    if (!preventRedirect) {
+      setLocation(href);
+    }
+  }, [href, preventRedirect, setLocation]);
+
+  return (
+    <a
+      href={href}
+      onClick={handleClick}
+      className={`nav-link ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"} cursor-pointer`}
+    >
+      {children}
+    </a>
+  );
+});
 
 NavLink.displayName = "NavLink";
 
@@ -81,7 +94,14 @@ const Navigation = () => {
                       <NavLink href="/about" isActive={location === "/about"}>
                         About
                       </NavLink>
-                      <NavLink href="/admin/login" isActive={location === "/admin"}>
+                      <NavLink href="/secret" isActive={location === "/secret"}>
+                        Secret Stories
+                      </NavLink>
+                      <NavLink 
+                        href="/admin/login" 
+                        isActive={location === "/admin/login"}
+                        preventRedirect={true}
+                      >
                         Admin
                       </NavLink>
                     </div>

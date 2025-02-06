@@ -53,9 +53,9 @@ export default function Posts() {
   const currentPost = posts[currentIndex];
 
   return (
-    <div className="relative min-h-screen pb-32">
+    <div className="relative min-h-screen">
       <Mist />
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 py-8 pb-48"> {/* Increased bottom padding */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
@@ -73,8 +73,7 @@ export default function Posts() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Controls - Adjusted position closer to footer */}
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
+        <div className="fixed bottom-40 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg"> {/* Adjusted bottom spacing */}
           <div className="flex items-center justify-center gap-4">
             <TooltipProvider>
               <Tooltip>
@@ -108,7 +107,7 @@ export default function Posts() {
             </TooltipProvider>
           </div>
         </div>
-        <div className="text-center text-sm text-muted-foreground fixed bottom-4 left-1/2 transform -translate-x-1/2">
+        <div className="text-center text-sm text-muted-foreground fixed bottom-36 left-1/2 transform -translate-x-1/2"> {/* Adjusted bottom spacing */}
           Story {currentIndex + 1} of {posts.length}
         </div>
       </div>

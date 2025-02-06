@@ -21,7 +21,8 @@ export default function AdminLoginPage() {
     defaultValues: {
       email: "",
       password: ""
-    }
+    },
+    mode: "onSubmit"
   });
 
   const loginMutation = useMutation({
@@ -29,7 +30,6 @@ export default function AdminLoginPage() {
       const response = await apiRequest("POST", "/api/admin/login", data);
       if (!response.ok) {
         const error = await response.json();
-        // Handle rate limiting error specifically
         if (response.status === 429) {
           throw new Error(error.message || "Too many login attempts. Please try again later.");
         }
@@ -39,31 +39,41 @@ export default function AdminLoginPage() {
     },
     onSuccess: () => {
       setLocation("/admin");
-      // Only show toast on successful login
-      toast({
-        title: "Login successful",
-        description: "Welcome back, administrator"
-      });
     },
     onError: (error: Error) => {
-      // Clear password field on error for security
-      form.setValue("password", "");
-      // Set the error message in the form instead of showing a toast
       form.setError("root", { message: error.message });
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   });
 
+  const onSubmit = async (data: AdminLogin) => {
+    if (loginMutation.isPending) return;
+    try {
+      await loginMutation.mutateAsync(data);
+    } catch (error) {
+      // Error handling is done in mutation callbacks
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <Card className="w-full max-w-[400px] relative z-10">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      <Card className="w-full max-w-[500px] relative z-10">
         <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+            <form 
+              onSubmit={form.handleSubmit(onSubmit)} 
+              className="space-y-6"
+              autoComplete="off" // Prevent browser autofill popup
+            >
               {form.formState.errors.root && (
-                <Alert variant="destructive" className="mb-4">
+                <Alert variant="destructive" className="mb-6">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     {form.formState.errors.root.message}
@@ -76,13 +86,15 @@ export default function AdminLoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-base">Email</FormLabel>
                     <FormControl>
                       <Input 
                         type="email" 
                         placeholder="admin@example.com" 
                         {...field} 
-                        className={form.formState.errors.email ? "border-destructive" : ""}
+                        className={`h-11 text-base ${form.formState.errors.email ? "border-destructive" : ""}`}
+                        autoComplete="off"
+                        spellCheck="false"
                       />
                     </FormControl>
                     <FormMessage />
@@ -95,12 +107,13 @@ export default function AdminLoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-base">Password</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
                         {...field}
-                        className={form.formState.errors.password ? "border-destructive" : ""}
+                        className={`h-11 text-base ${form.formState.errors.password ? "border-destructive" : ""}`}
+                        autoComplete="new-password"
                       />
                     </FormControl>
                     <FormMessage />
@@ -108,7 +121,11 @@ export default function AdminLoginPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base"
+                disabled={loginMutation.isPending}
+              >
                 {loginMutation.isPending ? "Logging in..." : "Login"}
               </Button>
             </form>
