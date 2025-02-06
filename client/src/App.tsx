@@ -44,17 +44,19 @@ function App() {
             <Navigation />
             <main className="flex-1 container mx-auto px-4 py-8 mb-16">
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-                <Switch>
-                  <Route path="/" component={Home} />
-                  <Route path="/stories" component={Stories} />
-                  <Route path="/stories/:id" component={StoryView} />
-                  <Route path="/secret" component={Secret} />
-                  <Route path="/privacy" component={Privacy} />
-                  <Route path="/about" component={About} />
-                  <Route path="/admin" component={Admin} />
-                  <Route path="/admin/login" component={AdminLogin} />
-                  <Route component={NotFound} />
-                </Switch>
+                <React.Suspense fallback={<LoadingScreen />}>
+                  <Switch>
+                    <Route path="/" component={Home} />
+                    <Route path="/stories" component={Stories} />
+                    <Route path="/stories/:id" component={StoryView} />
+                    <Route path="/secret" component={Secret} />
+                    <Route path="/privacy" component={Privacy} />
+                    <Route path="/about" component={About} />
+                    <Route path="/admin" component={Admin} />
+                    <Route path="/admin/login" component={AdminLogin} />
+                    <Route component={NotFound} />
+                  </Switch>
+                </React.Suspense>
                 <aside className="hidden lg:block">
                   <Sidebar />
                 </aside>

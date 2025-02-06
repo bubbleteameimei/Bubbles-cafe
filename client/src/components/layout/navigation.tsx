@@ -21,6 +21,12 @@ const NavLink = ({ href, isActive, children }: {
     e.preventDefault();
     setLocation(href);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Close mobile menu if open
+    const sheet = document.querySelector('[data-state="open"]');
+    if (sheet) {
+      const closeButton = sheet.querySelector('button[data-state="open"]');
+      closeButton?.click();
+    }
   };
 
   return (
