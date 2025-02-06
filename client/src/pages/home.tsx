@@ -12,7 +12,9 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: ["/api/posts"]
+    queryKey: ["/api/posts"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const goToPrevious = useCallback(() => {
@@ -42,7 +44,7 @@ export default function Home() {
     return <LoadingScreen />;
   }
 
-  const currentPost = posts[currentIndex % posts.length];
+  const currentPost = posts[currentIndex];
 
   return (
     <div className="relative min-h-screen">
@@ -76,8 +78,8 @@ export default function Home() {
         </AnimatePresence>
 
         <div className="controls-container">
-          <div className="controls-wrapper">
-            <div className="nav-controls">
+          <div className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
+            <div className="nav-controls flex items-center justify-between">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -89,7 +91,7 @@ export default function Home() {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="page-counter">
+              <span className="page-counter text-sm text-muted-foreground font-mono">
                 {currentIndex + 1} / {posts.length}
               </span>
 

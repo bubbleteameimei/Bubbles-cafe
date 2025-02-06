@@ -49,7 +49,7 @@ const Navigation = () => {
   const navigationItems = (
     <>
       <NavLink href="/" isActive={location === "/"}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
+      <NavLink href="/stories" isActive={location.startsWith("/stories")}>Stories</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"}>About</NavLink>
       <NavLink href="/admin" isActive={location.startsWith("/admin")}>Admin</NavLink>

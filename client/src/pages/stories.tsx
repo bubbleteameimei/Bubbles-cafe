@@ -7,22 +7,22 @@ import PostCard from "@/components/blog/post-card";
 import Mist from "@/components/effects/mist";
 
 export default function Stories() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
-  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
-    queryKey: ["/api/posts"],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    networkMode: 'offlineFirst',
-    refetchOnWindowFocus: false
+  const { data: posts, isLoading, error } = useQuery<Post[]>({
+    queryKey: ["/api/posts"]
   });
 
-  if (isLoading || !posts || posts.length === 0) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error) {
     return <div className="text-center p-8">Error loading stories. Please try again later.</div>;
+  }
+
+  if (!posts || posts.length === 0) {
+    return <div className="text-center p-8">No stories found.</div>;
   }
 
   return (
@@ -32,17 +32,14 @@ export default function Stories() {
         <div className="max-w-5xl mx-auto">
           <h1 className="text-4xl font-serif font-bold mb-8 text-center">Story Index</h1>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post, index) => (
+            {posts.map((post) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(index * 0.1, 2) }}
+                transition={{ delay: Math.min(0.1, 2) }}
               >
-                <PostCard 
-                  post={post} 
-                  onClick={() => setLocation(`/schoop?index=${index}`)}
-                />
+                <PostCard post={post} />
               </motion.div>
             ))}
           </div>

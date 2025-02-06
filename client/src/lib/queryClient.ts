@@ -16,9 +16,7 @@ export async function apiRequest(
     method,
     headers: {
       ...(data ? { "Content-Type": "application/json" } : {}),
-      // Add cache control headers
-      'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-      'Surrogate-Control': 'max-age=30', // CDN caching
+      'Cache-Control': 'no-cache',
       'Pragma': 'no-cache'
     },
     body: data ? JSON.stringify(data) : undefined,
@@ -37,8 +35,7 @@ export const getQueryFn = <T>(options: {
     const res = await fetch(context.queryKey[0] as string, {
       credentials: "include",
       headers: {
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-        'Surrogate-Control': 'max-age=30', // CDN caching
+        'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       }
     });
@@ -57,18 +54,13 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 30 * 60 * 1000, // 30 minutes
       retry: false,
-      networkMode: 'offlineFirst',
-      refetchOnMount: false,
-      refetchOnReconnect: 'always'
     },
     mutations: {
       retry: false,
-      networkMode: 'offlineFirst',
       onError: (error) => {
         console.error('Mutation error:', error);
       }

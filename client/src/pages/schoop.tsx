@@ -7,18 +7,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
+import { useParams } from "wouter";
 
 export default function Schoop() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const params = useParams();
+  const postId = params?.id ? parseInt(params.id) : undefined;
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    networkMode: 'offlineFirst',
-    refetchOnWindowFocus: false
   });
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Set initial index based on postId
+  useEffect(() => {
+    if (posts && postId) {
+      const index = posts.findIndex(post => post.id === postId);
+      if (index !== -1) {
+        setCurrentIndex(index);
+      }
+    }
+  }, [posts, postId]);
 
   const navigate = useCallback((newIndex: number) => {
     if (isNavigating) return;
@@ -45,11 +57,7 @@ export default function Schoop() {
       newIndex = Math.floor(Math.random() * posts.length);
     } while (newIndex === currentIndex && posts.length > 1);
     navigate(newIndex);
-  }, [posts?.length, navigate, currentIndex]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [currentIndex]);
+  }, [posts?.length, currentIndex, navigate]);
 
   if (isLoading || !posts || posts.length === 0) {
     return <LoadingScreen />;
@@ -59,7 +67,7 @@ export default function Schoop() {
     return <div className="text-center p-8">Error loading stories. Please try again later.</div>;
   }
 
-  const currentPost = posts[currentIndex % posts.length];
+  const currentPost = posts[currentIndex];
 
   return (
     <div className="relative min-h-screen">

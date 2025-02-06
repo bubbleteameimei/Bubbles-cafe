@@ -1,6 +1,6 @@
 import React from 'react';
 import { Switch, Route, useLocation } from "wouter";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AudioProvider } from "@/components/effects/audio";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -18,41 +18,21 @@ import AdminLogin from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
 import Schoop from "./pages/schoop";
-
-// Initialize QueryClient
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import { queryClient } from "@/lib/queryClient";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
 
-  // Initial loading screen
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500); 
-
+    }, 400);
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle route changes including manual navigation
   React.useEffect(() => {
-    const handleRouteChange = () => {
-      window.scrollTo(0, 0);
-      setIsLoading(true);
-      setTimeout(() => setIsLoading(false), 800);
-    };
-
-    // Listen for location changes
-    handleRouteChange();
+    window.scrollTo(0, 0);
   }, [location]);
 
   return (
@@ -67,7 +47,7 @@ function App() {
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/stories" component={Stories} />
-                  <Route path="/schoop" component={Schoop} />
+                  <Route path="/stories/:id" component={Schoop} />
                   <Route path="/secret" component={Secret} />
                   <Route path="/privacy" component={Privacy} />
                   <Route path="/about" component={About} />
