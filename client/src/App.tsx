@@ -10,7 +10,8 @@ import Footer from "./components/layout/footer";
 import Sidebar from "./components/blog/sidebar";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
-import Stories from "./pages/stories";  // Changed from Posts to Stories
+import Stories from "./pages/stories";
+import StoryIndex from "./pages/story-index";
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import Admin from "./pages/admin";
@@ -22,7 +23,6 @@ function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
 
-  // Initial loading screen
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -31,7 +31,6 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle route changes including manual navigation
   React.useEffect(() => {
     const handleRouteChange = () => {
       window.scrollTo(0, 0);
@@ -39,7 +38,6 @@ function App() {
       setTimeout(() => setIsLoading(false), 800);
     };
 
-    // Listen for location changes
     handleRouteChange();
   }, [location]);
 
@@ -53,7 +51,8 @@ function App() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
               <Switch>
                 <Route path="/" component={Home} />
-                <Route path="/stories" component={Stories} />  {/* Changed from /posts to /stories */}
+                <Route path="/stories/:slug" component={Stories} />
+                <Route path="/stories" component={StoryIndex} />
                 <Route path="/secret" component={Secret} />
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/about" component={About} />
