@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { insertPostSchema, type Post, type InsertPost } from "@shared/schema";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pencil, Trash2, LogOut } from "lucide-react";
+import { Pencil, Trash2, LogOut, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function AdminPage() {
@@ -34,7 +34,9 @@ export default function AdminPage() {
   }, [setLocation]);
 
   const postForm = useForm<InsertPost>({
-    resolver: zodResolver(insertPostSchema.omit({ slug: true })),
+    resolver: zodResolver(insertPostSchema.extend({
+      slug: insertPostSchema.shape.slug.optional(),
+    })),
     defaultValues: {
       title: "",
       content: "",
@@ -60,7 +62,11 @@ export default function AdminPage() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-      const response = await apiRequest("POST", "/api/posts", { ...data, slug });
+      const response = await apiRequest(
+        editingPost ? "PATCH" : "POST",
+        editingPost ? `/api/posts/${editingPost.id}` : "/api/posts",
+        { ...data, slug }
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -69,13 +75,13 @@ export default function AdminPage() {
       setEditingPost(null);
       toast({
         title: "Success",
-        description: "Post created successfully",
+        description: editingPost ? "Post updated successfully" : "Post created successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to create post",
+        description: error.message || "Failed to save post",
         variant: "destructive",
       });
     },
@@ -92,6 +98,13 @@ export default function AdminPage() {
         description: "Post deleted successfully",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete post",
+        variant: "destructive",
+      });
+    },
   });
 
   const logoutMutation = useMutation({
@@ -104,10 +117,17 @@ export default function AdminPage() {
         title: "Logged out",
         description: "Successfully logged out"
       });
-    }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
+      });
+    },
   });
 
-  const handleEditPost = (post: Post) => {
+  const handleEditPost = useCallback((post: Post) => {
     setEditingPost(post);
     postForm.reset({
       title: post.title,
@@ -116,10 +136,14 @@ export default function AdminPage() {
       isSecret: post.isSecret,
       authorId: post.authorId,
     });
-  };
+  }, [postForm]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error) {
@@ -136,7 +160,11 @@ export default function AdminPage() {
           onClick={() => logoutMutation.mutate()}
           disabled={logoutMutation.isPending}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          {logoutMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <LogOut className="h-4 w-4 mr-2" />
+          )}
           {logoutMutation.isPending ? "Logging out..." : "Logout"}
         </Button>
       </div>
@@ -146,7 +174,10 @@ export default function AdminPage() {
           {editingPost ? "Edit Post" : "Create New Post"}
         </h2>
         <Form {...postForm}>
-          <form onSubmit={postForm.handleSubmit((data) => createPostMutation.mutate(data))} className="space-y-4">
+          <form 
+            onSubmit={postForm.handleSubmit((data) => createPostMutation.mutate(data))} 
+            className="space-y-4"
+          >
             <FormField
               control={postForm.control}
               name="title"
@@ -205,14 +236,29 @@ export default function AdminPage() {
             />
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={createPostMutation.isPending}>
-                {createPostMutation.isPending ? "Saving..." : (editingPost ? "Update Post" : "Create Post")}
+              <Button 
+                type="submit" 
+                disabled={createPostMutation.isPending}
+                className="relative"
+              >
+                {createPostMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {editingPost ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  editingPost ? "Update Post" : "Create Post"
+                )}
               </Button>
               {editingPost && (
-                <Button type="button" variant="outline" onClick={() => {
-                  setEditingPost(null);
-                  postForm.reset();
-                }}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingPost(null);
+                    postForm.reset();
+                  }}
+                >
                   Cancel Edit
                 </Button>
               )}
@@ -225,7 +271,10 @@ export default function AdminPage() {
         <h2 className="text-xl font-semibold mb-4">Existing Posts</h2>
         <div className="space-y-4">
           {posts?.map((post: Post) => (
-            <div key={post.id} className="p-4 border rounded flex items-center justify-between">
+            <div 
+              key={post.id} 
+              className="p-4 border rounded flex items-center justify-between hover:bg-accent/5 transition-colors"
+            >
               <div>
                 <h3 className="font-medium">{post.title}</h3>
                 <p className="text-sm text-muted-foreground">{post.excerpt}</p>
@@ -240,19 +289,26 @@ export default function AdminPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleEditPost(post)}
+                  className="hover:bg-primary/10"
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="hover:bg-destructive/10"
                   onClick={() => {
                     if (confirm('Are you sure you want to delete this post?')) {
                       deletePostMutation.mutate(post.id);
                     }
                   }}
+                  disabled={deletePostMutation.isPending}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {deletePostMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>

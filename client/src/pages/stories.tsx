@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { PostFooter } from "@/components/blog/post-footer";
 import { Button } from "@/components/ui/button";
-import { List } from "lucide-react";
+import { List, Loader2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -25,29 +25,39 @@ const socialLinks = {
 export default function Stories() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIndexOpen, setIsIndexOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { data: posts = [], isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    networkMode: 'offlineFirst',
   });
 
   const goToPrevious = useCallback(() => {
-    if (!posts.length) return;
+    if (!posts.length || isNavigating) return;
+    setIsNavigating(true);
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts.length]);
+    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
+  }, [posts.length, isNavigating]);
 
   const goToNext = useCallback(() => {
-    if (!posts.length) return;
+    if (!posts.length || isNavigating) return;
+    setIsNavigating(true);
     setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts.length]);
+    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
+  }, [posts.length, isNavigating]);
 
   const randomize = useCallback(() => {
-    if (!posts.length) return;
+    if (!posts.length || isNavigating) return;
+    setIsNavigating(true);
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts.length]);
+    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
+  }, [posts.length, isNavigating]);
 
   // Memoize the current post to prevent unnecessary re-renders
   const currentPost = useMemo(() => {
@@ -87,8 +97,13 @@ export default function Stories() {
                 variant="outline"
                 size="sm"
                 className="gap-2 backdrop-blur-sm bg-background/50 hover:bg-background/70 transition-all duration-300 will-change-transform hover:scale-105"
+                disabled={isNavigating}
               >
-                <List className="h-4 w-4" />
+                {isNavigating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <List className="h-4 w-4" />
+                )}
                 Story Index
               </Button>
             </SheetTrigger>
@@ -107,9 +122,12 @@ export default function Stories() {
                       index === currentIndex ? 'border-primary bg-primary/10' : 'bg-background/50'
                     }`}
                     onClick={() => {
+                      if (isNavigating) return;
+                      setIsNavigating(true);
                       setCurrentIndex(index);
                       setIsIndexOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                      setTimeout(() => setIsNavigating(false), 300);
                     }}
                   >
                     <h4 className="font-serif font-semibold mb-2">{post.title}</h4>
@@ -161,6 +179,7 @@ export default function Stories() {
           onNext={goToNext}
           onRandom={randomize}
           socialLinks={socialLinks}
+          isNavigating={isNavigating}
         />
       </div>
     </div>

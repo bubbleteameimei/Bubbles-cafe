@@ -6,6 +6,7 @@ import { db } from "./db";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 
 async function getOrCreateAdminUser() {
   try {
@@ -77,11 +78,20 @@ async function parseWordPressXML() {
 
           const excerpt = formattedContent.split("\n")[0];
 
+          // Generate unique slug by adding random string
+          const baseSlug = item["wp:post_name"] || item.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+
+          const uniqueSuffix = randomBytes(4).toString('hex');
+          const uniqueSlug = `${baseSlug}-${uniqueSuffix}`;
+
           await storage.createPost({
             title: item.title,
             content: formattedContent,
             excerpt: excerpt,
-            slug: item["wp:post_name"],
+            slug: uniqueSlug,
             isSecret: false,
             authorId: admin.id
           });

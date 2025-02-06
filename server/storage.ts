@@ -23,6 +23,7 @@ export interface IStorage {
   deletePost(id: number): Promise<void>;
   getSecretPosts(): Promise<Post[]>;
   unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
+  updatePost(id: number, post: Partial<InsertPost>): Promise<Post>;
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
@@ -68,6 +69,7 @@ export class DatabaseStorage implements IStorage {
 
   // Posts with optimized queries
   async getPosts(): Promise<Post[]> {
+    // Use the created index for efficient sorting
     return await db.select()
       .from(posts)
       .where(eq(posts.isSecret, false))
@@ -84,6 +86,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
+    // Use the slug index for faster lookups
     const [post] = await db.select()
       .from(posts)
       .where(eq(posts.slug, slug))
@@ -108,6 +111,30 @@ export class DatabaseStorage implements IStorage {
       .values(progress)
       .returning();
     return newProgress;
+  }
+
+  async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
+    // Get the existing post first
+    const [existingPost] = await db.select()
+      .from(posts)
+      .where(eq(posts.id, id))
+      .limit(1);
+
+    if (!existingPost) {
+      throw new Error("Post not found");
+    }
+
+    // Update the post while preserving the original createdAt
+    const [updatedPost] = await db
+      .update(posts)
+      .set({
+        ...post,
+        createdAt: existingPost.createdAt // Preserve original creation date
+      })
+      .where(eq(posts.id, id))
+      .returning();
+
+    return updatedPost;
   }
 
   // Comments with optimized queries

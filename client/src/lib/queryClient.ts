@@ -14,7 +14,13 @@ export async function apiRequest(
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      // Add cache control headers
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+      'Surrogate-Control': 'max-age=30', // CDN caching
+      'Pragma': 'no-cache'
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -32,6 +38,7 @@ export const getQueryFn = <T>(options: {
       credentials: "include",
       headers: {
         'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+        'Surrogate-Control': 'max-age=30', // CDN caching
         'Pragma': 'no-cache'
       }
     });
@@ -55,11 +62,16 @@ export const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 30 * 60 * 1000, // 30 minutes
       retry: false,
-      networkMode: 'offlineFirst'
+      networkMode: 'offlineFirst',
+      refetchOnMount: false,
+      refetchOnReconnect: 'always'
     },
     mutations: {
       retry: false,
-      networkMode: 'offlineFirst'
+      networkMode: 'offlineFirst',
+      onError: (error) => {
+        console.error('Mutation error:', error);
+      }
     },
   },
 });

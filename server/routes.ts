@@ -116,6 +116,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Add PATCH endpoint for updating posts
+  app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const updatedPost = await storage.updatePost(postId, req.body);
+      res.json(updatedPost);
+    } catch (error) {
+      console.error("Error updating post:", error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
   // Public routes
   app.get("/api/posts", async (_req, res) => {
     const posts = await storage.getPosts();
