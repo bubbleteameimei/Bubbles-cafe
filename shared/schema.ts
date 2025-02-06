@@ -21,6 +21,8 @@ export const posts = pgTable("posts", {
   revealCondition: text("reveal_condition"),
   slug: text("slug").notNull().unique(),
   authorId: integer("author_id").notNull(),
+  likes: integer("likes").default(0).notNull(),
+  dislikes: integer("dislikes").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -47,7 +49,7 @@ export const secretProgress = pgTable("secret_progress", {
 
 // Zod schemas for type validation
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
+export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true, likes: true, dislikes: true });
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });

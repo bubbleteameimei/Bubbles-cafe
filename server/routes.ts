@@ -37,6 +37,24 @@ export function registerRoutes(app: Express): Server {
     res.json(post);
   });
 
+  // Handle post interactions (likes/dislikes)
+  app.post("/api/posts/:postId/interaction", async (req, res) => {
+    const { type } = req.body;
+    const postId = parseInt(req.params.postId);
+
+    if (!['like', 'dislike', null].includes(type)) {
+      res.status(400).json({ message: "Invalid interaction type" });
+      return;
+    }
+
+    try {
+      const post = await storage.updatePostInteraction(postId, type);
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update interaction" });
+    }
+  });
+
   // Get recent comments across all posts
   app.get("/api/posts/comments/recent", async (_req, res) => {
     const comments = await storage.getRecentComments();

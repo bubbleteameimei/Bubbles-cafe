@@ -8,9 +8,9 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
+  NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 
 export default function Navigation() {
@@ -50,7 +50,7 @@ export default function Navigation() {
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>More <ChevronDown className="h-4 w-4 ml-2 rotate-90"/></NavigationMenuTrigger>
+                  <NavigationMenuTrigger>More <ChevronDown className="h-4 w-4 ml-2"/></NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <div className="grid gap-3 p-4 w-[200px]">
                       <NavigationMenuLink asChild>
