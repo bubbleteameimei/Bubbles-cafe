@@ -1,18 +1,122 @@
-import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { type Post } from "@shared/schema";
+import { useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import Mist from "@/components/effects/mist";
 
 export default function Home() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const { data: posts, isLoading } = useQuery<Post[]>({
+    queryKey: ["/api/posts"]
+  });
+
+  const goToPrevious = useCallback(() => {
+    if (!posts?.length) return;
+    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
+
+  const goToNext = useCallback(() => {
+    if (!posts?.length) return;
+    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
+
+  const randomize = useCallback(() => {
+    if (!posts?.length) return;
+    const newIndex = Math.floor(Math.random() * posts.length);
+    setCurrentIndex(newIndex);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentIndex]);
+
+  if (isLoading || !posts || posts.length === 0) {
+    return <LoadingScreen />;
+  }
+
+  const currentPost = posts[currentIndex % posts.length];
+
   return (
     <div className="relative min-h-screen">
-      <div className="container mx-auto px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <h1 className="text-4xl font-serif mb-4">Welcome to Bubble's Cafe</h1>
-          <p className="text-muted-foreground">A place for horror and existential fiction.</p>
-        </motion.div>
+      <Mist />
+      <div className="story-container max-w-3xl mx-auto px-4 py-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPost.id}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
+            <article className="prose dark:prose-invert mx-auto">
+              <h2 className="text-3xl font-bold mb-4">{currentPost.title}</h2>
+              <div
+                className="story-content"
+                style={{ whiteSpace: 'pre-wrap' }}
+              >
+                {currentPost.content.split('\n\n').map((paragraph, index) => (
+                  <p key={index} className="mb-6">
+                    {paragraph.trim().split('_').map((text, i) =>
+                      i % 2 === 0 ? text : <i key={i}>{text}</i>
+                    )}
+                  </p>
+                ))}
+              </div>
+            </article>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="controls-container">
+          <div className="controls-wrapper">
+            <div className="nav-controls">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Previous Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <span className="page-counter">
+                {currentIndex + 1} / {posts.length}
+              </span>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Random Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Next Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
