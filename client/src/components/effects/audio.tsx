@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 interface AudioContextType {
@@ -12,7 +12,7 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const [audio] = useState(() => typeof window !== 'undefined' ? new Audio('/ambient.mp3') : null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
@@ -20,64 +20,75 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize audio
   useEffect(() => {
-    if (audio) {
-      audio.loop = true;
-      audio.volume = volume;
+    const initAudio = () => {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('/ambient.mp3');
+        audioRef.current.loop = true;
+        audioRef.current.volume = volume;
 
-      const handleCanPlay = () => {
-        setAudioReady(true);
-      };
+        const handleCanPlay = () => {
+          setAudioReady(true);
+        };
 
-      const handleError = () => {
-        setAudioReady(false);
-        toast({
-          title: "Audio Error",
-          description: "Failed to load audio. Please try again.",
-          variant: "destructive",
-        });
-      };
+        const handleError = () => {
+          setAudioReady(false);
+          toast({
+            title: "Audio Error",
+            description: "Failed to load audio. Please try again.",
+            variant: "destructive",
+          });
+        };
 
-      audio.addEventListener('canplaythrough', handleCanPlay);
-      audio.addEventListener('error', handleError);
+        audioRef.current.addEventListener('canplaythrough', handleCanPlay);
+        audioRef.current.addEventListener('error', handleError);
+      }
+    };
 
-      // Update volume when it changes
-      audio.volume = volume;
+    initAudio();
 
-      return () => {
-        audio.removeEventListener('canplaythrough', handleCanPlay);
-        audio.removeEventListener('error', handleError);
-        audio.pause();
-      };
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeEventListener('canplaythrough', () => setAudioReady(true));
+        audioRef.current.removeEventListener('error', () => setAudioReady(false));
+        audioRef.current = null;
+      }
+    };
+  }, [toast]);
+
+  // Handle volume changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
     }
-  }, [audio, volume, toast]);
+  }, [volume]);
 
-  const toggleAudio = useCallback(() => {
-    if (!audio || !audioReady) return;
+  const toggleAudio = useCallback(async () => {
+    if (!audioRef.current || !audioReady) return;
 
     try {
       if (isPlaying) {
-        audio.pause();
+        audioRef.current.pause();
         setIsPlaying(false);
       } else {
-        const playPromise = audio.play();
-        if (playPromise) {
-          playPromise.then(() => {
-            setIsPlaying(true);
-          }).catch(() => {
-            setIsPlaying(false);
-            toast({
-              title: "Audio Error",
-              description: "Failed to play audio. Please try again.",
-              variant: "destructive",
-            });
+        try {
+          await audioRef.current.play();
+          setIsPlaying(true);
+        } catch (error) {
+          console.error('Audio play error:', error);
+          toast({
+            title: "Audio Error",
+            description: "Failed to play audio. Please try again.",
+            variant: "destructive",
           });
+          setIsPlaying(false);
         }
       }
     } catch (err) {
       console.error("Toggle audio error:", err);
       setIsPlaying(false);
     }
-  }, [audio, isPlaying, audioReady, toast]);
+  }, [audioReady, isPlaying, toast]);
 
   return (
     <AudioContext.Provider value={{

@@ -72,21 +72,17 @@ const Navigation = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  const handleNavClick = useCallback((href: string) => {
-    setLocation(href);
-    setIsOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [setLocation]);
-
   const navigationItems = (
     <>
       <NavLink href="/" isActive={location === "/"}>Home</NavLink>
-      <div className="relative group">
+      <div className="relative group flex items-center">
         <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
         <Button 
           variant="ghost" 
-          className="ml-2"
+          size="sm"
+          className="ml-1 p-1 opacity-70 hover:opacity-100 transition-opacity"
           onClick={() => setIsIndexOpen(true)}
+          title="Open Story Index"
         >
           <List className="h-4 w-4" />
         </Button>
@@ -145,7 +141,7 @@ const Navigation = () => {
 
             <div className="w-24 hidden md:block">
               <Slider
-                defaultValue={[volume * 100]}
+                value={[volume * 100]}
                 max={100}
                 step={1}
                 onValueChange={handleVolumeChange}
@@ -173,11 +169,11 @@ const Navigation = () => {
         <DrawerContent>
           <div className="max-w-3xl mx-auto px-4 py-6">
             <h2 className="text-2xl font-bold mb-6">Story Index</h2>
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid gap-4 max-h-[60vh] overflow-y-auto px-2">
               {posts?.map((post, index) => (
                 <div 
                   key={post.id} 
-                  className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                  className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors hover:scale-[1.01] active:scale-[0.99] transform duration-200"
                   onClick={() => {
                     setLocation(`/stories?index=${index}`);
                     setIsIndexOpen(false);

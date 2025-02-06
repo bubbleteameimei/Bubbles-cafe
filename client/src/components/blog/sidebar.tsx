@@ -20,10 +20,10 @@ export default function Sidebar() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            {posts?.slice(0, 5).map((post) => (
+            {posts?.slice(0, 5).map((post, index) => (
               <li key={post.id}>
                 <a 
-                  href={`/post/${post.slug}`}
+                  href={`/stories?index=${index}`}
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
                   {post.title}

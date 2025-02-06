@@ -15,7 +15,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     if (onClick) {
       onClick();
     } else {
-      setLocation(`/post/${post.slug}`);
+      setLocation(`/stories?index=${post.id}`);
     }
   };
 
