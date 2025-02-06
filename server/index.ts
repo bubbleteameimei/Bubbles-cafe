@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { createServer } from "net";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,20 @@ app.use((req, res, next) => {
   next();
 });
 
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.listen(startPort, '0.0.0.0', () => {
+      const { port } = server.address() as { port: number };
+      server.close(() => resolve(port));
+    });
+
+    server.on('error', () => {
+      resolve(findAvailablePort(startPort + 1));
+    });
+  });
+}
+
 async function startServer() {
   try {
     // Seed database with WordPress posts
@@ -65,7 +80,8 @@ async function startServer() {
       serveStatic(app);
     }
 
-    const PORT = parseInt(process.env.PORT || '5000', 10);
+    const startPort = parseInt(process.env.PORT || '5000', 10);
+    const PORT = await findAvailablePort(startPort);
 
     // Handle server shutdown
     const closeServer = () => {
@@ -78,22 +94,24 @@ async function startServer() {
     process.on('SIGTERM', closeServer);
     process.on('SIGINT', closeServer);
 
-    // Start server
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server is ready and listening on port ${PORT}`);
-    }).on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${PORT} is already in use. Please try a different port.`);
-      } else {
+    // Start server and wait for it to be ready
+    return new Promise<void>((resolve, reject) => {
+      server.listen(PORT, "0.0.0.0", () => {
+        log(`Server is ready and listening on port ${PORT}`);
+        resolve();
+      }).on('error', (err: any) => {
         log(`Server error: ${err.message}`);
-      }
-      process.exit(1);
+        reject(err);
+      });
     });
-
   } catch (error) {
     log(`Failed to start server: ${error}`);
     process.exit(1);
   }
 }
 
-startServer();
+// Start server and handle any errors
+startServer().catch((error) => {
+  log(`Server startup failed: ${error}`);
+  process.exit(1);
+});
