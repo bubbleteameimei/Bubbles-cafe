@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
 interface AudioContextType {
@@ -12,50 +12,54 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audio] = useState(() => typeof window !== 'undefined' ? new Audio('/ambient.mp3') : null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
   const { toast } = useToast();
 
-  // Initialize audio on first interaction
-  const initializeAudio = useCallback(() => {
-    if (!audioRef.current) {
-      const audio = new Audio('/ambient.mp3');
+  // Initialize audio
+  useEffect(() => {
+    if (audio) {
       audio.loop = true;
       audio.volume = volume;
 
-      audio.addEventListener('canplaythrough', () => {
+      const handleCanPlay = () => {
         setAudioReady(true);
-      });
+      };
 
-      audio.addEventListener('error', () => {
+      const handleError = () => {
+        setAudioReady(false);
         toast({
           title: "Audio Error",
           description: "Failed to load audio. Please try again.",
           variant: "destructive",
         });
-        setAudioReady(false);
-        setIsPlaying(false);
-      });
+      };
 
-      audioRef.current = audio;
+      audio.addEventListener('canplaythrough', handleCanPlay);
+      audio.addEventListener('error', handleError);
+
+      // Update volume when it changes
+      audio.volume = volume;
+
+      return () => {
+        audio.removeEventListener('canplaythrough', handleCanPlay);
+        audio.removeEventListener('error', handleError);
+        audio.pause();
+      };
     }
-  }, [volume, toast]);
+  }, [audio, volume, toast]);
 
   const toggleAudio = useCallback(() => {
+    if (!audio || !audioReady) return;
+
     try {
-      if (!audioRef.current) {
-        initializeAudio();
-      }
-
-      if (!audioRef.current) return;
-
       if (isPlaying) {
-        audioRef.current.pause();
+        audio.pause();
         setIsPlaying(false);
       } else {
-        const playPromise = audioRef.current.play();
+        const playPromise = audio.play();
         if (playPromise) {
           playPromise.then(() => {
             setIsPlaying(true);
@@ -73,7 +77,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.error("Toggle audio error:", err);
       setIsPlaying(false);
     }
-  }, [isPlaying, initializeAudio, toast]);
+  }, [audio, isPlaying, audioReady, toast]);
 
   return (
     <AudioContext.Provider value={{

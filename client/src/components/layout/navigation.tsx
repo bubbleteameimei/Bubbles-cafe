@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, Menu, ChevronDown } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Menu, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider"; 
+import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
 import {
@@ -10,16 +10,17 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useCallback, useState, memo, useMemo } from "react";
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useQuery } from "@tanstack/react-query";
+import { type Post } from "@shared/schema";
+import { useCallback, useState, memo } from "react";
 
-const NavLink = memo(({ href, isActive, children, onClick }: { 
-  href: string; 
-  isActive: boolean; 
+const NavLink = memo(({ href, isActive, children, onClick }: {
+  href: string;
+  isActive: boolean;
   children: React.ReactNode;
   onClick?: () => void;
 }) => {
@@ -56,7 +57,12 @@ const Navigation = () => {
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
   const [isOpen, setIsOpen] = useState(false);
+  const [isIndexOpen, setIsIndexOpen] = useState(false);
   const [, setLocation] = useLocation();
+
+  const { data: posts } = useQuery<Post[]>({
+    queryKey: ["/api/posts"]
+  });
 
   const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
@@ -66,41 +72,30 @@ const Navigation = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  const handleAudioToggle = useCallback(() => {
-    toggleAudio();
-  }, [toggleAudio]);
-
   const handleNavClick = useCallback((href: string) => {
     setLocation(href);
     setIsOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setLocation]);
 
-  const NavigationContent = useMemo(() => (
+  const navigationItems = (
     <>
-      <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
-        Home
-      </NavLink>
-
-      <NavLink href="/posts" isActive={location === "/posts"} onClick={() => handleNavClick("/posts")}>
-        Posts
-      </NavLink>
-
-      <NavLink href="/about" isActive={location === "/about"} onClick={() => handleNavClick("/about")}>
-        About
-      </NavLink>
-      <NavLink href="/secret" isActive={location === "/secret"} onClick={() => handleNavClick("/secret")}>
-        Secret Stories
-      </NavLink>
-      <NavLink 
-        href="/admin/login" 
-        isActive={location.startsWith("/admin")}
-        onClick={() => handleNavClick("/admin/login")}
-      >
-        Admin
-      </NavLink>
+      <NavLink href="/" isActive={location === "/"}>Home</NavLink>
+      <div className="relative group">
+        <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
+        <Button 
+          variant="ghost" 
+          className="ml-2"
+          onClick={() => setIsIndexOpen(true)}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+      </div>
+      <NavLink href="/secret" isActive={location === "/secret"}>Secret Stories</NavLink>
+      <NavLink href="/about" isActive={location === "/about"}>About</NavLink>
+      <NavLink href="/admin" isActive={location.startsWith("/admin")}>Admin</NavLink>
     </>
-  ), [location, handleNavClick]);
+  );
 
   return (
     <header className="bg-background">
@@ -116,67 +111,86 @@ const Navigation = () => {
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="hover:bg-primary/10 transition-colors duration-200"
-                >
+                <Button variant="ghost" size="icon">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[80vw] pt-16">
                 <nav className="flex flex-col space-y-4">
-                  {NavigationContent}
+                  {navigationItems}
                 </nav>
               </SheetContent>
             </Sheet>
           </div>
 
           <div className="hidden md:flex items-center space-x-2">
-            {NavigationContent}
+            {navigationItems}
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleAudioToggle}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleAudio}
+              disabled={!audioReady}
+              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+              title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
+            >
+              {isPlaying ? (
+                <Volume2 className="h-5 w-5" />
+              ) : (
+                <VolumeX className="h-5 w-5" />
+              )}
+            </Button>
+
+            <div className="w-24 hidden md:block">
+              <Slider
+                defaultValue={[volume * 100]}
+                max={100}
+                step={1}
+                onValueChange={handleVolumeChange}
                 disabled={!audioReady}
-                className="relative group hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
-                title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
-              >
-                {isPlaying ? (
-                  <Volume2 className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
-                ) : (
-                  <VolumeX className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
-                )}
-              </Button>
-              <div className="w-24 hidden md:block">
-                <Slider
-                  defaultValue={[volume * 100]}
-                  max={100}
-                  step={1}
-                  onValueChange={handleVolumeChange}
-                  disabled={!audioReady}
-                />
-              </div>
+              />
             </div>
+
             <Button
               variant="ghost"
               size="icon"
               onClick={handleThemeToggle}
-              className="transition-all duration-200 hover:bg-primary/10 hover:scale-105 active:scale-95"
+              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
             >
               {theme === "dark" ? (
-                <Sun className="h-5 w-5 transition-transform duration-200" />
+                <Sun className="h-5 w-5" />
               ) : (
-                <Moon className="h-5 w-5 transition-transform duration-200" />
+                <Moon className="h-5 w-5" />
               )}
             </Button>
           </div>
         </div>
       </nav>
+
+      <Drawer open={isIndexOpen} onOpenChange={setIsIndexOpen}>
+        <DrawerContent>
+          <div className="max-w-3xl mx-auto px-4 py-6">
+            <h2 className="text-2xl font-bold mb-6">Story Index</h2>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              {posts?.map((post, index) => (
+                <div 
+                  key={post.id} 
+                  className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => {
+                    setLocation(`/stories?index=${index}`);
+                    setIsIndexOpen(false);
+                  }}
+                >
+                  <h4 className="font-semibold mb-2">{post.title}</h4>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </header>
   );
 };

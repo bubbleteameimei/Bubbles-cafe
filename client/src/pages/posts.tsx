@@ -1,10 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { useState, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { PostFooter } from "@/components/blog/post-footer";
 import Mist from "@/components/effects/mist";
@@ -43,8 +40,14 @@ export default function Posts() {
   }, [posts?.length]);
 
   useEffect(() => {
+    // Get index from URL if present
+    const params = new URLSearchParams(window.location.search);
+    const index = parseInt(params.get('index') || '0');
+    if (!isNaN(index) && posts && index >= 0 && index < posts.length) {
+      setCurrentIndex(index);
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [currentIndex]);
+  }, [posts]);
 
   if (isLoading || !posts || posts.length === 0) {
     return <LoadingScreen />;
@@ -56,25 +59,6 @@ export default function Posts() {
     <div className="relative min-h-screen">
       <Mist />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
-        {/* Story Index */}
-        <div className="mb-8 bg-background/80 backdrop-blur-sm rounded-lg p-6 border border-border/50">
-          <h3 className="text-xl font-bold mb-4">Story Index</h3>
-          <div className="space-y-4">
-            {posts.map((post, index) => (
-              <div 
-                key={post.id} 
-                className={`p-4 border-b border-border/50 last:border-0 cursor-pointer hover:bg-accent/50 transition-colors ${
-                  index === currentIndex ? 'bg-accent' : ''
-                }`}
-                onClick={() => setCurrentIndex(index)}
-              >
-                <h4 className="font-semibold mb-2">{post.title}</h4>
-                <p className="text-sm text-muted-foreground">{post.excerpt}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}

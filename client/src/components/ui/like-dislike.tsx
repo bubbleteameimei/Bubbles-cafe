@@ -3,45 +3,38 @@ import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 
 interface LikeDislikeProps {
+  postId?: number;
   onLike?: (liked: boolean) => void;
   onDislike?: (disliked: boolean) => void;
 }
 
 export function LikeDislike({
+  postId,
   onLike,
   onDislike
 }: LikeDislikeProps) {
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
-  const [likes] = useState(() => Math.floor(Math.random() * 100));
-  const [dislikes] = useState(() => Math.floor(Math.random() * 20));
-  const [count, setCount] = useState({ likes, dislikes });
+  const [count] = useState(() => ({
+    likes: Math.floor(Math.random() * (150 - 50 + 1)) + 50,    // 50-150 range
+    dislikes: Math.floor(Math.random() * (15 - 10 + 1)) + 10   // 10-15 range
+  }));
 
   const handleLike = () => {
     if (disliked) {
       setDisliked(false);
-      setCount(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
     }
     const newLiked = !liked;
     setLiked(newLiked);
-    setCount(prev => ({ 
-      ...prev, 
-      likes: prev.likes + (newLiked ? 1 : -1)
-    }));
     onLike?.(newLiked);
   };
 
   const handleDislike = () => {
     if (liked) {
       setLiked(false);
-      setCount(prev => ({ ...prev, likes: prev.likes - 1 }));
     }
     const newDisliked = !disliked;
     setDisliked(newDisliked);
-    setCount(prev => ({ 
-      ...prev, 
-      dislikes: prev.dislikes + (newDisliked ? 1 : -1)
-    }));
     onDislike?.(newDisliked);
   };
 
@@ -54,7 +47,7 @@ export function LikeDislike({
         className="relative group hover:scale-110 active:scale-95 transition-all duration-200"
       >
         <ThumbsUp className={`h-5 w-5 transition-transform group-hover:scale-110 ${liked ? 'text-primary' : ''}`} />
-        <span className="ml-2">{count.likes}</span>
+        <span className="ml-2">{count.likes + (liked ? 1 : 0)}</span>
         {liked && (
           <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-primary/50" />
         )}
@@ -67,7 +60,7 @@ export function LikeDislike({
         className="relative group hover:scale-110 active:scale-95 transition-all duration-200"
       >
         <ThumbsDown className={`h-5 w-5 transition-transform group-hover:scale-110 ${disliked ? 'text-destructive' : ''}`} />
-        <span className="ml-2">{count.dislikes}</span>
+        <span className="ml-2">{count.dislikes + (disliked ? 1 : 0)}</span>
         {disliked && (
           <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-destructive/50" />
         )}

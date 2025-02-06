@@ -14,40 +14,40 @@ interface SocialButtonsProps {
 
 export function SocialButtons({ links, className = "" }: SocialButtonsProps) {
   return (
-    <div className={`social-buttons ${className} flex justify-center items-center gap-4 p-4 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border/50`}>
+    <div className={`flex items-center gap-4 ${className}`}>
       {links.wordpress && (
         <a href={links.wordpress} target="_blank" rel="noopener noreferrer" 
-          className="social-button wordpress transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#21759b] transition-all duration-200 hover:scale-110">
           <SiWordpress className="h-5 w-5" />
         </a>
       )}
       {links.twitter && (
         <a href={links.twitter} target="_blank" rel="noopener noreferrer" 
-          className="social-button twitter transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#1DA1F2] transition-all duration-200 hover:scale-110">
           <SiX className="h-5 w-5" />
         </a>
       )}
       {links.instagram && (
         <a href={links.instagram} target="_blank" rel="noopener noreferrer" 
-          className="social-button instagram transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#E4405F] transition-all duration-200 hover:scale-110">
           <SiInstagram className="h-5 w-5" />
         </a>
       )}
       {links.github && (
         <a href={links.github} target="_blank" rel="noopener noreferrer" 
-          className="social-button github transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#333] transition-all duration-200 hover:scale-110">
           <SiGithub className="h-5 w-5" />
         </a>
       )}
       {links.linkedin && (
         <a href={links.linkedin} target="_blank" rel="noopener noreferrer" 
-          className="social-button linkedin transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#0077B5] transition-all duration-200 hover:scale-110">
           <SiLinkedin className="h-5 w-5" />
         </a>
       )}
       {links.facebook && (
         <a href={links.facebook} target="_blank" rel="noopener noreferrer" 
-          className="social-button facebook transform hover:scale-110 transition-all">
+          className="text-muted-foreground hover:text-[#1877F2] transition-all duration-200 hover:scale-110">
           <SiFacebook className="h-5 w-5" />
         </a>
       )}
