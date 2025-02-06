@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { PostFooter } from "@/components/blog/post-footer";
@@ -15,42 +15,47 @@ import {
 } from "@/components/ui/sheet";
 import Mist from "@/components/effects/mist";
 
-// Social media links
+// Memoized social media links
 const socialLinks = {
   wordpress: "https://bubbleteameimei.wordpress.com",
   twitter: "https://twitter.com/Bubbleteameimei",
   instagram: "https://www.instagram.com/bubbleteameimei"
-};
+} as const;
 
 export default function Stories() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIndexOpen, setIsIndexOpen] = useState(false);
 
-  const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: ["/api/posts"]
+  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
+    queryKey: ["/api/posts"],
   });
 
   const goToPrevious = useCallback(() => {
-    if (!posts?.length) return;
+    if (!posts.length) return;
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [posts.length]);
 
   const goToNext = useCallback(() => {
-    if (!posts?.length) return;
+    if (!posts.length) return;
     setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [posts.length]);
 
   const randomize = useCallback(() => {
-    if (!posts?.length) return;
+    if (!posts.length) return;
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [posts.length]);
+
+  // Memoize the current post to prevent unnecessary re-renders
+  const currentPost = useMemo(() => {
+    if (!posts.length) return null;
+    return posts[currentIndex % posts.length];
+  }, [posts, currentIndex]);
 
   useEffect(() => {
-    // Get index from URL if present
     const params = new URLSearchParams(window.location.search);
     const index = parseInt(params.get('index') || '0');
     if (!isNaN(index) && posts && index >= 0 && index < posts.length) {
@@ -63,7 +68,13 @@ export default function Stories() {
     return <LoadingScreen />;
   }
 
-  const currentPost = posts[currentIndex % posts.length];
+  if (error) {
+    return <div className="text-center p-8">Error loading stories. Please try again later.</div>;
+  }
+
+  if (!currentPost) {
+    return <div className="text-center p-8">No stories available.</div>;
+  }
 
   return (
     <div className="relative min-h-screen bg-[url('/assets/IMG_4399.jpeg')] bg-cover bg-center bg-fixed before:content-[''] before:absolute before:inset-0 before:bg-background/90">
@@ -75,7 +86,7 @@ export default function Stories() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 backdrop-blur-sm bg-background/50 hover:bg-background/70 transition-all duration-300 hover:scale-105"
+                className="gap-2 backdrop-blur-sm bg-background/50 hover:bg-background/70 transition-all duration-300 will-change-transform hover:scale-105"
               >
                 <List className="h-4 w-4" />
                 Story Index
@@ -86,13 +97,13 @@ export default function Stories() {
                 <SheetTitle className="text-2xl font-serif">Story Index</SheetTitle>
               </SheetHeader>
               <div className="mt-8 grid gap-4 pr-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
-                {posts?.map((post, index) => (
+                {posts.map((post: Post, index: number) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`p-4 border border-border rounded-lg cursor-pointer backdrop-blur-sm hover:bg-accent/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
+                    transition={{ delay: Math.min(index * 0.05, 1) }}
+                    className={`p-4 border border-border rounded-lg cursor-pointer backdrop-blur-sm hover:bg-accent/50 transition-all duration-300 will-change-transform hover:scale-[1.02] active:scale-[0.98] ${
                       index === currentIndex ? 'border-primary bg-primary/10' : 'bg-background/50'
                     }`}
                     onClick={() => {
@@ -119,21 +130,21 @@ export default function Stories() {
             transition={{ duration: 0.3 }}
             className="mb-8"
           >
-            <article className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto backdrop-blur-sm bg-background/50 p-6 sm:p-8 rounded-lg border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <article className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto backdrop-blur-sm bg-background/50 p-6 sm:p-8 rounded-lg border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300 will-change-transform">
               <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">{currentPost.title}</h2>
               <div
                 className="story-content"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
-                {currentPost.content.split('\n\n').map((paragraph, index) => (
+                {currentPost.content.split('\n\n').map((paragraph: string, index: number) => (
                   <motion.p
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: Math.min(index * 0.1, 2) }}
                     className="mb-6"
                   >
-                    {paragraph.trim().split('_').map((text, i) =>
+                    {paragraph.trim().split('_').map((text: string, i: number) =>
                       i % 2 === 0 ? text : <i key={i}>{text}</i>
                     )}
                   </motion.p>
