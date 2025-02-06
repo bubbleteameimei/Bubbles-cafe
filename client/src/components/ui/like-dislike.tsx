@@ -10,8 +10,8 @@ interface LikeDislikeProps {
 }
 
 export function LikeDislike({
-  initialLikes = 0,
-  initialDislikes = 0,
+  initialLikes = Math.floor(Math.random() * 100),
+  initialDislikes = Math.floor(Math.random() * 20),
   onLike,
   onDislike
 }: LikeDislikeProps) {
@@ -49,13 +49,13 @@ export function LikeDislike({
           variant={liked ? "default" : "ghost"}
           size="icon"
           onClick={handleLike}
-          className="relative group"
+          className="relative group hover:scale-105 transition-all duration-200"
         >
           <ThumbsUp className={`h-5 w-5 transition-transform group-hover:scale-110 ${liked ? 'text-primary' : ''}`} />
           <span className="ml-2">{likes}</span>
-          <div className="fireworks">
-            <div className="checked-like-fx"></div>
-          </div>
+          {liked && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-primary/50" />
+          )}
         </Button>
       </div>
 
@@ -64,13 +64,13 @@ export function LikeDislike({
           variant={disliked ? "default" : "ghost"}
           size="icon"
           onClick={handleDislike}
-          className="relative group"
+          className="relative group hover:scale-105 transition-all duration-200"
         >
           <ThumbsDown className={`h-5 w-5 transition-transform group-hover:scale-110 ${disliked ? 'text-destructive' : ''}`} />
           <span className="ml-2">{dislikes}</span>
-          <div className="fireworks">
-            <div className="checked-dislike-fx"></div>
-          </div>
+          {disliked && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-destructive/50" />
+          )}
         </Button>
       </div>
     </div>

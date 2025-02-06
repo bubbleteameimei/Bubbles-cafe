@@ -32,7 +32,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize audio on mount
   useEffect(() => {
-    const audio = new Audio('/assets/ambient.mp3');
+    console.log("Initializing audio...");
+    const audio = new Audio('/ambient.mp3');
     audio.preload = 'auto';
     audio.loop = true;
     audio.volume = volume;
@@ -41,15 +42,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.log("Audio is ready to play");
       setAudioReady(true);
     };
-    const handleEnded = () => setIsPlaying(false);
-    const handleError = (e: ErrorEvent) => {
+
+    const handleError = (e: any) => {
       console.error("Audio loading error:", e);
+      toast.toast({
+        title: "Audio Error",
+        description: "Failed to load audio file. Please try again later.",
+        variant: "destructive",
+      });
       setAudioReady(false);
       setIsPlaying(false);
     };
 
     audio.addEventListener('canplaythrough', handleCanPlayThrough);
-    audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
     audioRef.current = audio;
@@ -58,7 +63,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     return () => {
       audio.pause();
       audio.removeEventListener('canplaythrough', handleCanPlayThrough);
-      audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
   }, []);
@@ -79,6 +83,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Start playing after 5 seconds
       if (elapsed >= 5000 && !isPlaying && audioReady) {
+        console.log("Attempting auto-play after 5 seconds...");
         const playPromise = audioRef.current?.play();
         if (playPromise) {
           playPromise
@@ -103,7 +108,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }, 1000);
 
     return () => clearInterval(checkTime);
-  }, [audioReady, isPlaying, showPauseDialog, toast]);
+  }, [audioReady, isPlaying, showPauseDialog]);
 
   const toggleAudio = useCallback(() => {
     if (!audioReady || !audioRef.current) {
@@ -115,14 +120,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
-        console.log("Audio paused");
       } else {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
               setIsPlaying(true);
-              console.log("Audio playing");
             })
             .catch(error => {
               console.error("Playback failed:", error);
@@ -144,7 +147,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [isPlaying, audioReady, toast]);
+  }, [isPlaying, audioReady]);
 
   return (
     <AudioContext.Provider value={{
