@@ -2,23 +2,26 @@ import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+const COOKIE_CONSENT_KEY = 'cookieConsent';
+
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const hasConsented = localStorage.getItem('cookieConsent');
-    if (!hasConsented) {
+    // Only show if consent hasn't been given/declined before
+    const hasResponded = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (!hasResponded) {
       setIsVisible(true);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem('cookieConsent', 'true');
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
     setIsVisible(false);
   };
 
   const handleDecline = () => {
-    localStorage.setItem('cookieConsent', 'false');
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
     setIsVisible(false);
   };
 

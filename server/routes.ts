@@ -19,15 +19,18 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export function registerRoutes(app: Express): Server {
-  // Session middleware
+  // Session middleware with updated configuration
   app.use(session({
     secret: process.env.REPL_ID!,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    }
   }));
 
-  // Admin authentication routes
+  // Admin authentication routes with improved error handling
   app.post("/api/admin/login", async (req, res) => {
     const { email, password } = req.body;
     console.log("Login attempt for email:", email);
@@ -49,6 +52,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       req.session.isAdmin = true;
+      await req.session.save();
       res.json({ message: "Logged in successfully" });
     } catch (error) {
       console.error("Login error:", error);

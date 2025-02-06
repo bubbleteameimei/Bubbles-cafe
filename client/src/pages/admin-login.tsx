@@ -26,7 +26,8 @@ export default function AdminLoginPage() {
     mutationFn: async (data: AdminLogin) => {
       const response = await apiRequest("POST", "/api/admin/login", data);
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        const error = await response.json();
+        throw new Error(error.message || "Invalid credentials");
       }
       return response.json();
     },
@@ -37,12 +38,14 @@ export default function AdminLoginPage() {
         description: "Welcome back, administrator"
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: "Invalid email or password",
+        description: error.message || "Invalid email or password",
         variant: "destructive"
       });
+      // Clear password field on error
+      form.setValue("password", "");
     }
   });
 

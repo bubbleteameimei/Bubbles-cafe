@@ -65,7 +65,8 @@ export default function Home() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="sticky bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm py-4 mt-8">
+        {/* Navigation Controls - Now with oval shape and closer to footer */}
+        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
           <div className="flex items-center justify-center gap-4">
             <TooltipProvider>
               <Tooltip>
@@ -98,9 +99,9 @@ export default function Home() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="text-center text-sm text-muted-foreground mt-2">
-            Story {currentIndex + 1} of {posts.length}
-          </div>
+        </div>
+        <div className="text-center text-sm text-muted-foreground fixed bottom-8 left-1/2 transform -translate-x-1/2">
+          Story {currentIndex + 1} of {posts.length}
         </div>
       </div>
     </div>
