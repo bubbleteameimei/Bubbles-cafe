@@ -44,12 +44,12 @@ export default function AdminPage() {
     },
   });
 
-  const { data: posts, isLoading } = useQuery<Post[]>({
+  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
     retry: false,
-    onError: () => {
-      setLocation("/admin/login");
-    }
+    throwOnError: true,
   });
 
   const createPostMutation = useMutation({
@@ -120,6 +120,11 @@ export default function AdminPage() {
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    setLocation("/admin/login");
+    return null;
   }
 
   return (
@@ -219,7 +224,7 @@ export default function AdminPage() {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Existing Posts</h2>
         <div className="space-y-4">
-          {posts?.map((post) => (
+          {posts?.map((post: Post) => (
             <div key={post.id} className="p-4 border rounded flex items-center justify-between">
               <div>
                 <h3 className="font-medium">{post.title}</h3>

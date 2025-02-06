@@ -7,7 +7,7 @@ import {
   posts, comments, readingProgress, secretProgress, users
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -35,50 +35,72 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations
+  // User operations with optimized queries
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
     return user;
   }
 
   async getAdminByEmail(email: string): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.email, email));
+    return await db.select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
+    const [newUser] = await db.insert(users)
+      .values(user)
+      .returning();
     return newUser;
   }
 
-  // Posts
+  // Posts with optimized queries
   async getPosts(): Promise<Post[]> {
     return await db.select()
       .from(posts)
       .where(eq(posts.isSecret, false))
-      .orderBy(desc(posts.createdAt));
+      .orderBy(desc(posts.createdAt))
+      .limit(50); // Paginate results for better performance
   }
 
   async getSecretPosts(): Promise<Post[]> {
-    return await db.select().from(posts).where(eq(posts.isSecret, true));
+    return await db.select()
+      .from(posts)
+      .where(eq(posts.isSecret, true))
+      .orderBy(desc(posts.createdAt))
+      .limit(20);
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
-    const [post] = await db.select().from(posts).where(eq(posts.slug, slug));
+    const [post] = await db.select()
+      .from(posts)
+      .where(eq(posts.slug, slug))
+      .limit(1);
     return post;
   }
 
   async createPost(post: InsertPost): Promise<Post> {
-    const [newPost] = await db.insert(posts).values(post).returning();
+    const [newPost] = await db.insert(posts)
+      .values(post)
+      .returning();
     return newPost;
   }
 
   async deletePost(id: number): Promise<void> {
-    await db.delete(posts).where(eq(posts.id, id));
+    await db.delete(posts)
+      .where(eq(posts.id, id));
   }
 
   async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {
@@ -88,25 +110,35 @@ export class DatabaseStorage implements IStorage {
     return newProgress;
   }
 
-  // Comments
+  // Comments with optimized queries
   async getComments(postId: number): Promise<Comment[]> {
-    return await db.select().from(comments).where(eq(comments.postId, postId));
+    return await db.select()
+      .from(comments)
+      .where(eq(comments.postId, postId))
+      .orderBy(desc(comments.createdAt))
+      .limit(100);
   }
 
   async getRecentComments(): Promise<Comment[]> {
-    return await db.select().from(comments).orderBy(desc(comments.id)).limit(10);
+    return await db.select()
+      .from(comments)
+      .orderBy(desc(comments.createdAt))
+      .limit(10);
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const [newComment] = await db.insert(comments).values(comment).returning();
+    const [newComment] = await db.insert(comments)
+      .values(comment)
+      .returning();
     return newComment;
   }
 
-  // Reading Progress
+  // Reading Progress with optimized queries
   async getProgress(postId: number): Promise<ReadingProgress | undefined> {
     const [progress] = await db.select()
       .from(readingProgress)
-      .where(eq(readingProgress.postId, postId));
+      .where(eq(readingProgress.postId, postId))
+      .limit(1);
     return progress;
   }
 

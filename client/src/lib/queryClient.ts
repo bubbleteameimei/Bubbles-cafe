@@ -31,7 +31,8 @@ export const getQueryFn = <T>(options: {
     const res = await fetch(context.queryKey[0] as string, {
       credentials: "include",
       headers: {
-        'Cache-Control': 'public, max-age=300', // Enable HTTP caching
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+        'Pragma': 'no-cache'
       }
     });
 
@@ -52,11 +53,13 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (replacing deprecated cacheTime)
+      gcTime: 30 * 60 * 1000, // 30 minutes
       retry: false,
+      networkMode: 'offlineFirst'
     },
     mutations: {
       retry: false,
+      networkMode: 'offlineFirst'
     },
   },
 });
