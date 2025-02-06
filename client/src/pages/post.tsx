@@ -4,7 +4,6 @@ import { type Post } from "@shared/schema";
 import CommentSection from "@/components/blog/comment-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from "@/components/ui/breadcrumb";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import { LikeDislike } from "@/components/blog/like-dislike";
 import Mist from "@/components/effects/mist";
 
@@ -14,7 +13,7 @@ interface ReadingProgress {
 
 export default function PostPage() {
   const [, params] = useRoute("/post/:slug");
-  const slug = params?.slug || '';
+  const slug = params?.slug;
 
   const { data: post, isLoading: isPostLoading } = useQuery<Post>({
     queryKey: ["/api/posts", slug],
@@ -46,19 +45,39 @@ export default function PostPage() {
   };
 
   if (isPostLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (!post) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h2 className="text-2xl font-bold text-muted-foreground">Story not found</h2>
-        <BreadcrumbLink href="/posts" className="mt-4">
-          Return to Posts
-        </BreadcrumbLink>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Skeleton className="h-8 w-32 mb-4" />
+        <Skeleton className="h-64 w-full max-w-2xl" />
       </div>
     );
   }
+
+  if (!post || !slug) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <p className="text-lg text-muted-foreground">Post not found</p>
+      </div>
+    );
+  }
+
+  const renderContent = () => {
+    if (!post.content) return <p>No content available.</p>;
+
+    const paragraphs = post.content.split('\n\n');
+    return paragraphs.map((paragraph, index) => {
+      if (!paragraph.trim()) return null;
+
+      const segments = paragraph.trim().split('_');
+      return (
+        <p key={index} className="mb-6">
+          {segments.map((text, i) => 
+            i % 2 === 0 ? text : <em key={i}>{text}</em>
+          )}
+        </p>
+      );
+    });
+  };
 
   return (
     <div className="relative">
@@ -89,13 +108,7 @@ export default function PostPage() {
         >
           <h1 className="mb-8">{post.title}</h1>
           <div className="story-content">
-            {post.content.split('\n\n').map((paragraph, index) => (
-              <p key={index} className="mb-6">
-                {paragraph.trim().split('_').map((text, i) => 
-                  i % 2 === 0 ? text : <em key={i}>{text}</em>
-                )}
-              </p>
-            ))}
+            {renderContent()}
           </div>
         </article>
 

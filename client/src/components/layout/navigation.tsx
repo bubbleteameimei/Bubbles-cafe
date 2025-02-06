@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, ChevronDown } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider"; 
 import { useTheme } from "@/hooks/use-theme";
@@ -12,15 +12,21 @@ import {
   NavigationMenuTrigger,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
+import { useState, useCallback } from "react";
 
 export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleVolumeChange = (value: number[]) => {
+  const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
-  };
+  }, [setVolume]);
+
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
 
   return (
     <header className="border-b border-border">
@@ -34,51 +40,56 @@ export default function Navigation() {
       <nav className="gothic-menu">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-6">
-            <a 
-              href="/" 
-              className={location === "/" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              Home
-            </a>
-            <a 
-              href="/posts"
-              className={location === "/posts" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              Posts
-            </a>
-
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>More <ChevronDown className="h-4 w-4 ml-2"/></NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="grid gap-3 p-4 w-[200px]">
-                      <NavigationMenuLink asChild>
-                        <a 
+                  <NavigationMenuLink
+                    href="/"
+                    className={location === "/" ? "text-primary" : "text-muted-foreground hover:text-primary"}
+                  >
+                    Home
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href="/posts"
+                    className={location === "/posts" ? "text-primary" : "text-muted-foreground hover:text-primary"}
+                  >
+                    Posts
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger
+                    onClick={() => setIsOpen(!isOpen)}
+                  >
+                    More
+                  </NavigationMenuTrigger>
+                  {isOpen && (
+                    <NavigationMenuContent>
+                      <div className="min-w-[200px] p-4 space-y-2">
+                        <NavigationMenuLink
                           href="/secret"
                           className={`block p-2 hover:bg-accent rounded-md ${location === "/secret" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                         >
                           Secret Stories
-                        </a>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <a 
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
                           href="/about"
                           className={`block p-2 hover:bg-accent rounded-md ${location === "/about" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                         >
                           About
-                        </a>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <a 
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
                           href="/admin"
                           className={`block p-2 hover:bg-accent rounded-md ${location === "/admin" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                         >
                           Admin
-                        </a>
-                      </NavigationMenuLink>
-                    </div>
-                  </NavigationMenuContent>
+                        </NavigationMenuLink>
+                      </div>
+                    </NavigationMenuContent>
+                  )}
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -113,7 +124,7 @@ export default function Navigation() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={handleThemeToggle}
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>

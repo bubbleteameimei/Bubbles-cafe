@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { type Post } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import PostCard from "@/components/blog/post-card";
 
 export default function Posts() {
   const { data: posts, isLoading } = useQuery<Post[]>({
@@ -36,10 +37,7 @@ export default function Posts() {
       <div className="grid gap-6">
         {posts.map((post) => (
           <Link key={post.id} href={`/post/${post.slug}`}>
-            <Card className="p-6 hover:bg-muted/50 transition-colors cursor-pointer">
-              <h2 className="text-2xl font-semibold mb-2">{post.title}</h2>
-              <p className="text-muted-foreground">{post.excerpt}</p>
-            </Card>
+            <PostCard post={post} />
           </Link>
         ))}
       </div>

@@ -65,3 +65,11 @@ export type InsertPost = z.infer<typeof insertPostSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
 export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
+
+// Add admin credentials validation schema
+export const adminLoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+export type AdminLogin = z.infer<typeof adminLoginSchema>;

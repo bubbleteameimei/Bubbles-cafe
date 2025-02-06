@@ -1,33 +1,45 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCommentSchema, insertProgressSchema, insertSecretProgressSchema } from "@shared/schema";
+import { insertCommentSchema } from "@shared/schema";
+
+// Set specific admin credentials
+const ADMIN_EMAIL = "Vantalison@gmail.com";
+const ADMIN_PASSWORD = "powerPUFF70";
 
 export function registerRoutes(app: Express): Server {
-  // Get all public posts
-  app.get("/api/posts", async (_req, res) => {
-    const posts = await storage.getPosts();
-    res.json(posts);
-  });
+  // Admin authentication
+  app.post("/api/admin/login", async (req, res) => {
+    const { email, password } = req.body;
 
-  // Get secret posts
-  app.get("/api/secret-posts", async (_req, res) => {
-    const posts = await storage.getSecretPosts();
-    res.json(posts);
-  });
-
-  // Unlock secret post
-  app.post("/api/unlock-secret", async (req, res) => {
-    const { postId, code } = req.body;
-    try {
-      const progress = await storage.unlockSecretPost({ postId, code });
-      res.json(progress);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid code" });
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ message: "Invalid credentials" });
     }
   });
 
-  // Get single post
+  // Get all public posts ordered by update date
+  app.get("/api/posts", async (_req, res) => {
+    const posts = await storage.getPosts();
+    // Sort posts by createdAt in descending order
+    const sortedPosts = posts.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    res.json(sortedPosts);
+  });
+
+  // Create new post (admin only)
+  app.post("/api/posts", async (req, res) => {
+    try {
+      const post = await storage.createPost(req.body);
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create post" });
+    }
+  });
+
+  // Get single post by slug
   app.get("/api/posts/:slug", async (req, res) => {
     const post = await storage.getPost(req.params.slug);
     if (!post) {
@@ -55,12 +67,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get recent comments across all posts
-  app.get("/api/posts/comments/recent", async (_req, res) => {
-    const comments = await storage.getRecentComments();
-    res.json(comments);
-  });
-
   // Get comments for post
   app.get("/api/posts/:postId/comments", async (req, res) => {
     const comments = await storage.getComments(parseInt(req.params.postId));
@@ -76,23 +82,6 @@ export function registerRoutes(app: Express): Server {
     }
     const comment = await storage.createComment(result.data);
     res.json(comment);
-  });
-
-  // Get reading progress
-  app.get("/api/posts/:postId/progress", async (req, res) => {
-    const progress = await storage.getProgress(parseInt(req.params.postId));
-    res.json(progress);
-  });
-
-  // Update reading progress
-  app.post("/api/posts/:postId/progress", async (req, res) => {
-    const result = insertProgressSchema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ message: "Invalid progress data" });
-      return;
-    }
-    const progress = await storage.updateProgress(result.data);
-    res.json(progress);
   });
 
   return createServer(app);
