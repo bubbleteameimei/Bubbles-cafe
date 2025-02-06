@@ -19,8 +19,8 @@ export default function AdminPage() {
 
   const loginForm = useForm({
     defaultValues: {
-      email: "Vantalison@gmail.com", // Updated default email
-      password: "powerPUFF70",       // Updated default password
+      email: "",
+      password: "",
     },
   });
 

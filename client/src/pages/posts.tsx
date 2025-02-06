@@ -5,11 +5,9 @@ import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LikeDislike } from "@/components/blog/like-dislike";
-import CommentSection from "@/components/blog/comment-section";
-import Mist from "@/components/effects/mist";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import Mist from "@/components/effects/mist";
 
 const PostContent = memo(({ content }: { content: string }) => (
   <div className="story-content" style={{ whiteSpace: 'pre-wrap' }}>
@@ -76,18 +74,6 @@ export default function Posts() {
                 <PostContent content={currentPost.content} />
               </ErrorBoundary>
             </article>
-
-            <div className="mt-12 max-w-2xl mx-auto">
-              <LikeDislike 
-                postId={currentPost.id}
-                initialLikes={currentPost.likes || 0}
-                initialDislikes={currentPost.dislikes || 0}
-              />
-            </div>
-
-            <div className="mt-12 max-w-2xl mx-auto">
-              <CommentSection postId={currentPost.id} />
-            </div>
           </motion.div>
         </AnimatePresence>
 
