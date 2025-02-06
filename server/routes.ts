@@ -1,20 +1,72 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import bcrypt from "bcryptjs";
+import session from "express-session";
+
+declare module 'express-session' {
+  interface SessionData {
+    isAdmin: boolean;
+  }
+}
+
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.session.isAdmin) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
 
 export function registerRoutes(app: Express): Server {
-  // Get all public posts ordered by update date
-  app.get("/api/posts", async (_req, res) => {
-    const posts = await storage.getPosts();
-    // Sort posts by createdAt in descending order
-    const sortedPosts = posts.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-    res.json(sortedPosts);
+  // Session middleware
+  app.use(session({
+    secret: process.env.REPL_ID!,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+  }));
+
+  // Admin authentication routes
+  app.post("/api/admin/login", async (req, res) => {
+    const { email, password } = req.body;
+    console.log("Login attempt for email:", email); // Debug log
+
+    try {
+      const [admin] = await storage.getAdminByEmail(email);
+      console.log("Found admin:", admin ? "yes" : "no"); // Debug log
+
+      if (!admin) {
+        console.log("No admin found with email:", email); // Debug log
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, admin.password_hash);
+      console.log("Password valid:", isValidPassword); // Debug log
+
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      req.session.isAdmin = true;
+      res.json({ message: "Logged in successfully" });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Error during login" });
+    }
   });
 
-  // Create new post (admin only)
-  app.post("/api/posts", async (req, res) => {
+  app.post("/api/admin/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Error during logout" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  // Protected admin routes
+  app.post("/api/posts", isAuthenticated, async (req, res) => {
     try {
       const post = await storage.createPost(req.body);
       res.json(post);
@@ -23,7 +75,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get single post by slug
+  app.delete("/api/posts/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deletePost(parseInt(req.params.id));
+      res.json({ message: "Post deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
+  // Public routes
+  app.get("/api/posts", async (_req, res) => {
+    const posts = await storage.getPosts();
+    const sortedPosts = posts.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    res.json(sortedPosts);
+  });
+
   app.get("/api/posts/:slug", async (req, res) => {
     const post = await storage.getPost(req.params.slug);
     if (!post) {
@@ -33,13 +102,11 @@ export function registerRoutes(app: Express): Server {
     res.json(post);
   });
 
-  // Get comments for post
   app.get("/api/posts/:postId/comments", async (req, res) => {
     const comments = await storage.getComments(parseInt(req.params.postId));
     res.json(comments);
   });
 
-  // Create comment
   app.post("/api/posts/:postId/comments", async (req, res) => {
     const comment = await storage.createComment(req.body);
     res.json(comment);

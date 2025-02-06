@@ -2,16 +2,22 @@ import { motion } from "framer-motion";
 
 export function LoadingScreen() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/40 backdrop-blur-[1px] z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/30 backdrop-blur-[0.5px] z-50">
       <motion.div
         className="flex flex-col items-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        {/* Progress Bar */}
-        <div className="progress-loader">
-          <div className="progress"></div>
+        {/* Loading Text Animation */}
+        <div className="loader">
+          <span>L</span>
+          <span>O</span>
+          <span>A</span>
+          <span>D</span>
+          <span>I</span>
+          <span>N</span>
+          <span>G</span>
         </div>
 
         {/* ARIA live region for accessibility */}
@@ -20,35 +26,28 @@ export function LoadingScreen() {
         </div>
 
         <style>{`
-          .progress-loader {
-            width: 200px;
-            background: var(--border);
-            height: 4px;
-            border-radius: 7px;
-            overflow: hidden;
+          .loader {
+            display: flex;
+            gap: 0.5rem;
           }
 
-          .progress {
-            content: '';
-            width: 1px;
-            height: 4px;
-            border-radius: 7px;
-            background: var(--primary);
-            transition: 0.5s;
-            animation: loading 2s ease infinite;
+          .loader span {
+            font-size: 22px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 600;
+            animation: blur 2s linear infinite;
+            line-height: 20px;
+            transition: all 0.5s;
+            letter-spacing: 0.2em;
           }
 
-          @keyframes loading {
-            0% {
-              width: 0%;
+          @keyframes blur {
+            0%, 90% {
+              filter: blur(0);
             }
 
             50% {
-              width: 60%;
-            }
-
-            100% {
-              width: 100%;
+              filter: blur(2px);
             }
           }
         `}</style>

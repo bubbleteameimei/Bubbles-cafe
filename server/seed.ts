@@ -8,22 +8,26 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 async function getOrCreateAdminUser() {
-  // Check if admin exists
-  const [admin] = await db.select().from(users).where(eq(users.username, "admin"));
+  try {
+    // First, clear any existing admin users to avoid duplicates
+    await db.delete(users).where(eq(users.email, "vantalison@gmail.com"));
 
-  if (admin) {
-    return admin;
+    // Create fresh admin user
+    const hashedPassword = await bcrypt.hash("powerPUFF70", 10);
+    console.log("Creating admin user with email: vantalison@gmail.com");
+
+    const [newAdmin] = await db.insert(users).values({
+      username: "admin",
+      email: "vantalison@gmail.com",
+      password_hash: hashedPassword,
+    }).returning();
+
+    console.log("Admin user created successfully with ID:", newAdmin.id);
+    return newAdmin;
+  } catch (error) {
+    console.error("Error in getOrCreateAdminUser:", error);
+    throw error;
   }
-
-  // Create admin if doesn't exist
-  const hashedPassword = await bcrypt.hash("admin", 10);
-  const [newAdmin] = await db.insert(users).values({
-    username: "admin",
-    email: "admin@example.com",
-    password_hash: hashedPassword,
-  }).returning();
-
-  return newAdmin;
 }
 
 async function parseWordPressXML() {

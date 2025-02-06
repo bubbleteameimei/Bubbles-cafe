@@ -10,20 +10,21 @@ import { insertPostSchema, type Post, type InsertPost } from "@shared/schema";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, LogOut } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const postForm = useForm<InsertPost>({
-    resolver: zodResolver(insertPostSchema),
+    resolver: zodResolver(insertPostSchema.omit({ slug: true })),
     defaultValues: {
       title: "",
       content: "",
       excerpt: "",
       isSecret: false,
-      slug: "",
       authorId: 1,
     },
   });
@@ -33,8 +34,14 @@ export default function AdminPage() {
   });
 
   const createPostMutation = useMutation({
-    mutationFn: async (data: InsertPost) => {
-      const response = await apiRequest("POST", "/api/posts", data);
+    mutationFn: async (data: Omit<InsertPost, "slug">) => {
+      // Generate slug from title
+      const slug = data.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      const response = await apiRequest("POST", "/api/posts", { ...data, slug });
       return response.json();
     },
     onSuccess: () => {
@@ -68,13 +75,25 @@ export default function AdminPage() {
     },
   });
 
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/logout");
+    },
+    onSuccess: () => {
+      setLocation("/admin/login");
+      toast({
+        title: "Logged out",
+        description: "Successfully logged out"
+      });
+    }
+  });
+
   const handleEditPost = (post: Post) => {
     setEditingPost(post);
     postForm.reset({
       title: post.title,
       content: post.content,
       excerpt: post.excerpt,
-      slug: post.slug,
       isSecret: post.isSecret,
       authorId: post.authorId,
     });
@@ -85,9 +104,17 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <Button
+          variant="outline"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
+        </Button>
       </div>
 
       <Card className="p-6">
@@ -130,19 +157,6 @@ export default function AdminPage() {
                   <FormLabel>Excerpt</FormLabel>
                   <FormControl>
                     <Textarea {...field} rows={3} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={postForm.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Slug</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
                   </FormControl>
                 </FormItem>
               )}

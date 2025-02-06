@@ -13,12 +13,14 @@ export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAdminByEmail(email: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
 
   // Posts
   getPosts(): Promise<Post[]>;
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
+  deletePost(id: number): Promise<void>;
   getSecretPosts(): Promise<Post[]>;
   unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
 
@@ -42,6 +44,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
+  }
+
+  async getAdminByEmail(email: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.email, email));
   }
 
   async createUser(user: InsertUser): Promise<User> {
@@ -69,6 +75,10 @@ export class DatabaseStorage implements IStorage {
   async createPost(post: InsertPost): Promise<Post> {
     const [newPost] = await db.insert(posts).values(post).returning();
     return newPost;
+  }
+
+  async deletePost(id: number): Promise<void> {
+    await db.delete(posts).where(eq(posts.id, id));
   }
 
   async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {

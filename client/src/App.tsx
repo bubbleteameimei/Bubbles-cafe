@@ -15,6 +15,7 @@ import Posts from "./pages/posts";
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import Admin from "./pages/admin";
+import AdminLogin from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
 
@@ -24,7 +25,7 @@ function App() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1500); 
 
     return () => clearTimeout(timer);
   }, []);
@@ -45,6 +46,7 @@ function App() {
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/about" component={About} />
                 <Route path="/admin" component={Admin} />
+                <Route path="/admin/login" component={AdminLogin} />
                 <Route component={NotFound} />
               </Switch>
               <aside className="hidden lg:block">
