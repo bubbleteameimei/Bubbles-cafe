@@ -26,12 +26,12 @@ export default function PostCard({ post, onClick }: PostCardProps) {
       onClick={handleClick}
       className="cursor-pointer"
     >
-      <Card className="h-full hover:bg-accent">
+      <Card className="h-full hover:bg-accent/5 transition-colors">
         <CardHeader>
-          <CardTitle>{post.title}</CardTitle>
+          <CardTitle className="line-clamp-2">{post.title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">{post.excerpt}</p>
+          <p className="text-muted-foreground line-clamp-3">{post.excerpt}</p>
         </CardContent>
       </Card>
     </motion.div>

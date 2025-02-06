@@ -7,20 +7,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 
-export default function Schoop() {
+export default function StoryView() {
   const params = useParams();
+  const [, setLocation] = useLocation();
   const postId = params?.id ? parseInt(params.id) : undefined;
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes,
+    retry: 2
   });
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   // Set initial index based on postId
   useEffect(() => {
@@ -28,17 +31,24 @@ export default function Schoop() {
       const index = posts.findIndex(post => post.id === postId);
       if (index !== -1) {
         setCurrentIndex(index);
+        setLoadingError(null);
+      } else {
+        setLoadingError("Story not found");
+        // Redirect after a brief delay to show the error message
+        setTimeout(() => setLocation("/stories"), 2000);
       }
     }
-  }, [posts, postId]);
+  }, [posts, postId, setLocation]);
 
   const navigate = useCallback((newIndex: number) => {
-    if (isNavigating) return;
+    if (!posts || isNavigating || newIndex < 0 || newIndex >= posts.length) return;
     setIsNavigating(true);
+    const newPost = posts[newIndex];
+    setLocation(`/stories/${newPost.id}`);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    setTimeout(() => setIsNavigating(false), 200);
-  }, [isNavigating]);
+    setTimeout(() => setIsNavigating(false), 300);
+  }, [isNavigating, posts, setLocation]);
 
   const goToPrevious = useCallback(() => {
     if (!posts?.length) return;
@@ -59,15 +69,55 @@ export default function Schoop() {
     navigate(newIndex);
   }, [posts?.length, currentIndex, navigate]);
 
-  if (isLoading || !posts || posts.length === 0) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
-  if (error) {
-    return <div className="text-center p-8">Error loading stories. Please try again later.</div>;
+  if (error || loadingError) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">
+            {loadingError || "Error loading stories"}
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Please try again later
+          </p>
+          <Button onClick={() => setLocation("/stories")}>
+            Return to Stories
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!posts || posts.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">No Stories Available</h2>
+          <p className="text-muted-foreground">Check back later for new stories</p>
+        </div>
+      </div>
+    );
   }
 
   const currentPost = posts[currentIndex];
+  if (!currentPost) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Story Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            The story you're looking for might have been moved or deleted
+          </p>
+          <Button onClick={() => setLocation("/stories")}>
+            Browse Stories
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -106,7 +156,13 @@ export default function Schoop() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={goToPrevious}
+                      className="hover:bg-primary/10"
+                      disabled={isNavigating}
+                    >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -121,7 +177,13 @@ export default function Schoop() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={randomize}
+                      className="hover:bg-primary/10"
+                      disabled={isNavigating}
+                    >
                       <Shuffle className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -132,7 +194,13 @@ export default function Schoop() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={goToNext}
+                      className="hover:bg-primary/10"
+                      disabled={isNavigating}
+                    >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

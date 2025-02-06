@@ -2,8 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post, type Comment } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiWordpress, SiX, SiInstagram } from "react-icons/si";
+import { useLocation } from "wouter";
 
 export default function Sidebar() {
+  const [, setLocation] = useLocation();
+
   const { data: posts } = useQuery<Post[]>({
     queryKey: ["/api/posts"]
   });
@@ -20,14 +23,14 @@ export default function Sidebar() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            {posts?.slice(0, 5).map((post, index) => (
+            {posts?.slice(0, 5).map((post) => (
               <li key={post.id}>
-                <a 
-                  href={`/stories?index=${index}`}
-                  className="text-muted-foreground hover:text-primary transition-colors"
+                <button 
+                  onClick={() => setLocation(`/stories/${post.id}`)}
+                  className="text-muted-foreground hover:text-primary transition-colors text-left w-full"
                 >
                   {post.title}
-                </a>
+                </button>
               </li>
             ))}
           </ul>

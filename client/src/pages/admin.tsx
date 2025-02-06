@@ -1,17 +1,19 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { insertPostSchema, type Post, type InsertPost } from "@shared/schema";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pencil, Trash2, LogOut, Loader2 } from "lucide-react";
+import { Pencil, Trash2, LogOut, Loader2, Plus, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -172,152 +174,193 @@ export default function AdminPage() {
         </Button>
       </div>
 
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">
-          {editingPost ? "Edit Post" : "Create New Post"}
-        </h2>
-        <Form {...postForm}>
-          <form 
-            onSubmit={postForm.handleSubmit((data) => createPostMutation.mutate(data))} 
-            className="space-y-4"
-          >
-            <FormField
-              control={postForm.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                </FormItem>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="lg:sticky lg:top-8 h-fit">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">
+              {editingPost ? (
+                <div className="flex items-center justify-between">
+                  <span>Edit Post</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingPost(null);
+                      postForm.reset();
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  <span>New Post</span>
+                </div>
               )}
-            />
-
-            <FormField
-              control={postForm.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={10} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={postForm.control}
-              name="excerpt"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Excerpt</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={3} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={postForm.control}
-              name="isSecret"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className="rounded border-gray-300"
-                    />
-                  </FormControl>
-                  <FormLabel>Is Secret Post</FormLabel>
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-2">
-              <Button 
-                type="submit" 
-                disabled={createPostMutation.isPending}
-                className="relative"
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...postForm}>
+              <form 
+                onSubmit={postForm.handleSubmit((data) => createPostMutation.mutate(data))} 
+                className="space-y-6"
               >
-                {createPostMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    {editingPost ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  editingPost ? "Update Post" : "Create Post"
-                )}
-              </Button>
-              {editingPost && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setEditingPost(null);
-                    postForm.reset();
-                  }}
-                >
-                  Cancel Edit
-                </Button>
-              )}
-            </div>
-          </form>
-        </Form>
-      </Card>
+                <FormField
+                  control={postForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-9" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Existing Posts</h2>
-        <div className="space-y-4">
-          {posts?.map((post: Post) => (
-            <div 
-              key={post.id} 
-              className="p-4 border rounded flex items-center justify-between hover:bg-accent/5 transition-colors"
-            >
-              <div>
-                <h3 className="font-medium">{post.title}</h3>
-                <p className="text-sm text-muted-foreground">{post.excerpt}</p>
-                {post.isSecret && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                    Secret
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEditPost(post)}
-                  className="hover:bg-primary/10"
+                <FormField
+                  control={postForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={12} className="resize-none" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={postForm.control}
+                  name="excerpt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Excerpt</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={3} className="resize-none" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={postForm.control}
+                  name="isSecret"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="rounded border-gray-300"
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Secret Post</FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  disabled={createPostMutation.isPending}
+                  className="w-full"
                 >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-destructive/10"
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete this post?')) {
-                      deletePostMutation.mutate(post.id);
-                    }
-                  }}
-                  disabled={deletePostMutation.isPending}
-                >
-                  {deletePostMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {createPostMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      {editingPost ? "Updating..." : "Creating..."}
+                    </>
                   ) : (
-                    <Trash2 className="h-4 w-4" />
+                    <span className="flex items-center gap-2">
+                      {editingPost ? (
+                        <>
+                          <Pencil className="h-4 w-4" />
+                          Update Post
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Create Post
+                        </>
+                      )}
+                    </span>
                   )}
                 </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Posts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+              <div className="space-y-4">
+                {posts?.map((post: Post) => (
+                  <div 
+                    key={post.id}
+                    className={`p-4 border rounded-lg transition-colors ${
+                      editingPost?.id === post.id 
+                        ? "bg-primary/5 border-primary" 
+                        : "hover:bg-accent/5"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{post.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {post.excerpt}
+                        </p>
+                        {post.isSecret && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mt-2">
+                            Secret
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditPost(post)}
+                          disabled={editingPost?.id === post.id}
+                          className="hover:bg-primary/10"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-destructive/10"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this post?')) {
+                              deletePostMutation.mutate(post.id);
+                            }
+                          }}
+                          disabled={deletePostMutation.isPending}
+                        >
+                          {deletePostMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

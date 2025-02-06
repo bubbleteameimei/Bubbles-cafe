@@ -11,13 +11,13 @@ import Sidebar from "./components/blog/sidebar";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
 import Stories from "./pages/stories";
+import StoryView from "./pages/schoop";
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import Admin from "./pages/admin";
 import AdminLogin from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
-import Schoop from "./pages/schoop";
 import { queryClient } from "@/lib/queryClient";
 
 function App() {
@@ -47,7 +47,7 @@ function App() {
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/stories" component={Stories} />
-                  <Route path="/stories/:id" component={Schoop} />
+                  <Route path="/stories/:id" component={StoryView} />
                   <Route path="/secret" component={Secret} />
                   <Route path="/privacy" component={Privacy} />
                   <Route path="/about" component={About} />
