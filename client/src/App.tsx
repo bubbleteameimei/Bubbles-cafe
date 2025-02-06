@@ -1,8 +1,7 @@
 import React from 'react';
 import { Switch, Route, useLocation } from "wouter";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { queryClient } from "./lib/queryClient";
 import { AudioProvider } from "@/components/effects/audio";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -19,6 +18,17 @@ import AdminLogin from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
 import Schoop from "./pages/schoop";
+
+// Initialize QueryClient
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -46,9 +56,9 @@ function App() {
   }, [location]);
 
   return (
-    <AuthProvider>
-      <AudioProvider>
-        <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AudioProvider>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             {isLoading && <LoadingScreen />}
             <Navigation />
@@ -74,9 +84,9 @@ function App() {
             <CookieConsent />
             <Toaster />
           </div>
-        </QueryClientProvider>
-      </AudioProvider>
-    </AuthProvider>
+        </AudioProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

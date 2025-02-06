@@ -18,7 +18,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [audioReady, setAudioReady] = useState(false);
   const { toast } = useToast();
 
-  // Initialize audio
   useEffect(() => {
     const audio = new Audio('/ambient.mp3');
     audio.loop = true;
@@ -29,8 +28,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setAudioReady(true);
       toast({
         title: "Audio Ready",
-        description: "Background music available",
-        duration: 800, // Reduced to 800ms
+        duration: 500,
       });
     };
 
@@ -42,7 +40,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         title: "Audio Error",
         description: "Failed to load audio",
         variant: "destructive",
-        duration: 800, // Reduced to 800ms
+        duration: 500,
       });
     };
 
@@ -58,7 +56,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Handle volume changes
   useEffect(() => {
     if (audioRef.current) {
       const constrainedVolume = Math.max(0, Math.min(1, volume));
@@ -67,7 +64,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume]);
 
-  // Load saved volume preference
   useEffect(() => {
     const savedVolume = localStorage.getItem('audioVolume');
     if (savedVolume) {
@@ -80,9 +76,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (!audio || !audioReady) {
       toast({
         title: "Audio Not Ready",
-        description: "Please wait",
         variant: "destructive",
-        duration: 800, // Reduced to 800ms
+        duration: 500,
       });
       return;
     }
@@ -92,7 +87,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(false);
       toast({
         title: "Audio Paused",
-        duration: 800, // Reduced to 800ms
+        duration: 500,
       });
     } else {
       const playPromise = audio.play();
@@ -102,7 +97,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setIsPlaying(true);
             toast({
               title: "Audio Playing",
-              duration: 800, // Reduced to 800ms
+              duration: 500,
             });
           })
           .catch((error) => {
@@ -112,7 +107,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
               title: "Audio Error",
               description: "Failed to play",
               variant: "destructive",
-              duration: 800, // Reduced to 800ms
+              duration: 500,
             });
           });
       }
