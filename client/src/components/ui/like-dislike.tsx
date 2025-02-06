@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 
@@ -16,9 +16,28 @@ export function LikeDislike({
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const countRef = useRef({
-    likes: Math.floor(Math.random() * (100)) + 50,    // 50-150 range
-    dislikes: Math.floor(Math.random() * (5)) + 10    // 10-15 range
+    likes: 0,
+    dislikes: 0
   });
+
+  // Generate and store random values on mount
+  useEffect(() => {
+    // Use postId as a seed to ensure consistent values for each post
+    const seed = postId || Math.random();
+    const seededRandom = () => {
+      const x = Math.sin(seed * 9999) * 10000;
+      return x - Math.floor(x);
+    };
+
+    // Generate values within specified ranges
+    const randomLikes = Math.floor(seededRandom() * (100)) + 50;    // 50-150 range
+    const randomDislikes = Math.floor(seededRandom() * (5)) + 10;   // 10-15 range
+
+    countRef.current = {
+      likes: randomLikes,
+      dislikes: randomDislikes
+    };
+  }, [postId]); // Only run once on mount or when postId changes
 
   const handleLike = () => {
     if (disliked) {

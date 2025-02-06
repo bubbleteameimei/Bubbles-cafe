@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, Menu, List } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
@@ -9,32 +9,19 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-import { useQuery } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
-import { useCallback, useState, memo } from "react";
 
-const NavLink = memo(({ href, isActive, children, onClick }: {
+const NavLink = ({ href, isActive, children }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
-  onClick?: () => void;
 }) => {
   const [, setLocation] = useLocation();
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onClick) {
-      onClick();
-    } else {
-      setLocation(href);
-    }
+    setLocation(href);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [href, onClick, setLocation]);
+  };
 
   return (
     <a
@@ -48,45 +35,21 @@ const NavLink = memo(({ href, isActive, children, onClick }: {
       {children}
     </a>
   );
-});
-
-NavLink.displayName = "NavLink";
+};
 
 const Navigation = () => {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isIndexOpen, setIsIndexOpen] = useState(false);
-  const [, setLocation] = useLocation();
 
-  const { data: posts } = useQuery<Post[]>({
-    queryKey: ["/api/posts"]
-  });
-
-  const handleVolumeChange = useCallback((value: number[]) => {
+  const handleVolumeChange = (value: number[]) => {
     setVolume(value[0] / 100);
-  }, [setVolume]);
-
-  const handleThemeToggle = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }, [theme, setTheme]);
+  };
 
   const navigationItems = (
     <>
       <NavLink href="/" isActive={location === "/"}>Home</NavLink>
-      <div className="relative group flex items-center">
-        <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="ml-1 p-1 opacity-70 hover:opacity-100 transition-opacity"
-          onClick={() => setIsIndexOpen(true)}
-          title="Open Story Index"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-      </div>
+      <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"}>About</NavLink>
       <NavLink href="/admin" isActive={location.startsWith("/admin")}>Admin</NavLink>
@@ -102,10 +65,11 @@ const Navigation = () => {
         </div>
       </div>
 
-      <nav className="gothic-menu sticky top-0 z-50">
+      <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="container mx-auto h-16 flex items-center justify-between px-4">
+          {/* Mobile Menu */}
           <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-5 w-5" />
@@ -119,10 +83,12 @@ const Navigation = () => {
             </Sheet>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-2">
             {navigationItems}
           </div>
 
+          {/* Audio and Theme Controls */}
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -146,13 +112,14 @@ const Navigation = () => {
                 step={1}
                 onValueChange={handleVolumeChange}
                 disabled={!audioReady}
+                className="cursor-pointer"
               />
             </div>
 
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleThemeToggle}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
             >
               {theme === "dark" ? (
@@ -164,31 +131,8 @@ const Navigation = () => {
           </div>
         </div>
       </nav>
-
-      <Drawer open={isIndexOpen} onOpenChange={setIsIndexOpen}>
-        <DrawerContent>
-          <div className="max-w-3xl mx-auto px-4 py-6">
-            <h2 className="text-2xl font-bold mb-6">Story Index</h2>
-            <div className="grid gap-4 max-h-[60vh] overflow-y-auto px-2">
-              {posts?.map((post, index) => (
-                <div 
-                  key={post.id} 
-                  className="p-4 border border-border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors hover:scale-[1.01] active:scale-[0.99] transform duration-200"
-                  onClick={() => {
-                    setLocation(`/stories?index=${index}`);
-                    setIsIndexOpen(false);
-                  }}
-                >
-                  <h4 className="font-semibold mb-2">{post.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
     </header>
   );
 };
 
-export default memo(Navigation);
+export default Navigation;

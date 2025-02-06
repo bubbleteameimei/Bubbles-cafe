@@ -20,83 +20,116 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize audio
   useEffect(() => {
-    const initAudio = () => {
-      if (!audioRef.current) {
-        audioRef.current = new Audio('/ambient.mp3');
-        audioRef.current.loop = true;
-        audioRef.current.volume = volume;
+    const audio = new Audio('/ambient.mp3');
+    audio.loop = true;
+    audio.volume = volume;
+    audioRef.current = audio;
 
-        const handleCanPlay = () => {
-          setAudioReady(true);
-        };
-
-        const handleError = () => {
-          setAudioReady(false);
-          toast({
-            title: "Audio Error",
-            description: "Failed to load audio. Please try again.",
-            variant: "destructive",
-          });
-        };
-
-        audioRef.current.addEventListener('canplaythrough', handleCanPlay);
-        audioRef.current.addEventListener('error', handleError);
-      }
+    const handleCanPlay = () => {
+      setAudioReady(true);
+      toast({
+        title: "Audio Ready",
+        description: "Background music is now available.",
+      });
     };
 
-    initAudio();
+    const handleError = (e: ErrorEvent) => {
+      console.error('Audio error:', e);
+      setAudioReady(false);
+      setIsPlaying(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to load audio. Please try again.",
+        variant: "destructive",
+      });
+    };
+
+    audio.addEventListener('canplaythrough', handleCanPlay);
+    audio.addEventListener('error', handleError as EventListener);
+    audio.load(); // Explicitly load the audio
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeEventListener('canplaythrough', () => setAudioReady(true));
-        audioRef.current.removeEventListener('error', () => setAudioReady(false));
-        audioRef.current = null;
-      }
+      audio.pause();
+      audio.removeEventListener('canplaythrough', handleCanPlay);
+      audio.removeEventListener('error', handleError as EventListener);
+      audioRef.current = null;
     };
-  }, [toast]);
+  }, []); // Only run once on mount
 
   // Handle volume changes
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume;
+      const constrainedVolume = Math.max(0, Math.min(1, volume));
+      audioRef.current.volume = constrainedVolume;
+
+      // Save volume preference
+      localStorage.setItem('audioVolume', constrainedVolume.toString());
     }
   }, [volume]);
 
-  const toggleAudio = useCallback(async () => {
-    if (!audioRef.current || !audioReady) return;
+  // Load saved volume preference
+  useEffect(() => {
+    const savedVolume = localStorage.getItem('audioVolume');
+    if (savedVolume) {
+      setVolume(parseFloat(savedVolume));
+    }
+  }, []);
 
-    try {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        try {
-          await audioRef.current.play();
-          setIsPlaying(true);
-        } catch (error) {
-          console.error('Audio play error:', error);
-          toast({
-            title: "Audio Error",
-            description: "Failed to play audio. Please try again.",
-            variant: "destructive",
-          });
-          setIsPlaying(false);
-        }
-      }
-    } catch (err) {
-      console.error("Toggle audio error:", err);
+  const toggleAudio = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioReady) {
+      toast({
+        title: "Audio Not Ready",
+        description: "Please wait for audio to load.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isPlaying) {
+      audio.pause();
       setIsPlaying(false);
+      toast({
+        title: "Audio Paused",
+        description: "Background music has been paused.",
+      });
+    } else {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            toast({
+              title: "Audio Playing",
+              description: "Background music has started.",
+            });
+          })
+          .catch((error) => {
+            console.error('Audio play error:', error);
+            setIsPlaying(false);
+            toast({
+              title: "Audio Error",
+              description: "Failed to play audio. Please try again.",
+              variant: "destructive",
+            });
+          });
+      }
     }
   }, [audioReady, isPlaying, toast]);
 
+  const setVolumeWithConstraints = useCallback((newVolume: number) => {
+    // Ensure volume stays within 0-1 range
+    const constrainedVolume = Math.max(0, Math.min(1, newVolume));
+    setVolume(constrainedVolume);
+  }, []);
+
   return (
     <AudioContext.Provider value={{
-      toggleAudio,
       isPlaying,
       volume,
-      setVolume,
-      audioReady
+      setVolume: setVolumeWithConstraints,
+      audioReady,
+      toggleAudio
     }}>
       {children}
     </AudioContext.Provider>
