@@ -14,7 +14,7 @@ export default function Home() {
     queryKey: ["/api/posts"]
   });
 
-  if (isLoading || !posts) {
+  if (isLoading || !posts || posts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <svg
@@ -29,13 +29,13 @@ export default function Home() {
           />
         </svg>
         <p className="text-lg text-muted-foreground animate-pulse">
-          Summoning dark tales...
+          {isLoading ? "Summoning dark tales..." : "No stories found..."}
         </p>
       </div>
     );
   }
 
-  const currentPost = posts[currentIndex];
+  const currentPost = posts[currentIndex % posts.length];
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
@@ -53,11 +53,6 @@ export default function Home() {
   return (
     <div className="relative">
       <Mist />
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-2">Bubble's Cafe</h1>
-        <p className="text-xl text-muted-foreground">Thoughts and emotions made into art</p>
-      </div>
-
       <div className="max-w-3xl mx-auto">
         <AnimatePresence mode="wait">
           <motion.div
@@ -77,7 +72,7 @@ export default function Home() {
                 {currentPost.content.split('\n\n').map((paragraph, index) => (
                   <p key={index} className="mb-6">
                     {paragraph.trim().split('_').map((text, i) => 
-                      i % 2 === 0 ? text : <i>{text}</i> // Changed to <i>
+                      i % 2 === 0 ? text : <i key={i}>{text}</i>
                     )}
                   </p>
                 ))}

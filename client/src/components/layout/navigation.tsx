@@ -50,6 +50,12 @@ export default function Navigation() {
             >
               About
             </a>
+            <a 
+              href="/admin"
+              className={location === "/admin" ? "text-primary" : "text-muted-foreground hover:text-primary"}
+            >
+              Admin
+            </a>
           </div>
 
           <div className="flex items-center gap-4">

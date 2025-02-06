@@ -3,7 +3,26 @@ import { XMLParser } from "fast-xml-parser";
 import fs from "fs/promises";
 import path from "path";
 import { db } from "./db";
-import { posts } from "@shared/schema";
+import { posts, users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+async function getOrCreateAdminUser() {
+  // Check if admin exists
+  const [admin] = await db.select().from(users).where(eq(users.username, "admin"));
+
+  if (admin) {
+    return admin;
+  }
+
+  // Create admin if doesn't exist
+  const [newAdmin] = await db.insert(users).values({
+    username: "admin",
+    password: "admin", // This should be changed through the admin interface
+    isAdmin: true,
+  }).returning();
+
+  return newAdmin;
+}
 
 async function parseWordPressXML() {
   const xmlContent = await fs.readFile(
@@ -22,6 +41,9 @@ async function parseWordPressXML() {
 
   // Clear existing posts first
   await db.delete(posts);
+
+  // Get admin user for post authorship
+  const admin = await getOrCreateAdminUser();
 
   for (const item of items) {
     if (item["wp:post_type"] === "post") {
@@ -42,7 +64,7 @@ async function parseWordPressXML() {
       // Create proper paragraphs
       const formattedContent = content
         .split("\n\n")
-        .filter(p => p.trim())
+        .filter((p: string) => p.trim())
         .join("\n\n");
 
       const excerpt = formattedContent.split("\n")[0];
@@ -52,7 +74,8 @@ async function parseWordPressXML() {
         content: formattedContent,
         excerpt: excerpt,
         slug: item["wp:post_name"],
-        isSecret: false
+        isSecret: false,
+        authorId: admin.id // Use admin user ID for all posts
       });
     }
   }

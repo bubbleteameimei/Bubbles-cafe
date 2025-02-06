@@ -1,7 +1,4 @@
 import { createContext, useContext, useRef, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX } from 'lucide-react';
-
 interface AudioContextType {
   toggleAudio: () => void;
   isPlaying: boolean;
@@ -76,19 +73,3 @@ export const useAudio = () => {
   }
   return context;
 };
-
-export default function AmbientAudio() {
-  const { toggleAudio, isPlaying } = useAudio();
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleAudio}
-      className="fixed bottom-4 right-4 z-50"
-      title={isPlaying ? 'Mute' : 'Play ambient sound'}
-    >
-      {isPlaying ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-    </Button>
-  );
-}
