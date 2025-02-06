@@ -1,10 +1,13 @@
-
 import { motion } from "framer-motion";
 
-export default function Mist() {
+interface MistProps {
+  className?: string;
+}
+
+export default function Mist({ className = "" }: MistProps) {
   return (
     <motion.div
-      className="fixed inset-0 pointer-events-none z-0"
+      className={`fixed inset-0 pointer-events-none z-0 ${className}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: [0.05, 0.1, 0.05] }}
       transition={{ 
