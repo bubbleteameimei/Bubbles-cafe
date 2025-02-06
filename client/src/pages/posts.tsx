@@ -53,7 +53,7 @@ export default function Posts() {
   const currentPost = posts[currentIndex];
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen pb-32">
       <Mist />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
@@ -73,8 +73,8 @@ export default function Posts() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Controls - Now with oval shape and closer to footer */}
-        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
+        {/* Navigation Controls - Adjusted position closer to footer */}
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
           <div className="flex items-center justify-center gap-4">
             <TooltipProvider>
               <Tooltip>
@@ -108,7 +108,7 @@ export default function Posts() {
             </TooltipProvider>
           </div>
         </div>
-        <div className="text-center text-sm text-muted-foreground fixed bottom-8 left-1/2 transform -translate-x-1/2">
+        <div className="text-center text-sm text-muted-foreground fixed bottom-4 left-1/2 transform -translate-x-1/2">
           Story {currentIndex + 1} of {posts.length}
         </div>
       </div>

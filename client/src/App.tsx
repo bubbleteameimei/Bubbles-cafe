@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "./lib/queryClient";
@@ -21,7 +21,9 @@ import Privacy from "./pages/privacy";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
+  const [location] = useLocation();
 
+  // Initial loading screen
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -29,6 +31,18 @@ function App() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle route changes including manual navigation
+  React.useEffect(() => {
+    const handleRouteChange = () => {
+      window.scrollTo(0, 0);
+      setIsLoading(true);
+      setTimeout(() => setIsLoading(false), 800);
+    };
+
+    // Listen for location changes
+    handleRouteChange();
+  }, [location]); // Depend on location changes instead of popstate
 
   return (
     <AudioProvider>

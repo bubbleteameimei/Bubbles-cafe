@@ -37,7 +37,7 @@ export default function PostPage() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen pb-32">
       <Mist />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <motion.div

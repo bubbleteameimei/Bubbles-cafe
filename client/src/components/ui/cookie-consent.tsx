@@ -8,9 +8,10 @@ export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Only show if consent hasn't been given/declined before
-    const hasResponded = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!hasResponded) {
+    // Check if user has already made a choice
+    const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (!hasConsent) {
+      // Only show if no choice has been made before
       setIsVisible(true);
     }
   }, []);

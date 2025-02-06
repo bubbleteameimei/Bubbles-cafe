@@ -27,6 +27,10 @@ export default function AdminLoginPage() {
       const response = await apiRequest("POST", "/api/admin/login", data);
       if (!response.ok) {
         const error = await response.json();
+        // Handle rate limiting error specifically
+        if (response.status === 429) {
+          throw new Error(error.message || "Too many login attempts. Please try again later.");
+        }
         throw new Error(error.message || "Invalid credentials");
       }
       return response.json();
@@ -41,10 +45,10 @@ export default function AdminLoginPage() {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid email or password",
+        description: error.message,
         variant: "destructive"
       });
-      // Clear password field on error
+      // Clear password field on error for security
       form.setValue("password", "");
     }
   });

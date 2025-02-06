@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export function LoadingScreen() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/30 backdrop-blur-[0.5px] z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50">
       <motion.div
         className="flex flex-col items-center"
         initial={{ opacity: 0 }}
@@ -41,13 +41,23 @@ export function LoadingScreen() {
             letter-spacing: 0.2em;
           }
 
+          .loader span:nth-child(1) { animation-delay: 0.0s; }
+          .loader span:nth-child(2) { animation-delay: 0.2s; }
+          .loader span:nth-child(3) { animation-delay: 0.4s; }
+          .loader span:nth-child(4) { animation-delay: 0.6s; }
+          .loader span:nth-child(5) { animation-delay: 0.8s; }
+          .loader span:nth-child(6) { animation-delay: 1.0s; }
+          .loader span:nth-child(7) { animation-delay: 1.2s; }
+
           @keyframes blur {
-            0%, 90% {
+            0%, 80% {
               filter: blur(0);
+              opacity: 1;
             }
 
-            50% {
-              filter: blur(2px);
+            40% {
+              filter: blur(5px);
+              opacity: 0.5;
             }
           }
         `}</style>

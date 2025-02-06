@@ -7,6 +7,8 @@ import session from "express-session";
 declare module 'express-session' {
   interface SessionData {
     isAdmin: boolean;
+    loginAttempts?: number;
+    lockUntil?: number;
   }
 }
 
@@ -30,28 +32,54 @@ export function registerRoutes(app: Express): Server {
     }
   }));
 
-  // Admin authentication routes with improved error handling
+  // Admin authentication routes with improved error handling and rate limiting
   app.post("/api/admin/login", async (req, res) => {
     const { email, password } = req.body;
-    console.log("Login attempt for email:", email);
+
+    // Check if account is locked
+    if (req.session.lockUntil && req.session.lockUntil > Date.now()) {
+      return res.status(429).json({ 
+        message: "Account is temporarily locked. Please try again later." 
+      });
+    }
 
     try {
       const [admin] = await storage.getAdminByEmail(email);
-      console.log("Found admin:", admin ? "yes" : "no");
 
       if (!admin) {
-        console.log("No admin found with email:", email);
+        req.session.loginAttempts = (req.session.loginAttempts || 0) + 1;
+
+        // Lock account after 5 failed attempts
+        if (req.session.loginAttempts >= 5) {
+          req.session.lockUntil = Date.now() + 15 * 60 * 1000; // 15 minutes
+          return res.status(429).json({ 
+            message: "Too many failed attempts. Account locked for 15 minutes." 
+          });
+        }
+
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const isValidPassword = await bcrypt.compare(password, admin.password_hash);
-      console.log("Password valid:", isValidPassword);
 
       if (!isValidPassword) {
+        req.session.loginAttempts = (req.session.loginAttempts || 0) + 1;
+
+        if (req.session.loginAttempts >= 5) {
+          req.session.lockUntil = Date.now() + 15 * 60 * 1000;
+          return res.status(429).json({ 
+            message: "Too many failed attempts. Account locked for 15 minutes." 
+          });
+        }
+
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Reset login attempts on successful login
+      req.session.loginAttempts = 0;
+      req.session.lockUntil = undefined;
       req.session.isAdmin = true;
+
       await req.session.save();
       res.json({ message: "Logged in successfully" });
     } catch (error) {
