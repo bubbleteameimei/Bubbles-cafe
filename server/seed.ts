@@ -6,7 +6,6 @@ import { db } from "./db";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { randomBytes } from "crypto";
 
 async function getOrCreateAdminUser() {
   try {
@@ -31,21 +30,22 @@ async function getOrCreateAdminUser() {
   }
 }
 
-async function cleanContent(content: string): string {
+function cleanContent(content: string): string {
   return content
     // Remove WordPress formatting
     .replace(/<!-- wp:paragraph -->/g, "")
     .replace(/<!-- \/wp:paragraph -->/g, "")
     .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
     .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-    // Convert HTML tags to markdown
+    // Properly handle italics formatting
     .replace(/<em>(.*?)<\/em>/g, "_$1_")
+    // Replace HTML line breaks with newlines
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<p>/g, "\n")
     .replace(/<\/p>/g, "\n")
-    // Remove unnecessary underscores that aren't part of italics
-    .replace(/([^_]|^)_([^_]|$)/g, "$1$2")
-    // Clean up multiple newlines
+    // Only remove lone underscores, preserving paired ones used for italics
+    .replace(/(?<![_\w]|^)_(?![_\w]|$)/g, "")
+    // Clean up multiple newlines while preserving italics
     .replace(/\n\s*\n\s*\n/g, "\n\n")
     .trim();
 }
@@ -80,7 +80,7 @@ async function parseWordPressXML() {
     for (const item of items) {
       if (item["wp:post_type"] === "post") {
         try {
-          const cleanedContent = await cleanContent(item["content:encoded"]);
+          const cleanedContent = cleanContent(item["content:encoded"]);
           const excerpt = cleanedContent.split("\n")[0];
 
           // Generate unique slug

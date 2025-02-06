@@ -2,6 +2,7 @@ import { SocialButtons } from "@/components/ui/social-buttons";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { memo } from "react";
 
 interface PostFooterProps {
   currentIndex: number;
@@ -19,7 +20,7 @@ interface PostFooterProps {
   };
 }
 
-export function PostFooter({
+export const PostFooter = memo(function PostFooter({
   currentIndex,
   totalPosts,
   onPrevious,
@@ -78,4 +79,4 @@ export function PostFooter({
       </div>
     </div>
   );
-}
+});

@@ -7,7 +7,7 @@ import {
   posts, comments, readingProgress, secretProgress, users
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -69,12 +69,11 @@ export class DatabaseStorage implements IStorage {
 
   // Posts with optimized queries
   async getPosts(): Promise<Post[]> {
-    // Use the created index for efficient sorting
+    // Use created index and add query optimization
     return await db.select()
       .from(posts)
       .where(eq(posts.isSecret, false))
-      .orderBy(desc(posts.createdAt))
-      .limit(50); // Paginate results for better performance
+      .orderBy(desc(posts.createdAt));
   }
 
   async getSecretPosts(): Promise<Post[]> {
@@ -114,6 +113,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
+    console.log("Updating post in storage:", id, post);
+
     // Get the existing post first
     const [existingPost] = await db.select()
       .from(posts)
@@ -124,7 +125,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Post not found");
     }
 
-    // Update the post while preserving the original createdAt
+    // Update the post while preserving the original createdAt and order
     const [updatedPost] = await db
       .update(posts)
       .set({
@@ -134,6 +135,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(posts.id, id))
       .returning();
 
+    console.log("Post updated successfully:", updatedPost);
     return updatedPost;
   }
 

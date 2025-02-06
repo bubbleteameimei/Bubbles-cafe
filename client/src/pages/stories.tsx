@@ -22,6 +22,34 @@ const socialLinks = {
   instagram: "https://www.instagram.com/bubbleteameimei"
 } as const;
 
+function renderContent(content: string) {
+  return content.split('\n\n').map((paragraph: string, index: number) => {
+    // Clean up any residual HTML tags while preserving italics
+    const cleanedText = paragraph
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/?p>/g, '')
+      .trim();
+
+    // Process italics by converting _text_ to <em>text</em>
+    // Only process underscores that are actually part of italics (paired)
+    const processedText = cleanedText.replace(
+      /(?<!\\)_(.+?)(?<!\\)_/g,
+      (match, p1) => `<em>${p1}</em>`
+    );
+
+    return (
+      <motion.p
+        key={index}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: Math.min(index * 0.1, 2), type: "spring", stiffness: 100 }}
+        className="mb-6 leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: processedText }}
+      />
+    );
+  });
+}
+
 export default function Stories() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isIndexOpen, setIsIndexOpen] = useState(false);
@@ -32,35 +60,38 @@ export default function Stories() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     networkMode: 'offlineFirst',
+    refetchOnWindowFocus: false
   });
 
-  // Improve navigation responsiveness with useCallback and proper debouncing
+  // Memoize navigation functions for better performance
   const navigate = useCallback((newIndex: number) => {
-    if (isNavigating) return;
+    if (isNavigating) return; // Prevent double clicks
     setIsNavigating(true);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    // Shorter debounce time for better responsiveness
-    setTimeout(() => setIsNavigating(false), 200);
+    setTimeout(() => setIsNavigating(false), 100); // Shorter debounce time
   }, [isNavigating]);
 
   const goToPrevious = useCallback(() => {
-    if (!posts.length) return;
+    if (!posts.length || isNavigating) return;
     navigate(currentIndex === 0 ? posts.length - 1 : currentIndex - 1);
-  }, [posts.length, currentIndex, navigate]);
+  }, [posts.length, currentIndex, navigate, isNavigating]);
 
   const goToNext = useCallback(() => {
-    if (!posts.length) return;
+    if (!posts.length || isNavigating) return;
     navigate(currentIndex === posts.length - 1 ? 0 : currentIndex + 1);
-  }, [posts.length, currentIndex, navigate]);
+  }, [posts.length, currentIndex, navigate, isNavigating]);
 
   const randomize = useCallback(() => {
-    if (!posts.length) return;
-    const newIndex = Math.floor(Math.random() * posts.length);
+    if (!posts.length || isNavigating) return;
+    let newIndex;
+    do {
+      newIndex = Math.floor(Math.random() * posts.length);
+    } while (newIndex === currentIndex && posts.length > 1);
     navigate(newIndex);
-  }, [posts.length, navigate]);
+  }, [posts.length, navigate, currentIndex, isNavigating]);
 
-  // Memoize the current post to prevent unnecessary re-renders
+  // Memoize current post to prevent unnecessary re-renders
   const currentPost = useMemo(() => {
     if (!posts.length) return null;
     return posts[currentIndex % posts.length];
@@ -118,7 +149,7 @@ export default function Stories() {
                     key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(index * 0.05, 1) }}
+                    transition={{ delay: Math.min(index * 0.05, 1), type: "spring" }}
                     className={`p-4 border border-border rounded-lg cursor-pointer backdrop-blur-sm hover:bg-accent/50 transition-all duration-300 will-change-transform hover:scale-[1.02] active:scale-[0.98] ${
                       index === currentIndex ? 'border-primary bg-primary/10' : 'bg-background/50'
                     }`}
@@ -126,7 +157,6 @@ export default function Stories() {
                       if (isNavigating) return;
                       navigate(index);
                       setIsIndexOpen(false);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   >
                     <h4 className="font-serif font-semibold mb-2">{post.title}</h4>
@@ -144,23 +174,15 @@ export default function Stories() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.2, type: "spring", stiffness: 200 }}
             className="mb-8"
           >
             <article className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto backdrop-blur-sm bg-background/50 p-6 sm:p-8 rounded-lg border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">{currentPost?.title}</h2>
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">
+                {currentPost?.title}
+              </h2>
               <div className="story-content">
-                {currentPost?.content.split('\n\n').map((paragraph: string, index: number) => (
-                  <motion.p
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(index * 0.1, 2) }}
-                    className="mb-6"
-                  >
-                    {paragraph}
-                  </motion.p>
-                ))}
+                {currentPost && renderContent(currentPost.content)}
               </div>
             </article>
           </motion.div>
