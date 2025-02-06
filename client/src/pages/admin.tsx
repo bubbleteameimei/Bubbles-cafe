@@ -13,16 +13,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Pencil, Trash2 } from "lucide-react";
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const { toast } = useToast();
-
-  const loginForm = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
 
   const postForm = useForm<InsertPost>({
     resolver: zodResolver(insertPostSchema),
@@ -32,37 +24,12 @@ export default function AdminPage() {
       excerpt: "",
       isSecret: false,
       slug: "",
-      authorId: 1, // Default admin ID
-    },
-  });
-
-  const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/admin/login", data);
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      setIsAuthenticated(true);
-      toast({
-        title: "Success",
-        description: "Logged in successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Invalid credentials",
-        variant: "destructive",
-      });
+      authorId: 1,
     },
   });
 
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
-    enabled: isAuthenticated,
   });
 
   const createPostMutation = useMutation({
@@ -113,29 +80,6 @@ export default function AdminPage() {
     });
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <form 
-          className="form"
-          onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))}
-        >
-          <span className="input-span">
-            <label htmlFor="email" className="label">Email</label>
-            <Input type="email" id="email" {...loginForm.register("email")} />
-          </span>
-          <span className="input-span">
-            <label htmlFor="password" className="label">Password</label>
-            <Input type="password" id="password" {...loginForm.register("password")} />
-          </span>
-          <Button type="submit" disabled={loginMutation.isPending}>
-            {loginMutation.isPending ? "Logging in..." : "Log in"}
-          </Button>
-        </form>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -144,12 +88,6 @@ export default function AdminPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Button
-          variant="outline"
-          onClick={() => setIsAuthenticated(false)}
-        >
-          Logout
-        </Button>
       </div>
 
       <Card className="p-6">

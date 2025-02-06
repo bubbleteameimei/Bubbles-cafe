@@ -21,7 +21,6 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getSecretPosts(): Promise<Post[]>;
   unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
-  updatePostInteraction(postId: number, type: 'like' | 'dislike' | null): Promise<Post>;
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
@@ -55,7 +54,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(posts)
       .where(eq(posts.isSecret, false))
-      .orderBy(desc(posts.createdAt)); // Order by most recent first
+      .orderBy(desc(posts.createdAt));
   }
 
   async getSecretPosts(): Promise<Post[]> {
@@ -78,28 +77,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newProgress;
   }
-
-  async updatePostInteraction(postId: number, type: 'like' | 'dislike' | null): Promise<Post> {
-    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-    if (!post) throw new Error('Post not found');
-
-    let updateData: Partial<Post> = {};
-
-    if (type === 'like') {
-      updateData = { likes: post.likes + 1 };
-    } else if (type === 'dislike') {
-      updateData = { dislikes: post.dislikes + 1 };
-    }
-
-    const [updatedPost] = await db
-      .update(posts)
-      .set(updateData)
-      .where(eq(posts.id, postId))
-      .returning();
-
-    return updatedPost;
-  }
-
 
   // Comments
   async getComments(postId: number): Promise<Comment[]> {

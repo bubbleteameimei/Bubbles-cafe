@@ -46,12 +46,8 @@ export default function Posts() {
     setCurrentIndex(newIndex);
   }, [posts?.length]);
 
-  if (isLoading) {
+  if (isLoading || !posts?.length) {
     return <LoadingScreen />;
-  }
-
-  if (!posts?.length) {
-    return null;
   }
 
   const currentPost = posts[currentIndex];

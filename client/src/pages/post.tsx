@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { type Post } from "@shared/schema";
 import CommentSection from "@/components/blog/comment-section";
-import { LikeDislike } from "@/components/blog/like-dislike";
 import Mist from "@/components/effects/mist";
 import { motion } from "framer-motion";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -53,14 +52,6 @@ export default function PostPage() {
               <PostContent content={post.content} />
             </ErrorBoundary>
           </article>
-
-          <div className="mt-12 max-w-2xl mx-auto">
-            <LikeDislike 
-              postId={post.id}
-              initialLikes={post.likes || 0}
-              initialDislikes={post.dislikes || 0}
-            />
-          </div>
 
           <div className="mt-12 max-w-2xl mx-auto">
             <CommentSection postId={post.id} />

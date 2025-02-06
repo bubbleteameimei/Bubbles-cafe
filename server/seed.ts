@@ -5,6 +5,7 @@ import path from "path";
 import { db } from "./db";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 async function getOrCreateAdminUser() {
   // Check if admin exists
@@ -15,10 +16,11 @@ async function getOrCreateAdminUser() {
   }
 
   // Create admin if doesn't exist
+  const hashedPassword = await bcrypt.hash("admin", 10);
   const [newAdmin] = await db.insert(users).values({
     username: "admin",
-    password: "admin", // This should be changed through the admin interface
-    isAdmin: true,
+    email: "admin@example.com",
+    password_hash: hashedPassword,
   }).returning();
 
   return newAdmin;
@@ -75,7 +77,7 @@ async function parseWordPressXML() {
         excerpt: excerpt,
         slug: item["wp:post_name"],
         isSecret: false,
-        authorId: admin.id // Use admin user ID for all posts
+        authorId: admin.id
       });
     }
   }
