@@ -7,6 +7,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -37,38 +38,62 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Seed database with WordPress posts
+async function startServer() {
   try {
-    await seedDatabase();
-  } catch (err) {
-    log(`Error seeding database: ${err}`);
-    // Continue even if seeding fails
-  }
+    // Seed database with WordPress posts
+    try {
+      await seedDatabase();
+      log("Database seeded successfully!");
+    } catch (err) {
+      log(`Error seeding database: ${err}`);
+      // Continue even if seeding fails
+    }
 
-  const server = registerRoutes(app);
+    const server = registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      log(`Error: ${status} - ${message}`);
+      res.status(status).json({ message });
+    });
 
-    res.status(status).json({ message });
-    throw err;
-  });
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+    const PORT = parseInt(process.env.PORT || '5000', 10);
 
-  const PORT = parseInt(process.env.PORT || '5000', 10);
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`Server is ready and listening on port ${PORT}`);
-    console.log(`Server is ready and listening on port ${PORT}`); // Additional logging
-  }).on('error', (err) => {
-    log(`Server error: ${err.message}`);
-    console.error(`Server error: ${err.message}`); // Additional logging
+    // Handle server shutdown
+    const closeServer = () => {
+      server.close(() => {
+        log('Server is shutting down');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', closeServer);
+    process.on('SIGINT', closeServer);
+
+    // Start server
+    server.listen(PORT, "0.0.0.0", () => {
+      log(`Server is ready and listening on port ${PORT}`);
+    }).on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${PORT} is already in use. Please try a different port.`);
+      } else {
+        log(`Server error: ${err.message}`);
+      }
+      process.exit(1);
+    });
+
+  } catch (error) {
+    log(`Failed to start server: ${error}`);
     process.exit(1);
-  });
-})();
+  }
+}
+
+startServer();
