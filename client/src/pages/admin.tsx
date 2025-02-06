@@ -50,13 +50,10 @@ export default function AdminPage() {
     queryKey: ["/api/posts"],
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: false,
-    throwOnError: true,
   });
 
   const createPostMutation = useMutation({
     mutationFn: async (data: Omit<InsertPost, "slug">) => {
-      // Generate slug from title
       const slug = data.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')

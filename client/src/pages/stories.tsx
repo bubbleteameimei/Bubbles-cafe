@@ -34,30 +34,31 @@ export default function Stories() {
     networkMode: 'offlineFirst',
   });
 
-  const goToPrevious = useCallback(() => {
-    if (!posts.length || isNavigating) return;
+  // Improve navigation responsiveness with useCallback and proper debouncing
+  const navigate = useCallback((newIndex: number) => {
+    if (isNavigating) return;
     setIsNavigating(true);
-    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
-  }, [posts.length, isNavigating]);
-
-  const goToNext = useCallback(() => {
-    if (!posts.length || isNavigating) return;
-    setIsNavigating(true);
-    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
-  }, [posts.length, isNavigating]);
-
-  const randomize = useCallback(() => {
-    if (!posts.length || isNavigating) return;
-    setIsNavigating(true);
-    const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    setTimeout(() => setIsNavigating(false), 300); // Debounce navigation
-  }, [posts.length, isNavigating]);
+    // Shorter debounce time for better responsiveness
+    setTimeout(() => setIsNavigating(false), 200);
+  }, [isNavigating]);
+
+  const goToPrevious = useCallback(() => {
+    if (!posts.length) return;
+    navigate(currentIndex === 0 ? posts.length - 1 : currentIndex - 1);
+  }, [posts.length, currentIndex, navigate]);
+
+  const goToNext = useCallback(() => {
+    if (!posts.length) return;
+    navigate(currentIndex === posts.length - 1 ? 0 : currentIndex + 1);
+  }, [posts.length, currentIndex, navigate]);
+
+  const randomize = useCallback(() => {
+    if (!posts.length) return;
+    const newIndex = Math.floor(Math.random() * posts.length);
+    navigate(newIndex);
+  }, [posts.length, navigate]);
 
   // Memoize the current post to prevent unnecessary re-renders
   const currentPost = useMemo(() => {
@@ -123,11 +124,9 @@ export default function Stories() {
                     }`}
                     onClick={() => {
                       if (isNavigating) return;
-                      setIsNavigating(true);
-                      setCurrentIndex(index);
+                      navigate(index);
                       setIsIndexOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
-                      setTimeout(() => setIsNavigating(false), 300);
                     }}
                   >
                     <h4 className="font-serif font-semibold mb-2">{post.title}</h4>
@@ -141,20 +140,17 @@ export default function Stories() {
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentPost.id}
+            key={currentPost?.id}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
             className="mb-8"
           >
-            <article className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto backdrop-blur-sm bg-background/50 p-6 sm:p-8 rounded-lg border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300 will-change-transform">
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">{currentPost.title}</h2>
-              <div
-                className="story-content"
-                style={{ whiteSpace: 'pre-wrap' }}
-              >
-                {currentPost.content.split('\n\n').map((paragraph: string, index: number) => (
+            <article className="prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto backdrop-blur-sm bg-background/50 p-6 sm:p-8 rounded-lg border border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-4">{currentPost?.title}</h2>
+              <div className="story-content">
+                {currentPost?.content.split('\n\n').map((paragraph: string, index: number) => (
                   <motion.p
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
@@ -162,9 +158,7 @@ export default function Stories() {
                     transition={{ delay: Math.min(index * 0.1, 2) }}
                     className="mb-6"
                   >
-                    {paragraph.trim().split('_').map((text: string, i: number) =>
-                      i % 2 === 0 ? text : <i key={i}>{text}</i>
-                    )}
+                    {paragraph}
                   </motion.p>
                 ))}
               </div>
@@ -179,7 +173,6 @@ export default function Stories() {
           onNext={goToNext}
           onRandom={randomize}
           socialLinks={socialLinks}
-          isNavigating={isNavigating}
         />
       </div>
     </div>

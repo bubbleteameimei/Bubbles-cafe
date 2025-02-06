@@ -31,6 +31,25 @@ async function getOrCreateAdminUser() {
   }
 }
 
+async function cleanContent(content: string): string {
+  return content
+    // Remove WordPress formatting
+    .replace(/<!-- wp:paragraph -->/g, "")
+    .replace(/<!-- \/wp:paragraph -->/g, "")
+    .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
+    .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
+    // Convert HTML tags to markdown
+    .replace(/<em>(.*?)<\/em>/g, "_$1_")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<p>/g, "\n")
+    .replace(/<\/p>/g, "\n")
+    // Remove unnecessary underscores that aren't part of italics
+    .replace(/([^_]|^)_([^_]|$)/g, "$1$2")
+    // Clean up multiple newlines
+    .replace(/\n\s*\n\s*\n/g, "\n\n")
+    .trim();
+}
+
 async function parseWordPressXML() {
   try {
     const xmlContent = await fs.readFile(
@@ -50,48 +69,40 @@ async function parseWordPressXML() {
     // Get admin user for post authorship
     const admin = await getOrCreateAdminUser();
 
+    // Track existing slugs to prevent duplicates
+    const existingSlugs = new Set<string>();
     console.log("Starting to create posts...");
     let createdCount = 0;
+
+    // First, clear existing posts to prevent duplicates
+    await db.delete(posts);
 
     for (const item of items) {
       if (item["wp:post_type"] === "post") {
         try {
-          // Process content to match WordPress formatting
-          const content = item["content:encoded"]
-            .replace(/<!-- wp:paragraph -->/g, "")
-            .replace(/<!-- \/wp:paragraph -->/g, "")
-            .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
-            .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-            // Keep <p> tags for proper spacing
-            .replace(/<p>/g, "\n")
-            .replace(/<\/p>/g, "\n")
-            // Preserve italics
-            .replace(/<em>/g, "_")
-            .replace(/<\/em>/g, "_")
-            .trim();
+          const cleanedContent = await cleanContent(item["content:encoded"]);
+          const excerpt = cleanedContent.split("\n")[0];
 
-          // Create proper paragraphs
-          const formattedContent = content
-            .split("\n\n")
-            .filter((p: string) => p.trim())
-            .join("\n\n");
-
-          const excerpt = formattedContent.split("\n")[0];
-
-          // Generate unique slug by adding random string
-          const baseSlug = item["wp:post_name"] || item.title
+          // Generate unique slug
+          let baseSlug = item["wp:post_name"] || item.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
-          const uniqueSuffix = randomBytes(4).toString('hex');
-          const uniqueSlug = `${baseSlug}-${uniqueSuffix}`;
+          // Ensure slug uniqueness
+          let finalSlug = baseSlug;
+          let counter = 1;
+          while (existingSlugs.has(finalSlug)) {
+            finalSlug = `${baseSlug}-${counter}`;
+            counter++;
+          }
+          existingSlugs.add(finalSlug);
 
           await storage.createPost({
             title: item.title,
-            content: formattedContent,
+            content: cleanedContent,
             excerpt: excerpt,
-            slug: uniqueSlug,
+            slug: finalSlug,
             isSecret: false,
             authorId: admin.id
           });
