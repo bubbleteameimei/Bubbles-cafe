@@ -14,6 +14,7 @@ import Secret from "./pages/secret";
 import About from "./pages/about";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
+import AmbientAudio from "./components/effects/audio";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -29,6 +30,7 @@ function App() {
 
   return (
     <AudioProvider>
+      <AmbientAudio /> {/* Added AmbientAudio component here */}
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
           {isLoading && <LoadingScreen />}
