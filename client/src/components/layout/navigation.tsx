@@ -76,39 +76,15 @@ const Navigation = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setLocation]);
 
-  // Memoize NavigationContent for better performance
   const NavigationContent = useMemo(() => (
     <>
       <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
         Home
       </NavLink>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            className={`nav-link px-3 py-2 text-base transition-colors duration-300 ${
-              location.startsWith("/posts") ? "text-primary" : "text-muted-foreground hover:text-primary"
-            }`}
-          >
-            Posts <ChevronDown className="h-4 w-4 ml-1" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => handleNavClick("/posts/latest")}>
-            Latest Posts
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleNavClick("/posts/horror")}>
-            Horror Stories
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleNavClick("/posts/psychological")}>
-            Psychological Tales
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleNavClick("/posts/excerpts")}>
-            Story Excerpts
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <NavLink href="/posts" isActive={location === "/posts"} onClick={() => handleNavClick("/posts")}>
+        Posts
+      </NavLink>
 
       <NavLink href="/about" isActive={location === "/about"} onClick={() => handleNavClick("/about")}>
         About
@@ -137,7 +113,6 @@ const Navigation = () => {
 
       <nav className="gothic-menu sticky top-0 z-50">
         <div className="container mx-auto h-16 flex items-center justify-between px-4">
-          {/* Mobile Menu - Optimized with smooth transitions */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -157,12 +132,10 @@ const Navigation = () => {
             </Sheet>
           </div>
 
-          {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-2">
             {NavigationContent}
           </div>
 
-          {/* Controls - Optimized with better transitions */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Button

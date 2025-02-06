@@ -10,7 +10,6 @@ import Footer from "./components/layout/footer";
 import Sidebar from "./components/blog/sidebar";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
-import Post from "./pages/post";
 import Posts from "./pages/posts";
 import Secret from "./pages/secret";
 import About from "./pages/about";
@@ -55,7 +54,6 @@ function App() {
               <Switch>
                 <Route path="/" component={Home} />
                 <Route path="/posts" component={Posts} />
-                <Route path="/post/:slug" component={Post} />
                 <Route path="/secret" component={Secret} />
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/about" component={About} />

@@ -83,21 +83,14 @@ async function startServer() {
     const startPort = parseInt(process.env.PORT || '5000', 10);
     const PORT = await findAvailablePort(startPort);
 
-    // Handle server shutdown
-    const closeServer = () => {
-      server.close(() => {
-        log('Server is shutting down');
-        process.exit(0);
-      });
-    };
-
-    process.on('SIGTERM', closeServer);
-    process.on('SIGINT', closeServer);
-
     // Start server and wait for it to be ready
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
         log(`Server is ready and listening on port ${PORT}`);
+        // Signal that we're ready to accept connections
+        if (process.send) {
+          process.send('ready');
+        }
         resolve();
       }).on('error', (err: any) => {
         log(`Server error: ${err.message}`);
