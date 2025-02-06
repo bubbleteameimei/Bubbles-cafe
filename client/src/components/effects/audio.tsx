@@ -11,108 +11,43 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.2);
   const [audioReady, setAudioReady] = useState(false);
 
   useEffect(() => {
-    try {
-      // Initialize Web Audio API
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      oscillatorRef.current = audioContextRef.current.createOscillator();
+    audioRef.current = new Audio('/assets/whispering_wind.mp3');
+    audioRef.current.loop = true;
+    audioRef.current.volume = volume;
+    setAudioReady(true);
 
-      // Connect nodes
-      oscillatorRef.current.connect(gainNodeRef.current);
-      gainNodeRef.current.connect(audioContextRef.current.destination);
-
-      // Set initial volume with smooth transition
-      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-      gainNodeRef.current.gain.linearRampToValueAtTime(
-        volume,
-        audioContextRef.current.currentTime + 0.1
-      );
-
-      // Set up oscillator for ambient sound
-      oscillatorRef.current.type = 'sine';
-      oscillatorRef.current.frequency.setValueAtTime(100, audioContextRef.current.currentTime);
-      oscillatorRef.current.detune.setValueAtTime(-10, audioContextRef.current.currentTime);
-
-      setAudioReady(true);
-
-      return () => {
-        if (oscillatorRef.current) {
-          oscillatorRef.current.stop();
-        }
-        if (audioContextRef.current) {
-          audioContextRef.current.close();
-        }
-      };
-    } catch (err) {
-      console.error("Error initializing audio:", err);
-      setAudioReady(false);
-    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
   }, []);
 
-  // Update volume with smooth transition
   useEffect(() => {
-    if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.cancelScheduledValues(audioContextRef.current.currentTime);
-      gainNodeRef.current.gain.setValueAtTime(
-        gainNodeRef.current.gain.value,
-        audioContextRef.current.currentTime
-      );
-      gainNodeRef.current.gain.linearRampToValueAtTime(
-        volume,
-        audioContextRef.current.currentTime + 0.1
-      );
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
     }
   }, [volume]);
 
   const toggleAudio = async () => {
-    if (!audioReady || !audioContextRef.current || !oscillatorRef.current) {
+    if (!audioReady || !audioRef.current) {
       console.log('Audio system not ready');
       return;
     }
 
     try {
       if (isPlaying) {
-        // Fade out before stopping
-        if (gainNodeRef.current) {
-          gainNodeRef.current.gain.linearRampToValueAtTime(
-            0,
-            audioContextRef.current.currentTime + 0.1
-          );
-        }
-        setTimeout(() => {
-          if (oscillatorRef.current) {
-            oscillatorRef.current.stop();
-          }
-        }, 100);
-        setIsPlaying(false);
+        audioRef.current.pause();
       } else {
-        // Create and start a new oscillator with fade in
-        oscillatorRef.current = audioContextRef.current.createOscillator();
-        oscillatorRef.current.connect(gainNodeRef.current!);
-
-        oscillatorRef.current.type = 'sine';
-        oscillatorRef.current.frequency.setValueAtTime(100, audioContextRef.current.currentTime);
-        oscillatorRef.current.detune.setValueAtTime(-10, audioContextRef.current.currentTime);
-
-        if (gainNodeRef.current) {
-          gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-          gainNodeRef.current.gain.linearRampToValueAtTime(
-            volume,
-            audioContextRef.current.currentTime + 0.1
-          );
-        }
-
-        oscillatorRef.current.start();
-        setIsPlaying(true);
+        audioRef.current.play();
       }
+      setIsPlaying(!isPlaying);
     } catch (err) {
       console.error("Toggle audio error:", err);
       setIsPlaying(false);
