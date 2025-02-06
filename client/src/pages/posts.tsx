@@ -7,7 +7,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PostFooter } from "@/components/blog/post-footer";
 import Mist from "@/components/effects/mist";
+
+// Social media links
+const socialLinks = {
+  wordpress: "https://bubbleteameimei.wordpress.com",
+  twitter: "https://twitter.com/Bubbleteameimei",
+  instagram: "https://www.instagram.com/bubbleteameimei"
+};
 
 const PostContent = memo(({ content }: { content: string }) => (
   <div className="story-content" style={{ whiteSpace: 'pre-wrap' }}>
@@ -49,7 +57,6 @@ export default function Posts() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [posts?.length]);
 
-  // Scroll to top when component mounts or updates
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentIndex]);
@@ -78,46 +85,17 @@ export default function Posts() {
                 <PostContent content={currentPost.content} />
               </ErrorBoundary>
             </article>
+
+            <PostFooter
+              currentIndex={currentIndex}
+              totalPosts={posts.length}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              onRandom={randomize}
+              socialLinks={socialLinks}
+            />
           </motion.div>
         </AnimatePresence>
-
-        <div className="controls-container">
-          <div className="controls-wrapper">
-            <span className="text-sm text-muted-foreground px-3">
-              {currentIndex + 1} / {posts.length}
-            </span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Previous Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
-                    <Shuffle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Random Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Next Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
       </div>
     </div>
   );

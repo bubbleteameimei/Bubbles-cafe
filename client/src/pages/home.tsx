@@ -6,16 +6,7 @@ import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { SocialButtons } from "@/components/ui/social-buttons";
-import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
-
-// Extract social links from XML content
-const socialLinks = {
-  wordpress: "https://bubbleteameimei.wordpress.com",
-  twitter: "https://twitter.com/Bubbleteameimei",
-  instagram: "https://www.instagram.com/bubbleteameimei"
-};
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,7 +34,6 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [posts?.length]);
 
-  // Add useEffect to handle initial scroll position and post changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentIndex]);
@@ -69,10 +59,6 @@ export default function Home() {
           >
             <article className="prose dark:prose-invert mx-auto">
               <h2 className="text-3xl font-bold mb-4">{currentPost.title}</h2>
-              <div className="flex justify-between items-center mb-6">
-                <LikeDislike initialLikes={123} initialDislikes={4} />
-                <SocialButtons links={socialLinks} />
-              </div>
               <div
                 className="story-content"
                 style={{ whiteSpace: 'pre-wrap' }}

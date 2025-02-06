@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, Menu } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Menu, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider"; 
 import { useTheme } from "@/hooks/use-theme";
@@ -9,6 +9,12 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCallback, useState, memo, useMemo } from "react";
 
 const NavLink = memo(({ href, isActive, children, onClick }: { 
@@ -52,17 +58,14 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setLocation] = useLocation();
 
-  // Optimize volume change handler
   const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
   }, [setVolume]);
 
-  // Optimize theme toggle with immediate response
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  // Optimize audio toggle with immediate response
   const handleAudioToggle = useCallback(() => {
     toggleAudio();
   }, [toggleAudio]);
@@ -79,9 +82,34 @@ const Navigation = () => {
       <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
         Home
       </NavLink>
-      <NavLink href="/posts" isActive={location === "/posts"} onClick={() => handleNavClick("/posts")}>
-        Posts
-      </NavLink>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className={`nav-link px-3 py-2 text-base transition-colors duration-300 ${
+              location.startsWith("/posts") ? "text-primary" : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            Posts <ChevronDown className="h-4 w-4 ml-1" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => handleNavClick("/posts/latest")}>
+            Latest Posts
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleNavClick("/posts/horror")}>
+            Horror Stories
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleNavClick("/posts/psychological")}>
+            Psychological Tales
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleNavClick("/posts/excerpts")}>
+            Story Excerpts
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <NavLink href="/about" isActive={location === "/about"} onClick={() => handleNavClick("/about")}>
         About
       </NavLink>

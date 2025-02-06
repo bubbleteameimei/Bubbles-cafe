@@ -14,7 +14,7 @@ interface SocialButtonsProps {
 
 export function SocialButtons({ links, className = "" }: SocialButtonsProps) {
   return (
-    <div className={`social-buttons ${className} fixed bottom-8 right-8 z-50 flex flex-col gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-border/50`}>
+    <div className={`social-buttons ${className} flex justify-center items-center gap-4 p-4 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border border-border/50`}>
       {links.wordpress && (
         <a href={links.wordpress} target="_blank" rel="noopener noreferrer" 
           className="social-button wordpress transform hover:scale-110 transition-all">
