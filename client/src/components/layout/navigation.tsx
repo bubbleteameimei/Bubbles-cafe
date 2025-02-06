@@ -1,9 +1,17 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider"; 
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -38,24 +46,42 @@ export default function Navigation() {
             >
               Posts
             </a>
-            <a 
-              href="/secret"
-              className={location === "/secret" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              Secret Stories
-            </a>
-            <a 
-              href="/about"
-              className={location === "/about" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              About
-            </a>
-            <a 
-              href="/admin"
-              className={location === "/admin" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              Admin
-            </a>
+
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>More <ChevronDown className="h-4 w-4 ml-2 rotate-90"/></NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="grid gap-3 p-4 w-[200px]">
+                      <NavigationMenuLink asChild>
+                        <a 
+                          href="/secret"
+                          className={`block p-2 hover:bg-accent rounded-md ${location === "/secret" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                        >
+                          Secret Stories
+                        </a>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink asChild>
+                        <a 
+                          href="/about"
+                          className={`block p-2 hover:bg-accent rounded-md ${location === "/about" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                        >
+                          About
+                        </a>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink asChild>
+                        <a 
+                          href="/admin"
+                          className={`block p-2 hover:bg-accent rounded-md ${location === "/admin" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                        >
+                          Admin
+                        </a>
+                      </NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
 
           <div className="flex items-center gap-4">
