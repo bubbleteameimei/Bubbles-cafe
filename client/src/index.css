@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme transition styles */
+:root {
+  --theme-transition: none;
+}
+
+* {
+  transition: var(--theme-transition);
+}
+
 @layer base {
   :root {
     /* Dark mode colors (Refined Gothic & Arcane Blend) */
@@ -62,6 +71,11 @@
     letter-spacing: 0.01em;
   }
 
+  /* Add improved transition classes for buttons and interactive elements */
+  button, a {
+    @apply transition-all duration-200;
+  }
+
   .container {
     @apply px-4 mx-auto;
     max-width: min(100% - 2rem, 75ch);
@@ -110,12 +124,12 @@
 
   /* Navigation */
   .nav-link {
-    @apply relative overflow-hidden transition-colors duration-300;
+    @apply relative overflow-hidden transition-all duration-200;
   }
 
   .nav-link::after {
     content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0 transition-transform duration-300;
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0 transition-transform duration-200;
   }
 
   .nav-link:hover::after {

@@ -16,47 +16,52 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolume] = useState(0.2);
   const [audioReady, setAudioReady] = useState(false);
 
+  // Initialize audio on mount
   useEffect(() => {
     const audio = new Audio('/assets/whispering_wind.mp3');
+    audio.preload = 'auto'; // Ensure audio is preloaded
     audio.loop = true;
     audio.volume = volume;
 
     // Set up event listeners for better state management
-    audio.addEventListener('canplaythrough', () => setAudioReady(true));
-    audio.addEventListener('ended', () => setIsPlaying(false));
-    audio.addEventListener('error', () => {
+    const handleCanPlayThrough = () => setAudioReady(true);
+    const handleEnded = () => setIsPlaying(false);
+    const handleError = () => {
       console.error("Audio loading error");
       setAudioReady(false);
       setIsPlaying(false);
-    });
+    };
+
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     audioRef.current = audio;
 
     return () => {
       audio.pause();
-      audio.removeEventListener('canplaythrough', () => setAudioReady(true));
-      audio.removeEventListener('ended', () => setIsPlaying(false));
-      audio.removeEventListener('error', () => {
-        setAudioReady(false);
-        setIsPlaying(false);
-      });
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
+  // Handle volume changes efficiently
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
   }, [volume]);
 
+  // Optimized toggle function with proper state management
   const toggleAudio = useCallback(() => {
     if (!audioReady || !audioRef.current) return;
 
     try {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        // Create a promise for play() to handle autoplay restrictions properly
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           playPromise
@@ -69,14 +74,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             });
         }
       }
-      setIsPlaying(!isPlaying);
     } catch (err) {
       console.error("Toggle audio error:", err);
       setIsPlaying(false);
     }
   }, [isPlaying, audioReady]);
 
-  const memoizedValue = {
+  const value = {
     toggleAudio,
     isPlaying,
     volume,
@@ -85,7 +89,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AudioContext.Provider value={memoizedValue}>
+    <AudioContext.Provider value={value}>
       {children}
     </AudioContext.Provider>
   );

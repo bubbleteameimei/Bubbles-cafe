@@ -52,29 +52,19 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setLocation] = useLocation();
 
-  // Memoized handlers
+  // Optimize volume change handler
   const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
   }, [setVolume]);
 
-  const handleThemeToggle = useMemo(() => {
-    let lastClick = 0;
-    return () => {
-      const now = Date.now();
-      if (now - lastClick < 300) return; // Debounce 300ms
-      lastClick = now;
-      setTheme(theme === "dark" ? "light" : "dark");
-    };
+  // Optimize theme toggle with immediate response
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  const handleAudioToggle = useMemo(() => {
-    let lastClick = 0;
-    return () => {
-      const now = Date.now();
-      if (now - lastClick < 300) return; // Debounce 300ms
-      lastClick = now;
-      toggleAudio();
-    };
+  // Optimize audio toggle with immediate response
+  const handleAudioToggle = useCallback(() => {
+    toggleAudio();
   }, [toggleAudio]);
 
   const handleNavClick = useCallback((href: string) => {
@@ -83,7 +73,7 @@ const Navigation = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setLocation]);
 
-  // Memoize NavigationContent
+  // Memoize NavigationContent for better performance
   const NavigationContent = useMemo(() => (
     <>
       <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
@@ -119,11 +109,15 @@ const Navigation = () => {
 
       <nav className="gothic-menu sticky top-0 z-50">
         <div className="container mx-auto h-16 flex items-center justify-between px-4">
-          {/* Mobile Menu */}
+          {/* Mobile Menu - Optimized with smooth transitions */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:bg-primary/10 transition-colors duration-200"
+                >
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -140,7 +134,7 @@ const Navigation = () => {
             {NavigationContent}
           </div>
 
-          {/* Controls - Always Visible */}
+          {/* Controls - Optimized with better transitions */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Button
@@ -148,13 +142,13 @@ const Navigation = () => {
                 size="icon"
                 onClick={handleAudioToggle}
                 disabled={!audioReady}
-                className="relative group hover:bg-primary/10"
+                className="relative group hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
                 title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
               >
                 {isPlaying ? (
-                  <Volume2 className="h-5 w-5 transition-transform group-hover:scale-110" />
+                  <Volume2 className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
                 ) : (
-                  <VolumeX className="h-5 w-5 transition-transform group-hover:scale-110" />
+                  <VolumeX className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
                 )}
               </Button>
               <div className="w-24 hidden md:block">
@@ -171,12 +165,12 @@ const Navigation = () => {
               variant="ghost"
               size="icon"
               onClick={handleThemeToggle}
-              className="transition-transform duration-300 hover:bg-primary/10 hover:scale-105 active:scale-95"
+              className="transition-all duration-200 hover:bg-primary/10 hover:scale-105 active:scale-95"
             >
               {theme === "dark" ? (
-                <Sun className="h-5 w-5 transform transition-transform duration-300 rotate-0" />
+                <Sun className="h-5 w-5 transition-transform duration-200" />
               ) : (
-                <Moon className="h-5 w-5 transform transition-transform duration-300 rotate-0" />
+                <Moon className="h-5 w-5 transition-transform duration-200" />
               )}
             </Button>
           </div>
