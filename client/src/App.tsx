@@ -8,6 +8,7 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
 import Sidebar from "./components/blog/sidebar";
+import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
 import Post from "./pages/post";
 import Secret from "./pages/secret";
@@ -30,7 +31,7 @@ function App() {
 
   return (
     <AudioProvider>
-      <AmbientAudio /> {/* Added AmbientAudio component here */}
+      <AmbientAudio />
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
           {isLoading && <LoadingScreen />}
@@ -51,6 +52,7 @@ function App() {
             </div>
           </main>
           <Footer />
+          <CookieConsent />
           <Toaster />
         </div>
       </QueryClientProvider>
