@@ -39,7 +39,7 @@ export function CookieConsent() {
       <div className="max-w-[300px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
         <div className="flex justify-center relative">
           <svg 
-            className="w-[50px] h-[50px] transition-colors duration-200" 
+            className="w-[50px] h-[50px] transition-all duration-300 hover:rotate-12 hover:scale-110" 
             viewBox="0 0 122.88 122.25"
           >
             <path 
@@ -65,12 +65,14 @@ export function CookieConsent() {
           </p>
         </div>
 
-        <div className="flex justify-center gap-4">
+        <div className="relative flex justify-center gap-4">
+          <div className="absolute -top-8 -left-6 w-2 h-2 rounded-full bg-[#C4A484] opacity-40 animate-float" />
+          <div className="absolute -top-4 -right-4 w-1.5 h-1.5 rounded-full bg-[#C4A484] opacity-30 animate-float-delayed" />
           <button
             onClick={handleAccept}
             className={cn(
               "px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium",
-              "transition-all duration-200 hover:opacity-90 hover:scale-105"
+              "transition-all duration-300 hover:opacity-90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
             )}
           >
             Allow
@@ -79,7 +81,7 @@ export function CookieConsent() {
             onClick={handleDecline}
             className={cn(
               "px-6 py-2 rounded-full bg-muted text-muted-foreground font-medium",
-              "transition-all duration-200 hover:bg-muted/80 hover:scale-105"
+              "transition-all duration-300 hover:bg-muted/80 hover:scale-105 hover:shadow-lg"
             )}
           >
             Decline
