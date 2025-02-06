@@ -13,7 +13,7 @@ const PostContent = memo(({ content }: { content: string }) => (
   <div className="story-content" style={{ whiteSpace: 'pre-wrap' }}>
     {content.split('\n\n').map((paragraph, index) => (
       <p key={index} className="mb-6">
-        {paragraph.trim().split('_').map((text, i) => 
+        {paragraph.trim().split('_').map((text, i) =>
           i % 2 === 0 ? text : <i key={i}>{text}</i>
         )}
       </p>
@@ -55,7 +55,7 @@ export default function Posts() {
   return (
     <div className="relative min-h-screen">
       <Mist />
-      <div className="max-w-3xl mx-auto px-4 py-8 pb-48"> {/* Increased bottom padding */}
+      <div className="max-w-3xl mx-auto px-4 py-8 pb-32">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
@@ -73,8 +73,11 @@ export default function Posts() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="fixed bottom-40 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg"> {/* Adjusted bottom spacing */}
-          <div className="flex items-center justify-center gap-4">
+        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2">
+          <div className="flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
+            <span className="text-sm text-muted-foreground px-3">
+              {currentIndex + 1} / {posts.length}
+            </span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -106,9 +109,6 @@ export default function Posts() {
               </Tooltip>
             </TooltipProvider>
           </div>
-        </div>
-        <div className="text-center text-sm text-muted-foreground fixed bottom-36 left-1/2 transform -translate-x-1/2"> {/* Adjusted bottom spacing */}
-          Story {currentIndex + 1} of {posts.length}
         </div>
       </div>
     </div>

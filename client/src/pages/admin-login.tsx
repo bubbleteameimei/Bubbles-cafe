@@ -60,17 +60,17 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-      <Card className="w-full max-w-[500px] relative z-10">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+    <div className="min-h-[calc(100vh-12rem)] flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm">
+      <Card className="w-full max-w-md relative z-10">
+        <CardHeader className="space-y-2 p-6">
+          <CardTitle className="text-2xl text-center font-serif">Admin Login</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <Form {...form}>
             <form 
               onSubmit={form.handleSubmit(onSubmit)} 
               className="space-y-6"
-              autoComplete="off" // Prevent browser autofill popup
+              autoComplete="off"
             >
               {form.formState.errors.root && (
                 <Alert variant="destructive" className="mb-6">
@@ -92,8 +92,8 @@ export default function AdminLoginPage() {
                         type="email" 
                         placeholder="admin@example.com" 
                         {...field} 
-                        className={`h-11 text-base ${form.formState.errors.email ? "border-destructive" : ""}`}
-                        autoComplete="off"
+                        className={`h-12 text-base px-4 ${form.formState.errors.email ? "border-destructive" : ""}`}
+                        autoComplete="new-email"
                         spellCheck="false"
                       />
                     </FormControl>
@@ -112,7 +112,7 @@ export default function AdminLoginPage() {
                       <Input 
                         type="password" 
                         {...field}
-                        className={`h-11 text-base ${form.formState.errors.password ? "border-destructive" : ""}`}
+                        className={`h-12 text-base px-4 ${form.formState.errors.password ? "border-destructive" : ""}`}
                         autoComplete="new-password"
                       />
                     </FormControl>
@@ -123,7 +123,7 @@ export default function AdminLoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-11 text-base"
+                className="w-full h-12 text-base font-medium"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? "Logging in..." : "Login"}
