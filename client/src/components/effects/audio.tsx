@@ -19,7 +19,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    const audio = new Audio('/ambient.mp3');
+    const audio = new Audio();
+    audio.preload = "none"; // Don't load until explicitly requested
+    audio.src = '/ambient.mp3';
     audio.loop = true;
     audio.volume = volume;
     audioRef.current = audio;
@@ -31,6 +33,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         duration: 500,
       });
     };
+
+    // Only start loading when user interacts
+    const handleFirstInteraction = () => {
+      audio.preload = "auto";
+      document.removeEventListener('click', handleFirstInteraction);
+    };
+    document.addEventListener('click', handleFirstInteraction);
 
     const handleError = (e: ErrorEvent) => {
       console.error('Audio error:', e);
