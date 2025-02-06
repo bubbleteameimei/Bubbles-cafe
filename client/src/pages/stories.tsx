@@ -32,10 +32,10 @@ function renderContent(content: string) {
 
     // Process italics by converting _text_ to <em>text</em>
     // Only process underscores that are actually part of italics (paired)
-    const processedText = cleanedText.replace(
-      /(?<!\\)_(.+?)(?<!\\)_/g,
-      (match, p1) => `<em>${p1}</em>`
-    );
+    const processedText = cleanedText.split('_').map((text, i) => {
+      // Every odd index (1, 3, etc.) should be italicized
+      return i % 2 === 0 ? text : `<em>${text}</em>`;
+    }).join('');
 
     return (
       <motion.p

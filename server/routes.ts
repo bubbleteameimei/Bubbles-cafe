@@ -128,7 +128,9 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts", async (_req, res) => {
     try {
       const posts = await storage.getPosts();
-      res.json(posts);
+      // Remove any duplicates by id
+      const uniquePosts = Array.from(new Map(posts.map(post => [post.id, post])).values());
+      res.json(uniquePosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
       res.status(500).json({ message: "Failed to fetch posts" });
