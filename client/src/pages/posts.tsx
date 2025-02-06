@@ -1,44 +1,132 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
 import { type Post } from "@shared/schema";
-import { Skeleton } from "@/components/ui/skeleton";
-import PostCard from "@/components/blog/post-card";
+import { useState, useCallback, memo } from "react";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { LikeDislike } from "@/components/blog/like-dislike";
+import CommentSection from "@/components/blog/comment-section";
+import Mist from "@/components/effects/mist";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+
+const PostContent = memo(({ content }: { content: string }) => (
+  <div className="story-content" style={{ whiteSpace: 'pre-wrap' }}>
+    {content.split('\n\n').map((paragraph, index) => (
+      <p key={index} className="mb-6">
+        {paragraph.trim().split('_').map((text, i) => 
+          i % 2 === 0 ? text : <i key={i}>{text}</i>
+        )}
+      </p>
+    ))}
+  </div>
+));
+
+PostContent.displayName = "PostContent";
 
 export default function Posts() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
   });
 
+  const goToPrevious = useCallback(() => {
+    if (!posts?.length) return;
+    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
+  }, [posts?.length]);
+
+  const goToNext = useCallback(() => {
+    if (!posts?.length) return;
+    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+  }, [posts?.length]);
+
+  const randomize = useCallback(() => {
+    if (!posts?.length) return;
+    const newIndex = Math.floor(Math.random() * posts.length);
+    setCurrentIndex(newIndex);
+  }, [posts?.length]);
+
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} className="p-6">
-            <Skeleton className="h-6 w-1/3 mb-4" />
-            <Skeleton className="h-20 w-full" />
-          </Card>
-        ))}
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!posts?.length) {
-    return (
-      <Card className="p-6 text-center">
-        <p className="text-muted-foreground">No posts available.</p>
-      </Card>
-    );
+    return null;
   }
 
+  const currentPost = posts[currentIndex];
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Latest Posts</h1>
-      <div className="grid gap-6">
-        {posts.map((post) => (
-          <div key={post.id}>
-            <PostCard post={post} />
-          </div>
-        ))}
+    <div className="relative min-h-screen">
+      <Mist />
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPost.id}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <article className="prose dark:prose-invert mx-auto">
+              <h2 className="text-3xl font-bold mb-4">{currentPost.title}</h2>
+              <ErrorBoundary>
+                <PostContent content={currentPost.content} />
+              </ErrorBoundary>
+            </article>
+
+            <div className="mt-12 max-w-2xl mx-auto">
+              <LikeDislike 
+                postId={currentPost.id}
+                initialLikes={currentPost.likes || 0}
+                initialDislikes={currentPost.dislikes || 0}
+              />
+            </div>
+
+            <div className="mt-12 max-w-2xl mx-auto">
+              <CommentSection postId={currentPost.id} />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={goToPrevious}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Previous Story</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={randomize}>
+                  <Shuffle className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Random Story</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={goToNext}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Next Story</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div className="text-center text-sm text-muted-foreground mt-4 fixed bottom-2 left-1/2 transform -translate-x-1/2">
+          Story {currentIndex + 1} of {posts.length}
+        </div>
       </div>
     </div>
   );

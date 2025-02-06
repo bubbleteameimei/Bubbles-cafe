@@ -5,16 +5,25 @@ import { useLocation } from "wouter";
 
 interface PostCardProps {
   post: Post;
+  onClick?: () => void;
 }
 
-export default function PostCard({ post }: PostCardProps) {
+export default function PostCard({ post, onClick }: PostCardProps) {
   const [, setLocation] = useLocation();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      setLocation(`/post/${post.slug}`);
+    }
+  };
 
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", damping: 15 }}
-      onClick={() => setLocation(`/post/${post.slug}`)}
+      onClick={handleClick}
       className="cursor-pointer"
     >
       <Card className="h-full hover:bg-accent">

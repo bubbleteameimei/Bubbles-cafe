@@ -24,11 +24,12 @@ export function LikeDislike({ postId, initialLikes = 0, initialDislikes = 0 }: L
       if (!response.ok) throw new Error('Failed to update interaction');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
+    onSuccess: (data: Post) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts", postId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      setInteraction(null); // Reset interaction after successful update
     },
     onError: () => {
-      // Revert the optimistic update
       setInteraction(null);
       toast({
         title: "Error",
