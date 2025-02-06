@@ -6,7 +6,16 @@ import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { SocialButtons } from "@/components/ui/social-buttons";
+import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
+
+// Extract social links from XML content
+const socialLinks = {
+  wordpress: "https://bubbleteameimei.wordpress.com",
+  twitter: "https://twitter.com/Bubbleteameimei",
+  instagram: "https://www.instagram.com/bubbleteameimei"
+};
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -18,25 +27,25 @@ export default function Home() {
   const goToPrevious = useCallback(() => {
     if (!posts?.length) return;
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [posts?.length]);
 
   const goToNext = useCallback(() => {
     if (!posts?.length) return;
     setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [posts?.length]);
 
   const randomize = useCallback(() => {
     if (!posts?.length) return;
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [posts?.length]);
 
-  // Scroll to top when component mounts or updates
+  // Add useEffect to handle initial scroll position and post changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentIndex]);
 
   if (isLoading || !posts || posts.length === 0) {
@@ -46,9 +55,9 @@ export default function Home() {
   const currentPost = posts[currentIndex % posts.length];
 
   return (
-    <div className="relative min-h-screen pb-32">
+    <div className="relative min-h-screen">
       <Mist />
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
@@ -60,13 +69,17 @@ export default function Home() {
           >
             <article className="prose dark:prose-invert mx-auto">
               <h2 className="text-3xl font-bold mb-4">{currentPost.title}</h2>
-              <div 
+              <div className="flex justify-between items-center mb-6">
+                <LikeDislike initialLikes={123} initialDislikes={4} />
+                <SocialButtons links={socialLinks} />
+              </div>
+              <div
                 className="story-content"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
                 {currentPost.content.split('\n\n').map((paragraph, index) => (
                   <p key={index} className="mb-6">
-                    {paragraph.trim().split('_').map((text, i) => 
+                    {paragraph.trim().split('_').map((text, i) =>
                       i % 2 === 0 ? text : <i key={i}>{text}</i>
                     )}
                   </p>
@@ -78,39 +91,44 @@ export default function Home() {
 
         <div className="controls-container">
           <div className="controls-wrapper">
-            <span className="text-sm text-muted-foreground px-3">
-              {currentIndex + 1} / {posts.length}
-            </span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Previous Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
-                    <Shuffle className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Random Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Next Story</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="nav-controls">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Previous Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <span className="page-counter">
+                {currentIndex + 1} / {posts.length}
+              </span>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Random Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Next Story</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
       </div>

@@ -122,13 +122,114 @@
     @apply scale-x-100;
   }
 
-  /* Controls positioning */
+  /* Social Buttons */
+  .social-buttons {
+    @apply flex justify-center items-center gap-4 p-4;
+  }
+
+  .social-button {
+    @apply flex justify-center items-center w-10 h-10 rounded-full 
+           transition-all duration-300 hover:scale-110 hover:shadow-lg;
+  }
+
+  .social-button svg {
+    @apply transition-colors duration-300;
+  }
+
+  .social-button.wordpress {
+    @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
+  }
+
+  .social-button.twitter {
+    @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
+  }
+
+  .social-button.instagram {
+    @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
+  }
+
+  .social-button.github {
+    @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
+  }
+
+  .social-button.linkedin {
+    @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
+  }
+
+  .social-button.facebook {
+    @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
+  }
+
+  /* Like/Dislike Animations */
+  .fireworks {
+    @apply absolute -top-2 -right-2 pointer-events-none;
+  }
+
+  .checked-like-fx,
+  .checked-dislike-fx {
+    @apply w-2 h-2 rounded-full opacity-0;
+    animation: fireworks-bang 0.5s ease-out forwards,
+              fireworks-gravity 0.5s ease-in forwards,
+              fireworks-position 0.5s linear forwards;
+  }
+
+  @keyframes fireworks-bang {
+    to {
+      box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
+      transform: scale(3);
+    }
+  }
+
+  @keyframes fireworks-gravity {
+    to {
+      transform: translateY(100px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes fireworks-position {
+    0% {
+      margin-top: 10%;
+      margin-left: 40%;
+    }
+    50% {
+      margin-top: 20%;
+      margin-left: 60%;
+    }
+    100% {
+      margin-top: 30%;
+      margin-left: 50%;
+    }
+  }
+
+  /* Modified controls positioning */
   .controls-container {
-    @apply fixed bottom-12 left-1/2 transform -translate-x-1/2 z-40;
+    @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40;
+    max-width: min(100% - 2rem, 75ch);
   }
 
   .controls-wrapper {
-    @apply flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg;
+    @apply flex items-center justify-center bg-background/80 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-lg;
+    border: 1px solid hsl(var(--border));
+  }
+
+  .nav-controls {
+    @apply flex items-center gap-4;
+  }
+
+  .page-counter {
+    @apply text-sm text-muted-foreground mx-4 min-w-[3rem] text-center;
+    font-family: 'Crimson Text', serif;
+  }
+
+  /* Ensure footer has proper spacing */
+  footer {
+    @apply mt-16 mb-32;
+  }
+
+  /* Story content container adjustments */
+  .story-container {
+    @apply pb-20; /* Reduced padding to prevent too much space */
   }
 }
 
