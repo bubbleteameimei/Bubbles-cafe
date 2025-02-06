@@ -39,7 +39,12 @@ app.use((req, res, next) => {
 
 (async () => {
   // Seed database with WordPress posts
-  await seedDatabase();
+  try {
+    await seedDatabase();
+  } catch (err) {
+    log(`Error seeding database: ${err}`);
+    // Continue even if seeding fails
+  }
 
   const server = registerRoutes(app);
 
@@ -57,11 +62,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const PORT = process.env.PORT || 5000;
+  const PORT = parseInt(process.env.PORT || '5000', 10);
   server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
+    log(`Server is ready and listening on port ${PORT}`);
+    console.log(`Server is ready and listening on port ${PORT}`); // Additional logging
   }).on('error', (err) => {
     log(`Server error: ${err.message}`);
+    console.error(`Server error: ${err.message}`); // Additional logging
     process.exit(1);
   });
 })();

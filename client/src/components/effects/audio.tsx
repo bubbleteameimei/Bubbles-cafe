@@ -1,4 +1,6 @@
 import { createContext, useContext, useRef, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Volume2, VolumeX } from 'lucide-react';
 
 interface AudioContextType {
   toggleAudio: () => void;
@@ -75,30 +77,8 @@ export const useAudio = () => {
   return context;
 };
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX } from 'lucide-react';
-
 export default function AmbientAudio() {
-  const [audio] = useState(new Audio('/assets/whispering_wind.mp3'));
-  const [playing, setPlaying] = useState(false);
-
-  useEffect(() => {
-    audio.loop = true;
-    audio.volume = 0.2;
-    return () => {
-      audio.pause();
-    };
-  }, [audio]);
-
-  const toggleAudio = () => {
-    if (playing) {
-      audio.pause();
-    } else {
-      audio.play();
-    }
-    setPlaying(!playing);
-  };
+  const { toggleAudio, isPlaying } = useAudio();
 
   return (
     <Button
@@ -106,9 +86,9 @@ export default function AmbientAudio() {
       size="icon"
       onClick={toggleAudio}
       className="fixed bottom-4 right-4 z-50"
-      title={playing ? 'Mute' : 'Play ambient sound'}
+      title={isPlaying ? 'Mute' : 'Play ambient sound'}
     >
-      {playing ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+      {isPlaying ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
     </Button>
   );
 }
