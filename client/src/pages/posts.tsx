@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { type Post } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,9 +35,9 @@ export default function Posts() {
       <h1 className="text-3xl font-bold">Latest Posts</h1>
       <div className="grid gap-6">
         {posts.map((post) => (
-          <Link key={post.id} href={`/post/${post.slug}`}>
+          <div key={post.id}>
             <PostCard post={post} />
-          </Link>
+          </div>
         ))}
       </div>
     </div>

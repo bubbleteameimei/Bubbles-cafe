@@ -6,19 +6,34 @@ import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuList,
   NavigationMenuTrigger,
-  NavigationMenuLink,
+  NavigationMenuContent,
+  //NavigationMenuLink, //removed as per edited code
 } from "@/components/ui/navigation-menu";
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 
-export default function Navigation() {
+const NavLink = memo(({ href, isActive, children }: { 
+  href: string; 
+  isActive: boolean; 
+  children: React.ReactNode;
+}) => (
+  <a
+    href={href}
+    className={`nav-link ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+  >
+    {children}
+  </a>
+));
+
+NavLink.displayName = "NavLink";
+
+const Navigation = () => {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
@@ -27,6 +42,10 @@ export default function Navigation() {
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
+
+  const handleMenuToggle = useCallback(() => {
+    setIsMenuOpen(prev => !prev);
+  }, []);
 
   return (
     <header className="border-b border-border">
@@ -39,61 +58,39 @@ export default function Navigation() {
 
       <nav className="gothic-menu">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    href="/"
-                    className={location === "/" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-                  >
-                    Home
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavLink href="/" isActive={location === "/"}>
+                  Home
+                </NavLink>
+              </NavigationMenuItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    href="/posts"
-                    className={location === "/posts" ? "text-primary" : "text-muted-foreground hover:text-primary"}
-                  >
-                    Posts
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavLink href="/posts" isActive={location === "/posts"}>
+                  Posts
+                </NavLink>
+              </NavigationMenuItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger
-                    onClick={() => setIsOpen(!isOpen)}
-                  >
-                    More
-                  </NavigationMenuTrigger>
-                  {isOpen && (
-                    <NavigationMenuContent>
-                      <div className="min-w-[200px] p-4 space-y-2">
-                        <NavigationMenuLink
-                          href="/secret"
-                          className={`block p-2 hover:bg-accent rounded-md ${location === "/secret" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                        >
-                          Secret Stories
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          href="/about"
-                          className={`block p-2 hover:bg-accent rounded-md ${location === "/about" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                        >
-                          About
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          href="/admin"
-                          className={`block p-2 hover:bg-accent rounded-md ${location === "/admin" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                        >
-                          Admin
-                        </NavigationMenuLink>
-                      </div>
-                    </NavigationMenuContent>
-                  )}
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger onClick={handleMenuToggle}>
+                  More
+                </NavigationMenuTrigger>
+                {isMenuOpen && (
+                  <NavigationMenuContent>
+                    <div className="min-w-[200px] p-4 space-y-3">
+                      <NavLink href="/about" isActive={location === "/about"}>
+                        About
+                      </NavLink>
+                      <NavLink href="/admin" isActive={location === "/admin"}>
+                        Admin
+                      </NavLink>
+                    </div>
+                  </NavigationMenuContent>
+                )}
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -133,4 +130,6 @@ export default function Navigation() {
       </nav>
     </header>
   );
-}
+};
+
+export default memo(Navigation);

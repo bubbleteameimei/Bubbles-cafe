@@ -1,6 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +18,8 @@ export default function AdminPage() {
 
   const loginForm = useForm({
     defaultValues: {
-      email: "",
-      password: "",
+      email: "Vantalison@gmail.com", // Updated default email
+      password: "powerPUFF70",       // Updated default password
     },
   });
 
@@ -122,26 +121,15 @@ export default function AdminPage() {
         >
           <span className="input-span">
             <label htmlFor="email" className="label">Email</label>
-            <input 
-              type="email" 
-              id="email"
-              {...loginForm.register("email")}
-            />
+            <Input type="email" id="email" {...loginForm.register("email")} />
           </span>
           <span className="input-span">
             <label htmlFor="password" className="label">Password</label>
-            <input 
-              type="password" 
-              id="password"
-              {...loginForm.register("password")}
-            />
+            <Input type="password" id="password" {...loginForm.register("password")} />
           </span>
-          <input 
-            className="submit" 
-            type="submit" 
-            value={loginMutation.isPending ? "Logging in..." : "Log in"} 
-            disabled={loginMutation.isPending}
-          />
+          <Button type="submit" disabled={loginMutation.isPending}>
+            {loginMutation.isPending ? "Logging in..." : "Log in"}
+          </Button>
         </form>
       </div>
     );
