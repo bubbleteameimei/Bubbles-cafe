@@ -30,19 +30,19 @@ export function registerRoutes(app: Express): Server {
   // Admin authentication routes
   app.post("/api/admin/login", async (req, res) => {
     const { email, password } = req.body;
-    console.log("Login attempt for email:", email); // Debug log
+    console.log("Login attempt for email:", email);
 
     try {
       const [admin] = await storage.getAdminByEmail(email);
-      console.log("Found admin:", admin ? "yes" : "no"); // Debug log
+      console.log("Found admin:", admin ? "yes" : "no");
 
       if (!admin) {
-        console.log("No admin found with email:", email); // Debug log
+        console.log("No admin found with email:", email);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const isValidPassword = await bcrypt.compare(password, admin.password_hash);
-      console.log("Password valid:", isValidPassword); // Debug log
+      console.log("Password valid:", isValidPassword);
 
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -91,6 +91,23 @@ export function registerRoutes(app: Express): Server {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     res.json(sortedPosts);
+  });
+
+  app.get("/api/posts/secret", async (_req, res) => {
+    const posts = await storage.getSecretPosts();
+    res.json(posts);
+  });
+
+  app.post("/api/posts/secret/:postId/unlock", async (req, res) => {
+    try {
+      const progress = await storage.unlockSecretPost({
+        postId: parseInt(req.params.postId),
+        unlockedBy: req.body.unlockedBy
+      });
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unlock secret post" });
+    }
   });
 
   app.get("/api/posts/:slug", async (req, res) => {

@@ -73,41 +73,43 @@ export default function Posts() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={goToPrevious}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Previous Story</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={randomize}>
-                  <Shuffle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Random Story</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={goToNext}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Next Story</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
-        <div className="text-center text-sm text-muted-foreground mt-4 fixed bottom-2 left-1/2 transform -translate-x-1/2">
-          Story {currentIndex + 1} of {posts.length}
+        {/* Navigation Controls - Now positioned statically at the bottom with proper spacing */}
+        <div className="sticky bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm py-4 mt-8">
+          <div className="flex items-center justify-center gap-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={goToPrevious}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Previous Story</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={randomize}>
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Random Story</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={goToNext}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Next Story</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="text-center text-sm text-muted-foreground mt-2">
+            Story {currentIndex + 1} of {posts.length}
+          </div>
         </div>
       </div>
     </div>

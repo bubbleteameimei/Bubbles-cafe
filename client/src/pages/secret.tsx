@@ -1,27 +1,41 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Secret() {
   const [code, setCode] = useState("");
+  const { toast } = useToast();
   const { data: secretPosts } = useQuery<Post[]>({
-    queryKey: ["/api/secret-posts"],
+    queryKey: ["/api/posts/secret"]
   });
 
-  const handleUnlock = async (postId: number) => {
-    const response = await fetch("/api/unlock-secret", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, code }),
-    });
-
-    if (response.ok) {
-      window.location.href = `/post/${secretPosts?.find(p => p.id === postId)?.slug}`;
+  const unlockMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await apiRequest("POST", `/api/posts/secret/${postId}/unlock`, {
+        unlockedBy: code
+      });
+      return response.json();
+    },
+    onSuccess: (_, postId) => {
+      const post = secretPosts?.find(p => p.id === postId);
+      if (post) {
+        window.location.href = `/post/${post.slug}`;
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/secret"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unlock the secret post. Please check your code.",
+        variant: "destructive"
+      });
     }
-  };
+  });
 
   return (
     <div className="space-y-6">
@@ -33,8 +47,11 @@ export default function Secret() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
         />
-        <Button onClick={() => secretPosts?.[0] && handleUnlock(secretPosts[0].id)}>
-          Unlock
+        <Button 
+          onClick={() => secretPosts?.[0] && unlockMutation.mutate(secretPosts[0].id)}
+          disabled={unlockMutation.isPending || !code}
+        >
+          {unlockMutation.isPending ? "Unlocking..." : "Unlock"}
         </Button>
       </div>
       <div className="grid gap-6">
@@ -48,6 +65,9 @@ export default function Secret() {
             </CardContent>
           </Card>
         ))}
+        {secretPosts?.length === 0 && (
+          <p className="text-center text-muted-foreground">No secret posts found.</p>
+        )}
       </div>
     </div>
   );

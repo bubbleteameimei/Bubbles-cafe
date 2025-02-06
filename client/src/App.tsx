@@ -33,10 +33,10 @@ function App() {
   return (
     <AudioProvider>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
+        <div className="flex flex-col min-h-screen bg-background text-foreground">
           {isLoading && <LoadingScreen />}
           <Navigation />
-          <main className="container mx-auto px-4 py-8 flex-grow">
+          <main className="flex-1 container mx-auto px-4 py-8 mb-16">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
               <Switch>
                 <Route path="/" component={Home} />
