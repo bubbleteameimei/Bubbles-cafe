@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -8,10 +9,8 @@ export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if user has already made a choice
     const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!hasConsent) {
-      // Only show if no choice has been made before
       setIsVisible(true);
     }
   }, []);
@@ -33,21 +32,41 @@ export function CookieConsent() {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
       className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm"
     >
       <div className="max-w-[300px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
-        <div className="flex justify-center">
-          <svg 
-            className="w-[50px] h-[50px] text-muted-foreground transition-colors duration-200 group-hover:text-primary" 
-            viewBox="0 0 122.88 122.25"
-          >
-            <path 
-              d="M101.77,49.38c2.09,3.1,4.37,5.11,6.86,5.78c2.45,0.66,5.32,0.06,8.7-2.01c1.36-0.84,3.14-0.41,3.97,0.95c0.28,0.46,0.42,0.96,0.43,1.47c0.13,1.4,0.21,2.82,0.24,4.26c0.03,1.46,0.02,2.91-0.05,4.35h0v0c0,0.13-0.01,0.26-0.03,0.38c-0.91,16.72-8.47,31.51-20,41.93c-11.55,10.44-27.06,16.49-43.82,15.69v0.01h0c-0.13,0-0.26-0.01-0.38-0.03c-16.72-0.91-31.51-8.47-41.93-20C5.31,90.61-0.73,75.1,0.07,58.34H0.07v0c0-0.13,0.01-0.26,0.03-0.38C1,41.22,8.81,26.35,20.57,15.87C32.34,5.37,48.09-0.73,64.85,0.07V0.07h0c1.6,0,2.89,1.29,2.89,2.89c0,0.4-0.08,0.78-0.23,1.12c-1.17,3.81-1.25,7.34-0.27,10.14c0.89,2.54,2.7,4.51,5.41,5.52c1.44,0.54,2.2,2.1,1.74,3.55l0.01,0c-1.83,5.89-1.87,11.08-0.52,15.26c0.82,2.53,2.14,4.69,3.88,6.4c1.74,1.72,3.9,3,6.39,3.78c4.04,1.26,8.94,1.18,14.31-0.55C99.73,47.78,101.08,48.3,101.77,49.38L101.77,49.38z" 
-              className="fill-current"
-            />
-          </svg>
-        </div>
+        <motion.div 
+          className="flex justify-center"
+          initial={{ rotate: -10 }}
+          animate={{ rotate: 10 }}
+          transition={{ 
+            duration: 2,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut"
+          }}
+        >
+          <div className="relative w-[80px] h-[80px] bg-[#d4a064] rounded-full border-4 border-[#8b5e34] overflow-hidden">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-3 h-3 bg-[#3a1f0f] rounded-full"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ 
+                  delay: i * 0.05,
+                  duration: 0.2,
+                  ease: "easeOut"
+                }}
+                style={{
+                  top: `${Math.random() * 80}%`,
+                  left: `${Math.random() * 80}%`,
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
 
         <div className="text-center space-y-2">
           <h2 className="text-xl font-bold text-foreground">We use cookies</h2>
@@ -64,7 +83,7 @@ export function CookieConsent() {
               "transition-all duration-200 hover:opacity-90 hover:scale-105"
             )}
           >
-            Allow
+            Accept
           </button>
           <button
             onClick={handleDecline}
