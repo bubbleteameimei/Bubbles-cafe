@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { insertPostSchema, type Post, type InsertPost } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Pencil, Trash2, LogOut } from "lucide-react";
@@ -17,6 +17,21 @@ export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/posts");
+        if (response.status === 401) {
+          setLocation("/admin/login");
+        }
+      } catch (error) {
+        setLocation("/admin/login");
+      }
+    };
+    checkAuth();
+  }, [setLocation]);
 
   const postForm = useForm<InsertPost>({
     resolver: zodResolver(insertPostSchema.omit({ slug: true })),
@@ -31,6 +46,10 @@ export default function AdminPage() {
 
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
+    retry: false,
+    onError: () => {
+      setLocation("/admin/login");
+    }
   });
 
   const createPostMutation = useMutation({

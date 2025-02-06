@@ -27,14 +27,6 @@
     --input: 27 33% 25%;
     --ring: 43 47% 65%;
     --radius: 0.75rem;
-
-    /* Increased font size variables for fluid typography */
-    --font-size-base: clamp(1.125rem, 1.75vw, 1.25rem);
-    --font-size-lg: clamp(1.25rem, 2.25vw, 1.375rem);
-    --font-size-xl: clamp(1.375rem, 2.75vw, 1.625rem);
-    --font-size-2xl: clamp(1.625rem, 3.25vw, 2rem);
-    --font-size-3xl: clamp(2rem, 3.75vw, 2.375rem);
-    --font-size-4xl: clamp(2.375rem, 4.25vw, 3.25rem);
   }
 
   .light {
@@ -87,13 +79,6 @@
     @apply font-bold tracking-tight;
   }
 
-  h1 { font-size: var(--font-size-4xl); }
-  h2 { font-size: var(--font-size-3xl); }
-  h3 { font-size: var(--font-size-2xl); }
-  h4 { font-size: var(--font-size-xl); }
-  h5 { font-size: var(--font-size-lg); }
-  h6 { font-size: var(--font-size-base); }
-
   .prose {
     @apply text-foreground;
     font-size: 20px;
@@ -120,131 +105,9 @@
   .light .story-content {
     @apply prose;
   }
-}
-
-@layer components {
-  .stained-glass-header {
-    background-image: url('/assets/stained-glass.jpg');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .stained-glass-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-  }
 
   .gothic-menu {
     @apply border-2 border-primary bg-background/95 backdrop-blur-md;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .loading-skull {
-    @apply w-16 h-16 mx-auto mb-4;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 0.3; transform: scale(0.95); }
-    50% { opacity: 1; transform: scale(1.05); }
-    100% { opacity: 0.3; transform: scale(0.95); }
-  }
-
-  .nav-link {
-    @apply relative transition-colors duration-200;
-  }
-
-  .nav-link::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-200;
-  }
-
-  .nav-link:hover::after {
-    @apply w-full;
-  }
-
-  /* Admin Login Form Styles */
-  .form {
-    --bg-light: #efefef;
-    --bg-dark: #707070;
-    --clr: #58bc82;
-    --clr-alpha: #9c9c9c60;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    width: 100%;
-    max-width: 300px;
-  }
-
-  .form .input-span {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form input[type="email"],
-  .form input[type="password"] {
-    border-radius: 0.5rem;
-    padding: 1rem 0.75rem;
-    width: 100%;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: var(--clr-alpha);
-    outline: 2px solid var(--bg-dark);
-  }
-
-  .form input[type="email"]:focus,
-  .form input[type="password"]:focus {
-    outline: 2px solid var(--clr);
-  }
-
-  .form .label {
-    align-self: flex-start;
-    color: var(--clr);
-    font-weight: 600;
-  }
-
-  .form .submit {
-    padding: 1rem 0.75rem;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 3rem;
-    background-color: var(--bg-dark);
-    color: var(--bg-light);
-    border: none;
-    cursor: pointer;
-    transition: all 300ms;
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-
-  .form .submit:hover {
-    background-color: var(--clr);
-    color: var(--bg-dark);
-  }
-
-  .form .submit:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .form .span {
-    text-decoration: none;
-    color: var(--bg-dark);
-  }
-
-  .form .span a {
-    color: var(--clr);
   }
 }

@@ -10,7 +10,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   NavigationMenuContent,
-  //NavigationMenuLink, //removed as per edited code
 } from "@/components/ui/navigation-menu";
 import { useState, useCallback, memo } from "react";
 
@@ -49,10 +48,10 @@ const Navigation = () => {
 
   return (
     <header className="border-b border-border">
-      <div className="stained-glass-header h-48 flex items-center justify-center">
+      <div className="relative h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">Bubble's Cafe</h1>
-          <p className="text-lg md:text-xl text-gray-200">Thoughts and emotions made into art</p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-2">Bubble's Cafe</h1>
+          <p className="text-lg md:text-xl text-muted-foreground">Thoughts and emotions made into art</p>
         </div>
       </div>
 
@@ -82,7 +81,7 @@ const Navigation = () => {
                       <NavLink href="/about" isActive={location === "/about"}>
                         About
                       </NavLink>
-                      <NavLink href="/admin" isActive={location === "/admin"}>
+                      <NavLink href="/admin/login" isActive={location === "/admin"}>
                         Admin
                       </NavLink>
                     </div>

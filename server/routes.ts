@@ -57,7 +57,7 @@ export function registerRoutes(app: Express): Server {
           });
         }
 
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
       const isValidPassword = await bcrypt.compare(password, admin.password_hash);
@@ -72,7 +72,7 @@ export function registerRoutes(app: Express): Server {
           });
         }
 
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
       // Reset login attempts on successful login
