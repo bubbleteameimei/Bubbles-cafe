@@ -10,7 +10,7 @@ import Footer from "./components/layout/footer";
 import Sidebar from "./components/blog/sidebar";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
-import Posts from "./pages/posts";
+import Stories from "./pages/stories";  // Changed from Posts to Stories
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import Admin from "./pages/admin";
@@ -41,7 +41,7 @@ function App() {
 
     // Listen for location changes
     handleRouteChange();
-  }, [location]); // Depend on location changes instead of popstate
+  }, [location]);
 
   return (
     <AudioProvider>
@@ -53,7 +53,7 @@ function App() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
               <Switch>
                 <Route path="/" component={Home} />
-                <Route path="/posts" component={Posts} />
+                <Route path="/stories" component={Stories} />  {/* Changed from /posts to /stories */}
                 <Route path="/secret" component={Secret} />
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/about" component={About} />
