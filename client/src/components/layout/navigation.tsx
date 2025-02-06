@@ -5,13 +5,6 @@ import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
-} from "@/components/ui/navigation-menu";
-import {
   Sheet,
   SheetContent,
   SheetTrigger,
@@ -33,13 +26,17 @@ const NavLink = memo(({ href, isActive, children, onClick }: {
     } else {
       setLocation(href);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [href, onClick, setLocation]);
 
   return (
     <a
       href={href}
       onClick={handleClick}
-      className={`nav-link ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"} cursor-pointer transition-colors duration-200`}
+      className={`
+        nav-link relative px-3 py-2 text-base transition-colors duration-300
+        ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}
+      `}
     >
       {children}
     </a>
@@ -63,24 +60,30 @@ const Navigation = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
+  const handleNavClick = useCallback((href: string) => {
+    setLocation(href);
+    setIsOpen(false); // Close mobile menu when a link is clicked
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setLocation]);
+
   const NavigationContent = () => (
     <>
-      <NavLink href="/" isActive={location === "/"}>
+      <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
         Home
       </NavLink>
-      <NavLink href="/posts" isActive={location === "/posts"}>
+      <NavLink href="/posts" isActive={location === "/posts"} onClick={() => handleNavClick("/posts")}>
         Posts
       </NavLink>
-      <NavLink href="/about" isActive={location === "/about"}>
+      <NavLink href="/about" isActive={location === "/about"} onClick={() => handleNavClick("/about")}>
         About
       </NavLink>
-      <NavLink href="/secret" isActive={location === "/secret"}>
+      <NavLink href="/secret" isActive={location === "/secret"} onClick={() => handleNavClick("/secret")}>
         Secret Stories
       </NavLink>
       <NavLink 
         href="/admin/login" 
         isActive={location.startsWith("/admin")}
-        onClick={() => setLocation("/admin/login")}
+        onClick={() => handleNavClick("/admin/login")}
       >
         Admin
       </NavLink>
@@ -88,7 +91,7 @@ const Navigation = () => {
   );
 
   return (
-    <header className="border-b border-border">
+    <header className="bg-background">
       <div className="relative h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold mb-2">Bubble's Cafe</h1>
@@ -97,16 +100,16 @@ const Navigation = () => {
       </div>
 
       <nav className="gothic-menu sticky top-0 z-50">
-        <div className="container mx-auto h-16 flex items-center justify-between">
+        <div className="container mx-auto h-16 flex items-center justify-between px-4">
           {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[80vw] pt-12">
+              <SheetContent side="left" className="w-[80vw] pt-16">
                 <nav className="flex flex-col space-y-4">
                   <NavigationContent />
                 </nav>
@@ -115,7 +118,7 @@ const Navigation = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-2">
             <NavigationContent />
           </div>
 
@@ -127,13 +130,13 @@ const Navigation = () => {
                 size="icon"
                 onClick={toggleAudio}
                 disabled={!audioReady}
-                className="relative"
+                className="relative group hover:bg-primary/10"
                 title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
               >
                 {isPlaying ? (
-                  <Volume2 className="h-5 w-5" />
+                  <Volume2 className="h-5 w-5 transition-transform group-hover:scale-110" />
                 ) : (
-                  <VolumeX className="h-5 w-5" />
+                  <VolumeX className="h-5 w-5 transition-transform group-hover:scale-110" />
                 )}
               </Button>
               <div className="w-24 hidden md:block">
@@ -150,9 +153,13 @@ const Navigation = () => {
               variant="ghost"
               size="icon"
               onClick={handleThemeToggle}
-              className="transition-transform hover:rotate-12"
+              className="transition-transform duration-300 hover:bg-primary/10 hover:scale-105 active:scale-95"
             >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5 transform transition-transform duration-300 rotate-0" />
+              ) : (
+                <Moon className="h-5 w-5 transform transition-transform duration-300 rotate-0" />
+              )}
             </Button>
           </div>
         </div>

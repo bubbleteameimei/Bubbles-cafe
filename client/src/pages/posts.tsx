@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,18 +33,26 @@ export default function Posts() {
   const goToPrevious = useCallback(() => {
     if (!posts?.length) return;
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [posts?.length]);
 
   const goToNext = useCallback(() => {
     if (!posts?.length) return;
     setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [posts?.length]);
 
   const randomize = useCallback(() => {
     if (!posts?.length) return;
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [posts?.length]);
+
+  // Scroll to top when component mounts or updates
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentIndex]);
 
   if (isLoading || !posts?.length) {
     return <LoadingScreen />;
@@ -53,9 +61,9 @@ export default function Posts() {
   const currentPost = posts[currentIndex];
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen pb-32">
       <Mist />
-      <div className="max-w-3xl mx-auto px-4 py-8 pb-32">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
@@ -73,15 +81,15 @@ export default function Posts() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2">
-          <div className="flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm p-4 rounded-full shadow-lg">
+        <div className="controls-container">
+          <div className="controls-wrapper">
             <span className="text-sm text-muted-foreground px-3">
               {currentIndex + 1} / {posts.length}
             </span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToPrevious}>
+                  <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -91,7 +99,7 @@ export default function Posts() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={randomize}>
+                  <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
                     <Shuffle className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -101,7 +109,7 @@ export default function Posts() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={goToNext}>
+                  <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
