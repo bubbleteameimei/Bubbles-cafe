@@ -6,15 +6,38 @@ const COOKIE_CONSENT_KEY = 'cookieConsent';
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if user has already made a choice
     const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!hasConsent) {
-      // Only show if no choice has been made before
       setIsVisible(true);
     }
-  }, []);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isVisible) {
+        handleDecline();
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusableElements = dialogRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isVisible]);
 
   const handleAccept = () => {
     localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
@@ -42,6 +65,7 @@ export function CookieConsent() {
       role="dialog"
       aria-labelledby="cookie-consent-title"
       tabIndex={-1}
+      ref={dialogRef}
     >
       <div className="max-w-[300px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
         <div className="flex justify-center relative">
