@@ -9,7 +9,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useState, useCallback, memo } from "react";
+import { useCallback, useState, memo, useMemo } from "react";
 
 const NavLink = memo(({ href, isActive, children, onClick }: { 
   href: string; 
@@ -52,21 +52,39 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [, setLocation] = useLocation();
 
+  // Memoized handlers
   const handleVolumeChange = useCallback((value: number[]) => {
     setVolume(value[0] / 100);
   }, [setVolume]);
 
-  const handleThemeToggle = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
+  const handleThemeToggle = useMemo(() => {
+    let lastClick = 0;
+    return () => {
+      const now = Date.now();
+      if (now - lastClick < 300) return; // Debounce 300ms
+      lastClick = now;
+      setTheme(theme === "dark" ? "light" : "dark");
+    };
   }, [theme, setTheme]);
+
+  const handleAudioToggle = useMemo(() => {
+    let lastClick = 0;
+    return () => {
+      const now = Date.now();
+      if (now - lastClick < 300) return; // Debounce 300ms
+      lastClick = now;
+      toggleAudio();
+    };
+  }, [toggleAudio]);
 
   const handleNavClick = useCallback((href: string) => {
     setLocation(href);
-    setIsOpen(false); // Close mobile menu when a link is clicked
+    setIsOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setLocation]);
 
-  const NavigationContent = () => (
+  // Memoize NavigationContent
+  const NavigationContent = useMemo(() => (
     <>
       <NavLink href="/" isActive={location === "/"} onClick={() => handleNavClick("/")}>
         Home
@@ -88,7 +106,7 @@ const Navigation = () => {
         Admin
       </NavLink>
     </>
-  );
+  ), [location, handleNavClick]);
 
   return (
     <header className="bg-background">
@@ -111,7 +129,7 @@ const Navigation = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-[80vw] pt-16">
                 <nav className="flex flex-col space-y-4">
-                  <NavigationContent />
+                  {NavigationContent}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -119,7 +137,7 @@ const Navigation = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-2">
-            <NavigationContent />
+            {NavigationContent}
           </div>
 
           {/* Controls - Always Visible */}
@@ -128,7 +146,7 @@ const Navigation = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={toggleAudio}
+                onClick={handleAudioToggle}
                 disabled={!audioReady}
                 className="relative group hover:bg-primary/10"
                 title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}

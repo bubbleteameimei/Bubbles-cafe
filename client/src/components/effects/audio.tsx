@@ -1,4 +1,5 @@
-import { createContext, useContext, useRef, useEffect, useState } from 'react';
+import { createContext, useContext, useRef, useEffect, useState, useCallback } from 'react';
+
 interface AudioContextType {
   toggleAudio: () => void;
   isPlaying: boolean;
@@ -16,15 +17,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [audioReady, setAudioReady] = useState(false);
 
   useEffect(() => {
-    audioRef.current = new Audio('/assets/whispering_wind.mp3');
-    audioRef.current.loop = true;
-    audioRef.current.volume = volume;
-    setAudioReady(true);
+    const audio = new Audio('/assets/whispering_wind.mp3');
+    audio.loop = true;
+    audio.volume = volume;
+
+    // Set up event listeners for better state management
+    audio.addEventListener('canplaythrough', () => setAudioReady(true));
+    audio.addEventListener('ended', () => setIsPlaying(false));
+    audio.addEventListener('error', () => {
+      console.error("Audio loading error");
+      setAudioReady(false);
+      setIsPlaying(false);
+    });
+
+    audioRef.current = audio;
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      audio.pause();
+      audio.removeEventListener('canplaythrough', () => setAudioReady(true));
+      audio.removeEventListener('ended', () => setIsPlaying(false));
+      audio.removeEventListener('error', () => {
+        setAudioReady(false);
+        setIsPlaying(false);
+      });
     };
   }, []);
 
@@ -34,33 +49,43 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume]);
 
-  const toggleAudio = async () => {
-    if (!audioReady || !audioRef.current) {
-      console.log('Audio system not ready');
-      return;
-    }
+  const toggleAudio = useCallback(() => {
+    if (!audioReady || !audioRef.current) return;
 
     try {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        // Create a promise for play() to handle autoplay restrictions properly
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(error => {
+              console.error("Playback failed:", error);
+              setIsPlaying(false);
+            });
+        }
       }
       setIsPlaying(!isPlaying);
     } catch (err) {
       console.error("Toggle audio error:", err);
       setIsPlaying(false);
     }
+  }, [isPlaying, audioReady]);
+
+  const memoizedValue = {
+    toggleAudio,
+    isPlaying,
+    volume,
+    setVolume,
+    audioReady
   };
 
   return (
-    <AudioContext.Provider value={{ 
-      toggleAudio, 
-      isPlaying, 
-      volume, 
-      setVolume, 
-      audioReady 
-    }}>
+    <AudioContext.Provider value={memoizedValue}>
       {children}
     </AudioContext.Provider>
   );
