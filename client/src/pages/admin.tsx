@@ -23,7 +23,7 @@ export default function AdminPage() {
     const checkAuth = async () => {
       try {
         const response = await apiRequest("GET", "/api/posts");
-        if (response.status === 401) {
+        if (!response.ok) {
           setLocation("/admin/login");
         }
       } catch (error) {
@@ -48,8 +48,8 @@ export default function AdminPage() {
 
   const { data: posts = [], isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const createPostMutation = useMutation({
@@ -64,6 +64,12 @@ export default function AdminPage() {
         editingPost ? `/api/posts/${editingPost.id}` : "/api/posts",
         { ...data, slug }
       );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to save post");
+      }
+
       return response.json();
     },
     onSuccess: () => {

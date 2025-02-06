@@ -55,7 +55,7 @@ export function registerRoutes(app: Express): Server {
         req.session.loginAttempts = (req.session.loginAttempts || 0) + 1;
 
         if (req.session.loginAttempts >= 5) {
-          req.session.lockUntil = Date.now() + 15 * 60 * 1000;
+          req.session.lockUntil = Date.now() + 15 * 60 * 1000; // 15 minutes
           return res.status(429).json({ 
             message: "Too many failed attempts. Account locked for 15 minutes." 
           });
@@ -83,19 +83,23 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.post("/api/admin/logout", (req, res) => {
+    if (!req.session) {
+      return res.status(401).json({ message: "No active session" });
+    }
+
     req.session.destroy((err) => {
       if (err) {
+        console.error("Logout error:", err);
         return res.status(500).json({ message: "Error during logout" });
       }
       res.json({ message: "Logged out successfully" });
     });
   });
 
-  // Protected admin routes - placing PATCH endpoint first for proper handling
+  // Protected admin routes
   app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
-      console.log("Updating post:", postId, req.body);
       const updatedPost = await storage.updatePost(postId, req.body);
       res.json(updatedPost);
     } catch (error) {

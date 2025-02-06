@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "./lib/queryClient";
 import { AudioProvider } from "@/components/effects/audio";
+import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
@@ -45,35 +46,37 @@ function App() {
   }, [location]);
 
   return (
-    <AudioProvider>
-      <QueryClientProvider client={queryClient}>
-        <div className="flex flex-col min-h-screen bg-background text-foreground">
-          {isLoading && <LoadingScreen />}
-          <Navigation />
-          <main className="flex-1 container mx-auto px-4 py-8 mb-16">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-              <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/stories" component={Stories} />
-                <Route path="/schoop" component={Schoop} />
-                <Route path="/secret" component={Secret} />
-                <Route path="/privacy" component={Privacy} />
-                <Route path="/about" component={About} />
-                <Route path="/admin" component={Admin} />
-                <Route path="/admin/login" component={AdminLogin} />
-                <Route component={NotFound} />
-              </Switch>
-              <aside className="hidden lg:block">
-                <Sidebar />
-              </aside>
-            </div>
-          </main>
-          <Footer />
-          <CookieConsent />
-          <Toaster />
-        </div>
-      </QueryClientProvider>
-    </AudioProvider>
+    <AuthProvider>
+      <AudioProvider>
+        <QueryClientProvider client={queryClient}>
+          <div className="flex flex-col min-h-screen bg-background text-foreground">
+            {isLoading && <LoadingScreen />}
+            <Navigation />
+            <main className="flex-1 container mx-auto px-4 py-8 mb-16">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
+                <Switch>
+                  <Route path="/" component={Home} />
+                  <Route path="/stories" component={Stories} />
+                  <Route path="/schoop" component={Schoop} />
+                  <Route path="/secret" component={Secret} />
+                  <Route path="/privacy" component={Privacy} />
+                  <Route path="/about" component={About} />
+                  <Route path="/admin" component={Admin} />
+                  <Route path="/admin/login" component={AdminLogin} />
+                  <Route component={NotFound} />
+                </Switch>
+                <aside className="hidden lg:block">
+                  <Sidebar />
+                </aside>
+              </div>
+            </main>
+            <Footer />
+            <CookieConsent />
+            <Toaster />
+          </div>
+        </QueryClientProvider>
+      </AudioProvider>
+    </AuthProvider>
   );
 }
 

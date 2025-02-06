@@ -29,7 +29,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setAudioReady(true);
       toast({
         title: "Audio Ready",
-        description: "Background music is now available.",
+        description: "Background music available",
+        duration: 800, // Reduced to 800ms
       });
     };
 
@@ -39,14 +40,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(false);
       toast({
         title: "Audio Error",
-        description: "Failed to load audio. Please try again.",
+        description: "Failed to load audio",
         variant: "destructive",
+        duration: 800, // Reduced to 800ms
       });
     };
 
     audio.addEventListener('canplaythrough', handleCanPlay);
     audio.addEventListener('error', handleError as EventListener);
-    audio.load(); // Explicitly load the audio
+    audio.load();
 
     return () => {
       audio.pause();
@@ -54,15 +56,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('error', handleError as EventListener);
       audioRef.current = null;
     };
-  }, []); // Only run once on mount
+  }, []);
 
   // Handle volume changes
   useEffect(() => {
     if (audioRef.current) {
       const constrainedVolume = Math.max(0, Math.min(1, volume));
       audioRef.current.volume = constrainedVolume;
-
-      // Save volume preference
       localStorage.setItem('audioVolume', constrainedVolume.toString());
     }
   }, [volume]);
@@ -80,8 +80,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (!audio || !audioReady) {
       toast({
         title: "Audio Not Ready",
-        description: "Please wait for audio to load.",
+        description: "Please wait",
         variant: "destructive",
+        duration: 800, // Reduced to 800ms
       });
       return;
     }
@@ -91,7 +92,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(false);
       toast({
         title: "Audio Paused",
-        description: "Background music has been paused.",
+        duration: 800, // Reduced to 800ms
       });
     } else {
       const playPromise = audio.play();
@@ -101,7 +102,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setIsPlaying(true);
             toast({
               title: "Audio Playing",
-              description: "Background music has started.",
+              duration: 800, // Reduced to 800ms
             });
           })
           .catch((error) => {
@@ -109,8 +110,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             setIsPlaying(false);
             toast({
               title: "Audio Error",
-              description: "Failed to play audio. Please try again.",
+              description: "Failed to play",
               variant: "destructive",
+              duration: 800, // Reduced to 800ms
             });
           });
       }
@@ -118,7 +120,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [audioReady, isPlaying, toast]);
 
   const setVolumeWithConstraints = useCallback((newVolume: number) => {
-    // Ensure volume stays within 0-1 range
     const constrainedVolume = Math.max(0, Math.min(1, newVolume));
     setVolume(constrainedVolume);
   }, []);
