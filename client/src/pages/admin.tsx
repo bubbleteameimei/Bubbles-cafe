@@ -30,6 +30,16 @@ export default function AdminPage() {
             variant: "destructive",
           });
           setLocation("/admin/login");
+          return;
+        }
+        const data = await response.json();
+        if (!data.isAdmin) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges",
+            variant: "destructive",
+          });
+          setLocation("/admin/login");
         }
       } catch (error) {
         toast({
@@ -194,11 +204,11 @@ export default function AdminPage() {
               <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                 <div className="space-y-4">
                   {posts?.map((post: Post) => (
-                    <div 
+                    <div
                       key={post.id}
                       className={`p-4 border rounded-lg transition-colors ${
-                        editingPost?.id === post.id 
-                          ? "bg-primary/5 border-primary" 
+                        editingPost?.id === post.id
+                          ? "bg-primary/5 border-primary"
                           : "hover:bg-accent/5"
                       }`}
                     >

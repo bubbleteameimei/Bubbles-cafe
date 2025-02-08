@@ -35,7 +35,14 @@ export default function AdminLoginPage() {
         }
         throw new Error(error.message || "Invalid email or password");
       }
-      return response.json();
+      await response.json(); // Make sure to consume the response
+
+      // Verify the session is active
+      const verifyResponse = await apiRequest("GET", "/api/admin/user");
+      if (!verifyResponse.ok) {
+        throw new Error("Failed to verify login session");
+      }
+      return await verifyResponse.json();
     },
     onSuccess: () => {
       toast({

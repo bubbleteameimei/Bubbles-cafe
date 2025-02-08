@@ -121,23 +121,15 @@ export function registerRoutes(app: Express): Server {
       req.session.lockUntil = undefined;
       req.session.isAdmin = true;
 
-      // Touch the session to ensure it's saved
-      req.session.touch();
-
       // Save session explicitly
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            reject(err);
-          } else {
-            console.log("Admin session saved successfully");
-            resolve();
-          }
-        });
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Error during login" });
+        }
+        console.log("Admin session saved successfully");
+        res.json({ message: "Logged in successfully" });
       });
-
-      res.json({ message: "Logged in successfully" });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error during login" });
