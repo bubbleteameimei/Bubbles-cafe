@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Shuffle, ListFilter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 
@@ -16,10 +16,10 @@ export default function Reader() {
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
 
-  // Remove the saved index after using it
+  // Keep track of the current index in session storage
   useEffect(() => {
-    sessionStorage.removeItem('selectedStoryIndex');
-  }, []);
+    sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+  }, [currentIndex]);
 
   const [, setLocation] = useLocation();
 
@@ -75,8 +75,7 @@ export default function Reader() {
     return <div className="text-center p-8">Error loading current story.</div>;
   }
 
-  const timeAgo = formatDistanceToNow(parseISO(currentPost.createdAt), { addSuffix: true });
-  const formattedDate = format(parseISO(currentPost.createdAt), 'MMMM d, yyyy');
+  const formattedDate = format(currentPost.createdAt, 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
 
   return (
@@ -98,7 +97,7 @@ export default function Reader() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setLocation('/stories')}
+                  onClick={() => setLocation('/index')}
                   className="hover:bg-primary/10"
                 >
                   <ListFilter className="h-4 w-4" />
@@ -106,8 +105,6 @@ export default function Reader() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
                 <time>{formattedDate}</time>
-                <span className="text-primary/50">•</span>
-                <span>{timeAgo}</span>
                 <span className="text-primary/50">•</span>
                 <span>{readingTime}</span>
               </div>

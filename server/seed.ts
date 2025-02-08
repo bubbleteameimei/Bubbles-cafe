@@ -87,13 +87,11 @@ async function parseWordPressXML() {
             ? cleanContent(item["excerpt:encoded"]).split('\n')[0]
             : cleanedContent.split('\n')[0];
 
-          // Generate unique slug
           let baseSlug = item["wp:post_name"] || item.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
-          // Ensure slug uniqueness
           let finalSlug = baseSlug;
           let counter = 1;
           while (existingSlugs.has(finalSlug)) {
@@ -102,26 +100,23 @@ async function parseWordPressXML() {
           }
           existingSlugs.add(finalSlug);
 
-          // Parse and validate the publication date
-          let pubDate = new Date(item.pubDate);
-          if (isNaN(pubDate.getTime())) {
-            console.warn(`Invalid publication date for post "${item.title}": ${item.pubDate}, using current date`);
-            pubDate = new Date();
-          }
+          // Parse the publication date properly
+          const pubDateStr = item.pubDate;
+          const pubDate = new Date(pubDateStr);
 
-          // Create the post with validated date
-          const result = await storage.createPost({
+          // Create the post with the correct date format
+          await db.insert(posts).values({
             title: item.title,
             content: cleanedContent,
             excerpt: excerpt,
             slug: finalSlug,
             isSecret: false,
             authorId: admin.id,
-            createdAt: pubDate.toISOString()
+            createdAt: pubDate
           });
 
           createdCount++;
-          console.log(`Created post: "${item.title}" with date: ${result.createdAt}`);
+          console.log(`Created post: "${item.title}" with date: ${pubDateStr}`);
         } catch (error) {
           console.error(`Error creating post "${item.title}":`, error);
         }

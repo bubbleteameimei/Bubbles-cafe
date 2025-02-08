@@ -3,7 +3,7 @@ import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format, parseISO } from "date-fns";
+import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Clock, Calendar } from "lucide-react";
@@ -17,10 +17,8 @@ export default function IndexView() {
     staleTime: 5 * 60 * 1000
   });
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (date: Date) => {
     try {
-      if (!dateString) return '';
-      const date = parseISO(dateString);
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -58,6 +56,15 @@ export default function IndexView() {
     return trimmed.length > maxLength 
       ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
       : trimmed;
+  };
+
+  const navigateToStory = (postId: number) => {
+    if (!posts) return;
+    const index = posts.findIndex(p => p.id === postId);
+    if (index !== -1) {
+      sessionStorage.setItem('selectedStoryIndex', index.toString());
+      setLocation('/reader');
+    }
   };
 
   if (isLoading) {
@@ -105,11 +112,7 @@ export default function IndexView() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  onClick={() => {
-                    const readerIndex = posts.findIndex(p => p.id === post.id);
-                    setLocation('/reader');
-                    sessionStorage.setItem('selectedStoryIndex', readerIndex.toString());
-                  }}
+                  onClick={() => navigateToStory(post.id)}
                   className="cursor-pointer group"
                 >
                   <Card className="h-full hover:shadow-xl transition-all duration-300 bg-background/70 backdrop-blur-sm border-border/50 hover:bg-background/90">

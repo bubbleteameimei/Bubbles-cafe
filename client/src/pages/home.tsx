@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -25,10 +25,17 @@ export default function Home() {
     return <div className="text-center p-8">Error loading latest story.</div>;
   }
 
-  const formatDate = (dateString: string | Date) => {
+  const navigateToStory = (postId: number) => {
+    if (!posts) return;
+    const index = posts.findIndex(p => p.id === postId);
+    if (index !== -1) {
+      sessionStorage.setItem('selectedStoryIndex', index.toString());
+      setLocation('/reader');
+    }
+  };
+
+  const formatDate = (date: Date) => {
     try {
-      if (!dateString) return '';
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -57,7 +64,7 @@ export default function Home() {
           <div className="grid gap-6 sm:grid-cols-2 w-full max-w-lg">
             <Button
               size="lg"
-              onClick={() => setLocation('/stories')}
+              onClick={() => setLocation('/index')}
               className="text-lg h-14"
             >
               Browse Stories
@@ -84,7 +91,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide font-mono">Latest Story</p>
               <h2 
                 className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                onClick={() => setLocation(`/stories/${posts[0].slug}`)}
+                onClick={() => navigateToStory(posts[0].id)}
               >
                 {posts[0].title}
               </h2>
@@ -92,7 +99,7 @@ export default function Home() {
                 {posts[0].excerpt}
               </p>
               <div className="text-sm text-muted-foreground font-mono">
-                {posts[0].createdAt ? formatDate(posts[0].createdAt) : ''}
+                {posts[0].createdAt && formatDate(posts[0].createdAt)}
               </div>
             </motion.div>
           )}

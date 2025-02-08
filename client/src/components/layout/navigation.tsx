@@ -64,7 +64,6 @@ const Navigation = () => {
     <>
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
-      <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
