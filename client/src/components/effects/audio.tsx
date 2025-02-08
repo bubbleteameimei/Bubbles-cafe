@@ -47,7 +47,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       }
 
       const audio = new Audio();
-      
+
       // Get the correct file path with absolute URL
       const trackPath = TRACKS[selectedTrack as keyof typeof TRACKS];
       console.log('Initializing audio track:', selectedTrack, 'URL:', trackPath);
@@ -57,7 +57,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.volume = volume;
       audio.loop = true;
       audio.src = trackPath;
-      
+
       // Force immediate loading
       Promise.all([
         audio.load(),
@@ -165,11 +165,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (isPlaying) {
         console.log('Pausing audio');
         audioRef.current.pause();
-        toast({
-          title: "Paused",
-          description: `${selectedTrack} atmosphere paused`,
-          duration: 1000,
-        });
+        // Skip pause notification
       } else {
         console.log('Starting audio playback');
         audioRef.current.currentTime = 0;
