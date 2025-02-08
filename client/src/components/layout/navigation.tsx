@@ -21,10 +21,10 @@ const NavLink = ({ href, isActive, children }: {
     e.preventDefault();
     setLocation(href);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Close mobile menu if open
+    // Close mobile menu if open - Fixed TypeScript error
     const sheet = document.querySelector('[data-state="open"]');
     if (sheet) {
-      const closeButton = sheet.querySelector('button[data-state="open"]');
+      const closeButton = sheet.querySelector('button[data-state="open"]') as HTMLButtonElement | null;
       closeButton?.click();
     }
   };
