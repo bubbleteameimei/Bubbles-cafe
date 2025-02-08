@@ -9,37 +9,33 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useState } from "react";
 
-const NavLink = ({ href, isActive, children }: {
+const NavLink = ({ href, isActive, children, onNavigate }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
+  onNavigate?: () => void;
 }) => {
   const [, setLocation] = useLocation();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    onNavigate?.();
     setLocation(href);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Close mobile menu if open
-    const sheet = document.querySelector('[data-state="open"]');
-    if (sheet) {
-      const closeButton = sheet.querySelector('button[data-state="open"]') as HTMLButtonElement | null;
-      closeButton?.click();
-    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   return (
-    <a
-      href={href}
+    <button
       onClick={handleClick}
       className={`
-        nav-link relative px-3 py-2 text-base transition-colors duration-300
+        nav-link relative px-3 py-2 text-base transition-colors duration-200 w-full text-left
         ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}
       `}
     >
       {children}
-    </a>
+    </button>
   );
 };
 
@@ -47,19 +43,24 @@ const Navigation = () => {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleVolumeChange = (value: number[]) => {
     setVolume(value[0] / 100);
   };
 
-  const navigationItems = (
+  const handleNavigation = () => {
+    setIsOpen(false);
+  };
+
+  const navigationItems = (onNavigate?: () => void) => (
     <>
-      <NavLink href="/" isActive={location === "/"}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
-      <NavLink href="/stories/schoop" isActive={location.startsWith("/stories/schoop")}>Schoop</NavLink>
-      <NavLink href="/secret" isActive={location === "/secret"}>Secret Stories</NavLink>
-      <NavLink href="/about" isActive={location === "/about"}>About</NavLink>
-      <NavLink href="/admin" isActive={location.startsWith("/admin")}>Admin</NavLink>
+      <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
+      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+      <NavLink href="/schoop" isActive={location === "/schoop"} onNavigate={onNavigate}>Schoop</NavLink>
+      <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
+      <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
+      <NavLink href="/admin" isActive={location.startsWith("/admin")} onNavigate={onNavigate}>Admin</NavLink>
     </>
   );
 
@@ -76,7 +77,7 @@ const Navigation = () => {
         <div className="container mx-auto h-16 flex items-center justify-between px-4">
           {/* Mobile Menu */}
           <div className="md:hidden">
-            <Sheet>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-5 w-5" />
@@ -84,7 +85,7 @@ const Navigation = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-[80vw] pt-16">
                 <nav className="flex flex-col space-y-4">
-                  {navigationItems}
+                  {navigationItems(handleNavigation)}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -92,7 +93,7 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-2">
-            {navigationItems}
+            {navigationItems()}
           </div>
 
           {/* Audio and Theme Controls */}
