@@ -54,12 +54,12 @@ export default function Stories() {
               >
                 <Card 
                   className="cursor-pointer hover:bg-primary/5 transition-colors"
-                  onClick={() => setLocation(`/stories/${post.slug}`)}
+                  onClick={() => setLocation(`/reader?story=${post.id}`)}
                 >
                   <CardContent className="py-4 flex justify-between items-center">
                     <h2 className="text-lg font-medium">{post.title}</h2>
                     <time className="text-sm text-muted-foreground font-mono">
-                      {format(parseISO(post.createdAt), 'MMM d, yyyy')}
+                      {format(new Date(post.createdAt), 'MMM d, yyyy')}
                     </time>
                   </CardContent>
                 </Card>

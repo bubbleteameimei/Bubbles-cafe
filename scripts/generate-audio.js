@@ -1,56 +1,61 @@
-import { createReadStream, createWriteStream } from 'fs';
-import { Synth, now, Offline } from 'tone';
+import * as Tone from 'tone';
+import { writeFile } from 'fs/promises';
 
-// Create a simple whispering wind sound effect using Web Audio API
-async function generateWhisperingWind() {
+async function generateAudio(type = 'ethereal') {
   try {
-    // Create an offline context for audio generation
-    const buffer = await Offline(() => {
-      // Create a more complex synth for a realistic wind effect
-      const synth = new Synth({
-        oscillator: {
-          type: 'sine',
-          modulationType: 'triangle',
-          modulationIndex: 3,
-          harmonicity: 1.5,
-        },
-        envelope: {
-          attack: 0.5,
-          decay: 1,
-          sustain: 0.8,
-          release: 2,
-        },
-        volume: -20,
-      }).toDestination();
-
-      // Generate a more natural wind-like sound with multiple notes
-      const currentTime = now();
-      synth.triggerAttackRelease('C2', '2n', currentTime);
-      synth.triggerAttackRelease('D2', '4n', currentTime + 0.5);
-      synth.triggerAttackRelease('E2', '8n', currentTime + 1);
-      synth.triggerAttackRelease('G2', '4n', currentTime + 1.5);
-    }, 4); // Increased duration to 4 seconds for a longer effect
-
-    // Create directory if it doesn't exist
-    const audioStream = createWriteStream('client/public/whispering_wind.mp3', { flags: 'w' });
-    const bufferStream = createReadStream(buffer.toArray());
-
-    return new Promise((resolve, reject) => {
-      bufferStream.pipe(audioStream)
-        .on('finish', () => {
-          console.log('Audio file generated successfully');
-          resolve();
-        })
-        .on('error', (error) => {
-          console.error('Error writing audio file:', error);
-          reject(error);
-        });
+    // Initialize Tone.js context
+    await Tone.start();
+    const synth = new Tone.Synth({
+      oscillator: {
+        type: type === 'ethereal' ? 'sine' : 'triangle',
+        modulationType: type === 'ethereal' ? 'triangle' : 'sine',
+      },
+      envelope: {
+        attack: type === 'ethereal' ? 2 : 1,
+        decay: type === 'ethereal' ? 1 : 0.5,
+        sustain: type === 'ethereal' ? 0.8 : 0.6,
+        release: type === 'ethereal' ? 4 : 3,
+      }
     });
+
+    const reverb = new Tone.Reverb({
+      decay: 5,
+      wet: 0.5
+    });
+
+    synth.connect(reverb);
+    reverb.toDestination();
+
+    // Create a sequence of notes
+    const notes = type === 'ethereal' ?
+      ['C4', 'E4', 'G4', 'B4'] :
+      ['G2', 'Bb2', 'D3', 'F3'];
+
+    // Generate a buffer for offline rendering
+    const buffer = await Tone.Offline(({transport}) => {
+      notes.forEach((note, i) => {
+        synth.triggerAttackRelease(note, '4n', i);
+      });
+    }, 5);
+
+    // Export buffer to file
+    const fileName = type === 'ethereal' ? 'ethereal.mp3' : 'nocturnal.mp3';
+    const filePath = `client/public/${fileName}`;
+
+    // Write to file using fs.promises
+    await writeFile(filePath, Buffer.from(buffer.get()));
+
+    console.log(`Generated ${fileName} successfully`);
   } catch (error) {
-    console.error('Error generating audio:', error);
+    console.error(`Error generating ${type} audio:`, error);
     throw error;
   }
 }
 
-// Execute and handle errors properly
-generateWhisperingWind().catch(console.error);
+// Generate both audio files
+Promise.all([
+  generateAudio('ethereal'),
+  generateAudio('nocturnal')
+]).then(() => {
+  console.log('All audio files generated successfully');
+}).catch(console.error);
