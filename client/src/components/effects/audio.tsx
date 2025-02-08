@@ -13,11 +13,11 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-// Default static audio files with meaningful names
+// Audio tracks mapping with correct paths for the new audio files
 const TRACKS = {
-  'Ethereal': '/static/angels_standing_guard.mp3',
-  'Nocturnal': '/static/whispering_wind.mp3'
-};
+  'Ethereal': '/static/ASMZ - 13 Angels Standing Guard \'Round the Side of Your Bed [hQZfGa5t4e8].mp3',  // 13 Angels Standing Guard
+  'Nocturnal': '/static/whispering_wind.mp3'      // Whispering Wind
+} as const;
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -27,12 +27,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
   const { toast } = useToast();
 
+  // Clean up function to handle audio cleanup
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    setIsPlaying(false);
+    setAudioReady(false);
+  }, []);
+
   useEffect(() => {
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      cleanupAudio();
 
       const audio = new Audio();
       audio.preload = "auto";
@@ -44,7 +52,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       // Show loading toast
       toast({
         title: "Loading Audio",
-        description: "Preparing your ambient experience...",
+        description: `Loading ${selectedTrack} atmosphere...`,
         duration: 2000,
       });
 
@@ -58,46 +66,43 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       };
 
       const handleLoadError = (error: Event) => {
-        console.error("Audio load error for track:", selectedTrack, error);
+        console.error("Audio load error:", error);
         setAudioReady(false);
         toast({
           title: "Audio Load Failed",
-          description: "Could not load the ambient sound. Please try again.",
+          description: `Could not load ${selectedTrack} atmosphere. Please try again.`,
           variant: "destructive",
           duration: 3000,
         });
       };
 
+      const handleEnded = () => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(console.error);
+        }
+      };
+
       audio.addEventListener('canplaythrough', handleCanPlay);
       audio.addEventListener('error', handleLoadError);
-
-      // Add stalled and waiting event handlers
-      audio.addEventListener('stalled', () => {
-        console.log('Audio playback stalled');
-        setAudioReady(false);
-      });
-
-      audio.addEventListener('waiting', () => {
-        console.log('Audio playback waiting');
-        setAudioReady(false);
-      });
+      audio.addEventListener('ended', handleEnded);
 
       return () => {
         audio.removeEventListener('canplaythrough', handleCanPlay);
         audio.removeEventListener('error', handleLoadError);
-        audio.pause();
+        audio.removeEventListener('ended', handleEnded);
+        cleanupAudio();
       };
     } catch (error) {
       console.error('Error initializing audio:', error);
       setAudioReady(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to initialize audio system",
+        variant: "destructive",
+      });
     }
-  }, [selectedTrack]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
+  }, [selectedTrack, cleanupAudio, toast, volume]);
 
   const toggleAudio = useCallback(async () => {
     if (!audioRef.current || !audioReady) {
@@ -115,10 +120,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(false);
         toast({
           title: "Audio Paused",
+          description: `${selectedTrack} atmosphere paused`,
           duration: 1000,
         });
       } else {
-        // Ensure the audio is properly loaded before playing
         if (audioRef.current.readyState < 3) {
           toast({
             title: "Loading",
@@ -145,7 +150,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [audioReady, isPlaying, selectedTrack]);
+  }, [audioReady, isPlaying, selectedTrack, toast]);
 
   return (
     <AudioContext.Provider value={{
