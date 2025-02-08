@@ -32,20 +32,25 @@ export const getQueryFn = <T>(options: {
   on401: UnauthorizedBehavior;
 }) => {
   const queryFn: QueryFunction<T> = async (context) => {
-    const res = await fetch(context.queryKey[0] as string, {
-      credentials: "include",
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+    try {
+      const res = await fetch(context.queryKey[0] as string, {
+        credentials: "include",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
+      if (options.on401 === "returnNull" && res.status === 401) {
+        return null;
       }
-    });
 
-    if (options.on401 === "returnNull" && res.status === 401) {
-      return null;
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      console.error('Query error:', error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
   return queryFn;
 };
@@ -55,9 +60,15 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      retry: false,
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 60 * 60 * 1000, // 1 hour
+      retry: (failureCount, error) => {
+        if (error instanceof Error && error.message.includes('404')) {
+          return false; // Don't retry 404s
+        }
+        return failureCount < 2; // Only retry twice for other errors
+      },
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
     },
     mutations: {
       retry: false,

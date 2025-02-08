@@ -94,11 +94,11 @@ export class DatabaseStorage implements IStorage {
           dateStr = new Date().toISOString(); // Fallback to current date
         }
 
-        console.log(`Processing post: ${post.title} (ID: ${post.id}) with date: ${dateStr}`);
-
         return {
           ...post,
-          createdAt: dateStr
+          createdAt: dateStr,
+          content: post.content || '', // Ensure content is never undefined
+          excerpt: post.excerpt || '' // Ensure excerpt is never undefined
         };
       });
 
@@ -206,7 +206,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Post not found");
     }
 
-    // Update the post while preserving the original createdAt and order
+    // Update the post while preserving the original createdAt
     const [updatedPost] = await db
       .update(postsTable)
       .set({
@@ -216,8 +216,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(postsTable.id, id))
       .returning();
 
-    console.log("Post updated successfully:", updatedPost);
-    return updatedPost;
+    // Transform the date to ISO string for consistency
+    return {
+      ...updatedPost,
+      createdAt: updatedPost.createdAt.toISOString()
+    };
   }
 
   // Comments with optimized queries

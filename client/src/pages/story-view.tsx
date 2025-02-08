@@ -17,16 +17,6 @@ export default function StoryView({ params }: StoryViewProps) {
     queryKey: ["/api/posts", params.slug],
   });
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = parseISO(dateStr);
-      return format(date, 'MMMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
-    }
-  };
-
   const getReadingTime = (content: string) => {
     const wordsPerMinute = 200;
     const words = content.trim().split(/\s+/).length;
@@ -52,18 +42,15 @@ export default function StoryView({ params }: StoryViewProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="prose dark:prose-invert mx-auto mb-8"
+          className="prose dark:prose-invert mx-auto"
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
-            <time>{formatDate(post.createdAt)}</time>
+            <time>{format(parseISO(post.createdAt), 'MMMM d, yyyy')}</time>
             <span className="text-primary/50">•</span>
             <span>{getReadingTime(content)}</span>
           </div>
-          <div
-            className="story-content"
-            style={{ whiteSpace: 'pre-wrap' }}
-          >
+          <div className="story-content mb-16" style={{ whiteSpace: 'pre-wrap' }}>
             {content.split('\n\n').map((paragraph, index) => (
               <p key={index} className="mb-6">
                 {paragraph.trim().split('_').map((text, i) =>
@@ -74,7 +61,10 @@ export default function StoryView({ params }: StoryViewProps) {
           </div>
         </motion.article>
 
-        <CommentSection postId={post.id} />
+        {/* Comments section moved to bottom with spacing */}
+        <div className="mt-16 pt-8 border-t border-border/50">
+          <CommentSection postId={post.id} />
+        </div>
       </div>
     </div>
   );

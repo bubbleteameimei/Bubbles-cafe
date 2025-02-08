@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
+import { format, parseISO } from 'date-fns'; // Added import statement
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -78,11 +79,7 @@ export default function Home() {
                 {posts[0].excerpt}
               </p>
               <div className="text-sm text-muted-foreground font-mono">
-                {new Date(posts[0].createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                {format(parseISO(posts[0].createdAt), 'MMMM d, yyyy')}
               </div>
             </motion.div>
           )}

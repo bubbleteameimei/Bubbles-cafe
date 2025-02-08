@@ -20,6 +20,7 @@ import { queryClient } from "@/lib/queryClient";
 import StoryView from "./pages/story-view";
 import Contact from "./pages/contact";
 import Reader from "./pages/reader";
+import IndexView from "./pages/index";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -28,7 +29,7 @@ function App() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 400);
+    }, 200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -36,12 +37,15 @@ function App() {
     window.scrollTo(0, 0);
   }, [location]);
 
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AudioProvider>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
-            {isLoading && <LoadingScreen />}
             <Navigation />
             <main className="flex-1">
               <React.Suspense fallback={<LoadingScreen />}>
@@ -49,6 +53,7 @@ function App() {
                   <Route path="/" component={Home} />
                   <Route path="/reader" component={Reader} />
                   <Route path="/stories" component={Stories} />
+                  <Route path="/index" component={IndexView} />
                   <Route path="/stories/:slug" component={StoryView} />
                   <Route path="/secret" component={Secret} />
                   <Route path="/privacy" component={Privacy} />
