@@ -10,6 +10,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const NavLink = ({ href, isActive, children, onNavigate }: {
   href: string;
@@ -42,7 +49,7 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
 const Navigation = () => {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
-  const { isPlaying, toggleAudio, volume, setVolume, audioReady } = useAudio();
+  const { isPlaying, toggleAudio, volume, setVolume, audioReady, selectedTrack, setSelectedTrack } = useAudio();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleVolumeChange = (value: number[]) => {
@@ -56,10 +63,10 @@ const Navigation = () => {
   const navigationItems = (onNavigate?: () => void) => (
     <>
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
+      <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
       <NavLink href="/admin" isActive={location.startsWith("/admin")} onNavigate={onNavigate}>Admin</NavLink>
     </>
   );
@@ -75,7 +82,6 @@ const Navigation = () => {
 
       <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
-          {/* Mobile Menu - Made static */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen} modal={false}>
               <SheetTrigger asChild>
@@ -91,13 +97,23 @@ const Navigation = () => {
             </Sheet>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             {navigationItems()}
           </div>
 
-          {/* Audio and Theme Controls */}
           <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden md:flex items-center gap-2">
+              <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="13 Angels">13 Angels</SelectItem>
+                  <SelectItem value="Whispering Wind">Whispering Wind</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button
               variant="ghost"
               size="icon"

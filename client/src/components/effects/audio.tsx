@@ -7,24 +7,34 @@ interface AudioContextType {
   setVolume: (volume: number) => void;
   audioReady: boolean;
   toggleAudio: () => void;
+  selectedTrack: string;
+  setSelectedTrack: (track: string) => void;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
+
+const TRACKS = {
+  '13 Angels': '/13-angels.mp3',
+  'Whispering Wind': '/whispering-wind.mp3'
+};
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const lastPlaybackTimeRef = useRef<number>(0);
+  const lastPauseTimeRef = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<string>('13 Angels');
   const { toast } = useToast();
 
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "none";
-    audio.src = '/ambient.mp3';
+    audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
     audio.loop = true;
     audioRef.current = audio;
 
@@ -55,7 +65,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener('click', handleFirstInteraction);
 
-    const handleError = (e: ErrorEvent) => {
+    audio.addEventListener('canplaythrough', handleCanPlay);
+    audio.addEventListener('error', (e) => {
       console.error('Audio error:', e);
       setAudioReady(false);
       setIsPlaying(false);
@@ -65,55 +76,59 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         variant: "destructive",
         duration: 500,
       });
-    };
+    });
 
-    audio.addEventListener('canplaythrough', handleCanPlay);
-    audio.addEventListener('error', handleError as EventListener);
     audio.load();
 
     return () => {
       audio.pause();
       audio.removeEventListener('canplaythrough', handleCanPlay);
-      audio.removeEventListener('error', handleError as EventListener);
-      audioRef.current = null;
       if (audioContext.state !== 'closed') {
         audioContext.close();
       }
     };
-  }, []);
+  }, [selectedTrack]);
 
   useEffect(() => {
     if (gainNodeRef.current) {
-      const constrainedVolume = Math.max(0, Math.min(1, volume));
-      gainNodeRef.current.gain.value = constrainedVolume;
-      localStorage.setItem('audioVolume', constrainedVolume.toString());
+      gainNodeRef.current.gain.value = Math.max(0, Math.min(1, volume));
+      localStorage.setItem('audioVolume', volume.toString());
     }
   }, [volume]);
 
+  // Load saved preferences
   useEffect(() => {
     const savedVolume = localStorage.getItem('audioVolume');
-    if (savedVolume) {
-      setVolume(parseFloat(savedVolume));
-    }
+    const savedTrack = localStorage.getItem('selectedTrack');
+    if (savedVolume) setVolume(parseFloat(savedVolume));
+    if (savedTrack && savedTrack in TRACKS) setSelectedTrack(savedTrack);
   }, []);
 
-  function updateRate(audio: HTMLAudioElement, start: number, startTime: number) {
-    const duration = 1000; // 1 second transition
-    const end = 1.0;
-    const elapsed = performance.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
+  // Save track preference
+  useEffect(() => {
+    localStorage.setItem('selectedTrack', selectedTrack);
+  }, [selectedTrack]);
 
-    // Ease out cubic function for smooth transition
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-    const newRate = start + (end - start) * easeOut;
+  function updatePlaybackRate(audio: HTMLAudioElement, start: number, duration: number) {
+    const startTime = performance.now();
 
-    if (audio) {
-      audio.playbackRate = newRate;
+    function animate() {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Cubic ease-out for smooth transition
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentRate = start + (1 - start) * easeOut;
+
+      if (audio && !audio.paused) {
+        audio.playbackRate = currentRate;
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      }
     }
 
-    if (progress < 1 && audio) {
-      requestAnimationFrame(() => updateRate(audio, start, startTime));
-    }
+    animate();
   }
 
   const toggleAudio = useCallback(() => {
@@ -129,28 +144,39 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const currentTime = Date.now();
+
     if (isPlaying) {
       audio.pause();
+      lastPlaybackTimeRef.current = audio.currentTime;
+      lastPauseTimeRef.current = currentTime;
       setIsPlaying(false);
       toast({
         title: "Audio Paused",
         duration: 500,
       });
     } else {
+      const pauseDuration = currentTime - lastPauseTimeRef.current;
+
+      // Reset to beginning if paused for more than 30 seconds
+      if (pauseDuration > 30000) {
+        audio.currentTime = 0;
+      } else {
+        audio.currentTime = lastPlaybackTimeRef.current;
+      }
+
       // Set initial faster playback rate
-      audio.playbackRate = 1.5; // 50% faster
+      audio.playbackRate = 1.5;
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             setIsPlaying(true);
-            // Schedule return to normal speed after 8 seconds
+            // Start smooth transition to normal speed after 8 seconds
             setTimeout(() => {
-              if (audio) {
-                // Start the transition
-                const startTime = performance.now();
-                updateRate(audio, audio.playbackRate, startTime);
+              if (audio && !audio.paused) {
+                updatePlaybackRate(audio, 1.5, 2000); // 2-second transition
               }
             }, 8000);
 
@@ -173,18 +199,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [audioReady, isPlaying, toast]);
 
-  const setVolumeWithConstraints = useCallback((newVolume: number) => {
-    const constrainedVolume = Math.max(0, Math.min(1, newVolume));
-    setVolume(constrainedVolume);
-  }, []);
-
   return (
     <AudioContext.Provider value={{
       isPlaying,
       volume,
-      setVolume: setVolumeWithConstraints,
+      setVolume,
       audioReady,
-      toggleAudio
+      toggleAudio,
+      selectedTrack,
+      setSelectedTrack
     }}>
       {children}
     </AudioContext.Provider>

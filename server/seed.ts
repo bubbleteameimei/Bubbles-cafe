@@ -61,6 +61,8 @@ async function parseWordPressXML() {
       ignoreAttributes: false,
       parseTagValue: true,
       parseAttributeValue: true,
+      textNodeName: "_text",
+      isArray: (name) => ['item'].indexOf(name) !== -1
     });
 
     const data = parser.parse(xmlContent);
@@ -78,10 +80,12 @@ async function parseWordPressXML() {
     await db.delete(posts);
 
     for (const item of items) {
-      if (item["wp:post_type"] === "post") {
+      if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
         try {
           const cleanedContent = cleanContent(item["content:encoded"]);
-          const excerpt = cleanedContent.split("\n")[0];
+          const excerpt = item["excerpt:encoded"] 
+            ? cleanContent(item["excerpt:encoded"]).split('\n')[0] 
+            : cleanedContent.split('\n')[0];
 
           // Generate unique slug
           let baseSlug = item["wp:post_name"] || item.title
@@ -98,22 +102,29 @@ async function parseWordPressXML() {
           }
           existingSlugs.add(finalSlug);
 
-          // Parse and use the original post date
-          const originalDate = new Date(item.pubDate || item["wp:post_date"]);
+          // Parse the original publication date
+          const pubDate = new Date(item.pubDate);
+          if (isNaN(pubDate.getTime())) {
+            console.warn(`Invalid publication date for post "${item.title}": ${item.pubDate}`);
+            continue;
+          }
 
-          await storage.createPost({
+          const newPost = {
             title: item.title,
             content: cleanedContent,
             excerpt: excerpt,
             slug: finalSlug,
             isSecret: false,
             authorId: admin.id,
-            createdAt: originalDate // Use the original publication date
-          });
+            createdAt: pubDate.toISOString()
+          };
+
+          await db.insert(posts).values(newPost);
 
           createdCount++;
+          console.log(`Created post: "${item.title}" with date: ${pubDate.toISOString()}`);
         } catch (error) {
-          console.error("Error creating post:", error);
+          console.error(`Error creating post "${item.title}":`, error);
         }
       }
     }

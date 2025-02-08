@@ -7,11 +7,9 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
-import Sidebar from "./components/blog/sidebar";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import Home from "./pages/home";
 import Stories from "./pages/stories";
-import Schoop from "./pages/schoop"; 
 import Secret from "./pages/secret";
 import About from "./pages/about";
 import Admin from "./pages/admin";
@@ -19,6 +17,8 @@ import AdminLogin from "./pages/admin-login";
 import NotFound from "./pages/not-found";
 import Privacy from "./pages/privacy";
 import { queryClient } from "@/lib/queryClient";
+import StoryView from "./pages/story-view";
+import Contact from "./pages/contact";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -47,10 +47,11 @@ function App() {
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/stories" component={Stories} />
-                  <Route path="/schoop" component={Schoop} />
+                  <Route path="/stories/:slug" component={StoryView} />
                   <Route path="/secret" component={Secret} />
                   <Route path="/privacy" component={Privacy} />
                   <Route path="/about" component={About} />
+                  <Route path="/contact" component={Contact} />
                   <Route path="/admin" component={Admin} />
                   <Route path="/admin/login" component={AdminLogin} />
                   <Route component={NotFound} />
