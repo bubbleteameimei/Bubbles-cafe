@@ -49,10 +49,10 @@ const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
   );
 };
 
-const NavigationItems = ({ location, onNavigate, isMobile = false }: { 
-  location: string, 
+const NavigationItems = ({ location, onNavigate, isMobile = false }: {
+  location: string,
   onNavigate?: () => void,
-  isMobile?: boolean 
+  isMobile?: boolean
 }) => {
   return (
     <>
@@ -130,7 +130,10 @@ const Navigation = () => {
 
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
-              <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+              <Select value={selectedTrack} onValueChange={(value) => {
+                console.log('Changing track to:', value);
+                setSelectedTrack(value);
+              }}>
                 <SelectTrigger className="w-[120px] hover:bg-primary/10">
                   <SelectValue placeholder="Atmosphere" />
                 </SelectTrigger>
@@ -144,11 +147,20 @@ const Navigation = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleAudio}
+              onClick={() => {
+                console.log('Toggle audio clicked');
+                toggleAudio();
+              }}
               disabled={!audioReady}
-              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
+              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
               title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
             >
+              {!audioReady && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
               {isPlaying ? (
                 <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
               ) : (
