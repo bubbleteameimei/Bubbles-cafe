@@ -56,8 +56,8 @@ const Navigation = () => {
   const navigationItems = (onNavigate?: () => void) => (
     <>
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
+      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
-      <NavLink href="/schoop" isActive={location === "/schoop"} onNavigate={onNavigate}>Schoop</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/admin" isActive={location.startsWith("/admin")} onNavigate={onNavigate}>Admin</NavLink>
@@ -75,9 +75,9 @@ const Navigation = () => {
 
       <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80">
         <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
-          {/* Mobile Menu */}
+          {/* Mobile Menu - Made static */}
           <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <Sheet open={isOpen} onOpenChange={setIsOpen} modal={false}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                   <Menu className="h-5 w-5" />

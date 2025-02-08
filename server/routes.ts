@@ -211,24 +211,24 @@ export function registerRoutes(app: Express): Server {
   // Contact form submission
   app.post("/api/contact", async (req, res) => {
     try {
-      const { name, email, message } = req.body;
+      const { name, email, message, showEmail } = req.body;
 
       // Save to database
       const savedMessage = await storage.createContactMessage({
         name,
         email,
         message,
-        showEmail: true // Default to showing email
+        showEmail
       });
 
-      // Send email notification
+      // Send email notification with email visibility respect
       await transporter.sendMail({
         from: 'vantalison@gmail.com',
         to: 'vantalison@gmail.com',
         subject: `New Contact Form Message from ${name}`,
         text: `
 Name: ${name}
-Email: ${email}
+${showEmail ? `Email: ${email}` : '(Email hidden by sender preference)'}
 Message: ${message}
         `
       });

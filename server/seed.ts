@@ -98,13 +98,17 @@ async function parseWordPressXML() {
           }
           existingSlugs.add(finalSlug);
 
+          // Parse and use the original post date
+          const originalDate = new Date(item.pubDate || item["wp:post_date"]);
+
           await storage.createPost({
             title: item.title,
             content: cleanedContent,
             excerpt: excerpt,
             slug: finalSlug,
             isSecret: false,
-            authorId: admin.id
+            authorId: admin.id,
+            createdAt: originalDate // Use the original publication date
           });
 
           createdCount++;
