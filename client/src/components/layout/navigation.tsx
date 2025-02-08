@@ -21,7 +21,7 @@ const NavLink = ({ href, isActive, children }: {
     e.preventDefault();
     setLocation(href);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Close mobile menu if open - Fixed TypeScript error
+    // Close mobile menu if open
     const sheet = document.querySelector('[data-state="open"]');
     if (sheet) {
       const closeButton = sheet.querySelector('button[data-state="open"]') as HTMLButtonElement | null;
@@ -55,7 +55,8 @@ const Navigation = () => {
   const navigationItems = (
     <>
       <NavLink href="/" isActive={location === "/"}>Home</NavLink>
-      <NavLink href="/stories" isActive={location.startsWith("/stories")}>Stories</NavLink>
+      <NavLink href="/stories" isActive={location === "/stories"}>Stories</NavLink>
+      <NavLink href="/stories/schoop" isActive={location.startsWith("/stories/schoop")}>Schoop</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"}>About</NavLink>
       <NavLink href="/admin" isActive={location.startsWith("/admin")}>Admin</NavLink>

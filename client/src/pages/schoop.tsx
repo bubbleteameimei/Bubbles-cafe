@@ -7,117 +7,44 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
-import { useParams, useLocation } from "wouter";
 
-export default function StoryView() {
-  const params = useParams();
-  const [, setLocation] = useLocation();
-  const postId = params?.id ? parseInt(params.id) : undefined;
+export default function Schoop() {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+  const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes,
-    retry: 2
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
-
-  // Set initial index based on postId
-  useEffect(() => {
-    if (posts && postId) {
-      const index = posts.findIndex(post => post.id === postId);
-      if (index !== -1) {
-        setCurrentIndex(index);
-        setLoadingError(null);
-      } else {
-        setLoadingError("Story not found");
-        // Redirect after a brief delay to show the error message
-        setTimeout(() => setLocation("/stories"), 2000);
-      }
-    }
-  }, [posts, postId, setLocation]);
-
-  const navigate = useCallback((newIndex: number) => {
-    if (!posts || isNavigating || newIndex < 0 || newIndex >= posts.length) return;
-    setIsNavigating(true);
-    const newPost = posts[newIndex];
-    setLocation(`/stories/${newPost.id}`);
-    setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setTimeout(() => setIsNavigating(false), 300);
-  }, [isNavigating, posts, setLocation]);
 
   const goToPrevious = useCallback(() => {
     if (!posts?.length) return;
-    navigate(currentIndex === 0 ? posts.length - 1 : currentIndex - 1);
-  }, [posts?.length, currentIndex, navigate]);
+    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
 
   const goToNext = useCallback(() => {
     if (!posts?.length) return;
-    navigate(currentIndex === posts.length - 1 ? 0 : currentIndex + 1);
-  }, [posts?.length, currentIndex, navigate]);
+    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
 
   const randomize = useCallback(() => {
     if (!posts?.length) return;
-    let newIndex;
-    do {
-      newIndex = Math.floor(Math.random() * posts.length);
-    } while (newIndex === currentIndex && posts.length > 1);
-    navigate(newIndex);
-  }, [posts?.length, currentIndex, navigate]);
+    const newIndex = Math.floor(Math.random() * posts.length);
+    setCurrentIndex(newIndex);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [posts?.length]);
 
-  if (isLoading) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentIndex]);
+
+  if (isLoading || !posts || posts.length === 0) {
     return <LoadingScreen />;
   }
 
-  if (error || loadingError) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">
-            {loadingError || "Error loading stories"}
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Please try again later
-          </p>
-          <Button onClick={() => setLocation("/stories")}>
-            Return to Stories
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!posts || posts.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">No Stories Available</h2>
-          <p className="text-muted-foreground">Check back later for new stories</p>
-        </div>
-      </div>
-    );
-  }
-
   const currentPost = posts[currentIndex];
-  if (!currentPost) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Story Not Found</h2>
-          <p className="text-muted-foreground mb-4">
-            The story you're looking for might have been moved or deleted
-          </p>
-          <Button onClick={() => setLocation("/stories")}>
-            Browse Stories
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen">
@@ -156,13 +83,7 @@ export default function StoryView() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={goToPrevious}
-                      className="hover:bg-primary/10"
-                      disabled={isNavigating}
-                    >
+                    <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -177,13 +98,7 @@ export default function StoryView() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={randomize}
-                      className="hover:bg-primary/10"
-                      disabled={isNavigating}
-                    >
+                    <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
                       <Shuffle className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -194,13 +109,7 @@ export default function StoryView() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={goToNext}
-                      className="hover:bg-primary/10"
-                      disabled={isNavigating}
-                    >
+                    <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
