@@ -13,10 +13,10 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-// Audio tracks mapping with correct paths for the new audio files
+// Audio tracks mapping with correct paths
 const TRACKS = {
-  'Ethereal': '/static/ASMZ - 13 Angels Standing Guard \'Round the Side of Your Bed [hQZfGa5t4e8].mp3',  // 13 Angels Standing Guard
-  'Nocturnal': '/static/whispering_wind.mp3'      // Whispering Wind
+  'Ethereal': '/static/ASMZ - 13 Angels Standing Guard \'Round the Side of Your Bed [hQZfGa5t4e8].mp3',
+  'Nocturnal': '/static/whispering_wind.mp3'
 } as const;
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
