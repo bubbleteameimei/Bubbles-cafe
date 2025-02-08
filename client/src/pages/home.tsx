@@ -32,7 +32,7 @@ export default function Home() {
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
-      return format(new Date(), 'MMMM d, yyyy');
+      return '';
     }
   };
 
@@ -92,7 +92,7 @@ export default function Home() {
                 {posts[0].excerpt}
               </p>
               <div className="text-sm text-muted-foreground font-mono">
-                {formatDate(posts[0].createdAt)}
+                {posts[0].createdAt ? formatDate(posts[0].createdAt) : ''}
               </div>
             </motion.div>
           )}

@@ -24,7 +24,7 @@ export default function StoryView({ params }: StoryViewProps) {
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
-      return format(new Date(), 'MMMM d, yyyy');
+      return '';
     }
   };
 
@@ -58,7 +58,7 @@ export default function StoryView({ params }: StoryViewProps) {
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
-            <time>{formatDate(post.createdAt)}</time>
+            {post.createdAt && <time>{formatDate(post.createdAt)}</time>}
             <span className="text-primary/50">•</span>
             <span>{getReadingTime(content)}</span>
           </div>
@@ -73,7 +73,6 @@ export default function StoryView({ params }: StoryViewProps) {
           </div>
         </motion.article>
 
-        {/* Comments section moved to bottom with spacing */}
         <div className="mt-16 pt-8 border-t border-border/50">
           <CommentSection postId={post.id} />
         </div>

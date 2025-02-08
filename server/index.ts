@@ -55,7 +55,7 @@ async function findAvailablePort(startPort: number): Promise<number> {
 
 async function startServer() {
   try {
-    // Seed database with WordPress posts
+    // Seed database with posts
     try {
       await seedDatabase();
       log("Database seeded successfully!");
@@ -90,8 +90,8 @@ async function startServer() {
         if (process.send) {
           process.send('ready');
         }
-        // Explicitly log the port for the workflow
-        console.log(`Server started on port ${PORT}`);
+        // Explicitly log the port for the workflow in the expected format
+        console.log(`PORT=${PORT}`);
         resolve();
       }).on('error', (err: any) => {
         log(`Server error: ${err.message}`);

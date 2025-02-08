@@ -3,7 +3,7 @@ import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format, isValid, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
@@ -24,7 +24,7 @@ export default function IndexView() {
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
-      return format(new Date(), 'MMMM d, yyyy');
+      return '';
     }
   };
 
@@ -40,7 +40,6 @@ export default function IndexView() {
     if (!content) return '';
 
     const paragraphs = content.split('\n\n');
-    // Look for engaging paragraphs
     const engagingParagraph = paragraphs.find(p => 
       p.includes('!') || 
       p.includes('?') || 
@@ -53,10 +52,7 @@ export default function IndexView() {
       p.toLowerCase().includes('dark')
     );
 
-    // If no engaging paragraph found, use the first one
     const selectedParagraph = engagingParagraph || paragraphs[0];
-
-    // Trim and add ellipsis if needed
     const maxLength = 200;
     const trimmed = selectedParagraph.trim();
     return trimmed.length > maxLength 
@@ -119,7 +115,7 @@ export default function IndexView() {
                           {post.title}
                         </CardTitle>
                         <div className="text-xs text-muted-foreground font-mono space-y-1 text-right">
-                          <time>{formatDate(post.createdAt)}</time>
+                          {post.createdAt && <time>{formatDate(post.createdAt)}</time>}
                           <div className="flex items-center gap-2 justify-end">
                             <span>{readingTime}</span>
                           </div>

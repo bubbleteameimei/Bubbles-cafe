@@ -5,10 +5,11 @@ import {
   type SecretProgress, type InsertSecretProgress,
   type User, type InsertUser,
   type ContactMessage, type InsertContactMessage,
-  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages
+  type Session, type InsertSession,
+  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, lt, gt } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -16,6 +17,13 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getAdminByEmail(email: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Sessions
+  createSession(session: InsertSession): Promise<Session>;
+  getSession(token: string): Promise<Session | undefined>;
+  deleteSession(token: string): Promise<void>;
+  cleanExpiredSessions(): Promise<void>;
+  updateSessionAccess(token: string): Promise<void>;
 
   // Posts
   getPosts(): Promise<Post[]>;
@@ -67,23 +75,57 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const [newUser] = await db.insert(users)
-      .values(user)
+      .values({ ...user, createdAt: new Date() })
       .returning();
     return newUser;
+  }
+
+  // Sessions
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db.insert(sessions)
+      .values({ ...session, createdAt: new Date(), lastAccessedAt: new Date() })
+      .returning();
+    return newSession;
+  }
+
+  async getSession(token: string): Promise<Session | undefined> {
+    const [session] = await db.select()
+      .from(sessions)
+      .where(and(
+        eq(sessions.token, token),
+        gt(sessions.expiresAt, new Date())
+      ))
+      .limit(1);
+    return session;
+  }
+
+  async deleteSession(token: string): Promise<void> {
+    await db.delete(sessions)
+      .where(eq(sessions.token, token));
+  }
+
+  async cleanExpiredSessions(): Promise<void> {
+    await db.delete(sessions)
+      .where(lt(sessions.expiresAt, new Date()));
+  }
+
+  async updateSessionAccess(token: string): Promise<void> {
+    await db.update(sessions)
+      .set({ lastAccessedAt: new Date() })
+      .where(eq(sessions.token, token));
   }
 
   // Posts operations
   async getPosts(): Promise<Post[]> {
     try {
-      console.log("Fetching posts from database...");
-      const dbPosts = await db.select()
+      const posts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
         .orderBy(desc(postsTable.createdAt));
 
-      return dbPosts.map(post => ({
+      return posts.map(post => ({
         ...post,
-        createdAt: post.createdAt.toISOString(),
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
       }));
     } catch (error) {
       console.error("Error in getPosts:", error);
@@ -99,7 +141,7 @@ export class DatabaseStorage implements IStorage {
 
     return posts.map(post => ({
       ...post,
-      createdAt: post.createdAt.toISOString()
+      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
     }));
   }
 
@@ -113,18 +155,18 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...post,
-      createdAt: post.createdAt.toISOString()
+      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
     };
   }
 
   async createPost(post: InsertPost): Promise<Post> {
     const [newPost] = await db.insert(postsTable)
-      .values(post)
+      .values({ ...post, createdAt: new Date() })
       .returning();
 
     return {
       ...newPost,
-      createdAt: newPost.createdAt.toISOString()
+      createdAt: newPost.createdAt instanceof Date ? newPost.createdAt : new Date(newPost.createdAt)
     };
   }
 
@@ -141,37 +183,51 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...updatedPost,
-      createdAt: updatedPost.createdAt.toISOString()
+      createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt)
     };
   }
 
   async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {
     const [newProgress] = await db.insert(secretProgress)
-      .values(progress)
+      .values({ ...progress, discoveryDate: new Date() })
       .returning();
     return newProgress;
   }
 
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
-    return await db.select()
+    const comments = await db.select()
       .from(comments)
       .where(eq(comments.postId, postId))
       .orderBy(desc(comments.createdAt));
+
+    return comments.map(comment => ({
+      ...comment,
+      createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+    }));
   }
 
   async getRecentComments(): Promise<Comment[]> {
-    return await db.select()
+    const comments = await db.select()
       .from(comments)
       .orderBy(desc(comments.createdAt))
       .limit(10);
+
+    return comments.map(comment => ({
+      ...comment,
+      createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+    }));
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
     const [newComment] = await db.insert(comments)
-      .values(comment)
+      .values({ ...comment, createdAt: new Date() })
       .returning();
-    return newComment;
+
+    return {
+      ...newComment,
+      createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)
+    };
   }
 
   // Reading Progress operations
@@ -192,16 +248,25 @@ export class DatabaseStorage implements IStorage {
 
   // Contact Messages operations
   async getContactMessages(): Promise<ContactMessage[]> {
-    return await db.select()
+    const messages = await db.select()
       .from(contactMessages)
       .orderBy(desc(contactMessages.createdAt));
+
+    return messages.map(message => ({
+      ...message,
+      createdAt: message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt)
+    }));
   }
 
   async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
     const [newMessage] = await db.insert(contactMessages)
-      .values(message)
+      .values({ ...message, createdAt: new Date() })
       .returning();
-    return newMessage;
+
+    return {
+      ...newMessage,
+      createdAt: newMessage.createdAt instanceof Date ? newMessage.createdAt : new Date(newMessage.createdAt)
+    };
   }
 }
 

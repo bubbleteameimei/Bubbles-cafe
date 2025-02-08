@@ -10,6 +10,15 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const sessions = pgTable("sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull()
+});
+
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -51,21 +60,21 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Define insert schemas without timestamp fields since they're auto-generated
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
+export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true, lastAccessedAt: true });
 
-// Type definitions
 export type Post = typeof posts.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type ReadingProgress = typeof readingProgress.$inferSelect;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPost = z.infer<typeof insertPostSchema>;
@@ -73,6 +82,7 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
 export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+export type InsertSession = z.infer<typeof insertSessionSchema>;
 
 export const adminLoginSchema = z.object({
   email: z.string().email(),
