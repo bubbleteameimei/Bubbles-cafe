@@ -20,6 +20,7 @@ async function getOrCreateAdminUser() {
       username: "admin",
       email: "vantalison@gmail.com",
       password_hash: hashedPassword,
+      isAdmin: true // Set admin flag
     }).returning();
 
     console.log("Admin user created successfully with ID:", newAdmin.id);

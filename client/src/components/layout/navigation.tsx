@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 const NavLink = ({ href, isActive, children, onNavigate }: {
   href: string;
@@ -49,27 +50,7 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
 };
 
 const NavigationItems = ({ location, onNavigate }: { location: string, onNavigate?: () => void }) => {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const checkAdmin = async () => {
-      try {
-        const response = await apiRequest("GET", "/api/admin/user");
-        if (mounted && response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.isAdmin);
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        if (mounted) setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-    return () => { mounted = false; };
-  }, []);
+  const { user } = useAuth();
 
   return (
     <>
@@ -79,7 +60,7 @@ const NavigationItems = ({ location, onNavigate }: { location: string, onNavigat
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
-      {isAdmin && (
+      {user?.isAdmin && (
         <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
       )}
     </>

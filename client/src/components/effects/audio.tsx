@@ -13,10 +13,10 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-// Update the audio tracks mapping to use existing files
+// Update the audio file paths to match the actual files in public directory
 const TRACKS = {
-  'Ethereal': '/static/13-angels.mp3',
-  'Nocturnal': '/static/whispering_wind.mp3'
+  'Ethereal': '/ethereal.mp3',
+  'Nocturnal': '/nocturnal.mp3'
 } as const;
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
   const { toast } = useToast();
 
-  // Clean up function to handle audio cleanup
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
       try {
@@ -74,23 +73,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         });
       };
 
-      const handlePlayError = () => {
-        setIsPlaying(false);
-        toast({
-          title: "Playback Error",
-          description: "There was an error playing the audio. Please try again.",
-          variant: "destructive",
-          duration: 3000,
-        });
-      };
-
       audio.addEventListener('canplaythrough', handleCanPlay);
       audio.addEventListener('error', handleLoadError);
       audio.addEventListener('playing', () => setIsPlaying(true));
       audio.addEventListener('pause', () => setIsPlaying(false));
       audio.addEventListener('ended', () => setIsPlaying(false));
-      audio.addEventListener('stalled', handlePlayError);
-      audio.addEventListener('suspend', () => setAudioReady(false));
 
       return () => {
         audio.removeEventListener('canplaythrough', handleCanPlay);
@@ -98,8 +85,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.removeEventListener('playing', () => setIsPlaying(true));
         audio.removeEventListener('pause', () => setIsPlaying(false));
         audio.removeEventListener('ended', () => setIsPlaying(false));
-        audio.removeEventListener('stalled', handlePlayError);
-        audio.removeEventListener('suspend', () => setAudioReady(false));
         cleanupAudio();
       };
     } catch (error) {
@@ -132,15 +117,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           duration: 1000,
         });
       } else {
-        if (audioRef.current.readyState < 3) {
-          toast({
-            title: "Loading",
-            description: "Please wait while the audio loads...",
-            duration: 2000,
-          });
-          return;
-        }
-
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           await playPromise;
@@ -162,13 +138,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [audioReady, isPlaying, selectedTrack, toast]);
-
-  // Update volume when it changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
 
   return (
     <AudioContext.Provider value={{
