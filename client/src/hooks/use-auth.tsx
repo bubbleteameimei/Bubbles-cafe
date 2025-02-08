@@ -6,6 +6,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 interface User {
   id: number;
   email: string;
+  isAdmin: boolean;
 }
 
 type AuthContextType = {
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/admin/login", credentials);
+      const response = await apiRequest("POST", "/api/login", credentials);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Login failed");
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/logout");
+      const response = await apiRequest("POST", "/api/logout");
       if (!response.ok) {
         throw new Error("Logout failed");
       }

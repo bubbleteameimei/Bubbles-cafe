@@ -11,10 +11,12 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminLoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { loginMutation } = useAuth();
 
   const form = useForm<AdminLogin>({
     resolver: zodResolver(adminLoginSchema),
@@ -25,46 +27,15 @@ export default function AdminLoginPage() {
     mode: "onSubmit"
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: AdminLogin) => {
-      const response = await apiRequest("POST", "/api/admin/login", data);
-      if (!response.ok) {
-        const error = await response.json();
-        if (response.status === 429) {
-          throw new Error(error.message || "Too many login attempts. Please try again later.");
-        }
-        throw new Error(error.message || "Invalid email or password");
-      }
-      await response.json(); // Make sure to consume the response
-
-      // Verify the session is active
-      const verifyResponse = await apiRequest("GET", "/api/admin/user");
-      if (!verifyResponse.ok) {
-        throw new Error("Failed to verify login session");
-      }
-      return await verifyResponse.json();
-    },
-    onSuccess: () => {
+  const onSubmit = async (data: AdminLogin) => {
+    if (loginMutation.isPending) return;
+    try {
+      await loginMutation.mutateAsync(data);
       toast({
         title: "Success",
         description: "Logged in successfully"
       });
       setLocation("/admin");
-    },
-    onError: (error: Error) => {
-      form.setError("root", { message: error.message });
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  const onSubmit = async (data: AdminLogin) => {
-    if (loginMutation.isPending) return;
-    try {
-      await loginMutation.mutateAsync(data);
     } catch (error) {
       // Error handling is done in mutation callbacks
     }

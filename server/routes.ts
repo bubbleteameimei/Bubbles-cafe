@@ -26,6 +26,14 @@ export function registerRoutes(app: Express): Server {
   // Set up authentication routes and middleware
   setupAuth(app);
 
+  // Admin-specific routes
+  app.get("/api/admin/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized: Please log in again" });
+    }
+    res.json({ isAdmin: req.user.isAdmin });
+  });
+
   // Protected admin routes
   app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {

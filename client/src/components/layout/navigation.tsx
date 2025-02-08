@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
 const NavLink = ({ href, isActive, children, onNavigate }: {
@@ -57,6 +56,7 @@ const NavigationItems = ({ location, onNavigate }: { location: string, onNavigat
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
       <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
       <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
+      <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>

@@ -49,11 +49,14 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy({
+      usernameField: 'email',
+      passwordField: 'password'
+    }, async (email, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false, { message: "Invalid username or password" });
+        const user = await storage.getUserByEmail(email);
+        if (!user || !(await comparePasswords(password, user.password_hash))) {
+          return done(null, false, { message: "Invalid email or password" });
         }
         return done(null, user);
       } catch (error) {
@@ -77,7 +80,11 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized: Please log in again" });
     }
-    res.json({ isAdmin: req.user.isAdmin });
+    res.json({ 
+      id: req.user.id,
+      email: req.user.email,
+      isAdmin: req.user.isAdmin 
+    });
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
