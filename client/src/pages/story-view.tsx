@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
@@ -16,6 +16,19 @@ export default function StoryView({ params }: StoryViewProps) {
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", params.slug],
   });
+
+  const formatDate = (dateString: string | Date) => {
+    try {
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      if (!isValid(date)) {
+        return 'Invalid date';
+      }
+      return format(date, 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -37,7 +50,7 @@ export default function StoryView({ params }: StoryViewProps) {
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <time className="text-sm text-muted-foreground block mb-8">
-            {format(new Date(post.createdAt), 'MMMM d, yyyy')}
+            {formatDate(post.createdAt)}
           </time>
           <div
             className="story-content"

@@ -102,7 +102,7 @@ const Navigation = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2"> {/* Removed hidden md:flex */}
               <Select value={selectedTrack} onValueChange={setSelectedTrack}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />

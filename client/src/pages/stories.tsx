@@ -3,7 +3,7 @@ import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Mist from "@/components/effects/mist";
 
@@ -12,6 +12,19 @@ export default function Stories() {
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"]
   });
+
+  const formatDate = (dateString: string | Date) => {
+    try {
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      if (!isValid(date)) {
+        return 'Invalid date';
+      }
+      return format(date, 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -60,7 +73,7 @@ export default function Stories() {
                       {post.title}
                     </CardTitle>
                     <time className="text-xs text-muted-foreground font-mono">
-                      {format(new Date(post.createdAt), 'MMMM d, yyyy')}
+                      {formatDate(post.createdAt)}
                     </time>
                   </CardHeader>
                   <CardContent>

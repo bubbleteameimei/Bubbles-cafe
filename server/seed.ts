@@ -83,8 +83,8 @@ async function parseWordPressXML() {
       if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
         try {
           const cleanedContent = cleanContent(item["content:encoded"]);
-          const excerpt = item["excerpt:encoded"] 
-            ? cleanContent(item["excerpt:encoded"]).split('\n')[0] 
+          const excerpt = item["excerpt:encoded"]
+            ? cleanContent(item["excerpt:encoded"]).split('\n')[0]
             : cleanedContent.split('\n')[0];
 
           // Generate unique slug
@@ -102,14 +102,14 @@ async function parseWordPressXML() {
           }
           existingSlugs.add(finalSlug);
 
-          // Parse the original publication date and ensure it's a valid ISO string
-          const pubDate = new Date(item.pubDate);
+          // Parse and validate the publication date
+          let pubDate = new Date(item.pubDate);
           if (isNaN(pubDate.getTime())) {
-            console.warn(`Invalid publication date for post "${item.title}": ${item.pubDate}`);
-            continue;
+            console.warn(`Invalid publication date for post "${item.title}": ${item.pubDate}, using current date`);
+            pubDate = new Date();
           }
 
-          // Create the post with the properly formatted date
+          // Create the post with validated date
           const result = await storage.createPost({
             title: item.title,
             content: cleanedContent,
@@ -117,7 +117,7 @@ async function parseWordPressXML() {
             slug: finalSlug,
             isSecret: false,
             authorId: admin.id,
-            createdAt: pubDate.toISOString() // Convert to ISO string format
+            createdAt: pubDate.toISOString()
           });
 
           createdCount++;
