@@ -26,7 +26,11 @@ export default function Reader() {
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     retry: 3,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.map(post => ({
+      ...post,
+      createdAt: new Date(post.createdAt)
+    }))
   });
 
   const goToPrevious = useCallback(() => {
@@ -80,7 +84,7 @@ export default function Reader() {
 
   return (
     <div className="relative min-h-screen">
-      <Mist />
+      <Mist className="opacity-40" />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div
@@ -91,11 +95,11 @@ export default function Reader() {
             transition={{ duration: 0.3 }}
             className="mb-8"
           >
-            <article className="prose dark:prose-invert mx-auto">
+            <article>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-3xl font-bold m-0">{currentPost.title}</h2>
-                <Button
-                  variant="ghost"
+                <h1 className="story-title">{currentPost.title}</h1>
+                <Button 
+                  variant="ghost" 
                   size="icon"
                   onClick={() => setLocation('/index')}
                   className="hover:bg-primary/10"
@@ -103,7 +107,7 @@ export default function Reader() {
                   <ListFilter className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
+              <div className="story-meta flex items-center gap-2 mb-8">
                 <time>{formattedDate}</time>
                 <span className="text-primary/50">•</span>
                 <span>{readingTime}</span>
@@ -125,8 +129,8 @@ export default function Reader() {
         </AnimatePresence>
 
         <div className="controls-container">
-          <div className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
-            <div className="nav-controls flex items-center justify-between">
+          <div className="controls-wrapper">
+            <div className="nav-controls">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -138,7 +142,7 @@ export default function Reader() {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="page-counter text-sm text-muted-foreground font-mono">
+              <span className="page-counter">
                 {currentIndex + 1} / {posts.length}
               </span>
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;700&family=Spectral:wght@400;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -36,17 +36,17 @@
 
 @layer base {
   :root {
-    /* Dark mode colors (Refined Gothic & Arcane Blend) */
-    --background: 220 14% 12%;    /* #191c23 - Deeper blue-tinted charcoal */
-    --foreground: 43 31% 83%;    /* #e3dbc5 - Warm parchment */
-    --card: 220 14% 15%;         /* #1e2229 - Slightly lighter than background */
+    /* Dark mode colors (Gothic Renaissance Theme) */
+    --background: 220 14% 12%;    /* Deep charcoal with blue undertones */
+    --foreground: 43 31% 83%;    /* Aged parchment */
+    --card: 220 14% 15%;         /* Slightly lighter background */
     --card-foreground: 43 31% 83%;
     --popover: 220 14% 12%;
     --popover-foreground: 43 31% 83%;
-    --primary: 345 85% 35%;      /* #af0026 - Rich crimson */
+    --primary: 345 85% 35%;      /* Deep crimson */
     --primary-foreground: 43 31% 83%;
-    --secondary: 27 33% 25%;     /* #574232 - Rich oak brown */
-    --secondary-foreground: 43 47% 65%;  /* #cdb07c - Brighter gold */
+    --secondary: 27 33% 25%;     /* Aged oak */
+    --secondary-foreground: 43 47% 65%;  /* Antique gold */
     --muted: 27 33% 25%;
     --muted-foreground: 43 47% 65%;
     --accent: 27 33% 25%;
@@ -60,19 +60,19 @@
   }
 
   .light {
-    /* Light mode colors (Elegant & Aged Aesthetic) */
-    --background: 43 71% 93%;    /* #faf3e0 */
-    --foreground: 27 8% 17%;     /* #2e2a26 */
+    /* Light mode colors (Elegant Parchment Theme) */
+    --background: 43 71% 93%;    /* Light parchment */
+    --foreground: 27 8% 17%;     /* Dark ink */
     --card: 43 71% 95%;
     --card-foreground: 27 8% 17%;
     --popover: 43 71% 93%;
     --popover-foreground: 27 8% 17%;
-    --primary: 354 50% 37%;      /* #8c2f39 */
+    --primary: 354 50% 37%;      /* Burgundy */
     --primary-foreground: 43 71% 93%;
-    --secondary: 19 43% 34%;     /* #793b32 */
+    --secondary: 19 43% 34%;     /* Aged leather */
     --secondary-foreground: 43 71% 93%;
     --muted: 19 43% 34%;
-    --muted-foreground: 43 31% 55%;  /* #b79a64 */
+    --muted-foreground: 43 31% 55%;
     --accent: 19 43% 34%;
     --accent-foreground: 43 71% 93%;
     --destructive: 0 84.2% 60.2%;
@@ -97,65 +97,16 @@
     );
   }
 
-  /* Add improved transition classes for buttons and interactive elements */
-  button, a {
-    @apply transition-transform duration-200 hover:shadow-md hover:shadow-primary/20;
-    @apply active:scale-95;
-  }
-
-  .container {
-    @apply px-4 mx-auto;
-    max-width: min(100% - 1rem, 75ch);
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-float-delayed {
-    animation: float 3s ease-in-out infinite;
-    animation-delay: 1.5s;
-  }
-
-  *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Cinzel Decorative', serif;
     @apply font-bold tracking-tight;
-  }
-
-  /* Mobile-optimized typography */
-  h1 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
-  h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
-  h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
-
-  .prose {
-    @apply text-foreground;
-    font-size: clamp(16px, 1.5vw, 18px);
-    line-height: 1.6;
-    max-width: 65ch;
-    margin: 0 auto;
-  }
-
-  .prose p {
-    @apply mb-4 sm:mb-6;
-  }
-
-  .prose em, .prose i {
-    font-style: italic;
   }
 
   .story-content {
     @apply prose prose-invert mx-auto px-4;
     max-width: min(100% - 2rem, 65ch);
     line-height: 1.8;
+    font-family: 'Crimson Text', serif;
     @apply transition-colors duration-200;
     @apply prose-headings:text-primary prose-p:text-foreground/90;
     @apply prose-strong:text-primary prose-em:text-secondary-foreground;
@@ -163,50 +114,40 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
 
-  .light .story-content {
-    @apply prose;
+  .story-title {
+    font-family: 'Playfair Display', serif;
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
   }
 
-  .gothic-menu {
-    @apply border-b border-border/50 bg-background/95 backdrop-blur-md shadow-md;
-    transition: background-color 0.2s ease;
+  .story-meta {
+    font-family: 'Spectral', serif;
+    @apply text-sm text-muted-foreground;
   }
 
-  /* Navigation */
-  .nav-link {
-    @apply relative overflow-hidden;
-    transition: color 0.2s ease;
+  .controls-container {
+    @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40;
+    max-width: min(100% - 2rem, 75ch);
   }
 
-  .nav-link::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0;
-    transition: transform 0.2s ease;
+  .controls-wrapper {
+    @apply flex items-center justify-center bg-background/80 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-lg;
+    border: 1px solid hsl(var(--border));
   }
 
-  .nav-link:hover::after {
-    @apply scale-x-100;
+  .nav-controls {
+    @apply flex items-center gap-4;
   }
 
-  .nav-link:hover {
-    @apply text-primary;
-    text-shadow: 0 0 8px hsl(var(--primary) / 0.2);
+  .page-counter {
+    @apply text-sm text-muted-foreground mx-4 min-w-[3rem] text-center;
+    font-family: 'Spectral', serif;
   }
 
-  /* Mobile layout optimizations */
+  /* Mobile optimizations */
   @media (max-width: 640px) {
-    .container {
-      @apply px-3;
-      max-width: 100%;
-    }
-
-    .story-container {
-      @apply px-3;
-    }
-
-    .prose {
-      font-size: 16px;
-      line-height: 1.6;
+    .story-title {
+      @apply text-3xl;
     }
 
     .controls-container {
@@ -227,147 +168,241 @@
       font-size: 0.875rem;
     }
   }
+}
 
-  /* Controls positioning - Mobile optimized */
+/* Add improved transition classes for buttons and interactive elements */
+button, a {
+  @apply transition-transform duration-200 hover:shadow-md hover:shadow-primary/20;
+  @apply active:scale-95;
+}
+
+.container {
+  @apply px-4 mx-auto;
+  max-width: min(100% - 1rem, 75ch);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Mobile-optimized typography */
+h1 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
+h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+
+.prose {
+  @apply text-foreground;
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.6;
+  max-width: 65ch;
+  margin: 0 auto;
+}
+
+.prose p {
+  @apply mb-4 sm:mb-6;
+}
+
+.prose em, .prose i {
+  font-style: italic;
+}
+
+
+.gothic-menu {
+  @apply border-b border-border/50 bg-background/95 backdrop-blur-md shadow-md;
+  transition: background-color 0.2s ease;
+}
+
+/* Navigation */
+.nav-link {
+  @apply relative overflow-hidden;
+  transition: color 0.2s ease;
+}
+
+.nav-link::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0;
+  transition: transform 0.2s ease;
+}
+
+.nav-link:hover::after {
+  @apply scale-x-100;
+}
+
+.nav-link:hover {
+  @apply text-primary;
+  text-shadow: 0 0 8px hsl(var(--primary) / 0.2);
+}
+
+/* Mobile layout optimizations */
+@media (max-width: 640px) {
+  .container {
+    @apply px-3;
+    max-width: 100%;
+  }
+
+  .story-container {
+    @apply px-3;
+  }
+
+  .prose {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
   .controls-container {
-    @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40;
-    max-width: min(100% - 2rem, 75ch);
+    @apply bottom-4 px-3;
+    max-width: calc(100% - 1.5rem);
   }
 
   .controls-wrapper {
-    @apply flex items-center justify-center bg-background/80 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-lg;
-    border: 1px solid hsl(var(--border));
+    @apply px-3 py-2;
   }
 
   .nav-controls {
-    @apply flex items-center gap-4;
+    @apply gap-2;
   }
 
   .page-counter {
-    @apply text-sm text-muted-foreground mx-4 min-w-[3rem] text-center;
-    font-family: 'Crimson Text', serif;
+    @apply mx-2 min-w-[2.5rem];
+    font-size: 0.875rem;
+  }
+}
+
+/* Controls positioning - Mobile optimized */
+
+/* Ensure footer has proper spacing */
+footer {
+  @apply mt-16 mb-24 sm:mb-32;
+}
+
+/* Story content container adjustments */
+.story-container {
+  @apply pb-16 sm:pb-20;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
+         focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
+}
+
+/* Grid layouts - Mobile optimized */
+.grid-layout {
+  @apply grid gap-3 sm:gap-4 md:gap-6;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+/* Social Buttons */
+.social-buttons {
+  @apply flex justify-center items-center gap-4 p-4;
+}
+
+.social-button {
+  @apply flex justify-center items-center w-10 h-10 rounded-full 
+         transition-all duration-300 hover:scale-110 hover:shadow-lg;
+}
+
+.social-button svg {
+  @apply transition-colors duration-300;
+}
+
+.social-button.wordpress {
+  @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
+}
+
+.social-button.twitter {
+  @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
+}
+
+.social-button.instagram {
+  @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
+}
+
+.social-button.github {
+  @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
+}
+
+.social-button.linkedin {
+  @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
+}
+
+.social-button.facebook {
+  @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
+}
+
+/* Like/Dislike Animations */
+.fireworks {
+  @apply absolute -top-2 -right-2 pointer-events-none;
+}
+
+.checked-like-fx,
+.checked-dislike-fx {
+  @apply w-2 h-2 rounded-full opacity-0;
+  animation: fireworks-bang 0.5s ease-out forwards,
+            fireworks-gravity 0.5s ease-in forwards,
+            fireworks-position 0.5s linear forwards;
+}
+
+@keyframes fireworks-bang {
+  to {
+    box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
+    transform: scale(3);
+  }
+}
+
+@keyframes fireworks-gravity {
+  to {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+}
+
+@keyframes fireworks-position {
+  0% {
+    margin-top: 10%;
+    margin-left: 40%;
+  }
+  50% {
+    margin-top: 20%;
+    margin-left: 60%;
+  }
+  100% {
+    margin-top: 30%;
+    margin-left: 50%;
+  }
+}
+
+/* Card animations */
+.card {
+  @apply transition-all duration-300 hover:shadow-lg;
+}
+
+/* Section spacing */
+.content-section {
+  @apply py-8 md:py-12 lg:py-16;
+}
+
+/* Mobile-first responsive navigation */
+@media (max-width: 768px) {
+  .nav-container {
+    @apply px-2;
   }
 
-  /* Ensure footer has proper spacing */
-  footer {
-    @apply mt-16 mb-24 sm:mb-32;
-  }
-
-  /* Story content container adjustments */
-  .story-container {
-    @apply pb-16 sm:pb-20;
-  }
-
-  /* Skip to content link */
-  .skip-to-content {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
-           focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
-  }
-
-  /* Grid layouts - Mobile optimized */
-  .grid-layout {
-    @apply grid gap-3 sm:gap-4 md:gap-6;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  }
-
-  /* Social Buttons */
-  .social-buttons {
-    @apply flex justify-center items-center gap-4 p-4;
-  }
-
-  .social-button {
-    @apply flex justify-center items-center w-10 h-10 rounded-full 
-           transition-all duration-300 hover:scale-110 hover:shadow-lg;
-  }
-
-  .social-button svg {
-    @apply transition-colors duration-300;
-  }
-
-  .social-button.wordpress {
-    @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
-  }
-
-  .social-button.twitter {
-    @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
-  }
-
-  .social-button.instagram {
-    @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
-  }
-
-  .social-button.github {
-    @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
-  }
-
-  .social-button.linkedin {
-    @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
-  }
-
-  .social-button.facebook {
-    @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
-  }
-
-  /* Like/Dislike Animations */
-  .fireworks {
-    @apply absolute -top-2 -right-2 pointer-events-none;
-  }
-
-  .checked-like-fx,
-  .checked-dislike-fx {
-    @apply w-2 h-2 rounded-full opacity-0;
-    animation: fireworks-bang 0.5s ease-out forwards,
-              fireworks-gravity 0.5s ease-in forwards,
-              fireworks-position 0.5s linear forwards;
-  }
-
-  @keyframes fireworks-bang {
-    to {
-      box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
-      transform: scale(3);
-    }
-  }
-
-  @keyframes fireworks-gravity {
-    to {
-      transform: translateY(100px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes fireworks-position {
-    0% {
-      margin-top: 10%;
-      margin-left: 40%;
-    }
-    50% {
-      margin-top: 20%;
-      margin-left: 60%;
-    }
-    100% {
-      margin-top: 30%;
-      margin-left: 50%;
-    }
-  }
-
-  /* Card animations */
-  .card {
-    @apply transition-all duration-300 hover:shadow-lg;
-  }
-
-  /* Section spacing */
-  .content-section {
-    @apply py-8 md:py-12 lg:py-16;
-  }
-
-  /* Mobile-first responsive navigation */
-  @media (max-width: 768px) {
-    .nav-container {
-      @apply px-2;
-    }
-
-    .nav-menu {
-      @apply space-y-2;
-    }
+  .nav-menu {
+    @apply space-y-2;
   }
 }

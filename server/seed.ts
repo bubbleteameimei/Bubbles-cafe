@@ -77,7 +77,13 @@ async function parseWordPressXML() {
     let createdCount = 0;
 
     // First, clear existing posts to prevent duplicates
-    await db.delete(posts);
+    try {
+      await db.delete(posts);
+      console.log("Cleared existing posts");
+    } catch (error) {
+      console.error("Error clearing posts:", error);
+      // Continue even if clearing fails
+    }
 
     for (const item of items) {
       if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
@@ -105,7 +111,7 @@ async function parseWordPressXML() {
           const pubDate = new Date(pubDateStr);
 
           // Create the post with the correct date format
-          await db.insert(posts).values({
+          const [newPost] = await db.insert(posts).values({
             title: item.title,
             content: cleanedContent,
             excerpt: excerpt,
@@ -113,10 +119,10 @@ async function parseWordPressXML() {
             isSecret: false,
             authorId: admin.id,
             createdAt: pubDate
-          });
+          }).returning();
 
           createdCount++;
-          console.log(`Created post: "${item.title}" with date: ${pubDateStr}`);
+          console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
         } catch (error) {
           console.error(`Error creating post "${item.title}":`, error);
         }
@@ -124,6 +130,7 @@ async function parseWordPressXML() {
     }
 
     console.log(`Successfully created ${createdCount} posts`);
+    return createdCount;
   } catch (error) {
     console.error("Error parsing WordPress XML:", error);
     throw error;
@@ -133,9 +140,11 @@ async function parseWordPressXML() {
 export async function seedDatabase() {
   try {
     console.log("Starting database seeding...");
-    await parseWordPressXML();
-    console.log("Database seeded successfully!");
+    const postsCreated = await parseWordPressXML();
+    console.log(`Database seeded successfully with ${postsCreated} posts!`);
+    return postsCreated;
   } catch (error) {
     console.error("Error seeding database:", error);
+    throw error;
   }
 }

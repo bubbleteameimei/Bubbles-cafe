@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
+import { LogOut, Loader2, Plus, X, Pencil, Trash2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import PostEditor from "@/components/admin/post-editor";
+import { format } from "date-fns";
 
 export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -21,7 +22,7 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await apiRequest("GET", "/api/posts");
+        const response = await apiRequest("GET", "/api/admin/user");
         if (!response.ok) {
           toast({
             title: "Authentication Error",
@@ -75,7 +76,6 @@ export default function AdminPage() {
         description: error.message || "Failed to delete post",
         variant: "destructive",
       });
-      console.error('Delete mutation error:', error);
     },
   });
 
@@ -101,9 +101,12 @@ export default function AdminPage() {
         description: error.message || "Failed to logout",
         variant: "destructive",
       });
-      console.error('Logout error:', error);
     },
   });
+
+  const viewPost = (slug: string) => {
+    window.open(`/story/${slug}`, '_blank');
+  };
 
   if (isLoading) {
     return (
@@ -114,16 +117,15 @@ export default function AdminPage() {
   }
 
   if (error) {
-    console.error('Posts fetch error:', error);
     setLocation("/admin/login");
     return null;
   }
 
   return (
     <ErrorBoundary>
-      <div className="space-y-8 p-8">
+      <div className="container mx-auto space-y-8 p-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
           <Button
             variant="outline"
             onClick={() => logoutMutation.mutate()}
@@ -206,13 +208,24 @@ export default function AdminPage() {
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                             {post.excerpt}
                           </p>
-                          {post.isSecret && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mt-2">
-                              Secret
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            <time>{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
+                            {post.isSecret && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                Secret
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => viewPost(post.slug)}
+                            className="hover:bg-secondary/10"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

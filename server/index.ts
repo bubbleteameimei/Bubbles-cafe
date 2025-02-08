@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
-import { createServer } from "net";
+import { createServer, Socket } from "net";
 
 const app = express();
 app.use(express.json());
@@ -53,6 +53,35 @@ async function findAvailablePort(startPort: number): Promise<number> {
   });
 }
 
+async function waitForPort(port: number, retries = 10, delay = 1000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = new Socket();
+    let attempts = 0;
+
+    const tryConnect = () => {
+      attempts++;
+      socket.connect(port, '0.0.0.0', () => {
+        log(`Successfully connected to port ${port} after ${attempts} attempts`);
+        socket.end();
+        socket.destroy();
+        resolve();
+      });
+    };
+
+    socket.on('error', (err) => {
+      socket.destroy();
+      if (attempts >= retries) {
+        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
+      } else {
+        log(`Retry ${attempts}/${retries} connecting to port ${port}`);
+        setTimeout(tryConnect, delay);
+      }
+    });
+
+    tryConnect();
+  });
+}
+
 async function startServer() {
   try {
     // Seed database with posts
@@ -84,16 +113,27 @@ async function startServer() {
     const PORT = await findAvailablePort(startPort);
 
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", () => {
+      server.listen(PORT, "0.0.0.0", async () => {
         log(`Server is ready and listening on port ${PORT}`);
-        // Signal that we're ready to accept connections
-        if (process.send) {
-          process.send('ready');
+
+        try {
+          // Wait for the port to be actually ready with retries
+          await waitForPort(PORT, 15, 500);
+          log(`Port ${PORT} is ready and accepting connections`);
+
+          // Signal that we're ready to accept connections
+          if (process.send) {
+            process.send('ready');
+          }
+
+          // Log the port in workflow-friendly format
+          console.log(`Server started successfully and listening on port ${PORT}`);
+          console.log(`PORT=${PORT}`);
+          resolve();
+        } catch (error) {
+          log(`Failed to verify port availability: ${error}`);
+          reject(error);
         }
-        // Log the port in workflow-friendly format
-        console.log(`Server started successfully and listening on port ${PORT}`);
-        console.log(`PORT=${PORT}`);
-        resolve();
       }).on('error', (err: any) => {
         log(`Server error: ${err.message}`);
         reject(err);
