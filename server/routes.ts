@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { createTransport } from "nodemailer";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -22,6 +23,15 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     res.status(401).json({ message: "Unauthorized" });
   }
 };
+
+// Configure nodemailer
+const transporter = createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'vantalison@gmail.com',
+    pass: process.env.GMAIL_APP_PASSWORD
+  }
+});
 
 export function registerRoutes(app: Express): Server {
   // Session middleware with updated configuration
@@ -195,6 +205,49 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error creating comment:", error);
       res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Contact form submission
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, message } = req.body;
+
+      // Save to database
+      const savedMessage = await storage.createContactMessage({
+        name,
+        email,
+        message,
+        showEmail: true // Default to showing email
+      });
+
+      // Send email notification
+      await transporter.sendMail({
+        from: 'vantalison@gmail.com',
+        to: 'vantalison@gmail.com',
+        subject: `New Contact Form Message from ${name}`,
+        text: `
+Name: ${name}
+Email: ${email}
+Message: ${message}
+        `
+      });
+
+      res.json(savedMessage);
+    } catch (error) {
+      console.error("Error handling contact form:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Get contact messages (admin only)
+  app.get("/api/admin/messages", isAuthenticated, async (_req, res) => {
+    try {
+      const messages = await storage.getContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
     }
   });
 

@@ -65,26 +65,26 @@ const Navigation = () => {
   );
 
   return (
-    <header className="bg-background">
-      <div className="relative h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
-        <div className="text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-bold mb-2">Bubble's Cafe</h1>
-          <p className="text-lg md:text-xl text-muted-foreground">Thoughts and emotions made into art</p>
+    <header className="bg-background theme-transition">
+      <div className="relative h-32 sm:h-40 md:h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
+        <div className="text-center relative z-10 px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2">Bubble's Cafe</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Thoughts and emotions made into art</p>
         </div>
       </div>
 
       <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80">
-        <div className="container mx-auto h-16 flex items-center justify-between px-4">
+        <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
           {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[80vw] pt-16">
-                <nav className="flex flex-col space-y-4">
+                <nav className="flex flex-col space-y-2">
                   {navigationItems(handleNavigation)}
                 </nav>
               </SheetContent>
@@ -92,12 +92,12 @@ const Navigation = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-1">
             {navigationItems()}
           </div>
 
           {/* Audio and Theme Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
@@ -107,13 +107,13 @@ const Navigation = () => {
               title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
             >
               {isPlaying ? (
-                <Volume2 className="h-5 w-5" />
+                <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
               ) : (
-                <VolumeX className="h-5 w-5" />
+                <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
             </Button>
 
-            <div className="w-24 hidden md:block">
+            <div className="w-16 sm:w-24 hidden md:block">
               <Slider
                 value={[volume * 100]}
                 max={100}
@@ -131,9 +131,9 @@ const Navigation = () => {
               className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
             >
               {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
+                <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
               ) : (
-                <Moon className="h-5 w-5" />
+                <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
             </Button>
           </div>

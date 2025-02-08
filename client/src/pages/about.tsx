@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ContactFormData {
   name: string;
@@ -17,12 +18,26 @@ export default function About() {
   const { toast } = useToast();
   const form = useForm<ContactFormData>();
 
-  const onSubmit = (data: ContactFormData) => {
-    toast({
-      title: "Message Sent",
-      description: "Thank you for your message. I'll get back to you soon!"
-    });
-    form.reset();
+  const onSubmit = async (data: ContactFormData) => {
+    try {
+      const response = await apiRequest("POST", "/api/contact", data);
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      toast({
+        title: "Message Sent",
+        description: "Thank you for your message. I'll get back to you soon!"
+      });
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -34,7 +49,8 @@ export default function About() {
         <CardContent>
           <div className="space-y-4 text-foreground">
             <p>
-              Vanessa here. Writing stories is one of my big passions. Fluent in English and Chinese. 
+              Hi hi, My name is Vanessa Chiwetalu, I made this website for my writing. 
+              Writing stories is one of my big passions. Fluent in English and Chinese. 
               I'm a big fan of horror themed stories and existential dread.
             </p>
             <p>
@@ -45,7 +61,7 @@ export default function About() {
             <p className="font-bold text-primary">
               PLEASE DO NOT REPOST ANY OF MY STORIES TO ANY OTHER SITE FOR PROFIT. 
               RETRANSLATING MY STORIES INTO ANOTHER LANGUAGE IS ALLOWED, 
-              HOWEVER PLEASE USE AT YOUR OWN DISCRETION.
+              HOWEVER PLEASE DO NOT PLAGIARISE MY STORIES.
             </p>
           </div>
         </CardContent>

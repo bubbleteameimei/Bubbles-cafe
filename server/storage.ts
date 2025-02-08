@@ -4,7 +4,8 @@ import {
   type ReadingProgress, type InsertProgress,
   type SecretProgress, type InsertSecretProgress,
   type User, type InsertUser,
-  posts, comments, readingProgress, secretProgress, users
+  type ContactMessage, type InsertContactMessage,
+  posts, comments, readingProgress, secretProgress, users, contactMessages
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -33,6 +34,10 @@ export interface IStorage {
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
   updateProgress(progress: InsertProgress): Promise<ReadingProgress>;
+
+  // Contact Messages
+  getContactMessages(): Promise<ContactMessage[]>;
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -176,6 +181,20 @@ export class DatabaseStorage implements IStorage {
       .values(progress)
       .returning();
     return newProgress;
+  }
+
+  // Contact Messages Implementation
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db.select()
+      .from(contactMessages)
+      .orderBy(desc(contactMessages.createdAt));
+  }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const [newMessage] = await db.insert(contactMessages)
+      .values(message)
+      .returning();
+    return newMessage;
   }
 }
 
