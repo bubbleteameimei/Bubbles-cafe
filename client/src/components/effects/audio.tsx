@@ -19,6 +19,15 @@ const TRACKS = {
   'Nocturnal': `${window.location.origin}/nocturnal.mp3`
 } as const;
 
+// Preload all audio files
+Object.values(TRACKS).forEach(track => {
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'audio';
+  link.href = track;
+  document.head.appendChild(link);
+});
+
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -37,10 +46,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audioRef.current = null;
       }
 
-      setAudioReady(false); // Reset ready state while loading new track
-
       const audio = new Audio();
-
+      
       // Get the correct file path with absolute URL
       const trackPath = TRACKS[selectedTrack as keyof typeof TRACKS];
       console.log('Initializing audio track:', selectedTrack, 'URL:', trackPath);
@@ -50,6 +57,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.volume = volume;
       audio.loop = true;
       audio.src = trackPath;
+      
+      // Force immediate loading
+      Promise.all([
+        audio.load(),
+        new Promise(resolve => {
+          const loadHandler = () => {
+            audio.removeEventListener('loadeddata', loadHandler);
+            resolve(true);
+          };
+          audio.addEventListener('loadeddata', loadHandler);
+        })
+      ]).then(() => {
+        setAudioReady(true);
+      });
 
       // Set up event handlers
       const handleCanPlay = () => {
