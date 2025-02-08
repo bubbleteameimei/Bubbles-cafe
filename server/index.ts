@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { createServer, Socket } from "net";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 const app = express();
 app.use(express.json());
@@ -53,7 +55,7 @@ async function findAvailablePort(startPort: number): Promise<number> {
   });
 }
 
-async function waitForPort(port: number, retries = 10, delay = 1000): Promise<void> {
+async function waitForPort(port: number, retries = 15, delay = 500): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = new Socket();
     let attempts = 0;
@@ -82,8 +84,22 @@ async function waitForPort(port: number, retries = 10, delay = 1000): Promise<vo
   });
 }
 
+async function checkDatabaseConnection(): Promise<void> {
+  try {
+    await db.execute(sql`SELECT 1`);
+    log("Database connection successful");
+  } catch (error) {
+    log("Database connection failed:", error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
 async function startServer() {
   try {
+    // First check database connection
+    await checkDatabaseConnection();
+    log("Database connection verified");
+
     // Seed database with posts
     try {
       await seedDatabase();
@@ -114,12 +130,12 @@ async function startServer() {
 
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", async () => {
-        log(`Server is ready and listening on port ${PORT}`);
+        log(`Server starting on port ${PORT}`);
 
         try {
           // Wait for the port to be actually ready with retries
-          await waitForPort(PORT, 15, 500);
-          log(`Port ${PORT} is ready and accepting connections`);
+          await waitForPort(PORT);
+          log(`Port ${PORT} is confirmed ready and accepting connections`);
 
           // Signal that we're ready to accept connections
           if (process.send) {

@@ -196,24 +196,24 @@ export class DatabaseStorage implements IStorage {
 
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
-    const comments = await db.select()
+    const commentsResult = await db.select()
       .from(comments)
       .where(eq(comments.postId, postId))
       .orderBy(desc(comments.createdAt));
 
-    return comments.map(comment => ({
+    return commentsResult.map(comment => ({
       ...comment,
       createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
     }));
   }
 
   async getRecentComments(): Promise<Comment[]> {
-    const comments = await db.select()
+    const commentsResult = await db.select()
       .from(comments)
       .orderBy(desc(comments.createdAt))
       .limit(10);
 
-    return comments.map(comment => ({
+    return commentsResult.map(comment => ({
       ...comment,
       createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
     }));

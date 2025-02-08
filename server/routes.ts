@@ -34,17 +34,20 @@ const transporter = createTransport({
 });
 
 export function registerRoutes(app: Express): Server {
-  // Session middleware with updated configuration
+  // Update session middleware configuration
   app.use(session({
     secret: process.env.REPL_ID!,
     resave: false,
     saveUninitialized: false,
     store: new MemoryStoreSession({
-      checkPeriod: 86400000 // prune expired entries every 24h
+      checkPeriod: 86400000, // prune expired entries every 24h
+      stale: false // Important: Prevent stale session data
     }),
     cookie: { 
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
     }
   }));
 
@@ -104,6 +107,15 @@ export function registerRoutes(app: Express): Server {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Add the admin user check route
+  app.get("/api/admin/user", isAuthenticated, (req, res) => {
+    if (req.session && req.session.isAdmin) {
+      res.json({ isAdmin: true });
+    } else {
+      res.status(401).json({ message: "Unauthorized" });
+    }
   });
 
   // Protected admin routes
