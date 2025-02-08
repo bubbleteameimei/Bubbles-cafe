@@ -37,8 +37,9 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
     <button
       onClick={handleClick}
       className={`
-        nav-link relative px-3 py-2 text-base transition-colors duration-200 w-full text-left
-        ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}
+        nav-link relative px-3 py-2 text-base transition-colors duration-300 w-full text-left
+        ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
+        hover:bg-primary/5 rounded-md
       `}
     >
       {children}
@@ -49,9 +50,9 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
 const NavigationItems = ({ location, onNavigate }: { location: string, onNavigate?: () => void }) => (
   <>
     <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
+    <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
     <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
     <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
-    <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
     <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
     <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
   </>
@@ -75,8 +76,8 @@ const Navigation = () => {
     <header className="bg-background theme-transition">
       <div className="relative h-32 sm:h-40 md:h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 font-serif">Bubble's Cafe</h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Where Reality Meets the Surreal</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 font-serif text-primary/90 hover:text-primary transition-colors duration-300">Bubble's Cafe</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground italic">Where Reality Meets the Surreal</p>
         </div>
       </div>
 
@@ -89,7 +90,7 @@ const Navigation = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[80vw] pt-16">
+              <SheetContent side="left" className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg">
                 <nav className="flex flex-col space-y-2">
                   <NavigationItems location={location} onNavigate={handleNavigation} />
                 </nav>
@@ -104,7 +105,7 @@ const Navigation = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[120px] hover:bg-primary/10">
                   <SelectValue placeholder="Atmosphere" />
                 </SelectTrigger>
                 <SelectContent>

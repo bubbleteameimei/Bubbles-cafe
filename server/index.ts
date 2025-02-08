@@ -91,6 +91,7 @@ async function startServer() {
           process.send('ready');
         }
         // Log the port in workflow-friendly format
+        console.log(`Server started successfully and listening on port ${PORT}`);
         console.log(`PORT=${PORT}`);
         resolve();
       }).on('error', (err: any) => {
