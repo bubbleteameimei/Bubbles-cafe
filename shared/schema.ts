@@ -52,7 +52,9 @@ export const contactMessages = pgTable("contact_messages", {
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
+export const insertPostSchema = createInsertSchema(posts).extend({
+  createdAt: z.string().optional()
+});
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });

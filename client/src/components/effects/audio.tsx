@@ -25,11 +25,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const gainNodeRef = useRef<GainNode | null>(null);
   const lastPlaybackTimeRef = useRef<number>(0);
   const lastPauseTimeRef = useRef<number>(0);
+  const animationFrameRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<string>('13 Angels');
   const { toast } = useToast();
+
+  // Cleanup function for animation frame
+  const cleanupAnimation = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const audio = new Audio();
@@ -81,13 +90,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.load();
 
     return () => {
+      cleanupAnimation();
       audio.pause();
       audio.removeEventListener('canplaythrough', handleCanPlay);
+      document.removeEventListener('click', handleFirstInteraction);
       if (audioContext.state !== 'closed') {
         audioContext.close();
       }
     };
-  }, [selectedTrack]);
+  }, [selectedTrack, cleanupAnimation]);
 
   useEffect(() => {
     if (gainNodeRef.current) {
@@ -109,7 +120,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('selectedTrack', selectedTrack);
   }, [selectedTrack]);
 
-  function updatePlaybackRate(audio: HTMLAudioElement, start: number, duration: number) {
+  function updatePlaybackRate(audio: HTMLAudioElement, startRate: number, endRate: number, duration: number) {
+    cleanupAnimation();
     const startTime = performance.now();
 
     function animate() {
@@ -118,12 +130,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       // Cubic ease-out for smooth transition
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      const currentRate = start + (1 - start) * easeOut;
+      const currentRate = startRate + (endRate - startRate) * easeOut;
 
       if (audio && !audio.paused) {
         audio.playbackRate = currentRate;
         if (progress < 1) {
-          requestAnimationFrame(animate);
+          animationFrameRef.current = requestAnimationFrame(animate);
         }
       }
     }
@@ -147,6 +159,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const currentTime = Date.now();
 
     if (isPlaying) {
+      cleanupAnimation();
       audio.pause();
       lastPlaybackTimeRef.current = audio.currentTime;
       lastPauseTimeRef.current = currentTime;
@@ -165,7 +178,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.currentTime = lastPlaybackTimeRef.current;
       }
 
-      // Set initial faster playback rate
+      // Start playback and smoothly transition speed
       audio.playbackRate = 1.5;
 
       const playPromise = audio.play();
@@ -173,12 +186,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         playPromise
           .then(() => {
             setIsPlaying(true);
-            // Start smooth transition to normal speed after 8 seconds
-            setTimeout(() => {
-              if (audio && !audio.paused) {
-                updatePlaybackRate(audio, 1.5, 2000); // 2-second transition
-              }
-            }, 8000);
+            // Start with faster playback and smoothly transition to normal speed
+            updatePlaybackRate(audio, 1.5, 1.0, 2000);
 
             toast({
               title: "Audio Playing",
@@ -197,7 +206,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           });
       }
     }
-  }, [audioReady, isPlaying, toast]);
+  }, [audioReady, isPlaying, cleanupAnimation, toast]);
 
   return (
     <AudioContext.Provider value={{

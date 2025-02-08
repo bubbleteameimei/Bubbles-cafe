@@ -102,27 +102,26 @@ async function parseWordPressXML() {
           }
           existingSlugs.add(finalSlug);
 
-          // Parse the original publication date
+          // Parse the original publication date and ensure it's a valid ISO string
           const pubDate = new Date(item.pubDate);
           if (isNaN(pubDate.getTime())) {
             console.warn(`Invalid publication date for post "${item.title}": ${item.pubDate}`);
             continue;
           }
 
-          const newPost = {
+          // Create the post with the properly formatted date
+          const result = await storage.createPost({
             title: item.title,
             content: cleanedContent,
             excerpt: excerpt,
             slug: finalSlug,
             isSecret: false,
             authorId: admin.id,
-            createdAt: pubDate.toISOString()
-          };
-
-          await db.insert(posts).values(newPost);
+            createdAt: pubDate.toISOString() // Convert to ISO string format
+          });
 
           createdCount++;
-          console.log(`Created post: "${item.title}" with date: ${pubDate.toISOString()}`);
+          console.log(`Created post: "${item.title}" with date: ${result.createdAt}`);
         } catch (error) {
           console.error(`Error creating post "${item.title}":`, error);
         }
