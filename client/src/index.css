@@ -257,117 +257,117 @@
   .story-container {
     @apply pb-16 sm:pb-20;
   }
-}
 
-/* Skip to content link */
-.skip-to-content {
-  @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
-         focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
-}
-
-/* Grid layouts - Mobile optimized */
-.grid-layout {
-  @apply grid gap-3 sm:gap-4 md:gap-6;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-}
-
-/* Social Buttons */
-.social-buttons {
-  @apply flex justify-center items-center gap-4 p-4;
-}
-
-.social-button {
-  @apply flex justify-center items-center w-10 h-10 rounded-full 
-         transition-all duration-300 hover:scale-110 hover:shadow-lg;
-}
-
-.social-button svg {
-  @apply transition-colors duration-300;
-}
-
-.social-button.wordpress {
-  @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
-}
-
-.social-button.twitter {
-  @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
-}
-
-.social-button.instagram {
-  @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
-}
-
-.social-button.github {
-  @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
-}
-
-.social-button.linkedin {
-  @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
-}
-
-.social-button.facebook {
-  @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
-}
-
-/* Like/Dislike Animations */
-.fireworks {
-  @apply absolute -top-2 -right-2 pointer-events-none;
-}
-
-.checked-like-fx,
-.checked-dislike-fx {
-  @apply w-2 h-2 rounded-full opacity-0;
-  animation: fireworks-bang 0.5s ease-out forwards,
-            fireworks-gravity 0.5s ease-in forwards,
-            fireworks-position 0.5s linear forwards;
-}
-
-@keyframes fireworks-bang {
-  to {
-    box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
-    transform: scale(3);
-  }
-}
-
-@keyframes fireworks-gravity {
-  to {
-    transform: translateY(100px);
-    opacity: 0;
-  }
-}
-
-@keyframes fireworks-position {
-  0% {
-    margin-top: 10%;
-    margin-left: 40%;
-  }
-  50% {
-    margin-top: 20%;
-    margin-left: 60%;
-  }
-  100% {
-    margin-top: 30%;
-    margin-left: 50%;
-  }
-}
-
-/* Card animations */
-.card {
-  @apply transition-all duration-300 hover:shadow-lg;
-}
-
-/* Section spacing */
-.content-section {
-  @apply py-8 md:py-12 lg:py-16;
-}
-
-/* Mobile-first responsive navigation */
-@media (max-width: 768px) {
-  .nav-container {
-    @apply px-2;
+  /* Skip to content link */
+  .skip-to-content {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
+           focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
   }
 
-  .nav-menu {
-    @apply space-y-2;
+  /* Grid layouts - Mobile optimized */
+  .grid-layout {
+    @apply grid gap-3 sm:gap-4 md:gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  }
+
+  /* Social Buttons */
+  .social-buttons {
+    @apply flex justify-center items-center gap-4 p-4;
+  }
+
+  .social-button {
+    @apply flex justify-center items-center w-10 h-10 rounded-full 
+           transition-all duration-300 hover:scale-110 hover:shadow-lg;
+  }
+
+  .social-button svg {
+    @apply transition-colors duration-300;
+  }
+
+  .social-button.wordpress {
+    @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
+  }
+
+  .social-button.twitter {
+    @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
+  }
+
+  .social-button.instagram {
+    @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
+  }
+
+  .social-button.github {
+    @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
+  }
+
+  .social-button.linkedin {
+    @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
+  }
+
+  .social-button.facebook {
+    @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
+  }
+
+  /* Like/Dislike Animations */
+  .fireworks {
+    @apply absolute -top-2 -right-2 pointer-events-none;
+  }
+
+  .checked-like-fx,
+  .checked-dislike-fx {
+    @apply w-2 h-2 rounded-full opacity-0;
+    animation: fireworks-bang 0.5s ease-out forwards,
+              fireworks-gravity 0.5s ease-in forwards,
+              fireworks-position 0.5s linear forwards;
+  }
+
+  @keyframes fireworks-bang {
+    to {
+      box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
+      transform: scale(3);
+    }
+  }
+
+  @keyframes fireworks-gravity {
+    to {
+      transform: translateY(100px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes fireworks-position {
+    0% {
+      margin-top: 10%;
+      margin-left: 40%;
+    }
+    50% {
+      margin-top: 20%;
+      margin-left: 60%;
+    }
+    100% {
+      margin-top: 30%;
+      margin-left: 50%;
+    }
+  }
+
+  /* Card animations */
+  .card {
+    @apply transition-all duration-300 hover:shadow-lg;
+  }
+
+  /* Section spacing */
+  .content-section {
+    @apply py-8 md:py-12 lg:py-16;
+  }
+
+  /* Mobile-first responsive navigation */
+  @media (max-width: 768px) {
+    .nav-container {
+      @apply px-2;
+    }
+
+    .nav-menu {
+      @apply space-y-2;
+    }
   }
 }
