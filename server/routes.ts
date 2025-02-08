@@ -16,13 +16,47 @@ declare module 'express-session' {
   }
 }
 
+// Update the admin check middleware with better session validation
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  console.log("Session state:", {
+    sessionExists: !!req.session,
+    isAdmin: req.session?.isAdmin,
+    sessionID: req.sessionID,
+    cookie: req.session?.cookie
+  });
+
   if (req.session && req.session.isAdmin) {
+    // Update last accessed time
+    req.session.touch();
     next();
   } else {
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({ message: "Unauthorized: Please log in again" });
   }
 };
+
+// Add session cleanup interval
+const cleanupInterval = setInterval(() => {
+  console.log("Running session cleanup...");
+  (session.MemoryStore as any).all((err: Error, sessions: { [key: string]: any }) => {
+    if (err) {
+      console.error("Session cleanup error:", err);
+      return;
+    }
+    const now = Date.now();
+    Object.entries(sessions).forEach(([sid, session]) => {
+      if (session.cookie && session.cookie.expires && new Date(session.cookie.expires).getTime() < now) {
+        (session.MemoryStore as any).destroy(sid, (err: Error) => {
+          if (err) console.error("Error destroying session:", err);
+        });
+      }
+    });
+  });
+}, 15 * 60 * 1000); // Run every 15 minutes
+
+// Clean up interval on process exit
+process.on('exit', () => {
+  clearInterval(cleanupInterval);
+});
 
 // Configure nodemailer
 const transporter = createTransport({
@@ -37,54 +71,69 @@ export function registerRoutes(app: Express): Server {
   // Update session middleware configuration
   app.use(session({
     secret: process.env.REPL_ID!,
-    resave: false,
+    resave: true, // Changed to true to ensure session persistence
     saveUninitialized: false,
     store: new MemoryStoreSession({
       checkPeriod: 86400000, // prune expired entries every 24h
-      stale: false // Important: Prevent stale session data
+      stale: false, // Important: Prevent stale session data
+      ttl: 24 * 60 * 60 * 1000 // 24 hours TTL
     }),
-    cookie: { 
+    cookie: {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       httpOnly: true,
-      sameSite: 'lax'
-    }
+      sameSite: 'lax',
+      path: '/'
+    },
+    name: 'adminSession' // Custom session name to avoid conflicts
   }));
 
-  // Admin authentication routes
+  // Update the admin login route to handle sessions better
   app.post("/api/admin/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (req.session.lockUntil && req.session.lockUntil > Date.now()) {
-      return res.status(429).json({ 
-        message: "Account is temporarily locked. Please try again later." 
+      return res.status(429).json({
+        message: "Account is temporarily locked. Please try again later."
       });
     }
 
     try {
       const [admin] = await storage.getAdminByEmail(email);
+      console.log("Admin login attempt for:", email);
 
       if (!admin || !(await bcrypt.compare(password, admin.password_hash))) {
         req.session.loginAttempts = (req.session.loginAttempts || 0) + 1;
+        console.log(`Failed login attempt #${req.session.loginAttempts} for ${email}`);
 
         if (req.session.loginAttempts >= 5) {
           req.session.lockUntil = Date.now() + 15 * 60 * 1000; // 15 minutes
-          return res.status(429).json({ 
-            message: "Too many failed attempts. Account locked for 15 minutes." 
+          return res.status(429).json({
+            message: "Too many failed attempts. Account locked for 15 minutes."
           });
         }
 
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      // Reset login attempts on successful login
       req.session.loginAttempts = 0;
       req.session.lockUntil = undefined;
       req.session.isAdmin = true;
 
+      // Touch the session to ensure it's saved
+      req.session.touch();
+
+      // Save session explicitly
       await new Promise<void>((resolve, reject) => {
         req.session.save((err) => {
-          if (err) reject(err);
-          else resolve();
+          if (err) {
+            console.error("Session save error:", err);
+            reject(err);
+          } else {
+            console.log("Admin session saved successfully");
+            resolve();
+          }
         });
       });
 

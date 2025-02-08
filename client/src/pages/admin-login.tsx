@@ -38,6 +38,10 @@ export default function AdminLoginPage() {
       return response.json();
     },
     onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Logged in successfully"
+      });
       setLocation("/admin");
     },
     onError: (error: Error) => {
