@@ -75,21 +75,35 @@ export class DatabaseStorage implements IStorage {
   // Posts with optimized queries
   async getPosts(): Promise<Post[]> {
     try {
-      const posts = await db.select()
+      console.log("Fetching posts from database...");
+      const dbPosts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
         .orderBy(desc(postsTable.createdAt));
 
-      return posts.map(post => {
-        const dateStr = post.createdAt instanceof Date 
-          ? post.createdAt.toISOString()
-          : new Date(post.createdAt).toISOString();
+      console.log(`Found ${dbPosts.length} posts in database`);
+
+      const transformedPosts = dbPosts.map(post => {
+        let dateStr;
+        try {
+          dateStr = post.createdAt instanceof Date 
+            ? post.createdAt.toISOString()
+            : new Date(post.createdAt).toISOString();
+        } catch (error) {
+          console.error(`Error formatting date for post ${post.id}:`, error);
+          dateStr = new Date().toISOString(); // Fallback to current date
+        }
+
+        console.log(`Processing post: ${post.title} (ID: ${post.id}) with date: ${dateStr}`);
 
         return {
           ...post,
           createdAt: dateStr
         };
       });
+
+      console.log(`Returning ${transformedPosts.length} transformed posts`);
+      return transformedPosts;
     } catch (error) {
       console.error("Error in getPosts:", error);
       throw error;

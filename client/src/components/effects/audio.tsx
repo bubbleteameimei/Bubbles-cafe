@@ -14,8 +14,8 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const TRACKS = {
-  '13 Angels': '/13-angels.mp3',
-  'Whispering Wind': '/whispering-wind.mp3'
+  'Ethereal': '/13-angels.mp3',
+  'Nocturnal': '/whispering-wind.mp3'
 };
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
@@ -29,7 +29,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<string>('13 Angels');
+  const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
   const { toast } = useToast();
 
   // Cleanup function for animation frame
@@ -42,8 +42,38 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const audio = new Audio();
-    audio.preload = "none";
-    audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
+    audio.preload = "auto";
+
+    // Add error event listener before setting the source
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+      console.error('Audio error details:', {
+        error: audio.error,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+        src: audio.src
+      });
+      setAudioReady(false);
+      setIsPlaying(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to load atmosphere track. Please try again.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    });
+
+    // Set source after adding error listener
+    try {
+      audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
+      console.log('Loading audio track:', {
+        track: selectedTrack,
+        src: audio.src
+      });
+    } catch (error) {
+      console.error('Error setting audio source:', error);
+    }
+
     audio.loop = true;
     audioRef.current = audio;
 
@@ -62,30 +92,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const handleCanPlay = () => {
       setAudioReady(true);
       toast({
-        title: "Audio Ready",
-        duration: 500,
+        title: "Atmosphere Ready",
+        description: `"${selectedTrack}" loaded`,
+        duration: 1500,
       });
     };
 
     const handleFirstInteraction = () => {
-      audio.preload = "auto";
       audioContext.resume();
       document.removeEventListener('click', handleFirstInteraction);
     };
     document.addEventListener('click', handleFirstInteraction);
 
     audio.addEventListener('canplaythrough', handleCanPlay);
-    audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
-      setAudioReady(false);
-      setIsPlaying(false);
-      toast({
-        title: "Audio Error",
-        description: "Failed to load audio",
-        variant: "destructive",
-        duration: 500,
-      });
-    });
+    
 
     audio.load();
 
@@ -98,7 +118,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audioContext.close();
       }
     };
-  }, [selectedTrack, cleanupAnimation]);
+  }, [selectedTrack]);
 
   useEffect(() => {
     if (gainNodeRef.current) {
@@ -149,9 +169,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     if (!audio || !audioReady || !audioContext) {
       toast({
-        title: "Audio Not Ready",
-        variant: "destructive",
-        duration: 500,
+        title: "Setting up Atmosphere",
+        description: "One moment please...",
+        duration: 1500,
       });
       return;
     }
@@ -165,8 +185,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       lastPauseTimeRef.current = currentTime;
       setIsPlaying(false);
       toast({
-        title: "Audio Paused",
-        duration: 500,
+        title: "Atmosphere Paused",
+        duration: 1000,
       });
     } else {
       const pauseDuration = currentTime - lastPauseTimeRef.current;
@@ -178,7 +198,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audio.currentTime = lastPlaybackTimeRef.current;
       }
 
-      // Start playback and smoothly transition speed
       audio.playbackRate = 1.5;
 
       const playPromise = audio.play();
@@ -186,27 +205,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         playPromise
           .then(() => {
             setIsPlaying(true);
-            // Start with faster playback and smoothly transition to normal speed
             updatePlaybackRate(audio, 1.5, 1.0, 2000);
-
             toast({
-              title: "Audio Playing",
-              duration: 500,
+              title: "Atmosphere Active",
+              description: `Playing "${selectedTrack}"`,
+              duration: 1500,
             });
           })
           .catch((error) => {
             console.error('Audio play error:', error);
             setIsPlaying(false);
             toast({
-              title: "Audio Error",
-              description: "Failed to play",
+              title: "Playback Failed",
+              description: "Please try again or check browser settings",
               variant: "destructive",
-              duration: 500,
+              duration: 2000,
             });
           });
       }
     }
-  }, [audioReady, isPlaying, cleanupAnimation, toast]);
+  }, [audioReady, isPlaying, cleanupAnimation, selectedTrack]);
 
   return (
     <AudioContext.Provider value={{

@@ -64,10 +64,10 @@ const Navigation = () => {
     <>
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
       <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+      <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
-      <NavLink href="/admin" isActive={location.startsWith("/admin")} onNavigate={onNavigate}>Admin</NavLink>
     </>
   );
 
@@ -75,15 +75,15 @@ const Navigation = () => {
     <header className="bg-background theme-transition">
       <div className="relative h-32 sm:h-40 md:h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2">Bubble's Cafe</h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Thoughts and emotions made into art</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 font-serif">Bubble's Cafe</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Where Reality Meets the Surreal</p>
         </div>
       </div>
 
-      <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80">
+      <nav className="gothic-menu sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b border-border/50">
         <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
           <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen} modal={false}>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                   <Menu className="h-5 w-5" />
@@ -102,14 +102,14 @@ const Navigation = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2"> {/* Removed hidden md:flex */}
+            <div className="flex items-center gap-2">
               <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Atmosphere" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="13 Angels">13 Angels</SelectItem>
-                  <SelectItem value="Whispering Wind">Whispering Wind</SelectItem>
+                  <SelectItem value="Ethereal">Ethereal</SelectItem>
+                  <SelectItem value="Nocturnal">Nocturnal</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -120,7 +120,7 @@ const Navigation = () => {
               onClick={toggleAudio}
               disabled={!audioReady}
               className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
-              title={audioReady ? (isPlaying ? "Mute" : "Unmute") : "Audio loading..."}
+              title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
             >
               {isPlaying ? (
                 <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { format, isValid, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
@@ -17,17 +17,21 @@ export default function StoryView({ params }: StoryViewProps) {
     queryKey: ["/api/posts", params.slug],
   });
 
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateStr: string) => {
     try {
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-      if (!isValid(date)) {
-        return 'Invalid date';
-      }
+      const date = parseISO(dateStr);
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid date';
     }
+  };
+
+  const getReadingTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
   };
 
   if (isLoading) {
@@ -37,6 +41,8 @@ export default function StoryView({ params }: StoryViewProps) {
   if (error || !post) {
     return <div className="text-center p-8">Story not found or error loading story.</div>;
   }
+
+  const content = post.content || '';
 
   return (
     <div className="relative min-h-screen">
@@ -49,14 +55,16 @@ export default function StoryView({ params }: StoryViewProps) {
           className="prose dark:prose-invert mx-auto mb-8"
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
-          <time className="text-sm text-muted-foreground block mb-8">
-            {formatDate(post.createdAt)}
-          </time>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
+            <time>{formatDate(post.createdAt)}</time>
+            <span className="text-primary/50">•</span>
+            <span>{getReadingTime(content)}</span>
+          </div>
           <div
             className="story-content"
             style={{ whiteSpace: 'pre-wrap' }}
           >
-            {post.content.split('\n\n').map((paragraph, index) => (
+            {content.split('\n\n').map((paragraph, index) => (
               <p key={index} className="mb-6">
                 {paragraph.trim().split('_').map((text, i) =>
                   i % 2 === 0 ? text : <i key={i}>{text}</i>

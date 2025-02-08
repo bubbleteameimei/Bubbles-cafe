@@ -51,21 +51,34 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// Update the schema to handle dates as strings in the API
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPostSchema = createInsertSchema(posts).extend({
   createdAt: z.string().optional()
-});
+}).omit({ id: true });
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
 
+// Define the types
+export type Post = {
+  id: number;
+  title: string;
+  content: string;
+  excerpt: string;
+  isSecret: boolean;
+  slug: string;
+  authorId: number;
+  createdAt: string; // Changed to string for API responses
+};
+
 export type User = typeof users.$inferSelect;
-export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type ReadingProgress = typeof readingProgress.$inferSelect;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

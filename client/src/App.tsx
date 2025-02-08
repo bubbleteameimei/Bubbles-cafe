@@ -19,6 +19,7 @@ import Privacy from "./pages/privacy";
 import { queryClient } from "@/lib/queryClient";
 import StoryView from "./pages/story-view";
 import Contact from "./pages/contact";
+import Reader from "./pages/reader";
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -46,6 +47,7 @@ function App() {
               <React.Suspense fallback={<LoadingScreen />}>
                 <Switch>
                   <Route path="/" component={Home} />
+                  <Route path="/reader" component={Reader} />
                   <Route path="/stories" component={Stories} />
                   <Route path="/stories/:slug" component={StoryView} />
                   <Route path="/secret" component={Secret} />
