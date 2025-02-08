@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
 
 const NavLink = ({ href, isActive, children, onNavigate }: {
   href: string;
@@ -47,16 +48,43 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
   );
 };
 
-const NavigationItems = ({ location, onNavigate }: { location: string, onNavigate?: () => void }) => (
-  <>
-    <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-    <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
-    <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
-    <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
-    <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
-    <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
-  </>
-);
+const NavigationItems = ({ location, onNavigate }: { location: string, onNavigate?: () => void }) => {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAdmin = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/admin/user");
+        if (mounted && response.ok) {
+          const data = await response.json();
+          setIsAdmin(data.isAdmin);
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        if (mounted) setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+    return () => { mounted = false; };
+  }, []);
+
+  return (
+    <>
+      <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
+      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+      <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
+      <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
+      <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
+      <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
+      {isAdmin && (
+        <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
+      )}
+    </>
+  );
+};
 
 const Navigation = () => {
   const [location] = useLocation();
