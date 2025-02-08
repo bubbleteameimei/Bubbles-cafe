@@ -14,8 +14,8 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const TRACKS = {
-  'Dark Ambience': '/13-angels.mp3',
-  'Haunting Whispers': '/whispering-wind.mp3'
+  'Ethereal': '/ethereal.mp3',
+  'Nocturnal': '/nocturnal.mp3'
 };
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
@@ -29,7 +29,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<string>('Dark Ambience');
+  const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
   const { toast } = useToast();
 
   const cleanupAnimation = useCallback(() => {
@@ -39,24 +39,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Initialize Audio Context and Audio Element
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        // Clean up existing audio elements
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.src = '';
         }
 
-        // Create new audio element
         const audio = new Audio();
         audio.preload = "auto";
         audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
         audio.loop = true;
         audioRef.current = audio;
 
-        // Initialize Web Audio API context
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const gainNode = audioContext.createGain();
         const sourceNode = audioContext.createMediaElementSource(audio);
@@ -68,10 +64,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         gainNodeRef.current = gainNode;
         sourceNodeRef.current = sourceNode;
 
-        // Set initial volume
         gainNode.gain.value = volume;
 
-        // Wait for the audio to be ready
         await new Promise<void>((resolve) => {
           const handleCanPlay = () => {
             resolve();
@@ -102,7 +96,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     initializeAudio();
 
-    // Resume AudioContext on user interaction
     const handleFirstInteraction = () => {
       if (audioContextRef.current?.state === 'suspended') {
         audioContextRef.current.resume();
@@ -123,7 +116,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     };
   }, [selectedTrack]);
 
-  // Handle volume changes
   useEffect(() => {
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = Math.max(0, Math.min(1, volume));
@@ -131,7 +123,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [volume]);
 
-  // Load saved preferences
   useEffect(() => {
     const savedVolume = localStorage.getItem('audioVolume');
     const savedTrack = localStorage.getItem('selectedTrack');
@@ -139,7 +130,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (savedTrack && savedTrack in TRACKS) setSelectedTrack(savedTrack);
   }, []);
 
-  // Save track preference
   useEffect(() => {
     localStorage.setItem('selectedTrack', selectedTrack);
   }, [selectedTrack]);

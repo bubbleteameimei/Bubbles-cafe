@@ -67,6 +67,7 @@ const Navigation = () => {
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
+      <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
     </>
@@ -109,8 +110,8 @@ const Navigation = () => {
                   <SelectValue placeholder="Atmosphere" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Dark Ambience">Dark Ambience</SelectItem>
-                  <SelectItem value="Haunting Whispers">Haunting Whispers</SelectItem>
+                  <SelectItem value="Ethereal">Ethereal</SelectItem>
+                  <SelectItem value="Nocturnal">Nocturnal</SelectItem>
                 </SelectContent>
               </Select>
             </div>

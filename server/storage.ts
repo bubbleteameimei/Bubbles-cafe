@@ -41,7 +41,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations with optimized queries
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select()
       .from(users)
@@ -72,7 +72,7 @@ export class DatabaseStorage implements IStorage {
     return newUser;
   }
 
-  // Posts with optimized queries
+  // Posts operations
   async getPosts(): Promise<Post[]> {
     try {
       console.log("Fetching posts from database...");
@@ -81,29 +81,10 @@ export class DatabaseStorage implements IStorage {
         .where(eq(postsTable.isSecret, false))
         .orderBy(desc(postsTable.createdAt));
 
-      console.log(`Found ${dbPosts.length} posts in database`);
-
-      const transformedPosts = dbPosts.map(post => {
-        let dateStr;
-        try {
-          dateStr = post.createdAt instanceof Date 
-            ? post.createdAt.toISOString()
-            : new Date(post.createdAt).toISOString();
-        } catch (error) {
-          console.error(`Error formatting date for post ${post.id}:`, error);
-          dateStr = new Date().toISOString(); // Fallback to current date
-        }
-
-        return {
-          ...post,
-          createdAt: dateStr,
-          content: post.content || '', // Ensure content is never undefined
-          excerpt: post.excerpt || '' // Ensure excerpt is never undefined
-        };
-      });
-
-      console.log(`Returning ${transformedPosts.length} transformed posts`);
-      return transformedPosts;
+      return dbPosts.map(post => ({
+        ...post,
+        createdAt: post.createdAt.toISOString(),
+      }));
     } catch (error) {
       console.error("Error in getPosts:", error);
       throw error;
@@ -111,79 +92,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSecretPosts(): Promise<Post[]> {
-    try {
-      const posts = await db.select()
-        .from(postsTable)
-        .where(eq(postsTable.isSecret, true))
-        .orderBy(desc(postsTable.createdAt))
-        .limit(20);
+    const posts = await db.select()
+      .from(postsTable)
+      .where(eq(postsTable.isSecret, true))
+      .orderBy(desc(postsTable.createdAt));
 
-      return posts.map(post => {
-        const dateStr = post.createdAt instanceof Date 
-          ? post.createdAt.toISOString()
-          : new Date(post.createdAt).toISOString();
-
-        return {
-          ...post,
-          createdAt: dateStr
-        };
-      });
-    } catch (error) {
-      console.error("Error in getSecretPosts:", error);
-      throw error;
-    }
+    return posts.map(post => ({
+      ...post,
+      createdAt: post.createdAt.toISOString()
+    }));
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
-    try {
-      const [post] = await db.select()
-        .from(postsTable)
-        .where(eq(postsTable.slug, slug))
-        .limit(1);
+    const [post] = await db.select()
+      .from(postsTable)
+      .where(eq(postsTable.slug, slug))
+      .limit(1);
 
-      if (!post) return undefined;
+    if (!post) return undefined;
 
-      const dateStr = post.createdAt instanceof Date 
-        ? post.createdAt.toISOString()
-        : new Date(post.createdAt).toISOString();
-
-      return {
-        ...post,
-        createdAt: dateStr
-      };
-    } catch (error) {
-      console.error("Error in getPost:", error);
-      throw error;
-    }
+    return {
+      ...post,
+      createdAt: post.createdAt.toISOString()
+    };
   }
 
   async createPost(post: InsertPost): Promise<Post> {
-    try {
-      const postDate = post.createdAt ? new Date(post.createdAt) : new Date();
-      if (isNaN(postDate.getTime())) {
-        throw new Error(`Invalid date provided: ${post.createdAt}`);
-      }
+    const [newPost] = await db.insert(postsTable)
+      .values(post)
+      .returning();
 
-      const [newPost] = await db.insert(postsTable)
-        .values({
-          ...post,
-          createdAt: postDate
-        })
-        .returning();
-
-      return {
-        ...newPost,
-        createdAt: newPost.createdAt.toISOString()
-      };
-    } catch (error) {
-      console.error("Error creating post:", error);
-      throw error;
-    }
+    return {
+      ...newPost,
+      createdAt: newPost.createdAt.toISOString()
+    };
   }
 
   async deletePost(id: number): Promise<void> {
     await db.delete(postsTable)
       .where(eq(postsTable.id, id));
+  }
+
+  async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
+    const [updatedPost] = await db.update(postsTable)
+      .set(post)
+      .where(eq(postsTable.id, id))
+      .returning();
+
+    return {
+      ...updatedPost,
+      createdAt: updatedPost.createdAt.toISOString()
+    };
   }
 
   async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {
@@ -193,43 +152,12 @@ export class DatabaseStorage implements IStorage {
     return newProgress;
   }
 
-  async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
-    console.log("Updating post in storage:", id, post);
-
-    // Get the existing post first
-    const [existingPost] = await db.select()
-      .from(postsTable)
-      .where(eq(postsTable.id, id))
-      .limit(1);
-
-    if (!existingPost) {
-      throw new Error("Post not found");
-    }
-
-    // Update the post while preserving the original createdAt
-    const [updatedPost] = await db
-      .update(postsTable)
-      .set({
-        ...post,
-        createdAt: existingPost.createdAt // Preserve original creation date
-      })
-      .where(eq(postsTable.id, id))
-      .returning();
-
-    // Transform the date to ISO string for consistency
-    return {
-      ...updatedPost,
-      createdAt: updatedPost.createdAt.toISOString()
-    };
-  }
-
-  // Comments with optimized queries
+  // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
     return await db.select()
       .from(comments)
       .where(eq(comments.postId, postId))
-      .orderBy(desc(comments.createdAt))
-      .limit(100);
+      .orderBy(desc(comments.createdAt));
   }
 
   async getRecentComments(): Promise<Comment[]> {
@@ -246,7 +174,7 @@ export class DatabaseStorage implements IStorage {
     return newComment;
   }
 
-  // Reading Progress with optimized queries
+  // Reading Progress operations
   async getProgress(postId: number): Promise<ReadingProgress | undefined> {
     const [progress] = await db.select()
       .from(readingProgress)
@@ -262,7 +190,7 @@ export class DatabaseStorage implements IStorage {
     return newProgress;
   }
 
-  // Contact Messages Implementation
+  // Contact Messages operations
   async getContactMessages(): Promise<ContactMessage[]> {
     return await db.select()
       .from(contactMessages)

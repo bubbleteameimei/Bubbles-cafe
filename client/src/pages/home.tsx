@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
+import { format, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Mist from "@/components/effects/mist";
-import { format, parseISO } from 'date-fns'; // Added import statement
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -24,6 +24,17 @@ export default function Home() {
     console.error('Error loading stories:', error);
     return <div className="text-center p-8">Error loading latest story.</div>;
   }
+
+  const formatDate = (dateString: string | Date) => {
+    try {
+      if (!dateString) return '';
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      return format(date, 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return format(new Date(), 'MMMM d, yyyy');
+    }
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -71,15 +82,17 @@ export default function Home() {
               className="mt-16 text-center"
             >
               <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide font-mono">Latest Story</p>
-              <h2 className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                  onClick={() => setLocation(`/stories/${posts[0].slug}`)}>
+              <h2 
+                className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                onClick={() => setLocation(`/stories/${posts[0].slug}`)}
+              >
                 {posts[0].title}
               </h2>
               <p className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4">
                 {posts[0].excerpt}
               </p>
               <div className="text-sm text-muted-foreground font-mono">
-                {format(parseISO(posts[0].createdAt), 'MMMM d, yyyy')}
+                {formatDate(posts[0].createdAt)}
               </div>
             </motion.div>
           )}

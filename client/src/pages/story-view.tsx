@@ -17,7 +17,19 @@ export default function StoryView({ params }: StoryViewProps) {
     queryKey: ["/api/posts", params.slug],
   });
 
+  const formatDate = (dateString: string | Date) => {
+    try {
+      if (!dateString) return '';
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      return format(date, 'MMMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return format(new Date(), 'MMMM d, yyyy');
+    }
+  };
+
   const getReadingTime = (content: string) => {
+    if (!content) return '0 min read';
     const wordsPerMinute = 200;
     const words = content.trim().split(/\s+/).length;
     const minutes = Math.ceil(words / wordsPerMinute);
@@ -46,7 +58,7 @@ export default function StoryView({ params }: StoryViewProps) {
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
-            <time>{format(parseISO(post.createdAt), 'MMMM d, yyyy')}</time>
+            <time>{formatDate(post.createdAt)}</time>
             <span className="text-primary/50">•</span>
             <span>{getReadingTime(content)}</span>
           </div>

@@ -3,7 +3,7 @@ import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format, isValid, parseISO, formatDistanceToNow } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
@@ -17,14 +17,13 @@ export default function IndexView() {
     staleTime: 5 * 60 * 1000
   });
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return format(new Date(), 'MMMM d, yyyy');
-      }
+      if (!dateString) return '';
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
+      console.error('Error formatting date:', error);
       return format(new Date(), 'MMMM d, yyyy');
     }
   };
@@ -101,7 +100,6 @@ export default function IndexView() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {posts.map((post, index) => {
-              const timeAgo = formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true });
               const readingTime = getReadingTime(post.content);
               const excerpt = getExcerpt(post.content);
 
@@ -121,10 +119,8 @@ export default function IndexView() {
                           {post.title}
                         </CardTitle>
                         <div className="text-xs text-muted-foreground font-mono space-y-1 text-right">
-                          <time className="block">{formatDate(post.createdAt)}</time>
+                          <time>{formatDate(post.createdAt)}</time>
                           <div className="flex items-center gap-2 justify-end">
-                            <span>{timeAgo}</span>
-                            <span className="text-primary/50">•</span>
                             <span>{readingTime}</span>
                           </div>
                         </div>
