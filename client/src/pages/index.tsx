@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { format, parseISO } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Clock, Calendar } from "lucide-react";
 import Mist from "@/components/effects/mist";
 
 export default function IndexView() {
@@ -17,10 +17,10 @@ export default function IndexView() {
     staleTime: 5 * 60 * 1000
   });
 
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string) => {
     try {
       if (!dateString) return '';
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      const date = parseISO(dateString);
       return format(date, 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -74,12 +74,12 @@ export default function IndexView() {
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div 
-            className="flex items-center justify-between mb-8"
+            className="flex items-center justify-between mb-12"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl md:text-5xl font-serif font-bold">Story Index</h1>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold">Index</h1>
             <Button 
               variant="ghost" 
               onClick={() => setLocation('/')}
@@ -90,7 +90,7 @@ export default function IndexView() {
           </motion.div>
 
           <motion.div 
-            className="grid gap-6"
+            className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -105,29 +105,37 @@ export default function IndexView() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  onClick={() => setLocation(`/stories/${post.slug}`)}
+                  onClick={() => {
+                    const readerIndex = posts.findIndex(p => p.id === post.id);
+                    setLocation('/reader');
+                    sessionStorage.setItem('selectedStoryIndex', readerIndex.toString());
+                  }}
                   className="cursor-pointer group"
                 >
-                  <Card className="hover:shadow-lg transition-all duration-300">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
+                  <Card className="h-full hover:shadow-xl transition-all duration-300 bg-background/70 backdrop-blur-sm border-border/50 hover:bg-background/90">
+                    <CardHeader className="relative">
+                      <div className="flex justify-between items-start gap-4">
                         <CardTitle className="text-2xl group-hover:text-primary transition-colors">
                           {post.title}
                         </CardTitle>
-                        <div className="text-xs text-muted-foreground font-mono space-y-1 text-right">
-                          {post.createdAt && <time>{formatDate(post.createdAt)}</time>}
-                          <div className="flex items-center gap-2 justify-end">
+                        <div className="text-xs text-muted-foreground font-mono space-y-2">
+                          <div className="flex items-center gap-1 justify-end">
+                            <Calendar className="h-3 w-3" />
+                            <time>{formatDate(post.createdAt)}</time>
+                          </div>
+                          <div className="flex items-center gap-1 justify-end">
+                            <Clock className="h-3 w-3" />
                             <span>{readingTime}</span>
                           </div>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground prose dark:prose-invert">
+                      <p className="text-muted-foreground prose dark:prose-invert line-clamp-3">
                         {excerpt}
                       </p>
-                      <div className="mt-4 flex items-center text-sm text-primary group-hover:underline">
-                        Read full story <ChevronRight className="h-4 w-4 ml-1" />
+                      <div className="mt-6 flex items-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                        Read full story <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
                   </Card>

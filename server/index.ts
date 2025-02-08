@@ -90,7 +90,7 @@ async function startServer() {
         if (process.send) {
           process.send('ready');
         }
-        // Explicitly log the port for the workflow in the expected format
+        // Log the port in workflow-friendly format
         console.log(`PORT=${PORT}`);
         resolve();
       }).on('error', (err: any) => {

@@ -63,7 +63,6 @@ const Navigation = () => {
   const navigationItems = (onNavigate?: () => void) => (
     <>
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>

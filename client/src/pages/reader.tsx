@@ -11,7 +11,16 @@ import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 
 export default function Reader() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const savedIndex = sessionStorage.getItem('selectedStoryIndex');
+    return savedIndex ? parseInt(savedIndex, 10) : 0;
+  });
+
+  // Remove the saved index after using it
+  useEffect(() => {
+    sessionStorage.removeItem('selectedStoryIndex');
+  }, []);
+
   const [, setLocation] = useLocation();
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
@@ -67,6 +76,7 @@ export default function Reader() {
   }
 
   const timeAgo = formatDistanceToNow(parseISO(currentPost.createdAt), { addSuffix: true });
+  const formattedDate = format(parseISO(currentPost.createdAt), 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
 
   return (
@@ -95,7 +105,7 @@ export default function Reader() {
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
-                <time>{format(parseISO(currentPost.createdAt), 'MMMM d, yyyy')}</time>
+                <time>{formattedDate}</time>
                 <span className="text-primary/50">•</span>
                 <span>{timeAgo}</span>
                 <span className="text-primary/50">•</span>
