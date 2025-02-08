@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, Menu } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
@@ -9,6 +9,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import {
   Select,
@@ -17,13 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/hooks/use-auth";
 
-const NavLink = ({ href, isActive, children, onNavigate }: {
+const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
   onNavigate?: () => void;
+  className?: string;
 }) => {
   const [, setLocation] = useLocation();
 
@@ -38,9 +39,9 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
     <button
       onClick={handleClick}
       className={`
-        nav-link relative px-3 py-2 text-base transition-colors duration-300 w-full text-left
+        nav-link relative px-3 py-2.5 text-base transition-colors duration-300 w-full text-left font-serif
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
-        hover:bg-primary/5 rounded-md
+        hover:bg-primary/5 rounded-md ${className}
       `}
     >
       {children}
@@ -48,21 +49,33 @@ const NavLink = ({ href, isActive, children, onNavigate }: {
   );
 };
 
-const NavigationItems = ({ location, onNavigate }: { location: string, onNavigate?: () => void }) => {
-  const { user } = useAuth();
-
+const NavigationItems = ({ location, onNavigate, isMobile = false }: { 
+  location: string, 
+  onNavigate?: () => void,
+  isMobile?: boolean 
+}) => {
   return (
     <>
-      <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
-      <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
-      <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
-      <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
-      <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
-      <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
-      {user?.isAdmin && (
+      <div className={`${isMobile ? '' : 'flex items-center space-x-1'}`}>
+        <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
+        <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+        <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
+      </div>
+
+      {isMobile && <div className="my-4 border-t border-border/20" />}
+
+      <div className={`${isMobile ? '' : 'flex items-center space-x-1 ml-4'}`}>
+        <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
+        <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
+      </div>
+
+      {isMobile && <div className="my-4 border-t border-border/20" />}
+
+      <div className={`${isMobile ? '' : 'flex items-center space-x-1 ml-4'}`}>
+        <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
+        <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
         <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
-      )}
+      </div>
     </>
   );
 };
@@ -82,7 +95,7 @@ const Navigation = () => {
   };
 
   return (
-    <header className="bg-background theme-transition">
+    <header className="bg-background/95 backdrop-blur-sm theme-transition">
       <div className="relative h-32 sm:h-40 md:h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10 px-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 font-serif text-primary/90 hover:text-primary transition-colors duration-300">Bubble's Cafe</h1>
@@ -100,14 +113,18 @@ const Navigation = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg">
+                <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-secondary">
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </SheetClose>
                 <nav className="flex flex-col space-y-2">
-                  <NavigationItems location={location} onNavigate={handleNavigation} />
+                  <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
                 </nav>
               </SheetContent>
             </Sheet>
           </div>
 
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center flex-1">
             <NavigationItems location={location} />
           </div>
 
@@ -129,7 +146,7 @@ const Navigation = () => {
               size="icon"
               onClick={toggleAudio}
               disabled={!audioReady}
-              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
               title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
             >
               {isPlaying ? (
@@ -154,7 +171,7 @@ const Navigation = () => {
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
