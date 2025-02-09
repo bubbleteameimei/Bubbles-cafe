@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import type { Request, Response, NextFunction } from "express";
 import { createTransport } from "nodemailer";
+import * as bcrypt from 'bcrypt'; // Import bcrypt
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -302,6 +303,64 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("Error creating comment:", error);
       res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Add these routes after the existing post routes
+  app.post("/api/posts/:postId/like", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { isLike } = req.body;
+      let userId = req.user?.id;
+
+      // If no user is logged in, use a temporary ID based on their IP
+      if (!userId) {
+        const ip = req.ip || '127.0.0.1'; // Fallback to localhost if no IP
+        const salt = await bcrypt.genSalt(5);
+        const ipHash = await bcrypt.hash(ip, salt);
+        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
+      }
+
+      console.log(`Processing like/dislike for post ${postId} by user ${userId}`);
+
+      // Get existing like status
+      const existingLike = await storage.getPostLike(postId, userId);
+
+      if (existingLike) {
+        // Update existing like
+        if (existingLike.isLike === isLike) {
+          console.log(`Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          // Remove like/dislike if clicking the same button
+          await storage.removePostLike(postId, userId);
+        } else {
+          console.log(`Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          // Change from like to dislike or vice versa
+          await storage.updatePostLike(postId, userId, isLike);
+        }
+      } else {
+        console.log(`Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+        // Create new like
+        await storage.createPostLike(postId, userId, isLike);
+      }
+
+      // Get updated counts
+      const counts = await storage.getPostLikeCounts(postId);
+      console.log(`Updated counts for post ${postId}:`, counts);
+      res.json(counts);
+    } catch (error) {
+      console.error("Error handling post like:", error);
+      res.status(500).json({ message: "Failed to update like status" });
+    }
+  });
+
+  app.get("/api/posts/:postId/likes", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const counts = await storage.getPostLikeCounts(postId);
+      res.json(counts);
+    } catch (error) {
+      console.error("Error fetching post likes:", error);
+      res.status(500).json({ message: "Failed to fetch like counts" });
     }
   });
 

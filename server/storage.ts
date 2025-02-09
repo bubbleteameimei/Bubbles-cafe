@@ -6,10 +6,11 @@ import {
   type User, type InsertUser,
   type ContactMessage, type InsertContactMessage,
   type Session, type InsertSession,
-  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions
+  type PostLike,
+  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions, postLikes
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, lt, gt } from "drizzle-orm";
+import { eq, desc, and, lt, gt, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -47,6 +48,13 @@ export interface IStorage {
   // Contact Messages
   getContactMessages(): Promise<ContactMessage[]>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+
+  // Post Likes
+  getPostLike(postId: number, userId: number): Promise<PostLike | undefined>;
+  removePostLike(postId: number, userId: number): Promise<void>;
+  updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
+  createPostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
+  getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,7 +141,7 @@ export class DatabaseStorage implements IStorage {
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
         .orderBy(desc(postsTable.createdAt))
-        .limit(20); 
+        .limit(20);
 
       return posts.map(post => ({
         ...post,
@@ -151,7 +159,7 @@ export class DatabaseStorage implements IStorage {
         .from(postsTable)
         .where(eq(postsTable.isSecret, true))
         .orderBy(desc(postsTable.createdAt))
-        .limit(10); 
+        .limit(10);
 
       return posts.map(post => ({
         ...post,
@@ -308,6 +316,79 @@ export class DatabaseStorage implements IStorage {
       ...newMessage,
       createdAt: newMessage.createdAt instanceof Date ? newMessage.createdAt : new Date(newMessage.createdAt)
     };
+  }
+
+  // Post Likes operations
+  async getPostLike(postId: number, userId: number): Promise<PostLike | undefined> {
+    const [like] = await db.select()
+      .from(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.userId, userId)
+      ))
+      .limit(1);
+    return like;
+  }
+
+  async removePostLike(postId: number, userId: number): Promise<void> {
+    await db.delete(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.userId, userId)
+      ));
+
+    await this.updatePostCounts(postId);
+  }
+
+  async updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void> {
+    await db.update(postLikes)
+      .set({ isLike })
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.userId, userId)
+      ));
+
+    await this.updatePostCounts(postId);
+  }
+
+  async createPostLike(postId: number, userId: number, isLike: boolean): Promise<void> {
+    await db.insert(postLikes)
+      .values({
+        postId,
+        userId,
+        isLike,
+        createdAt: new Date()
+      });
+
+    await this.updatePostCounts(postId);
+  }
+
+  async getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }> {
+    const likes = await db.select({ count: sql`count(*)` })
+      .from(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.isLike, true)
+      ));
+
+    const dislikes = await db.select({ count: sql`count(*)` })
+      .from(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.isLike, false)
+      ));
+
+    return {
+      likesCount: Number(likes[0]?.count || 0),
+      dislikesCount: Number(dislikes[0]?.count || 0)
+    };
+  }
+
+  private async updatePostCounts(postId: number): Promise<void> {
+    const counts = await this.getPostLikeCounts(postId);
+    await db.update(postsTable)
+      .set({ likesCount: counts.likesCount, dislikesCount: counts.dislikesCount })
+      .where(eq(postsTable.id, postId));
   }
 }
 
