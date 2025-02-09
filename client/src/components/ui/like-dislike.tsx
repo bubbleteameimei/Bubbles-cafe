@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
@@ -26,17 +26,10 @@ export function LikeDislike({
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
-  const countRef = useRef({
+  const [counts, setCounts] = useState({
     likes: initialLikes,
     dislikes: initialDislikes
   });
-
-  useEffect(() => {
-    countRef.current = {
-      likes: initialLikes,
-      dislikes: initialDislikes
-    };
-  }, [initialLikes, initialDislikes]);
 
   const likeMutation = useMutation({
     mutationFn: async (isLike: boolean) => {
@@ -46,20 +39,33 @@ export function LikeDislike({
       await queryClient.cancelQueries({ queryKey: ['/api/posts', postId] });
       const previousPost = queryClient.getQueryData(['/api/posts', postId]);
 
-      // Optimistically update the UI
-      queryClient.setQueryData(['/api/posts', postId], (old: any) => ({
-        ...old,
-        likesCount: isLike ? old.likesCount + 1 : old.likesCount,
-        dislikesCount: !isLike ? old.dislikesCount + 1 : old.dislikesCount
-      }));
+      setCounts(prev => {
+        const newCounts = { ...prev };
+        if (isLike) {
+          if (liked) {
+            newCounts.likes--;
+          } else {
+            newCounts.likes++;
+            if (disliked) newCounts.dislikes--;
+          }
+        } else {
+          if (disliked) {
+            newCounts.dislikes--;
+          } else {
+            newCounts.dislikes++;
+            if (liked) newCounts.likes--;
+          }
+        }
+        return newCounts;
+      });
 
       return { previousPost };
     },
     onError: (err, _, context) => {
-      // Revert to previous state on error
       if (context?.previousPost) {
         queryClient.setQueryData(['/api/posts', postId], context.previousPost);
       }
+      setCounts({ likes: initialLikes, dislikes: initialDislikes });
       toast({
         title: "Error",
         description: "Failed to update. Please try again.",
@@ -72,44 +78,66 @@ export function LikeDislike({
   });
 
   const handleLike = async () => {
-    if (disliked) {
-      setDisliked(false);
+    if (counts.likes >= 150) {
+      toast({
+        title: "Maximum likes reached",
+        description: "This post has reached its maximum number of likes.",
+        variant: "default"
+      });
+      return;
     }
+
     const newLiked = !liked;
     setLiked(newLiked);
+    if (disliked) setDisliked(false);
     try {
       await likeMutation.mutateAsync(true);
       onLike?.(newLiked);
     } catch (error) {
-      setLiked(!newLiked); // Revert on error
+      setLiked(!newLiked);
+      if (disliked) setDisliked(true);
     }
   };
 
   const handleDislike = async () => {
-    if (liked) {
-      setLiked(false);
+    if (counts.dislikes >= 15) {
+      toast({
+        title: "Maximum dislikes reached",
+        description: "This post has reached its maximum number of dislikes.",
+        variant: "destructive"
+      });
+      return;
     }
+
     const newDisliked = !disliked;
     setDisliked(newDisliked);
+    if (liked) setLiked(false);
     try {
       await likeMutation.mutateAsync(false);
       onDislike?.(newDisliked);
     } catch (error) {
-      setDisliked(!newDisliked); // Revert on error
+      setDisliked(!newDisliked);
+      if (liked) setLiked(true);
     }
   };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="w-full flex items-center gap-6 z-10 relative bg-transparent pointer-events-auto">
       <Button
         variant={liked ? "default" : "ghost"}
-        size="icon"
+        size="sm"
         onClick={handleLike}
-        className="relative group hover:scale-110 active:scale-95 transition-all duration-200"
-        disabled={likeMutation.isPending}
+        className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
+          liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
+        } pointer-events-auto`}
+        disabled={likeMutation.isPending || counts.likes >= 150}
       >
-        <ThumbsUp className={`h-5 w-5 transition-transform group-hover:scale-110 ${liked ? 'text-primary' : ''}`} />
-        <span className="ml-2">{countRef.current.likes + (liked ? 1 : 0)}</span>
+        <ThumbsUp className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+          liked ? 'text-primary' : 'text-muted-foreground'
+        }`} />
+        <span className={`text-sm ${
+          liked ? 'text-primary' : 'text-muted-foreground'
+        }`}>{counts.likes}</span>
         {liked && (
           <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-primary/50" />
         )}
@@ -117,13 +145,19 @@ export function LikeDislike({
 
       <Button
         variant={disliked ? "default" : "ghost"}
-        size="icon"
+        size="sm"
         onClick={handleDislike}
-        className="relative group hover:scale-110 active:scale-95 transition-all duration-200"
-        disabled={likeMutation.isPending}
+        className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
+          disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
+        } pointer-events-auto`}
+        disabled={likeMutation.isPending || counts.dislikes >= 15}
       >
-        <ThumbsDown className={`h-5 w-5 transition-transform group-hover:scale-110 ${disliked ? 'text-destructive' : ''}`} />
-        <span className="ml-2">{countRef.current.dislikes + (disliked ? 1 : 0)}</span>
+        <ThumbsDown className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+          disliked ? 'text-destructive' : 'text-muted-foreground'
+        }`} />
+        <span className={`text-sm ${
+          disliked ? 'text-destructive' : 'text-muted-foreground'
+        }`}>{counts.dislikes}</span>
         {disliked && (
           <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-destructive/50" />
         )}

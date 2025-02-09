@@ -18,5 +18,17 @@
   "accent": {
     "dark": "hsl(345, 85%, 45%)",
     "light": "hsl(345, 85%, 35%)"
+  },
+  "card": {
+    "dark": "hsl(240, 10%, 8%)",
+    "light": "hsl(0, 0%, 100%)"
+  },
+  "border": {
+    "dark": "hsl(240, 5%, 20%)",
+    "light": "hsl(0, 0%, 90%)"
+  },
+  "destructive": {
+    "dark": "hsl(0, 85%, 45%)",
+    "light": "hsl(0, 85%, 35%)"
   }
 }

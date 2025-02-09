@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Clock, Calendar } from "lucide-react";
+import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 
 export default function IndexView() {
@@ -76,7 +77,7 @@ export default function IndexView() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-background">
       <Mist className="opacity-40" />
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
@@ -86,7 +87,7 @@ export default function IndexView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl md:text-5xl font-serif font-bold">Index</h1>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Index</h1>
             <Button 
               variant="ghost" 
               onClick={() => setLocation('/')}
@@ -97,7 +98,7 @@ export default function IndexView() {
           </motion.div>
 
           <motion.div 
-            className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2"
+            className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 relative"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -112,13 +113,14 @@ export default function IndexView() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  onClick={() => navigateToStory(post.id)}
-                  className="cursor-pointer group"
+                  className="group relative"
                 >
-                  <Card className="h-full hover:shadow-xl transition-all duration-300 bg-background/70 backdrop-blur-sm border-border/50 hover:bg-background/90">
-                    <CardHeader className="relative">
+                  <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10">
+                    <CardHeader className="relative pb-4">
                       <div className="flex justify-between items-start gap-4">
-                        <CardTitle className="text-2xl group-hover:text-primary transition-colors">
+                        <CardTitle 
+                          className="text-2xl font-serif group-hover:text-primary transition-colors"
+                        >
                           {post.title}
                         </CardTitle>
                         <div className="text-xs text-muted-foreground font-mono space-y-2">
@@ -133,14 +135,26 @@ export default function IndexView() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground prose dark:prose-invert line-clamp-3">
+                    <CardContent 
+                      onClick={() => navigateToStory(post.id)}
+                      className="cursor-pointer py-4 flex-grow"
+                    >
+                      <p className="text-muted-foreground text-sm leading-relaxed mb-6">
                         {excerpt}
                       </p>
-                      <div className="mt-6 flex items-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                      <div className="flex items-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
                         Read full story <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
+                    <CardFooter className="relative mt-auto pt-4 border-t border-border bg-card">
+                      <div className="w-full">
+                        <LikeDislike
+                          postId={post.id}
+                          initialLikes={post.likesCount}
+                          initialDislikes={post.dislikesCount}
+                        />
+                      </div>
+                    </CardFooter>
                   </Card>
                 </motion.div>
               );
