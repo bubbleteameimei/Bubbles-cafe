@@ -48,18 +48,43 @@ app.use((req, res, next) => {
   next();
 });
 
-async function findAvailablePort(startPort: number): Promise<number> {
-  return new Promise((resolve) => {
-    const server = createServer();
-    server.listen(startPort, '0.0.0.0', () => {
-      const { port } = server.address() as { port: number };
-      server.close(() => resolve(port));
-    });
+async function findAvailablePort(startPort: number, maxAttempts: number = 10): Promise<number> {
+  let currentPort = startPort;
+  let attempts = 0;
 
-    server.on('error', () => {
-      resolve(findAvailablePort(startPort + 1));
-    });
-  });
+  while (attempts < maxAttempts) {
+    try {
+      const server = createServer();
+      await new Promise<number>((resolve, reject) => {
+        server.once('error', (err: NodeJS.ErrnoException) => {
+          if (err.code === 'EADDRINUSE') {
+            server.close();
+            currentPort++;
+            attempts++;
+            resolve(currentPort);
+          } else {
+            reject(err);
+          }
+        });
+
+        server.listen(currentPort, '0.0.0.0', () => {
+          const { port } = server.address() as { port: number };
+          server.close(() => resolve(port));
+        });
+      });
+
+      // Log port in workflow-friendly format
+      console.log(`PORT=${currentPort}`);
+      log(`Found available port: ${currentPort}`);
+      return currentPort;
+    } catch (error) {
+      log(`Error checking port ${currentPort}:`, error instanceof Error ? error.message : String(error));
+      currentPort++;
+      attempts++;
+    }
+  }
+
+  throw new Error(`Could not find an available port after ${maxAttempts} attempts`);
 }
 
 async function waitForPort(port: number, retries = 45, delay = 1500): Promise<void> {
@@ -67,14 +92,18 @@ async function waitForPort(port: number, retries = 45, delay = 1500): Promise<vo
     const socket = new Socket();
     let attempts = 0;
 
+    const cleanup = () => {
+      socket.removeAllListeners();
+      socket.destroy();
+    };
+
     const tryConnect = () => {
       attempts++;
       log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
 
       socket.connect(port, '0.0.0.0', () => {
         log(`Successfully connected to port ${port} after ${attempts} attempts`);
-        socket.end();
-        socket.destroy();
+        cleanup();
         resolve();
       });
     };
@@ -82,6 +111,7 @@ async function waitForPort(port: number, retries = 45, delay = 1500): Promise<vo
     socket.on('error', (err) => {
       socket.destroy();
       if (attempts >= retries) {
+        cleanup();
         const errorMsg = `Failed to connect to port ${port} after ${retries} attempts: ${err.message}`;
         log(errorMsg);
         reject(new Error(errorMsg));
@@ -159,7 +189,7 @@ async function startServer() {
     const PORT = await findAvailablePort(startPort);
 
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", async () => {
+      const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
         log(`Server starting on port ${PORT}`);
 
         try {
@@ -178,12 +208,24 @@ async function startServer() {
           resolve();
         } catch (error) {
           log(`Failed to verify port availability: ${error}`);
+          serverInstance.close();
           reject(error);
         }
       }).on('error', (err: any) => {
         log(`Server error: ${err.message}`);
         reject(err);
       });
+
+      // Handle process termination
+      const cleanup = () => {
+        serverInstance.close(() => {
+          log('Server closed');
+          process.exit(0);
+        });
+      };
+
+      process.on('SIGTERM', cleanup);
+      process.on('SIGINT', cleanup);
     });
   } catch (error) {
     log(`Critical server error: ${error instanceof Error ? error.stack : String(error)}`);

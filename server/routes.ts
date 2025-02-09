@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { createTransport } from "nodemailer";
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -10,11 +12,11 @@ const transporter = createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'vantalison@gmail.com',
+    user: process.env.GMAIL_USER || 'vantalison@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD?.trim()
   },
   // Reduce timeouts to fail fast if there are issues
-  connectionTimeout: 10000, // 10 seconds
+  connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
   // Optimize pool settings
@@ -36,7 +38,8 @@ const verifyEmailConfig = async () => {
     console.log('Attempting to verify email configuration...');
     console.log('Environment check:', {
       hasAppPassword: !!process.env.GMAIL_APP_PASSWORD,
-      appPasswordLength: process.env.GMAIL_APP_PASSWORD?.length
+      appPasswordLength: process.env.GMAIL_APP_PASSWORD?.length,
+      hasGmailUser: !!process.env.GMAIL_USER
     });
 
     const verified = await transporter.verify();
@@ -53,7 +56,7 @@ const verifyEmailConfig = async () => {
     });
 
     if (error.code === 'EAUTH') {
-      console.error('Authentication failed. Please check the Gmail app password.');
+      console.error('Authentication failed. Please check the Gmail app password and user.');
     } else if (error.code === 'ESOCKET') {
       console.error('Socket error. Please check network connectivity.');
     }
@@ -81,6 +84,42 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export function registerRoutes(app: Express): Server {
+  // Add security headers
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+    crossOriginEmbedderPolicy: true,
+    crossOriginOpenerPolicy: true,
+    crossOriginResourcePolicy: { policy: "same-site" },
+    dnsPrefetchControl: true,
+    frameguard: { action: "deny" },
+    hidePoweredBy: true,
+    hsts: true,
+    ieNoOpen: true,
+    noSniff: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xssFilter: true,
+  }));
+
+  // Rate limiting for authentication attempts
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per windowMs
+    message: "Too many login attempts, please try again later",
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Apply rate limiting to auth endpoints
+  app.use("/api/login", authLimiter);
+  app.use("/api/admin/*", authLimiter);
+
   // Set up authentication routes and middleware
   setupAuth(app);
 
