@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { createTransport } from "nodemailer";
 
-// Configure nodemailer with secure settings
+// Configure nodemailer with optimized settings
 const transporter = createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -13,20 +13,21 @@ const transporter = createTransport({
     user: 'vantalison@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD?.trim()
   },
-  connectionTimeout: 5000, // 5 seconds
-  greetingTimeout: 5000,
-  socketTimeout: 5000,
-  debug: true,
-  logger: true, // Enable built-in logger
+  // Reduce timeouts to fail fast if there are issues
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  // Optimize pool settings
+  pool: true,
+  maxConnections: 3,
+  maxMessages: 10,
+  rateDelta: 1000,
+  rateLimit: 5,
+  // Ensure secure communication
   tls: {
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2'
-  },
-  pool: true,
-  maxConnections: 1,
-  maxMessages: 100,
-  rateDelta: 1000,
-  rateLimit: 3
+  }
 });
 
 // Verify transporter connection on startup with detailed error logging

@@ -12,8 +12,8 @@ async function getOrCreateAdminUser() {
     // First, clear any existing admin users to avoid duplicates
     await db.delete(users).where(eq(users.email, "vantalison@gmail.com"));
 
-    // Create fresh admin user
-    const hashedPassword = await bcrypt.hash("powerPUFF70", 10);
+    // Create fresh admin user with stronger password hashing
+    const hashedPassword = await bcrypt.hash("powerPUFF70", 12); // Increased rounds to 12
     console.log("Creating admin user with email: vantalison@gmail.com");
 
     const [newAdmin] = await db.insert(users).values({

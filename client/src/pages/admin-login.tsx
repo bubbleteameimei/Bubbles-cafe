@@ -24,11 +24,12 @@ export default function AdminLoginPage() {
       email: "",
       password: ""
     },
-    mode: "onSubmit"
+    mode: "onChange" // Enable real-time validation
   });
 
   const onSubmit = async (data: AdminLogin) => {
     if (loginMutation.isPending) return;
+
     try {
       await loginMutation.mutateAsync(data);
       toast({
@@ -36,8 +37,13 @@ export default function AdminLoginPage() {
         description: "Logged in successfully"
       });
       setLocation("/admin");
-    } catch (error) {
-      // Error handling is done in mutation callbacks
+    } catch (error: any) {
+      // Handle specific error messages from the server
+      const errorMessage = error?.response?.data?.message || "Failed to log in";
+      form.setError("root", {
+        type: "manual",
+        message: errorMessage
+      });
     }
   };
 
