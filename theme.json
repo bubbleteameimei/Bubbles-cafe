@@ -2,5 +2,21 @@
   "variant": "professional",
   "primary": "hsl(345, 85%, 35%)",
   "appearance": "dark",
-  "radius": 0.75
+  "radius": 0.5,
+  "background": {
+    "dark": "hsl(240, 10%, 4%)",
+    "light": "hsl(0, 0%, 98%)"
+  },
+  "foreground": {
+    "dark": "hsl(0, 0%, 98%)",
+    "light": "hsl(240, 10%, 4%)"
+  },
+  "muted": {
+    "dark": "hsl(240, 5%, 12%)",
+    "light": "hsl(0, 0%, 92%)"
+  },
+  "accent": {
+    "dark": "hsl(345, 85%, 45%)",
+    "light": "hsl(345, 85%, 35%)"
+  }
 }

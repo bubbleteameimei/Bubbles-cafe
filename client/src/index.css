@@ -90,11 +90,38 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     letter-spacing: 0.02em;
-    background-image: radial-gradient(
-      circle at center,
-      hsl(var(--background)) 0%,
-      hsl(220, 14%, 10%) 100%
-    );
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(
+        to bottom,
+        hsl(var(--background) / 0.97),
+        hsl(var(--background) / 0.93)
+      ),
+      url('/attached_assets/IMG_4321.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+    opacity: 0.4;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .light body::before {
+    opacity: 0.15;
+    background-image: linear-gradient(
+        to bottom,
+        hsl(var(--background) / 0.95),
+        hsl(var(--background) / 0.98)
+      ),
+      url('/attached_assets/IMG_4321.jpeg');
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -170,7 +197,6 @@
   }
 }
 
-/* Add improved transition classes for buttons and interactive elements */
 button, a {
   @apply transition-transform duration-200 hover:shadow-md hover:shadow-primary/20;
   @apply active:scale-95;
