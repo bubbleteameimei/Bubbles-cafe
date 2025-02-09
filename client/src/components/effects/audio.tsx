@@ -13,10 +13,10 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-// Updated tracks with absolute paths and base URL
+// Updated tracks with absolute paths
 const TRACKS = {
-  'Ethereal': `${window.location.origin}/ethereal.mp3`,
-  'Nocturnal': `${window.location.origin}/nocturnal.mp3`
+  'Ethereal': '/ethereal.mp3',
+  'Nocturnal': '/nocturnal.mp3'
 } as const;
 
 // Preload all audio files
@@ -40,7 +40,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     try {
       // Cleanup previous audio instance if it exists
       if (audioRef.current) {
-        console.log('Cleaning up previous audio instance');
+        console.log('[Audio] Cleaning up previous audio instance');
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
@@ -48,9 +48,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
       const audio = new Audio();
 
-      // Get the correct file path with absolute URL
+      // Get the track path
       const trackPath = TRACKS[selectedTrack as keyof typeof TRACKS];
-      console.log('Initializing audio track:', selectedTrack, 'URL:', trackPath);
+      console.log('[Audio] Initializing track:', selectedTrack, 'Path:', trackPath);
 
       // Configure audio settings
       audio.preload = "auto";
@@ -58,92 +58,76 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.loop = true;
       audio.src = trackPath;
 
-      // Force immediate loading
-      Promise.all([
-        audio.load(),
-        new Promise(resolve => {
-          const loadHandler = () => {
-            audio.removeEventListener('loadeddata', loadHandler);
-            resolve(true);
-          };
-          audio.addEventListener('loadeddata', loadHandler);
-        })
-      ]).then(() => {
-        setAudioReady(true);
-      });
-
-      // Set up event handlers
+      // Set up event handlers with improved error logging
       const handleCanPlay = () => {
-        console.log('Audio is ready to play:', selectedTrack);
+        console.log('[Audio] Track ready to play:', selectedTrack);
         setAudioReady(true);
         toast({
           title: "Audio Ready",
-          description: `${selectedTrack} atmosphere ready`,
+          description: `${selectedTrack} atmosphere loaded`,
           duration: 2000,
         });
       };
 
       const handleLoadError = (error: Event) => {
-        console.error("Audio load error:", error);
-        console.error("Failed track path:", trackPath);
+        const errorDetails = error instanceof ErrorEvent ? error.message : 'Unknown error';
+        console.error("[Audio] Load error:", errorDetails);
+        console.error("[Audio] Failed track path:", trackPath);
         setAudioReady(false);
         setIsPlaying(false);
         toast({
           title: "Audio Error",
-          description: `Could not load ${selectedTrack} track. Please try again.`,
+          description: `Failed to load ${selectedTrack}. Please try again.`,
           variant: "destructive",
           duration: 3000,
         });
       };
 
+      const handlePlay = () => {
+        console.log('[Audio] Playback started:', selectedTrack);
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        console.log('[Audio] Playback paused:', selectedTrack);
+        setIsPlaying(false);
+      };
+
       // Add event listeners
       audio.addEventListener('canplaythrough', handleCanPlay);
       audio.addEventListener('error', handleLoadError);
-      audio.addEventListener('playing', () => {
-        console.log('Audio started playing:', selectedTrack);
-        setIsPlaying(true);
-      });
-      audio.addEventListener('pause', () => {
-        console.log('Audio paused:', selectedTrack);
-        setIsPlaying(false);
-      });
-      audio.addEventListener('ended', () => {
-        console.log('Audio playback ended');
-        setIsPlaying(false);
-      });
+      audio.addEventListener('playing', handlePlay);
+      audio.addEventListener('pause', handlePause);
 
       audioRef.current = audio;
 
       // Force load the audio
       audio.load();
 
-      // Cleanup function
       return () => {
-        console.log('Cleaning up audio resources');
+        console.log('[Audio] Cleaning up resources');
         if (audio) {
           audio.removeEventListener('canplaythrough', handleCanPlay);
           audio.removeEventListener('error', handleLoadError);
-          audio.removeEventListener('playing', () => setIsPlaying(true));
-          audio.removeEventListener('pause', () => setIsPlaying(false));
-          audio.removeEventListener('ended', () => setIsPlaying(false));
+          audio.removeEventListener('playing', handlePlay);
+          audio.removeEventListener('pause', handlePause);
           audio.pause();
           audio.src = '';
         }
       };
     } catch (error) {
-      console.error('Error initializing audio:', error);
+      console.error('[Audio] Initialization error:', error);
       setAudioReady(false);
       toast({
         title: "Audio System Error",
-        description: "Failed to initialize audio system. Please refresh the page.",
+        description: "Failed to initialize audio. Please refresh the page.",
         variant: "destructive",
       });
     }
   }, [selectedTrack, toast, volume]);
 
-  // Initialize audio when component mounts or track changes
   useEffect(() => {
-    console.log('Setting up audio provider');
+    console.log('[Audio] Setting up audio provider');
     const cleanup = initAudio();
     return () => {
       cleanup?.();
@@ -152,7 +136,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const toggleAudio = useCallback(async () => {
     if (!audioRef.current || !audioReady) {
-      console.log('Cannot toggle audio - not ready:', { current: !!audioRef.current, ready: audioReady });
+      console.log('[Audio] Cannot toggle - not ready:', { current: !!audioRef.current, ready: audioReady });
       toast({
         title: "Audio Not Ready",
         description: "Please wait for the audio to load",
@@ -163,11 +147,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     try {
       if (isPlaying) {
-        console.log('Pausing audio');
+        console.log('[Audio] Pausing playback');
         audioRef.current.pause();
-        // Skip pause notification
       } else {
-        console.log('Starting audio playback');
+        console.log('[Audio] Starting playback');
         audioRef.current.currentTime = 0;
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
@@ -180,7 +163,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Audio playback error:', error);
+      console.error('[Audio] Playback error:', error);
       setIsPlaying(false);
       toast({
         title: "Playback Error",
@@ -191,10 +174,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [audioReady, isPlaying, selectedTrack, toast]);
 
-  // Update volume in real-time
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
+      console.log('[Audio] Volume updated:', volume);
     }
   }, [volume]);
 

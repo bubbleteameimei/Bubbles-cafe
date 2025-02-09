@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Volume2, VolumeX } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface AudioTrack {
   name: string;
@@ -13,29 +14,46 @@ interface AudioTrack {
 
 export const SoundMixer = () => {
   const [tracks, setTracks] = useState<AudioTrack[]>([
-    { name: "Whispering Wind", file: "/static/whispering_wind.mp3", volume: 0.5, isPlaying: false },
-    { name: "Ethereal", file: "/static/ethereal.mp3", volume: 0.5, isPlaying: false },
-    { name: "Nocturnal", file: "/static/nocturnal.mp3", volume: 0.5, isPlaying: false },
-    { name: "Angels Standing Guard", file: "/static/angels_standing_guard.mp3", volume: 0.5, isPlaying: false },
+    { name: "Whispering Wind", file: "/whispering_wind.mp3", volume: 0.5, isPlaying: false },
+    { name: "Ethereal", file: "/ethereal.mp3", volume: 0.5, isPlaying: false },
+    { name: "Nocturnal", file: "/nocturnal.mp3", volume: 0.5, isPlaying: false },
+    { name: "Angels Standing Guard", file: "/angels_standing_guard.mp3", volume: 0.5, isPlaying: false },
   ]);
 
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
+    console.log('[SoundMixer] Initializing audio elements');
     // Initialize audio elements
     audioRefs.current = tracks.map((_, i) => audioRefs.current[i] || new Audio());
-    
+
     // Set up audio elements
     tracks.forEach((track, i) => {
       if (audioRefs.current[i]) {
-        audioRefs.current[i]!.src = track.file;
-        audioRefs.current[i]!.loop = true;
-        audioRefs.current[i]!.volume = track.volume;
+        try {
+          audioRefs.current[i]!.src = track.file;
+          audioRefs.current[i]!.loop = true;
+          audioRefs.current[i]!.volume = track.volume;
+
+          // Add error handling
+          audioRefs.current[i]!.onerror = () => {
+            console.error(`[SoundMixer] Error loading track: ${track.name}`);
+            toast({
+              title: "Audio Error",
+              description: `Failed to load ${track.name}`,
+              variant: "destructive",
+            });
+          };
+        } catch (error) {
+          console.error(`[SoundMixer] Error setting up track ${track.name}:`, error);
+        }
       }
     });
 
     // Cleanup
     return () => {
+      console.log('[SoundMixer] Cleaning up audio elements');
       audioRefs.current.forEach(audio => {
         if (audio) {
           audio.pause();
@@ -43,41 +61,87 @@ export const SoundMixer = () => {
         }
       });
     };
-  }, []);
+  }, [toast]);
 
   const toggleTrack = (index: number) => {
-    setTracks(prev => prev.map((track, i) => {
-      if (i === index) {
-        const audio = audioRefs.current[i];
-        if (audio) {
-          track.isPlaying ? audio.pause() : audio.play();
+    try {
+      setTracks(prev => prev.map((track, i) => {
+        if (i === index) {
+          const audio = audioRefs.current[i];
+          if (audio) {
+            if (track.isPlaying) {
+              audio.pause();
+              console.log(`[SoundMixer] Paused track: ${track.name}`);
+            } else {
+              audio.play().catch(error => {
+                console.error(`[SoundMixer] Playback error for ${track.name}:`, error);
+                toast({
+                  title: "Playback Error",
+                  description: `Could not play ${track.name}`,
+                  variant: "destructive",
+                });
+              });
+              console.log(`[SoundMixer] Playing track: ${track.name}`);
+            }
+          }
+          return { ...track, isPlaying: !track.isPlaying };
         }
-        return { ...track, isPlaying: !track.isPlaying };
-      }
-      return track;
-    }));
+        return track;
+      }));
+    } catch (error) {
+      console.error('[SoundMixer] Toggle error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle audio track",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateVolume = (index: number, value: number) => {
-    setTracks(prev => prev.map((track, i) => {
-      if (i === index) {
-        const audio = audioRefs.current[i];
-        if (audio) {
-          audio.volume = value;
+    try {
+      setTracks(prev => prev.map((track, i) => {
+        if (i === index) {
+          const audio = audioRefs.current[i];
+          if (audio) {
+            audio.volume = value;
+            console.log(`[SoundMixer] Updated volume for ${track.name}: ${value}`);
+          }
+          return { ...track, volume: value };
         }
-        return { ...track, volume: value };
-      }
-      return track;
-    }));
+        return track;
+      }));
+    } catch (error) {
+      console.error('[SoundMixer] Volume update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update volume",
+        variant: "destructive",
+      });
+    }
   };
 
   const savePreferences = () => {
-    const preferences = tracks.map(track => ({
-      name: track.name,
-      volume: track.volume,
-      isPlaying: track.isPlaying
-    }));
-    localStorage.setItem('audioPreferences', JSON.stringify(preferences));
+    try {
+      const preferences = tracks.map(track => ({
+        name: track.name,
+        volume: track.volume,
+        isPlaying: track.isPlaying
+      }));
+      localStorage.setItem('audioPreferences', JSON.stringify(preferences));
+      console.log('[SoundMixer] Preferences saved successfully');
+      toast({
+        title: "Success",
+        description: "Audio preferences saved",
+      });
+    } catch (error) {
+      console.error('[SoundMixer] Error saving preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save preferences",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
