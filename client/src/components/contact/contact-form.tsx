@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 export default function ContactForm() {
   const { toast } = useToast();
@@ -25,7 +26,7 @@ export default function ContactForm() {
       name: "",
       email: "",
       message: "",
-      showEmail: false, // Default to not showing email for privacy
+      showEmail: false,
     },
   });
 
@@ -35,7 +36,7 @@ export default function ContactForm() {
 
       toast({
         title: "Message sent successfully",
-        description: "Thank you for your message. I'll get back to you soon.",
+        description: response.message || "Thank you for your message. I'll get back to you soon.",
       });
 
       form.reset();
@@ -55,7 +56,12 @@ export default function ContactForm() {
 
       toast({
         title: "Error sending message",
-        description: error.message || "Please try again later.",
+        description: (
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <span>{error.message || "Please try again later."}</span>
+          </div>
+        ),
         variant: "destructive",
       });
     }
