@@ -7,6 +7,10 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 
 const app = express();
+
+// Set trust proxy first, before other middleware
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -73,8 +77,6 @@ async function findAvailablePort(startPort: number, maxAttempts: number = 10): P
         });
       });
 
-      // Log port in workflow-friendly format
-      console.log(`PORT=${currentPort}`);
       log(`Found available port: ${currentPort}`);
       return currentPort;
     } catch (error) {
@@ -87,7 +89,7 @@ async function findAvailablePort(startPort: number, maxAttempts: number = 10): P
   throw new Error(`Could not find an available port after ${maxAttempts} attempts`);
 }
 
-async function waitForPort(port: number, retries = 45, delay = 1500): Promise<void> {
+async function waitForPort(port: number, retries = 45, delay = 1000): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = new Socket();
     let attempts = 0;
@@ -102,7 +104,7 @@ async function waitForPort(port: number, retries = 45, delay = 1500): Promise<vo
       log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
 
       socket.connect(port, '0.0.0.0', () => {
-        log(`Successfully connected to port ${port} after ${attempts} attempts`);
+        log(`Successfully connected to port ${port}`);
         cleanup();
         resolve();
       });
@@ -112,11 +114,8 @@ async function waitForPort(port: number, retries = 45, delay = 1500): Promise<vo
       socket.destroy();
       if (attempts >= retries) {
         cleanup();
-        const errorMsg = `Failed to connect to port ${port} after ${retries} attempts: ${err.message}`;
-        log(errorMsg);
-        reject(new Error(errorMsg));
+        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
       } else {
-        log(`Connection attempt ${attempts} failed, retrying in ${delay}ms...`);
         setTimeout(tryConnect, delay);
       }
     });
@@ -135,12 +134,11 @@ async function checkDatabaseConnection(): Promise<void> {
   }
 }
 
-// Error handling middleware with enhanced security and logging
+// Error handling middleware
 function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
   const status = err.status || err.statusCode || 500;
   const isDevelopment = process.env.NODE_ENV !== 'production';
 
-  // Detailed error logging for debugging
   const errorDetails = {
     status,
     message: err.message,
@@ -151,10 +149,9 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
 
   log('Error occurred:', JSON.stringify(errorDetails, null, 2));
 
-  // Send safe response to client
   res.status(status).json({
     status,
-    message: isDevelopment ? err.message : 'An error occurred. Please try again later.',
+    message: isDevelopment ? err.message : 'An error occurred',
     ...(isDevelopment && { details: err.details }),
   });
 }
@@ -175,8 +172,6 @@ async function startServer() {
     }
 
     const server = registerRoutes(app);
-
-    // Use the enhanced error handler
     app.use(errorHandler);
 
     if (app.get("env") === "development") {
@@ -190,33 +185,35 @@ async function startServer() {
 
     return new Promise<void>((resolve, reject) => {
       const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
-        log(`Server starting on port ${PORT}`);
-
         try {
-          // Wait for the port to be actually ready with increased retries
-          await waitForPort(PORT);
-          log(`Port ${PORT} is confirmed ready and accepting connections`);
+          log(`Server starting on port ${PORT}`);
 
-          // Signal that we're ready to accept connections
+          // Wait for port to be actually ready
+          await waitForPort(PORT);
+          log(`Port ${PORT} is ready and accepting connections`);
+
+          // Print port in the exact format expected by Replit
+          // This must be printed exactly as is: PORT=number
+          console.log(`PORT=${PORT}`);
+
           if (process.send) {
             process.send('ready');
           }
 
-          // Log the port in workflow-friendly format
-          console.log(`Server started successfully and listening on port ${PORT}`);
-          console.log(`PORT=${PORT}`);
           resolve();
         } catch (error) {
-          log(`Failed to verify port availability: ${error}`);
+          log(`Error during server startup: ${error}`);
           serverInstance.close();
           reject(error);
         }
-      }).on('error', (err: any) => {
+      });
+
+      serverInstance.on('error', (err: any) => {
         log(`Server error: ${err.message}`);
         reject(err);
       });
 
-      // Handle process termination
+      // Handle graceful shutdown
       const cleanup = () => {
         serverInstance.close(() => {
           log('Server closed');
@@ -233,7 +230,6 @@ async function startServer() {
   }
 }
 
-// Start server and handle any errors
 startServer().catch((error) => {
   log(`Server startup failed: ${error}`);
   process.exit(1);
