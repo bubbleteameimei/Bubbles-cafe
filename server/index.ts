@@ -10,12 +10,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging middleware
+// Logging middleware with enhanced security details
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Capture response for logging
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
@@ -26,8 +27,14 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+
+      // Safely log response data
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Remove sensitive data before logging
+        const sanitizedResponse = { ...capturedJsonResponse };
+        delete sanitizedResponse.password;
+        delete sanitizedResponse.token;
+        logLine += ` :: ${JSON.stringify(sanitizedResponse)}`;
       }
 
       if (logLine.length > 80) {
@@ -55,13 +62,15 @@ async function findAvailablePort(startPort: number): Promise<number> {
   });
 }
 
-async function waitForPort(port: number, retries = 15, delay = 500): Promise<void> {
+async function waitForPort(port: number, retries = 45, delay = 1500): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = new Socket();
     let attempts = 0;
 
     const tryConnect = () => {
       attempts++;
+      log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
+
       socket.connect(port, '0.0.0.0', () => {
         log(`Successfully connected to port ${port} after ${attempts} attempts`);
         socket.end();
@@ -73,9 +82,11 @@ async function waitForPort(port: number, retries = 15, delay = 500): Promise<voi
     socket.on('error', (err) => {
       socket.destroy();
       if (attempts >= retries) {
-        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
+        const errorMsg = `Failed to connect to port ${port} after ${retries} attempts: ${err.message}`;
+        log(errorMsg);
+        reject(new Error(errorMsg));
       } else {
-        log(`Retry ${attempts}/${retries} connecting to port ${port}`);
+        log(`Connection attempt ${attempts} failed, retrying in ${delay}ms...`);
         setTimeout(tryConnect, delay);
       }
     });
@@ -92,6 +103,30 @@ async function checkDatabaseConnection(): Promise<void> {
     log("Database connection failed:", error instanceof Error ? error.message : String(error));
     throw error;
   }
+}
+
+// Error handling middleware with enhanced security and logging
+function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+  const status = err.status || err.statusCode || 500;
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
+  // Detailed error logging for debugging
+  const errorDetails = {
+    status,
+    message: err.message,
+    stack: err.stack,
+    timestamp: new Date().toISOString(),
+    code: err.code,
+  };
+
+  log('Error occurred:', JSON.stringify(errorDetails, null, 2));
+
+  // Send safe response to client
+  res.status(status).json({
+    status,
+    message: isDevelopment ? err.message : 'An error occurred. Please try again later.',
+    ...(isDevelopment && { details: err.details }),
+  });
 }
 
 async function startServer() {
@@ -111,13 +146,8 @@ async function startServer() {
 
     const server = registerRoutes(app);
 
-    // Error handling middleware
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      log(`Error: ${status} - ${message}`);
-      res.status(status).json({ message });
-    });
+    // Use the enhanced error handler
+    app.use(errorHandler);
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
@@ -133,7 +163,7 @@ async function startServer() {
         log(`Server starting on port ${PORT}`);
 
         try {
-          // Wait for the port to be actually ready with retries
+          // Wait for the port to be actually ready with increased retries
           await waitForPort(PORT);
           log(`Port ${PORT} is confirmed ready and accepting connections`);
 
@@ -156,7 +186,7 @@ async function startServer() {
       });
     });
   } catch (error) {
-    log(`Failed to start server: ${error}`);
+    log(`Critical server error: ${error instanceof Error ? error.stack : String(error)}`);
     process.exit(1);
   }
 }
