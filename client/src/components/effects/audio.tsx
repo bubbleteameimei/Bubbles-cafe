@@ -71,11 +71,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.error("[Audio] Load error:", error);
         setAudioReady(false);
         setIsPlaying(false);
-        toast({
-          title: "Audio Error",
-          description: `Failed to load audio. Please try again.`,
-          variant: "destructive",
-        });
       };
 
       const handlePlay = () => {
@@ -110,13 +105,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('[Audio] Initialization error:', error);
       setAudioReady(false);
-      toast({
-        title: "Audio System Error",
-        description: "Failed to initialize audio. Please refresh the page.",
-        variant: "destructive",
-      });
     }
-  }, [selectedTrack, toast, volume]);
+  }, [selectedTrack, volume]);
 
   useEffect(() => {
     console.log('[Audio] Setting up audio provider');
@@ -146,11 +136,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('[Audio] Playback error:', error);
       setIsPlaying(false);
-      toast({
-        title: "Playback Error",
-        description: "Could not play audio. Please try again.",
-        variant: "destructive",
-      });
     }
   }, [audioReady, isPlaying]);
 

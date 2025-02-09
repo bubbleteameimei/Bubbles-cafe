@@ -30,7 +30,7 @@ async function generateAudio(type = 'ethereal') {
 
       synth.connect(reverb);
 
-      // Schedule notes with different patterns for each type
+      // Schedule notes with different patterns based on type
       const notes = type === 'ethereal' 
         ? ['C4', 'E4', 'G4', 'B4']
         : ['A2', 'C3', 'E3', 'G3'];
@@ -48,7 +48,7 @@ async function generateAudio(type = 'ethereal') {
       }, notes.length + 2);
     }, 10);
 
-    // Write buffer to file
+    // Write buffer to file with specific settings for better quality
     const fileName = type === 'ethereal' ? 'ethereal.mp3' : 'nocturnal.mp3';
     const filePath = `client/public/${fileName}`;
     await writeFile(filePath, Buffer.from(buffer.get()));
