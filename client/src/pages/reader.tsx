@@ -10,24 +10,7 @@ import { format } from "date-fns";
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-
-// Helper function to generate and persist random stats (This is not used anymore)
-//const getOrCreateStats = (postId: number) => {
-//  const storageKey = `post-stats-${postId}`;
-//  const existingStats = localStorage.getItem(storageKey);
-//
-//  if (existingStats) {
-//    return JSON.parse(existingStats);
-//  }
-//
-//  const newStats = {
-//    likes: Math.floor(Math.random() * 150),
-//    dislikes: Math.floor(Math.random() * 15)
-//  };
-//
-//  localStorage.setItem(storageKey, JSON.stringify(newStats));
-//  return newStats;
-//};
+import CommentSection from "@/components/blog/comment-section"; // Fixed import path
 
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -64,9 +47,9 @@ export default function Reader() {
         if (existingStats) {
           persistedStats[post.id] = JSON.parse(existingStats);
         } else {
-          // Generate random stats within limits if not already stored
+          // Generate random stats within limits, ensuring minimum 80 likes
           const newStats = {
-            likes: Math.floor(Math.random() * 150),
+            likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
             dislikes: Math.floor(Math.random() * 15)
           };
           localStorage.setItem(storageKey, JSON.stringify(newStats));
@@ -143,8 +126,8 @@ export default function Reader() {
             <article>
               <div className="flex items-center justify-between mb-4">
                 <h1 className="story-title">{currentPost.title}</h1>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={() => setLocation('/index')}
                   className="hover:bg-primary/10"
@@ -158,22 +141,40 @@ export default function Reader() {
                 <span>{readingTime}</span>
               </div>
               <div
-                className="story-content mb-8"
+                className="story-content mb-8 prose dark:prose-invert max-w-none"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
-                {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => (
-                  <p key={index} className="mb-6">
-                    {paragraph.trim().split('_').map((text, i) =>
-                      i % 2 === 0 ? text : <i key={i}>{text}</i>
-                    )}
-                  </p>
-                ))}
+                {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => {
+                  // Skip empty paragraphs
+                  if (!paragraph.trim()) return null;
+
+                  // Process the paragraph
+                  const processed = paragraph.trim().split('_').map((text, i) => (
+                    i % 2 === 0 ? (
+                      <span key={i}>{text}</span>
+                    ) : (
+                      <i key={i} className="italic text-primary/80 font-serif">{text}</i>
+                    )
+                  ));
+
+                  return (
+                    <p key={index} className="mb-6 leading-relaxed">
+                      {processed}
+                    </p>
+                  );
+                })}
               </div>
               <div className="border-t border-border pt-4">
                 <LikeDislike
                   postId={currentPost.id}
                   initialLikes={postStats[currentPost.id]?.likes || 0}
                   initialDislikes={postStats[currentPost.id]?.dislikes || 0}
+                />
+              </div>
+              <div className="mt-16"> {/* Added comment section */}
+                <CommentSection
+                  postId={currentPost.id}
+                  title={currentPost.title}
                 />
               </div>
             </article>

@@ -19,7 +19,7 @@ const getOrCreateStats = (postId: number) => {
   }
 
   const newStats = {
-    likes: Math.floor(Math.random() * 150),
+    likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
     dislikes: Math.floor(Math.random() * 15)
   };
 

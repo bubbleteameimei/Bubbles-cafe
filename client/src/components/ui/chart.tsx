@@ -170,7 +170,10 @@ const ChartTooltipContent = React.forwardRef<
     if (!active || !payload?.length) {
       return null;
     }
-    if (!ref.current) {
+
+    // Check if ref is a function or an object and handle accordingly
+    const refCurrent = typeof ref === 'function' ? ref : ref.current;
+    if (!refCurrent) {
       return null;
     }
 

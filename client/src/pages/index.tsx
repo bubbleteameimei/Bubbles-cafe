@@ -20,12 +20,45 @@ const getOrCreateStats = (postId: number) => {
   }
 
   const newStats = {
-    likes: Math.floor(Math.random() * 150),
+    likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
     dislikes: Math.floor(Math.random() * 15)
   };
 
   localStorage.setItem(storageKey, JSON.stringify(newStats));
   return newStats;
+};
+
+// Update the excerpt function to be more concise
+const getExcerpt = (content: string) => {
+  if (!content) return '';
+
+  const paragraphs = content.split('\n\n');
+  const engagingParagraph = paragraphs.find(p => 
+    p.includes('!') || 
+    p.includes('?') || 
+    p.includes('...') || 
+    p.toLowerCase().includes('suddenly') ||
+    p.toLowerCase().includes('horror') ||
+    p.toLowerCase().includes('fear') ||
+    p.toLowerCase().includes('scream') ||
+    p.toLowerCase().includes('blood') ||
+    p.toLowerCase().includes('dark')
+  );
+
+  const selectedParagraph = engagingParagraph || paragraphs[0];
+  const maxLength = 100; // Reduced from 120
+  const trimmed = selectedParagraph.trim();
+  return trimmed.length > maxLength 
+    ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
+    : trimmed;
+};
+
+const getReadingTime = (content: string) => {
+  if (!content) return '0 min read';
+  const wordsPerMinute = 200;
+  const words = content.trim().split(/\s+/).length;
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return `${minutes} min read`;
 };
 
 export default function IndexView() {
@@ -43,38 +76,6 @@ export default function IndexView() {
       console.error('Error formatting date:', error);
       return '';
     }
-  };
-
-  const getReadingTime = (content: string) => {
-    if (!content) return '0 min read';
-    const wordsPerMinute = 200;
-    const words = content.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
-  };
-
-  const getExcerpt = (content: string) => {
-    if (!content) return '';
-
-    const paragraphs = content.split('\n\n');
-    const engagingParagraph = paragraphs.find(p => 
-      p.includes('!') || 
-      p.includes('?') || 
-      p.includes('...') || 
-      p.toLowerCase().includes('suddenly') ||
-      p.toLowerCase().includes('horror') ||
-      p.toLowerCase().includes('fear') ||
-      p.toLowerCase().includes('scream') ||
-      p.toLowerCase().includes('blood') ||
-      p.toLowerCase().includes('dark')
-    );
-
-    const selectedParagraph = engagingParagraph || paragraphs[0];
-    const maxLength = 200;
-    const trimmed = selectedParagraph.trim();
-    return trimmed.length > maxLength 
-      ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
-      : trimmed;
   };
 
   const navigateToStory = (postId: number) => {
@@ -135,14 +136,14 @@ export default function IndexView() {
                   className="group relative"
                 >
                   <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10">
-                    <CardHeader className="relative pb-4">
-                      <div className="flex justify-between items-start gap-4">
+                    <CardHeader className="relative py-2 px-3">
+                      <div className="flex justify-between items-start gap-2">
                         <CardTitle 
-                          className="text-2xl font-serif group-hover:text-primary transition-colors"
+                          className="text-base font-serif group-hover:text-primary transition-colors"
                         >
                           {post.title}
                         </CardTitle>
-                        <div className="text-xs text-muted-foreground font-mono space-y-2">
+                        <div className="text-[10px] text-muted-foreground font-mono space-y-0.5">
                           <div className="flex items-center gap-1 justify-end">
                             <Calendar className="h-3 w-3" />
                             <time>{formatDate(post.createdAt)}</time>
@@ -156,16 +157,16 @@ export default function IndexView() {
                     </CardHeader>
                     <CardContent 
                       onClick={() => navigateToStory(post.id)}
-                      className="cursor-pointer py-4 flex-grow"
+                      className="cursor-pointer py-1 px-3 flex-grow"
                     >
-                      <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
                         {excerpt}
                       </p>
-                      <div className="flex items-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
-                        Read full story <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center text-[11px] text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                        Read full story <ChevronRight className="h-2.5 w-2.5 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
-                    <CardFooter className="relative mt-auto pt-4 border-t border-border bg-card">
+                    <CardFooter className="relative mt-auto py-2 px-3 border-t border-border bg-card">
                       <div className="w-full">
                         <LikeDislike
                           postId={post.id}

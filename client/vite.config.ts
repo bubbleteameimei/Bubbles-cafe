@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { runtimeErrorModalPlugin } from "@replit/vite-plugin-runtime-error-modal";
-import { shadcnThemeJsonPlugin } from "@replit/vite-plugin-shadcn-theme-json";
+import runtimeErrorModalPlugin from "@replit/vite-plugin-runtime-error-modal";
+import shadcnThemeJsonPlugin from "@replit/vite-plugin-shadcn-theme-json";
 
 export default defineConfig({
   plugins: [react(), runtimeErrorModalPlugin(), shadcnThemeJsonPlugin()],
