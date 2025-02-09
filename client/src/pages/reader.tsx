@@ -9,12 +9,33 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
+import { LikeDislike } from "@/components/ui/like-dislike";
+
+// Helper function to generate and persist random stats (This is not used anymore)
+//const getOrCreateStats = (postId: number) => {
+//  const storageKey = `post-stats-${postId}`;
+//  const existingStats = localStorage.getItem(storageKey);
+//
+//  if (existingStats) {
+//    return JSON.parse(existingStats);
+//  }
+//
+//  const newStats = {
+//    likes: Math.floor(Math.random() * 150),
+//    dislikes: Math.floor(Math.random() * 15)
+//  };
+//
+//  localStorage.setItem(storageKey, JSON.stringify(newStats));
+//  return newStats;
+//};
 
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
+
+  const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
 
   // Keep track of the current index in session storage
   useEffect(() => {
@@ -32,6 +53,29 @@ export default function Reader() {
       createdAt: new Date(post.createdAt)
     }))
   });
+
+  // Initialize or load persisted stats for posts
+  useEffect(() => {
+    if (posts) {
+      const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
+      posts.forEach(post => {
+        const storageKey = `post-stats-${post.id}`;
+        const existingStats = localStorage.getItem(storageKey);
+        if (existingStats) {
+          persistedStats[post.id] = JSON.parse(existingStats);
+        } else {
+          // Generate random stats within limits if not already stored
+          const newStats = {
+            likes: Math.floor(Math.random() * 150),
+            dislikes: Math.floor(Math.random() * 15)
+          };
+          localStorage.setItem(storageKey, JSON.stringify(newStats));
+          persistedStats[post.id] = newStats;
+        }
+      });
+      setPostStats(persistedStats);
+    }
+  }, [posts]);
 
   const goToPrevious = useCallback(() => {
     if (!posts?.length) return;
@@ -81,6 +125,7 @@ export default function Reader() {
 
   const formattedDate = format(currentPost.createdAt, 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
+  const stats = postStats[currentPost.id] || { likes: 0, dislikes: 0 };
 
   return (
     <div className="relative min-h-screen">
@@ -113,7 +158,7 @@ export default function Reader() {
                 <span>{readingTime}</span>
               </div>
               <div
-                className="story-content"
+                className="story-content mb-8"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
                 {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => (
@@ -124,13 +169,20 @@ export default function Reader() {
                   </p>
                 ))}
               </div>
+              <div className="border-t border-border pt-4">
+                <LikeDislike
+                  postId={currentPost.id}
+                  initialLikes={postStats[currentPost.id]?.likes || 0}
+                  initialDislikes={postStats[currentPost.id]?.dislikes || 0}
+                />
+              </div>
             </article>
           </motion.div>
         </AnimatePresence>
 
         <div className="controls-container">
-          <div className="controls-wrapper">
-            <div className="nav-controls">
+          <div className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
+            <div className="nav-controls flex items-center justify-between">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -142,7 +194,7 @@ export default function Reader() {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="page-counter">
+              <span className="page-counter text-sm text-muted-foreground font-mono">
                 {currentIndex + 1} / {posts.length}
               </span>
 

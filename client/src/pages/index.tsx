@@ -10,6 +10,24 @@ import { ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 
+// Helper function to generate and persist random stats
+const getOrCreateStats = (postId: number) => {
+  const storageKey = `post-stats-${postId}`;
+  const existingStats = localStorage.getItem(storageKey);
+
+  if (existingStats) {
+    return JSON.parse(existingStats);
+  }
+
+  const newStats = {
+    likes: Math.floor(Math.random() * 150),
+    dislikes: Math.floor(Math.random() * 15)
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(newStats));
+  return newStats;
+};
+
 export default function IndexView() {
   const [, setLocation] = useLocation();
   const { data: posts, isLoading, error } = useQuery<Post[]>({
@@ -106,6 +124,7 @@ export default function IndexView() {
             {posts.map((post, index) => {
               const readingTime = getReadingTime(post.content);
               const excerpt = getExcerpt(post.content);
+              const stats = getOrCreateStats(post.id);
 
               return (
                 <motion.div
@@ -150,8 +169,8 @@ export default function IndexView() {
                       <div className="w-full">
                         <LikeDislike
                           postId={post.id}
-                          initialLikes={post.likesCount}
-                          initialDislikes={post.dislikesCount}
+                          initialLikes={stats.likes}
+                          initialDislikes={stats.dislikes}
                         />
                       </div>
                     </CardFooter>

@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 interface LikeDislikeProps {
   postId: number;
@@ -31,54 +30,71 @@ export function LikeDislike({
     dislikes: initialDislikes
   });
 
+  // Load persisted stats on mount
+  useEffect(() => {
+    const storageKey = `post-stats-${postId}`;
+    const storedStats = localStorage.getItem(storageKey);
+    if (storedStats) {
+      const stats = JSON.parse(storedStats);
+      setCounts(stats);
+    }
+  }, [postId]);
+
+  const updateLocalStorage = (newCounts: { likes: number, dislikes: number }) => {
+    const storageKey = `post-stats-${postId}`;
+    localStorage.setItem(storageKey, JSON.stringify(newCounts));
+  };
+
   const likeMutation = useMutation({
     mutationFn: async (isLike: boolean) => {
-      return apiRequest('POST', `/api/posts/${postId}/like`, { isLike });
-    },
-    onMutate: async (isLike) => {
-      await queryClient.cancelQueries({ queryKey: ['/api/posts', postId] });
-      const previousPost = queryClient.getQueryData(['/api/posts', postId]);
+      const storageKey = `post-stats-${postId}`;
+      const currentStats = JSON.parse(localStorage.getItem(storageKey) || JSON.stringify(counts));
 
-      setCounts(prev => {
-        const newCounts = { ...prev };
-        if (isLike) {
-          if (liked) {
-            newCounts.likes--;
-          } else {
-            newCounts.likes++;
-            if (disliked) newCounts.dislikes--;
-          }
+      let newStats = { ...currentStats };
+      if (isLike) {
+        if (liked) {
+          newStats.likes = Math.max(0, newStats.likes - 1);
         } else {
+          if (newStats.likes >= 150) {
+            throw new Error("Maximum likes reached");
+          }
+          newStats.likes = Math.min(150, newStats.likes + 1);
           if (disliked) {
-            newCounts.dislikes--;
-          } else {
-            newCounts.dislikes++;
-            if (liked) newCounts.likes--;
+            newStats.dislikes = Math.max(0, newStats.dislikes - 1);
           }
         }
-        return newCounts;
-      });
-
-      return { previousPost };
-    },
-    onError: (err, _, context) => {
-      if (context?.previousPost) {
-        queryClient.setQueryData(['/api/posts', postId], context.previousPost);
+      } else {
+        if (disliked) {
+          newStats.dislikes = Math.max(0, newStats.dislikes - 1);
+        } else {
+          if (newStats.dislikes >= 15) {
+            throw new Error("Maximum dislikes reached");
+          }
+          newStats.dislikes = Math.min(15, newStats.dislikes + 1);
+          if (liked) {
+            newStats.likes = Math.max(0, newStats.likes - 1);
+          }
+        }
       }
-      setCounts({ likes: initialLikes, dislikes: initialDislikes });
+
+      updateLocalStorage(newStats);
+      return newStats;
+    },
+    onSuccess: (newStats) => {
+      setCounts(newStats);
+      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
+    },
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update. Please try again.",
+        description: error.message || "Failed to update. Please try again.",
         variant: "destructive"
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
     }
   });
 
   const handleLike = async () => {
-    if (counts.likes >= 150) {
+    if (counts.likes >= 150 && !liked) {
       toast({
         title: "Maximum likes reached",
         description: "This post has reached its maximum number of likes.",
@@ -90,6 +106,7 @@ export function LikeDislike({
     const newLiked = !liked;
     setLiked(newLiked);
     if (disliked) setDisliked(false);
+
     try {
       await likeMutation.mutateAsync(true);
       onLike?.(newLiked);
@@ -100,7 +117,7 @@ export function LikeDislike({
   };
 
   const handleDislike = async () => {
-    if (counts.dislikes >= 15) {
+    if (counts.dislikes >= 15 && !disliked) {
       toast({
         title: "Maximum dislikes reached",
         description: "This post has reached its maximum number of dislikes.",
@@ -112,6 +129,7 @@ export function LikeDislike({
     const newDisliked = !disliked;
     setDisliked(newDisliked);
     if (liked) setLiked(false);
+
     try {
       await likeMutation.mutateAsync(false);
       onDislike?.(newDisliked);
@@ -130,7 +148,7 @@ export function LikeDislike({
         className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
         } pointer-events-auto`}
-        disabled={likeMutation.isPending || counts.likes >= 150}
+        disabled={likeMutation.isPending || (counts.likes >= 150 && !liked)}
       >
         <ThumbsUp className={`h-4 w-4 transition-transform group-hover:scale-110 ${
           liked ? 'text-primary' : 'text-muted-foreground'
@@ -150,7 +168,7 @@ export function LikeDislike({
         className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
         } pointer-events-auto`}
-        disabled={likeMutation.isPending || counts.dislikes >= 15}
+        disabled={likeMutation.isPending || (counts.dislikes >= 15 && !disliked)}
       >
         <ThumbsDown className={`h-4 w-4 transition-transform group-hover:scale-110 ${
           disliked ? 'text-destructive' : 'text-muted-foreground'

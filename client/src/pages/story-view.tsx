@@ -6,6 +6,26 @@ import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
 import { SoundMixer } from "@/components/effects/sound-mixer";
+import { LikeDislike } from "@/components/ui/like-dislike";
+import { useState, useEffect } from "react";
+
+// Helper function to generate and persist random stats
+const getOrCreateStats = (postId: number) => {
+  const storageKey = `post-stats-${postId}`;
+  const existingStats = localStorage.getItem(storageKey);
+
+  if (existingStats) {
+    return JSON.parse(existingStats);
+  }
+
+  const newStats = {
+    likes: Math.floor(Math.random() * 150),
+    dislikes: Math.floor(Math.random() * 15)
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(newStats));
+  return newStats;
+};
 
 interface StoryViewProps {
   params: {
@@ -14,9 +34,22 @@ interface StoryViewProps {
 }
 
 export default function StoryView({ params }: StoryViewProps) {
+  const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
+
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", params.slug],
   });
+
+  // Initialize persisted stats for the post
+  useEffect(() => {
+    if (post) {
+      const stats = getOrCreateStats(post.id);
+      setPostStats(prev => ({
+        ...prev,
+        [post.id]: stats
+      }));
+    }
+  }, [post]);
 
   const formatDate = (dateString: string | Date) => {
     try {
@@ -46,6 +79,7 @@ export default function StoryView({ params }: StoryViewProps) {
   }
 
   const content = post.content || '';
+  const stats = postStats[post.id] || { likes: 0, dislikes: 0 };
 
   return (
     <div className="relative min-h-screen">
@@ -74,6 +108,13 @@ export default function StoryView({ params }: StoryViewProps) {
                 )}
               </p>
             ))}
+          </div>
+          <div className="border-t border-border pt-4">
+            <LikeDislike
+              postId={post.id}
+              initialLikes={stats.likes}
+              initialDislikes={stats.dislikes}
+            />
           </div>
         </motion.article>
 
