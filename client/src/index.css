@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;700&family=Spectral:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -84,12 +84,12 @@
 
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: 'Crimson Text', serif;
+    font-family: 'Libre Baskerville', serif;
     font-size: clamp(16px, 1.5vw, 18px);
     line-height: 1.75;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     position: relative;
   }
 
@@ -125,8 +125,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cinzel Decorative', serif;
-    @apply font-bold tracking-tight;
+    font-family: 'Cormorant Garamond', serif;
+    @apply font-bold tracking-normal;
   }
 
   .story-content {
@@ -148,8 +148,8 @@
   }
 
   .story-meta {
-    font-family: 'Spectral', serif;
-    @apply text-sm text-muted-foreground;
+    font-family: 'Montserrat', sans-serif;
+    @apply text-sm text-muted-foreground font-medium;
   }
 
   .controls-container {
