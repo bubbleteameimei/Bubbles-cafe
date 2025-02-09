@@ -158,5 +158,38 @@ Message: ${message}
     }
   });
 
+  app.get("/api/posts/comments/recent", async (_req, res) => {
+    try {
+      const comments = await storage.getRecentComments();
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching recent comments:", error);
+      res.status(500).json({ message: "Failed to fetch recent comments" });
+    }
+  });
+
+  app.get("/api/posts/:postId/comments", async (req, res) => {
+    try {
+      const comments = await storage.getComments(parseInt(req.params.postId));
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/posts/:postId/comments", async (req, res) => {
+    try {
+      const comment = await storage.createComment({
+        ...req.body,
+        postId: parseInt(req.params.postId)
+      });
+      res.json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
   return createServer(app);
 }
