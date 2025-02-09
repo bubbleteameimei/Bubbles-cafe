@@ -31,17 +31,7 @@ export default function ContactForm() {
 
   const onSubmit = async (data: any) => {
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      const response = await apiRequest('POST', '/api/contact', data);
 
       toast({
         title: "Message sent successfully",
@@ -49,10 +39,23 @@ export default function ContactForm() {
       });
 
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
+      // Handle structured error responses
+      const errorDetails = error.details || {};
+
+      // Set form errors if we received field-specific errors
+      Object.entries(errorDetails).forEach(([field, message]) => {
+        if (message) {
+          form.setError(field as any, {
+            type: 'server',
+            message: message as string
+          });
+        }
+      });
+
       toast({
         title: "Error sending message",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     }

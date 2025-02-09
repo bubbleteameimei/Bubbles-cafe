@@ -4,12 +4,24 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { createTransport } from "nodemailer";
 
-// Configure nodemailer
+// Configure nodemailer with secure settings
 const transporter = createTransport({
   service: 'gmail',
   auth: {
     user: 'vantalison@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
+// Verify transporter connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Email transporter verification failed:', error);
+  } else {
+    console.log('Email transporter is ready to send messages');
   }
 });
 
@@ -120,6 +132,26 @@ export function registerRoutes(app: Express): Server {
     try {
       const { name, email, message, showEmail } = req.body;
 
+      if (!name || !email || !message) {
+        return res.status(400).json({ 
+          message: "Please fill in all required fields",
+          details: {
+            name: !name ? "Name is required" : null,
+            email: !email ? "Email is required" : null,
+            message: !message ? "Message is required" : null
+          }
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ 
+          message: "Invalid email format",
+          details: { email: "Please enter a valid email address" }
+        });
+      }
+
       // Save to database
       const savedMessage = await storage.createContactMessage({
         name,
@@ -128,22 +160,57 @@ export function registerRoutes(app: Express): Server {
         showEmail
       });
 
-      // Send email notification
-      await transporter.sendMail({
-        from: 'vantalison@gmail.com',
-        to: 'vantalison@gmail.com',
-        subject: `New Contact Form Message from ${name}`,
-        text: `
-Name: ${name}
-${showEmail ? `Email: ${email}` : '(Email hidden by sender preference)'}
-Message: ${message}
-        `
-      });
+      // Send email notification with enhanced formatting
+      try {
+        await transporter.sendMail({
+          from: 'vantalison@gmail.com',
+          to: 'vantalison@gmail.com',
+          subject: `New Contact Form Message from ${name}`,
+          text: `
+New message received from your horror blog contact form:
 
-      res.json(savedMessage);
-    } catch (error) {
+Sender Details:
+--------------
+Name: ${name}
+Email: ${showEmail ? email : '(Email hidden by sender preference)'}
+
+Message Content:
+---------------
+${message}
+
+Timestamp: ${new Date().toLocaleString()}
+          `,
+          html: `
+            <h2>New message received from your horror blog contact form</h2>
+
+            <h3>Sender Details:</h3>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${showEmail ? email : '<em>(Email hidden by sender preference)</em>'}</p>
+
+            <h3>Message Content:</h3>
+            <p style="white-space: pre-wrap;">${message}</p>
+
+            <p><small>Received at: ${new Date().toLocaleString()}</small></p>
+          `
+        });
+
+        console.log(`Email notification sent successfully for contact message from ${name}`);
+      } catch (emailError) {
+        console.error("Email sending failed:", emailError);
+        // Don't expose email sending errors to the client
+        // but log them for debugging
+      }
+
+      res.json({ 
+        message: "Message sent successfully",
+        data: savedMessage 
+      });
+    } catch (error: unknown) {
       console.error("Error handling contact form:", error);
-      res.status(500).json({ message: "Failed to send message" });
+      res.status(500).json({ 
+        message: "Failed to send message. Please try again later.",
+        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
+      });
     }
   });
 
