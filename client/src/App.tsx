@@ -9,6 +9,7 @@ import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 // Lazy load components that aren't needed immediately
 const Home = lazy(() => import("./pages/home"));
@@ -32,12 +33,14 @@ function App() {
   React.useEffect(() => {
     const prefetchRoutes = async () => {
       const routes = ['/', '/stories', '/reader'];
-      routes.forEach(route => {
-        queryClient.prefetchQuery({
-          queryKey: [`/api${route}`],
-          staleTime: 5 * 60 * 1000 // 5 minutes
-        });
-      });
+      await Promise.all(
+        routes.map(route =>
+          queryClient.prefetchQuery({
+            queryKey: [`/api${route}`],
+            staleTime: 5 * 60 * 1000 // 5 minutes
+          })
+        )
+      );
     };
     prefetchRoutes();
   }, []);
@@ -59,34 +62,42 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AudioProvider>
-          <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <Navigation />
-            <main className="flex-1">
-              <Suspense fallback={<LoadingScreen />}>
-                <Switch>
-                  <Route path="/" component={Home} />
-                  <Route path="/reader" component={Reader} />
-                  <Route path="/stories" component={Stories} />
-                  <Route path="/index" component={IndexView} />
-                  <Route path="/stories/:slug" component={StoryView} />
-                  <Route path="/secret" component={Secret} />
-                  <Route path="/privacy" component={Privacy} />
-                  <Route path="/about" component={About} />
-                  <Route path="/contact" component={Contact} />
-                  <Route path="/admin" component={Admin} />
-                  <Route path="/admin/login" component={AdminLogin} />
-                  <Route component={NotFound} />
-                </Switch>
-              </Suspense>
-            </main>
-            <Footer />
-            <CookieConsent />
-            <Toaster />
-          </div>
-        </AudioProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AudioProvider>
+            <div className="flex flex-col min-h-screen bg-background text-foreground">
+              <Navigation />
+              <main className="flex-1">
+                <ErrorBoundary>
+                  <Suspense fallback={
+                    <div className="w-full h-[50vh] flex items-center justify-center">
+                      <LoadingScreen />
+                    </div>
+                  }>
+                    <Switch>
+                      <Route path="/" component={Home} />
+                      <Route path="/reader" component={Reader} />
+                      <Route path="/stories" component={Stories} />
+                      <Route path="/index" component={IndexView} />
+                      <Route path="/stories/:slug" component={StoryView} />
+                      <Route path="/secret" component={Secret} />
+                      <Route path="/privacy" component={Privacy} />
+                      <Route path="/about" component={About} />
+                      <Route path="/contact" component={Contact} />
+                      <Route path="/admin" component={Admin} />
+                      <Route path="/admin/login" component={AdminLogin} />
+                      <Route component={NotFound} />
+                    </Switch>
+                  </Suspense>
+                </ErrorBoundary>
+              </main>
+              <Footer />
+              <CookieConsent />
+              <Toaster />
+            </div>
+          </AudioProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

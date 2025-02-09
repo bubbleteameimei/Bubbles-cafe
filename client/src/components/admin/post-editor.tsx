@@ -8,14 +8,15 @@ import {
   Undo,
   Redo,
   Check,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { insertPostSchema, type Post } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +28,8 @@ interface PostEditorProps {
 export default function PostEditor({ post, onClose }: PostEditorProps) {
   const { toast } = useToast();
   const [selectedText, setSelectedText] = useState({ start: 0, end: 0 });
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const form = useForm({
     resolver: zodResolver(insertPostSchema),
@@ -38,11 +41,37 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
     }
   });
 
+  // Optimistic update helper
+  const getOptimisticPost = (formData: any) => ({
+    id: post?.id || Date.now().toString(),
+    ...formData,
+    createdAt: post?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
   const mutation = useMutation({
-    mutationFn: (data: any) => 
-      post 
-        ? apiRequest("PATCH", `/api/posts/${post.id}`, data)
-        : apiRequest("POST", "/api/posts", data),
+    mutationFn: async (data: any) => {
+      const endpoint = post ? `/api/posts/${post.id}` : "/api/posts";
+      const method = post ? "PATCH" : "POST";
+      return apiRequest(method, endpoint, data);
+    },
+    onMutate: async (newPost) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/posts"] });
+
+      // Snapshot the previous value
+      const previousPosts = queryClient.getQueryData(["/api/posts"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["/api/posts"], (old: any[]) => {
+        const optimisticPost = getOptimisticPost(newPost);
+        return post
+          ? old?.map(p => p.id === post.id ? optimisticPost : p)
+          : [...(old || []), optimisticPost];
+      });
+
+      return { previousPosts };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
@@ -51,10 +80,14 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       });
       onClose?.();
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback to the previous state on error
+      if (context?.previousPosts) {
+        queryClient.setQueryData(["/api/posts"], context.previousPosts);
+      }
       toast({
         title: "Error",
-        description: "Failed to save post",
+        description: "Failed to save post. Please try again.",
         variant: "destructive",
       });
     },
@@ -63,10 +96,17 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
   const handleTextSelection = () => {
     const textarea = document.querySelector('textarea[name="content"]') as HTMLTextAreaElement;
     if (textarea) {
+      const newContent = textarea.value;
       setSelectedText({
         start: textarea.selectionStart,
         end: textarea.selectionEnd
       });
+
+      // Add to history if content changed
+      if (history[history.length - 1] !== newContent) {
+        setHistory(prev => [...prev.slice(0, historyIndex + 1), newContent]);
+        setHistoryIndex(prev => prev + 1);
+      }
     }
   };
 
@@ -88,6 +128,21 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
     }
 
     form.setValue("content", newContent);
+    handleTextSelection();
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prev => prev - 1);
+      form.setValue("content", history[historyIndex - 1]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prev => prev + 1);
+      form.setValue("content", history[historyIndex + 1]);
+    }
   };
 
   return (
@@ -129,6 +184,26 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                 >
                   <Italic className="h-4 w-4" />
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  title="Undo"
+                >
+                  <Undo className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  title="Redo"
+                >
+                  <Redo className="h-4 w-4" />
+                </Button>
               </div>
 
               <FormField
@@ -142,7 +217,11 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                         placeholder="Write your story..."
                         className="min-h-[400px] font-mono"
                         onSelect={handleTextSelection}
-                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleTextSelection();
+                        }}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -192,6 +271,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                 type="button"
                 variant="outline"
                 onClick={onClose}
+                disabled={mutation.isPending}
               >
                 <X className="mr-2 h-4 w-4" />
                 Cancel
@@ -199,9 +279,19 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
               <Button
                 type="submit"
                 disabled={mutation.isPending}
+                className="min-w-[120px]"
               >
-                <Check className="mr-2 h-4 w-4" />
-                {mutation.isPending ? (post ? "Updating..." : "Creating...") : (post ? "Update Post" : "Create Post")}
+                {mutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {post ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {post ? "Update Post" : "Create Post"}
+                  </>
+                )}
               </Button>
             </div>
           </form>

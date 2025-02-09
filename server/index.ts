@@ -5,11 +5,49 @@ import { seedDatabase } from "./seed";
 import { createServer, Socket } from "net";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import compression from "compression";
 
 const app = express();
 
 // Set trust proxy first, before other middleware
 app.set('trust proxy', 1);
+
+// Enable Gzip compression
+app.use(compression());
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
+      connectSrc: ["'self'", 'https:'],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json());
@@ -158,7 +196,6 @@ async function startServer() {
           log(`Port ${PORT} is ready and accepting connections`);
 
           // Print port in the exact format expected by Replit
-          // This must be printed exactly as is: PORT=number
           console.log(`PORT=${PORT}`);
           process.env.PORT = PORT.toString();
 
