@@ -25,23 +25,25 @@ export const SoundMixer = () => {
 
   useEffect(() => {
     console.log('[SoundMixer] Initializing audio elements');
-    // Initialize audio elements
     audioRefs.current = tracks.map((_, i) => audioRefs.current[i] || new Audio());
 
-    // Set up audio elements
     tracks.forEach((track, i) => {
       if (audioRefs.current[i]) {
         try {
-          audioRefs.current[i]!.src = track.file;
-          audioRefs.current[i]!.loop = true;
-          audioRefs.current[i]!.volume = track.volume;
+          const audio = audioRefs.current[i]!;
+          audio.src = track.file;
+          audio.loop = true;
+          audio.volume = track.volume;
+          audio.crossOrigin = "anonymous"; // Enable cross-fade support
 
-          // Add error handling
-          audioRefs.current[i]!.onerror = () => {
+          // Preload audio
+          audio.load();
+
+          audio.onerror = () => {
             console.error(`[SoundMixer] Error loading track: ${track.name}`);
             toast({
               title: "Audio Error",
-              description: `Failed to load ${track.name}`,
+              description: `Failed to load audio`,
               variant: "destructive",
             });
           };
@@ -51,7 +53,6 @@ export const SoundMixer = () => {
       }
     });
 
-    // Cleanup
     return () => {
       console.log('[SoundMixer] Cleaning up audio elements');
       audioRefs.current.forEach(audio => {
@@ -73,14 +74,29 @@ export const SoundMixer = () => {
               audio.pause();
               console.log(`[SoundMixer] Paused track: ${track.name}`);
             } else {
-              audio.play().catch(error => {
+              // Implement smooth fade-in
+              audio.volume = 0;
+              const playPromise = audio.play().catch(error => {
                 console.error(`[SoundMixer] Playback error for ${track.name}:`, error);
                 toast({
                   title: "Playback Error",
-                  description: `Could not play ${track.name}`,
+                  description: `Could not play audio`,
                   variant: "destructive",
                 });
               });
+
+              if (playPromise) {
+                playPromise.then(() => {
+                  // Gradually increase volume for smooth transition
+                  const fadeIn = setInterval(() => {
+                    if (audio.volume < track.volume) {
+                      audio.volume = Math.min(audio.volume + 0.1, track.volume);
+                    } else {
+                      clearInterval(fadeIn);
+                    }
+                  }, 50);
+                });
+              }
               console.log(`[SoundMixer] Playing track: ${track.name}`);
             }
           }
@@ -92,7 +108,7 @@ export const SoundMixer = () => {
       console.error('[SoundMixer] Toggle error:', error);
       toast({
         title: "Error",
-        description: "Failed to toggle audio track",
+        description: "Failed to toggle audio",
         variant: "destructive",
       });
     }
@@ -104,7 +120,23 @@ export const SoundMixer = () => {
         if (i === index) {
           const audio = audioRefs.current[i];
           if (audio) {
-            audio.volume = value;
+            // Smoothly transition volume
+            const currentVolume = audio.volume;
+            const volumeDiff = value - currentVolume;
+            const steps = 10;
+            const stepSize = volumeDiff / steps;
+
+            let step = 0;
+            const smoothVolume = setInterval(() => {
+              if (step < steps) {
+                audio.volume = currentVolume + (stepSize * step);
+                step++;
+              } else {
+                audio.volume = value;
+                clearInterval(smoothVolume);
+              }
+            }, 20);
+
             console.log(`[SoundMixer] Updated volume for ${track.name}: ${value}`);
           }
           return { ...track, volume: value };
@@ -113,11 +145,6 @@ export const SoundMixer = () => {
       }));
     } catch (error) {
       console.error('[SoundMixer] Volume update error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update volume",
-        variant: "destructive",
-      });
     }
   };
 
@@ -130,10 +157,6 @@ export const SoundMixer = () => {
       }));
       localStorage.setItem('audioPreferences', JSON.stringify(preferences));
       console.log('[SoundMixer] Preferences saved successfully');
-      toast({
-        title: "Success",
-        description: "Audio preferences saved",
-      });
     } catch (error) {
       console.error('[SoundMixer] Error saving preferences:', error);
       toast({
