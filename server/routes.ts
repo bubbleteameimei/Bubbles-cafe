@@ -33,7 +33,7 @@ const transporter = createTransport({
 
 // Admin middleware - uses passport's authentication
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated() && req.user?.isAdmin) {
+  if (req.isAuthenticated() && req.user && req.user.isAdmin) {
     next();
   } else {
     res.status(401).json({ message: "Unauthorized: Please log in again" });
@@ -73,8 +73,9 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Admin-specific API routes with isAuthenticated middleware
-  app.get("/api/admin/user", isAuthenticated, (req, res) => {
-    res.json({ isAdmin: req.user.isAdmin });
+  app.get("/api/admin/user", isAuthenticated, (req: Request, res: Response) => {
+    // Now TypeScript knows req.user exists due to isAuthenticated middleware
+    res.json({ isAdmin: req.user!.isAdmin });
   });
 
   // Protected admin routes for posts
