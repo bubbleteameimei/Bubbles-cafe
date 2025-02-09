@@ -11,44 +11,19 @@ const app = express();
 // Set trust proxy first, before other middleware
 app.set('trust proxy', 1);
 
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging middleware with enhanced security details
+// API request logging middleware
 app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  // Capture response for logging
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-
-      // Safely log response data
-      if (capturedJsonResponse) {
-        // Remove sensitive data before logging
-        const sanitizedResponse = { ...capturedJsonResponse };
-        delete sanitizedResponse.password;
-        delete sanitizedResponse.token;
-        logLine += ` :: ${JSON.stringify(sanitizedResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
+  if (req.path.startsWith('/api')) {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
+    });
+  }
   next();
 });
 
@@ -124,16 +99,6 @@ async function waitForPort(port: number, retries = 45, delay = 1000): Promise<vo
   });
 }
 
-async function checkDatabaseConnection(): Promise<void> {
-  try {
-    await db.execute(sql`SELECT 1`);
-    log("Database connection successful");
-  } catch (error) {
-    log("Database connection failed:", error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-}
-
 // Error handling middleware
 function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
   const status = err.status || err.statusCode || 500;
@@ -159,7 +124,7 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
 async function startServer() {
   try {
     // First check database connection
-    await checkDatabaseConnection();
+    await db.execute(sql`SELECT 1`);
     log("Database connection verified");
 
     // Seed database with posts
@@ -195,6 +160,7 @@ async function startServer() {
           // Print port in the exact format expected by Replit
           // This must be printed exactly as is: PORT=number
           console.log(`PORT=${PORT}`);
+          process.env.PORT = PORT.toString();
 
           if (process.send) {
             process.send('ready');

@@ -1,10 +1,11 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { createTransport } from "nodemailer";
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import type { Request, Response, NextFunction } from "express";
+import { createTransport } from "nodemailer";
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -15,64 +16,20 @@ const transporter = createTransport({
     user: process.env.GMAIL_USER || 'vantalison@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD?.trim()
   },
-  // Reduce timeouts to fail fast if there are issues
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
-  // Optimize pool settings
   pool: true,
   maxConnections: 3,
   maxMessages: 10,
   rateDelta: 1000,
   rateLimit: 5,
-  // Ensure secure communication
   tls: {
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2'
   }
 });
 
-// Verify transporter connection on startup with detailed error logging
-const verifyEmailConfig = async () => {
-  try {
-    console.log('Attempting to verify email configuration...');
-    console.log('Environment check:', {
-      hasAppPassword: !!process.env.GMAIL_APP_PASSWORD,
-      appPasswordLength: process.env.GMAIL_APP_PASSWORD?.length,
-      hasGmailUser: !!process.env.GMAIL_USER
-    });
-
-    const verified = await transporter.verify();
-    console.log('Email transporter verification successful:', verified);
-    return verified;
-  } catch (error: any) {
-    console.error('Email transporter verification failed with error:', {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      responseCode: error.responseCode,
-      response: error.response,
-      authMethod: error.authMethod
-    });
-
-    if (error.code === 'EAUTH') {
-      console.error('Authentication failed. Please check the Gmail app password and user.');
-    } else if (error.code === 'ESOCKET') {
-      console.error('Socket error. Please check network connectivity.');
-    }
-
-    return false;
-  }
-};
-
-// Verify email configuration immediately
-verifyEmailConfig().then(verified => {
-  if (verified) {
-    console.log('Email system ready to send messages');
-  } else {
-    console.log('Email system not properly configured');
-  }
-});
 
 // Admin middleware - uses passport's authentication
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
@@ -84,34 +41,26 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export function registerRoutes(app: Express): Server {
-  // Add security headers
+  // Security headers for both API and SPA
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "ws:", "wss:"],
       },
     },
-    crossOriginEmbedderPolicy: true,
-    crossOriginOpenerPolicy: true,
-    crossOriginResourcePolicy: { policy: "same-site" },
-    dnsPrefetchControl: true,
-    frameguard: { action: "deny" },
-    hidePoweredBy: true,
-    hsts: true,
-    ieNoOpen: true,
-    noSniff: true,
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-    xssFilter: true,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   }));
 
-  // Rate limiting for authentication attempts
+  // Rate limiting for auth endpoints
   const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
-    message: "Too many login attempts, please try again later",
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { message: "Too many login attempts, please try again later" },
     standardHeaders: true,
     legacyHeaders: false,
   });
@@ -120,18 +69,15 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/login", authLimiter);
   app.use("/api/admin/*", authLimiter);
 
-  // Set up authentication routes and middleware
+  // Set up authentication routes BEFORE other routes
   setupAuth(app);
 
-  // Admin-specific routes
-  app.get("/api/admin/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized: Please log in again" });
-    }
+  // Admin-specific API routes with isAuthenticated middleware
+  app.get("/api/admin/user", isAuthenticated, (req, res) => {
     res.json({ isAdmin: req.user.isAdmin });
   });
 
-  // Protected admin routes
+  // Protected admin routes for posts
   app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
@@ -358,5 +304,7 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  return createServer(app);
+  // Create HTTP server
+  const server = createServer(app);
+  return server;
 }

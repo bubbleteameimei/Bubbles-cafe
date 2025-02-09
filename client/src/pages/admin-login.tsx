@@ -24,21 +24,23 @@ export default function AdminLoginPage() {
       email: "",
       password: ""
     },
-    mode: "onChange" // Enable real-time validation
+    mode: "onChange"
   });
 
   const onSubmit = async (data: AdminLogin) => {
     if (loginMutation.isPending) return;
 
     try {
+      console.log('Attempting admin login...');
       await loginMutation.mutateAsync(data);
+      console.log('Login successful, redirecting to admin dashboard...');
       toast({
         title: "Success",
         description: "Logged in successfully"
       });
       setLocation("/admin");
     } catch (error: any) {
-      // Handle specific error messages from the server
+      console.error('Login error:', error);
       const errorMessage = error?.response?.data?.message || "Failed to log in";
       form.setError("root", {
         type: "manual",
