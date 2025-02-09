@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,7 +9,10 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  emailIdx: index("email_idx").on(table.email),
+  usernameIdx: index("username_idx").on(table.username)
+}));
 
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
@@ -18,7 +21,10 @@ export const sessions = pgTable("sessions", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull()
-});
+}, (table) => ({
+  tokenIdx: index("token_idx").on(table.token),
+  userIdIdx: index("session_user_id_idx").on(table.userId)
+}));
 
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
@@ -29,7 +35,11 @@ export const posts = pgTable("posts", {
   slug: text("slug").notNull().unique(),
   authorId: integer("author_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  slugIdx: index("slug_idx").on(table.slug),
+  createdAtIdx: index("created_at_idx").on(table.createdAt),
+  authorIdIdx: index("post_author_id_idx").on(table.authorId)
+}));
 
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),

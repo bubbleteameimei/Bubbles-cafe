@@ -13,7 +13,8 @@ export default function Home() {
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     retry: 3,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
   });
 
   if (isLoading) {
@@ -57,7 +58,7 @@ export default function Home() {
             Welcome to Bubble's Cafe
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground mb-12 max-w-2xl leading-relaxed">
-            Step into a realm where reality blends with the surreal. Each story here is a portal to the unexpected,
+            Each story here is a portal to the unexpected,
             the unsettling, and the unexplained.
           </p>
 

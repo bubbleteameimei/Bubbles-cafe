@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,23 +8,39 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
 import { CookieConsent } from "@/components/ui/cookie-consent";
-import Home from "./pages/home";
-import Stories from "./pages/stories";
-import Secret from "./pages/secret";
-import About from "./pages/about";
-import Admin from "./pages/admin";
-import AdminLogin from "./pages/admin-login";
-import NotFound from "./pages/not-found";
-import Privacy from "./pages/privacy";
 import { queryClient } from "@/lib/queryClient";
-import StoryView from "./pages/story-view";
-import Contact from "./pages/contact";
-import Reader from "./pages/reader";
-import IndexView from "./pages/index";
+
+// Lazy load components that aren't needed immediately
+const Home = lazy(() => import("./pages/home"));
+const Stories = lazy(() => import("./pages/stories"));
+const Secret = lazy(() => import("./pages/secret"));
+const About = lazy(() => import("./pages/about"));
+const Admin = lazy(() => import("./pages/admin"));
+const AdminLogin = lazy(() => import("./pages/admin-login"));
+const NotFound = lazy(() => import("./pages/not-found"));
+const Privacy = lazy(() => import("./pages/privacy"));
+const StoryView = lazy(() => import("./pages/story-view"));
+const Contact = lazy(() => import("./pages/contact"));
+const Reader = lazy(() => import("./pages/reader"));
+const IndexView = lazy(() => import("./pages/index"));
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
+
+  // Prefetch critical routes
+  React.useEffect(() => {
+    const prefetchRoutes = async () => {
+      const routes = ['/', '/stories', '/reader'];
+      routes.forEach(route => {
+        queryClient.prefetchQuery({
+          queryKey: [`/api${route}`],
+          staleTime: 5 * 60 * 1000 // 5 minutes
+        });
+      });
+    };
+    prefetchRoutes();
+  }, []);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -48,7 +64,7 @@ function App() {
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <Navigation />
             <main className="flex-1">
-              <React.Suspense fallback={<LoadingScreen />}>
+              <Suspense fallback={<LoadingScreen />}>
                 <Switch>
                   <Route path="/" component={Home} />
                   <Route path="/reader" component={Reader} />
@@ -63,7 +79,7 @@ function App() {
                   <Route path="/admin/login" component={AdminLogin} />
                   <Route component={NotFound} />
                 </Switch>
-              </React.Suspense>
+              </Suspense>
             </main>
             <Footer />
             <CookieConsent />

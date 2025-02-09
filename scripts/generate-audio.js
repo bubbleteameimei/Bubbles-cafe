@@ -10,33 +10,35 @@ async function generateAudio(type = 'ethereal') {
     // Create a new offline context for rendering
     const buffer = await Tone.Offline(async ({ transport }) => {
       // Create synth after context is initialized
-      const synth = new Tone.Synth({
+      const synth = new Tone.PolySynth({
         oscillator: {
-          type: type === 'ethereal' ? 'sine' : 'triangle'
+          type: type === 'ethereal' ? 'sine' : 'sawtooth'
         },
         envelope: {
-          attack: type === 'ethereal' ? 2 : 1,
-          decay: type === 'ethereal' ? 1 : 0.5,
+          attack: type === 'ethereal' ? 2 : 0.5,
+          decay: type === 'ethereal' ? 1 : 0.8,
           sustain: type === 'ethereal' ? 0.8 : 0.6,
-          release: type === 'ethereal' ? 4 : 3
+          release: type === 'ethereal' ? 4 : 2
         }
       }).toDestination();
 
       // Add reverb effect
       const reverb = new Tone.Reverb({
-        decay: 5,
-        wet: 0.5
+        decay: type === 'ethereal' ? 5 : 3,
+        wet: type === 'ethereal' ? 0.5 : 0.3
       }).toDestination();
 
       synth.connect(reverb);
 
-      // Schedule notes
+      // Schedule notes with different patterns for each type
       const notes = type === 'ethereal' 
         ? ['C4', 'E4', 'G4', 'B4']
-        : ['G2', 'Bb2', 'D3', 'F3'];
+        : ['A2', 'C3', 'E3', 'G3'];
+
+      const duration = type === 'ethereal' ? '4n' : '2n';
 
       notes.forEach((note, i) => {
-        synth.triggerAttackRelease(note, '4n', i);
+        synth.triggerAttackRelease(note, duration, i);
       });
 
       // Let the reverb tail complete

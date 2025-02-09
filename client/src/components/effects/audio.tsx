@@ -18,12 +18,21 @@ const TRACKS = {
   'Nocturnal': '/nocturnal.mp3'
 } as const;
 
-// Preload all audio files
-Object.values(TRACKS).forEach(track => {
+// Create an AudioCache to store preloaded audio files
+const audioCache = new Map<string, HTMLAudioElement>();
+
+// Preload all audio files and store them in the cache
+Object.entries(TRACKS).forEach(([name, path]) => {
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.src = path;
+  audioCache.set(name, audio);
+
+  // Add preload link to document head
   const link = document.createElement('link');
   link.rel = 'preload';
   link.as = 'audio';
-  link.href = track;
+  link.href = path;
   document.head.appendChild(link);
 });
 
@@ -40,29 +49,26 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (audioRef.current) {
         console.log('[Audio] Cleaning up previous audio instance');
         audioRef.current.pause();
-        audioRef.current.src = '';
         audioRef.current = null;
       }
 
-      const audio = new Audio();
-      const trackPath = TRACKS[selectedTrack as keyof typeof TRACKS];
-      console.log('[Audio] Initializing track:', selectedTrack, 'Path:', trackPath);
+      // Get cached audio instance
+      const cachedAudio = audioCache.get(selectedTrack);
+      if (!cachedAudio) {
+        throw new Error(`Audio track ${selectedTrack} not found in cache`);
+      }
 
-      audio.preload = "auto";
+      const audio = cachedAudio.cloneNode() as HTMLAudioElement;
       audio.volume = volume;
       audio.loop = true;
-      audio.src = trackPath;
 
       const handleCanPlay = () => {
         console.log('[Audio] Track ready to play:', selectedTrack);
         setAudioReady(true);
-        // Removed toast notification for audio ready
       };
 
       const handleLoadError = (error: Event) => {
-        const errorDetails = error instanceof ErrorEvent ? error.message : 'Unknown error';
-        console.error("[Audio] Load error:", errorDetails);
-        console.error("[Audio] Failed track path:", trackPath);
+        console.error("[Audio] Load error:", error);
         setAudioReady(false);
         setIsPlaying(false);
         toast({
@@ -87,21 +93,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.addEventListener('playing', handlePlay);
       audio.addEventListener('pause', handlePause);
 
-      // Crossfade setup
+      // Enable crossfade
       audio.crossOrigin = "anonymous";
-      audio.load();
 
       audioRef.current = audio;
 
       return () => {
-        console.log('[Audio] Cleaning up resources');
         if (audio) {
           audio.removeEventListener('canplaythrough', handleCanPlay);
           audio.removeEventListener('error', handleLoadError);
           audio.removeEventListener('playing', handlePlay);
           audio.removeEventListener('pause', handlePause);
           audio.pause();
-          audio.src = '';
         }
       };
     } catch (error) {
@@ -138,7 +141,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           await playPromise;
-          // Removed success toast for playback
         }
       }
     } catch (error) {
@@ -154,8 +156,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume;
-      console.log('[Audio] Volume updated:', volume);
+      // Implement smooth volume transition
+      const currentVolume = audioRef.current.volume;
+      const volumeDiff = volume - currentVolume;
+      const steps = 10;
+      const stepSize = volumeDiff / steps;
+
+      let step = 0;
+      const fadeInterval = setInterval(() => {
+        if (step < steps) {
+          audioRef.current!.volume = currentVolume + (stepSize * step);
+          step++;
+        } else {
+          audioRef.current!.volume = volume;
+          clearInterval(fadeInterval);
+        }
+      }, 50);
+
+      return () => clearInterval(fadeInterval);
     }
   }, [volume]);
 

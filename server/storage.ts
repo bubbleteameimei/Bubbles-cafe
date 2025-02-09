@@ -132,7 +132,8 @@ export class DatabaseStorage implements IStorage {
       const posts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
-        .orderBy(desc(postsTable.createdAt));
+        .orderBy(desc(postsTable.createdAt))
+        .limit(20); 
 
       return posts.map(post => ({
         ...post,
@@ -140,34 +141,63 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error("Error in getPosts:", error);
-      throw error;
+      throw new Error("Failed to fetch posts");
     }
   }
 
   async getSecretPosts(): Promise<Post[]> {
-    const posts = await db.select()
-      .from(postsTable)
-      .where(eq(postsTable.isSecret, true))
-      .orderBy(desc(postsTable.createdAt));
+    try {
+      const posts = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.isSecret, true))
+        .orderBy(desc(postsTable.createdAt))
+        .limit(10); 
 
-    return posts.map(post => ({
-      ...post,
-      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-    }));
+      return posts.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error("Error in getSecretPosts:", error);
+      throw new Error("Failed to fetch secret posts");
+    }
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
-    const [post] = await db.select()
-      .from(postsTable)
-      .where(eq(postsTable.slug, slug))
-      .limit(1);
+    try {
+      const [post] = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.slug, slug))
+        .limit(1);
 
-    if (!post) return undefined;
+      if (!post) return undefined;
 
-    return {
-      ...post,
-      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-    };
+      return {
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      };
+    } catch (error) {
+      console.error("Error in getPost:", error);
+      throw new Error("Failed to fetch post");
+    }
+  }
+
+  async getPostsByAuthor(authorId: number, limit: number = 10): Promise<Post[]> {
+    try {
+      const posts = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.authorId, authorId))
+        .orderBy(desc(postsTable.createdAt))
+        .limit(limit);
+
+      return posts.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error("Error in getPostsByAuthor:", error);
+      throw new Error("Failed to fetch posts by author");
+    }
   }
 
   async createPost(post: InsertPost): Promise<Post> {

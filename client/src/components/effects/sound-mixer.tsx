@@ -12,6 +12,9 @@ interface AudioTrack {
   isPlaying: boolean;
 }
 
+// Create an AudioCache to store preloaded audio files
+const audioCache = new Map<string, HTMLAudioElement>();
+
 export const SoundMixer = () => {
   const [tracks, setTracks] = useState<AudioTrack[]>([
     { name: "Whispering Wind", file: "/whispering_wind.mp3", volume: 0.5, isPlaying: false },
@@ -23,34 +26,29 @@ export const SoundMixer = () => {
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const { toast } = useToast();
 
+  // Preload audio files
+  useEffect(() => {
+    tracks.forEach((track) => {
+      if (!audioCache.has(track.file)) {
+        const audio = new Audio(track.file);
+        audio.preload = "auto";
+        audioCache.set(track.file, audio);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     console.log('[SoundMixer] Initializing audio elements');
-    audioRefs.current = tracks.map((_, i) => audioRefs.current[i] || new Audio());
-
-    tracks.forEach((track, i) => {
-      if (audioRefs.current[i]) {
-        try {
-          const audio = audioRefs.current[i]!;
-          audio.src = track.file;
-          audio.loop = true;
-          audio.volume = track.volume;
-          audio.crossOrigin = "anonymous"; // Enable cross-fade support
-
-          // Preload audio
-          audio.load();
-
-          audio.onerror = () => {
-            console.error(`[SoundMixer] Error loading track: ${track.name}`);
-            toast({
-              title: "Audio Error",
-              description: `Failed to load audio`,
-              variant: "destructive",
-            });
-          };
-        } catch (error) {
-          console.error(`[SoundMixer] Error setting up track ${track.name}:`, error);
-        }
+    audioRefs.current = tracks.map((track) => {
+      const cachedAudio = audioCache.get(track.file);
+      if (cachedAudio) {
+        const audio = cachedAudio.cloneNode() as HTMLAudioElement;
+        audio.loop = true;
+        audio.volume = track.volume;
+        audio.crossOrigin = "anonymous";
+        return audio;
       }
+      return null;
     });
 
     return () => {
@@ -58,25 +56,31 @@ export const SoundMixer = () => {
       audioRefs.current.forEach(audio => {
         if (audio) {
           audio.pause();
-          audio.src = '';
         }
       });
     };
-  }, [toast]);
+  }, [tracks]);
 
-  const toggleTrack = (index: number) => {
+  const toggleTrack = async (index: number) => {
     try {
       setTracks(prev => prev.map((track, i) => {
         if (i === index) {
           const audio = audioRefs.current[i];
           if (audio) {
             if (track.isPlaying) {
-              audio.pause();
-              console.log(`[SoundMixer] Paused track: ${track.name}`);
+              // Implement smooth fade-out
+              const fadeOut = setInterval(() => {
+                if (audio.volume > 0.1) {
+                  audio.volume = Math.max(0, audio.volume - 0.1);
+                } else {
+                  audio.pause();
+                  clearInterval(fadeOut);
+                }
+              }, 50);
             } else {
               // Implement smooth fade-in
               audio.volume = 0;
-              const playPromise = audio.play().catch(error => {
+              audio.play().catch(error => {
                 console.error(`[SoundMixer] Playback error for ${track.name}:`, error);
                 toast({
                   title: "Playback Error",
@@ -85,19 +89,13 @@ export const SoundMixer = () => {
                 });
               });
 
-              if (playPromise) {
-                playPromise.then(() => {
-                  // Gradually increase volume for smooth transition
-                  const fadeIn = setInterval(() => {
-                    if (audio.volume < track.volume) {
-                      audio.volume = Math.min(audio.volume + 0.1, track.volume);
-                    } else {
-                      clearInterval(fadeIn);
-                    }
-                  }, 50);
-                });
-              }
-              console.log(`[SoundMixer] Playing track: ${track.name}`);
+              const fadeIn = setInterval(() => {
+                if (audio.volume < track.volume) {
+                  audio.volume = Math.min(audio.volume + 0.1, track.volume);
+                } else {
+                  clearInterval(fadeIn);
+                }
+              }, 50);
             }
           }
           return { ...track, isPlaying: !track.isPlaying };
@@ -136,8 +134,6 @@ export const SoundMixer = () => {
                 clearInterval(smoothVolume);
               }
             }, 20);
-
-            console.log(`[SoundMixer] Updated volume for ${track.name}: ${value}`);
           }
           return { ...track, volume: value };
         }
