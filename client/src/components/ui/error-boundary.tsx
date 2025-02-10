@@ -24,6 +24,23 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorTime: Date.now() };
   }
 
+  private cleanup?: () => void;
+
+  public componentDidMount() {
+    this.cleanup = () => {
+      if (this.state.hasError) {
+        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+      }
+    };
+    window.addEventListener('popstate', this.cleanup);
+  }
+
+  public componentWillUnmount() {
+    if (this.cleanup) {
+      window.removeEventListener('popstate', this.cleanup);
+    }
+  }
+
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     this.setState({

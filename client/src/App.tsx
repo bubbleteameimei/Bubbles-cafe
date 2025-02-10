@@ -49,7 +49,16 @@ function App() {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 200);
-    return () => clearTimeout(timer);
+    
+    // Cleanup audio contexts when component unmounts
+    return () => {
+      clearTimeout(timer);
+      const audioElements = document.getElementsByTagName('audio');
+      Array.from(audioElements).forEach(audio => {
+        audio.pause();
+        audio.src = '';
+      });
+    };
   }, []);
 
   React.useEffect(() => {

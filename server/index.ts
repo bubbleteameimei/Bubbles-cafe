@@ -184,6 +184,9 @@ async function startServer() {
     }
 
     const startPort = parseInt(process.env.PORT || '5000', 10);
+    if (isNaN(startPort) || startPort < 1024 || startPort > 65535) {
+      throw new Error('Invalid port number');
+    }
     const PORT = await findAvailablePort(startPort);
 
     return new Promise<void>((resolve, reject) => {

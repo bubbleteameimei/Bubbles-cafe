@@ -96,10 +96,10 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
       if (err) {
         console.error("Login error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: process.env.NODE_ENV === 'production' ? "An error occurred" : err.message });
       }
       if (!user) {
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
+        return res.status(401).json({ message: "Invalid credentials" });
       }
       req.logIn(user, (loginErr) => {
         if (loginErr) {
