@@ -153,9 +153,15 @@ export default function Reader() {
   }
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
-  const excludedStories = ['bug', 'skin', 'tunnel', 'chase', 'descent'];
+  const storyThemeMap: Record<string, ThemeCategory> = {
+    'bug': 'PARASITE',
+    'skin': 'BODY_HORROR',
+    'tunnel': 'STALKING',
+    'chase': 'STALKING',
+    'descent': 'DEATH'
+  };
   const title = currentPost.title.toLowerCase();
-  let theme = excludedStories.includes(title) ? null : contentAnalysis.themes[0];
+  let theme = storyThemeMap[title] || contentAnalysis.themes[0];
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
   const IconComponent = themeInfo ? getIconComponent(themeInfo.icon) : Moon;
