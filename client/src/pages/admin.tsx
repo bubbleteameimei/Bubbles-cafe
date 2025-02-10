@@ -147,6 +147,46 @@ export default function AdminPage() {
               <LogOut className="h-4 w-4 mr-2" />
             )}
             {logoutMutation.isPending ? "Logging out..." : "Logout"}
+
+  const { data: comments = [] } = useQuery<Comment[]>({
+    queryKey: ["/api/comments"],
+  });
+
+  const moderateComment = useMutation({
+    mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
+      const response = await fetch(`/api/comments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved })
+      });
+      if (!response.ok) throw new Error("Failed to moderate comment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      toast({
+        title: "Comment moderated",
+        description: "The comment status has been updated"
+      });
+    }
+  });
+
+  const deleteComment = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/comments/${id}`, {
+        method: "DELETE"
+      });
+      if (!response.ok) throw new Error("Failed to delete comment");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      toast({
+        title: "Comment deleted",
+        description: "The comment has been removed"
+      });
+    }
+  });
+
           </Button>
         </div>
 
@@ -207,6 +247,46 @@ export default function AdminPage() {
                     <div
                       key={post.id}
                       className={`p-4 border rounded-lg transition-colors ${
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Comment Moderation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <div key={comment.id} className="border p-4 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium">{comment.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={comment.approved ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => moderateComment.mutate({ id: comment.id, approved: !comment.approved })}
+                    >
+                      {comment.approved ? "Approved" : "Approve"}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteComment.mutate(comment.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm">{comment.content}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
                         editingPost?.id === post.id
                           ? "bg-primary/5 border-primary"
                           : "hover:bg-accent/5"

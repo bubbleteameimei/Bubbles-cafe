@@ -247,6 +247,38 @@ Timestamp: ${new Date().toLocaleString()}
 
       // Return appropriate response
       res.json({
+
+  // Comment routes
+  app.get("/api/comments", isAuthenticated, async (_req, res) => {
+    try {
+      const comments = await storage.getComments();
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.patch("/api/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      const comment = await storage.updateComment(parseInt(req.params.id), req.body);
+      res.json(comment);
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  app.delete("/api/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteComment(parseInt(req.params.id));
+      res.json({ message: "Comment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
         message: emailSent
           ? "Message sent successfully"
           : "Message saved successfully, but there was an issue with email notification. Our team has been notified.",

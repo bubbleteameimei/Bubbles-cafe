@@ -68,7 +68,8 @@ export const comments = pgTable("comments", {
   postId: integer("post_id").notNull(),
   content: text("content").notNull(),
   author: text("author").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  approved: boolean("approved").default(false).notNull()
 });
 
 export const readingProgress = pgTable("reading_progress", {
@@ -113,7 +114,7 @@ export const insertPostSchema = createInsertSchema(posts)
     triggerWarnings: z.array(z.string()).optional()
   });
 
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, approved: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
