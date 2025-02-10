@@ -315,39 +315,64 @@ export const detectThemes = (content: string): ThemeCategory[] => {
 export const calculateIntensity = (content: string): number => {
   if (!content) return 3;
 
-  const emotionalPatterns = {
-    extreme: /terrified|horrified|petrified|screaming|agony|blood|gore/gi,
-    strong: /scared|frightened|panic|terror|dread|possessed|demon/gi,
-    moderate: /worried|nervous|anxious|uneasy|fear|strange|weird/gi
+  const themeIntensityMap: Record<ThemeCategory, number> = {
+    BODY_HORROR: 4.5,
+    CANNIBALISM: 5,
+    SUICIDAL: 5,
+    PSYCHOPATH: 4.5,
+    POSSESSION: 4,
+    LOVECRAFTIAN: 4,
+    SUPERNATURAL: 3.5,
+    PSYCHOLOGICAL: 3.5,
+    PARASITE: 4,
+    TECHNOLOGICAL: 3,
+    STALKING: 4,
+    DEATH: 4,
+    GOTHIC: 3,
+    APOCALYPTIC: 4,
+    ISOLATION: 3,
+    AQUATIC: 3,
+    VIRAL: 3.5,
+    URBAN_LEGEND: 3,
+    TIME_HORROR: 3,
+    DREAMSCAPE: 3
   };
 
-  let score = 3; 
+  const emotionalPatterns = {
+    extreme: /terrified|horrified|petrified|screaming|agony|blood|gore|mutilate|torture|kill|die/gi,
+    strong: /scared|frightened|panic|terror|dread|possessed|demon|evil|monster|beast/gi,
+    moderate: /worried|nervous|anxious|uneasy|fear|strange|weird|dark|shadow/gi
+  };
 
+  let baseScore = 3;
+  const themes = detectThemes(content);
+  
+  if (themes.length > 0) {
+    baseScore = themeIntensityMap[themes[0]] || 3;
+  }
+
+  let contentScore = 0;
   Object.entries(emotionalPatterns).forEach(([level, pattern]) => {
     const matches = content.match(pattern);
     if (matches) {
-      score += matches.length * (
-        level === 'extreme' ? 0.5 :
-        level === 'strong' ? 0.3 :
-        0.2
+      contentScore += matches.length * (
+        level === 'extreme' ? 0.3 :
+        level === 'strong' ? 0.2 :
+        0.1
       );
     }
   });
 
   const shortSentences = content.split(/[.!?]+/).filter(s =>
-    s.trim().split(/\s+/).length < 10
+    s.trim().split(/\s+/).length < 8
   ).length;
 
-  score += shortSentences * 0.1;
-  if (content.includes('blood') || content.includes('gore')) score += 1;
-  if (/[A-Z]{3,}/.test(content)) score += 0.5;
-  if (content.match(/!{2,}/g)) score += 0.5;
+  contentScore += Math.min(0.5, shortSentences * 0.05);
+  if (/[A-Z]{3,}/.test(content)) contentScore += 0.3;
+  if (content.match(/!{2,}/g)) contentScore += 0.2;
 
-  if (content.includes('possessed') || content.includes('demon')) score += 0.5;
-  if (content.includes('cookbook') || content.includes('recipe')) score += 0.3;
-  if (content.includes('mirror') || content.includes('reflection')) score += 0.2;
-
-  return Math.max(3, Math.min(5, Math.ceil(score)));
+  const finalScore = baseScore + contentScore;
+  return Math.max(3, Math.min(5, Math.round(finalScore)));
 };
 
 export const getReadingTime = (content: string): string => {
