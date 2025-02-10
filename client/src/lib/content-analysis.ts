@@ -1,5 +1,5 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Knife } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
@@ -30,7 +30,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     keywords: [
       'mind', 'sanity', 'therapy', 'mental', 'obsession', 'delusion',
       'reality', 'perception', 'consciousness', 'paranoia', 'hallucination',
-      'trauma', 'identity', 'control', 'manipulation'
+      'trauma', 'identity', 'control', 'manipulation', 'rain'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "psychological",
@@ -118,7 +118,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     keywords: [
       'follow', 'watch', 'hide', 'shadow', 'stalk', 'observe',
       'track', 'pursue', 'hunt', 'predator', 'prey', 'tunnel',
-      'dark', 'alone', 'fear'
+      'dark', 'alone', 'fear', 'chase'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "stalking",
@@ -229,9 +229,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
 export const detectThemes = (content: string): ThemeCategory[] => {
   try {
     if (content.toLowerCase().includes('rain')) {
-      if (content.match(/mind|consciousness|fear|sanity|reality/i)) {
-        return ['PSYCHOLOGICAL'];
-      }
+      return ['PSYCHOLOGICAL'];
     }
 
     if (content.toLowerCase().includes('chase') || 

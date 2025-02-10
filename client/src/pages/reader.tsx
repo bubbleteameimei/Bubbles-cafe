@@ -25,7 +25,8 @@ import {
   Timer,
   Gauge,
   Pill,
-  Axe
+  Axe,
+  BookDead
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -57,6 +58,7 @@ const getIconComponent = (iconName: string) => {
     case 'Clock': return Clock;
     case 'Pill': return Pill;
     case 'Axe': return Axe;
+    case 'BookDead': return BookDead;
     default: return Moon;
   }
 };
