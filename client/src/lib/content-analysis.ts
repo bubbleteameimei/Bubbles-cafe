@@ -234,7 +234,7 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       'therapist': 'PSYCHOLOGICAL',
       'bleach': 'SUICIDAL',
       'machine': 'TECHNOLOGICAL',
-      'bug': 'BODY_HORROR',
+      'bug': 'PARASITE',
       'drive': 'PSYCHOPATH',
       'mirror': 'SUPERNATURAL',
       'car': 'PSYCHOLOGICAL',
