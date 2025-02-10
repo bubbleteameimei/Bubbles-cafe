@@ -5,7 +5,6 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
-import Mist from "@/components/effects/mist";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
 export default function Home() {
@@ -13,8 +12,8 @@ export default function Home() {
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     retry: 3,
-    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
-    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading) {
@@ -45,8 +44,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen">
-      <Mist />
+    <div className="relative min-h-screen bg-background/95">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

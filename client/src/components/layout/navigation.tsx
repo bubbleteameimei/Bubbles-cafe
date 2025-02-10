@@ -95,17 +95,16 @@ export default function Navigation() {
   };
 
   return (
-    <header className="bg-background/95 backdrop-blur-sm theme-transition">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/10">
       <div 
-        className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center transition-all duration-700"
+        className="h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center"
         style={{
-          backgroundImage: 'url("/IMG_4484.jpeg")',
-          backgroundBlendMode: 'multiply',
-          backgroundColor: 'rgba(10, 10, 10, 0.92)' // Darker overlay
+          backgroundImage: 'url("/assets/IMG_4484.jpeg")',
+          backgroundBlendMode: 'normal'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/70 to-background transition-opacity duration-700"/>
-        <div className="text-center relative z-10 px-4 animate-fade-in">
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 px-4 text-center">
           <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
             Bubble's Cafe
           </h1>
@@ -115,89 +114,87 @@ export default function Navigation() {
         </div>
       </div>
 
-      <nav className="sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b border-primary/10">
-        <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
-          <div className="md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg">
-                <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-secondary">
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </SheetClose>
-                <nav className="flex flex-col space-y-2">
-                  <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
-                </nav>
-              </SheetContent>
-            </Sheet>
+      <nav className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
+        <div className="md:hidden">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg">
+              <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-secondary">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </SheetClose>
+              <nav className="flex flex-col space-y-2">
+                <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <div className="hidden md:flex items-center flex-1">
+          <NavigationItems location={location} />
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2">
+            <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+              <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
+                <SelectValue placeholder="Atmosphere" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
+                <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="hidden md:flex items-center flex-1">
-            <NavigationItems location={location} />
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleAudio}
+            disabled={!audioReady}
+            className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
+            title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
+          >
+            {!audioReady && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+            )}
+            {isPlaying ? (
+              <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
+          </Button>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2">
-              <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-                <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
-                  <SelectValue placeholder="Atmosphere" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
-                  <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleAudio}
+          <div className="w-16 sm:w-24 hidden md:block">
+            <Slider
+              value={[volume * 100]}
+              max={100}
+              step={1}
+              onValueChange={handleVolumeChange}
               disabled={!audioReady}
-              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
-              title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
-            >
-              {!audioReady && (
-                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                </span>
-              )}
-              {isPlaying ? (
-                <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
-              ) : (
-                <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
-              )}
-            </Button>
-
-            <div className="w-16 sm:w-24 hidden md:block">
-              <Slider
-                value={[volume * 100]}
-                max={100}
-                step={1}
-                onValueChange={handleVolumeChange}
-                disabled={!audioReady}
-                className="cursor-pointer"
-              />
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
-              ) : (
-                <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
-              )}
-            </Button>
+              className="cursor-pointer"
+            />
           </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
+          </Button>
         </div>
       </nav>
     </header>

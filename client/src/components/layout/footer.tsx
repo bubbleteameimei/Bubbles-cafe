@@ -6,12 +6,11 @@ export default function Footer() {
       <div 
         className="relative bg-cover bg-center py-16"
         style={{
-          backgroundImage: 'url("/IMG_4480.jpeg")',
-          backgroundBlendMode: 'multiply',
-          backgroundColor: 'rgba(10, 10, 10, 0.92)' // Darker overlay
+          backgroundImage: 'url("/assets/IMG_4480.jpeg")',
+          backgroundBlendMode: 'normal'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/85" />
+        <div className="absolute inset-0 bg-black/60" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col items-center justify-center gap-8">
             <div className="text-center">

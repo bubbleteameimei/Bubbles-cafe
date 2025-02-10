@@ -2,7 +2,6 @@ import { Component, type ReactNode } from "react";
 import { AlertCircle, RefreshCcw, Home, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
 
 interface Props {
   children: ReactNode;
@@ -27,6 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   private cleanup?: () => void;
 
   public componentDidMount() {
+    // Reset error state on route change
     this.cleanup = () => {
       if (this.state.hasError) {
         this.setState({ hasError: false, error: undefined, errorInfo: undefined });
@@ -63,6 +63,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private getErrorMessage(error: Error): string {
+    if (!error.message) return "An unexpected error occurred.";
+
     if (error.message.includes('401')) {
       return "You need to be logged in to access this page. Please log in and try again.";
     }
@@ -81,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (error.message.includes('chunk')) {
       return "There was an error loading this page. Please refresh and try again.";
     }
-    return "An unexpected error occurred. We're looking into it.";
+    return error.message || "An unexpected error occurred. We're looking into it.";
   }
 
   private formatTime(timestamp: number): string {
@@ -95,7 +97,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       const errorMessage = this.getErrorMessage(this.state.error!);
-      const errorTime = this.formatTime(this.state.errorTime!);
+      const errorTime = this.state.errorTime ? this.formatTime(this.state.errorTime) : '';
 
       return (
         <div className="min-h-[50vh] flex items-center justify-center p-4 bg-background/50 backdrop-blur-sm">
@@ -113,7 +115,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <p className="text-xs opacity-70">Error occurred at: {errorTime}</p>
                   <details className="text-xs">
                     <summary className="cursor-pointer hover:opacity-80">Technical Details</summary>
-                    <pre className="mt-2 bg-black/10 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight">
+                    <pre className="mt-2 bg-black/10 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight whitespace-pre-wrap">
                       {this.state.error?.stack}
                       {"\n\nComponent Stack:"}
                       {this.state.errorInfo.componentStack}

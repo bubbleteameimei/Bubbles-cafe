@@ -49,8 +49,7 @@ function App() {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 200);
-    
-    // Cleanup audio contexts when component unmounts
+
     return () => {
       clearTimeout(timer);
       const audioElements = document.getElementsByTagName('audio');
@@ -77,28 +76,24 @@ function App() {
             <div className="flex flex-col min-h-screen bg-background text-foreground">
               <Navigation />
               <main className="flex-1">
-                <ErrorBoundary>
-                  <Suspense fallback={
-                    <div className="w-full h-[50vh] flex items-center justify-center">
-                      <LoadingScreen />
-                    </div>
-                  }>
+                <Suspense fallback={<LoadingScreen />}>
+                  <ErrorBoundary>
                     <Switch>
                       <Route path="/" component={Home} />
                       <Route path="/reader" component={Reader} />
                       <Route path="/stories" component={Stories} />
                       <Route path="/index" component={IndexView} />
-                      <Route path="/stories/:slug" component={StoryView} />
+                      <Route path="/story/:slug" component={StoryView} />
                       <Route path="/secret" component={Secret} />
                       <Route path="/privacy" component={Privacy} />
                       <Route path="/about" component={About} />
                       <Route path="/contact" component={Contact} />
-                      <Route path="/admin" component={Admin} />
                       <Route path="/admin/login" component={AdminLogin} />
+                      <Route path="/admin" component={Admin} />
                       <Route component={NotFound} />
                     </Switch>
-                  </Suspense>
-                </ErrorBoundary>
+                  </ErrorBoundary>
+                </Suspense>
               </main>
               <Footer />
               <CookieConsent />
