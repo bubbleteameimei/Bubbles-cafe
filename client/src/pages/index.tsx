@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { detectThemes, calculateIntensity } from "@/lib/content-analysis";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -159,11 +160,24 @@ export default function IndexView() {
                       onClick={() => navigateToStory(post.id)}
                       className="cursor-pointer py-1 px-3 flex-grow"
                     >
-                      <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3 font-serif">
                         {excerpt}
                       </p>
-                      <div className="flex items-center text-[11px] text-primary gap-1 group-hover:gap-2 transition-all duration-300">
-                        Read full story <ChevronRight className="h-2.5 w-2.5 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center justify-between text-xs mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary/80">
+                            Level {calculateIntensity(post.content)}/5
+                          </span>
+                          {detectThemes(post.content)[0] && (
+                            <span className="text-muted-foreground">
+                              {detectThemes(post.content)[0].charAt(0) + 
+                               detectThemes(post.content)[0].slice(1).toLowerCase().replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                        Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
                     <CardFooter className="relative mt-auto py-2 px-3 border-t border-border bg-card">
