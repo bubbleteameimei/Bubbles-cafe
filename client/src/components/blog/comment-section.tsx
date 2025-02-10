@@ -8,9 +8,10 @@ interface CommentSectionProps {
 
 export default function CommentSection({ postId, title }: CommentSectionProps) {
   const disqusConfig = {
-    url: window.location.href,
+    url: `${window.location.origin}/reader?story=${postId}`,
     identifier: `story-${postId}`,
     title: title || `Story ${postId}`,
+    language: 'en'
   };
 
   return (
@@ -18,7 +19,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       <h2 className="text-2xl font-bold mb-6">Join the Discussion</h2>
       <div className="mt-8 bg-background/50 p-6 rounded-lg border border-border/50">
         <DiscussionEmbed
-          shortname="bubbles-cafe"
+          shortname="bubblescafe"
           config={disqusConfig}
         />
       </div>
