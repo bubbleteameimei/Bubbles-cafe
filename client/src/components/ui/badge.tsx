@@ -1,6 +1,5 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -17,10 +16,12 @@ const badgeVariants = cva(
         outline: "text-foreground border-primary/20 hover:bg-primary/10",
         warning: "border-transparent bg-orange-500/20 text-orange-400 hover:bg-orange-500/30",
         horror: "border-transparent bg-red-900/20 text-red-400 hover:bg-red-900/30",
-        psychological: "border-transparent bg-purple-500/20 text-purple-400 hover:bg-purple-500/30",
-        supernatural: "border-transparent bg-blue-500/20 text-blue-400 hover:bg-blue-500/30",
-        survival: "border-transparent bg-green-500/20 text-green-400 hover:bg-green-500/30",
-        gore: "border-transparent bg-red-500/20 text-red-400 hover:bg-red-500/30",
+        psychological: "border-transparent bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 backdrop-blur-sm",
+        supernatural: "border-transparent bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 backdrop-blur-sm",
+        survival: "border-transparent bg-green-500/20 text-green-400 hover:bg-green-500/30 backdrop-blur-sm",
+        gore: "border-transparent bg-red-500/20 text-red-400 hover:bg-red-500/30 backdrop-blur-sm",
+        trigger: "border-transparent bg-orange-500/10 text-orange-400/90 hover:bg-orange-500/20 backdrop-blur-sm",
+        intensity: "border-transparent bg-yellow-500/10 text-yellow-400/90 hover:bg-yellow-500/20 backdrop-blur-sm",
       },
     },
     defaultVariants: {

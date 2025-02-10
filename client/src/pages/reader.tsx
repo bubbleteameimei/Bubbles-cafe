@@ -28,113 +28,137 @@ import { SoundMixer } from "@/components/effects/sound-mixer";
 
 // Theme categories and types
 type ThemeCategory = 'PSYCHOLOGICAL' | 'GORE' | 'SUPERNATURAL' | 'SURVIVAL';
-
-interface ThemeCategoryInfo {
+interface ThemeInfo {
   icon: React.ComponentType;
   keywords: string[];
   atmosphericTrack: string;
   badgeVariant: "psychological" | "gore" | "supernatural" | "survival";
 }
 
-const THEME_CATEGORIES: Record<ThemeCategory, ThemeCategoryInfo> = {
+const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   PSYCHOLOGICAL: {
     icon: Brain,
-    keywords: ['mind', 'sanity', 'reality', 'perception', 'consciousness', 'dream', 'paranoia', 'delusion'],
-    atmosphericTrack: 'ethereal.mp3',
+    keywords: [
+      'mind', 'sanity', 'reality', 'perception', 'consciousness', 'dream',
+      'paranoia', 'delusion', 'hallucination', 'madness', 'insanity',
+      'psychosis', 'memory', 'identity', 'trauma', 'therapy', 'mental'
+    ],
+    atmosphericTrack: 'ethereal',
     badgeVariant: "psychological"
   },
   GORE: {
     icon: Skull,
-    keywords: ['blood', 'flesh', 'bone', 'visceral', 'mutilation', 'wound', 'gore', 'dismember'],
-    atmosphericTrack: 'heartbeat.mp3',
+    keywords: [
+      'blood', 'flesh', 'bone', 'visceral', 'mutilation', 'wound', 'gore',
+      'dismember', 'organ', 'tissue', 'entrails', 'dissect', 'cut', 'slice',
+      'tear', 'rip', 'eviscerate', 'body', 'corpse', 'dead'
+    ],
+    atmosphericTrack: 'nocturnal',
     badgeVariant: "gore"
   },
   SUPERNATURAL: {
     icon: Ghost,
-    keywords: ['ghost', 'spirit', 'demon', 'haunted', 'ethereal', 'occult', 'ritual', 'possession'],
-    atmosphericTrack: 'whispers.mp3',
+    keywords: [
+      'ghost', 'spirit', 'demon', 'haunted', 'ethereal', 'occult', 'ritual',
+      'possession', 'paranormal', 'entity', 'apparition', 'specter', 'phantom',
+      'poltergeist', 'curse', 'hex', 'witch', 'magic', 'undead', 'soul'
+    ],
+    atmosphericTrack: 'ethereal',
     badgeVariant: "supernatural"
   },
   SURVIVAL: {
     icon: Running,
-    keywords: ['chase', 'escape', 'hide', 'run', 'pursue', 'hunt', 'trap', 'survive'],
-    atmosphericTrack: 'chase.mp3',
+    keywords: [
+      'chase', 'escape', 'hide', 'run', 'pursue', 'hunt', 'trap', 'survive',
+      'flee', 'evade', 'stalker', 'predator', 'prey', 'hunter', 'victim',
+      'catch', 'corner', 'trapped', 'escape', 'alone'
+    ],
+    atmosphericTrack: 'nocturnal',
     badgeVariant: "survival"
   }
 };
 
-// Enhanced trigger warnings
+// Enhanced trigger warnings with additional categories and descriptions
 const TRIGGER_WARNINGS = [
-  'gore',
-  'body-horror',
-  'psychological-distress',
-  'claustrophobia',
-  'trypophobia',
-  'arachnophobia',
-  'death',
-  'suicide',
-  'self-harm',
-  'violence',
-  'abuse',
-  'religious-imagery',
-  'cosmic-horror',
-  'body-transformation',
-  'paranoia',
-  'existential-horror',
-  'medical-procedures',
-  'isolation',
-  'jumpscares',
-  'child-harm',
-  'animal-harm',
-  'disturbing-imagery',
-  'stalking',
-  'home-invasion'
+  { id: 'gore', label: 'Gore', description: 'Graphic violence or blood' },
+  { id: 'body-horror', label: 'Body Horror', description: 'Physical transformation or mutilation' },
+  { id: 'psychological-distress', label: 'Psychological Distress', description: 'Mental trauma or breakdown' },
+  { id: 'claustrophobia', label: 'Claustrophobia', description: 'Confined spaces' },
+  { id: 'trypophobia', label: 'Trypophobia', description: 'Patterns of small holes' },
+  { id: 'arachnophobia', label: 'Arachnophobia', description: 'Spiders or spider-like creatures' },
+  { id: 'death', label: 'Death', description: 'Death or dying' },
+  { id: 'suicide', label: 'Suicide', description: 'References to suicide' },
+  { id: 'self-harm', label: 'Self-harm', description: 'Self-inflicted injuries' },
+  { id: 'violence', label: 'Violence', description: 'Physical violence' },
+  { id: 'abuse', label: 'Abuse', description: 'Physical or emotional abuse' },
+  { id: 'religious-imagery', label: 'Religious Imagery', description: 'Disturbing religious content' },
+  { id: 'cosmic-horror', label: 'Cosmic Horror', description: 'Existential dread or cosmic entities' },
+  { id: 'body-transformation', label: 'Body Transformation', description: 'Physical metamorphosis' },
+  { id: 'paranoia', label: 'Paranoia', description: 'Extreme suspicion or persecution' },
+  { id: 'existential-horror', label: 'Existential Horror', description: 'Reality-bending concepts' },
+  { id: 'medical-procedures', label: 'Medical Procedures', description: 'Graphic medical content' },
+  { id: 'isolation', label: 'Isolation', description: 'Extreme solitude or abandonment' },
+  { id: 'jumpscares', label: 'Jump Scares', description: 'Sudden frightening elements' },
+  { id: 'child-harm', label: 'Child Harm', description: 'Violence involving minors' },
+  { id: 'animal-harm', label: 'Animal Harm', description: 'Cruelty to animals' },
+  { id: 'disturbing-imagery', label: 'Disturbing Imagery', description: 'Unsettling visual descriptions' },
+  { id: 'stalking', label: 'Stalking', description: 'Unwanted pursuit or surveillance' },
+  { id: 'home-invasion', label: 'Home Invasion', description: 'Violation of personal space' }
 ];
 
-// Calculate intensity rating
+// Enhanced intensity calculation with theme-based modifiers
 const calculateIntensity = (content: string): number => {
   const intensityFactors = {
     triggerWords: 0,
     capitalizedWords: 0,
     exclamationMarks: 0,
     ellipsis: 0,
-    paragraphLength: 0
+    paragraphLength: 0,
+    emotionalWords: 0,
+    rapidPacing: 0,
+    thematicIntensity: 0
   };
 
-  // Count trigger words
-  TRIGGER_WARNINGS.forEach(warning => {
-    const regex = new RegExp(warning.replace('-', '|'), 'gi');
-    const matches = content.match(regex);
-    if (matches) intensityFactors.triggerWords += matches.length;
+  // Analyze themes for base intensity
+  const themes = detectThemes(content);
+  intensityFactors.thematicIntensity = themes.length * 0.5; // Multiple themes indicate higher intensity
+
+  // Enhanced emotional word detection
+  const emotionalPatterns = {
+    extreme: /terrified|horrified|petrified|screaming|agony/gi,
+    strong: /scared|frightened|panic|terror|dread/gi,
+    moderate: /worried|nervous|anxious|uneasy|fear/gi
+  };
+
+  Object.entries(emotionalPatterns).forEach(([level, pattern]) => {
+    const matches = content.match(pattern);
+    if (matches) {
+      intensityFactors.emotionalWords += matches.length * (
+        level === 'extreme' ? 2 :
+          level === 'strong' ? 1.5 :
+            1
+      );
+    }
   });
 
-  // Count capitalized words (excluding normal sentence starts)
-  const capitalizedWords = content.match(/[.!?]\s+\w*[A-Z]+\w*|\w*[A-Z]{2,}\w*/g);
-  intensityFactors.capitalizedWords = capitalizedWords ? capitalizedWords.length : 0;
+  // Analyze sentence structure and pacing
+  const sentences = content.split(/[.!?]+/).filter(Boolean);
+  const shortSentences = sentences.filter(s => s.trim().split(/\s+/).length < 10).length;
+  intensityFactors.rapidPacing = (shortSentences / sentences.length) * 3;
 
-  // Count exclamation marks and ellipsis
-  intensityFactors.exclamationMarks = (content.match(/!/g) || []).length;
-  intensityFactors.ellipsis = (content.match(/\.\.\./g) || []).length;
-
-  // Analyze paragraph length variance
-  const paragraphs = content.split('\n\n');
-  const avgLength = paragraphs.reduce((acc, p) => acc + p.length, 0) / paragraphs.length;
-  const variance = paragraphs.reduce((acc, p) => acc + Math.pow(p.length - avgLength, 2), 0) / paragraphs.length;
-  intensityFactors.paragraphLength = Math.min(variance / 1000, 5);
-
-  // Calculate final score (1-5 scale)
+  // Calculate final score with weighted components
   const rawScore = (
-    intensityFactors.triggerWords * 0.3 +
-    intensityFactors.capitalizedWords * 0.2 +
-    intensityFactors.exclamationMarks * 0.2 +
-    intensityFactors.ellipsis * 0.1 +
-    intensityFactors.paragraphLength * 0.2
+    intensityFactors.thematicIntensity * 0.3 +
+    intensityFactors.emotionalWords * 0.3 +
+    intensityFactors.rapidPacing * 0.2 +
+    (themes.includes('GORE') ? 0.5 : 0) +
+    (themes.includes('PSYCHOLOGICAL') ? 0.3 : 0)
   );
 
-  return Math.max(1, Math.min(5, Math.ceil(rawScore)));
+  return Math.max(1, Math.min(5, Math.ceil(rawScore * 2)));
 };
 
-// Generate impactful excerpt
+// Enhanced excerpt generation focusing on impactful moments
 const generateExcerpt = (content: string): string => {
   if (!content) return '';
 
@@ -144,7 +168,7 @@ const generateExcerpt = (content: string): string => {
     score: calculateParagraphImpact(p)
   }));
 
-  // Sort by impact score and get the highest-impact paragraph
+  // Get the highest-impact paragraph
   const mostImpactful = scoredParagraphs.sort((a, b) => b.score - a.score)[0];
 
   const maxLength = 150;
@@ -157,42 +181,94 @@ const generateExcerpt = (content: string): string => {
 const calculateParagraphImpact = (paragraph: string): number => {
   let score = 0;
 
-  // Check for horror elements
-  if (/blood|scream|dark|shadow|fear|terror|horror/i.test(paragraph)) score += 2;
+  // Check for horror elements with weighted scoring
+  const horrorElements = {
+    visceral: /blood|scream|flesh|bone|wound/i,
+    psychological: /sanity|mind|reality|consciousness|madness/i,
+    supernatural: /ghost|spirit|demon|shadow|dark/i,
+    tension: /suddenly|instantly|without warning|silence/i,
+    emotion: /fear|terror|horror|dread|panic/i,
+    sensory: /saw|heard|felt|smelled|tasted/i,
+    atmosphere: /cold|dark|empty|alone|night/i
+  };
 
-  // Check for emotional intensity
-  if (/!|\?{2,}|\.{3}/g.test(paragraph)) score += 1;
+  Object.entries(horrorElements).forEach(([type, regex]) => {
+    if (regex.test(paragraph)) {
+      // Weight different horror elements differently
+      const weight = type === 'visceral' || type === 'psychological' ? 2 : 1.5;
+      score += weight;
+    }
+  });
 
-  // Check for sudden events
-  if (/suddenly|instantly|immediately|without warning/i.test(paragraph)) score += 1.5;
-
-  // Check for sensory descriptions
-  if (/heard|saw|felt|smelled|tasted/i.test(paragraph)) score += 1;
-
-  // Check for atmospheric words
-  if (/cold|dark|silent|empty|alone/i.test(paragraph)) score += 1;
+  // Check for emotional intensity markers
+  if (/!|\?{2,}|\.{3}/g.test(paragraph)) score += 1.5;
+  if (/[A-Z]{2,}/g.test(paragraph)) score += 1;
 
   return score;
 };
 
-// Update the detectThemes function to use proper typing
+// Add combination detection for multi-themed stories
 const detectThemes = (content: string): ThemeCategory[] => {
-  const themes: ThemeCategory[] = [];
-  Object.entries(THEME_CATEGORIES).forEach(([theme, info]) => {
-    if (info.keywords.some(keyword => content.toLowerCase().includes(keyword))) {
-      themes.push(theme as ThemeCategory);
+  try {
+    const themes: Set<ThemeCategory> = new Set();
+    const lowerContent = content.toLowerCase();
+    console.log('[Theme Detection] Analyzing content:', lowerContent.substring(0, 100) + '...');
+
+    // First pass: Direct keyword matching
+    Object.entries(THEME_CATEGORIES).forEach(([theme, info]) => {
+      const matchedKeywords = info.keywords.filter(keyword => lowerContent.includes(keyword));
+      if (matchedKeywords.length > 0) {
+        console.log(`[Theme Detection] Found ${theme} theme with keywords:`, matchedKeywords);
+        themes.add(theme as ThemeCategory);
+      }
+    });
+
+    // Second pass: Context-based analysis
+    if (lowerContent.includes('hospital') || lowerContent.includes('doctor') || lowerContent.includes('patient')) {
+      console.log('[Theme Detection] Medical context detected, adding PSYCHOLOGICAL theme');
+      themes.add('PSYCHOLOGICAL');
+      if (lowerContent.includes('blood') || lowerContent.includes('surgery')) {
+        console.log('[Theme Detection] Medical + gore context detected, adding GORE theme');
+        themes.add('GORE');
+      }
     }
-  });
-  return themes;
+
+    if (lowerContent.includes('basement') || lowerContent.includes('attic')) {
+      console.log('[Theme Detection] Location-based supernatural context detected');
+      themes.add('SUPERNATURAL');
+    }
+
+    if (lowerContent.includes('forest') || lowerContent.includes('dark')) {
+      console.log('[Theme Detection] Environment-based survival context detected');
+      themes.add('SURVIVAL');
+    }
+
+    return Array.from(themes);
+  } catch (error) {
+    console.error('[Theme Detection] Error:', error);
+    return [];
+  }
 };
 
 const detectTriggerWarnings = (content: string): string[] => {
-  const warnings: string[] = [];
-  TRIGGER_WARNINGS.forEach(warning => {
-    const regex = new RegExp(warning.replace('-', '|'), 'gi');
-    if (content.match(regex)) warnings.push(warning);
-  });
-  return warnings;
+  try {
+    const warnings: string[] = [];
+    const lowerContent = content.toLowerCase();
+    console.log('[Trigger Warning Detection] Analyzing content');
+
+    TRIGGER_WARNINGS.forEach(warning => {
+      const regex = new RegExp(warning.id.replace('-', '|'), 'gi');
+      if (content.match(regex)) {
+        console.log(`[Trigger Warning Detection] Found warning: ${warning.label}`);
+        warnings.push(warning.label);
+      }
+    });
+
+    return warnings;
+  } catch (error) {
+    console.error('[Trigger Warning Detection] Error:', error);
+    return [];
+  }
 };
 
 
@@ -274,11 +350,20 @@ export default function Reader() {
   }, [currentIndex]);
 
   useEffect(() => {
+    const currentPost = posts?.[currentIndex];
     if (currentPost?.content) {
       const intensity = calculateIntensity(currentPost.content);
       const themes = detectThemes(currentPost.content);
       const warnings = detectTriggerWarnings(currentPost.content);
       const excerpt = generateExcerpt(currentPost.content);
+
+      console.log('[Content Analysis]', {
+        postTitle: currentPost.title,
+        intensity,
+        themes,
+        warnings,
+        excerpt
+      });
 
       setContentAnalysis({
         intensity,
@@ -287,7 +372,7 @@ export default function Reader() {
         excerpt
       });
     }
-  }, [currentPost]);
+  }, [currentIndex, posts]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -354,29 +439,85 @@ export default function Reader() {
                     const themeInfo = THEME_CATEGORIES[theme];
                     const ThemeIcon = themeInfo?.icon || AlertTriangle;
                     return (
-                      <Badge
-                        key={theme}
-                        variant={themeInfo?.badgeVariant || "default"}
-                        className="flex items-center gap-1"
-                      >
-                        <ThemeIcon className="inline-block h-3 w-3 mr-1" />
-                        <span>{theme}</span>
-                      </Badge>
+                      <TooltipProvider key={theme}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block">
+                              <Badge
+                                variant={themeInfo?.badgeVariant || "default"}
+                                className="flex items-center gap-1 cursor-pointer"
+                              >
+                                <ThemeIcon className="inline-block h-3 w-3 mr-1" />
+                                <span>{theme.toLowerCase()}</span>
+                              </Badge>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">
+                              {theme === 'PSYCHOLOGICAL' ? 'Mental and psychological horror elements' :
+                                theme === 'GORE' ? 'Graphic and visceral content' :
+                                  theme === 'SUPERNATURAL' ? 'Paranormal and otherworldly elements' :
+                                    'Survival and chase sequences'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     );
                   })}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {contentAnalysis.warnings.map((warning) => (
-                    <Badge
-                      key={warning}
-                      variant="warning"
-                      className="text-xs"
-                    >
-                      {warning}
-                    </Badge>
-                  ))}
+                  {contentAnalysis.warnings.map((warning) => {
+                    const warningInfo = TRIGGER_WARNINGS.find(w => w.label === warning);
+                    return (
+                      <TooltipProvider key={warning}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block">
+                              <Badge
+                                variant="trigger"
+                                className="text-xs backdrop-blur-sm cursor-pointer"
+                              >
+                                {warning}
+                              </Badge>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">{warningInfo?.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
                 </div>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-block">
+                        <Badge
+                          variant="intensity"
+                          className="flex items-center gap-1 cursor-pointer"
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>
+                            Intensity: {Array(contentAnalysis.intensity).fill('●').join('')}
+                            {Array(5 - contentAnalysis.intensity).fill('○').join('')}
+                          </span>
+                        </Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        {contentAnalysis.intensity === 1 ? 'Mild horror elements' :
+                          contentAnalysis.intensity === 2 ? 'Moderate suspense and tension' :
+                            contentAnalysis.intensity === 3 ? 'Strong horror elements' :
+                              contentAnalysis.intensity === 4 ? 'Very intense content' :
+                                'Extreme horror content'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               <div

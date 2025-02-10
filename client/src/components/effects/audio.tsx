@@ -18,30 +18,12 @@ const TRACKS = {
   'Nocturnal': '/nocturnal.mp3'
 } as const;
 
-// Create an AudioCache to store preloaded audio files
-const audioCache = new Map<string, HTMLAudioElement>();
-
-// Preload all audio files and store them in the cache
-Object.entries(TRACKS).forEach(([name, path]) => {
-  const audio = new Audio();
-  audio.preload = "auto";
-  audio.src = path;
-  audioCache.set(name, audio);
-
-  // Add preload link to document head
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'audio';
-  link.href = path;
-  document.head.appendChild(link);
-});
-
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [audioReady, setAudioReady] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   const initAudio = useCallback(() => {
@@ -52,13 +34,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         audioRef.current = null;
       }
 
-      // Get cached audio instance
-      const cachedAudio = audioCache.get(selectedTrack);
-      if (!cachedAudio) {
-        throw new Error(`Audio track ${selectedTrack} not found in cache`);
-      }
-
-      const audio = cachedAudio.cloneNode() as HTMLAudioElement;
+      const audio = new Audio();
+      audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
       audio.volume = volume;
       audio.loop = true;
 
@@ -71,45 +48,36 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         console.error("[Audio] Load error:", error);
         setAudioReady(false);
         setIsPlaying(false);
-      };
-
-      const handlePlay = () => {
-        console.log('[Audio] Playback started:', selectedTrack);
-        setIsPlaying(true);
-      };
-
-      const handlePause = () => {
-        console.log('[Audio] Playback paused:', selectedTrack);
-        setIsPlaying(false);
+        toast({
+          title: "Audio Error",
+          description: "Failed to load audio track. Please try again.",
+          variant: "destructive",
+        });
       };
 
       audio.addEventListener('canplaythrough', handleCanPlay);
       audio.addEventListener('error', handleLoadError);
-      audio.addEventListener('playing', handlePlay);
-      audio.addEventListener('pause', handlePause);
-
-      // Enable crossfade
-      audio.crossOrigin = "anonymous";
-
       audioRef.current = audio;
 
       return () => {
         if (audio) {
           audio.removeEventListener('canplaythrough', handleCanPlay);
           audio.removeEventListener('error', handleLoadError);
-          audio.removeEventListener('playing', handlePlay);
-          audio.removeEventListener('pause', handlePause);
           audio.pause();
         }
       };
     } catch (error) {
       console.error('[Audio] Initialization error:', error);
       setAudioReady(false);
+      toast({
+        title: "Audio Error",
+        description: "Failed to initialize audio system",
+        variant: "destructive",
+      });
     }
-  }, [selectedTrack, volume]);
+  }, [selectedTrack, volume, toast]);
 
   useEffect(() => {
-    console.log('[Audio] Setting up audio provider');
     const cleanup = initAudio();
     return () => {
       cleanup?.();
@@ -117,50 +85,29 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [initAudio]);
 
   const toggleAudio = useCallback(async () => {
-    if (!audioRef.current || !audioReady) {
-      console.log('[Audio] Cannot toggle - not ready:', { current: !!audioRef.current, ready: audioReady });
-      return;
-    }
+    if (!audioRef.current || !audioReady) return;
 
     try {
       if (isPlaying) {
-        console.log('[Audio] Pausing playback');
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        console.log('[Audio] Starting playback');
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           await playPromise;
+          setIsPlaying(true);
         }
       }
     } catch (error) {
       console.error('[Audio] Playback error:', error);
       setIsPlaying(false);
+      toast({
+        title: "Playback Error",
+        description: "Failed to play audio track",
+        variant: "destructive",
+      });
     }
-  }, [audioReady, isPlaying]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      // Implement smooth volume transition
-      const currentVolume = audioRef.current.volume;
-      const volumeDiff = volume - currentVolume;
-      const steps = 10;
-      const stepSize = volumeDiff / steps;
-
-      let step = 0;
-      const fadeInterval = setInterval(() => {
-        if (step < steps) {
-          audioRef.current!.volume = currentVolume + (stepSize * step);
-          step++;
-        } else {
-          audioRef.current!.volume = volume;
-          clearInterval(fadeInterval);
-        }
-      }, 50);
-
-      return () => clearInterval(fadeInterval);
-    }
-  }, [volume]);
+  }, [audioReady, isPlaying, toast]);
 
   return (
     <AudioContext.Provider value={{
