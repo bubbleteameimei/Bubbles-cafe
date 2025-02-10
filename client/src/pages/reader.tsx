@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, ListFilter } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, ListFilter, AlertTriangle, Volume2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -10,7 +10,9 @@ import { format } from "date-fns";
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import CommentSection from "@/components/blog/comment-section"; // Fixed import path
+import { Badge } from "@/components/ui/badge";
+import CommentSection from "@/components/blog/comment-section";
+import { cn } from "@/lib/utils";
 
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -19,12 +21,6 @@ export default function Reader() {
   });
 
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
-
-  // Keep track of the current index in session storage
-  useEffect(() => {
-    sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-  }, [currentIndex]);
-
   const [, setLocation] = useLocation();
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
@@ -47,9 +43,8 @@ export default function Reader() {
         if (existingStats) {
           persistedStats[post.id] = JSON.parse(existingStats);
         } else {
-          // Generate random stats within limits, ensuring minimum 80 likes
           const newStats = {
-            likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
+            likes: Math.floor(Math.random() * 71) + 80,
             dislikes: Math.floor(Math.random() * 15)
           };
           localStorage.setItem(storageKey, JSON.stringify(newStats));
@@ -83,14 +78,6 @@ export default function Reader() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentIndex]);
 
-  const getReadingTime = (content: string) => {
-    if (!content) return '0 min read';
-    const wordsPerMinute = 200;
-    const words = content.split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
-  };
-
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -107,8 +94,26 @@ export default function Reader() {
   }
 
   const formattedDate = format(currentPost.createdAt, 'MMMM d, yyyy');
-  const readingTime = getReadingTime(currentPost.content);
   const stats = postStats[currentPost.id] || { likes: 0, dislikes: 0 };
+
+  // Get primary theme from trigger warnings
+  const getPrimaryTheme = (warnings: string[]) => {
+    const themeMapping: Record<string, string[]> = {
+      'Psychological Horror': ['psychological', 'mindbending', 'existential'],
+      'Gore Horror': ['gore', 'body-horror', 'violence'],
+      'Supernatural Horror': ['supernatural', 'cosmic-horror', 'religious'],
+      'Survival Horror': ['stalking', 'home-invasion', 'isolation'],
+      'Technological Horror': ['technology', 'surveillance'],
+      'Environmental Horror': ['claustrophobia', 'darkness', 'nature']
+    };
+
+    for (const [theme, keywords] of Object.entries(themeMapping)) {
+      if (keywords.some(keyword => warnings.includes(keyword))) {
+        return theme;
+      }
+    }
+    return 'General Horror';
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -124,6 +129,7 @@ export default function Reader() {
             className="mb-8"
           >
             <article>
+              {/* Story Header */}
               <div className="flex items-center justify-between mb-4">
                 <h1 className="story-title">{currentPost.title}</h1>
                 <Button
@@ -135,20 +141,65 @@ export default function Reader() {
                   <ListFilter className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="story-meta flex items-center gap-2 mb-8">
+
+              {/* Story Metadata */}
+              <div className="story-meta flex flex-wrap items-center gap-2 mb-4 text-sm text-muted-foreground">
                 <time>{formattedDate}</time>
                 <span className="text-primary/50">•</span>
-                <span>{readingTime}</span>
+                <span>{currentPost.readingTimeMinutes} min read</span>
+                {currentPost.atmosphericSound && (
+                  <>
+                    <span className="text-primary/50">•</span>
+                    <span className="flex items-center gap-1">
+                      <Volume2 className="h-3 w-3" />
+                      Atmospheric Sound
+                    </span>
+                  </>
+                )}
               </div>
+
+              {/* Theme and Trigger Warnings */}
+              <div className="mb-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-primary">
+                    {getPrimaryTheme(currentPost.triggerWarnings || [])}
+                  </Badge>
+                  {currentPost.matureContent && (
+                    <Badge variant="destructive" className="flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Mature Content
+                    </Badge>
+                  )}
+                </div>
+
+                {currentPost.triggerWarnings && currentPost.triggerWarnings.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {currentPost.triggerWarnings.map((warning) => (
+                      <Badge 
+                        key={warning}
+                        variant="secondary"
+                        className={cn(
+                          "text-xs",
+                          warning.includes("gore") && "bg-red-500/10 text-red-500",
+                          warning.includes("psychological") && "bg-purple-500/10 text-purple-500",
+                          warning.includes("death") && "bg-gray-500/10 text-gray-400"
+                        )}
+                      >
+                        {warning}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Story Content */}
               <div
                 className="story-content mb-8 prose dark:prose-invert max-w-none"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
                 {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => {
-                  // Skip empty paragraphs
                   if (!paragraph.trim()) return null;
 
-                  // Process the paragraph
                   const processed = paragraph.trim().split('_').map((text, i) => (
                     i % 2 === 0 ? (
                       <span key={i}>{text}</span>
@@ -164,6 +215,8 @@ export default function Reader() {
                   );
                 })}
               </div>
+
+              {/* Engagement Section */}
               <div className="border-t border-border pt-4">
                 <LikeDislike
                   postId={currentPost.id}
@@ -171,7 +224,9 @@ export default function Reader() {
                   initialDislikes={postStats[currentPost.id]?.dislikes || 0}
                 />
               </div>
-              <div className="mt-16"> {/* Added comment section */}
+
+              {/* Comments Section */}
+              <div className="mt-16">
                 <CommentSection
                   postId={currentPost.id}
                   title={currentPost.title}
@@ -181,6 +236,7 @@ export default function Reader() {
           </motion.div>
         </AnimatePresence>
 
+        {/* Navigation Controls */}
         <div className="controls-container">
           <div className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
             <div className="nav-controls flex items-center justify-between">

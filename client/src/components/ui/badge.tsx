@@ -11,10 +11,15 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-secondary/20 text-secondary-foreground hover:bg-secondary/30",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-destructive/90 text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground border-primary/20 hover:bg-primary/10",
+        warning: "border-transparent bg-orange-500/20 text-orange-400 hover:bg-orange-500/30",
+        horror: "border-transparent bg-red-900/20 text-red-400 hover:bg-red-900/30",
+        psychological: "border-transparent bg-purple-500/20 text-purple-400 hover:bg-purple-500/30",
+        supernatural: "border-transparent bg-blue-500/20 text-blue-400 hover:bg-blue-500/30",
+        survival: "border-transparent bg-green-500/20 text-green-400 hover:bg-green-500/30",
       },
     },
     defaultVariants: {
