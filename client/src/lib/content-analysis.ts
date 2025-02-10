@@ -316,26 +316,26 @@ export const calculateIntensity = (content: string): number => {
   if (!content) return 3;
 
   const themeIntensityMap: Record<ThemeCategory, number> = {
-    BODY_HORROR: 4.5,
-    CANNIBALISM: 5,
-    SUICIDAL: 5,
-    PSYCHOPATH: 4.5,
-    POSSESSION: 4,
-    LOVECRAFTIAN: 4,
-    SUPERNATURAL: 3.5,
-    PSYCHOLOGICAL: 3.5,
-    PARASITE: 4,
-    TECHNOLOGICAL: 3,
-    STALKING: 4,
-    DEATH: 4,
-    GOTHIC: 3,
-    APOCALYPTIC: 4,
-    ISOLATION: 3,
-    AQUATIC: 3,
-    VIRAL: 3.5,
-    URBAN_LEGEND: 3,
-    TIME_HORROR: 3,
-    DREAMSCAPE: 3
+    BODY_HORROR: 4,
+    CANNIBALISM: 4.5,
+    SUICIDAL: 4.5,
+    PSYCHOPATH: 4,
+    POSSESSION: 3.5,
+    LOVECRAFTIAN: 3.5,
+    SUPERNATURAL: 2.5,
+    PSYCHOLOGICAL: 2.5,
+    PARASITE: 3.5,
+    TECHNOLOGICAL: 2,
+    STALKING: 3.5,
+    DEATH: 3.5,
+    GOTHIC: 2,
+    APOCALYPTIC: 3.5,
+    ISOLATION: 2,
+    AQUATIC: 2,
+    VIRAL: 3,
+    URBAN_LEGEND: 2,
+    TIME_HORROR: 2,
+    DREAMSCAPE: 2
   };
 
   const emotionalPatterns = {
@@ -372,7 +372,7 @@ export const calculateIntensity = (content: string): number => {
   if (content.match(/!{2,}/g)) contentScore += 0.2;
 
   const finalScore = baseScore + contentScore;
-  return Math.max(3, Math.min(5, Math.round(finalScore)));
+  return Math.max(1, Math.min(5, Math.round(finalScore)));
 };
 
 export const getReadingTime = (content: string): string => {
