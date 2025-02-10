@@ -180,8 +180,7 @@ export default function Navigation() {
                       <SelectValue placeholder="Atmosphere" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
-                      <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
+                      <SelectItem value="Ambient" className="font-serif">Ambient</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

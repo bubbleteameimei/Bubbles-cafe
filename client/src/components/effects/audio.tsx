@@ -15,8 +15,7 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const TRACKS = {
-  'Ethereal': 'hQZfGa5t4e8', // 13 Angels Standing Guard
-  'Nocturnal': 'YOUR_VIDEO_ID_HERE' // Replace YOUR_VIDEO_ID_HERE with your desired video ID
+  'Ambient': 'YOHoOnaNivMHwcWW'
 };
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
