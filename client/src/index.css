@@ -358,7 +358,72 @@
     @apply flex justify-center items-center gap-4 p-4;
   }
 
-  .social-button {
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime&family=Dancing+Script&display=swap');
+
+:root {
+  --deep-burgundy: #8B0000;
+  --forest-green: #228B22;
+  --charcoal-black: #1A1A1A;
+  --antique-gold: #B8860B;
+  --faded-parchment: #F5F5DC;
+  --ink-stained-gray: #423F3B;
+  --cream-white: #FFF8E7;
+  --dusty-rose: #D4A5A5;
+  --warm-beige: #E0C090;
+  --burnt-sienna: #8B4513;
+  --olive-green: #556B2F;
+  --dark-brown: #3E2723;
+}
+
+body {
+  font-family: Garamond, "Playfair Display", serif;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: var(--cream-white);
+  color: var(--dark-brown);
+}
+
+[data-theme="dark"] body {
+  background-color: var(--charcoal-black);
+  color: var(--faded-parchment);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Playfair Display", Garamond, serif;
+  line-height: 1.2;
+  letter-spacing: 2px;
+}
+
+.typewriter-text {
+  font-family: "Courier Prime", monospace;
+}
+
+.handwritten-text {
+  font-family: "Dancing Script", "Great Vibes", cursive;
+}
+
+.latin-phrase {
+  font-style: italic;
+  color: var(--antique-gold);
+}
+
+[data-theme="light"] .latin-phrase {
+  color: var(--burnt-sienna);
+}
+
+.hover-glow {
+  transition: text-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .hover-glow:hover {
+  text-shadow: 0 0 8px var(--antique-gold);
+}
+
+[data-theme="light"] .hover-glow:hover {
+  text-shadow: 0 0 8px var(--burnt-sienna);
+}
+
+.social-button {
     @apply flex justify-center items-center w-10 h-10 rounded-full 
            transition-all duration-300 hover:scale-110 hover:shadow-lg;
   }
