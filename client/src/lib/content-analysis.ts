@@ -1,5 +1,5 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Knife } from "lucide-react";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
@@ -10,7 +10,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'writhe', 'infest', 'nostalgia', 'memory', 'forget', 'distort',
       'whisper', 'dig', 'flesh', 'brain', 'skin'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "parasite",
     icon: 'Worm',
     description: 'Parasitic and invasive horror'
@@ -21,7 +20,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'forgotten', 'blood', 'ritual', 'cave', 'underground', 'eternal',
       'revelations', 'forbidden', 'cyclopean', 'eldritch'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "lovecraftian",
     icon: 'Skull',
     description: 'Lovecraftian and cosmic horror'
@@ -32,7 +30,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'reality', 'perception', 'consciousness', 'paranoia', 'hallucination',
       'trauma', 'identity', 'control', 'manipulation', 'rain'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "psychological",
     icon: 'Brain',
     description: 'Psychological manipulation and mental horror'
@@ -43,7 +40,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'medication', 'hospital', 'poison', 'overdose', 'self-harm',
       'depression', 'despair', 'darkness'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "suicidal",
     icon: 'Pill',
     description: 'Self-destructive and survival horror'
@@ -54,7 +50,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'wire', 'mechanical', 'digital', 'system', 'consciousness',
       'upload', 'transfer', 'merge', 'cybernetic'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "technological",
     icon: 'Cpu',
     description: 'Technological and cybernetic horror'
@@ -65,7 +60,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'tissue', 'metamorphosis', 'skin', 'bone', 'blood', 'insect',
       'crawl', 'bug', 'inside'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "body",
     icon: 'Dna',
     description: 'Body transformation horror'
@@ -76,7 +70,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'obsess', 'hunt', 'capture', 'torture', 'victim', 'pleasure',
       'excitement', 'thrill'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "psychopath",
     icon: 'Axe',
     description: 'Psychopathic and murderous horror'
@@ -87,7 +80,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'apparition', 'mirror', 'reflection', 'portal', 'otherworldly',
       'presence', 'manifestation', 'swap', 'change'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "supernatural",
     icon: 'Ghost',
     description: 'Supernatural and paranormal horror'
@@ -98,9 +90,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'evil', 'exorcism', 'ritual', 'curse', 'dark', 'entity',
       'soul', 'corrupt', 'innocent'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "possession",
-    icon: 'Cross',
+    icon: 'Ghost',
     description: 'Demonic possession horror'
   },
   CANNIBALISM: {
@@ -109,9 +100,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'feast', 'cook', 'recipe', 'cookbook', 'taste', 'devour',
       'cannibalism', 'human', 'meal'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "cannibalism",
-    icon: 'Knife',
+    icon: 'Axe',
     description: 'Cannibalistic horror'
   },
   STALKING: {
@@ -120,7 +110,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'track', 'pursue', 'hunt', 'predator', 'prey', 'tunnel',
       'dark', 'alone', 'fear', 'chase'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "stalking",
     icon: 'Footprints',
     description: 'Stalking and pursuit horror'
@@ -131,7 +120,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'darkness', 'eternal', 'end', 'final', 'grave', 'tombstone',
       'spirit', 'beyond', 'mortal'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "death",
     icon: 'Skull',
     description: 'Death and mortality horror'
@@ -142,7 +130,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'estate', 'cathedral', 'crypt', 'family', 'legacy',
       'ancestor', 'portrait', 'painting'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "gothic",
     icon: 'Castle',
     description: 'Gothic and ancestral horror'
@@ -153,7 +140,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'wasteland', 'survival', 'pandemic', 'plague', 'end',
       'world', 'civilization', 'ruin'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "apocalyptic",
     icon: 'Radiation',
     description: 'Post-apocalyptic horror'
@@ -164,7 +150,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'isolated', 'remote', 'stranded', 'lonely', 'silence',
       'void', 'cut-off', 'separation'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "isolation",
     icon: 'UserMinus2',
     description: 'Isolation horror'
@@ -175,7 +160,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'submarine', 'drowning', 'flood', 'marine', 'depths',
       'vessel', 'ship'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "aquatic",
     icon: 'Anchor',
     description: 'Deep sea horror'
@@ -186,7 +170,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'virus', 'outbreak', 'contamination', 'mutation',
       'transmission', 'infected', 'pandemic'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "viral",
     icon: 'AlertTriangle',
     description: 'Viral and epidemic horror'
@@ -197,7 +180,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'city', 'street', 'local', 'whisper', 'mystery',
       'warning', 'curse'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "urban",
     icon: 'Building',
     description: 'Urban legend horror'
@@ -208,7 +190,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'future', 'timeline', 'moment', 'eternity', 'repeat',
       'trapped', 'forever'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "time",
     icon: 'Clock',
     description: 'Temporal horror'
@@ -219,7 +200,6 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'vision', 'lucid', 'phantasm', 'fantasy', 'illusion',
       'reality', 'trance'
     ],
-    atmosphericTrack: '13-angels.m4a',
     badgeVariant: "dreamscape",
     icon: 'Moon',
     description: 'Dream-based horror'
@@ -346,7 +326,7 @@ export const calculateIntensity = (content: string): number => {
 
   let baseScore = 3;
   const themes = detectThemes(content);
-  
+
   if (themes.length > 0) {
     baseScore = themeIntensityMap[themes[0]] || 3;
   }

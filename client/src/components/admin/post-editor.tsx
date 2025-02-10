@@ -27,16 +27,30 @@ interface PostEditorProps {
 }
 
 type ThemeCategoryMapping = {
-  [K in ThemeCategory]: { atmosphericTrack: string };
+  [K in ThemeCategory]: Record<string, never>;
 };
 
 const THEME_CATEGORIES: ThemeCategoryMapping = {
-  PSYCHOLOGICAL: { atmosphericTrack: '13-angels.m4a' },
-  SUPERNATURAL: { atmosphericTrack: '13-angels.m4a' },
-  GORE: { atmosphericTrack: 'whispers-wind.m4a' },
-  SURVIVAL: { atmosphericTrack: 'whispers-wind.m4a' },
-  TECHNOLOGICAL: { atmosphericTrack: 'whispers-wind.m4a' },
-  ENVIRONMENTAL: { atmosphericTrack: '13-angels.m4a' }
+  PARASITE: {},
+  LOVECRAFTIAN: {},
+  PSYCHOLOGICAL: {},
+  TECHNOLOGICAL: {},
+  SUICIDAL: {},
+  BODY_HORROR: {},
+  PSYCHOPATH: {},
+  SUPERNATURAL: {},
+  POSSESSION: {},
+  CANNIBALISM: {},
+  STALKING: {},
+  DEATH: {},
+  GOTHIC: {},
+  APOCALYPTIC: {},
+  ISOLATION: {},
+  AQUATIC: {},
+  VIRAL: {},
+  URBAN_LEGEND: {},
+  TIME_HORROR: {},
+  DREAMSCAPE: {}
 };
 
 export default function PostEditor({ post, onClose }: PostEditorProps) {
@@ -77,7 +91,6 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       originalSource: formData.originalSource || null,
       originalAuthor: formData.originalAuthor || null,
       originalPublishDate: formData.originalPublishDate || null,
-      atmosphericSound: theme ? THEME_CATEGORIES[theme].atmosphericTrack : null,
       themeCategory: theme || null,
       triggerWarnings: formData.triggerWarnings || [],
       matureContent: formData.matureContent || false,

@@ -1,9 +1,7 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Volume2, VolumeX, Menu, X } from "lucide-react";
+import { Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
-import { useAudio } from "@/components/effects/audio";
 import { useState, useCallback, memo } from "react";
 import {
   Sheet,
@@ -11,14 +9,6 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { SoundMixer } from "@/components/effects/sound-mixer";
 
 const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
@@ -91,14 +81,7 @@ NavigationItems.displayName = "NavigationItems";
 export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
-  const { isPlaying, toggleAudio, volume, setVolume, audioReady, selectedTrack, setSelectedTrack } = useAudio();
   const [isOpen, setIsOpen] = useState(false);
-
-  const handleVolumeChange = useCallback((value: number[]) => {
-    if (value[0] >= 0 && value[0] <= 100) {
-      setVolume(value[0] / 100);
-    }
-  }, [setVolume]);
 
   const handleNavigation = useCallback(() => {
     setIsOpen(false);
@@ -108,91 +91,77 @@ export default function Navigation() {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  const handleAudioToggle = useCallback(() => {
-    if (audioReady) {
-      toggleAudio();
-    }
-  }, [audioReady, toggleAudio]);
-
   return (
-    <>
-      <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/95 backdrop-blur-md" role="banner">
-        <div className="relative z-10">
-          <div className="container mx-auto py-6 px-4 text-center relative">
-            <h1 className="font-serif text-4xl font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
-              Bubble's Cafe
-            </h1>
-            <p className="text-sm text-primary/90 italic font-serif tracking-wider mt-1">
-              What once was will never be again
-            </p>
-          </div>
-
-          <nav 
-            className="bg-background/95 backdrop-blur-md border-t border-border/10 shadow-sm"
-            role="navigation"
-            aria-label="Main navigation"
-          >
-            <div className="container mx-auto h-12 flex items-center justify-between px-4">
-              <div className="md:hidden">
-                <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
-                      aria-label={isOpen ? "Close menu" : "Open menu"}
-                      aria-expanded={isOpen}
-                      aria-controls="mobile-menu"
-                    >
-                      <Menu className="h-5 w-5" aria-hidden="true" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent 
-                    side="left" 
-                    className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg"
-                    id="mobile-menu"
-                  >
-                    <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Close</span>
-                    </SheetClose>
-                    <nav className="flex flex-col space-y-2">
-                      <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
-                      <div className="mt-4">
-                        <SoundMixer />
-                      </div>
-                    </nav>
-                  </SheetContent>
-                </Sheet>
-              </div>
-
-              <div className="hidden md:flex items-center flex-1">
-                <NavigationItems location={location} />
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="hidden md:block">
-                  <SoundMixer />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleThemeToggle}
-                  className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
-                  aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                  aria-pressed={theme === "dark"}
-                >
-                  {theme === "dark" ? (
-                    <Sun className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <Moon className="h-4 w-4" aria-hidden="true" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </nav>
+    <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/95 backdrop-blur-md" role="banner">
+      <div className="relative z-10">
+        <div className="container mx-auto py-6 px-4 text-center relative">
+          <h1 className="font-serif text-4xl font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
+            Bubble's Cafe
+          </h1>
+          <p className="text-sm text-primary/90 italic font-serif tracking-wider mt-1">
+            What once was will never be again
+          </p>
         </div>
-      </header>
-    </>
+
+        <nav 
+          className="bg-background/95 backdrop-blur-md border-t border-border/10 shadow-sm"
+          role="navigation"
+          aria-label="Main navigation"
+        >
+          <div className="container mx-auto h-12 flex items-center justify-between px-4">
+            <div className="md:hidden">
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+                    aria-label={isOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={isOpen}
+                    aria-controls="mobile-menu"
+                  >
+                    <Menu className="h-5 w-5" aria-hidden="true" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent 
+                  side="left" 
+                  className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg"
+                  id="mobile-menu"
+                >
+                  <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </SheetClose>
+                  <nav className="flex flex-col space-y-2">
+                    <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            <div className="hidden md:flex items-center flex-1">
+              <NavigationItems location={location} />
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleThemeToggle}
+                className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                aria-pressed={theme === "dark"}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Moon className="h-4 w-4" aria-hidden="true" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
   );
 }

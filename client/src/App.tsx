@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react';
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { AudioProvider } from "@/components/effects/audio";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Navigation from "./components/layout/navigation";
@@ -52,12 +51,6 @@ function App() {
 
     return () => {
       clearTimeout(timer);
-      // Cleanup audio elements
-      const audioElements = document.getElementsByTagName('audio');
-      Array.from(audioElements).forEach(audio => {
-        audio.pause();
-        audio.src = '';
-      });
     };
   }, []);
 
@@ -74,58 +67,56 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <AuthProvider>
-          <AudioProvider>
-            <div className="flex flex-col min-h-screen bg-background text-foreground">
-              <Navigation />
-              <main className="flex-1">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingScreen />}>
-                    <Switch>
-                      <Route path="/">
-                        <Home />
-                      </Route>
-                      <Route path="/reader">
-                        <Reader />
-                      </Route>
-                      <Route path="/stories">
-                        <Stories />
-                      </Route>
-                      <Route path="/index">
-                        <IndexView />
-                      </Route>
-                      <Route path="/story/:slug">
-                        {params => <StoryView slug={params.slug} />}
-                      </Route>
-                      <Route path="/secret">
-                        <Secret />
-                      </Route>
-                      <Route path="/privacy">
-                        <Privacy />
-                      </Route>
-                      <Route path="/about">
-                        <About />
-                      </Route>
-                      <Route path="/contact">
-                        <Contact />
-                      </Route>
-                      <Route path="/admin/login">
-                        <AdminLogin />
-                      </Route>
-                      <Route path="/admin">
-                        <Admin />
-                      </Route>
-                      <Route>
-                        <NotFound />
-                      </Route>
-                    </Switch>
-                  </Suspense>
-                </ErrorBoundary>
-              </main>
-              <Footer />
-              <CookieConsent />
-              <Toaster />
-            </div>
-          </AudioProvider>
+          <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <Navigation />
+            <main className="flex-1">
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingScreen />}>
+                  <Switch>
+                    <Route path="/">
+                      <Home />
+                    </Route>
+                    <Route path="/reader">
+                      <Reader />
+                    </Route>
+                    <Route path="/stories">
+                      <Stories />
+                    </Route>
+                    <Route path="/index">
+                      <IndexView />
+                    </Route>
+                    <Route path="/story/:slug">
+                      {params => <StoryView slug={params.slug} />}
+                    </Route>
+                    <Route path="/secret">
+                      <Secret />
+                    </Route>
+                    <Route path="/privacy">
+                      <Privacy />
+                    </Route>
+                    <Route path="/about">
+                      <About />
+                    </Route>
+                    <Route path="/contact">
+                      <Contact />
+                    </Route>
+                    <Route path="/admin/login">
+                      <AdminLogin />
+                    </Route>
+                    <Route path="/admin">
+                      <Admin />
+                    </Route>
+                    <Route>
+                      <NotFound />
+                    </Route>
+                  </Switch>
+                </Suspense>
+              </ErrorBoundary>
+            </main>
+            <Footer />
+            <CookieConsent />
+            <Toaster />
+          </div>
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>

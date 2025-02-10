@@ -40,7 +40,6 @@ export const posts = pgTable("posts", {
   originalSource: text("original_source"),
   originalAuthor: text("original_author"),
   originalPublishDate: timestamp("original_publish_date"),
-  atmosphericSound: text("atmospheric_sound"),
   themeCategory: text("theme_category"),
   triggerWarnings: text("trigger_warnings").array(),
   matureContent: boolean("mature_content").default(false).notNull(),
@@ -110,7 +109,6 @@ export const insertPostSchema = createInsertSchema(posts)
       'APOCALYPTIC', 'LOVECRAFTIAN', 'ISOLATION', 'AQUATIC',
       'VIRAL', 'URBAN_LEGEND', 'TIME_HORROR', 'DREAMSCAPE'
     ]),
-    atmosphericSound: z.string().optional(),
     triggerWarnings: z.array(z.string()).optional()
   });
 

@@ -18,7 +18,6 @@ async function importWordPressMetadata() {
       ignoreAttributes: false,
       parseTagValue: true,
       parseAttributeValue: true,
-      cdataTagName: "__cdata",
       textNodeName: "__text"
     });
     const jsonObj = parser.parse(xmlData);
@@ -60,36 +59,23 @@ async function importWordPressMetadata() {
       // Enhanced trigger warnings with broader patterns
       const triggerWarnings = ['horror']; // Base tag
       const triggerKeywords = {
-        // Physical horror
         'gore': /blood|gore|guts|viscera|flesh|wound|mutilat|dismember|entrails|organ/i,
         'violence': /murder|kill|stab|shot|violence|brutal|assault|attack|fight|struggle|strangle/i,
         'body-horror': /transform|mutate|deform|grotesque|twist|morph|flesh|skin|bone|decay/i,
-
-        // Psychological horror
         'psychological': /mind|sanity|madness|paranoia|hallucination|delusion|reality|conscious|dream|nightmare/i,
         'existential': /existence|meaning|purpose|void|empty|hollow|eternal|infinite|cosmic|universe/i,
         'mindbending': /reality.*bend|perception|truth|illusion|fake|real|believe|trust|doubt/i,
-
-        // Death and mortality
         'death': /death|die|corpse|dead|funeral|morgue|grave|cemetery|tomb|bury/i,
         'suicide': /suicide|self-harm|end.*life|jump|blade|pills|overdose|despair/i,
-
-        // Situational horror
         'stalking': /follow|watch|stalk|spy|observe|trail|track|hunt|pursue|shadow/i,
         'home-invasion': /break.*in|intruder|invaded|uninvited|stranger|door|window|lock|safe/i,
         'isolation': /alone|lonely|isolated|abandoned|empty|desert|remote|cut.*off|trap/i,
-
-        // Supernatural elements
         'supernatural': /ghost|spirit|demon|haunt|paranormal|possess|curse|hex|witch|occult/i,
         'cosmic-horror': /ancient|elder|cosmic|universe|vast|incomprehensible|knowledge|forbidden|cult/i,
         'religious': /god|devil|hell|heaven|sin|divine|sacred|unholy|ritual|worship/i,
-
-        // Environmental horror
         'claustrophobia': /tight|closed|trapped|confined|tunnel|cave|box|coffin|buried|space/i,
         'darkness': /dark|shadow|black|night|blind|light.*fade|dim|visibility|sight/i,
         'nature': /forest|ocean|mountain|wild|animal|creature|beast|predator|hunt/i,
-
-        // Technological horror
         'technology': /machine|computer|digital|virtual|cyber|network|screen|program|code|system/i,
         'surveillance': /camera|watch|monitor|record|tape|video|footage|evidence|proof|document/i
       };
@@ -124,53 +110,10 @@ async function importWordPressMetadata() {
          intensityFactors.supernaturalContent * 0.2) / 2
       ));
 
-      // Enhanced atmospheric sound mapping
-      let atmosphericSound = null;
-      const soundMappings = {
-        // Nature and weather
-        'rain': 'whispering_wind.mp3',
-        'storm': 'whispering_wind.mp3',
-        'thunder': 'whispering_wind.mp3',
-
-        // Psychological and supernatural
-        'tunnel': '13 angels.m4a',
-        'ghost': '13 angels.m4a',
-        'spirit': '13 angels.m4a',
-
-        // Action and tension
-        'chase': 'whispers wind.m4a',
-        'run': 'whispers wind.m4a',
-        'pursue': 'whispers wind.m4a'
-      };
-
-      // Check both title and content for sound mapping
-      Object.entries(soundMappings).forEach(([keyword, sound]) => {
-        if (title.toLowerCase().includes(keyword) || content.toLowerCase().includes(keyword)) {
-          atmosphericSound = sound;
-        }
-      });
-
-      // Determine primary theme based on trigger warnings
-      const themeMapping = {
-        'psychological-horror': ['psychological', 'mindbending', 'existential'],
-        'gore-horror': ['gore', 'body-horror', 'violence'],
-        'supernatural-horror': ['supernatural', 'cosmic-horror', 'religious'],
-        'survival-horror': ['stalking', 'home-invasion', 'isolation'],
-        'technological-horror': ['technology', 'surveillance'],
-        'environmental-horror': ['claustrophobia', 'darkness', 'nature']
-      };
-
-      let primaryTheme = 'general-horror';
-      Object.entries(themeMapping).forEach(([theme, relatedWarnings]) => {
-        if (relatedWarnings.some(warning => triggerWarnings.includes(warning))) {
-          primaryTheme = theme;
-        }
-      });
-
       // Import post metadata only
       const [newPost] = await db.insert(posts).values({
         title,
-        content: content, // Keep content for analysis but could be removed later
+        content, // Keep content for analysis
         excerpt: excerpt.substring(0, 200) + '...', // Limit excerpt length
         slug,
         authorId: adminUserId,
@@ -179,8 +122,7 @@ async function importWordPressMetadata() {
         originalPublishDate: new Date(item.pubDate),
         matureContent: intensityScore > 3,
         readingTimeMinutes,
-        triggerWarnings: [...new Set(triggerWarnings)], // Remove duplicates
-        atmosphericSound
+        triggerWarnings: [...new Set(triggerWarnings)] // Remove duplicates
       }).returning({ id: posts.id });
 
       // Import comments if any
