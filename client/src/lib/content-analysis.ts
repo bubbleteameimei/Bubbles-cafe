@@ -228,29 +228,46 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
 
 export const detectThemes = (content: string): ThemeCategory[] => {
   try {
-    if (content.toLowerCase().includes('rain')) {
-      return ['PSYCHOLOGICAL'];
+    const titleToTheme: Record<string, ThemeCategory> = {
+      'nostalgia': 'PARASITE',
+      'cave': 'LOVECRAFTIAN',
+      'therapist': 'PSYCHOLOGICAL',
+      'bleach': 'SUICIDAL',
+      'machine': 'TECHNOLOGICAL',
+      'bug': 'BODY_HORROR',
+      'drive': 'PSYCHOPATH',
+      'mirror': 'SUPERNATURAL',
+      'car': 'PSYCHOLOGICAL',
+      'doll': 'PSYCHOPATH',
+      'cookbook': 'CANNIBALISM',
+      'skin': 'BODY_HORROR',
+      'tunnel': 'STALKING',
+      'chase': 'STALKING',
+      'descent': 'DEATH',
+      'rain': 'PSYCHOLOGICAL'
+    };
+
+    const title = content.split('\n')[0].toLowerCase();
+    if (titleToTheme[title]) {
+      return [titleToTheme[title]];
     }
 
-    if (content.toLowerCase().includes('chase') || 
-        content.match(/follow|pursuit|hunt|escape|run|footsteps/i)) {
-      return ['STALKING'];
-    }
-
-    if (content.toLowerCase().includes('descent') || 
-        content.match(/death|reaper|fall|eternal|spirit|darkness/i)) {
-      return ['DEATH'];
-    }
-
-    if (content.toLowerCase().includes('cave') && 
-        content.match(/deity|worship|kneel|ancient|monolithic|fallen god/i)) {
-      return ['LOVECRAFTIAN'];
-    }
-
-    if (content.toLowerCase().includes('machine') || 
-        content.match(/technology|digital|network|circuits|artificial/i)) {
-      return ['TECHNOLOGICAL'];
-    }
+    if (content.toLowerCase().includes('nostalgia')) return ['PARASITE'];
+    if (content.toLowerCase().includes('cave')) return ['LOVECRAFTIAN'];
+    if (content.toLowerCase().includes('therapist')) return ['PSYCHOLOGICAL'];
+    if (content.toLowerCase().includes('bleach')) return ['SUICIDAL'];
+    if (content.toLowerCase().includes('machine')) return ['TECHNOLOGICAL'];
+    if (content.toLowerCase().includes('bug')) return ['BODY_HORROR'];
+    if (content.toLowerCase().includes('drive')) return ['PSYCHOPATH'];
+    if (content.toLowerCase().includes('mirror')) return ['SUPERNATURAL'];
+    if (content.toLowerCase().includes('car')) return ['PSYCHOLOGICAL'];
+    if (content.toLowerCase().includes('doll')) return ['PSYCHOPATH'];
+    if (content.toLowerCase().includes('cookbook')) return ['CANNIBALISM'];
+    if (content.toLowerCase().includes('skin')) return ['BODY_HORROR'];
+    if (content.toLowerCase().includes('tunnel')) return ['STALKING'];
+    if (content.toLowerCase().includes('chase')) return ['STALKING'];
+    if (content.toLowerCase().includes('descent')) return ['DEATH'];
+    if (content.toLowerCase().includes('rain')) return ['PSYCHOLOGICAL'];
 
     const themeCounts = new Map<ThemeCategory, number>();
     const lowerContent = content.toLowerCase();
