@@ -155,15 +155,6 @@ export default function IndexView() {
                             <Clock className="h-3 w-3" />
                             <span>{readingTime}</span>
                           </div>
-                          <div className="flex items-center gap-1 justify-end">
-                            <Gauge className="h-3 w-3" />
-                            <span>Level {calculateIntensity(post.content)}/5</span>
-                          </div>
-                          {detectThemes(post.content)[0] && (
-                            <div className="flex items-center gap-1 justify-end">
-                              <span>{detectThemes(post.content)[0].toLowerCase().replace(/_/g, ' ')}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -174,19 +165,7 @@ export default function IndexView() {
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3 font-serif">
                         {excerpt}
                       </p>
-                      <div className="flex items-center justify-between text-xs mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-primary/80">
-                            Level {calculateIntensity(post.content)}/5
-                          </span>
-                          {detectThemes(post.content)[0] && (
-                            <span className="text-muted-foreground">
-                              {detectThemes(post.content)[0].charAt(0) + 
-                               detectThemes(post.content)[0].slice(1).toLowerCase().replace(/_/g, ' ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      
                       <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
