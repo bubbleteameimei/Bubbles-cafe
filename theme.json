@@ -1,31 +1,31 @@
 {
   "variant": "professional",
-  "primary": "hsl(345, 85%, 35%)",
+  "primary": "hsl(0, 100%, 27%)",
   "appearance": "dark",
   "radius": 0.5,
   "background": {
-    "dark": "hsl(240, 10%, 4%)",
-    "light": "hsl(0, 0%, 98%)"
+    "dark": "hsl(0, 0%, 10%)",
+    "light": "hsl(34, 78%, 91%)"
   },
   "foreground": {
-    "dark": "hsl(0, 0%, 98%)",
-    "light": "hsl(240, 10%, 4%)"
+    "dark": "hsl(34, 78%, 91%)",
+    "light": "hsl(0, 0%, 10%)"
   },
   "muted": {
-    "dark": "hsl(240, 5%, 12%)",
-    "light": "hsl(0, 0%, 92%)"
+    "dark": "hsl(0, 0%, 15%)",
+    "light": "hsl(34, 38%, 86%)"
   },
   "accent": {
-    "dark": "hsl(345, 85%, 45%)",
-    "light": "hsl(345, 85%, 35%)"
+    "dark": "hsl(43, 87%, 38%)",
+    "light": "hsl(0, 100%, 27%)"
   },
   "card": {
-    "dark": "hsl(240, 10%, 8%)",
+    "dark": "hsl(0, 0%, 12%)",
     "light": "hsl(0, 0%, 100%)"
   },
   "border": {
-    "dark": "hsl(240, 5%, 20%)",
-    "light": "hsl(0, 0%, 90%)"
+    "dark": "hsl(0, 0%, 20%)",
+    "light": "hsl(34, 28%, 86%)"
   },
   "destructive": {
     "dark": "hsl(0, 85%, 45%)",
