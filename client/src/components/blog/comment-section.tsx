@@ -18,9 +18,10 @@ interface Comment {
 
 interface CommentSectionProps {
   postId: number;
+  title?: string; // Made optional since it's not always needed
 }
 
-export default function CommentSection({ postId }: CommentSectionProps) {
+export default function CommentSection({ postId, title }: CommentSectionProps) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const { toast } = useToast();
@@ -76,7 +77,9 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   return (
     <div className="space-y-8">
       <div className="border-t border-border/50 pt-8">
-        <h2 className="text-2xl font-bold mb-6">Comments</h2>
+        <h2 className="text-2xl font-bold mb-6">
+          {title ? `Comments on "${title}"` : "Comments"}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
