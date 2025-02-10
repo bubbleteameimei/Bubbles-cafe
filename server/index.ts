@@ -75,6 +75,7 @@ async function findAvailablePort(startPort: number, maxAttempts: number = 10): P
       await new Promise<number>((resolve, reject) => {
         server.once('error', (err: NodeJS.ErrnoException) => {
           if (err.code === 'EADDRINUSE') {
+            log(`Port ${currentPort} is in use, trying next port`);
             server.close();
             currentPort++;
             attempts++;
@@ -86,11 +87,13 @@ async function findAvailablePort(startPort: number, maxAttempts: number = 10): P
 
         server.listen(currentPort, '0.0.0.0', () => {
           const { port } = server.address() as { port: number };
-          server.close(() => resolve(port));
+          server.close(() => {
+            log(`Found available port: ${port}`);
+            resolve(port);
+          });
         });
       });
 
-      log(`Found available port: ${currentPort}`);
       return currentPort;
     } catch (error) {
       log(`Error checking port ${currentPort}:`, error instanceof Error ? error.message : String(error));
@@ -125,6 +128,8 @@ async function waitForPort(port: number, retries = 45, delay = 1000): Promise<vo
 
     socket.on('error', (err) => {
       socket.destroy();
+      log(`Connection attempt ${attempts} failed: ${err.message}`);
+
       if (attempts >= retries) {
         cleanup();
         reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
@@ -187,20 +192,26 @@ async function startServer() {
     if (isNaN(startPort) || startPort < 1024 || startPort > 65535) {
       throw new Error('Invalid port number');
     }
+
+    log(`Attempting to start server on port ${startPort}`);
     const PORT = await findAvailablePort(startPort);
 
+    // Print port immediately so workflow knows which port to wait for
+    console.log(`PORT=${PORT}`);
+    process.env.PORT = PORT.toString();
+
     return new Promise<void>((resolve, reject) => {
+      let isServerReady = false;
+
       const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
         try {
-          log(`Server starting on port ${PORT}`);
+          log(`Server listening started on port ${PORT}`);
 
           // Wait for port to be actually ready
           await waitForPort(PORT);
+          isServerReady = true;
           log(`Port ${PORT} is ready and accepting connections`);
 
-          // Print port in the exact format expected by Replit
-          console.log(`PORT=${PORT}`);
-          process.env.PORT = PORT.toString();
 
           if (process.send) {
             process.send('ready');
@@ -215,16 +226,22 @@ async function startServer() {
       });
 
       serverInstance.on('error', (err: any) => {
-        log(`Server error: ${err.message}`);
-        reject(err);
+        const errorMessage = `Server error: ${err.message}`;
+        log(errorMessage);
+
+        if (!isServerReady) {
+          reject(new Error(errorMessage));
+        }
       });
 
       // Handle graceful shutdown
       const cleanup = () => {
-        serverInstance.close(() => {
-          log('Server closed');
-          process.exit(0);
-        });
+        if (serverInstance) {
+          serverInstance.close(() => {
+            log('Server closed');
+            process.exit(0);
+          });
+        }
       };
 
       process.on('SIGTERM', cleanup);

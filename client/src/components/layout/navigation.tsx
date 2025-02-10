@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useTheme } from "@/hooks/use-theme";
 import { useAudio } from "@/components/effects/audio";
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
+const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
@@ -28,12 +28,12 @@ const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
 }) => {
   const [, setLocation] = useLocation();
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onNavigate?.();
     setLocation(href);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  };
+  }, [href, onNavigate, setLocation]);
 
   return (
     <button
@@ -41,44 +41,51 @@ const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
       className={`
         nav-link relative px-3 py-2.5 text-base transition-colors duration-300 w-full text-left font-serif tracking-wide
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
-        hover:bg-primary/5 rounded-md ${className}
+        hover:bg-primary/5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 ${className}
       `}
+      aria-current={isActive ? "page" : undefined}
+      role="menuitem"
+      tabIndex={0}
     >
       {children}
     </button>
   );
-};
+});
 
-const NavigationItems = ({ location, onNavigate, isMobile = false }: {
+NavLink.displayName = "NavLink";
+
+const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
   location: string,
   onNavigate?: () => void,
   isMobile?: boolean
 }) => {
   return (
-    <>
-      <div className={`${isMobile ? '' : 'flex items-center space-x-1'}`}>
+    <div role="menu" className={isMobile ? 'space-y-2' : 'flex items-center'} aria-label="Main navigation">
+      <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-1'}`}>
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
         <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       </div>
 
-      {isMobile && <div className="my-4 border-t border-border/20" />}
+      {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
 
-      <div className={`${isMobile ? '' : 'flex items-center space-x-1 ml-4'}`}>
+      <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
         <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       </div>
 
-      {isMobile && <div className="my-4 border-t border-border/20" />}
+      {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
 
-      <div className={`${isMobile ? '' : 'flex items-center space-x-1 ml-4'}`}>
+      <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
         <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
         <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
       </div>
-    </>
+    </div>
   );
-};
+});
+
+NavigationItems.displayName = "NavigationItems";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -86,22 +93,35 @@ export default function Navigation() {
   const { isPlaying, toggleAudio, volume, setVolume, audioReady, selectedTrack, setSelectedTrack } = useAudio();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0] / 100);
-  };
+  const handleVolumeChange = useCallback((value: number[]) => {
+    if (value[0] >= 0 && value[0] <= 100) {
+      setVolume(value[0] / 100);
+    }
+  }, [setVolume]);
 
-  const handleNavigation = () => {
+  const handleNavigation = useCallback(() => {
     setIsOpen(false);
-  };
+  }, []);
+
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
+
+  const handleAudioToggle = useCallback(() => {
+    if (audioReady) {
+      toggleAudio();
+    }
+  }, [audioReady, toggleAudio]);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/10">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/10" role="banner">
       <div 
-        className="h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center"
+        className="h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center relative"
         style={{
           backgroundImage: 'url("/assets/IMG_4484.jpeg")',
           backgroundBlendMode: 'normal'
         }}
+        aria-hidden="true"
       >
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 px-4 text-center">
@@ -114,16 +134,31 @@ export default function Navigation() {
         </div>
       </div>
 
-      <nav className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
+      <nav 
+        className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4" 
+        role="navigation"
+        aria-label="Main navigation"
+      >
         <div className="md:hidden">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                <Menu className="h-5 w-5" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isOpen}
+                aria-controls="mobile-menu"
+              >
+                <Menu className="h-5 w-5" aria-hidden="true" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg">
-              <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-secondary">
+            <SheetContent 
+              side="left" 
+              className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg"
+              id="mobile-menu"
+            >
+              <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none data-[state=open]:bg-secondary">
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
               </SheetClose>
@@ -140,7 +175,11 @@ export default function Navigation() {
 
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
-            <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+            <Select 
+              value={selectedTrack} 
+              onValueChange={setSelectedTrack}
+              aria-label="Select atmosphere track"
+            >
               <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
                 <SelectValue placeholder="Atmosphere" />
               </SelectTrigger>
@@ -154,21 +193,22 @@ export default function Navigation() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleAudio}
+            onClick={handleAudioToggle}
             disabled={!audioReady}
             className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
-            title={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading..."}
+            aria-label={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading audio..."}
+            aria-pressed={isPlaying}
           >
             {!audioReady && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden="true">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
               </span>
             )}
             {isPlaying ? (
-              <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             ) : (
-              <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
+              <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             )}
           </Button>
 
@@ -180,19 +220,25 @@ export default function Navigation() {
               onValueChange={handleVolumeChange}
               disabled={!audioReady}
               className="cursor-pointer"
+              aria-label="Volume control"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={volume * 100}
             />
           </div>
 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={handleThemeToggle}
             className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={theme === "dark"}
           >
             {theme === "dark" ? (
-              <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Sun className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             ) : (
-              <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Moon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             )}
           </Button>
         </div>

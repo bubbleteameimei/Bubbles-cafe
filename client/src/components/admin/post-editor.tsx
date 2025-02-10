@@ -26,11 +26,17 @@ interface PostEditorProps {
   onClose?: () => void;
 }
 
-const THEME_CATEGORIES = {
+type ThemeCategoryMapping = {
+  [K in ThemeCategory]: { atmosphericTrack: string };
+};
+
+const THEME_CATEGORIES: ThemeCategoryMapping = {
   PSYCHOLOGICAL: { atmosphericTrack: '13-angels.m4a' },
   SUPERNATURAL: { atmosphericTrack: '13-angels.m4a' },
   GORE: { atmosphericTrack: 'whispers-wind.m4a' },
-  SURVIVAL: { atmosphericTrack: 'whispers-wind.m4a' }
+  SURVIVAL: { atmosphericTrack: 'whispers-wind.m4a' },
+  TECHNOLOGICAL: { atmosphericTrack: 'whispers-wind.m4a' },
+  ENVIRONMENTAL: { atmosphericTrack: '13-angels.m4a' }
 };
 
 export default function PostEditor({ post, onClose }: PostEditorProps) {
