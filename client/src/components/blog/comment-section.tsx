@@ -39,7 +39,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ author: comment.name, content: comment.content })
+        body: JSON.stringify({ name: comment.name, content: comment.content, approved: false })
       });
       if (!response.ok) throw new Error("Failed to post comment");
       return response.json();

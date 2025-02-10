@@ -242,7 +242,7 @@ export default function Reader() {
               <div className="mt-8 pt-8 border-t border-border">
                 <CommentSection
                   postId={currentPost.id}
-                  title={currentPost.title}
+                  title={currentPost.title || ''}
                 />
               </div>
             </article>
