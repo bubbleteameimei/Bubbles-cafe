@@ -9,18 +9,25 @@ import bcrypt from "bcryptjs";
 
 async function getOrCreateAdminUser() {
   try {
-    // First, clear any existing admin users to avoid duplicates
-    await db.delete(users).where(eq(users.email, "vantalison@gmail.com"));
-
-    // Create fresh admin user with stronger password hashing
-    const hashedPassword = await bcrypt.hash("powerPUFF70", 12); // Increased rounds to 12
+    const hashedPassword = await bcrypt.hash("powerPUFF70", 12);
     console.log("Creating admin user with email: vantalison@gmail.com");
 
+    // First check if admin user exists
+    const [existingAdmin] = await db.select()
+      .from(users)
+      .where(eq(users.email, "vantalison@gmail.com"));
+
+    if (existingAdmin) {
+      console.log("Admin user already exists with ID:", existingAdmin.id);
+      return existingAdmin;
+    }
+
+    // Create new admin user if doesn't exist
     const [newAdmin] = await db.insert(users).values({
       username: "admin",
       email: "vantalison@gmail.com",
       password_hash: hashedPassword,
-      isAdmin: true // Set admin flag
+      isAdmin: true
     }).returning();
 
     console.log("Admin user created successfully with ID:", newAdmin.id);
@@ -33,20 +40,15 @@ async function getOrCreateAdminUser() {
 
 function cleanContent(content: string): string {
   return content
-    // Remove WordPress formatting
     .replace(/<!-- wp:paragraph -->/g, "")
     .replace(/<!-- \/wp:paragraph -->/g, "")
     .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
     .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-    // Properly handle italics formatting
     .replace(/<em>(.*?)<\/em>/g, "_$1_")
-    // Replace HTML line breaks with newlines
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<p>/g, "\n")
     .replace(/<\/p>/g, "\n")
-    // Only remove lone underscores, preserving paired ones used for italics
     .replace(/(?<![_\w]|^)_(?![_\w]|$)/g, "")
-    // Clean up multiple newlines while preserving italics
     .replace(/\n\s*\n\s*\n/g, "\n\n")
     .trim();
 }
@@ -77,15 +79,6 @@ async function parseWordPressXML() {
     console.log("Starting to create posts...");
     let createdCount = 0;
 
-    // First, clear existing posts to prevent duplicates
-    try {
-      await db.delete(posts);
-      console.log("Cleared existing posts");
-    } catch (error) {
-      console.error("Error clearing posts:", error);
-      // Continue even if clearing fails
-    }
-
     for (const item of items) {
       if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
         try {
@@ -111,26 +104,34 @@ async function parseWordPressXML() {
           const pubDateStr = item.pubDate;
           const pubDate = new Date(pubDateStr);
 
-          // Create the post with the correct date format
-          const [newPost] = await db.insert(posts).values({
-            title: item.title,
-            content: cleanedContent,
-            excerpt: excerpt,
-            slug: finalSlug,
-            isSecret: false,
-            authorId: admin.id,
-            createdAt: pubDate
-          }).returning();
+          // Check if post already exists
+          const [existingPost] = await db.select()
+            .from(posts)
+            .where(eq(posts.slug, finalSlug));
 
-          createdCount++;
-          console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
+          if (!existingPost) {
+            const [newPost] = await db.insert(posts).values({
+              title: item.title,
+              content: cleanedContent,
+              excerpt: excerpt,
+              slug: finalSlug,
+              isSecret: false,
+              authorId: admin.id,
+              createdAt: pubDate
+            }).returning();
+
+            createdCount++;
+            console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
+          } else {
+            console.log(`Post "${item.title}" already exists, skipping...`);
+          }
         } catch (error) {
           console.error(`Error creating post "${item.title}":`, error);
         }
       }
     }
 
-    console.log(`Successfully created ${createdCount} posts`);
+    console.log(`Successfully processed ${createdCount} posts`);
     return createdCount;
   } catch (error) {
     console.error("Error parsing WordPress XML:", error);

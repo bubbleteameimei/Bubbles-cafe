@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Axe, Knife } from "lucide-react";
+import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Axe, Scissors } from "lucide-react";
 import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -50,7 +50,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
                       themeInfo?.icon === 'Dna' ? Dna :
                       themeInfo?.icon === 'Axe' ? Axe :
                       themeInfo?.icon === 'Ghost' ? Ghost :
-                      themeInfo?.icon === 'Knife' ? Knife :
+                      themeInfo?.icon === 'Scissors' ? Scissors :
                       themeInfo?.icon === 'Footprints' ? Footprints :
                       themeInfo?.icon === 'Castle' ? Castle :
                       themeInfo?.icon === 'Radiation' ? Radiation :

@@ -39,7 +39,7 @@ const NavLink = ({ href, isActive, children, onNavigate, className = "" }: {
     <button
       onClick={handleClick}
       className={`
-        nav-link relative px-3 py-2.5 text-base transition-colors duration-300 w-full text-left font-serif
+        nav-link relative px-3 py-2.5 text-base transition-colors duration-300 w-full text-left font-serif tracking-wide
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
         hover:bg-primary/5 rounded-md ${className}
       `}
@@ -97,19 +97,19 @@ export default function Navigation() {
   return (
     <header className="bg-background/95 backdrop-blur-sm theme-transition">
       <div 
-        className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center"
+        className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center transition-all duration-700"
         style={{
           backgroundImage: 'url("/IMG_4484.jpeg")',
           backgroundBlendMode: 'multiply',
-          backgroundColor: 'rgba(20, 20, 20, 0.85)'
+          backgroundColor: 'rgba(10, 10, 10, 0.92)' // Darker overlay
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background"/>
-        <div className="text-center relative z-10 px-4">
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider">
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/70 to-background transition-opacity duration-700"/>
+        <div className="text-center relative z-10 px-4 animate-fade-in">
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
             Bubble's Cafe
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground/90 italic font-serif">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground/90 italic font-serif tracking-wider">
             What once was will never be again
           </p>
         </div>
@@ -143,12 +143,12 @@ export default function Navigation() {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-                <SelectTrigger className="w-[120px] hover:bg-primary/10">
+                <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
                   <SelectValue placeholder="Atmosphere" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Ethereal">Ethereal</SelectItem>
-                  <SelectItem value="Nocturnal">Nocturnal</SelectItem>
+                  <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
+                  <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
                 </SelectContent>
               </Select>
             </div>
