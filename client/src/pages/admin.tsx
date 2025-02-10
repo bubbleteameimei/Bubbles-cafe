@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
+import { type Post, type Comment } from "@shared/schema";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -18,7 +18,6 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // Enhanced authentication check with proper error handling
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -65,6 +64,11 @@ export default function AdminPage() {
     },
   });
 
+  const { data: comments = [] } = useQuery<Comment[]>({
+    queryKey: ["/api/comments"],
+    staleTime: 5 * 60 * 1000
+  });
+
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
       const response = await apiRequest("DELETE", `/api/posts/${postId}`);
@@ -87,6 +91,54 @@ export default function AdminPage() {
         variant: "destructive",
       });
     },
+  });
+
+  const moderateCommentMutation = useMutation({
+    mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/comments/${id}`, {
+        approved
+      });
+      if (!response.ok) {
+        throw new Error("Failed to moderate comment");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      toast({
+        title: "Success",
+        description: "Comment moderated successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to moderate comment",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/comments/${id}`);
+      if (!response.ok) {
+        throw new Error("Failed to delete comment");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment",
+        variant: "destructive"
+      });
+    }
   });
 
   const logoutMutation = useMutation({
@@ -147,46 +199,6 @@ export default function AdminPage() {
               <LogOut className="h-4 w-4 mr-2" />
             )}
             {logoutMutation.isPending ? "Logging out..." : "Logout"}
-
-  const { data: comments = [] } = useQuery<Comment[]>({
-    queryKey: ["/api/comments"],
-  });
-
-  const moderateComment = useMutation({
-    mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
-      const response = await fetch(`/api/comments/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved })
-      });
-      if (!response.ok) throw new Error("Failed to moderate comment");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
-      toast({
-        title: "Comment moderated",
-        description: "The comment status has been updated"
-      });
-    }
-  });
-
-  const deleteComment = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/comments/${id}`, {
-        method: "DELETE"
-      });
-      if (!response.ok) throw new Error("Failed to delete comment");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
-      toast({
-        title: "Comment deleted",
-        description: "The comment has been removed"
-      });
-    }
-  });
-
           </Button>
         </div>
 
@@ -247,50 +259,10 @@ export default function AdminPage() {
                     <div
                       key={post.id}
                       className={`p-4 border rounded-lg transition-colors ${
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Comment Moderation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="border p-4 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium">{comment.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={comment.approved ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => moderateComment.mutate({ id: comment.id, approved: !comment.approved })}
-                    >
-                      {comment.approved ? "Approved" : "Approve"}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteComment.mutate(comment.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm">{comment.content}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
                         editingPost?.id === post.id
                           ? "bg-primary/5 border-primary"
                           : "hover:bg-accent/5"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -344,6 +316,50 @@ export default function AdminPage() {
                           </Button>
                         </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Comment Moderation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="border p-4 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">{comment.author}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={comment.approved ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => moderateCommentMutation.mutate({ 
+                              id: comment.id, 
+                              approved: !comment.approved 
+                            })}
+                          >
+                            {comment.approved ? "Approved" : "Approve"}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteCommentMutation.mutate(comment.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-sm">{comment.content}</p>
                     </div>
                   ))}
                 </div>

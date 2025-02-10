@@ -109,6 +109,7 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
     z-index: -1;
     opacity: 0.4;
     transition: opacity 0.3s ease-in-out;
@@ -195,6 +196,36 @@
       font-size: 0.875rem;
     }
   }
+  .gothic-menu {
+    @apply fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-md shadow-md;
+    transition: background-color 0.2s ease;
+  }
+
+  main {
+    @apply pt-16 min-h-screen;
+  }
+
+  .story-container {
+    @apply relative z-10;
+    margin-top: 1rem;
+    padding-bottom: 6rem;
+  }
+
+  .comments-section {
+    @apply bg-background/80 backdrop-blur-sm rounded-lg p-6 mt-8;
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Ensure proper spacing for the fixed elements */
+  .fixed-header-space {
+    height: 4rem;
+  }
+
+  /* Adjust the content area to account for fixed elements */
+  .content-area {
+    @apply relative z-10;
+    min-height: calc(100vh - 4rem);
+  }
 }
 
 button, a {
@@ -247,12 +278,6 @@ h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
 }
 
 
-.gothic-menu {
-  @apply border-b border-border/50 bg-background/95 backdrop-blur-md shadow-md;
-  transition: background-color 0.2s ease;
-}
-
-/* Navigation */
 .nav-link {
   @apply relative overflow-hidden;
   transition: color 0.2s ease;

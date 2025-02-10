@@ -19,7 +19,7 @@ const getOrCreateStats = (postId: number) => {
   }
 
   const newStats = {
-    likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
+    likes: Math.floor(Math.random() * 71) + 80,
     dislikes: Math.floor(Math.random() * 15)
   };
 
@@ -28,19 +28,18 @@ const getOrCreateStats = (postId: number) => {
 };
 
 interface StoryViewProps {
-  params: {
-    slug: string;
-  };
+  slug: string;
 }
 
-export default function StoryView({ params }: StoryViewProps) {
+export default function StoryView({ slug }: StoryViewProps) {
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
 
   const { data: post, isLoading, error } = useQuery<Post>({
-    queryKey: ["/api/posts", params.slug],
+    queryKey: ["/api/posts", slug],
+    staleTime: 5 * 60 * 1000,
+    retry: 2
   });
 
-  // Initialize persisted stats for the post
   useEffect(() => {
     if (post) {
       const stats = getOrCreateStats(post.id);
@@ -51,25 +50,6 @@ export default function StoryView({ params }: StoryViewProps) {
     }
   }, [post]);
 
-  const formatDate = (dateString: string | Date) => {
-    try {
-      if (!dateString) return '';
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-      return format(date, 'MMMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  };
-
-  const getReadingTime = (content: string) => {
-    if (!content) return '0 min read';
-    const wordsPerMinute = 200;
-    const words = content.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
-  };
-
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -78,7 +58,6 @@ export default function StoryView({ params }: StoryViewProps) {
     return <div className="text-center p-8">Story not found or error loading story.</div>;
   }
 
-  const content = post.content || '';
   const stats = postStats[post.id] || { likes: 0, dislikes: 0 };
 
   return (
@@ -96,12 +75,10 @@ export default function StoryView({ params }: StoryViewProps) {
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
-            {post.createdAt && <time>{formatDate(post.createdAt)}</time>}
-            <span className="text-primary/50">•</span>
-            <span>{getReadingTime(content)}</span>
+            <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
           </div>
           <div className="story-content mb-16" style={{ whiteSpace: 'pre-wrap' }}>
-            {content.split('\n\n').map((paragraph, index) => (
+            {post.content.split('\n\n').map((paragraph, index) => (
               <p key={index} className="mb-6">
                 {paragraph.trim().split('_').map((text, i) =>
                   i % 2 === 0 ? text : <i key={i}>{text}</i>

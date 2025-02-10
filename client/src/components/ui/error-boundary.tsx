@@ -24,30 +24,49 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private cleanup?: () => void;
+  private mounted: boolean = false;
 
   public componentDidMount() {
-    // Reset error state on route change
-    this.cleanup = () => {
-      if (this.state.hasError) {
-        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.mounted = true;
+    // Reset error state on route change and handle navigation events
+    const handleRouteChange = () => {
+      if (this.mounted && this.state.hasError) {
+        this.setState({ 
+          hasError: false, 
+          error: undefined, 
+          errorInfo: undefined,
+          errorTime: undefined 
+        });
       }
     };
-    window.addEventListener('popstate', this.cleanup);
+
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('pushState', handleRouteChange);
+    window.addEventListener('replaceState', handleRouteChange);
+
+    this.cleanup = () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('pushState', handleRouteChange);
+      window.removeEventListener('replaceState', handleRouteChange);
+    };
   }
 
   public componentWillUnmount() {
+    this.mounted = false;
     if (this.cleanup) {
-      window.removeEventListener('popstate', this.cleanup);
+      this.cleanup();
     }
   }
 
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
-    this.setState({
-      error,
-      errorInfo,
-      errorTime: Date.now()
-    });
+    if (this.mounted) {
+      this.setState({
+        error,
+        errorInfo,
+        errorTime: Date.now()
+      });
+    }
   }
 
   private handleReload = () => {
@@ -80,8 +99,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (error.message.includes('network')) {
       return "Unable to connect to the server. Please check your internet connection and try again.";
     }
-    if (error.message.includes('chunk')) {
+    if (error.message.includes('chunk') || error.message.includes('loading')) {
       return "There was an error loading this page. Please refresh and try again.";
+    }
+    if (error.message.includes('route') || error.message.includes('navigation')) {
+      return "There was an error with page navigation. Please try going back or refreshing the page.";
     }
     return error.message || "An unexpected error occurred. We're looking into it.";
   }
@@ -95,66 +117,66 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
-    if (this.state.hasError) {
-      const errorMessage = this.getErrorMessage(this.state.error!);
-      const errorTime = this.state.errorTime ? this.formatTime(this.state.errorTime) : '';
-
-      return (
-        <div className="min-h-[50vh] flex items-center justify-center p-4 bg-background/50 backdrop-blur-sm">
-          <Alert variant="destructive" className="max-w-xl shadow-lg">
-            <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="text-lg font-semibold mb-2">
-              Something went wrong
-            </AlertTitle>
-            <AlertDescription className="space-y-4">
-              <p className="text-sm opacity-90">
-                {errorMessage}
-              </p>
-              {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
-                <div className="space-y-2">
-                  <p className="text-xs opacity-70">Error occurred at: {errorTime}</p>
-                  <details className="text-xs">
-                    <summary className="cursor-pointer hover:opacity-80">Technical Details</summary>
-                    <pre className="mt-2 bg-black/10 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight whitespace-pre-wrap">
-                      {this.state.error?.stack}
-                      {"\n\nComponent Stack:"}
-                      {this.state.errorInfo.componentStack}
-                    </pre>
-                  </details>
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={this.handleReload}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCcw className="h-4 w-4" />
-                  Try Again
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={this.handleGoBack}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Go Back
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={this.handleGoHome}
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  Go Home
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </div>
-      );
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    const errorMessage = this.getErrorMessage(this.state.error!);
+    const errorTime = this.state.errorTime ? this.formatTime(this.state.errorTime) : '';
+
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center p-4 bg-background/50 backdrop-blur-sm">
+        <Alert variant="destructive" className="max-w-xl shadow-lg">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-semibold mb-2">
+            Something went wrong
+          </AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p className="text-sm opacity-90">
+              {errorMessage}
+            </p>
+            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+              <div className="space-y-2">
+                <p className="text-xs opacity-70">Error occurred at: {errorTime}</p>
+                <details className="text-xs">
+                  <summary className="cursor-pointer hover:opacity-80">Technical Details</summary>
+                  <pre className="mt-2 bg-black/10 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight whitespace-pre-wrap break-words">
+                    {this.state.error?.stack}
+                    {"\n\nComponent Stack:"}
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                </details>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={this.handleReload}
+                className="flex items-center gap-2"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={this.handleGoBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Go Back
+              </Button>
+              <Button
+                variant="outline"
+                onClick={this.handleGoHome}
+                className="flex items-center gap-2"
+              >
+                <Home className="h-4 w-4" />
+                Go Home
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 }
