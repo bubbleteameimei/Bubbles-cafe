@@ -8,9 +8,21 @@ import {
   Shuffle,
   ListFilter,
   Brain,
-  Skull,
-  Ghost,
+  Cpu,
+  Telescope,
+  Trees,
+  Dna,
   Footprints,
+  Ghost,
+  Castle,
+  Radiation,
+  Skull,
+  UserMinus2,
+  Anchor,
+  AlertTriangle,
+  Building,
+  Clock,
+  Moon,
   Timer,
   Gauge
 } from "lucide-react";
@@ -24,7 +36,28 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
 import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
-import type { ThemeCategory } from "@/lib/content-analysis";
+import type { ThemeCategory } from "../shared/types";
+
+const getIconComponent = (iconName: string) => {
+  switch (iconName) {
+    case 'Brain': return Brain;
+    case 'Cpu': return Cpu;
+    case 'Telescope': return Telescope;
+    case 'Trees': return Trees;
+    case 'Dna': return Dna;
+    case 'Footprints': return Footprints;
+    case 'Ghost': return Ghost;
+    case 'Castle': return Castle;
+    case 'Radiation': return Radiation;
+    case 'Skull': return Skull;
+    case 'UserMinus2': return UserMinus2;
+    case 'Anchor': return Anchor;
+    case 'AlertTriangle': return AlertTriangle;
+    case 'Building': return Building;
+    case 'Clock': return Clock;
+    default: return Moon;
+  }
+};
 
 interface ContentAnalysis {
   intensity: number;
@@ -120,11 +153,8 @@ export default function Reader() {
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
   const theme = contentAnalysis.themes[0];
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
-  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase() : '';
-  const IconComponent = themeInfo?.icon === 'Brain' ? Brain :
-                       themeInfo?.icon === 'Skull' ? Skull :
-                       themeInfo?.icon === 'Ghost' ? Ghost :
-                       Footprints; // Added Footprints as default
+  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
+  const IconComponent = themeInfo ? getIconComponent(themeInfo.icon) : Moon;
 
   return (
     <div className="relative min-h-screen">
@@ -169,7 +199,7 @@ export default function Reader() {
               {themeInfo && (
                 <div className="mb-6">
                   <Badge
-                    variant={themeInfo.badgeVariant}
+                    variant="default"
                     className="text-sm font-medium tracking-wide px-3 py-1 flex items-center gap-1.5 w-fit"
                   >
                     <IconComponent className="h-3.5 w-3.5" />

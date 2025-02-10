@@ -12,7 +12,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { type Post, type InsertPost } from "@shared/schema";
+import { type Post, type InsertPost, insertPostSchema } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -25,6 +25,13 @@ interface PostEditorProps {
   post?: Post | null;
   onClose?: () => void;
 }
+
+const THEME_CATEGORIES = {
+  PSYCHOLOGICAL: { atmosphericTrack: '13-angels.m4a' },
+  SUPERNATURAL: { atmosphericTrack: '13-angels.m4a' },
+  GORE: { atmosphericTrack: 'whispers-wind.m4a' },
+  SURVIVAL: { atmosphericTrack: 'whispers-wind.m4a' }
+};
 
 export default function PostEditor({ post, onClose }: PostEditorProps) {
   const { toast } = useToast();
@@ -39,7 +46,8 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       content: post?.content || "",
       excerpt: post?.excerpt || "",
       isSecret: post?.isSecret || false,
-      slug: post?.slug || ""
+      slug: post?.slug || "",
+      authorId: post?.authorId || 1
     }
   });
 
@@ -47,19 +55,14 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
   const getOptimisticPost = (formData: InsertPost): Post => {
     const content = formData.content;
     const theme = detectThemes(content)[0];
-    const atmosphericTrackMap: Record<ThemeCategory, string> = {
-      PSYCHOLOGICAL: '13-angels.m4a',
-      SUPERNATURAL: '13-angels.m4a',
-      GORE: 'whispers-wind.m4a',
-      SURVIVAL: 'whispers-wind.m4a'
-    };
+    const readingTime = Math.ceil(content.split(/\s+/).length / 200); // Calculate reading time
 
     return {
       id: post?.id || Date.now(),
       title: formData.title,
       content: formData.content,
       excerpt: formData.excerpt,
-      isSecret: formData.isSecret,
+      isSecret: formData.isSecret || false,
       slug: formData.slug || formData.title.toLowerCase().replace(/\s+/g, '-'),
       createdAt: post?.createdAt ? new Date(post.createdAt) : new Date(),
       authorId: post?.authorId || 1,
@@ -68,9 +71,11 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       originalSource: formData.originalSource || null,
       originalAuthor: formData.originalAuthor || null,
       originalPublishDate: formData.originalPublishDate || null,
-      atmosphericSound: theme ? atmosphericTrackMap[theme] : null,
-      themeCategory: theme,
-      triggerWarnings: formData.triggerWarnings || null
+      atmosphericSound: theme ? THEME_CATEGORIES[theme].atmosphericTrack : null,
+      themeCategory: theme || null,
+      triggerWarnings: formData.triggerWarnings || [],
+      matureContent: formData.matureContent || false,
+      readingTimeMinutes: readingTime
     };
   };
 

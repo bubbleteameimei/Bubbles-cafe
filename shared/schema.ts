@@ -40,9 +40,11 @@ export const posts = pgTable("posts", {
   originalSource: text("original_source"),
   originalAuthor: text("original_author"),
   originalPublishDate: timestamp("original_publish_date"),
-  atmosphericSound: text("atmospheric_sound"), // Path to sound file
-  themeCategory: text("theme_category"), // 'PSYCHOLOGICAL' | 'GORE' | 'SUPERNATURAL' | 'SURVIVAL'
-  triggerWarnings: text("trigger_warnings").array()
+  atmosphericSound: text("atmospheric_sound"),
+  themeCategory: text("theme_category"),
+  triggerWarnings: text("trigger_warnings").array(),
+  matureContent: boolean("mature_content").default(false).notNull(),
+  readingTimeMinutes: integer("reading_time_minutes").default(0).notNull()
 }, (table) => ({
   slugIdx: index("slug_idx").on(table.slug),
   createdAtIdx: index("created_at_idx").on(table.createdAt),
@@ -53,7 +55,7 @@ export const postLikes = pgTable("post_likes", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull(),
   userId: integer("user_id").notNull(),
-  isLike: boolean("is_like").notNull(), // true for like, false for dislike
+  isLike: boolean("is_like").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   postUserIdx: unique().on(table.postId, table.userId),
@@ -97,12 +99,20 @@ export const insertPostSchema = createInsertSchema(posts)
     id: true, 
     createdAt: true, 
     likesCount: true, 
-    dislikesCount: true 
+    dislikesCount: true,
+    readingTimeMinutes: true
   })
   .extend({
-    themeCategory: z.enum(['PSYCHOLOGICAL', 'GORE', 'SUPERNATURAL', 'SURVIVAL']).optional(),
-    atmosphericSound: z.string().optional()
+    themeCategory: z.enum([
+      'PSYCHOLOGICAL', 'TECHNOLOGICAL', 'COSMIC', 'FOLK_HORROR',
+      'BODY_HORROR', 'SURVIVAL', 'SUPERNATURAL', 'GOTHIC',
+      'APOCALYPTIC', 'LOVECRAFTIAN', 'ISOLATION', 'AQUATIC',
+      'VIRAL', 'URBAN_LEGEND', 'TIME_HORROR', 'DREAMSCAPE'
+    ]),
+    atmosphericSound: z.string().optional(),
+    triggerWarnings: z.array(z.string()).optional()
   });
+
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });

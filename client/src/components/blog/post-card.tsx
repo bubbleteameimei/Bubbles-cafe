@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Skull, Ghost, Footprints, Timer, Gauge } from "lucide-react";
+import { Brain, Cpu, Telescope, Trees, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
 import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -23,7 +23,6 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     }
   };
 
-  // Get the first paragraph that's not empty and at least 100 characters
   const getEngagingExcerpt = (content: string): string => {
     const paragraphs = content.split('\n\n');
     const significantParagraph = paragraphs.find(p => p.trim().length >= 100) || paragraphs[0];
@@ -41,11 +40,23 @@ export default function PostCard({ post, onClick }: PostCardProps) {
   const theme = detectThemes(post.content)[0];
   const intensity = calculateIntensity(post.content);
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
-  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase() : '';
+  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
   const IconComponent = themeInfo?.icon === 'Brain' ? Brain :
-                       themeInfo?.icon === 'Skull' ? Skull :
-                       themeInfo?.icon === 'Ghost' ? Ghost :
-                       Footprints;
+                      themeInfo?.icon === 'Cpu' ? Cpu :
+                      themeInfo?.icon === 'Telescope' ? Telescope :
+                      themeInfo?.icon === 'Trees' ? Trees :
+                      themeInfo?.icon === 'Dna' ? Dna :
+                      themeInfo?.icon === 'Footprints' ? Footprints :
+                      themeInfo?.icon === 'Ghost' ? Ghost :
+                      themeInfo?.icon === 'Castle' ? Castle :
+                      themeInfo?.icon === 'Radiation' ? Radiation :
+                      themeInfo?.icon === 'Skull' ? Skull :
+                      themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
+                      themeInfo?.icon === 'Anchor' ? Anchor :
+                      themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
+                      themeInfo?.icon === 'Building' ? Building :
+                      themeInfo?.icon === 'Clock' ? Clock :
+                      Moon;
 
   return (
     <motion.div
@@ -76,7 +87,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
           {themeInfo && (
             <div className="mt-2">
               <Badge
-                variant={themeInfo.badgeVariant}
+                variant="default"
                 className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit"
               >
                 <IconComponent className="h-3 w-3" />
