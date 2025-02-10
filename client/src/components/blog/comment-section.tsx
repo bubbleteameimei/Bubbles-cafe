@@ -12,8 +12,9 @@ interface Comment {
   id: number;
   name: string;
   content: string;
-  createdAt: string;
+  createdAt: Date | string;
   approved: boolean;
+  author?: string;
 }
 
 interface CommentSectionProps {

@@ -115,21 +115,8 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Fixed Header Image */}
-      <div 
-        className="fixed top-0 left-0 w-full h-64 z-0"
-        style={{
-          backgroundImage: 'url("/assets/IMG_4484.jpeg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }}
-      >
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
-      </div>
-
       {/* Sticky Header Content */}
-      <header className="sticky top-0 z-50 w-full transition-all duration-300" role="banner">
+      <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/95 backdrop-blur-md" role="banner">
         <div className="relative z-10">
           {/* Title Section */}
           <div className="container mx-auto py-6 px-4 text-center relative">
@@ -256,8 +243,7 @@ export default function Navigation() {
         </div>
       </header>
 
-      {/* Spacer to account for fixed header height */}
-      <div className="h-64" aria-hidden="true" />
+      
     </>
   );
 }
