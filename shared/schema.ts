@@ -36,7 +36,16 @@ export const posts = pgTable("posts", {
   authorId: integer("author_id").notNull(),
   likesCount: integer("likes_count").default(0).notNull(),
   dislikesCount: integer("dislikes_count").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  // New fields for WordPress import
+  originalSource: text("original_source"),
+  originalAuthor: text("original_author"),
+  originalPublishDate: timestamp("original_publish_date"),
+  // Horror-specific fields
+  atmosphericSound: text("atmospheric_sound"), // Path to sound file
+  readingTimeMinutes: integer("reading_time_minutes"),
+  matureContent: boolean("mature_content").default(false).notNull(),
+  triggerWarnings: text("trigger_warnings").array()
 }, (table) => ({
   slugIdx: index("slug_idx").on(table.slug),
   createdAtIdx: index("created_at_idx").on(table.createdAt),
