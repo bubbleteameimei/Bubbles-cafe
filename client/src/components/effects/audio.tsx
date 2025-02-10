@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
+import YouTube from 'react-youtube';
 import { useToast } from "@/hooks/use-toast";
 
 interface AudioContextType {
@@ -14,117 +15,81 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const TRACKS = {
-  'Ethereal': '/13-angels.m4a',
-  'Nocturnal': '/whispers-wind.m4a'
-} as const;
+  'Ethereal': 'hQZfGa5t4e8', // 13 Angels Standing Guard
+  'Nocturnal': 'dQw4w9WgXcQ' // Replace with your YouTube video ID
+};
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.5);
+  const [volume, setVolume] = useState(50);
   const [audioReady, setAudioReady] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<string>('Ethereal');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [player, setPlayer] = useState<any>(null);
   const { toast } = useToast();
 
-  const initAudio = useCallback(() => {
-    try {
-      if (audioRef.current) {
-        console.log('[Audio] Cleaning up previous audio instance');
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+  const onReady = (event: any) => {
+    setPlayer(event.target);
+    setAudioReady(true);
+    event.target.setVolume(volume);
+  };
 
-      const audio = new Audio();
-      audio.src = TRACKS[selectedTrack as keyof typeof TRACKS];
-      audio.volume = volume;
-      audio.loop = true;
-
-      const handleCanPlay = () => {
-        console.log('[Audio] Track ready to play:', selectedTrack);
-        setAudioReady(true);
-      };
-
-      const handleLoadError = (error: Event) => {
-        console.error("[Audio] Load error:", error);
-        setAudioReady(false);
-        setIsPlaying(false);
-        toast({
-          title: "Audio Error",
-          description: `Failed to load audio track: ${selectedTrack}`,
-          variant: "destructive",
-        });
-      };
-
-      audio.addEventListener('canplaythrough', handleCanPlay);
-      audio.addEventListener('error', handleLoadError);
-      audioRef.current = audio;
-
-      return () => {
-        if (audio) {
-          audio.removeEventListener('canplaythrough', handleCanPlay);
-          audio.removeEventListener('error', handleLoadError);
-          audio.pause();
-        }
-      };
-    } catch (error) {
-      console.error('[Audio] Initialization error:', error);
-      setAudioReady(false);
-      toast({
-        title: "Audio Error",
-        description: "Failed to initialize audio system",
-        variant: "destructive",
-      });
-    }
-  }, [selectedTrack, volume, toast]);
-
-  useEffect(() => {
-    const cleanup = initAudio();
-    return () => {
-      cleanup?.();
-    };
-  }, [initAudio]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  const toggleAudio = useCallback(async () => {
-    if (!audioRef.current || !audioReady) return;
+  const toggleAudio = useCallback(() => {
+    if (!player || !audioReady) return;
 
     try {
       if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
+        player.pauseVideo();
       } else {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          await playPromise;
-          setIsPlaying(true);
-        }
+        player.playVideo();
       }
+      setIsPlaying(!isPlaying);
     } catch (error) {
       console.error('[Audio] Playback error:', error);
-      setIsPlaying(false);
       toast({
         title: "Playback Error",
         description: "Failed to play audio track",
         variant: "destructive",
       });
     }
-  }, [audioReady, isPlaying, toast]);
+  }, [audioReady, isPlaying, player, toast]);
+
+  const onStateChange = (event: any) => {
+    if (event.data === YouTube.PlayerState.ENDED) {
+      event.target.playVideo(); // Loop the video
+    }
+  };
 
   return (
     <AudioContext.Provider value={{
       isPlaying,
       volume,
-      setVolume,
+      setVolume: (newVolume) => {
+        setVolume(newVolume);
+        if (player) player.setVolume(newVolume);
+      },
       audioReady,
       toggleAudio,
       selectedTrack,
       setSelectedTrack
     }}>
+      <div style={{ display: 'none' }}>
+        <YouTube
+          videoId={TRACKS[selectedTrack as keyof typeof TRACKS]}
+          opts={{
+            height: '0',
+            width: '0',
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              fs: 0,
+              rel: 0,
+            },
+          }}
+          onReady={onReady}
+          onStateChange={onStateChange}
+        />
+      </div>
       {children}
     </AudioContext.Provider>
   );
