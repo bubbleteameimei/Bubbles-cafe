@@ -258,7 +258,7 @@ export const detectThemes = (content: string): ThemeCategory[] => {
     if (content.toLowerCase().includes('therapist')) return ['PSYCHOLOGICAL'];
     if (content.toLowerCase().includes('bleach')) return ['SUICIDAL'];
     if (content.toLowerCase().includes('machine')) return ['TECHNOLOGICAL'];
-    if (content.toLowerCase().includes('bug')) return ['BODY_HORROR'];
+    if (content.toLowerCase().includes('bug')) return ['PARASITE'];
     if (content.toLowerCase().includes('drive')) return ['PSYCHOPATH'];
     if (content.toLowerCase().includes('mirror')) return ['SUPERNATURAL'];
     if (content.toLowerCase().includes('car')) return ['PSYCHOLOGICAL'];
