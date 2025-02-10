@@ -1,5 +1,5 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Cross, Footprints, CloudRain, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Knife } from "lucide-react";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
@@ -133,7 +133,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "death",
-    icon: 'CloudRain',
+    icon: 'Skull',
     description: 'Death and mortality horror'
   },
   GOTHIC: {
@@ -228,86 +228,32 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
 
 export const detectThemes = (content: string): ThemeCategory[] => {
   try {
-    if (content.toLowerCase().includes('rain') && 
-        content.match(/storm|thunder|dark|flood|drown|weather/i)) {
-      return ['DEATH'];  
+    if (content.toLowerCase().includes('rain')) {
+      if (content.match(/mind|consciousness|fear|sanity|reality/i)) {
+        return ['PSYCHOLOGICAL'];
+      }
     }
-    if (content.toLowerCase().includes('chase') && 
+
+    if (content.toLowerCase().includes('chase') || 
         content.match(/follow|pursuit|hunt|escape|run|footsteps/i)) {
       return ['STALKING'];
     }
-    if (content.toLowerCase().includes('descent') && 
+
+    if (content.toLowerCase().includes('descent') || 
         content.match(/death|reaper|fall|eternal|spirit|darkness/i)) {
       return ['DEATH'];
     }
-    if (content.toLowerCase().includes('nostalgia') && 
-        content.match(/worm|maggot|brain|crawl|parasite/i)) {
-      return ['PARASITE'];
-    }
+
     if (content.toLowerCase().includes('cave') && 
         content.match(/deity|worship|kneel|ancient|monolithic|fallen god/i)) {
       return ['LOVECRAFTIAN'];
     }
-    if (content.toLowerCase().includes('machine') && 
-        (content.match(/consciousness|merge|upload|transcend|circuits/i) ||
-         content.match(/wires?|digital|network|electronic|machine/i))) {
-      const techKeywords = [
-        'consciousness', 'merge', 'upload', 'transcend', 'circuits',
-        'wires', 'digital', 'network', 'electronic', 'machine'
-      ];
-      const matchCount = techKeywords.filter(word => 
-        new RegExp(`\\b${word}\\b`, 'i').test(content)
-      ).length;
-      if (matchCount >= 2) {
-        return ['TECHNOLOGICAL'];
-      }
+
+    if (content.toLowerCase().includes('machine') || 
+        content.match(/technology|digital|network|circuits|artificial/i)) {
+      return ['TECHNOLOGICAL'];
     }
-    if (content.toLowerCase().includes('bleach') && 
-        content.match(/suicide|drink|end it all|poison/i)) {
-      return ['SUICIDAL'];
-    }
-    if (content.toLowerCase().includes('mirror') && 
-        content.match(/reflection|ghost|spirit|swap|change|entity/i)) {
-      return ['SUPERNATURAL'];
-    }
-    if (content.toLowerCase().includes('doll') && 
-        (content.match(/possess|demon|spirit|evil|puppet/i) ||
-         content.match(/supernatural|cursed|haunted|soul/i))) {
-      const possessionKeywords = [
-        'possess', 'demon', 'spirit', 'evil', 'puppet',
-        'supernatural', 'cursed', 'haunted', 'soul'
-      ];
-      const matchCount = possessionKeywords.filter(word => 
-        new RegExp(`\\b${word}\\b`, 'i').test(content)
-      ).length;
-      if (matchCount >= 2) {
-        return ['POSSESSION'];
-      }
-    }
-    if (content.toLowerCase().includes('cookbook') && 
-        content.match(/recipe|eat|flesh|meat|feast|devour/i)) {
-      return ['CANNIBALISM'];
-    }
-    if (content.toLowerCase().includes('therapist') && 
-        content.match(/session|fear|mind|obsess|couch/i)) {
-      return ['PSYCHOLOGICAL'];
-    }
-    if ((content.toLowerCase().includes('skin') || content.toLowerCase().includes('bug')) && 
-        content.match(/flesh|transform|deform|crawl|inside/i)) {
-      return ['BODY_HORROR'];
-    }
-    if (content.toLowerCase().includes('tunnel') && 
-        content.match(/follow|dark|stalk|watch|hide/i)) {
-      return ['STALKING'];
-    }
-    if (content.toLowerCase().includes('descent') && 
-        content.match(/death|reaper|fall|eternal|spirit/i)) {
-      return ['DEATH'];
-    }
-    if (content.toLowerCase().includes('drive') && 
-        content.match(/kill|blood|knife|murder|pleasure/i)) {
-      return ['PSYCHOPATH'];
-    }
+
     const themeCounts = new Map<ThemeCategory, number>();
     const lowerContent = content.toLowerCase();
 
@@ -339,8 +285,10 @@ export const detectThemes = (content: string): ThemeCategory[] => {
     });
 
     if (!dominantTheme || maxScore < 2) {
-      if (content.includes('mirror')) return ['SUPERNATURAL'];
-      if (content.includes('therapy')) return ['PSYCHOLOGICAL'];
+      if (content.includes('rain')) return ['PSYCHOLOGICAL'];
+      if (content.includes('chase')) return ['STALKING'];
+      if (content.includes('descent')) return ['DEATH'];
+      if (content.includes('cave')) return ['LOVECRAFTIAN'];
       if (content.includes('machine')) return ['TECHNOLOGICAL'];
       return ['PSYCHOLOGICAL'];
     }
