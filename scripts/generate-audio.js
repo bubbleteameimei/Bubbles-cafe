@@ -9,7 +9,7 @@ async function generateAudio(type = 'ethereal') {
 
     // Create a new offline context for rendering
     const buffer = await Tone.Offline(async ({ transport }) => {
-      // Create synth after context is initialized
+      // Create synth based on type
       const synth = new Tone.PolySynth({
         oscillator: {
           type: type === 'ethereal' ? 'sine' : 'sawtooth'
@@ -30,10 +30,14 @@ async function generateAudio(type = 'ethereal') {
 
       synth.connect(reverb);
 
-      // Schedule notes with different patterns based on type
+      // Schedule notes based on type
       const notes = type === 'ethereal' 
-        ? ['C4', 'E4', 'G4', 'B4']
-        : ['A2', 'C3', 'E3', 'G3'];
+        ? ['C4', 'E4', 'G4', 'B4']  // Ethereal chord
+        : type === 'heartbeat' 
+          ? ['C2']  // Low pulse
+          : type === 'whispers'
+            ? ['E5', 'G5', 'B5']  // High cluster
+            : ['A2', 'C3'];  // Chase rhythm
 
       const duration = type === 'ethereal' ? '4n' : '2n';
 
@@ -48,8 +52,8 @@ async function generateAudio(type = 'ethereal') {
       }, notes.length + 2);
     }, 10);
 
-    // Write buffer to file with specific settings for better quality
-    const fileName = type === 'ethereal' ? 'ethereal.mp3' : 'nocturnal.mp3';
+    // Write buffer to file
+    const fileName = `${type}.mp3`;
     const filePath = `client/public/${fileName}`;
     await writeFile(filePath, Buffer.from(buffer.get()));
     console.log(`Generated ${fileName} successfully`);
@@ -59,10 +63,12 @@ async function generateAudio(type = 'ethereal') {
   }
 }
 
-// Generate both audio files
+// Generate all required audio files
 Promise.all([
   generateAudio('ethereal'),
-  generateAudio('nocturnal')
+  generateAudio('heartbeat'),
+  generateAudio('whispers'),
+  generateAudio('chase')
 ]).then(() => {
   console.log('All audio files generated successfully');
 }).catch(console.error);

@@ -20,6 +20,7 @@ const badgeVariants = cva(
         psychological: "border-transparent bg-purple-500/20 text-purple-400 hover:bg-purple-500/30",
         supernatural: "border-transparent bg-blue-500/20 text-blue-400 hover:bg-blue-500/30",
         survival: "border-transparent bg-green-500/20 text-green-400 hover:bg-green-500/30",
+        gore: "border-transparent bg-red-500/20 text-red-400 hover:bg-red-500/30",
       },
     },
     defaultVariants: {
