@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface Comment {
   id: number;
@@ -27,7 +28,8 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
-    refetchInterval: 30000
+    refetchInterval: 30000,
+    staleTime: 10000
   });
 
   const mutation = useMutation({
@@ -48,6 +50,13 @@ export default function CommentSection({ postId }: CommentSectionProps) {
         title: "Comment posted",
         description: "Your comment will be visible after moderation"
       });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post comment",
+        variant: "destructive"
+      });
     }
   });
 
@@ -65,42 +74,77 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   };
 
   return (
-    <div className="mt-12 border-t border-border/50 pt-8">
-      <h2 className="text-2xl font-bold mb-6">Comments</h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-4 mb-8">
-        <Input
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={50}
-        />
-        <Textarea
-          placeholder="Write a comment..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={500}
-          rows={4}
-        />
-        <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Posting..." : "Post Comment"}
-        </Button>
-      </form>
+    <div className="space-y-8">
+      <div className="border-t border-border/50 pt-8">
+        <h2 className="text-2xl font-bold mb-6">Comments</h2>
 
-      <div className="space-y-6">
-        {comments
-          .filter(comment => comment.approved)
-          .map(comment => (
-            <div key={comment.id} className="bg-card p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">{comment.name}</span>
-                <time className="text-sm text-muted-foreground">
-                  {format(new Date(comment.createdAt), 'MMM d, yyyy')}
-                </time>
-              </div>
-              <p className="text-sm text-muted-foreground">{comment.content}</p>
-            </div>
-          ))}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={50}
+              className="bg-background/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Write a comment..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              maxLength={500}
+              rows={4}
+              className="bg-background/50"
+            />
+          </div>
+          <Button 
+            type="submit" 
+            disabled={mutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              "Post Comment"
+            )}
+          </Button>
+        </form>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="font-medium text-lg text-foreground/90">
+          {comments.filter(comment => comment.approved).length} Comments
+        </h3>
+
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : comments.filter(comment => comment.approved).length > 0 ? (
+          <div className="space-y-4">
+            {comments
+              .filter(comment => comment.approved)
+              .map(comment => (
+                <Card key={comment.id} className="p-4 bg-card/50 backdrop-blur-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-foreground">{comment.name}</span>
+                    <time className="text-sm text-muted-foreground">
+                      {format(new Date(comment.createdAt), 'MMM d, yyyy')}
+                    </time>
+                  </div>
+                  <p className="text-foreground/90 whitespace-pre-wrap">{comment.content}</p>
+                </Card>
+              ))}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground">
+            No comments yet. Be the first to share your thoughts!
+          </p>
+        )}
       </div>
     </div>
   );

@@ -22,10 +22,7 @@ import {
   Building,
   Clock,
   Moon,
-  Timer,
-  Gauge,
-  Pill,
-  Axe
+  Timer
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,7 +33,7 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
-import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
+import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 
 const getIconComponent = (iconName: string) => {
@@ -55,14 +52,11 @@ const getIconComponent = (iconName: string) => {
     case 'AlertTriangle': return AlertTriangle;
     case 'Building': return Building;
     case 'Clock': return Clock;
-    case 'Pill': return Pill;
-    case 'Axe': return Axe;
     default: return Moon;
   }
 };
 
 interface ContentAnalysis {
-  intensity: number;
   themes: ThemeCategory[];
 }
 
@@ -75,7 +69,6 @@ export default function Reader() {
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
   const [, setLocation] = useLocation();
   const [contentAnalysis, setContentAnalysis] = useState<ContentAnalysis>({
-    intensity: 3,
     themes: []
   });
 
@@ -128,13 +121,8 @@ export default function Reader() {
   useEffect(() => {
     const currentPost = posts?.[currentIndex];
     if (currentPost?.content) {
-      const intensity = calculateIntensity(currentPost.content);
       const themes = detectThemes(currentPost.content);
-
-      setContentAnalysis({
-        intensity,
-        themes,
-      });
+      setContentAnalysis({ themes });
     }
   }, [currentIndex, posts]);
 
@@ -165,6 +153,13 @@ export default function Reader() {
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
   const IconComponent = themeInfo ? getIconComponent(themeInfo.icon) : Moon;
+
+  const getReadingTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / wordsPerMinute);
+    return `${minutes} min read`;
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -198,11 +193,6 @@ export default function Reader() {
                 <span className="flex items-center gap-1">
                   <Timer className="h-4 w-4" />
                   {getReadingTime(currentPost.content)}
-                </span>
-                <span className="text-primary/50">•</span>
-                <span className="text-primary/90 font-medium flex items-center gap-1">
-                  <Gauge className="h-4 w-4" />
-                  Intensity Level {contentAnalysis.intensity}/5
                 </span>
               </div>
 
@@ -249,7 +239,7 @@ export default function Reader() {
                 />
               </div>
 
-              <div className="mt-16">
+              <div className="mt-8 pt-8 border-t border-border">
                 <CommentSection
                   postId={currentPost.id}
                   title={currentPost.title}

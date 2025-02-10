@@ -39,7 +39,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        nav-link relative px-3 py-2.5 text-base transition-colors duration-300 w-full text-left font-serif tracking-wide
+        nav-link relative px-3 py-2 text-base transition-colors duration-300 w-full text-left font-serif tracking-wide
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
         hover:bg-primary/5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 ${className}
       `}
@@ -67,14 +67,14 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
         <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       </div>
 
-      {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
+      {isMobile && <div className="my-2 border-t border-border/20" aria-hidden="true" />}
 
       <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
         <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       </div>
 
-      {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
+      {isMobile && <div className="my-2 border-t border-border/20" aria-hidden="true" />}
 
       <div className={`${isMobile ? 'space-y-1' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
@@ -114,135 +114,150 @@ export default function Navigation() {
   }, [audioReady, toggleAudio]);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-primary/10" role="banner">
+    <>
+      {/* Fixed Header Image */}
       <div 
-        className="h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center relative"
+        className="fixed top-0 left-0 w-full h-64 z-0"
         style={{
           backgroundImage: 'url("/assets/IMG_4484.jpeg")',
-          backgroundBlendMode: 'normal'
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
         }}
-        aria-hidden="true"
       >
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 px-4 text-center">
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
-            Bubble's Cafe
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground/90 italic font-serif tracking-wider">
-            What once was will never be again
-          </p>
-        </div>
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
       </div>
 
-      <nav 
-        className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4" 
-        role="navigation"
-        aria-label="Main navigation"
-      >
-        <div className="md:hidden">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
-                aria-label={isOpen ? "Close menu" : "Open menu"}
-                aria-expanded={isOpen}
-                aria-controls="mobile-menu"
-              >
-                <Menu className="h-5 w-5" aria-hidden="true" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent 
-              side="left" 
-              className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg"
-              id="mobile-menu"
-            >
-              <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </SheetClose>
-              <nav className="flex flex-col space-y-2">
-                <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
-
-        <div className="hidden md:flex items-center flex-1">
-          <NavigationItems location={location} />
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <Select 
-              value={selectedTrack} 
-              onValueChange={setSelectedTrack}
-              aria-label="Select atmosphere track"
-            >
-              <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
-                <SelectValue placeholder="Atmosphere" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
-                <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Sticky Header Content */}
+      <header className="sticky top-0 z-50 w-full transition-all duration-300" role="banner">
+        <div className="relative z-10">
+          {/* Title Section */}
+          <div className="container mx-auto py-6 px-4 text-center relative">
+            <h1 className="font-serif text-4xl font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
+              Bubble's Cafe
+            </h1>
+            <p className="text-sm text-primary/90 italic font-serif tracking-wider mt-1">
+              What once was will never be again
+            </p>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleAudioToggle}
-            disabled={!audioReady}
-            className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
-            aria-label={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading audio..."}
-            aria-pressed={isPlaying}
+          {/* Navigation Section */}
+          <nav 
+            className="bg-background/95 backdrop-blur-md border-t border-border/10 shadow-sm"
+            role="navigation"
+            aria-label="Main navigation"
           >
-            {!audioReady && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden="true">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-              </span>
-            )}
-            {isPlaying ? (
-              <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            ) : (
-              <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            )}
-          </Button>
+            <div className="container mx-auto h-12 flex items-center justify-between px-4">
+              <div className="md:hidden">
+                <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                  <SheetTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95"
+                      aria-label={isOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={isOpen}
+                      aria-controls="mobile-menu"
+                    >
+                      <Menu className="h-5 w-5" aria-hidden="true" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent 
+                    side="left" 
+                    className="w-[80vw] pt-16 bg-background/95 backdrop-blur-lg"
+                    id="mobile-menu"
+                  >
+                    <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Close</span>
+                    </SheetClose>
+                    <nav className="flex flex-col space-y-2">
+                      <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              </div>
 
-          <div className="w-16 sm:w-24 hidden md:block">
-            <Slider
-              value={[volume * 100]}
-              max={100}
-              step={1}
-              onValueChange={handleVolumeChange}
-              disabled={!audioReady}
-              className="cursor-pointer"
-              aria-label="Volume control"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={volume * 100}
-            />
-          </div>
+              <div className="hidden md:flex items-center flex-1">
+                <NavigationItems location={location} />
+              </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleThemeToggle}
-            className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            aria-pressed={theme === "dark"}
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            ) : (
-              <Moon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            )}
-          </Button>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <Select 
+                    value={selectedTrack} 
+                    onValueChange={setSelectedTrack}
+                    aria-label="Select atmosphere track"
+                  >
+                    <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
+                      <SelectValue placeholder="Atmosphere" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ethereal" className="font-serif">Ethereal</SelectItem>
+                      <SelectItem value="Nocturnal" className="font-serif">Nocturnal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleAudioToggle}
+                  disabled={!audioReady}
+                  className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
+                  aria-label={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading audio..."}
+                  aria-pressed={isPlaying}
+                >
+                  {!audioReady && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden="true">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                    </span>
+                  )}
+                  {isPlaying ? (
+                    <Volume2 className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <VolumeX className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+
+                <div className="w-16 sm:w-24 hidden md:block">
+                  <Slider
+                    value={[volume * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={handleVolumeChange}
+                    disabled={!audioReady}
+                    className="cursor-pointer"
+                    aria-label="Volume control"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={volume * 100}
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleThemeToggle}
+                  className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full"
+                  aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-pressed={theme === "dark"}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Moon className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </nav>
         </div>
-      </nav>
-    </header>
+      </header>
+
+      {/* Spacer to account for fixed header height */}
+      <div className="h-64" aria-hidden="true" />
+    </>
   );
 }

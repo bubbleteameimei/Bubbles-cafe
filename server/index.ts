@@ -17,14 +17,14 @@ app.set('trust proxy', 1);
 // Enable Gzip compression
 app.use(compression());
 
-// Security headers
+// Security headers with updated CSP for image loading
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       fontSrc: ["'self'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
       connectSrc: ["'self'", 'https:'],
       frameSrc: ["'self'"],
@@ -65,76 +65,53 @@ app.use((req, res, next) => {
   next();
 });
 
-async function findAvailablePort(startPort: number, maxAttempts: number = 10): Promise<number> {
-  let currentPort = startPort;
-  let attempts = 0;
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
 
-  while (attempts < maxAttempts) {
-    try {
-      const server = createServer();
-      await new Promise<number>((resolve, reject) => {
-        server.once('error', (err: NodeJS.ErrnoException) => {
-          if (err.code === 'EADDRINUSE') {
-            log(`Port ${currentPort} is in use, trying next port`);
-            server.close();
-            currentPort++;
-            attempts++;
-            resolve(currentPort);
-          } else {
-            reject(err);
-          }
-        });
-
-        server.listen(currentPort, '0.0.0.0', () => {
-          const { port } = server.address() as { port: number };
-          server.close(() => {
-            log(`Found available port: ${port}`);
-            resolve(port);
-          });
-        });
+    server.listen(startPort, '0.0.0.0', () => {
+      const { port } = server.address() as { port: number };
+      server.close(() => {
+        log(`Found available port: ${port}`);
+        resolve(port);
       });
+    });
 
-      return currentPort;
-    } catch (error) {
-      log(`Error checking port ${currentPort}:`, error instanceof Error ? error.message : String(error));
-      currentPort++;
-      attempts++;
-    }
-  }
-
-  throw new Error(`Could not find an available port after ${maxAttempts} attempts`);
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${startPort} is in use, trying next port`);
+        resolve(findAvailablePort(startPort + 1));
+      } else {
+        reject(err);
+      }
+    });
+  });
 }
 
-async function waitForPort(port: number, retries = 45, delay = 1000): Promise<void> {
+// Simplified port check function
+async function waitForPort(port: number, retries = 5): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = new Socket();
     let attempts = 0;
-
-    const cleanup = () => {
-      socket.removeAllListeners();
-      socket.destroy();
-    };
 
     const tryConnect = () => {
       attempts++;
       log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
 
       socket.connect(port, '0.0.0.0', () => {
+        socket.destroy();
         log(`Successfully connected to port ${port}`);
-        cleanup();
         resolve();
       });
     };
 
     socket.on('error', (err) => {
       socket.destroy();
-      log(`Connection attempt ${attempts} failed: ${err.message}`);
 
       if (attempts >= retries) {
-        cleanup();
-        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
+        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts`));
       } else {
-        setTimeout(tryConnect, delay);
+        setTimeout(tryConnect, 1000);
       }
     });
 
@@ -147,36 +124,27 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
   const status = err.status || err.statusCode || 500;
   const isDevelopment = process.env.NODE_ENV !== 'production';
 
-  const errorDetails = {
-    status,
-    message: err.message,
-    stack: err.stack,
-    timestamp: new Date().toISOString(),
-    code: err.code,
-  };
-
-  log('Error occurred:', JSON.stringify(errorDetails, null, 2));
+  log('Error occurred:', err);
 
   res.status(status).json({
     status,
     message: isDevelopment ? err.message : 'An error occurred',
-    ...(isDevelopment && { details: err.details }),
+    ...(isDevelopment && { details: err.stack }),
   });
 }
 
 async function startServer() {
   try {
-    // First check database connection
+    // Verify database connection
     await db.execute(sql`SELECT 1`);
     log("Database connection verified");
 
-    // Seed database with posts
+    // Seed database if needed
     try {
       await seedDatabase();
       log("Database seeded successfully!");
     } catch (err) {
       log(`Error seeding database: ${err}`);
-      // Continue even if seeding fails
     }
 
     const server = registerRoutes(app);
@@ -188,30 +156,21 @@ async function startServer() {
       serveStatic(app);
     }
 
-    const startPort = parseInt(process.env.PORT || '5000', 10);
-    if (isNaN(startPort) || startPort < 1024 || startPort > 65535) {
-      throw new Error('Invalid port number');
-    }
+    // Use environment port or default to 3000
+    const startPort = parseInt(process.env.PORT || '3000', 10);
 
-    log(`Attempting to start server on port ${startPort}`);
+    // Print port immediately for workflow
+    console.log(`PORT=${startPort}`);
+
     const PORT = await findAvailablePort(startPort);
-
-    // Print port immediately so workflow knows which port to wait for
-    console.log(`PORT=${PORT}`);
     process.env.PORT = PORT.toString();
 
     return new Promise<void>((resolve, reject) => {
-      let isServerReady = false;
-
-      const serverInstance = server.listen(PORT, "0.0.0.0", async () => {
+      server.listen(PORT, "0.0.0.0", async () => {
         try {
-          log(`Server listening started on port ${PORT}`);
-
-          // Wait for port to be actually ready
+          log(`Server started on port ${PORT}`);
           await waitForPort(PORT);
-          isServerReady = true;
-          log(`Port ${PORT} is ready and accepting connections`);
-
+          log(`Server is ready and accepting connections on port ${PORT}`);
 
           if (process.send) {
             process.send('ready');
@@ -220,35 +179,17 @@ async function startServer() {
           resolve();
         } catch (error) {
           log(`Error during server startup: ${error}`);
-          serverInstance.close();
           reject(error);
         }
       });
 
-      serverInstance.on('error', (err: any) => {
-        const errorMessage = `Server error: ${err.message}`;
-        log(errorMessage);
-
-        if (!isServerReady) {
-          reject(new Error(errorMessage));
-        }
+      server.on('error', (error: Error) => {
+        log(`Server error: ${error}`);
+        reject(error);
       });
-
-      // Handle graceful shutdown
-      const cleanup = () => {
-        if (serverInstance) {
-          serverInstance.close(() => {
-            log('Server closed');
-            process.exit(0);
-          });
-        }
-      };
-
-      process.on('SIGTERM', cleanup);
-      process.on('SIGINT', cleanup);
     });
   } catch (error) {
-    log(`Critical server error: ${error instanceof Error ? error.stack : String(error)}`);
+    log(`Critical server error: ${error}`);
     process.exit(1);
   }
 }
