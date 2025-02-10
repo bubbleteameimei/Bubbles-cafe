@@ -12,13 +12,13 @@ interface AudioTrack {
 
 const DEFAULT_TRACKS: AudioTrack[] = [
   { 
-    name: "Ethereal",
-    file: "/ethereal.mp3",
+    name: "Whispering Wind",
+    file: "/audio/whispering_wind.mp3",
     isPlaying: false
   },
   { 
-    name: "Nocturnal",
-    file: "/nocturnal.mp3",
+    name: "Ambient",
+    file: "https://www.youtube.com/watch?v=YOHoOnaNivMHwcWW",
     isPlaying: false
   }
 ];
@@ -43,7 +43,7 @@ export const SoundMixer = () => {
     };
   }, []);
 
-  const toggleTrack = (index: number) => {
+  const toggleTrack = async (index: number) => {
     try {
       setTracks(prev => prev.map((track, i) => {
         if (i === index) {

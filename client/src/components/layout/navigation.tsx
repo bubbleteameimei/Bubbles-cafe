@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SoundMixer } from "@/components/effects/sound-mixer";
 
 const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
@@ -115,10 +116,8 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Sticky Header Content */}
       <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/95 backdrop-blur-md" role="banner">
         <div className="relative z-10">
-          {/* Title Section */}
           <div className="container mx-auto py-6 px-4 text-center relative">
             <h1 className="font-serif text-4xl font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
               Bubble's Cafe
@@ -128,7 +127,6 @@ export default function Navigation() {
             </p>
           </div>
 
-          {/* Navigation Section */}
           <nav 
             className="bg-background/95 backdrop-blur-md border-t border-border/10 shadow-sm"
             role="navigation"
@@ -160,6 +158,9 @@ export default function Navigation() {
                     </SheetClose>
                     <nav className="flex flex-col space-y-2">
                       <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
+                      <div className="mt-4">
+                        <SoundMixer />
+                      </div>
                     </nav>
                   </SheetContent>
                 </Sheet>
@@ -170,58 +171,9 @@ export default function Navigation() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-2">
-                  <Select 
-                    value={selectedTrack} 
-                    onValueChange={setSelectedTrack}
-                    aria-label="Select atmosphere track"
-                  >
-                    <SelectTrigger className="w-[120px] hover:bg-primary/10 font-serif">
-                      <SelectValue placeholder="Atmosphere" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Ambient" className="font-serif">Ambient</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="hidden md:block">
+                  <SoundMixer />
                 </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleAudioToggle}
-                  disabled={!audioReady}
-                  className="hover:bg-primary/10 transition-transform duration-200 hover:scale-105 active:scale-95 rounded-full relative"
-                  aria-label={audioReady ? (isPlaying ? "Pause Atmosphere" : "Play Atmosphere") : "Loading audio..."}
-                  aria-pressed={isPlaying}
-                >
-                  {!audioReady && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden="true">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
-                  {isPlaying ? (
-                    <Volume2 className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <VolumeX className="h-4 w-4" aria-hidden="true" />
-                  )}
-                </Button>
-
-                <div className="w-16 sm:w-24 hidden md:block">
-                  <Slider
-                    value={[volume * 100]}
-                    max={100}
-                    step={1}
-                    onValueChange={handleVolumeChange}
-                    disabled={!audioReady}
-                    className="cursor-pointer"
-                    aria-label="Volume control"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={volume * 100}
-                  />
-                </div>
-
                 <Button
                   variant="ghost"
                   size="icon"
@@ -241,8 +193,6 @@ export default function Navigation() {
           </nav>
         </div>
       </header>
-
-      
     </>
   );
 }
