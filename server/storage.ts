@@ -35,11 +35,15 @@ export interface IStorage {
   getSecretPosts(): Promise<Post[]>;
   unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
   updatePost(id: number, post: Partial<InsertPost>): Promise<Post>;
+  getPostWithComments(slug: string): Promise<Post & { comments: Comment[] }>;
+  getPostsByAuthor(authorId: number, limit?: number): Promise<Post[]>;
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
   getRecentComments(): Promise<Comment[]>;
   createComment(comment: InsertComment): Promise<Comment>;
+  updateComment(id: number, comment: Partial<Comment>): Promise<Comment>;
+  deleteComment(id: number): Promise<void>;
 
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
@@ -149,6 +153,14 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error("Error in getPosts:", error);
+      if (error instanceof Error) {
+        if (error.message.includes('relation') || error.message.includes('column')) {
+          throw new Error("Database schema error: Please check if the database is properly initialized");
+        }
+        if (error.message.includes('connection')) {
+          throw new Error("Database connection error: Unable to connect to the database");
+        }
+      }
       throw new Error("Failed to fetch posts");
     }
   }
@@ -209,14 +221,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPost(post: InsertPost): Promise<Post> {
-    const [newPost] = await db.insert(postsTable)
-      .values({ ...post, createdAt: new Date() })
-      .returning();
+    try {
+      const [newPost] = await db.insert(postsTable)
+        .values({ ...post, createdAt: new Date() })
+        .returning();
 
-    return {
-      ...newPost,
-      createdAt: newPost.createdAt instanceof Date ? newPost.createdAt : new Date(newPost.createdAt)
-    };
+      return {
+        ...newPost,
+        createdAt: newPost.createdAt instanceof Date ? newPost.createdAt : new Date(newPost.createdAt)
+      };
+    } catch (error) {
+      console.error("Error in createPost:", error);
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key')) {
+          throw new Error("A post with this slug already exists");
+        }
+        if (error.message.includes('foreign key')) {
+          throw new Error("Invalid author ID provided");
+        }
+      }
+      throw new Error("Failed to create post");
+    }
   }
 
   async deletePost(id: number): Promise<void> {
@@ -225,15 +250,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
-    const [updatedPost] = await db.update(postsTable)
-      .set(post)
-      .where(eq(postsTable.id, id))
-      .returning();
+    try {
+      const [updatedPost] = await db.update(postsTable)
+        .set(post)
+        .where(eq(postsTable.id, id))
+        .returning();
 
-    return {
-      ...updatedPost,
-      createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt)
-    };
+      if (!updatedPost) {
+        throw new Error("Post not found");
+      }
+
+      return {
+        ...updatedPost,
+        createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt)
+      };
+    } catch (error) {
+      console.error("Error in updatePost:", error);
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          throw error;
+        }
+        if (error.message.includes('duplicate key')) {
+          throw new Error("A post with this slug already exists");
+        }
+      }
+      throw new Error("Failed to update post");
+    }
   }
 
   async unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress> {
@@ -241,6 +283,40 @@ export class DatabaseStorage implements IStorage {
       .values({ ...progress, discoveryDate: new Date() })
       .returning();
     return newProgress;
+  }
+
+  // Add optimized method for fetching post with comments
+  async getPostWithComments(slug: string): Promise<Post & { comments: Comment[] }> {
+    try {
+      const [post] = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.slug, slug))
+        .limit(1);
+
+      if (!post) {
+        throw new Error("Post not found");
+      }
+
+      const postComments = await db.select()
+        .from(comments)
+        .where(eq(comments.postId, post.id))
+        .orderBy(desc(comments.createdAt));
+
+      return {
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+        comments: postComments.map(comment => ({
+          ...comment,
+          createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        }))
+      };
+    } catch (error) {
+      console.error("Error in getPostWithComments:", error);
+      if (error instanceof Error && error.message === "Post not found") {
+        throw error;
+      }
+      throw new Error("Failed to fetch post and comments");
+    }
   }
 
   // Comments operations
@@ -277,6 +353,48 @@ export class DatabaseStorage implements IStorage {
       ...newComment,
       createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)
     };
+  }
+
+  async updateComment(id: number, comment: Partial<Comment>): Promise<Comment> {
+    try {
+      const [updatedComment] = await db.update(comments)
+        .set(comment)
+        .where(eq(comments.id, id))
+        .returning();
+
+      if (!updatedComment) {
+        throw new Error("Comment not found");
+      }
+
+      return {
+        ...updatedComment,
+        createdAt: updatedComment.createdAt instanceof Date ? updatedComment.createdAt : new Date(updatedComment.createdAt)
+      };
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      if (error instanceof Error && error.message === "Comment not found") {
+        throw error;
+      }
+      throw new Error("Failed to update comment");
+    }
+  }
+
+  async deleteComment(id: number): Promise<void> {
+    try {
+      const result = await db.delete(comments)
+        .where(eq(comments.id, id))
+        .returning();
+
+      if (!result.length) {
+        throw new Error("Comment not found");
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      if (error instanceof Error && error.message === "Comment not found") {
+        throw error;
+      }
+      throw new Error("Failed to delete comment");
+    }
   }
 
   // Reading Progress operations

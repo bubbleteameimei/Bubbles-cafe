@@ -41,34 +41,56 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// Rate limiting configuration at the top of the file
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: { message: "Too many login attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // Reduced from 100 to 50 requests per 15 minutes
+  message: { message: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export function registerRoutes(app: Express): Server {
   // Security headers for both API and SPA
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // Remove unsafe-eval
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
+        connectSrc: ["'self'", "https:"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin'],
+        upgradeInsecureRequests: [],
       },
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginResourcePolicy: { policy: "same-site" },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    },
+    referrerPolicy: { policy: "same-origin" }
   }));
 
-  // Rate limiting for auth endpoints
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: { message: "Too many login attempts, please try again later" },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  // Apply rate limiting to auth endpoints
+  // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
-  app.use("/api/admin/*", authLimiter);
+  app.use("/api/admin", authLimiter);
+  app.use("/api", apiLimiter);
 
   // Set up authentication routes BEFORE other routes
   setupAuth(app);
@@ -274,9 +296,10 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Comment routes
-  app.get("/api/comments", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
-      const comments = await storage.getComments();
+      const postId = parseInt(req.params.postId);
+      const comments = await storage.getComments(postId);
       res.json(comments);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -284,22 +307,44 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
+  app.get("/api/comments/recent", async (_req: Request, res: Response) => {
+    try {
+      const comments = await storage.getRecentComments();
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching recent comments:", error);
+      res.status(500).json({ message: "Failed to fetch recent comments" });
+    }
+  });
+
   app.patch("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const comment = await storage.updateComment(parseInt(req.params.id), req.body);
+      const commentId = parseInt(req.params.id);
+      const comment = await storage.updateComment(commentId, req.body);
       res.json(comment);
     } catch (error) {
       console.error("Error updating comment:", error);
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          return res.status(404).json({ message: "Comment not found" });
+        }
+      }
       res.status(500).json({ message: "Failed to update comment" });
     }
   });
 
   app.delete("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      await storage.deleteComment(parseInt(req.params.id));
+      const commentId = parseInt(req.params.id);
+      await storage.deleteComment(commentId);
       res.json({ message: "Comment deleted successfully" });
     } catch (error) {
       console.error("Error deleting comment:", error);
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          return res.status(404).json({ message: "Comment not found" });
+        }
+      }
       res.status(500).json({ message: "Failed to delete comment" });
     }
   });
