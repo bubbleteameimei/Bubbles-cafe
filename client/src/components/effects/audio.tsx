@@ -14,8 +14,8 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const TRACKS = {
-  'Ethereal': '/ethereal.mp3',
-  'Nocturnal': '/nocturnal.mp3'
+  'Ethereal': '/13-angels.m4a',
+  'Nocturnal': '/whispers-wind.m4a'
 } as const;
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
@@ -50,7 +50,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(false);
         toast({
           title: "Audio Error",
-          description: "Failed to load audio track. Please try again.",
+          description: `Failed to load audio track: ${selectedTrack}`,
           variant: "destructive",
         });
       };
@@ -83,6 +83,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       cleanup?.();
     };
   }, [initAudio]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   const toggleAudio = useCallback(async () => {
     if (!audioRef.current || !audioReady) return;

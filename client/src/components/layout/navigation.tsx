@@ -80,7 +80,7 @@ const NavigationItems = ({ location, onNavigate, isMobile = false }: {
   );
 };
 
-const Navigation = () => {
+export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { isPlaying, toggleAudio, volume, setVolume, audioReady, selectedTrack, setSelectedTrack } = useAudio();
@@ -196,6 +196,4 @@ const Navigation = () => {
       </nav>
     </header>
   );
-};
-
-export default Navigation;
+}
