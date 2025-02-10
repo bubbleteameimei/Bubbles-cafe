@@ -35,11 +35,11 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   });
 
   const mutation = useMutation({
-    mutationFn: async (comment: { name: string; content: string }) => {
+    mutationFn: async (comment: { author: string; content: string }) => {
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(comment)
+        body: JSON.stringify({ author: comment.name, content: comment.content })
       });
       if (!response.ok) throw new Error("Failed to post comment");
       return response.json();
