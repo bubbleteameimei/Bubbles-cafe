@@ -161,8 +161,7 @@ export default function IndexView() {
                           </div>
                           {detectThemes(post.content)[0] && (
                             <div className="flex items-center gap-1 justify-end">
-                              {themeInfo?.icon && React.createElement(getIconComponent(themeInfo.icon), { className: "h-3 w-3" })}
-                              <span>{displayName}</span>
+                              <span>{detectThemes(post.content)[0].toLowerCase().replace(/_/g, ' ')}</span>
                             </div>
                           )}
                         </div>
