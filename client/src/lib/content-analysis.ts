@@ -252,6 +252,7 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       return [titleToTheme[title]];
     }
 
+    // Fallback content-based detection
     if (content.toLowerCase().includes('nostalgia')) return ['PARASITE'];
     if (content.toLowerCase().includes('cave')) return ['LOVECRAFTIAN'];
     if (content.toLowerCase().includes('therapist')) return ['PSYCHOLOGICAL'];
