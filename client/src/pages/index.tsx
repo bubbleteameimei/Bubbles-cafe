@@ -7,7 +7,9 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Clock, Calendar } from "lucide-react";
+import { ChevronRight, Clock, Calendar, Gauge } from "lucide-react";
+import React from 'react';
+import { getIconComponent } from '@/components/ui/icons';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 
@@ -153,6 +155,16 @@ export default function IndexView() {
                             <Clock className="h-3 w-3" />
                             <span>{readingTime}</span>
                           </div>
+                          <div className="flex items-center gap-1 justify-end">
+                            <Gauge className="h-3 w-3" />
+                            <span>Level {calculateIntensity(post.content)}/5</span>
+                          </div>
+                          {detectThemes(post.content)[0] && (
+                            <div className="flex items-center gap-1 justify-end">
+                              {themeInfo?.icon && React.createElement(getIconComponent(themeInfo.icon), { className: "h-3 w-3" })}
+                              <span>{displayName}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
