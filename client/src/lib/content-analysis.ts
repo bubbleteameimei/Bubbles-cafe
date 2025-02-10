@@ -343,3 +343,8 @@ export const getReadingTime = (content: string): string => {
   const minutes = Math.ceil(words / wordsPerMinute);
   return `${minutes} min read`;
 };
+
+// Added function to log post creation with theme information.
+export const logPostCreation = (postId: number, postTitle: string, date: string, theme: ThemeCategory) => {
+  console.log(`Created post: "${postTitle}" (ID: ${postId}) with date: ${date} [Theme: ${theme}]`);
+};
