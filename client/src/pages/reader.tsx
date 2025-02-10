@@ -6,7 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Shuffle,
-  ListFilter
+  ListFilter,
+  Brain,
+  Skull,
+  Ghost,
+  Footprints,
+  Timer,
+  Gauge
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -17,157 +23,12 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
-import { cn } from "@/lib/utils";
-
-// Theme types
-type ThemeCategory = 'PSYCHOLOGICAL' | 'GORE' | 'SUPERNATURAL' | 'SURVIVAL';
-interface ThemeInfo {
-  keywords: string[];
-  atmosphericTrack: string;
-  badgeVariant: "psychological" | "gore" | "supernatural" | "survival";
-}
-
-const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
-  PSYCHOLOGICAL: {
-    keywords: [
-      'mind', 'sanity', 'reality', 'perception', 'consciousness', 'dream',
-      'paranoia', 'delusion', 'hallucination', 'madness', 'insanity',
-      'psychosis', 'memory', 'identity', 'trauma', 'therapy', 'mental'
-    ],
-    atmosphericTrack: 'ethereal',
-    badgeVariant: "psychological"
-  },
-  GORE: {
-    keywords: [
-      'blood', 'flesh', 'bone', 'visceral', 'mutilation', 'wound', 'gore',
-      'dismember', 'organ', 'tissue', 'entrails', 'dissect', 'cut', 'slice',
-      'tear', 'rip', 'eviscerate', 'body', 'corpse', 'dead'
-    ],
-    atmosphericTrack: 'nocturnal',
-    badgeVariant: "gore"
-  },
-  SUPERNATURAL: {
-    keywords: [
-      'ghost', 'spirit', 'demon', 'haunted', 'ethereal', 'occult', 'ritual',
-      'possession', 'paranormal', 'entity', 'apparition', 'specter', 'phantom',
-      'poltergeist', 'curse', 'hex', 'witch', 'magic', 'undead', 'soul'
-    ],
-    atmosphericTrack: 'ethereal',
-    badgeVariant: "supernatural"
-  },
-  SURVIVAL: {
-    keywords: [
-      'chase', 'escape', 'hide', 'run', 'pursue', 'hunt', 'trap', 'survive',
-      'flee', 'evade', 'stalker', 'predator', 'prey', 'hunter', 'victim',
-      'catch', 'corner', 'trapped', 'escape', 'alone'
-    ],
-    atmosphericTrack: 'nocturnal',
-    badgeVariant: "survival"
-  }
-};
-
-const getReadingTime = (content: string) => {
-  if (!content) return '0 min read';
-  const wordsPerMinute = 200;
-  const words = content.trim().split(/\s+/).length;
-  const minutes = Math.ceil(words / wordsPerMinute);
-  return `${minutes} min read`;
-};
-
-// Single theme detection
-const detectThemes = (content: string): ThemeCategory[] => {
-  try {
-    const themeCounts = new Map<ThemeCategory, number>();
-    const lowerContent = content.toLowerCase();
-
-    Object.entries(THEME_CATEGORIES).forEach(([theme, info]) => {
-      const matchCount = info.keywords.filter(keyword => lowerContent.includes(keyword)).length;
-      if (matchCount > 0) {
-        themeCounts.set(theme as ThemeCategory, matchCount);
-      }
-    });
-
-    let dominantTheme: ThemeCategory | null = null;
-    let maxCount = 0;
-
-    themeCounts.forEach((count, theme) => {
-      if (count > maxCount) {
-        maxCount = count;
-        dominantTheme = theme;
-      }
-    });
-
-    return dominantTheme ? [dominantTheme] : [];
-  } catch (error) {
-    console.error('[Theme Detection] Error:', error);
-    return [];
-  }
-};
-
-const calculateIntensity = (content: string): number => {
-  if (!content) return 1;
-
-  const emotionalPatterns = {
-    extreme: /terrified|horrified|petrified|screaming|agony/gi,
-    strong: /scared|frightened|panic|terror|dread/gi,
-    moderate: /worried|nervous|anxious|uneasy|fear/gi
-  };
-
-  let score = 1;
-
-  Object.entries(emotionalPatterns).forEach(([level, pattern]) => {
-    const matches = content.match(pattern);
-    if (matches) {
-      score += matches.length * (
-        level === 'extreme' ? 0.5 :
-          level === 'strong' ? 0.3 :
-            0.2
-      );
-    }
-  });
-
-  const shortSentences = content.split(/[.!?]+/).filter(s => 
-    s.trim().split(/\s+/).length < 10
-  ).length;
-
-  score += shortSentences * 0.1;
-
-  if (content.includes('blood') || content.includes('gore')) score += 1;
-  if (/[A-Z]{3,}/.test(content)) score += 0.5;
-  if (content.match(/!{2,}/g)) score += 0.5;
-
-  return Math.max(1, Math.min(5, Math.ceil(score)));
-};
-
-const detectTriggerWarnings = (content: string): string[] => {
-  const TRIGGER_WARNINGS = [
-    { id: 'gore', label: 'Gore', keywords: ['blood', 'gore', 'visceral'] },
-    { id: 'violence', label: 'Violence', keywords: ['violent', 'brutality', 'assault'] },
-    { id: 'psychological', label: 'Psychological', keywords: ['mental', 'trauma', 'ptsd'] },
-    { id: 'disturbing', label: 'Disturbing Content', keywords: ['disturbing', 'graphic', 'explicit'] }
-  ];
-
-  try {
-    const warnings = new Set<string>();
-    const lowerContent = content.toLowerCase();
-
-    TRIGGER_WARNINGS.forEach(warning => {
-      if (warning.keywords.some(keyword => lowerContent.includes(keyword))) {
-        warnings.add(warning.label);
-      }
-    });
-
-    return Array.from(warnings);
-  } catch (error) {
-    console.error('[Trigger Warning Detection] Error:', error);
-    return [];
-  }
-};
+import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
+import type { ThemeCategory } from "@/lib/content-analysis";
 
 interface ContentAnalysis {
   intensity: number;
   themes: ThemeCategory[];
-  warnings: string[];
 }
 
 export default function Reader() {
@@ -179,9 +40,8 @@ export default function Reader() {
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
   const [, setLocation] = useLocation();
   const [contentAnalysis, setContentAnalysis] = useState<ContentAnalysis>({
-    intensity: 1,
-    themes: [],
-    warnings: []
+    intensity: 3,
+    themes: []
   });
 
   const { data: posts, isLoading, error } = useQuery<Post[]>({
@@ -235,12 +95,10 @@ export default function Reader() {
     if (currentPost?.content) {
       const intensity = calculateIntensity(currentPost.content);
       const themes = detectThemes(currentPost.content);
-      const warnings = detectTriggerWarnings(currentPost.content);
 
       setContentAnalysis({
         intensity,
         themes,
-        warnings
       });
     }
   }, [currentIndex, posts]);
@@ -260,6 +118,13 @@ export default function Reader() {
   }
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
+  const theme = contentAnalysis.themes[0];
+  const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
+  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase() : '';
+  const IconComponent = themeInfo?.icon === 'Brain' ? Brain :
+                       themeInfo?.icon === 'Skull' ? Skull :
+                       themeInfo?.icon === 'Ghost' ? Ghost :
+                       Footprints; // Added Footprints as default
 
   return (
     <div className="relative min-h-screen">
@@ -276,7 +141,7 @@ export default function Reader() {
           >
             <article>
               <div className="flex items-center justify-between mb-4">
-                <h1 className="story-title">{currentPost.title}</h1>
+                <h1 className="story-title text-4xl font-bold font-serif">{currentPost.title}</h1>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -287,57 +152,31 @@ export default function Reader() {
                 </Button>
               </div>
 
-              <div className="story-meta flex flex-wrap items-center gap-2 mb-4">
+              <div className="story-meta flex flex-wrap items-center gap-2 mb-4 text-sm text-muted-foreground">
                 <time>{formattedDate}</time>
                 <span className="text-primary/50">•</span>
-                <span>{getReadingTime(currentPost.content)}</span>
+                <span className="flex items-center gap-1">
+                  <Timer className="h-4 w-4" />
+                  {getReadingTime(currentPost.content)}
+                </span>
                 <span className="text-primary/50">•</span>
-                <span>Intensity: {contentAnalysis.intensity}/5</span>
+                <span className="text-primary/90 font-medium flex items-center gap-1">
+                  <Gauge className="h-4 w-4" />
+                  Intensity Level {contentAnalysis.intensity}/5
+                </span>
               </div>
 
-              <div className="mb-6 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {contentAnalysis.themes.map((theme) => {
-                    const themeInfo = THEME_CATEGORIES[theme];
-                    return (
-                      <TooltipProvider key={theme}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="inline-block">
-                              <Badge
-                                variant={themeInfo?.badgeVariant || "default"}
-                                className="cursor-pointer"
-                              >
-                                {theme.toLowerCase()}
-                              </Badge>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">
-                              {theme === 'PSYCHOLOGICAL' ? 'Mental and psychological horror elements' :
-                                theme === 'GORE' ? 'Graphic and visceral content' :
-                                  theme === 'SUPERNATURAL' ? 'Paranormal and otherworldly elements' :
-                                    'Survival and chase sequences'}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  })}
+              {themeInfo && (
+                <div className="mb-6">
+                  <Badge
+                    variant={themeInfo.badgeVariant}
+                    className="text-sm font-medium tracking-wide px-3 py-1 flex items-center gap-1.5 w-fit"
+                  >
+                    <IconComponent className="h-3.5 w-3.5" />
+                    {displayName}
+                  </Badge>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {contentAnalysis.warnings.map((warning) => (
-                    <Badge
-                      key={warning}
-                      variant="trigger"
-                      className="text-xs backdrop-blur-sm"
-                    >
-                      {warning}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+              )}
 
               <div
                 className="story-content mb-8 prose dark:prose-invert max-w-none"

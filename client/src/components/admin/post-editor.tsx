@@ -12,13 +12,14 @@ import {
   Loader2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { insertPostSchema, type Post } from "@shared/schema";
+import { type Post, type InsertPost } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { detectThemes, getReadingTime, type ThemeCategory } from "@/lib/content-analysis";
 
 interface PostEditorProps {
   post?: Post | null;
@@ -37,42 +38,75 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       title: post?.title || "",
       content: post?.content || "",
       excerpt: post?.excerpt || "",
-      isSecret: post?.isSecret || false
+      isSecret: post?.isSecret || false,
+      slug: post?.slug || ""
     }
   });
 
-  // Optimistic update helper
-  const getOptimisticPost = (formData: any) => ({
-    id: post?.id || Date.now().toString(),
-    ...formData,
-    createdAt: post?.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
+  // Optimistic update helper with proper type handling
+  const getOptimisticPost = (formData: InsertPost): Post => {
+    const content = formData.content;
+    const theme = detectThemes(content)[0];
+    const atmosphericTrackMap: Record<ThemeCategory, string> = {
+      PSYCHOLOGICAL: '13-angels.m4a',
+      SUPERNATURAL: '13-angels.m4a',
+      GORE: 'whispers-wind.m4a',
+      SURVIVAL: 'whispers-wind.m4a'
+    };
+
+    return {
+      id: post?.id || Date.now(),
+      title: formData.title,
+      content: formData.content,
+      excerpt: formData.excerpt,
+      isSecret: formData.isSecret,
+      slug: formData.slug || formData.title.toLowerCase().replace(/\s+/g, '-'),
+      createdAt: post?.createdAt ? new Date(post.createdAt) : new Date(),
+      authorId: post?.authorId || 1,
+      likesCount: post?.likesCount || 0,
+      dislikesCount: post?.dislikesCount || 0,
+      originalSource: formData.originalSource || null,
+      originalAuthor: formData.originalAuthor || null,
+      originalPublishDate: formData.originalPublishDate || null,
+      atmosphericSound: theme ? atmosphericTrackMap[theme] : null,
+      themeCategory: theme,
+      triggerWarnings: formData.triggerWarnings || null
+    };
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       const endpoint = post ? `/api/posts/${post.id}` : "/api/posts";
       const method = post ? "PATCH" : "POST";
-      return apiRequest(method, endpoint, data);
+
+      try {
+        const response = await apiRequest(method, endpoint, data);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || `Failed to ${post ? 'update' : 'create'} post`);
+        }
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Post mutation error:', error);
+        throw error;
+      }
     },
     onMutate: async (newPost) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["/api/posts"] });
+      const previousPosts = queryClient.getQueryData<Post[]>(["/api/posts"]);
 
-      // Snapshot the previous value
-      const previousPosts = queryClient.getQueryData(["/api/posts"]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(["/api/posts"], (old: any[]) => {
+      queryClient.setQueryData<Post[]>(["/api/posts"], (old = []) => {
         const optimisticPost = getOptimisticPost(newPost);
-        return post
-          ? old?.map(p => p.id === post.id ? optimisticPost : p)
-          : [...(old || []), optimisticPost];
+        if (post) {
+          return old.map(p => p.id === post.id ? optimisticPost : p);
+        }
+        return [...old, optimisticPost];
       });
 
       return { previousPosts };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
         title: "Success",
@@ -80,14 +114,13 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       });
       onClose?.();
     },
-    onError: (error, variables, context) => {
-      // Rollback to the previous state on error
+    onError: (error: Error, variables, context) => {
       if (context?.previousPosts) {
         queryClient.setQueryData(["/api/posts"], context.previousPosts);
       }
       toast({
         title: "Error",
-        description: "Failed to save post. Please try again.",
+        description: error.message || "Failed to save post. Please try again.",
         variant: "destructive",
       });
     },
@@ -102,7 +135,6 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
         end: textarea.selectionEnd
       });
 
-      // Add to history if content changed
       if (history[history.length - 1] !== newContent) {
         setHistory(prev => [...prev.slice(0, historyIndex + 1), newContent]);
         setHistoryIndex(prev => prev + 1);
@@ -145,11 +177,29 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
+  const onSubmit = (data: any) => {
+    // Generate slug if not provided
+    if (!data.slug) {
+      data.slug = data.title.toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+    }
+
+    // Ensure all dates are properly formatted
+    const formattedData = {
+      ...data,
+      createdAt: post?.createdAt ? new Date(post.createdAt).toISOString() : new Date().toISOString()
+    };
+
+    mutation.mutate(formattedData);
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="title"

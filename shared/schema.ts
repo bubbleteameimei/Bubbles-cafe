@@ -37,14 +37,11 @@ export const posts = pgTable("posts", {
   likesCount: integer("likes_count").default(0).notNull(),
   dislikesCount: integer("dislikes_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // New fields for WordPress import
   originalSource: text("original_source"),
   originalAuthor: text("original_author"),
   originalPublishDate: timestamp("original_publish_date"),
-  // Horror-specific fields
   atmosphericSound: text("atmospheric_sound"), // Path to sound file
-  readingTimeMinutes: integer("reading_time_minutes"),
-  matureContent: boolean("mature_content").default(false).notNull(),
+  themeCategory: text("theme_category"), // 'PSYCHOLOGICAL' | 'GORE' | 'SUPERNATURAL' | 'SURVIVAL'
   triggerWarnings: text("trigger_warnings").array()
 }, (table) => ({
   slugIdx: index("slug_idx").on(table.slug),
@@ -94,9 +91,18 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Schema types and insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true, likesCount: true, dislikesCount: true });
+export const insertPostSchema = createInsertSchema(posts)
+  .omit({ 
+    id: true, 
+    createdAt: true, 
+    likesCount: true, 
+    dislikesCount: true 
+  })
+  .extend({
+    themeCategory: z.enum(['PSYCHOLOGICAL', 'GORE', 'SUPERNATURAL', 'SURVIVAL']).optional(),
+    atmosphericSound: z.string().optional()
+  });
 export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
@@ -104,7 +110,6 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true, lastAccessedAt: true });
 export const insertPostLikeSchema = createInsertSchema(postLikes).omit({ id: true, createdAt: true });
 
-// Type exports
 export type Post = typeof posts.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
