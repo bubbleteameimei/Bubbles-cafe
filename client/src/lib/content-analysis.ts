@@ -1,124 +1,168 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Brain, Cpu, Telescope, Trees, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
+import { Virus, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Cross, Utensils, Footprints, CloudRain, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
 export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
+  PARASITE: {
+    keywords: [
+      'parasite', 'worm', 'maggot', 'crawl', 'burrow', 'gnaw', 'squirm',
+      'writhe', 'infest', 'nostalgia', 'memory', 'forget', 'distort',
+      'whisper', 'dig', 'flesh', 'brain', 'skin'
+    ],
+    atmosphericTrack: 'whispers-wind.m4a',
+    badgeVariant: "parasite",
+    icon: 'Virus',
+    description: 'Parasitic and invasive horror'
+  },
+  LOVECRAFTIAN: {
+    keywords: [
+      'ancient', 'deity', 'worship', 'kneel', 'statue', 'monolithic',
+      'forgotten', 'blood', 'ritual', 'cave', 'underground', 'eternal',
+      'revelations', 'forbidden', 'cyclopean', 'eldritch'
+    ],
+    atmosphericTrack: '13-angels.m4a',
+    badgeVariant: "lovecraftian",
+    icon: 'Skull',
+    description: 'Lovecraftian and cosmic horror'
+  },
   PSYCHOLOGICAL: {
     keywords: [
-      'mind', 'sanity', 'reality', 'perception', 'consciousness', 'dream',
-      'paranoia', 'delusion', 'hallucination', 'madness', 'insanity',
-      'psychosis', 'memory', 'identity', 'trauma', 'therapy', 'mental'
+      'mind', 'sanity', 'therapy', 'mental', 'obsession', 'delusion',
+      'reality', 'perception', 'consciousness', 'paranoia', 'hallucination',
+      'trauma', 'identity', 'control', 'manipulation'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "psychological",
     icon: 'Brain',
-    description: 'Mental and psychological horror'
+    description: 'Psychological manipulation and mental horror'
+  },
+  SUICIDAL: {
+    keywords: [
+      'suicide', 'bleach', 'end', 'death', 'pain', 'guilt', 'survive',
+      'medication', 'hospital', 'poison', 'overdose', 'self-harm',
+      'depression', 'despair', 'darkness'
+    ],
+    atmosphericTrack: 'whispers-wind.m4a',
+    badgeVariant: "suicidal",
+    icon: 'Pill',
+    description: 'Self-destructive and survival horror'
   },
   TECHNOLOGICAL: {
     keywords: [
-      'machine', 'computer', 'artificial', 'digital', 'program', 'code',
-      'network', 'system', 'algorithm', 'robot', 'cyber', 'virtual',
-      'interface', 'screen', 'data', 'tech', 'electronic', 'device'
+      'machine', 'computer', 'technology', 'artificial', 'circuit',
+      'wire', 'mechanical', 'digital', 'system', 'consciousness',
+      'upload', 'transfer', 'merge', 'cybernetic'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
-    badgeVariant: "default",
+    badgeVariant: "technological",
     icon: 'Cpu',
-    description: 'Technology gone wrong'
-  },
-  COSMIC: {
-    keywords: [
-      'space', 'star', 'void', 'infinite', 'cosmic', 'universe', 'alien',
-      'planet', 'dimension', 'beyond', 'celestial', 'astronomical',
-      'galactic', 'nebula', 'constellation', 'orbit'
-    ],
-    atmosphericTrack: '13-angels.m4a',
-    badgeVariant: "default",
-    icon: 'Telescope',
-    description: 'Cosmic horror and space terror'
-  },
-  FOLK_HORROR: {
-    keywords: [
-      'ritual', 'tradition', 'village', 'ancient', 'folk', 'cult',
-      'pagan', 'sacrifice', 'worship', 'rural', 'superstition',
-      'ceremony', 'harvest', 'nature', 'forest'
-    ],
-    atmosphericTrack: 'whispers-wind.m4a',
-    badgeVariant: "default",
-    icon: 'Trees',
-    description: 'Folk and rural horror'
+    description: 'Technological and cybernetic horror'
   },
   BODY_HORROR: {
     keywords: [
       'flesh', 'transform', 'mutation', 'organic', 'grotesque', 'deform',
-      'tissue', 'metamorphosis', 'biology', 'cellular', 'morph',
-      'visceral', 'anatomy', 'bone', 'skin'
+      'tissue', 'metamorphosis', 'skin', 'bone', 'blood', 'insect',
+      'crawl', 'bug', 'inside'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
-    badgeVariant: "default",
+    badgeVariant: "body",
     icon: 'Dna',
     description: 'Body transformation horror'
   },
-  SURVIVAL: {
+  PSYCHOPATH: {
     keywords: [
-      'chase', 'escape', 'hide', 'run', 'pursue', 'hunt', 'trap',
-      'flee', 'evade', 'stalker', 'predator', 'prey', 'hunter',
-      'catch', 'corner', 'trapped', 'alone'
+      'kill', 'murder', 'blood', 'knife', 'stalk', 'watch', 'follow',
+      'obsess', 'hunt', 'capture', 'torture', 'victim', 'pleasure',
+      'excitement', 'thrill'
     ],
-    atmosphericTrack: 'whispers-wind.m4a',
-    badgeVariant: "survival",
-    icon: 'Footprints',
-    description: 'Survival horror'
+    atmosphericTrack: '13-angels.m4a',
+    badgeVariant: "psychopath",
+    icon: 'Axe',
+    description: 'Psychopathic and murderous horror'
   },
   SUPERNATURAL: {
     keywords: [
-      'ghost', 'spirit', 'demon', 'haunted', 'ethereal', 'occult',
-      'possession', 'paranormal', 'entity', 'apparition', 'specter',
-      'phantom', 'poltergeist', 'soul'
+      'ghost', 'spirit', 'haunted', 'ethereal', 'paranormal', 'entity',
+      'apparition', 'mirror', 'reflection', 'portal', 'otherworldly',
+      'presence', 'manifestation'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "supernatural",
     icon: 'Ghost',
-    description: 'Supernatural horror'
+    description: 'Supernatural and paranormal horror'
+  },
+  POSSESSION: {
+    keywords: [
+      'possess', 'demon', 'spirit', 'doll', 'puppet', 'control',
+      'evil', 'exorcism', 'ritual', 'curse', 'dark', 'entity',
+      'soul', 'corrupt', 'innocent'
+    ],
+    atmosphericTrack: '13-angels.m4a',
+    badgeVariant: "possession",
+    icon: 'Cross',
+    description: 'Demonic possession horror'
+  },
+  CANNIBALISM: {
+    keywords: [
+      'eat', 'consume', 'flesh', 'meat', 'hunger', 'appetite',
+      'feast', 'cook', 'recipe', 'cookbook', 'taste', 'devour',
+      'cannibalism', 'human', 'meal'
+    ],
+    atmosphericTrack: 'whispers-wind.m4a',
+    badgeVariant: "cannibalism",
+    icon: 'Utensils',
+    description: 'Cannibalistic horror'
+  },
+  STALKING: {
+    keywords: [
+      'follow', 'watch', 'hide', 'shadow', 'stalk', 'observe',
+      'track', 'pursue', 'hunt', 'predator', 'prey', 'tunnel',
+      'dark', 'alone', 'fear'
+    ],
+    atmosphericTrack: 'whispers-wind.m4a',
+    badgeVariant: "stalking",
+    icon: 'Footprints',
+    description: 'Stalking and pursuit horror'
+  },
+  DEATH: {
+    keywords: [
+      'death', 'reaper', 'soul', 'afterlife', 'descent', 'fall',
+      'darkness', 'eternal', 'end', 'final', 'grave', 'tombstone',
+      'spirit', 'beyond', 'mortal'
+    ],
+    atmosphericTrack: '13-angels.m4a',
+    badgeVariant: "death",
+    icon: 'CloudRain',
+    description: 'Death and mortality horror'
   },
   GOTHIC: {
     keywords: [
-      'castle', 'mansion', 'aristocrat', 'Victorian', 'gothic', 'noble',
-      'estate', 'cathedral', 'crypt', 'inheritance', 'family', 'legacy',
-      'ancestor', 'lineage', 'curse'
+      'castle', 'mansion', 'aristocrat', 'Victorian', 'gothic',
+      'estate', 'cathedral', 'crypt', 'family', 'legacy',
+      'ancestor', 'portrait', 'painting'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "gothic",
     icon: 'Castle',
-    description: 'Gothic horror'
+    description: 'Gothic and ancestral horror'
   },
   APOCALYPTIC: {
     keywords: [
-      'apocalypse', 'collapse', 'extinction', 'devastation', 'ruin',
-      'wasteland', 'survival', 'pandemic', 'plague', 'fallout',
-      'catastrophe', 'disaster', 'end', 'world'
+      'apocalypse', 'collapse', 'extinction', 'devastation',
+      'wasteland', 'survival', 'pandemic', 'plague', 'end',
+      'world', 'civilization', 'ruin'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "apocalyptic",
     icon: 'Radiation',
     description: 'Post-apocalyptic horror'
   },
-  LOVECRAFTIAN: {
-    keywords: [
-      'ancient', 'unknowable', 'cosmic', 'elder', 'forbidden',
-      'blasphemous', 'cyclopean', 'eldritch', 'primordial', 'abyss',
-      'tentacle', 'madness', 'revelation', 'knowledge'
-    ],
-    atmosphericTrack: '13-angels.m4a',
-    badgeVariant: "lovecraftian",
-    icon: 'Skull',
-    description: 'Lovecraftian cosmic horror'
-  },
   ISOLATION: {
     keywords: [
-      'alone', 'solitude', 'abandoned', 'desolate', 'empty', 'isolated',
-      'remote', 'stranded', 'deserted', 'lonely', 'cut-off', 'separation',
-      'disconnected', 'quarantine', 'silence'
+      'alone', 'solitude', 'abandoned', 'desolate', 'empty',
+      'isolated', 'remote', 'stranded', 'lonely', 'silence',
+      'void', 'cut-off', 'separation'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "isolation",
@@ -128,8 +172,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   AQUATIC: {
     keywords: [
       'ocean', 'deep', 'underwater', 'sea', 'abyss', 'maritime',
-      'submarine', 'drowning', 'flood', 'tide', 'marine', 'depths',
-      'submerged', 'coral', 'trenches'
+      'submarine', 'drowning', 'flood', 'marine', 'depths',
+      'vessel', 'ship'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "aquatic",
@@ -139,19 +183,19 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   VIRAL: {
     keywords: [
       'infection', 'spread', 'contagion', 'disease', 'epidemic',
-      'virus', 'outbreak', 'contamination', 'quarantine', 'symptom',
-      'mutation', 'carrier', 'transmission', 'infected'
+      'virus', 'outbreak', 'contamination', 'mutation',
+      'transmission', 'infected', 'pandemic'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "viral",
     icon: 'AlertTriangle',
-    description: 'Viral horror'
+    description: 'Viral and epidemic horror'
   },
   URBAN_LEGEND: {
     keywords: [
-      'legend', 'myth', 'rumor', 'story', 'urban', 'tale', 'folklore',
-      'city', 'street', 'local', 'whisper', 'mystery', 'reputation',
-      'hearsay', 'notorious'
+      'legend', 'myth', 'rumor', 'urban', 'tale', 'folklore',
+      'city', 'street', 'local', 'whisper', 'mystery',
+      'warning', 'curse'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "urban",
@@ -160,9 +204,9 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   },
   TIME_HORROR: {
     keywords: [
-      'time', 'temporal', 'loop', 'paradox', 'clock', 'chronology',
-      'past', 'future', 'timeline', 'moment', 'eternity', 'repeat',
-      'cycle', 'duration', 'forever'
+      'time', 'temporal', 'loop', 'paradox', 'clock', 'past',
+      'future', 'timeline', 'moment', 'eternity', 'repeat',
+      'trapped', 'forever'
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "time",
@@ -172,8 +216,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   DREAMSCAPE: {
     keywords: [
       'dream', 'nightmare', 'sleep', 'subconscious', 'surreal',
-      'abstract', 'vision', 'lucid', 'phantasm', 'fantasy',
-      'hallucination', 'reverie', 'trance', 'illusion'
+      'vision', 'lucid', 'phantasm', 'fantasy', 'illusion',
+      'reality', 'trance'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "dreamscape",
@@ -184,37 +228,140 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
 
 export const detectThemes = (content: string): ThemeCategory[] => {
   try {
+    if (content.toLowerCase().includes('nostalgia') && 
+        content.match(/worm|maggot|brain|crawl|parasite/i)) {
+      return ['PARASITE'];
+    }
+    if (content.toLowerCase().includes('cave') && 
+        content.match(/deity|worship|kneel|ancient|monolithic|fallen god/i)) {
+      return ['LOVECRAFTIAN'];
+    }
+    if (content.toLowerCase().includes('machine') && 
+        (content.match(/consciousness|merge|upload|transcend|circuits/i) ||
+         content.match(/wires?|digital|network|electronic|machine/i))) {
+      const techKeywords = [
+        'consciousness', 'merge', 'upload', 'transcend', 'circuits',
+        'wires', 'digital', 'network', 'electronic', 'machine'
+      ];
+      const matchCount = techKeywords.filter(word => 
+        new RegExp(`\\b${word}\\b`, 'i').test(content)
+      ).length;
+      if (matchCount >= 2) {
+        return ['TECHNOLOGICAL'];
+      }
+    }
+    if (content.toLowerCase().includes('bleach') && 
+        content.match(/suicide|drink|end it all|poison/i)) {
+      return ['SUICIDAL'];
+    }
+    if (content.toLowerCase().includes('mirror') && 
+        content.match(/reflection|ghost|spirit|swap|change|entity/i)) {
+      return ['SUPERNATURAL'];
+    }
+    if (content.toLowerCase().includes('chase') && 
+        content.match(/follow|pursuit|hunt|escape|run/i)) {
+      return ['STALKING'];
+    }
+    if (content.toLowerCase().includes('descent') && 
+        content.match(/death|reaper|fall|eternal|spirit/i)) {
+      return ['DEATH'];
+    }
+    if (content.toLowerCase().includes('doll') && 
+        (content.match(/possess|demon|spirit|evil|puppet/i) ||
+         content.match(/supernatural|cursed|haunted|soul/i))) {
+      const possessionKeywords = [
+        'possess', 'demon', 'spirit', 'evil', 'puppet',
+        'supernatural', 'cursed', 'haunted', 'soul'
+      ];
+      const matchCount = possessionKeywords.filter(word => 
+        new RegExp(`\\b${word}\\b`, 'i').test(content)
+      ).length;
+      if (matchCount >= 2) {
+        return ['POSSESSION'];
+      }
+    }
+    if (content.toLowerCase().includes('cookbook') && 
+        content.match(/recipe|eat|flesh|meat|feast|devour/i)) {
+      return ['CANNIBALISM'];
+    }
+    if (content.toLowerCase().includes('therapist') && 
+        content.match(/session|fear|mind|obsess|couch/i)) {
+      return ['PSYCHOLOGICAL'];
+    }
+    if ((content.toLowerCase().includes('skin') || content.toLowerCase().includes('bug')) && 
+        content.match(/flesh|transform|deform|crawl|inside/i)) {
+      return ['BODY_HORROR'];
+    }
+    if (content.toLowerCase().includes('tunnel') && 
+        content.match(/follow|dark|stalk|watch|hide/i)) {
+      return ['STALKING'];
+    }
+    if (content.toLowerCase().includes('descent') && 
+        content.match(/death|reaper|fall|eternal|spirit/i)) {
+      return ['DEATH'];
+    }
+    if (content.toLowerCase().includes('drive') && 
+        content.match(/kill|blood|knife|murder|pleasure/i)) {
+      return ['PSYCHOPATH'];
+    }
+
     const themeCounts = new Map<ThemeCategory, number>();
     const lowerContent = content.toLowerCase();
 
-    // Calculate theme scores based on keyword matches
     Object.entries(THEME_CATEGORIES).forEach(([theme, info]) => {
-      const matchCount = info.keywords.filter((keyword: string) =>
-        new RegExp(`\\b${keyword}\\b`, 'i').test(content)
-      ).length;
+      let score = 0;
 
-      if (matchCount > 0) {
-        // Add a small random factor to prevent ties and create more diversity
-        const randomFactor = Math.random() * 0.3;
-        themeCounts.set(theme as ThemeCategory, matchCount * (1 + randomFactor));
+      info.keywords.forEach(keyword => {
+        if (new RegExp(`\\b${keyword}\\b`, 'i').test(content)) {
+          score += 1;
+
+          if (content.slice(0, 300).includes(keyword)) score += 0.5;
+          const matches = content.match(new RegExp(`\\b${keyword}\\b`, 'gi'));
+          if (matches && matches.length > 1) score += 0.3;
+
+          switch (theme) {
+            case 'POSSESSION':
+              if (content.includes('doll') && (content.includes('spirit') || content.includes('demon'))) score += 4;
+              break;
+            case 'TECHNOLOGICAL':
+              if (content.includes('machine') && (content.includes('consciousness') || content.includes('circuits'))) score += 4;
+              break;
+            case 'CANNIBALISM':
+              if (content.includes('cookbook') || content.includes('recipe')) score += 2;
+              break;
+            case 'PARASITE':
+              if (content.includes('nostalgia') || content.includes('worm')) score += 2;
+              break;
+            case 'PSYCHOPATH':
+              if (content.includes('kill') || content.includes('blood')) score += 2;
+              break;
+            case 'LOVECRAFTIAN':
+              if (content.includes('deity') || content.includes('ancient')) score += 2;
+              break;
+          }
+        }
+      });
+
+      if (score > 0) {
+        themeCounts.set(theme as ThemeCategory, score);
       }
     });
 
-    // Select the theme with the highest score
     let dominantTheme: ThemeCategory | null = null;
-    let maxCount = 0;
+    let maxScore = 0;
 
-    themeCounts.forEach((count, theme) => {
-      if (count > maxCount) {
-        maxCount = count;
+    themeCounts.forEach((score, theme) => {
+      if (score > maxScore) {
+        maxScore = score;
         dominantTheme = theme;
       }
     });
 
-    // If no clear theme is detected, assign a random theme
-    if (!dominantTheme) {
-      const themes = Object.keys(THEME_CATEGORIES) as ThemeCategory[];
-      dominantTheme = themes[Math.floor(Math.random() * themes.length)];
+    if (!dominantTheme || maxScore < 2) {
+      if (content.includes('mirror')) return ['SUPERNATURAL'];
+      if (content.includes('therapy')) return ['PSYCHOLOGICAL'];
+      if (content.includes('machine')) return ['TECHNOLOGICAL'];
+      return ['PSYCHOLOGICAL'];
     }
 
     return [dominantTheme];
@@ -228,14 +375,13 @@ export const calculateIntensity = (content: string): number => {
   if (!content) return 3;
 
   const emotionalPatterns = {
-    extreme: /terrified|horrified|petrified|screaming|agony/gi,
-    strong: /scared|frightened|panic|terror|dread/gi,
-    moderate: /worried|nervous|anxious|uneasy|fear/gi
+    extreme: /terrified|horrified|petrified|screaming|agony|blood|gore/gi,
+    strong: /scared|frightened|panic|terror|dread|possessed|demon/gi,
+    moderate: /worried|nervous|anxious|uneasy|fear|strange|weird/gi
   };
 
-  let score = 3; // Start with base score
+  let score = 3; 
 
-  // Calculate score based on emotional intensity
   Object.entries(emotionalPatterns).forEach(([level, pattern]) => {
     const matches = content.match(pattern);
     if (matches) {
@@ -247,7 +393,6 @@ export const calculateIntensity = (content: string): number => {
     }
   });
 
-  // Additional factors that might increase intensity
   const shortSentences = content.split(/[.!?]+/).filter(s =>
     s.trim().split(/\s+/).length < 10
   ).length;
@@ -257,7 +402,10 @@ export const calculateIntensity = (content: string): number => {
   if (/[A-Z]{3,}/.test(content)) score += 0.5;
   if (content.match(/!{2,}/g)) score += 0.5;
 
-  // Ensure score is between 3 and 5
+  if (content.includes('possessed') || content.includes('demon')) score += 0.5;
+  if (content.includes('cookbook') || content.includes('recipe')) score += 0.3;
+  if (content.includes('mirror') || content.includes('reflection')) score += 0.2;
+
   return Math.max(3, Math.min(5, Math.ceil(score)));
 };
 

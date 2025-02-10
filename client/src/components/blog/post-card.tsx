@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Cpu, Telescope, Trees, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
+import { Virus, Cpu, Telescope, Trees, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Pill, Axe } from "lucide-react";
 import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -41,7 +41,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
   const intensity = calculateIntensity(post.content);
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
-  const IconComponent = themeInfo?.icon === 'Brain' ? Brain :
+  const IconComponent = themeInfo?.icon === 'Virus' ? Virus :
                       themeInfo?.icon === 'Cpu' ? Cpu :
                       themeInfo?.icon === 'Telescope' ? Telescope :
                       themeInfo?.icon === 'Trees' ? Trees :
@@ -56,6 +56,8 @@ export default function PostCard({ post, onClick }: PostCardProps) {
                       themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
                       themeInfo?.icon === 'Building' ? Building :
                       themeInfo?.icon === 'Clock' ? Clock :
+                      themeInfo?.icon === 'Pill' ? Pill :
+                      themeInfo?.icon === 'Axe' ? Axe :
                       Moon;
 
   return (
