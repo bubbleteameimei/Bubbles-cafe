@@ -100,22 +100,22 @@ export default function Navigation() {
         className="relative h-48 sm:h-56 md:h-64 flex items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: 'url("/IMG_4484.jpeg")',
-          backgroundBlendMode: 'overlay',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)'
+          backgroundBlendMode: 'multiply',
+          backgroundColor: 'rgba(20, 20, 20, 0.85)'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/50 to-background"/>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background"/>
         <div className="text-center relative z-10 px-4">
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary/90 hover:text-primary transition-colors duration-300 tracking-wider">
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider">
             Bubble's Cafe
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground italic font-serif">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground/90 italic font-serif">
             What once was will never be again
           </p>
         </div>
       </div>
 
-      <nav className="sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b border-border/50">
+      <nav className="sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b border-primary/10">
         <div className="container mx-auto h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4">
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>

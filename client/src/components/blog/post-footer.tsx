@@ -7,6 +7,7 @@ import { memo } from "react";
 interface PostFooterProps {
   currentIndex: number;
   totalPosts: number;
+  postId: number; // Add postId to props
   onPrevious: () => void;
   onNext: () => void;
   onRandom: () => void;
@@ -23,6 +24,7 @@ interface PostFooterProps {
 export const PostFooter = memo(function PostFooter({
   currentIndex,
   totalPosts,
+  postId, // Add postId to destructuring
   onPrevious,
   onNext,
   onRandom,
@@ -71,7 +73,7 @@ export const PostFooter = memo(function PostFooter({
       {/* Like/Dislike and Social buttons */}
       <div className="flex flex-col sm:flex-row items-center gap-4 backdrop-blur-sm bg-background/50 p-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
         <div className="w-full sm:w-1/2">
-          <LikeDislike />
+          <LikeDislike postId={postId} /> {/* Pass postId to LikeDislike component */}
         </div>
         <div className="w-full sm:w-1/2 flex justify-end">
           <SocialButtons links={socialLinks} />
