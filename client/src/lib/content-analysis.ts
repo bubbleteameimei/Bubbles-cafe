@@ -234,16 +234,11 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       'therapist': 'PSYCHOLOGICAL',
       'bleach': 'SUICIDAL',
       'machine': 'TECHNOLOGICAL',
-      'bug': 'PARASITE',
       'drive': 'PSYCHOPATH',
       'mirror': 'SUPERNATURAL',
       'car': 'PSYCHOLOGICAL',
       'doll': 'PSYCHOPATH',
       'cookbook': 'CANNIBALISM',
-      'skin': 'BODY_HORROR',
-      'tunnel': 'STALKING',
-      'chase': 'STALKING',
-      'descent': 'DEATH',
       'rain': 'PSYCHOLOGICAL'
     };
 
@@ -258,16 +253,17 @@ export const detectThemes = (content: string): ThemeCategory[] => {
     if (content.toLowerCase().includes('therapist')) return ['PSYCHOLOGICAL'];
     if (content.toLowerCase().includes('bleach')) return ['SUICIDAL'];
     if (content.toLowerCase().includes('machine')) return ['TECHNOLOGICAL'];
-    if (content.toLowerCase().includes('bug')) return ['PARASITE'];
     if (content.toLowerCase().includes('drive')) return ['PSYCHOPATH'];
     if (content.toLowerCase().includes('mirror')) return ['SUPERNATURAL'];
     if (content.toLowerCase().includes('car')) return ['PSYCHOLOGICAL'];
     if (content.toLowerCase().includes('doll')) return ['PSYCHOPATH'];
     if (content.toLowerCase().includes('cookbook')) return ['CANNIBALISM'];
-    if (content.toLowerCase().includes('skin')) return ['BODY_HORROR'];
-    if (content.toLowerCase().includes('tunnel')) return ['STALKING'];
-    if (content.toLowerCase().includes('chase')) return ['STALKING'];
-    if (content.toLowerCase().includes('descent')) return ['DEATH'];
+    // Theme detection for these stories removed as requested
+    if (content.toLowerCase().includes('bug')) return [];
+    if (content.toLowerCase().includes('skin')) return [];
+    if (content.toLowerCase().includes('tunnel')) return [];
+    if (content.toLowerCase().includes('chase')) return [];
+    if (content.toLowerCase().includes('descent')) return [];
     if (content.toLowerCase().includes('rain')) return ['PSYCHOLOGICAL'];
 
     const themeCounts = new Map<ThemeCategory, number>();
