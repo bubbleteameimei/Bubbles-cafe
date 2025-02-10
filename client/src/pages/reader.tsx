@@ -9,8 +9,7 @@ import {
   ListFilter,
   Brain,
   Cpu,
-  Telescope,
-  Trees,
+  Bug as Worm,
   Dna,
   Footprints,
   Ghost,
@@ -24,7 +23,9 @@ import {
   Clock,
   Moon,
   Timer,
-  Gauge
+  Gauge,
+  Pill,
+  Axe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,8 +43,7 @@ const getIconComponent = (iconName: string) => {
   switch (iconName) {
     case 'Brain': return Brain;
     case 'Cpu': return Cpu;
-    case 'Telescope': return Telescope;
-    case 'Trees': return Trees;
+    case 'Worm': return Worm;
     case 'Dna': return Dna;
     case 'Footprints': return Footprints;
     case 'Ghost': return Ghost;
@@ -55,6 +55,8 @@ const getIconComponent = (iconName: string) => {
     case 'AlertTriangle': return AlertTriangle;
     case 'Building': return Building;
     case 'Clock': return Clock;
+    case 'Pill': return Pill;
+    case 'Axe': return Axe;
     default: return Moon;
   }
 };

@@ -1,5 +1,5 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Virus, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Cross, Utensils, Footprints, CloudRain, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Cross, Footprints, CloudRain, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Knife } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
@@ -12,7 +12,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "parasite",
-    icon: 'Virus',
+    icon: 'Worm',
     description: 'Parasitic and invasive horror'
   },
   LOVECRAFTIAN: {
@@ -85,7 +85,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     keywords: [
       'ghost', 'spirit', 'haunted', 'ethereal', 'paranormal', 'entity',
       'apparition', 'mirror', 'reflection', 'portal', 'otherworldly',
-      'presence', 'manifestation'
+      'presence', 'manifestation', 'swap', 'change'
     ],
     atmosphericTrack: '13-angels.m4a',
     badgeVariant: "supernatural",
@@ -111,7 +111,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     atmosphericTrack: 'whispers-wind.m4a',
     badgeVariant: "cannibalism",
-    icon: 'Utensils',
+    icon: 'Knife',
     description: 'Cannibalistic horror'
   },
   STALKING: {
@@ -228,6 +228,18 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
 
 export const detectThemes = (content: string): ThemeCategory[] => {
   try {
+    if (content.toLowerCase().includes('rain') && 
+        content.match(/storm|thunder|dark|flood|drown|weather/i)) {
+      return ['DEATH'];  
+    }
+    if (content.toLowerCase().includes('chase') && 
+        content.match(/follow|pursuit|hunt|escape|run|footsteps/i)) {
+      return ['STALKING'];
+    }
+    if (content.toLowerCase().includes('descent') && 
+        content.match(/death|reaper|fall|eternal|spirit|darkness/i)) {
+      return ['DEATH'];
+    }
     if (content.toLowerCase().includes('nostalgia') && 
         content.match(/worm|maggot|brain|crawl|parasite/i)) {
       return ['PARASITE'];
@@ -257,14 +269,6 @@ export const detectThemes = (content: string): ThemeCategory[] => {
     if (content.toLowerCase().includes('mirror') && 
         content.match(/reflection|ghost|spirit|swap|change|entity/i)) {
       return ['SUPERNATURAL'];
-    }
-    if (content.toLowerCase().includes('chase') && 
-        content.match(/follow|pursuit|hunt|escape|run/i)) {
-      return ['STALKING'];
-    }
-    if (content.toLowerCase().includes('descent') && 
-        content.match(/death|reaper|fall|eternal|spirit/i)) {
-      return ['DEATH'];
     }
     if (content.toLowerCase().includes('doll') && 
         (content.match(/possess|demon|spirit|evil|puppet/i) ||
@@ -304,7 +308,6 @@ export const detectThemes = (content: string): ThemeCategory[] => {
         content.match(/kill|blood|knife|murder|pleasure/i)) {
       return ['PSYCHOPATH'];
     }
-
     const themeCounts = new Map<ThemeCategory, number>();
     const lowerContent = content.toLowerCase();
 
@@ -314,31 +317,9 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       info.keywords.forEach(keyword => {
         if (new RegExp(`\\b${keyword}\\b`, 'i').test(content)) {
           score += 1;
-
           if (content.slice(0, 300).includes(keyword)) score += 0.5;
           const matches = content.match(new RegExp(`\\b${keyword}\\b`, 'gi'));
           if (matches && matches.length > 1) score += 0.3;
-
-          switch (theme) {
-            case 'POSSESSION':
-              if (content.includes('doll') && (content.includes('spirit') || content.includes('demon'))) score += 4;
-              break;
-            case 'TECHNOLOGICAL':
-              if (content.includes('machine') && (content.includes('consciousness') || content.includes('circuits'))) score += 4;
-              break;
-            case 'CANNIBALISM':
-              if (content.includes('cookbook') || content.includes('recipe')) score += 2;
-              break;
-            case 'PARASITE':
-              if (content.includes('nostalgia') || content.includes('worm')) score += 2;
-              break;
-            case 'PSYCHOPATH':
-              if (content.includes('kill') || content.includes('blood')) score += 2;
-              break;
-            case 'LOVECRAFTIAN':
-              if (content.includes('deity') || content.includes('ancient')) score += 2;
-              break;
-          }
         }
       });
 

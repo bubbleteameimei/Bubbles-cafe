@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Virus, Cpu, Telescope, Trees, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Pill, Axe } from "lucide-react";
+import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Axe, Knife } from "lucide-react";
 import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -41,23 +41,24 @@ export default function PostCard({ post, onClick }: PostCardProps) {
   const intensity = calculateIntensity(post.content);
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
-  const IconComponent = themeInfo?.icon === 'Virus' ? Virus :
+
+  const IconComponent = themeInfo?.icon === 'Worm' ? Worm :
+                      themeInfo?.icon === 'Skull' ? Skull :
+                      themeInfo?.icon === 'Brain' ? Brain :
+                      themeInfo?.icon === 'Pill' ? Pill :
                       themeInfo?.icon === 'Cpu' ? Cpu :
-                      themeInfo?.icon === 'Telescope' ? Telescope :
-                      themeInfo?.icon === 'Trees' ? Trees :
                       themeInfo?.icon === 'Dna' ? Dna :
-                      themeInfo?.icon === 'Footprints' ? Footprints :
+                      themeInfo?.icon === 'Axe' ? Axe :
                       themeInfo?.icon === 'Ghost' ? Ghost :
+                      themeInfo?.icon === 'Knife' ? Knife :
+                      themeInfo?.icon === 'Footprints' ? Footprints :
                       themeInfo?.icon === 'Castle' ? Castle :
                       themeInfo?.icon === 'Radiation' ? Radiation :
-                      themeInfo?.icon === 'Skull' ? Skull :
                       themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
                       themeInfo?.icon === 'Anchor' ? Anchor :
                       themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
                       themeInfo?.icon === 'Building' ? Building :
                       themeInfo?.icon === 'Clock' ? Clock :
-                      themeInfo?.icon === 'Pill' ? Pill :
-                      themeInfo?.icon === 'Axe' ? Axe :
                       Moon;
 
   return (
