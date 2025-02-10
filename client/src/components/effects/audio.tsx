@@ -40,6 +40,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         player.pauseVideo();
       } else {
         player.playVideo();
+        player.setVolume(volume);
       }
       setIsPlaying(!isPlaying);
     } catch (error) {
@@ -50,7 +51,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         variant: "destructive",
       });
     }
-  }, [audioReady, isPlaying, player, toast]);
+  }, [audioReady, isPlaying, player, volume, toast]);
+
+  const onStateChange = (event: any) => {
+    switch (event.data) {
+      case YouTube.PlayerState.ENDED:
+        event.target.playVideo();
+        break;
+      case YouTube.PlayerState.PLAYING:
+        setIsPlaying(true);
+        break;
+      case YouTube.PlayerState.PAUSED:
+        setIsPlaying(false);
+        break;
+    }
+  };
 
   const onStateChange = (event: any) => {
     if (event.data === YouTube.PlayerState.ENDED) {
