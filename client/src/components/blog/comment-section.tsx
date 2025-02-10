@@ -1,3 +1,4 @@
+
 import { DiscussionEmbed } from 'disqus-react';
 
 interface CommentSectionProps {
@@ -7,9 +8,10 @@ interface CommentSectionProps {
 
 export default function CommentSection({ postId, title }: CommentSectionProps) {
   const disqusConfig = {
-    url: window.location.href,
+    url: `${window.location.origin}/reader?story=${postId}`,
     identifier: `story-${postId}`,
-    title: title || `Story ${postId}`
+    title: title || `Story ${postId}`,
+    language: 'en'
   };
 
   return (
