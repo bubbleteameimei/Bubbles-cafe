@@ -99,7 +99,7 @@ export default function Navigation() {
       <div className="relative h-32 sm:h-40 md:h-48 flex items-center justify-center bg-gradient-to-b from-background/50 to-background">
         <div className="text-center relative z-10 px-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 font-serif text-primary/90 hover:text-primary transition-colors duration-300">Bubble's Cafe</h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground italic">Where Reality Meets the Surreal</p>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground italic">What once was will never be again</p>
         </div>
       </div>
 
