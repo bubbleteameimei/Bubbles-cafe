@@ -255,6 +255,13 @@ export default function Reader() {
                   title={currentPost.title}
                 />
               </div>
+
+              <div className="mt-16">
+                <CommentSection
+                  postId={currentPost.id}
+                  title={currentPost.title}
+                />
+              </div>
             </article>
           </motion.div>
         </AnimatePresence>
