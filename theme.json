@@ -4,27 +4,27 @@
   "appearance": "dark",
   "radius": 0.5,
   "background": {
-    "dark": "hsl(0, 0%, 5%)",
+    "dark": "hsl(0, 0%, 3%)",
     "light": "hsl(0, 0%, 100%)"
   },
   "foreground": {
-    "dark": "hsl(0, 0%, 100%)",
+    "dark": "hsl(0, 0%, 98%)",
     "light": "hsl(0, 0%, 0%)"
   },
   "muted": {
-    "dark": "hsl(0, 0%, 10%)",
+    "dark": "hsl(0, 0%, 8%)",
     "light": "hsl(0, 0%, 98%)"
   },
   "accent": {
-    "dark": "hsl(0, 0%, 15%)",
+    "dark": "hsl(0, 0%, 12%)",
     "light": "hsl(0, 0%, 96%)"
   },
   "card": {
-    "dark": "hsl(0, 0%, 7%)",
+    "dark": "hsl(0, 0%, 5%)",
     "light": "hsl(0, 0%, 100%)"
   },
   "border": {
-    "dark": "hsl(0, 0%, 15%)",
+    "dark": "hsl(0, 0%, 12%)",
     "light": "hsl(0, 0%, 92%)"
   },
   "destructive": {

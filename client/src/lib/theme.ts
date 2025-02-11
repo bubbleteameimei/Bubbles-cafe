@@ -3,13 +3,13 @@ export const theme = {
     darkMode: {
       primaryColors: {
         base: '#000000',
-        subtle: '#0A0A0A',
-        accent: '#1A1A1A'
+        subtle: '#080808',
+        accent: '#141414'
       },
       accentColors: {
         primary: '#FFFFFF',
-        secondary: '#E0E0E0',
-        muted: '#A0A0A0'
+        secondary: '#E6E6E6',
+        muted: '#A8A8A8'
       }
     },
     lightMode: {
@@ -31,5 +31,10 @@ export const theme = {
       typewriterFont: '"Courier Prime", monospace',
       handwrittenScriptFont: '"Dancing Script", "Great Vibes", cursive'
     }
+  },
+  transitions: {
+    standard: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    smooth: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    spring: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
   }
 };

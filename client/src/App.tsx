@@ -54,9 +54,9 @@ function App() {
     };
   }, []);
 
-  // Scroll to top on route change with smooth behavior
+  // Scroll to top on route change
   React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location]);
 
   if (isLoading) {
@@ -70,8 +70,8 @@ function App() {
           <div className="relative min-h-screen bg-background text-foreground antialiased">
             <Navigation />
 
-            {/* Main Content - Add padding-top to account for fixed header */}
-            <main className="pt-[112px] transition-all duration-200">
+            {/* Main Content */}
+            <main className="pt-14">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>

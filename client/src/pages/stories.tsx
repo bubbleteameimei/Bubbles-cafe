@@ -41,7 +41,6 @@ export default function Stories() {
     initialPageParam: 1
   });
 
-  // Load more posts when the load more button comes into view
   React.useEffect(() => {
     if (isInView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -59,36 +58,49 @@ export default function Stories() {
   const posts = data.pages.flatMap(page => page.posts);
 
   return (
-    <div className="relative min-h-screen">
-      <Mist />
-      <div className="container mx-auto px-4 py-12">
-        <motion.div 
-          className="max-w-4xl mx-auto"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl font-serif font-bold">Stories</h1>
+    <div className="relative min-h-screen bg-background">
+      <Mist className="opacity-40" />
+      <div className="container mx-auto px-4 py-12 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <motion.div 
+            className="flex items-center justify-between mb-12"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Stories</h1>
             <Button 
               variant="ghost" 
-              onClick={() => setLocation('/')}
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                setLocation('/');
+              }}
+              className="text-muted-foreground hover:text-primary"
             >
               Back to Home
             </Button>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-4">
+          <motion.div 
+            className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             {posts.map((post, index) => (
               <motion.div
                 key={post.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group relative"
               >
                 <Card 
-                  className="cursor-pointer hover:bg-primary/5 transition-colors"
-                  onClick={() => setLocation(`/story/${post.slug}`)}
+                  className="cursor-pointer hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    setLocation(`/story/${post.slug}`);
+                  }}
                 >
                   <CardContent className="py-4 flex justify-between items-center">
                     <div>
@@ -106,12 +118,12 @@ export default function Stories() {
                 </Card>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <div ref={loadMoreRef} className="mt-8 text-center">
             {isFetchingNextPage && <LoadingScreen />}
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

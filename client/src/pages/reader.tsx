@@ -2,28 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Shuffle,
-  ListFilter,
-  Brain,
-  Cpu,
-  Bug as Worm,
-  Dna,
-  Footprints,
-  Ghost,
-  Castle,
-  Radiation,
-  Skull,
-  UserMinus2,
-  Anchor,
-  AlertTriangle,
-  Building,
-  Clock,
-  Moon,
-  Timer
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -33,36 +12,11 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
-import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
-}
-
-const getIconComponent = (iconName: string) => {
-  switch (iconName) {
-    case 'Brain': return Brain;
-    case 'Cpu': return Cpu;
-    case 'Worm': return Worm;
-    case 'Dna': return Dna;
-    case 'Footprints': return Footprints;
-    case 'Ghost': return Ghost;
-    case 'Castle': return Castle;
-    case 'Radiation': return Radiation;
-    case 'Skull': return Skull;
-    case 'UserMinus2': return UserMinus2;
-    case 'Anchor': return Anchor;
-    case 'AlertTriangle': return AlertTriangle;
-    case 'Building': return Building;
-    case 'Clock': return Clock;
-    default: return Moon;
-  }
-};
-
-interface ContentAnalysis {
-  themes: ThemeCategory[];
 }
 
 export default function Reader() {
@@ -73,29 +27,17 @@ export default function Reader() {
 
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
   const [, setLocation] = useLocation();
-  const [contentAnalysis, setContentAnalysis] = useState<ContentAnalysis>({
-    themes: []
-  });
 
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/posts?page=1&limit=16');
-        if (!response.ok) throw new Error('Failed to fetch posts');
-        const data = await response.json();
-        console.log('Fetched posts data:', data);
-        if (!data.posts || !Array.isArray(data.posts)) {
-          throw new Error('Invalid posts data format');
-        }
-        return {
-          posts: data.posts,
-          hasMore: !!data.hasMore
-        };
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        throw error;
+      const response = await fetch('/api/posts?page=1&limit=16');
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      const data = await response.json();
+      if (!data.posts || !Array.isArray(data.posts)) {
+        throw new Error('Invalid posts data format');
       }
+      return data;
     },
     staleTime: 5 * 60 * 1000,
     retry: 3
@@ -144,26 +86,13 @@ export default function Reader() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [postsData?.posts]);
 
-  useEffect(() => {
-    const currentPost = postsData?.posts?.[currentIndex];
-    if (currentPost?.content) {
-      const themes = detectThemes(currentPost.content);
-      setContentAnalysis({ themes });
-    }
-  }, [currentIndex, postsData?.posts]);
-
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error || !postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) {
     console.error('Error loading stories:', error);
-    return (
-      <div className="text-center p-8">
-        <h2 className="text-xl font-medium mb-4">No stories available</h2>
-        <p className="text-muted-foreground">Please try again later.</p>
-      </div>
-    );
+    return <div className="text-center p-8">No stories available.</div>;
   }
 
   const posts = postsData.posts;
@@ -174,26 +103,6 @@ export default function Reader() {
   }
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
-  const storyThemeMap: Record<string, ThemeCategory> = {
-    'bug': 'PARASITE',
-    'skin': 'BODY_HORROR',
-    'tunnel': 'STALKING',
-    'chase': 'STALKING',
-    'descent': 'DEATH'
-  };
-
-  const title = currentPost.title.toLowerCase();
-  let theme = storyThemeMap[title] || contentAnalysis.themes[0];
-  const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
-  const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
-  const IconComponent = themeInfo ? getIconComponent(themeInfo.icon) : Moon;
-
-  const getReadingTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const words = content.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
-  };
 
   return (
     <div className="relative min-h-screen">
@@ -202,45 +111,20 @@ export default function Reader() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
             className="mb-8"
           >
             <article>
               <div className="flex items-center justify-between mb-4">
                 <h1 className="story-title text-4xl font-bold font-serif">{currentPost.title}</h1>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setLocation('/index')}
-                  className="hover:bg-primary/10"
-                >
-                  <ListFilter className="h-4 w-4" />
-                </Button>
               </div>
 
-              <div className="story-meta flex flex-wrap items-center gap-2 mb-4 text-sm text-muted-foreground">
+              <div className="story-meta flex items-center gap-2 mb-4 text-sm text-muted-foreground font-mono">
                 <time>{formattedDate}</time>
-                <span className="text-primary/50">•</span>
-                <span className="flex items-center gap-1">
-                  <Timer className="h-4 w-4" />
-                  {getReadingTime(currentPost.content)}
-                </span>
               </div>
-
-              {themeInfo && (
-                <div className="mb-6">
-                  <Badge
-                    variant="default"
-                    className="text-sm font-medium tracking-wide px-3 py-1 flex items-center gap-1.5 w-fit"
-                  >
-                    <IconComponent className="h-3.5 w-3.5" />
-                    {displayName}
-                  </Badge>
-                </div>
-              )}
 
               <div
                 className="story-content mb-8 prose dark:prose-invert max-w-none"

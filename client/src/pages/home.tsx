@@ -53,17 +53,14 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background/95">
+    <div className="relative min-h-screen bg-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="min-h-[80vh] flex flex-col items-center justify-center text-center max-w-3xl mx-auto"
+          className="min-h-[90vh] flex flex-col items-center justify-center text-center max-w-3xl mx-auto"
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 font-serif">
-            Welcome to Bubble's Cafe
-          </h1>
           <p className="text-lg sm:text-xl text-muted-foreground mb-12 max-w-2xl leading-relaxed">
             Each story here is a portal to the unexpected,
             the unsettling, and the unexplained.
@@ -94,7 +91,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
-              className="mt-16 text-center"
+              className="mt-24 text-center"
             >
               <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide font-mono">Latest Story</p>
               <h2 
