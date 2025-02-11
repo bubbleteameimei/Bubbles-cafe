@@ -7,15 +7,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 export default function Sidebar() {
   const [, setLocation] = useLocation();
 
-  const { data: posts, isLoading: isLoadingPosts } = useQuery<Post[]>({
-    queryKey: ["/api/posts"]
+  const { data: postsData, isLoading: isLoadingPosts } = useQuery<PostsResponse>({
+    queryKey: ["/api/posts"],
+    queryFn: async () => {
+      const response = await fetch('/api/posts?page=1&limit=5');
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
-    queryKey: ["/api/posts/comments/recent"]
+    queryKey: ["/api/comments/recent"]
   });
 
   const containerVariants = {
@@ -46,26 +57,11 @@ export default function Sidebar() {
             ))}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-7 w-40" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-4 w-full" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
     );
   }
+
+  const posts = postsData?.posts || [];
 
   return (
     <motion.div 
@@ -80,17 +76,17 @@ export default function Sidebar() {
         </CardHeader>
         <CardContent>
           <motion.ul className="space-y-3" variants={containerVariants}>
-            {posts?.slice(0, 5).map((post) => (
+            {posts.map((post) => (
               <motion.li key={post.id} variants={itemVariants}>
                 <button 
-                  onClick={() => setLocation(`/stories/${post.slug}`)}
+                  onClick={() => setLocation(`/story/${post.slug}`)}
                   className="text-muted-foreground hover:text-primary transition-colors text-left w-full line-clamp-2 hover:underline"
                 >
                   {post.title}
                 </button>
               </motion.li>
             ))}
-            {!posts?.length && (
+            {!posts.length && (
               <motion.li variants={itemVariants} className="text-muted-foreground">
                 No stories available
               </motion.li>
@@ -98,7 +94,6 @@ export default function Sidebar() {
           </motion.ul>
         </CardContent>
       </Card>
-
       <Card className="transition-colors hover:bg-accent/5">
         <CardHeader>
           <CardTitle>Recent Comments</CardTitle>
@@ -133,7 +128,6 @@ export default function Sidebar() {
           </motion.ul>
         </CardContent>
       </Card>
-
       <Card className="transition-colors hover:bg-accent/5">
         <CardHeader>
           <CardTitle>Follow Me</CardTitle>

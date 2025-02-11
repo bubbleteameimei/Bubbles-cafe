@@ -1,28 +1,62 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Mist from "@/components/effects/mist";
+import { useInView } from "framer-motion";
+import { useRef } from "react";
+import React from 'react';
+
+const POSTS_PER_PAGE = 10;
+
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
 
 export default function Stories() {
+  const loadMoreRef = useRef(null);
+  const isInView = useInView(loadMoreRef);
   const [, setLocation] = useLocation();
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+
+  const { 
+    data, 
+    isLoading, 
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage 
+  } = useInfiniteQuery<PostsResponse>({
     queryKey: ["/api/posts"],
-    retry: 3,
-    staleTime: 5 * 60 * 1000
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}`);
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
+    getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length + 1 : undefined,
+    initialPageParam: 1
   });
+
+  // Load more posts when the load more button comes into view
+  React.useEffect(() => {
+    if (isInView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [isInView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  if (error || !posts || posts.length === 0) {
+  if (error || !data) {
     return <div className="text-center p-8">Stories not found or error loading stories.</div>;
   }
+
+  const posts = data.pages.flatMap(page => page.posts);
 
   return (
     <div className="relative min-h-screen">
@@ -54,17 +88,28 @@ export default function Stories() {
               >
                 <Card 
                   className="cursor-pointer hover:bg-primary/5 transition-colors"
-                  onClick={() => setLocation(`/reader?story=${post.id}`)}
+                  onClick={() => setLocation(`/story/${post.slug}`)}
                 >
                   <CardContent className="py-4 flex justify-between items-center">
-                    <h2 className="text-lg font-medium">{post.title}</h2>
-                    <time className="text-sm text-muted-foreground font-mono">
+                    <div>
+                      <h2 className="text-lg font-medium">{post.title}</h2>
+                      {post.excerpt && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {post.excerpt}
+                        </p>
+                      )}
+                    </div>
+                    <time className="text-sm text-muted-foreground font-mono whitespace-nowrap ml-4">
                       {format(new Date(post.createdAt), 'MMM d, yyyy')}
                     </time>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
+          </div>
+
+          <div ref={loadMoreRef} className="mt-8 text-center">
+            {isFetchingNextPage && <LoadingScreen />}
           </div>
         </motion.div>
       </div>

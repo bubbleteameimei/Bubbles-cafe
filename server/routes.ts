@@ -134,11 +134,20 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Public routes
-  app.get("/api/posts", async (_req, res) => {
+  app.get("/api/posts", async (req, res) => {
     try {
-      const posts = await storage.getPosts();
-      const uniquePosts = Array.from(new Map(posts.map(post => [post.id, post])).values());
-      res.json(uniquePosts);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+        return res.status(400).json({ 
+          message: "Invalid pagination parameters. Page and limit must be positive numbers." 
+        });
+      }
+
+      const { posts, hasMore } = await storage.getPosts(page, limit);
+      res.json({ posts, hasMore });
     } catch (error) {
       console.error("Error fetching posts:", error);
       res.status(500).json({ message: "Failed to fetch posts" });

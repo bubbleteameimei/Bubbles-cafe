@@ -28,7 +28,7 @@ export interface IStorage {
   updateSessionAccess(token: string): Promise<void>;
 
   // Posts
-  getPosts(): Promise<Post[]>;
+  getPosts(page?: number, limit?: number): Promise<{ posts: Post[], hasMore: boolean }>;
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   deletePost(id: number): Promise<void>;
@@ -139,18 +139,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Posts operations
-  async getPosts(): Promise<Post[]> {
+  async getPosts(page: number = 1, limit: number = 10): Promise<{ posts: Post[], hasMore: boolean }> {
     try {
+      const offset = (page - 1) * limit;
+
+      // Get posts for current page
       const posts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
         .orderBy(desc(postsTable.createdAt))
-        .limit(20);
+        .limit(limit + 1) // Fetch one extra to check if there are more
+        .offset(offset);
 
-      return posts.map(post => ({
-        ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-      }));
+      // Check if there are more posts
+      const hasMore = posts.length > limit;
+      const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
+
+      return {
+        posts: paginatedPosts.map(post => ({
+          ...post,
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        })),
+        hasMore
+      };
     } catch (error) {
       console.error("Error in getPosts:", error);
       if (error instanceof Error) {

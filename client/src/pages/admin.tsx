@@ -12,6 +12,11 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import PostEditor from "@/components/admin/post-editor";
 import { format } from "date-fns";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 export default function AdminPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [showEditor, setShowEditor] = useState(false);
@@ -52,8 +57,13 @@ export default function AdminPage() {
     checkAuth();
   }, [setLocation, toast]);
 
-  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
+  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
+    queryFn: async () => {
+      const response = await fetch('/api/posts?page=1&limit=50'); // Load more posts for admin view
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: (failureCount, error) => {
@@ -64,8 +74,10 @@ export default function AdminPage() {
     },
   });
 
+  const posts = postsData?.posts || [];
+
   const { data: comments = [] } = useQuery<Comment[]>({
-    queryKey: ["/api/comments"],
+    queryKey: ["/api/comments/recent"],
     staleTime: 5 * 60 * 1000
   });
 
@@ -103,7 +115,7 @@ export default function AdminPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/recent"] });
       toast({
         title: "Success",
         description: "Comment moderated successfully"
@@ -126,7 +138,7 @@ export default function AdminPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/recent"] });
       toast({
         title: "Success",
         description: "Comment deleted successfully"
@@ -255,14 +267,14 @@ export default function AdminPage() {
             <CardContent>
               <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                 <div className="space-y-4">
-                  {posts?.map((post: Post) => (
+                  {posts.map((post: Post) => (
                     <div
                       key={post.id}
                       className={`p-4 border rounded-lg transition-colors ${
                         editingPost?.id === post.id
                           ? "bg-primary/5 border-primary"
                           : "hover:bg-accent/5"
-                        }`}
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
