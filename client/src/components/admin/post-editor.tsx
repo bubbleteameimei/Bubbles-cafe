@@ -19,11 +19,30 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import * as z from 'zod';
 
 interface PostEditorProps {
   post?: Post | null;
   onClose?: () => void;
 }
+
+type ThemeCategory =
+  | "PSYCHOLOGICAL"
+  | "TECHNOLOGICAL"
+  | "COSMIC"
+  | "FOLK_HORROR"
+  | "BODY_HORROR"
+  | "SURVIVAL"
+  | "SUPERNATURAL"
+  | "GOTHIC"
+  | "APOCALYPTIC"
+  | "LOVECRAFTIAN"
+  | "ISOLATION"
+  | "AQUATIC"
+  | "VIRAL"
+  | "URBAN_LEGEND"
+  | "TIME_HORROR"
+  | "DREAMSCAPE";
 
 export default function PostEditor({ post, onClose }: PostEditorProps) {
   const { toast } = useToast();
@@ -32,7 +51,17 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const form = useForm<InsertPost>({
-    resolver: zodResolver(insertPostSchema),
+    resolver: zodResolver(insertPostSchema.extend({
+      title: z.string().min(1, "Title is required"),
+      content: z.string().min(1, "Content is required"),
+      excerpt: z.string().min(1, "Excerpt is required"),
+      themeCategory: z.enum([
+        "PSYCHOLOGICAL", "TECHNOLOGICAL", "COSMIC", "FOLK_HORROR",
+        "BODY_HORROR", "SURVIVAL", "SUPERNATURAL", "GOTHIC",
+        "APOCALYPTIC", "LOVECRAFTIAN", "ISOLATION", "AQUATIC",
+        "VIRAL", "URBAN_LEGEND", "TIME_HORROR", "DREAMSCAPE"
+      ])
+    })),
     defaultValues: {
       title: post?.title || "",
       content: post?.content || "",
@@ -40,50 +69,71 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       isSecret: post?.isSecret || false,
       slug: post?.slug || "",
       authorId: post?.authorId || 1,
-      themeCategory: post?.themeCategory || "PSYCHOLOGICAL",
+      themeCategory: (post?.themeCategory || "PSYCHOLOGICAL") as ThemeCategory,
       triggerWarnings: post?.triggerWarnings || [],
       matureContent: post?.matureContent || false
     }
   });
 
-  // Optimistic update helper with proper type handling
   const getOptimisticPost = (formData: InsertPost): Post => {
     const content = formData.content;
     const readingTime = Math.ceil(content.split(/\s+/).length / 200);
-    const slug = formData.slug || formData.title.toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
 
     return {
-      id: post?.id || Date.now(),
+      id: post?.id || Math.floor(Math.random() * -1000),
       title: formData.title,
       content: formData.content,
       excerpt: formData.excerpt,
       isSecret: formData.isSecret,
-      slug,
+      slug: formData.slug || formData.title.toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-'),
       createdAt: post?.createdAt ? new Date(post.createdAt) : new Date(),
       authorId: formData.authorId,
       likesCount: post?.likesCount || 0,
       dislikesCount: post?.dislikesCount || 0,
       themeCategory: formData.themeCategory,
-      triggerWarnings: formData.triggerWarnings,
-      matureContent: formData.matureContent,
+      triggerWarnings: formData.triggerWarnings || [],
+      matureContent: formData.matureContent || false,
       readingTimeMinutes: readingTime
     };
   };
 
   const mutation = useMutation({
-    mutationFn: async (data: InsertPost) => {
-      const endpoint = post ? `/api/posts/${post.id}` : "/api/posts";
-      const method = post ? "PATCH" : "POST";
+    mutationFn: async (formData: InsertPost) => {
+      try {
+        const endpoint = post ? `/api/posts/${post.id}` : "/api/posts";
+        const method = post ? "PATCH" : "POST";
 
-      const response = await apiRequest(method, endpoint, data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `Failed to ${post ? 'update' : 'create'} post`);
+        const processedData = {
+          ...formData,
+          slug: formData.slug || formData.title.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-'),
+          triggerWarnings: formData.triggerWarnings || [],
+          authorId: post?.authorId || 1,
+          matureContent: formData.matureContent || false,
+        };
+
+        console.log('Submitting post data:', processedData);
+        const response = await apiRequest(method, endpoint, processedData);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Post submission error:', errorData);
+          throw new Error(errorData.message || `Failed to ${post ? 'update' : 'create'} post`);
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('Post mutation error:', error);
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        }
+        throw new Error('An unexpected error occurred');
       }
-      return response.json();
     },
     onMutate: async (newPost) => {
       await queryClient.cancelQueries({ queryKey: ["/api/posts"] });
@@ -98,7 +148,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
           };
         }
         return {
-          posts: [...old.posts, optimisticPost],
+          posts: [optimisticPost, ...old.posts],
           hasMore: old.hasMore
         };
       });
@@ -109,20 +159,21 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
         title: "Success",
-        description: post ? "Post updated successfully" : "Post created successfully",
+        description: post ? "Post updated successfully" : "Post created successfully"
       });
       onClose?.();
+      form.reset();
     },
-    onError: (error: Error, variables, context) => {
+    onError: (error: Error, _variables, context) => {
       if (context?.previousPosts) {
         queryClient.setQueryData(["/api/posts"], context.previousPosts);
       }
       toast({
         title: "Error",
-        description: error.message || "Failed to save post. Please try again.",
-        variant: "destructive",
+        description: error.message || "Failed to save post",
+        variant: "destructive"
       });
-    },
+    }
   });
 
   const handleTextSelection = () => {
@@ -176,23 +227,16 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const onSubmit = (data: InsertPost) => {
-    // Generate slug if not provided
-    if (!data.slug) {
-      data.slug = data.title.toLowerCase()
-        .replace(/[^\w\s-]/g, '') // Remove special characters
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+  const onSubmit = async (data: InsertPost) => {
+    try {
+      await mutation.mutateAsync(data);
+    } catch (error) {
+      console.error('Form submission error:', error);
     }
-
-    // Handle trigger warnings - if empty array is submitted, ensure it's properly handled
-    data.triggerWarnings = data.triggerWarnings || [];
-
-    mutation.mutate(data);
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full">
       <CardContent className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -203,7 +247,11 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter post title" {...field} />
+                    <Input
+                      placeholder="Enter post title"
+                      {...field}
+                      disabled={mutation.isPending}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -218,6 +266,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                   size="icon"
                   onClick={() => insertFormatting('bold')}
                   title="Bold"
+                  disabled={mutation.isPending}
                 >
                   <Bold className="h-4 w-4" />
                 </Button>
@@ -227,6 +276,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                   size="icon"
                   onClick={() => insertFormatting('italic')}
                   title="Italic"
+                  disabled={mutation.isPending}
                 >
                   <Italic className="h-4 w-4" />
                 </Button>
@@ -235,7 +285,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                   variant="outline"
                   size="icon"
                   onClick={handleUndo}
-                  disabled={historyIndex <= 0}
+                  disabled={historyIndex <= 0 || mutation.isPending}
                   title="Undo"
                 >
                   <Undo className="h-4 w-4" />
@@ -245,7 +295,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                   variant="outline"
                   size="icon"
                   onClick={handleRedo}
-                  disabled={historyIndex >= history.length - 1}
+                  disabled={historyIndex >= history.length - 1 || mutation.isPending}
                   title="Redo"
                 >
                   <Redo className="h-4 w-4" />
@@ -268,6 +318,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                           handleTextSelection();
                         }}
                         value={field.value}
+                        disabled={mutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -287,6 +338,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                       placeholder="Enter a brief excerpt..."
                       className="h-24"
                       {...field}
+                      disabled={mutation.isPending}
                     />
                   </FormControl>
                   <FormMessage />
@@ -304,6 +356,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                     <select
                       {...field}
                       className="w-full px-3 py-2 border rounded-md"
+                      disabled={mutation.isPending}
                     >
                       <option value="PSYCHOLOGICAL">Psychological</option>
                       <option value="TECHNOLOGICAL">Technological</option>
@@ -340,6 +393,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                         checked={field.value}
                         onChange={field.onChange}
                         className="rounded border-gray-300"
+                        disabled={mutation.isPending}
                       />
                     </FormControl>
                     <FormLabel className="!mt-0">Secret Post</FormLabel>
@@ -358,6 +412,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                         checked={field.value}
                         onChange={field.onChange}
                         className="rounded border-gray-300"
+                        disabled={mutation.isPending}
                       />
                     </FormControl>
                     <FormLabel className="!mt-0">Mature Content</FormLabel>

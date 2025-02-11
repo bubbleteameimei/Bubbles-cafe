@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import { z } from "zod"; // Add zod import
-import { insertCommentSchema } from "@shared/schema"; // Add schema import
+import { insertCommentSchema, insertPostSchema } from "@shared/schema"; // Add schema import
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -117,10 +117,33 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/posts", isAuthenticated, async (req, res) => {
     try {
-      const post = await storage.createPost(req.body);
-      res.json(post);
+      // Parse and validate the post data using our schema
+      const postData = insertPostSchema.parse({
+        ...req.body,
+        authorId: req.user?.id || 1,
+        triggerWarnings: req.body.triggerWarnings || []
+      });
+
+      console.log('Creating new post:', postData);
+      const post = await storage.createPost(postData);
+
+      if (!post) {
+        throw new Error("Failed to create post");
+      }
+
+      console.log('Post created successfully:', post);
+      res.status(201).json(post);
     } catch (error) {
       console.error("Error creating post:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid post data", 
+          errors: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
       res.status(500).json({ message: "Failed to create post" });
     }
   });

@@ -233,9 +233,26 @@ export class DatabaseStorage implements IStorage {
 
   async createPost(post: InsertPost): Promise<Post> {
     try {
+      console.log('Storage: Creating new post with data:', {
+        title: post.title,
+        excerpt: post.excerpt,
+        isSecret: post.isSecret,
+        themeCategory: post.themeCategory
+      });
+
       const [newPost] = await db.insert(postsTable)
-        .values({ ...post, createdAt: new Date() })
+        .values({ 
+          ...post, 
+          createdAt: new Date(),
+          readingTimeMinutes: Math.ceil(post.content.split(/\s+/).length / 200)
+        })
         .returning();
+
+      console.log('Storage: Post created successfully:', {
+        id: newPost.id,
+        title: newPost.title,
+        slug: newPost.slug
+      });
 
       return {
         ...newPost,
