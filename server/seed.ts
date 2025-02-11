@@ -117,7 +117,9 @@ async function parseWordPressXML() {
               slug: finalSlug,
               isSecret: false,
               authorId: admin.id,
-              createdAt: pubDate
+              createdAt: pubDate,
+              matureContent: false,
+              readingTimeMinutes: Math.ceil(cleanedContent.split(/\s+/).length / 200)
             }).returning();
 
             createdCount++;

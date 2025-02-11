@@ -5,7 +5,6 @@ import { format, parseISO } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
-import { SoundMixer } from "@/components/effects/sound-mixer";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useState, useEffect } from "react";
 
@@ -63,9 +62,6 @@ export default function StoryView({ slug }: StoryViewProps) {
   return (
     <div className="relative min-h-screen">
       <Mist />
-      <div className="fixed bottom-4 right-4 z-50">
-        <SoundMixer />
-      </div>
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <motion.article
           initial={{ opacity: 0, y: 20 }}

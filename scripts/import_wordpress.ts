@@ -76,8 +76,7 @@ async function importWordPressMetadata() {
         'claustrophobia': /tight|closed|trapped|confined|tunnel|cave|box|coffin|buried|space/i,
         'darkness': /dark|shadow|black|night|blind|light.*fade|dim|visibility|sight/i,
         'nature': /forest|ocean|mountain|wild|animal|creature|beast|predator|hunt/i,
-        'technology': /machine|computer|digital|virtual|cyber|network|screen|program|code|system/i,
-        'surveillance': /camera|watch|monitor|record|tape|video|footage|evidence|proof|document/i
+        'technology': /machine|computer|digital|virtual|cyber|network|screen|program|code|system/i
       };
 
       Object.entries(triggerKeywords).forEach(([warning, regex]) => {
@@ -110,19 +109,18 @@ async function importWordPressMetadata() {
          intensityFactors.supernaturalContent * 0.2) / 2
       ));
 
-      // Import post metadata only
+      // Import post with updated schema
       const [newPost] = await db.insert(posts).values({
         title,
-        content, // Keep content for analysis
-        excerpt: excerpt.substring(0, 200) + '...', // Limit excerpt length
+        content,
+        excerpt: excerpt.substring(0, 200) + '...',
         slug,
         authorId: adminUserId,
-        originalSource: item.link,
-        originalAuthor: item['dc:creator'],
-        originalPublishDate: new Date(item.pubDate),
+        isSecret: false,
         matureContent: intensityScore > 3,
         readingTimeMinutes,
-        triggerWarnings: [...new Set(triggerWarnings)] // Remove duplicates
+        triggerWarnings: [...new Set(triggerWarnings)],
+        themeCategory: 'PSYCHOLOGICAL' // Default theme category
       }).returning({ id: posts.id });
 
       // Import comments if any
@@ -133,6 +131,7 @@ async function importWordPressMetadata() {
             postId: newPost.id,
             content: comment['wp:comment_content'],
             author: comment['wp:comment_author'],
+            approved: true
           });
         }
       }

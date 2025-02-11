@@ -12,7 +12,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "parasite",
     icon: 'Worm',
-    description: 'Parasitic and invasive horror'
+    description: 'Parasitic and invasive horror',
+    visualEffects: ['mist', 'shadows']
   },
   LOVECRAFTIAN: {
     keywords: [
@@ -22,7 +23,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "lovecraftian",
     icon: 'Skull',
-    description: 'Lovecraftian and cosmic horror'
+    description: 'Lovecraftian and cosmic horror',
+    visualEffects: ['fog', 'darkness']
   },
   PSYCHOLOGICAL: {
     keywords: [
@@ -32,7 +34,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "psychological",
     icon: 'Brain',
-    description: 'Psychological manipulation and mental horror'
+    description: 'Psychological manipulation and mental horror',
+    visualEffects: ['distortion', 'flashbacks']
   },
   SUICIDAL: {
     keywords: [
@@ -42,7 +45,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "suicidal",
     icon: 'Pill',
-    description: 'Self-destructive and survival horror'
+    description: 'Self-destructive and survival horror',
+    visualEffects: ['grayscale', 'desaturation']
   },
   TECHNOLOGICAL: {
     keywords: [
@@ -52,7 +56,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "technological",
     icon: 'Cpu',
-    description: 'Technological and cybernetic horror'
+    description: 'Technological and cybernetic horror',
+    visualEffects: ['glitches', 'static']
   },
   BODY_HORROR: {
     keywords: [
@@ -62,7 +67,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "body",
     icon: 'Dna',
-    description: 'Body transformation horror'
+    description: 'Body transformation horror',
+    visualEffects: ['close-ups', 'detail']
   },
   PSYCHOPATH: {
     keywords: [
@@ -72,7 +78,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "psychopath",
     icon: 'Axe',
-    description: 'Psychopathic and murderous horror'
+    description: 'Psychopathic and murderous horror',
+    visualEffects: ['red', 'blood splatter']
   },
   SUPERNATURAL: {
     keywords: [
@@ -82,7 +89,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "supernatural",
     icon: 'Ghost',
-    description: 'Supernatural and paranormal horror'
+    description: 'Supernatural and paranormal horror',
+    visualEffects: ['transparency', 'shimmer']
   },
   POSSESSION: {
     keywords: [
@@ -92,7 +100,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "possession",
     icon: 'Ghost',
-    description: 'Demonic possession horror'
+    description: 'Demonic possession horror',
+    visualEffects: ['distortion', 'shadow']
   },
   CANNIBALISM: {
     keywords: [
@@ -102,7 +111,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "cannibalism",
     icon: 'Axe',
-    description: 'Cannibalistic horror'
+    description: 'Cannibalistic horror',
+    visualEffects: ['gore', 'blood']
   },
   STALKING: {
     keywords: [
@@ -112,7 +122,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "stalking",
     icon: 'Footprints',
-    description: 'Stalking and pursuit horror'
+    description: 'Stalking and pursuit horror',
+    visualEffects: ['shadows', 'darkness']
   },
   DEATH: {
     keywords: [
@@ -122,7 +133,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "death",
     icon: 'Skull',
-    description: 'Death and mortality horror'
+    description: 'Death and mortality horror',
+    visualEffects: ['grayscale', 'fade']
   },
   GOTHIC: {
     keywords: [
@@ -132,7 +144,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "gothic",
     icon: 'Castle',
-    description: 'Gothic and ancestral horror'
+    description: 'Gothic and ancestral horror',
+    visualEffects: ['darkness', 'shadows']
   },
   APOCALYPTIC: {
     keywords: [
@@ -142,7 +155,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "apocalyptic",
     icon: 'Radiation',
-    description: 'Post-apocalyptic horror'
+    description: 'Post-apocalyptic horror',
+    visualEffects: ['destruction', 'ruin']
   },
   ISOLATION: {
     keywords: [
@@ -152,7 +166,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "isolation",
     icon: 'UserMinus2',
-    description: 'Isolation horror'
+    description: 'Isolation horror',
+    visualEffects: ['emptiness', 'silence']
   },
   AQUATIC: {
     keywords: [
@@ -162,7 +177,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "aquatic",
     icon: 'Anchor',
-    description: 'Deep sea horror'
+    description: 'Deep sea horror',
+    visualEffects: ['water', 'blue']
   },
   VIRAL: {
     keywords: [
@@ -172,7 +188,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "viral",
     icon: 'AlertTriangle',
-    description: 'Viral and epidemic horror'
+    description: 'Viral and epidemic horror',
+    visualEffects: ['red', 'infection']
   },
   URBAN_LEGEND: {
     keywords: [
@@ -182,7 +199,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "urban",
     icon: 'Building',
-    description: 'Urban legend horror'
+    description: 'Urban legend horror',
+    visualEffects: ['city', 'night']
   },
   TIME_HORROR: {
     keywords: [
@@ -192,7 +210,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "time",
     icon: 'Clock',
-    description: 'Temporal horror'
+    description: 'Temporal horror',
+    visualEffects: ['rewind', 'fast-forward']
   },
   DREAMSCAPE: {
     keywords: [
@@ -202,7 +221,8 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     ],
     badgeVariant: "dreamscape",
     icon: 'Moon',
-    description: 'Dream-based horror'
+    description: 'Dream-based horror',
+    visualEffects: ['blur', 'fade']
   }
 };
 

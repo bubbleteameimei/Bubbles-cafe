@@ -1,7 +1,6 @@
 import React from 'react';
 import { Post } from '@shared/schema';
 import { Card } from "@/components/ui/card";
-import AudioPlayer from './AudioPlayer';
 
 interface PostViewProps {
   post: Post;
@@ -11,12 +10,6 @@ const PostView: React.FC<PostViewProps> = ({ post }) => {
   return (
     <Card className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
-      {post.atmosphericSound && (
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold mb-2">Atmospheric Sound</h2>
-          <AudioPlayer videoId={post.atmosphericSound} />
-        </div>
-      )}
       <div className="prose dark:prose-invert max-w-none">
         {post.content}
       </div>
