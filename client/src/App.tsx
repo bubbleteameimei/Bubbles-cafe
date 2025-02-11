@@ -4,9 +4,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import Navigation from "./components/layout/navigation";
+import Footer from "./components/layout/footer";
+import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import Navigation from "@/components/layout/navigation";
 
 // Lazy load components that aren't needed immediately
 const Home = lazy(() => import("@/pages/home"));
@@ -26,6 +28,22 @@ function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
 
+  // Prefetch critical routes
+  React.useEffect(() => {
+    const prefetchRoutes = async () => {
+      const routes = ['/', '/stories', '/reader'];
+      await Promise.all(
+        routes.map(route =>
+          queryClient.prefetchQuery({
+            queryKey: [`/api${route}`],
+            staleTime: 5 * 60 * 1000 // 5 minutes
+          })
+        )
+      );
+    };
+    prefetchRoutes();
+  }, []);
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -36,6 +54,7 @@ function App() {
     };
   }, []);
 
+  // Scroll to top on route change
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location]);
@@ -48,9 +67,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <AuthProvider>
-          <div className="min-h-screen bg-background">
+          <div className="relative min-h-screen bg-background text-foreground antialiased">
             <Navigation />
-            <main>
+
+            {/* Main Content */}
+            <main className="pt-14">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>
@@ -72,6 +93,9 @@ function App() {
                 </Suspense>
               </ErrorBoundary>
             </main>
+
+            <Footer />
+            <CookieConsent />
             <Toaster />
           </div>
         </AuthProvider>
