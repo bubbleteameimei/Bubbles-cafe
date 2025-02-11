@@ -114,18 +114,26 @@ const AdminPage = () => {
 
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      console.log('Starting delete mutation for post:', postId);
-      const response = await apiRequest("DELETE", `/api/posts/${postId}`);
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Delete post error:', error);
-        throw new Error(error.message || "Failed to delete post");
+      try {
+        console.log('[Admin] Starting delete mutation for post:', postId);
+        const response = await apiRequest("DELETE", `/api/posts/${postId}`);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Admin] Delete post error:', errorData);
+          throw new Error(errorData.message || "Failed to delete post");
+        }
+
+        return postId;
+      } catch (error) {
+        console.error('[Admin] Delete post error:', error);
+        throw error;
       }
-      return postId;
     },
     onSuccess: (deletedPostId) => {
-      console.log('Post deleted successfully:', deletedPostId);
-      queryClient.setQueryData<PostsResponse>(["/api/posts"], (oldData) => {
+      console.log('[Admin] Post deleted successfully:', deletedPostId);
+      // Update the posts query data to remove the deleted post
+      queryClient.setQueriesData<PostsResponse>(["/api/posts"], (oldData) => {
         if (!oldData) return { posts: [], hasMore: false };
         return {
           ...oldData,
@@ -138,7 +146,7 @@ const AdminPage = () => {
       });
     },
     onError: (error: Error) => {
-      console.error('Post deletion error:', error);
+      console.error('[Admin] Post deletion error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete post",
@@ -176,27 +184,37 @@ const AdminPage = () => {
   });
 
   const deleteCommentMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/comments/${id}`);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete comment");
+    mutationFn: async (commentId: number) => {
+      try {
+        console.log('[Admin] Starting delete mutation for comment:', commentId);
+        const response = await apiRequest("DELETE", `/api/comments/${commentId}`);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Admin] Delete comment error:', errorData);
+          throw new Error(errorData.message || "Failed to delete comment");
+        }
+
+        return commentId;
+      } catch (error) {
+        console.error('[Admin] Delete comment error:', error);
+        throw error;
       }
-      return id;
     },
     onSuccess: (deletedCommentId) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
+      console.log('[Admin] Comment deleted successfully:', deletedCommentId);
       // Update local state
-      const currentComments = queryClient.getQueryData<Comment[]>(["/api/comments/pending"]) || [];
-      const updatedComments = currentComments.filter(comment => comment.id !== deletedCommentId);
-      queryClient.setQueryData(["/api/comments/pending"], updatedComments);
+      queryClient.setQueriesData<Comment[]>(["/api/comments/pending"], (oldData) => {
+        if (!oldData) return [];
+        return oldData.filter(comment => comment.id !== deletedCommentId);
+      });
       toast({
         title: "Success",
         description: "Comment deleted successfully"
       });
     },
     onError: (error: Error) => {
-      console.error('Comment deletion error:', error);
+      console.error('[Admin] Comment deletion error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete comment",
@@ -369,7 +387,7 @@ const AdminPage = () => {
                               className="hover:bg-destructive/10"
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this post?')) {
-                                  console.log('Attempting to delete post:', post.id);
+                                  console.log('[Admin] Attempting to delete post:', post.id);
                                   deletePostMutation.mutate(post.id);
                                 }
                               }}
@@ -426,6 +444,7 @@ const AdminPage = () => {
                                 size="sm"
                                 onClick={() => {
                                   if (window.confirm('Are you sure you want to delete this comment?')) {
+                                    console.log('[Admin] Attempting to delete comment:', comment.id);
                                     deleteCommentMutation.mutate(comment.id);
                                   }
                                 }}

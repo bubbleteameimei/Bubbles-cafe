@@ -34,7 +34,7 @@ export interface IStorage {
   getPosts(page?: number, limit?: number): Promise<{ posts: Post[], hasMore: boolean }>;
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
-  deletePost(id: number): Promise<void>;
+  deletePost(id: number): Promise<Post>;
   getSecretPosts(): Promise<Post[]>;
   unlockSecretPost(progress: InsertSecretProgress): Promise<SecretProgress>;
   updatePost(id: number, post: Partial<InsertPost>): Promise<Post>;
@@ -46,7 +46,7 @@ export interface IStorage {
   getRecentComments(): Promise<Comment[]>;
   createComment(comment: InsertComment): Promise<Comment>;
   updateComment(id: number, comment: Partial<Comment>): Promise<Comment>;
-  deleteComment(id: number): Promise<void>;
+  deleteComment(id: number): Promise<Comment>;
   getPendingComments(): Promise<Comment[]>;
 
   // Reading Progress
@@ -286,21 +286,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deletePost(id: number): Promise<void> {
+  async deletePost(id: number): Promise<Post> {
     try {
+      console.log(`[Storage] Attempting to delete post with ID: ${id}`);
       const result = await db.delete(postsTable)
         .where(eq(postsTable.id, id))
         .returning();
 
       if (!result.length) {
+        console.error(`[Storage] Post with ID ${id} not found`);
         throw new Error("Post not found");
       }
+
+      console.log(`[Storage] Successfully deleted post with ID: ${id}`);
+      return result[0];
     } catch (error) {
-      console.error("Error deleting post:", error);
-      if (error instanceof Error && error.message === "Post not found") {
-        throw error;
-      }
-      throw new Error("Failed to delete post");
+      console.error("[Storage] Error in deletePost:", error);
+      throw error;
     }
   }
 
@@ -446,21 +448,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteComment(id: number): Promise<void> {
+  async deleteComment(id: number): Promise<Comment> {
     try {
+      console.log(`[Storage] Attempting to delete comment with ID: ${id}`);
       const result = await db.delete(comments)
         .where(eq(comments.id, id))
         .returning();
 
       if (!result.length) {
+        console.error(`[Storage] Comment with ID ${id} not found`);
         throw new Error("Comment not found");
       }
+
+      console.log(`[Storage] Successfully deleted comment with ID: ${id}`);
+      return result[0];
     } catch (error) {
-      console.error("Error deleting comment:", error);
-      if (error instanceof Error && error.message === "Comment not found") {
-        throw error;
-      }
-      throw new Error("Failed to delete comment");
+      console.error("[Storage] Error in deleteComment:", error);
+      throw error;
     }
   }
 

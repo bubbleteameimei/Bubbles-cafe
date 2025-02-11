@@ -149,27 +149,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/posts/:id", isAuthenticated, async (req, res) => {
+  // Update the delete post route
+  app.delete("/api/posts/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.id);
       if (isNaN(postId)) {
+        console.log('[Delete Post] Invalid post ID:', req.params.id);
         return res.status(400).json({ message: "Invalid post ID" });
       }
 
-      console.log(`Attempting to delete post with ID: ${postId}`);
+      console.log(`[Delete Post] Attempting to delete post with ID: ${postId}`);
 
       // First check if post exists
       const post = await storage.getPost(postId.toString());
       if (!post) {
-        console.log(`Post ${postId} not found`);
+        console.log(`[Delete Post] Post ${postId} not found`);
         return res.status(404).json({ message: "Post not found" });
       }
 
-      await storage.deletePost(postId);
-      console.log(`Post ${postId} deleted successfully`);
-      res.json({ message: "Post deleted successfully" });
+      // Delete the post
+      const result = await storage.deletePost(postId);
+      console.log(`[Delete Post] Post ${postId} deleted successfully:`, result);
+      res.json({ message: "Post deleted successfully", postId });
     } catch (error) {
-      console.error("Error deleting post:", error);
+      console.error("[Delete Post] Error:", error);
       if (error instanceof Error) {
         if (error.message === "Post not found") {
           return res.status(404).json({ message: "Post not found" });
@@ -391,21 +394,29 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  app.delete("/api/comments/:id", isAuthenticated, async (req, res) => {
+  // Update the delete comment route
+  app.delete("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const commentId = parseInt(req.params.id);
       if (isNaN(commentId)) {
+        console.log('[Delete Comment] Invalid comment ID:', req.params.id);
         return res.status(400).json({ message: "Invalid comment ID" });
       }
 
-      await storage.deleteComment(commentId);
-      console.log(`Comment ${commentId} deleted successfully`);
-      res.json({ message: "Comment deleted successfully" });
+      console.log(`[Delete Comment] Attempting to delete comment with ID: ${commentId}`);
+
+      // Delete the comment
+      const result = await storage.deleteComment(commentId);
+      console.log(`[Delete Comment] Comment ${commentId} deleted successfully:`, result);
+      res.json({ message: "Comment deleted successfully", commentId });
     } catch (error) {
-      console.error("Error deleting comment:", error);
+      console.error("[Delete Comment] Error:", error);
       if (error instanceof Error) {
         if (error.message === "Comment not found") {
           return res.status(404).json({ message: "Comment not found" });
+        }
+        if (error.message.includes("Unauthorized")) {
+          return res.status(401).json({ message: "Unauthorized: Please log in again" });
         }
       }
       res.status(500).json({ message: "Failed to delete comment" });
