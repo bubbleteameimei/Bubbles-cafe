@@ -4,9 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import Navigation from "./components/layout/navigation";
-import Footer from "./components/layout/footer";
-import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
@@ -27,22 +24,6 @@ const IndexView = lazy(() => import("@/pages/index"));
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
-
-  // Prefetch critical routes
-  React.useEffect(() => {
-    const prefetchRoutes = async () => {
-      const routes = ['/', '/stories', '/reader'];
-      await Promise.all(
-        routes.map(route =>
-          queryClient.prefetchQuery({
-            queryKey: [`/api${route}`],
-            staleTime: 5 * 60 * 1000 // 5 minutes
-          })
-        )
-      );
-    };
-    prefetchRoutes();
-  }, []);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,11 +48,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <AuthProvider>
-          <div className="relative min-h-screen bg-background text-foreground antialiased">
-            <Navigation />
-
-            {/* Main Content */}
-            <main className="pt-14">
+          <div className="min-h-screen bg-background">
+            <main>
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>
@@ -93,9 +71,6 @@ function App() {
                 </Suspense>
               </ErrorBoundary>
             </main>
-
-            <Footer />
-            <CookieConsent />
             <Toaster />
           </div>
         </AuthProvider>
