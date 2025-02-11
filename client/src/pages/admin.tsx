@@ -30,93 +30,92 @@ const AdminPage = () => {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  // Check authentication status on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await apiRequest("GET", "/api/admin/user");
+        const response = await fetch('/api/admin/user', {
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+
         if (!response.ok) {
-          toast({
-            title: "Authentication Error",
-            description: "Please log in to access the admin dashboard",
-            variant: "destructive",
-          });
           setLocation("/admin/login");
           return;
         }
+
         const data = await response.json();
         if (!data.isAdmin) {
           toast({
             title: "Access Denied",
-            description: "You don't have admin privileges",
+            description: "You need admin privileges to access this page",
             variant: "destructive",
           });
           setLocation("/admin/login");
         }
       } catch (error) {
+        console.error('Auth check error:', error);
         toast({
-          title: "Error",
-          description: "Failed to verify authentication. Please try logging in again.",
+          title: "Authentication Error",
+          description: "Please log in again",
           variant: "destructive",
         });
         setLocation("/admin/login");
       }
     };
+
     checkAuth();
   }, [setLocation, toast]);
 
   const { data: postsData, isLoading: postsLoading } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/posts?page=1&limit=50');
-        if (!response.ok) throw new Error('Failed to fetch posts');
-        const data = await response.json();
-        return {
-          posts: Array.isArray(data.posts) ? data.posts : [],
-          hasMore: !!data.hasMore
-        };
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        return { posts: [], hasMore: false };
-      }
+      const response = await fetch('/api/posts?page=1&limit=50', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      const data = await response.json();
+      return {
+        posts: Array.isArray(data.posts) ? data.posts : [],
+        hasMore: !!data.hasMore
+      };
     },
+    retry: 1,
     staleTime: 5 * 60 * 1000
   });
 
   const { data: pendingComments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
     queryKey: ["/api/comments/pending"],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/comments/pending');
-        if (!response.ok) throw new Error('Failed to fetch pending comments');
-        const data = await response.json();
-        console.log('Fetched pending comments:', data);
-
-        // If there are new pending comments, show a notification
-        const currentComments = queryClient.getQueryData<Comment[]>(["/api/comments/pending"]) || [];
-        if (Array.isArray(data) && data.length > currentComments.length) {
-          toast({
-            title: "New Comments",
-            description: `You have ${data.length - currentComments.length} new comment${data.length - currentComments.length === 1 ? '' : 's'} awaiting moderation.`,
-            variant: "default",
-          });
+      const response = await fetch('/api/comments/pending', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
+      });
 
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error('Error fetching pending comments:', error);
-        return [];
-      }
+      if (!response.ok) throw new Error('Failed to fetch pending comments');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
-    refetchInterval: 30000, // Poll every 30 seconds for new comments
-    staleTime: 5 * 60 * 1000
+    retry: 1,
+    refetchInterval: 30000
   });
 
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
       try {
         console.log('[Admin] Starting delete mutation for post:', postId);
-        const response = await apiRequest("DELETE", `/api/posts/${postId}`);
+        const response = await apiRequest("DELETE", `/api/posts/${postId}`, {credentials: 'include'});
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -160,9 +159,7 @@ const AdminPage = () => {
 
   const moderateCommentMutation = useMutation({
     mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
-      const response = await apiRequest("PATCH", `/api/comments/${id}`, {
-        approved
-      });
+      const response = await apiRequest("PATCH", `/api/comments/${id}`, { approved, credentials: 'include' });
       if (!response.ok) {
         throw new Error("Failed to moderate comment");
       }
@@ -187,7 +184,7 @@ const AdminPage = () => {
     mutationFn: async (commentId: number) => {
       try {
         console.log('[Admin] Starting delete mutation for comment:', commentId);
-        const response = await apiRequest("DELETE", `/api/comments/${commentId}`);
+        const response = await apiRequest("DELETE", `/api/comments/${commentId}`, {credentials: 'include'});
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -228,19 +225,27 @@ const AdminPage = () => {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/logout");
+      const response = await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ message: "Failed to logout" }));
         throw new Error(error.message || "Failed to logout");
       }
     },
     onSuccess: () => {
+      queryClient.clear();
       setLocation("/admin/login");
       toast({
         title: "Logged out",
         description: "Successfully logged out"
       });
-      queryClient.clear();
     },
     onError: (error: Error) => {
       toast({

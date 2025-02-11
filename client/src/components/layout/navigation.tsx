@@ -25,8 +25,8 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
     >
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1'}`}>
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-        <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
         <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
+        <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}

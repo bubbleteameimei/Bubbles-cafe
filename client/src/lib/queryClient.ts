@@ -21,7 +21,7 @@ export async function apiRequest(
         'Pragma': 'no-cache'
       },
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      credentials: "include", // Always include credentials for all requests
     });
 
     await throwIfResNotOk(res);
@@ -32,7 +32,7 @@ export async function apiRequest(
   }
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
+type UnauthorizedBehavior = "returnNull" | "throw" | "redirect";
 export const getQueryFn = <T>(options: {
   on401: UnauthorizedBehavior;
 }) => {
@@ -46,8 +46,14 @@ export const getQueryFn = <T>(options: {
         }
       });
 
-      if (options.on401 === "returnNull" && res.status === 401) {
-        return null;
+      if (res.status === 401) {
+        console.log('401 Unauthorized response detected');
+        if (options.on401 === "returnNull") {
+          return null;
+        } else if (options.on401 === "redirect") {
+          window.location.href = "/admin/login";
+          return null;
+        }
       }
 
       await throwIfResNotOk(res);
@@ -69,15 +75,17 @@ export const queryClient = new QueryClient({
       gcTime: 60 * 60 * 1000, // 1 hour
       retry: (failureCount, error) => {
         if (error instanceof Error) {
-          // Don't retry certain error types
-          if (error.message.includes('404')) {
-            return false; // Don't retry 404s
-          }
+          // Don't retry auth errors
           if (error.message.includes('401')) {
-            return false; // Don't retry auth failures
+            return false;
           }
+          // Don't retry forbidden requests
           if (error.message.includes('403')) {
-            return false; // Don't retry forbidden requests
+            return false;
+          }
+          // Don't retry not found
+          if (error.message.includes('404')) {
+            return false;
           }
         }
         return failureCount < 2; // Only retry twice for other errors
@@ -88,6 +96,10 @@ export const queryClient = new QueryClient({
       retry: false,
       onError: (error) => {
         console.error('Mutation error:', error);
+        // Handle authentication errors globally
+        if (error instanceof Error && error.message.includes('401')) {
+          window.location.href = "/admin/login";
+        }
       }
     },
   },

@@ -38,14 +38,15 @@ export default function Secret() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-4xl font-serif mb-8">Secret Pages</h1>
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <h1 className="text-4xl font-semibold mb-8 tracking-tight">Secret Stories</h1>
       <div className="flex gap-4 mb-8">
         <Input
           type="password"
           placeholder="Enter secret code..."
           value={code}
           onChange={(e) => setCode(e.target.value)}
+          className="max-w-xs"
         />
         <Button 
           onClick={() => secretPosts?.[0] && unlockMutation.mutate(secretPosts[0].id)}
@@ -65,7 +66,7 @@ export default function Secret() {
             </CardContent>
           </Card>
         ))}
-        {secretPosts?.length === 0 && (
+        {(!secretPosts || secretPosts.length === 0) && (
           <p className="text-center text-muted-foreground">No secret posts found.</p>
         )}
       </div>

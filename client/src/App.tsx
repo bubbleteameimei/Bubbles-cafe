@@ -31,7 +31,7 @@ function App() {
   // Prefetch critical routes
   React.useEffect(() => {
     const prefetchRoutes = async () => {
-      const routes = ['/', '/stories', '/secret'];
+      const routes = ['/', '/index', '/reader'];
       await Promise.all(
         routes.map(route =>
           queryClient.prefetchQuery({
@@ -76,10 +76,10 @@ function App() {
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>
                     <Route path="/" component={Home} />
-                    <Route path="/stories" component={Stories} />
-                    <Route path="/secret" component={Secret} />
-                    <Route path="/reader" component={Reader} />
                     <Route path="/index" component={IndexView} />
+                    <Route path="/reader" component={Reader} />
+                    <Route path="/secret" component={Secret} />
+                    <Route path="/stories" component={Stories} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
