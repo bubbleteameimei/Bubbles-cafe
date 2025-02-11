@@ -67,52 +67,36 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <AuthProvider>
-          <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <Navigation />
-            <main className="flex-1 pt-[calc(6rem+3rem)] transition-all duration-300">
+          <div className="relative min-h-screen bg-background text-foreground antialiased">
+            {/* Sticky Navigation */}
+            <div className="sticky top-0 z-50">
+              <Navigation />
+            </div>
+
+            {/* Main Content */}
+            <main className="relative">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>
-                    <Route path="/">
-                      <Home />
-                    </Route>
-                    <Route path="/reader">
-                      <Reader />
-                    </Route>
-                    <Route path="/stories">
-                      <Stories />
-                    </Route>
-                    <Route path="/index">
-                      <IndexView />
-                    </Route>
+                    <Route path="/" component={Home} />
+                    <Route path="/reader" component={Reader} />
+                    <Route path="/stories" component={Stories} />
+                    <Route path="/index" component={IndexView} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
-                    <Route path="/secret">
-                      <Secret />
-                    </Route>
-                    <Route path="/privacy">
-                      <Privacy />
-                    </Route>
-                    <Route path="/about">
-                      <About />
-                    </Route>
-                    <Route path="/contact">
-                      <Contact />
-                    </Route>
-                    <Route path="/admin/login">
-                      <AdminLogin />
-                    </Route>
-                    <Route path="/admin">
-                      <Admin />
-                    </Route>
-                    <Route>
-                      <NotFound />
-                    </Route>
+                    <Route path="/secret" component={Secret} />
+                    <Route path="/privacy" component={Privacy} />
+                    <Route path="/about" component={About} />
+                    <Route path="/contact" component={Contact} />
+                    <Route path="/admin/login" component={AdminLogin} />
+                    <Route path="/admin" component={Admin} />
+                    <Route component={NotFound} />
                   </Switch>
                 </Suspense>
               </ErrorBoundary>
             </main>
+
             <Footer />
             <CookieConsent />
             <Toaster />
