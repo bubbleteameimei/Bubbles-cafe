@@ -1,134 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Theme transition styles */
-:root {
-  --theme-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-}
-
-.theme-transition {
-  transition: var(--theme-transition);
-}
-
-/* Loading state */
-.loading {
-  position: relative;
-  pointer-events: none;
-}
-
-.loading::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, currentColor, transparent);
-  animation: loading 1.5s infinite;
-  opacity: 0.2;
-}
-
-@keyframes loading {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
-}
-
 @layer base {
-  body {
-    @apply bg-background text-foreground min-h-screen;
-    font-family: 'Libre Baskerville', serif;
-    font-size: clamp(16px, 1.5vw, 18px);
-    line-height: 1.75;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    letter-spacing: 0.01em;
-    position: relative;
+  :root {
+    --theme-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
-  /* Structure and Layout */
-  .gothic-menu {
-    @apply fixed top-0 left-0 right-0 z-50;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+  body {
+    @apply bg-background text-foreground min-h-screen;
+    /* Using system font stack for consistent rendering */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    /* Using same system font stack for consistency */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply font-bold tracking-tight;
+  }
+
+  h1 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
+  h3 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+  h4 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+
+  /* Layout */
+  .container {
+    @apply px-4 mx-auto;
+    max-width: min(100% - 2rem, 75ch);
   }
 
   main {
     @apply pt-16 min-h-screen;
   }
 
-  .story-container {
-    @apply relative z-10;
-    margin-top: 1rem;
-    padding-bottom: 6rem;
-  }
-
-  .comments-section {
-    @apply rounded-lg p-6 mt-8;
-  }
-
-  /* Typography */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', serif;
-    @apply font-bold tracking-normal;
-  }
-
-  .story-title {
-    font-family: 'Playfair Display', serif;
-    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
-  }
-
-  .story-meta {
-    font-family: 'Montserrat', sans-serif;
-    @apply text-sm font-medium;
-  }
-
-  /* Navigation and Controls */
-  .controls-container {
-    @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40;
-    max-width: min(100% - 2rem, 75ch);
-  }
-
-  .controls-wrapper {
-    @apply flex items-center justify-center px-6 py-3 rounded-2xl;
-  }
-
-  .nav-controls {
-    @apply flex items-center gap-4;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 640px) {
-    .story-title {
-      @apply text-3xl;
-    }
-
-    .controls-container {
-      @apply bottom-4 px-3;
-      max-width: calc(100% - 1.5rem);
-    }
-
-    .controls-wrapper {
-      @apply px-3 py-2;
-    }
-
-    .nav-controls {
-      @apply gap-2;
-    }
-  }
-
-  /* Animations */
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-float-delayed {
-    animation: float 3s ease-in-out infinite;
-    animation-delay: 1.5s;
+  /* Interactive Elements */
+  button, a {
+    @apply transition-all duration-200;
   }
 
   /* Focus States */
@@ -136,230 +49,37 @@
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Container and Layout Utilities */
-  .container {
-    @apply px-4 mx-auto;
-    max-width: min(100% - 1rem, 75ch);
+  /* Loading State */
+  .loading {
+    @apply relative pointer-events-none;
   }
 
+  .loading::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    animation: loading 1.5s infinite;
+    opacity: 0.2;
+  }
+
+  @keyframes loading {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+
+  /* Prose */
   .prose {
-    @apply text-foreground;
+    @apply text-foreground max-w-prose mx-auto;
     font-size: clamp(16px, 1.5vw, 18px);
-    line-height: 1.6;
-    max-width: 65ch;
-    margin: 0 auto;
+    line-height: 1.75;
   }
 
   .prose p {
-    @apply mb-4 sm:mb-6;
+    @apply mb-4;
   }
 
-  .prose em, .prose i {
-    font-style: italic;
+  /* Theme Transition */
+  .theme-transition {
+    transition: var(--theme-transition);
   }
-
-  .nav-link {
-    @apply relative overflow-hidden;
-    transition: color 0.2s ease;
-  }
-
-  .nav-link::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0;
-    transition: transform 0.2s ease;
-  }
-
-  .nav-link:hover::after {
-    @apply scale-x-100;
-  }
-
-  .nav-link:hover {
-    @apply text-primary;
-  }
-
-  @media (max-width: 640px) {
-    .container {
-      @apply px-3;
-      max-width: 100%;
-    }
-
-    .story-container {
-      @apply px-3;
-    }
-
-    .prose {
-      font-size: 16px;
-      line-height: 1.6;
-    }
-
-    .controls-container {
-      @apply bottom-4 px-3;
-      max-width: calc(100% - 1.5rem);
-    }
-
-    .controls-wrapper {
-      @apply px-3 py-2;
-    }
-
-    .nav-controls {
-      @apply gap-2;
-    }
-
-    .page-counter {
-      @apply mx-2 min-w-[2.5rem];
-      font-size: 0.875rem;
-    }
-  }
-
-  footer {
-    @apply mt-16 mb-24 sm:mb-32;
-  }
-
-  .story-container {
-    @apply pb-16 sm:pb-20;
-  }
-
-  .skip-to-content {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
-           focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
-  }
-
-  .grid-layout {
-    @apply grid gap-3 sm:gap-4 md:gap-6;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  }
-
-  .social-buttons {
-    @apply flex justify-center items-center gap-4 p-4;
-  }
-
-  .social-button {
-    @apply flex justify-center items-center w-10 h-10 rounded-full 
-           transition-all duration-300 hover:scale-110 hover:shadow-lg;
-  }
-
-  .social-button svg {
-    @apply transition-colors duration-300;
-  }
-
-  .social-button.wordpress {
-    @apply bg-[#21759b] text-white hover:bg-white hover:text-[#21759b];
-  }
-
-  .social-button.twitter {
-    @apply bg-[#1DA1F2] text-white hover:bg-white hover:text-[#1DA1F2];
-  }
-
-  .social-button.instagram {
-    @apply bg-[#E4405F] text-white hover:bg-white hover:text-[#E4405F];
-  }
-
-  .social-button.github {
-    @apply bg-[#333] text-white hover:bg-white hover:text-[#333];
-  }
-
-  .social-button.linkedin {
-    @apply bg-[#0077B5] text-white hover:bg-white hover:text-[#0077B5];
-  }
-
-  .social-button.facebook {
-    @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
-  }
-
-  .fireworks {
-    @apply absolute -top-2 -right-2 pointer-events-none;
-  }
-
-  .checked-like-fx,
-  .checked-dislike-fx {
-    @apply w-2 h-2 rounded-full opacity-0;
-    animation: fireworks-bang 0.5s ease-out forwards,
-              fireworks-gravity 0.5s ease-in forwards,
-              fireworks-position 0.5s linear forwards;
-  }
-
-  @keyframes fireworks-bang {
-    to {
-      box-shadow: -70px -50px #ff0000, 70px -50px #ff0000;
-      transform: scale(3);
-    }
-  }
-
-  @keyframes fireworks-gravity {
-    to {
-      transform: translateY(100px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes fireworks-position {
-    0% {
-      margin-top: 10%;
-      margin-left: 40%;
-    }
-    50% {
-      margin-top: 20%;
-      margin-left: 60%;
-    }
-    100% {
-      margin-top: 30%;
-      margin-left: 50%;
-    }
-  }
-
-  .card {
-    @apply transition-all duration-300 hover:shadow-lg;
-  }
-
-  .content-section {
-    @apply py-8 md:py-12 lg:py-16;
-  }
-
-  @media (max-width: 768px) {
-    .nav-container {
-      @apply px-2;
-    }
-
-    .nav-menu {
-      @apply space-y-2;
-    }
-  }
-  h1 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
-  h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
-  h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
-  
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime&family=Dancing+Script&display=swap');
-
-  body {
-    font-family: Garamond, "Playfair Display", serif;
-    font-size: 16px;
-    line-height: 1.6;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: "Playfair Display", Garamond, serif;
-    line-height: 1.2;
-    letter-spacing: 2px;
-  }
-
-  .typewriter-text {
-    font-family: "Courier Prime", monospace;
-  }
-
-  .handwritten-text {
-    font-family: "Dancing Script", "Great Vibes", cursive;
-  }
-
-  .latin-phrase {
-    font-style: italic;
-  }
-
-  .hover-glow {
-    transition: text-shadow 0.3s ease;
-  }
-
-  button, a {
-    @apply transition-transform duration-200 hover:shadow-md active:scale-95;
-  }
-    
 }

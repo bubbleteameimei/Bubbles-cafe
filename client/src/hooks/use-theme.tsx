@@ -45,3 +45,5 @@ export function useTheme() {
     }, [])
   };
 }
+
+export default useTheme;
