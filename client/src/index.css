@@ -4,17 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme transition styles - Optimized */
+/* Theme transition styles */
 :root {
   --theme-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
-/* Only apply transitions to specific elements that need them */
 .theme-transition {
   transition: var(--theme-transition);
 }
 
-/* Loading state for buttons */
+/* Loading state */
 .loading {
   position: relative;
   pointer-events: none;
@@ -35,53 +34,6 @@
 }
 
 @layer base {
-  :root {
-    /* Dark mode colors (Gothic Renaissance Theme) */
-    --background: 220 14% 12%;    /* Deep charcoal with blue undertones */
-    --foreground: 43 31% 83%;    /* Aged parchment */
-    --card: 220 14% 15%;         /* Slightly lighter background */
-    --card-foreground: 43 31% 83%;
-    --popover: 220 14% 12%;
-    --popover-foreground: 43 31% 83%;
-    --primary: 345 85% 35%;      /* Deep crimson */
-    --primary-foreground: 43 31% 83%;
-    --secondary: 27 33% 25%;     /* Aged oak */
-    --secondary-foreground: 43 47% 65%;  /* Antique gold */
-    --muted: 27 33% 25%;
-    --muted-foreground: 43 47% 65%;
-    --accent: 27 33% 25%;
-    --accent-foreground: 43 47% 65%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 43 31% 83%;
-    --border: 27 33% 25%;
-    --input: 27 33% 25%;
-    --ring: 43 47% 65%;
-    --radius: 0.75rem;
-  }
-
-  .light {
-    /* Light mode colors (Elegant Parchment Theme) */
-    --background: 43 71% 93%;    /* Light parchment */
-    --foreground: 27 8% 17%;     /* Dark ink */
-    --card: 43 71% 95%;
-    --card-foreground: 27 8% 17%;
-    --popover: 43 71% 93%;
-    --popover-foreground: 27 8% 17%;
-    --primary: 354 50% 37%;      /* Burgundy */
-    --primary-foreground: 43 71% 93%;
-    --secondary: 19 43% 34%;     /* Aged leather */
-    --secondary-foreground: 43 71% 93%;
-    --muted: 19 43% 34%;
-    --muted-foreground: 43 31% 55%;
-    --accent: 19 43% 34%;
-    --accent-foreground: 43 71% 93%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 43 71% 93%;
-    --border: 19 43% 34%;
-    --input: 19 43% 34%;
-    --ring: 354 50% 37%;
-  }
-
   body {
     @apply bg-background text-foreground min-h-screen;
     font-family: 'Libre Baskerville', serif;
@@ -93,45 +45,15 @@
     position: relative;
   }
 
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--background) / 0.97),
-      hsl(var(--background) / 0.93)
-    );
-    z-index: -1;
-  }
-
-  .light body::before {
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--background) / 0.95),
-      hsl(var(--background) / 0.98)
-    );
-  }
-
+  /* Structure and Layout */
   .gothic-menu {
     @apply fixed top-0 left-0 right-0 z-50;
-    background: linear-gradient(
-      to bottom,
-      hsl(var(--background) / 0.95),
-      hsl(var(--background) / 0.90)
-    );
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid hsl(var(--border) / 0.1);
-    box-shadow: 0 2px 8px hsl(var(--background) / 0.5);
   }
 
   main {
     @apply pt-16 min-h-screen;
-    padding-top: 4rem; /* Ensure content starts below fixed header */
   }
 
   .story-container {
@@ -141,68 +63,40 @@
   }
 
   .comments-section {
-    @apply bg-background/80 backdrop-blur-sm rounded-lg p-6 mt-8;
-    border: 1px solid hsl(var(--border));
+    @apply rounded-lg p-6 mt-8;
   }
 
-  /* Ensure proper spacing for the fixed elements */
-  .fixed-header-space {
-    height: 4rem;
-  }
-
-  /* Adjust the content area to account for fixed elements */
-  .content-area {
-    @apply relative z-10;
-    min-height: calc(100vh - 4rem);
-  }
+  /* Typography */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cormorant Garamond', serif;
     @apply font-bold tracking-normal;
   }
 
-  .story-content {
-    @apply prose prose-invert mx-auto px-4;
-    max-width: min(100% - 2rem, 65ch);
-    line-height: 1.8;
-    font-family: 'Crimson Text', serif;
-    @apply transition-colors duration-200;
-    @apply prose-headings:text-primary prose-p:text-foreground/90;
-    @apply prose-strong:text-primary prose-em:text-secondary-foreground;
-    @apply prose-blockquote:border-primary prose-blockquote:text-foreground/80;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
   .story-title {
     font-family: 'Playfair Display', serif;
     @apply text-4xl md:text-5xl lg:text-6xl font-bold;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
   }
 
   .story-meta {
     font-family: 'Montserrat', sans-serif;
-    @apply text-sm text-muted-foreground font-medium;
+    @apply text-sm font-medium;
   }
 
+  /* Navigation and Controls */
   .controls-container {
     @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40;
     max-width: min(100% - 2rem, 75ch);
   }
 
   .controls-wrapper {
-    @apply flex items-center justify-center bg-background/80 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-lg;
-    border: 1px solid hsl(var(--border));
+    @apply flex items-center justify-center px-6 py-3 rounded-2xl;
   }
 
   .nav-controls {
     @apply flex items-center gap-4;
   }
 
-  .page-counter {
-    @apply text-sm text-muted-foreground mx-4 min-w-[3rem] text-center;
-    font-family: 'Spectral', serif;
-  }
-
-  /* Mobile optimizations */
+  /* Responsive Design */
   @media (max-width: 640px) {
     .story-title {
       @apply text-3xl;
@@ -220,22 +114,9 @@
     .nav-controls {
       @apply gap-2;
     }
-
-    .page-counter {
-      @apply mx-2 min-w-[2.5rem];
-      font-size: 0.875rem;
-    }
-  }
-  button, a {
-    @apply transition-transform duration-200 hover:shadow-md hover:shadow-primary/20;
-    @apply active:scale-95;
   }
 
-  .container {
-    @apply px-4 mx-auto;
-    max-width: min(100% - 1rem, 75ch);
-  }
-
+  /* Animations */
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
@@ -250,14 +131,16 @@
     animation-delay: 1.5s;
   }
 
+  /* Focus States */
   *:focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Mobile-optimized typography */
-  h1 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
-  h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
-  h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+  /* Container and Layout Utilities */
+  .container {
+    @apply px-4 mx-auto;
+    max-width: min(100% - 1rem, 75ch);
+  }
 
   .prose {
     @apply text-foreground;
@@ -292,10 +175,8 @@
 
   .nav-link:hover {
     @apply text-primary;
-    text-shadow: 0 0 8px hsl(var(--primary) / 0.2);
   }
 
-  /* Mobile layout optimizations */
   @media (max-width: 640px) {
     .container {
       @apply px-3;
@@ -329,101 +210,30 @@
       font-size: 0.875rem;
     }
   }
-  /* Controls positioning - Mobile optimized */
 
-  /* Ensure footer has proper spacing */
   footer {
     @apply mt-16 mb-24 sm:mb-32;
   }
 
-  /* Story content container adjustments */
   .story-container {
     @apply pb-16 sm:pb-20;
   }
 
-  /* Skip to content link */
   .skip-to-content {
     @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
            focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:rounded-md;
   }
 
-  /* Grid layouts - Mobile optimized */
   .grid-layout {
     @apply grid gap-3 sm:gap-4 md:gap-6;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   }
 
-  /* Social Buttons */
   .social-buttons {
     @apply flex justify-center items-center gap-4 p-4;
   }
 
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime&family=Dancing+Script&display=swap');
-
-:root {
-  --deep-burgundy: #8B0000;
-  --forest-green: #228B22;
-  --charcoal-black: #1A1A1A;
-  --antique-gold: #B8860B;
-  --faded-parchment: #F5F5DC;
-  --ink-stained-gray: #423F3B;
-  --cream-white: #FFF8E7;
-  --dusty-rose: #D4A5A5;
-  --warm-beige: #E0C090;
-  --burnt-sienna: #8B4513;
-  --olive-green: #556B2F;
-  --dark-brown: #3E2723;
-}
-
-body {
-  font-family: Garamond, "Playfair Display", serif;
-  font-size: 16px;
-  line-height: 1.6;
-  background-color: var(--cream-white);
-  color: var(--dark-brown);
-}
-
-[data-theme="dark"] body {
-  background-color: var(--charcoal-black);
-  color: var(--faded-parchment);
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Playfair Display", Garamond, serif;
-  line-height: 1.2;
-  letter-spacing: 2px;
-}
-
-.typewriter-text {
-  font-family: "Courier Prime", monospace;
-}
-
-.handwritten-text {
-  font-family: "Dancing Script", "Great Vibes", cursive;
-}
-
-.latin-phrase {
-  font-style: italic;
-  color: var(--antique-gold);
-}
-
-[data-theme="light"] .latin-phrase {
-  color: var(--burnt-sienna);
-}
-
-.hover-glow {
-  transition: text-shadow 0.3s ease;
-}
-
-[data-theme="dark"] .hover-glow:hover {
-  text-shadow: 0 0 8px var(--antique-gold);
-}
-
-[data-theme="light"] .hover-glow:hover {
-  text-shadow: 0 0 8px var(--burnt-sienna);
-}
-
-.social-button {
+  .social-button {
     @apply flex justify-center items-center w-10 h-10 rounded-full 
            transition-all duration-300 hover:scale-110 hover:shadow-lg;
   }
@@ -456,7 +266,6 @@ h1, h2, h3, h4, h5, h6 {
     @apply bg-[#1877F2] text-white hover:bg-white hover:text-[#1877F2];
   }
 
-  /* Like/Dislike Animations */
   .fireworks {
     @apply absolute -top-2 -right-2 pointer-events-none;
   }
@@ -498,17 +307,14 @@ h1, h2, h3, h4, h5, h6 {
     }
   }
 
-  /* Card animations */
   .card {
     @apply transition-all duration-300 hover:shadow-lg;
   }
 
-  /* Section spacing */
   .content-section {
     @apply py-8 md:py-12 lg:py-16;
   }
 
-  /* Mobile-first responsive navigation */
   @media (max-width: 768px) {
     .nav-container {
       @apply px-2;
@@ -518,4 +324,42 @@ h1, h2, h3, h4, h5, h6 {
       @apply space-y-2;
     }
   }
+  h1 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
+  h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+  h3 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+  
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime&family=Dancing+Script&display=swap');
+
+  body {
+    font-family: Garamond, "Playfair Display", serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", Garamond, serif;
+    line-height: 1.2;
+    letter-spacing: 2px;
+  }
+
+  .typewriter-text {
+    font-family: "Courier Prime", monospace;
+  }
+
+  .handwritten-text {
+    font-family: "Dancing Script", "Great Vibes", cursive;
+  }
+
+  .latin-phrase {
+    font-style: italic;
+  }
+
+  .hover-glow {
+    transition: text-shadow 0.3s ease;
+  }
+
+  button, a {
+    @apply transition-transform duration-200 hover:shadow-md active:scale-95;
+  }
+    
 }

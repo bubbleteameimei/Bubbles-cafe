@@ -1,34 +1,34 @@
 {
   "variant": "professional",
-  "primary": "hsl(0, 100%, 27%)",
+  "primary": "hsl(0, 0%, 0%)",
   "appearance": "dark",
   "radius": 0.5,
   "background": {
     "dark": "hsl(0, 0%, 10%)",
-    "light": "hsl(60, 56%, 91%)"
+    "light": "hsl(0, 0%, 98%)"
   },
   "foreground": {
-    "dark": "hsl(60, 56%, 91%)",
+    "dark": "hsl(0, 0%, 98%)",
     "light": "hsl(0, 0%, 10%)"
   },
   "muted": {
     "dark": "hsl(0, 0%, 15%)",
-    "light": "hsl(60, 33%, 96%)"
+    "light": "hsl(0, 0%, 96%)"
   },
   "accent": {
-    "dark": "hsl(43, 87%, 38%)",
-    "light": "hsl(0, 100%, 27%)"
+    "dark": "hsl(0, 0%, 20%)",
+    "light": "hsl(0, 0%, 94%)"
   },
   "card": {
     "dark": "hsl(0, 0%, 12%)",
     "light": "hsl(0, 0%, 100%)"
   },
   "border": {
-    "dark": "hsl(43, 87%, 38%, 0.2)",
-    "light": "hsl(60, 33%, 96%)"
+    "dark": "hsl(0, 0%, 20%)",
+    "light": "hsl(0, 0%, 90%)"
   },
   "destructive": {
-    "dark": "hsl(0, 100%, 27%)",
-    "light": "hsl(0, 85%, 35%)"
+    "dark": "hsl(0, 100%, 30%)",
+    "light": "hsl(0, 100%, 40%)"
   }
 }
