@@ -13,6 +13,11 @@ import { getIconComponent } from '@/components/ui/icons';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 // Helper function to generate and persist random stats
 const getOrCreateStats = (postId: number) => {
   const storageKey = `post-stats-${postId}`;
@@ -66,8 +71,13 @@ const getReadingTime = (content: string) => {
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
+    queryFn: async () => {
+      const response = await fetch('/api/posts?page=1&limit=50');
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
     retry: 3,
     staleTime: 5 * 60 * 1000
   });
@@ -82,8 +92,8 @@ export default function IndexView() {
   };
 
   const navigateToStory = (postId: number) => {
-    if (!posts) return;
-    const index = posts.findIndex(p => p.id === postId);
+    if (!postsData?.posts) return;
+    const index = postsData.posts.findIndex(p => p.id === postId);
     if (index !== -1) {
       sessionStorage.setItem('selectedStoryIndex', index.toString());
       setLocation('/reader');
@@ -94,9 +104,11 @@ export default function IndexView() {
     return <LoadingScreen />;
   }
 
-  if (error || !posts || posts.length === 0) {
+  if (error || !postsData?.posts || postsData.posts.length === 0) {
     return <div className="text-center p-8">Stories not found or error loading stories.</div>;
   }
+
+  const posts = postsData.posts;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -165,7 +177,7 @@ export default function IndexView() {
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3 font-serif">
                         {excerpt}
                       </p>
-                      
+
                       <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>

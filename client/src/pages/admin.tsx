@@ -57,27 +57,38 @@ export default function AdminPage() {
     checkAuth();
   }, [setLocation, toast]);
 
-  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
+  const { data: postsData, isLoading: postsLoading } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=50'); // Load more posts for admin view
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: (failureCount, error) => {
-      if (error instanceof Error && error.message.includes('401')) {
-        return false; // Don't retry auth failures
+      try {
+        const response = await fetch('/api/posts?page=1&limit=50');
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        const data = await response.json();
+        return {
+          posts: Array.isArray(data.posts) ? data.posts : [],
+          hasMore: !!data.hasMore
+        };
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        return { posts: [], hasMore: false };
       }
-      return failureCount < 2;
     },
+    staleTime: 5 * 60 * 1000
   });
 
-  const posts = postsData?.posts || [];
-
-  const { data: comments = [] } = useQuery<Comment[]>({
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
     queryKey: ["/api/comments/recent"],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/comments/recent');
+        if (!response.ok) throw new Error('Failed to fetch comments');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+      }
+    },
     staleTime: 5 * 60 * 1000
   });
 
@@ -182,7 +193,7 @@ export default function AdminPage() {
     window.open(`/story/${slug}`, '_blank');
   };
 
-  if (isLoading) {
+  if (postsLoading || commentsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -190,10 +201,7 @@ export default function AdminPage() {
     );
   }
 
-  if (error) {
-    setLocation("/admin/login");
-    return null;
-  }
+  const posts = postsData?.posts || [];
 
   return (
     <ErrorBoundary>
@@ -267,7 +275,7 @@ export default function AdminPage() {
             <CardContent>
               <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                 <div className="space-y-4">
-                  {posts.map((post: Post) => (
+                  {Array.isArray(posts) && posts.map((post: Post) => (
                     <div
                       key={post.id}
                       className={`p-4 border rounded-lg transition-colors ${
@@ -342,7 +350,7 @@ export default function AdminPage() {
             <CardContent>
               <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                 <div className="space-y-4">
-                  {comments.map((comment) => (
+                  {Array.isArray(comments) && comments.map((comment) => (
                     <div key={comment.id} className="border p-4 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <div>

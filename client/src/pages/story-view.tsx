@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
@@ -35,6 +35,11 @@ export default function StoryView({ slug }: StoryViewProps) {
 
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", slug],
+    queryFn: async () => {
+      const response = await fetch(`/api/posts/${slug}`);
+      if (!response.ok) throw new Error('Failed to fetch post');
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000,
     retry: 2
   });

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Axe, Scissors } from "lucide-react";
+import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
 import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -15,17 +15,22 @@ interface PostCardProps {
 export default function PostCard({ post, onClick }: PostCardProps) {
   const [, setLocation] = useLocation();
 
+  if (!post) {
+    return null;
+  }
+
   const handleClick = () => {
     if (onClick) {
       onClick();
-    } else {
+    } else if (post.slug) {
       setLocation(`/story/${post.slug}`);
     }
   };
 
   const getEngagingExcerpt = (content: string): string => {
+    if (!content) return '';
     const paragraphs = content.split('\n\n');
-    const significantParagraph = paragraphs.find(p => p.trim().length >= 100) || paragraphs[0];
+    const significantParagraph = paragraphs.find(p => p.trim().length >= 100) || paragraphs[0] || '';
     return significantParagraph.slice(0, 200) + (significantParagraph.length > 200 ? '...' : '');
   };
 
@@ -37,29 +42,28 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     return `${minutes} min read`;
   };
 
-  const theme = detectThemes(post.content)[0];
-  const intensity = calculateIntensity(post.content);
+  const themes = post.content ? detectThemes(post.content) : [];
+  const theme = themes.length > 0 ? themes[0] : null;
+  const intensity = post.content ? calculateIntensity(post.content) : 1;
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
 
   const IconComponent = themeInfo?.icon === 'Worm' ? Worm :
-                      themeInfo?.icon === 'Skull' ? Skull :
-                      themeInfo?.icon === 'Brain' ? Brain :
-                      themeInfo?.icon === 'Pill' ? Pill :
-                      themeInfo?.icon === 'Cpu' ? Cpu :
-                      themeInfo?.icon === 'Dna' ? Dna :
-                      themeInfo?.icon === 'Axe' ? Axe :
-                      themeInfo?.icon === 'Ghost' ? Ghost :
-                      themeInfo?.icon === 'Scissors' ? Scissors :
-                      themeInfo?.icon === 'Footprints' ? Footprints :
-                      themeInfo?.icon === 'Castle' ? Castle :
-                      themeInfo?.icon === 'Radiation' ? Radiation :
-                      themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
-                      themeInfo?.icon === 'Anchor' ? Anchor :
-                      themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
-                      themeInfo?.icon === 'Building' ? Building :
-                      themeInfo?.icon === 'Clock' ? Clock :
-                      Moon;
+                    themeInfo?.icon === 'Skull' ? Skull :
+                    themeInfo?.icon === 'Brain' ? Brain :
+                    themeInfo?.icon === 'Pill' ? Pill :
+                    themeInfo?.icon === 'Cpu' ? Cpu :
+                    themeInfo?.icon === 'Dna' ? Dna :
+                    themeInfo?.icon === 'Footprints' ? Footprints :
+                    themeInfo?.icon === 'Ghost' ? Ghost :
+                    themeInfo?.icon === 'Castle' ? Castle :
+                    themeInfo?.icon === 'Radiation' ? Radiation :
+                    themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
+                    themeInfo?.icon === 'Anchor' ? Anchor :
+                    themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
+                    themeInfo?.icon === 'Building' ? Building :
+                    themeInfo?.icon === 'Clock' ? Clock :
+                    Moon;
 
   return (
     <motion.div

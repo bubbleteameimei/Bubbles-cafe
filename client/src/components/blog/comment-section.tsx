@@ -10,16 +10,15 @@ import { Loader2 } from "lucide-react";
 
 interface Comment {
   id: number;
-  name: string;
   content: string;
   createdAt: Date | string;
   approved: boolean;
-  author?: string;
+  author: string;
 }
 
 interface CommentSectionProps {
   postId: number;
-  title?: string; // Made optional since it's not always needed
+  title?: string;
 }
 
 export default function CommentSection({ postId, title }: CommentSectionProps) {
@@ -30,21 +29,69 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/posts/${postId}/comments`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch comments');
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+      }
+    },
     refetchInterval: 30000,
     staleTime: 10000
   });
 
   const mutation = useMutation({
     mutationFn: async (comment: { name: string; content: string }) => {
+      // Validate input length
+      if (comment.name.length < 2 || comment.name.length > 50) {
+        throw new Error('Name must be between 2 and 50 characters');
+      }
+      if (comment.content.length < 3 || comment.content.length > 500) {
+        throw new Error('Comment must be between 3 and 500 characters');
+      }
+
+      // Validate name pattern (letters, numbers, spaces, and basic punctuation)
+      const namePattern = /^[a-zA-Z0-9\s.,!?-]{2,50}$/;
+      if (!namePattern.test(comment.name.trim())) {
+        throw new Error('Name contains invalid characters');
+      }
+
+      // Basic content validation (allow more characters but prevent HTML/scripts)
+      const contentPattern = /^[^<>{}]*$/;
+      if (!contentPattern.test(comment.content)) {
+        throw new Error('Comment contains invalid characters');
+      }
+
+      // Remove excessive whitespace and sanitize
+      const sanitizedContent = comment.content
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[^\w\s.,!?-]/g, '');
+      const sanitizedName = comment.name
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[^\w\s.,!?-]/g, '');
+
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          author: comment.name.trim(), 
-          content: comment.content.trim() 
+          author: sanitizedName, 
+          content: sanitizedContent
         })
       });
-      if (!response.ok) throw new Error("Failed to post comment");
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to post comment' }));
+        throw new Error(errorData.message || 'Failed to post comment');
+      }
+
       return response.json();
     },
     onSuccess: () => {
@@ -65,8 +112,9 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!name.trim() || !content.trim()) {
       toast({
         title: "Error",
@@ -75,7 +123,13 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       });
       return;
     }
-    mutation.mutate({ name, content });
+
+    try {
+      await mutation.mutateAsync({ name, content });
+    } catch (error) {
+      // Error is handled by mutation error callback
+      console.error('Failed to submit comment:', error);
+    }
   };
 
   return (
@@ -92,7 +146,9 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={50}
+              minLength={2}
               className="bg-background/50"
+              required
             />
           </div>
           <div className="space-y-2">
@@ -101,13 +157,15 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={500}
+              minLength={3}
               rows={4}
               className="bg-background/50"
+              required
             />
           </div>
           <Button 
             type="submit" 
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !name.trim() || !content.trim()}
             className="w-full sm:w-auto"
           >
             {mutation.isPending ? (
@@ -124,21 +182,21 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
       <div className="space-y-4">
         <h3 className="font-medium text-lg text-foreground/90">
-          {comments.filter(comment => comment.approved).length} Comments
+          {Array.isArray(comments) ? comments.filter(comment => comment.approved).length : 0} Comments
         </h3>
 
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : comments.filter(comment => comment.approved).length > 0 ? (
+        ) : Array.isArray(comments) && comments.filter(comment => comment.approved).length > 0 ? (
           <div className="space-y-4">
             {comments
               .filter(comment => comment.approved)
               .map(comment => (
                 <Card key={comment.id} className="p-4 bg-card/50 backdrop-blur-sm">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-foreground">{comment.name}</span>
+                    <span className="font-medium text-foreground">{comment.author}</span>
                     <time className="text-sm text-muted-foreground">
                       {format(new Date(comment.createdAt), 'MMM d, yyyy')}
                     </time>

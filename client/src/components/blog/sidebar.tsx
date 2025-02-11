@@ -18,31 +18,36 @@ export default function Sidebar() {
   const { data: postsData, isLoading: isLoadingPosts } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=5');
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
+      try {
+        const response = await fetch('/api/posts?page=1&limit=5');
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        const data = await response.json();
+        return {
+          posts: Array.isArray(data.posts) ? data.posts : [],
+          hasMore: !!data.hasMore
+        };
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        return { posts: [], hasMore: false };
+      }
     },
     staleTime: 5 * 60 * 1000
   });
 
-  const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
-    queryKey: ["/api/comments/recent"]
-  });
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
+  const { data: comments = [], isLoading: isLoadingComments } = useQuery<Comment[]>({
+    queryKey: ["/api/comments/recent"],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/comments/recent');
+        if (!response.ok) throw new Error('Failed to fetch comments');
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
       }
     }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  });
 
   if (isLoadingPosts || isLoadingComments) {
     return (
@@ -76,7 +81,7 @@ export default function Sidebar() {
         </CardHeader>
         <CardContent>
           <motion.ul className="space-y-3" variants={containerVariants}>
-            {posts.map((post) => (
+            {Array.isArray(posts) && posts.map((post) => (
               <motion.li key={post.id} variants={itemVariants}>
                 <button 
                   onClick={() => setLocation(`/story/${post.slug}`)}
@@ -86,7 +91,7 @@ export default function Sidebar() {
                 </button>
               </motion.li>
             ))}
-            {!posts.length && (
+            {(!Array.isArray(posts) || posts.length === 0) && (
               <motion.li variants={itemVariants} className="text-muted-foreground">
                 No stories available
               </motion.li>
@@ -94,13 +99,14 @@ export default function Sidebar() {
           </motion.ul>
         </CardContent>
       </Card>
+
       <Card className="transition-colors hover:bg-accent/5">
         <CardHeader>
           <CardTitle>Recent Comments</CardTitle>
         </CardHeader>
         <CardContent>
           <motion.ul className="space-y-4" variants={containerVariants}>
-            {comments?.slice(0, 3).map((comment) => (
+            {Array.isArray(comments) && comments.slice(0, 3).map((comment) => (
               <motion.li 
                 key={comment.id} 
                 variants={itemVariants}
@@ -117,7 +123,7 @@ export default function Sidebar() {
                 </p>
               </motion.li>
             ))}
-            {!comments?.length && (
+            {(!Array.isArray(comments) || comments.length === 0) && (
               <motion.li 
                 variants={itemVariants}
                 className="text-muted-foreground text-sm"
@@ -167,3 +173,18 @@ export default function Sidebar() {
     </motion.div>
   );
 }
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };

@@ -36,6 +36,11 @@ import CommentSection from "@/components/blog/comment-section";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 const getIconComponent = (iconName: string) => {
   switch (iconName) {
     case 'Brain': return Brain;
@@ -72,16 +77,29 @@ export default function Reader() {
     themes: []
   });
 
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
-    retry: 3,
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/posts?page=1&limit=50');
+        if (!response.ok) throw new Error('Failed to fetch posts');
+        const data = await response.json();
+        return {
+          posts: Array.isArray(data.posts) ? data.posts : [],
+          hasMore: !!data.hasMore
+        };
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        return { posts: [], hasMore: false };
+      }
+    },
     staleTime: 5 * 60 * 1000
   });
 
   useEffect(() => {
-    if (posts) {
+    if (postsData?.posts && Array.isArray(postsData.posts)) {
       const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
-      posts.forEach(post => {
+      postsData.posts.forEach(post => {
         const storageKey = `post-stats-${post.id}`;
         const existingStats = localStorage.getItem(storageKey);
         if (existingStats) {
@@ -97,45 +115,47 @@ export default function Reader() {
       });
       setPostStats(persistedStats);
     }
-  }, [posts]);
+  }, [postsData?.posts]);
 
   const goToPrevious = useCallback(() => {
-    if (!posts?.length) return;
-    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
+    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
+    setCurrentIndex((prev) => (prev === 0 ? postsData.posts.length - 1 : prev - 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [postsData?.posts]);
 
   const goToNext = useCallback(() => {
-    if (!posts?.length) return;
-    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
+    setCurrentIndex((prev) => (prev === postsData.posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [postsData?.posts]);
 
   const randomize = useCallback(() => {
-    if (!posts?.length) return;
-    const newIndex = Math.floor(Math.random() * posts.length);
+    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
+    const newIndex = Math.floor(Math.random() * postsData.posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [posts?.length]);
+  }, [postsData?.posts]);
 
   useEffect(() => {
-    const currentPost = posts?.[currentIndex];
+    const currentPost = postsData?.posts?.[currentIndex];
     if (currentPost?.content) {
       const themes = detectThemes(currentPost.content);
       setContentAnalysis({ themes });
     }
-  }, [currentIndex, posts]);
+  }, [currentIndex, postsData?.posts]);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  if (error || !posts || posts.length === 0) {
+  if (error || !postsData?.posts || !Array.isArray(postsData.posts)) {
     console.error('Error loading stories:', error);
     return <div className="text-center p-8">Stories not found or error loading stories.</div>;
   }
 
+  const posts = postsData.posts;
   const currentPost = posts[currentIndex];
+
   if (!currentPost) {
     return <div className="text-center p-8">Error loading current story.</div>;
   }
