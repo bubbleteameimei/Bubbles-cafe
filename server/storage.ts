@@ -44,6 +44,7 @@ export interface IStorage {
   createComment(comment: InsertComment): Promise<Comment>;
   updateComment(id: number, comment: Partial<Comment>): Promise<Comment>;
   deleteComment(id: number): Promise<void>;
+  getPendingComments(): Promise<Comment[]>;
 
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
@@ -365,6 +366,18 @@ export class DatabaseStorage implements IStorage {
       .from(comments)
       .orderBy(desc(comments.createdAt))
       .limit(10);
+
+    return commentsResult.map(comment => ({
+      ...comment,
+      createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+    }));
+  }
+
+  async getPendingComments(): Promise<Comment[]> {
+    const commentsResult = await db.select()
+      .from(comments)
+      .where(eq(comments.approved, false))
+      .orderBy(desc(comments.createdAt));
 
     return commentsResult.map(comment => ({
       ...comment,

@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Comment {
   id: number;
@@ -56,14 +57,14 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
         throw new Error('Comment must be between 3 and 500 characters');
       }
 
-      // Basic content validation (prevent scripts and ensure readability)
+      // Basic content validation
       const sanitizedContent = comment.content
         .trim()
-        .replace(/\s+/g, ' ');  // normalize whitespace
+        .replace(/\s+/g, ' ');
 
       const sanitizedName = comment.name
         .trim()
-        .replace(/\s+/g, ' '); // normalize whitespace
+        .replace(/\s+/g, ' ');
 
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
@@ -81,14 +82,25 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setName("");
       setContent("");
-      toast({
-        title: "Comment posted",
-        description: "Your comment will be visible after moderation"
-      });
+
+      // Show different toast messages based on whether the comment was auto-approved
+      if (data.approved) {
+        toast({
+          title: "✨ Comment Posted!",
+          description: "Thank you for sharing your thoughts!",
+          className: "bg-primary text-primary-foreground"
+        });
+      } else {
+        toast({
+          title: "Comment Received",
+          description: "Your comment will be reviewed shortly. Thanks for your patience!",
+          variant: "default"
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -114,7 +126,6 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     try {
       await mutation.mutateAsync({ name, content });
     } catch (error) {
-      // Error is handled by mutation error callback
       console.error('Failed to submit comment:', error);
     }
   };
@@ -122,7 +133,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
   return (
     <div className="space-y-8">
       <div className="border-t border-border/50 pt-8">
-        <h2 className="text-2xl font-bold mb-6">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
           {title ? `Comments on "${title}"` : "Comments"}
         </h2>
 
@@ -134,19 +146,25 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
               onChange={(e) => setName(e.target.value)}
               maxLength={50}
               minLength={2}
-              className="bg-background/50"
+              className={cn(
+                "bg-background/50",
+                "focus:ring-2 focus:ring-primary/20"
+              )}
               required
             />
           </div>
           <div className="space-y-2">
             <Textarea
-              placeholder="Write a comment..."
+              placeholder="Share your thoughts..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={500}
               minLength={3}
               rows={4}
-              className="bg-background/50"
+              className={cn(
+                "bg-background/50",
+                "focus:ring-2 focus:ring-primary/20"
+              )}
               required
             />
           </div>

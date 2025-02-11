@@ -136,8 +136,8 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error creating post:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid post data", 
+        return res.status(400).json({
+          message: "Invalid post data",
           errors: error.errors.map(err => ({
             path: err.path.join('.'),
             message: err.message
@@ -384,6 +384,17 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add comment routes after the existing post routes
+  app.get("/api/comments/pending", isAuthenticated, async (_req: Request, res: Response) => {
+    try {
+      const comments = await storage.getPendingComments();
+      console.log('Fetched pending comments:', comments);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching pending comments:", error);
+      res.status(500).json({ message: "Failed to fetch pending comments" });
+    }
+  });
+
   app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.postId);
@@ -401,8 +412,22 @@ Timestamp: ${new Date().toLocaleString()}
         ...req.body
       });
 
-      // Create the comment
-      const comment = await storage.createComment(commentData);
+      // Check for filtered words
+      const filteredWords = [
+        'hate', 'kill', 'racist', 'offensive', 'slur',
+        'violence', 'death', 'murder', 'abuse', 'discriminate'
+        // Add more filtered words as needed
+      ];
+
+      const containsFilteredWord = filteredWords.some(word =>
+        commentData.content.toLowerCase().includes(word.toLowerCase())
+      );
+
+      // Auto-approve if no filtered words are found
+      const comment = await storage.createComment({
+        ...commentData,
+        approved: !containsFilteredWord
+      });
 
       res.status(201).json(comment);
     } catch (error) {

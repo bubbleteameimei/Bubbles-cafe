@@ -84,16 +84,21 @@ export default function Reader() {
         const response = await fetch('/api/posts?page=1&limit=50');
         if (!response.ok) throw new Error('Failed to fetch posts');
         const data = await response.json();
+        console.log('Fetched posts data:', data);
+        if (!data.posts || !Array.isArray(data.posts)) {
+          throw new Error('Invalid posts data format');
+        }
         return {
-          posts: Array.isArray(data.posts) ? data.posts : [],
+          posts: data.posts,
           hasMore: !!data.hasMore
         };
       } catch (error) {
         console.error('Error fetching posts:', error);
-        return { posts: [], hasMore: false };
+        throw error;
       }
     },
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    retry: 3
   });
 
   useEffect(() => {
@@ -114,8 +119,11 @@ export default function Reader() {
         }
       });
       setPostStats(persistedStats);
+
+      // Save current index to session storage
+      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
-  }, [postsData?.posts]);
+  }, [postsData?.posts, currentIndex]);
 
   const goToPrevious = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
@@ -148,16 +156,21 @@ export default function Reader() {
     return <LoadingScreen />;
   }
 
-  if (error || !postsData?.posts || !Array.isArray(postsData.posts)) {
+  if (error || !postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) {
     console.error('Error loading stories:', error);
-    return <div className="text-center p-8">Stories not found or error loading stories.</div>;
+    return (
+      <div className="text-center p-8">
+        <h2 className="text-xl font-medium mb-4">No stories available</h2>
+        <p className="text-muted-foreground">Please try again later.</p>
+      </div>
+    );
   }
 
   const posts = postsData.posts;
   const currentPost = posts[currentIndex];
 
   if (!currentPost) {
-    return <div className="text-center p-8">Error loading current story.</div>;
+    return <div className="text-center p-8">No story selected.</div>;
   }
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
@@ -168,6 +181,7 @@ export default function Reader() {
     'chase': 'STALKING',
     'descent': 'DEATH'
   };
+
   const title = currentPost.title.toLowerCase();
   let theme = storyThemeMap[title] || contentAnalysis.themes[0];
   const themeInfo = theme ? THEME_CATEGORIES[theme] : null;

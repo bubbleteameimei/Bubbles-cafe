@@ -110,7 +110,7 @@ export const insertPostSchema = createInsertSchema(posts)
   });
 
 export const insertCommentSchema = createInsertSchema(comments)
-  .omit({ id: true, createdAt: true, approved: true })
+  .omit({ id: true, createdAt: true })
   .extend({
     author: z.string()
       .min(2, "Name must be at least 2 characters")
@@ -119,7 +119,8 @@ export const insertCommentSchema = createInsertSchema(comments)
     content: z.string()
       .min(3, "Comment must be at least 3 characters")
       .max(500, "Comment cannot exceed 500 characters")
-      .transform(val => val.trim())
+      .transform(val => val.trim()),
+    approved: z.boolean().optional().default(false)
   });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });

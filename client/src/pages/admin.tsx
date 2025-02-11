@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Loader2, Plus, X, Pencil, Trash2, Eye } from "lucide-react";
+import { LogOut, Loader2, Plus, Pencil, Trash2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -24,7 +24,7 @@ interface PostsResponse {
   hasMore: boolean;
 }
 
-export default function AdminPage() {
+const AdminPage = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const { toast } = useToast();
@@ -83,19 +83,32 @@ export default function AdminPage() {
     staleTime: 5 * 60 * 1000
   });
 
-  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
-    queryKey: ["/api/comments/recent"],
+  const { data: pendingComments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
+    queryKey: ["/api/comments/pending"],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/comments/recent');
-        if (!response.ok) throw new Error('Failed to fetch comments');
+        const response = await fetch('/api/comments/pending');
+        if (!response.ok) throw new Error('Failed to fetch pending comments');
         const data = await response.json();
+        console.log('Fetched pending comments:', data);
+
+        // If there are new pending comments, show a notification
+        const currentComments = queryClient.getQueryData<Comment[]>(["/api/comments/pending"]) || [];
+        if (Array.isArray(data) && data.length > currentComments.length) {
+          toast({
+            title: "New Comments",
+            description: `You have ${data.length - currentComments.length} new comment${data.length - currentComments.length === 1 ? '' : 's'} awaiting moderation.`,
+            variant: "default",
+          });
+        }
+
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error fetching comments:', error);
+        console.error('Error fetching pending comments:', error);
         return [];
       }
     },
+    refetchInterval: 30000, // Poll every 30 seconds for new comments
     staleTime: 5 * 60 * 1000
   });
 
@@ -106,15 +119,22 @@ export default function AdminPage() {
         const error = await response.json();
         throw new Error(error.message || "Failed to delete post");
       }
+      return postId;
     },
-    onSuccess: () => {
+    onSuccess: (deletedPostId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      // Update local state to immediately reflect deletion
+      if (postsData?.posts) {
+        const updatedPosts = postsData.posts.filter(post => post.id !== deletedPostId);
+        queryClient.setQueryData(["/api/posts"], { posts: updatedPosts, hasMore: postsData.hasMore });
+      }
       toast({
         title: "Success",
         description: "Post deleted successfully",
       });
     },
     onError: (error: Error) => {
+      console.error('Post deletion error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete post",
@@ -133,7 +153,7 @@ export default function AdminPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
       toast({
         title: "Success",
         description: "Comment moderated successfully"
@@ -156,7 +176,7 @@ export default function AdminPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
       toast({
         title: "Success",
         description: "Comment deleted successfully"
@@ -259,7 +279,14 @@ export default function AdminPage() {
         <Tabs defaultValue="posts" className="w-full">
           <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
             <TabsTrigger value="posts">Posts Management</TabsTrigger>
-            <TabsTrigger value="comments">Comment Moderation</TabsTrigger>
+            <TabsTrigger value="comments">
+              Comment Moderation
+              {pendingComments.length > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                  {pendingComments.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts" className="space-y-4">
@@ -355,38 +382,48 @@ export default function AdminPage() {
               <CardContent>
                 <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                   <div className="space-y-4">
-                    {Array.isArray(comments) && comments.map((comment) => (
-                      <div key={comment.id} className="border p-6 rounded-lg">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <p className="font-medium text-lg">{comment.author}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
-                            </p>
+                    {Array.isArray(pendingComments) && pendingComments.length > 0 ? (
+                      pendingComments.map((comment) => (
+                        <div key={comment.id} className="border p-6 rounded-lg">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="font-medium text-lg">{comment.author}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant={comment.approved ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => moderateCommentMutation.mutate({
+                                  id: comment.id,
+                                  approved: !comment.approved
+                                })}
+                              >
+                                {comment.approved ? "Approved" : "Approve"}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this comment?')) {
+                                    deleteCommentMutation.mutate(comment.id);
+                                  }
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant={comment.approved ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => moderateCommentMutation.mutate({ 
-                                id: comment.id, 
-                                approved: !comment.approved 
-                              })}
-                            >
-                              {comment.approved ? "Approved" : "Approve"}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => deleteCommentMutation.mutate(comment.id)}
-                            >
-                              Delete
-                            </Button>
-                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                      ))
+                    ) : (
+                      <div className="text-center p-8 text-muted-foreground">
+                        No pending comments to moderate
                       </div>
-                    ))}
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -396,4 +433,6 @@ export default function AdminPage() {
       </div>
     </ErrorBoundary>
   );
-}
+};
+
+export default AdminPage;
