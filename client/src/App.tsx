@@ -54,9 +54,9 @@ function App() {
     };
   }, []);
 
-  // Scroll to top on route change
+  // Scroll to top on route change with smooth behavior
   React.useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location]);
 
   if (isLoading) {
@@ -68,13 +68,10 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <div className="relative min-h-screen bg-background text-foreground antialiased">
-            {/* Sticky Navigation */}
-            <div className="sticky top-0 z-50">
-              <Navigation />
-            </div>
+            <Navigation />
 
-            {/* Main Content */}
-            <main className="relative">
+            {/* Main Content - Add padding-top to account for fixed header */}
+            <main className="pt-[112px] transition-all duration-200">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
                   <Switch>
