@@ -6,6 +6,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import Navigation from "@/components/layout/navigation";
 
 // Lazy load components that aren't needed immediately
 const Home = lazy(() => import("@/pages/home"));
@@ -35,7 +36,6 @@ function App() {
     };
   }, []);
 
-  // Scroll to top on route change
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location]);
@@ -49,6 +49,7 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <div className="min-h-screen bg-background">
+            <Navigation />
             <main>
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
