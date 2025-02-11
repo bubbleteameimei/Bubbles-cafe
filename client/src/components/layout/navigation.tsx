@@ -92,8 +92,8 @@ export default function Navigation() {
   }, [theme, setTheme]);
 
   return (
-    <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/95 backdrop-blur-md" role="banner">
-      <div className="relative z-10">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md shadow-md" role="banner">
+      <div className="relative">
         <div className="container mx-auto py-6 px-4 text-center relative">
           <h1 className="font-serif text-4xl font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-widest">
             Bubble's Cafe

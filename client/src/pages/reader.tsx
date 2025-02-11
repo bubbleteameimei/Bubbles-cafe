@@ -81,7 +81,7 @@ export default function Reader() {
     queryKey: ["/api/posts"],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/posts?page=1&limit=50');
+        const response = await fetch('/api/posts?page=1&limit=16');
         if (!response.ok) throw new Error('Failed to fetch posts');
         const data = await response.json();
         console.log('Fetched posts data:', data);

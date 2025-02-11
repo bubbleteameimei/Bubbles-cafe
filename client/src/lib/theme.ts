@@ -3,25 +3,25 @@ export const theme = {
     darkMode: {
       primaryColors: {
         base: '#000000',
-        subtle: '#1A1A1A',
-        accent: '#333333'
+        subtle: '#0A0A0A',
+        accent: '#1A1A1A'
       },
       accentColors: {
         primary: '#FFFFFF',
-        secondary: '#CCCCCC',
-        muted: '#999999'
+        secondary: '#E0E0E0',
+        muted: '#A0A0A0'
       }
     },
     lightMode: {
       primaryColors: {
         base: '#FFFFFF',
-        subtle: '#F5F5F5',
-        accent: '#EEEEEE'
+        subtle: '#FAFAFA',
+        accent: '#F5F5F5'
       },
       accentColors: {
         primary: '#000000',
-        secondary: '#333333',
-        muted: '#666666'
+        secondary: '#1A1A1A',
+        muted: '#4A4A4A'
       }
     }
   },

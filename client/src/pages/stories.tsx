@@ -11,7 +11,7 @@ import { useInView } from "framer-motion";
 import { useRef } from "react";
 import React from 'react';
 
-const POSTS_PER_PAGE = 10;
+const POSTS_PER_PAGE = 16;
 
 interface PostsResponse {
   posts: Post[];
@@ -52,7 +52,7 @@ export default function Stories() {
     return <LoadingScreen />;
   }
 
-  if (error || !data) {
+  if (error || !data?.pages) {
     return <div className="text-center p-8">Stories not found or error loading stories.</div>;
   }
 

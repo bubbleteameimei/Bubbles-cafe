@@ -153,11 +153,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Posts operations
-  async getPosts(page: number = 1, limit: number = 10): Promise<{ posts: Post[], hasMore: boolean }> {
+  async getPosts(page: number = 1, limit: number = 16): Promise<{ posts: Post[], hasMore: boolean }> {
     try {
+      console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}`);
       const offset = (page - 1) * limit;
 
-      // Get posts for current page
+      // Get posts for current page with increased limit
       const posts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.isSecret, false))
@@ -168,6 +169,8 @@ export class DatabaseStorage implements IStorage {
       // Check if there are more posts
       const hasMore = posts.length > limit;
       const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
+
+      console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
 
       return {
         posts: paginatedPosts.map(post => ({

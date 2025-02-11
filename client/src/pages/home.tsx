@@ -9,8 +9,15 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+  const { data: postsResponse, isLoading, error } = useQuery<{ posts: Post[], hasMore: boolean }>({
     queryKey: ["/api/posts"],
+    queryFn: async () => {
+      const response = await fetch('/api/posts?page=1&limit=16');
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      const data = await response.json();
+      console.log('Home: Fetched posts data:', data);
+      return data;
+    },
     retry: 3,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -20,10 +27,12 @@ export default function Home() {
     return <LoadingScreen />;
   }
 
-  if (error) {
+  if (error || !postsResponse?.posts) {
     console.error('Error loading stories:', error);
     return <div className="text-center p-8">Error loading latest story.</div>;
   }
+
+  const posts = postsResponse.posts;
 
   const navigateToStory = (postId: number) => {
     if (!posts) return;
@@ -34,9 +43,9 @@ export default function Home() {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     try {
-      return format(date, 'MMMM d, yyyy');
+      return format(new Date(date), 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
       return '';

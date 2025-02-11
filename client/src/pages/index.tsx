@@ -74,7 +74,7 @@ export default function IndexView() {
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=50');
+      const response = await fetch('/api/posts?page=1&limit=16');
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
