@@ -9,6 +9,7 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import { z } from "zod"; // Add zod import
 import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema"; // Add schema import
+import { moderateComment } from "./utils/comment-moderation";
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -155,9 +156,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Invalid post ID" });
       }
 
+      console.log(`Attempting to delete post with ID: ${postId}`);
+
       // First check if post exists
       const post = await storage.getPost(postId.toString());
       if (!post) {
+        console.log(`Post ${postId} not found`);
         return res.status(404).json({ message: "Post not found" });
       }
 
@@ -169,6 +173,9 @@ export function registerRoutes(app: Express): Server {
       if (error instanceof Error) {
         if (error.message === "Post not found") {
           return res.status(404).json({ message: "Post not found" });
+        }
+        if (error.message.includes("Unauthorized")) {
+          return res.status(401).json({ message: "Unauthorized: Please log in again" });
         }
       }
       res.status(500).json({ message: "Failed to delete post" });
@@ -422,8 +429,7 @@ Timestamp: ${new Date().toLocaleString()}
       const postId = parseInt(req.params.postId);
 
       // Get post to verify it exists
-      const posts = await storage.getPosts();
-      const post = posts.posts.find(p => p.id === postId);
+      const post = await storage.getPost(postId.toString());
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -434,24 +440,31 @@ Timestamp: ${new Date().toLocaleString()}
         ...req.body
       });
 
-      // Check for filtered words
-      const filteredWords = [
-        'hate', 'kill', 'racist', 'offensive', 'slur',
-        'violence', 'death', 'murder', 'abuse', 'discriminate'
-        // Add more filtered words as needed
-      ];
+      // Use the new moderation system
+      const { isBlocked, moderatedText } = moderateComment(commentData.content);
 
-      const containsFilteredWord = filteredWords.some(word =>
-        commentData.content.toLowerCase().includes(word.toLowerCase())
-      );
-
-      // Auto-approve if no filtered words are found
+      // Create the comment with moderated content
       const comment = await storage.createComment({
         ...commentData,
-        approved: !containsFilteredWord
+        content: moderatedText,
+        approved: !isBlocked
       });
 
-      res.json(comment);
+      // Return appropriate response
+      if (isBlocked) {
+        return res.json({
+          ...comment,
+          message: "Your comment contains inappropriate content and will be reviewed by moderators.",
+          status: "pending"
+        });
+      }
+
+      return res.json({
+        ...comment,
+        message: "Thank you for your comment!",
+        status: "approved"
+      });
+
     } catch (error) {
       console.error("Error creating comment:", error);
       if (error instanceof z.ZodError) {
@@ -541,18 +554,18 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId, userId);
+      const existingVote = await storage.getCommentVote(commentId.toString(), userId.toString());
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId, userId);
+          await storage.removeCommentVote(commentId.toString(), userId.toString());
         } else {
           // Change vote
-          await storage.updateCommentVote(commentId, userId, isUpvote);
+          await storage.updateCommentVote(commentId.toString(), userId.toString(), isUpvote);
         }
       } else {
         // Create new vote
-        await storage.createCommentVote(commentId, userId, isUpvote);
+        await storage.createCommentVote(commentId.toString(), userId.toString(), isUpvote);
       }
 
       // Get updated vote counts

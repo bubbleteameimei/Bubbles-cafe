@@ -114,20 +114,24 @@ const AdminPage = () => {
 
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
+      console.log('Starting delete mutation for post:', postId);
       const response = await apiRequest("DELETE", `/api/posts/${postId}`);
       if (!response.ok) {
         const error = await response.json();
+        console.error('Delete post error:', error);
         throw new Error(error.message || "Failed to delete post");
       }
       return postId;
     },
     onSuccess: (deletedPostId) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      // Update local state to immediately reflect deletion
-      if (postsData?.posts) {
-        const updatedPosts = postsData.posts.filter(post => post.id !== deletedPostId);
-        queryClient.setQueryData(["/api/posts"], { posts: updatedPosts, hasMore: postsData.hasMore });
-      }
+      console.log('Post deleted successfully:', deletedPostId);
+      queryClient.setQueryData<PostsResponse>(["/api/posts"], (oldData) => {
+        if (!oldData) return { posts: [], hasMore: false };
+        return {
+          ...oldData,
+          posts: oldData.posts.filter(post => post.id !== deletedPostId)
+        };
+      });
       toast({
         title: "Success",
         description: "Post deleted successfully",
@@ -140,7 +144,6 @@ const AdminPage = () => {
         description: error.message || "Failed to delete post",
         variant: "destructive",
       });
-      // If unauthorized, redirect to login
       if (error.message.includes("Unauthorized")) {
         setLocation("/admin/login");
       }
@@ -366,6 +369,7 @@ const AdminPage = () => {
                               className="hover:bg-destructive/10"
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this post?')) {
+                                  console.log('Attempting to delete post:', post.id);
                                   deletePostMutation.mutate(post.id);
                                 }
                               }}
