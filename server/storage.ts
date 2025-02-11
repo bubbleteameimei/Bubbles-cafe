@@ -7,7 +7,10 @@ import {
   type ContactMessage, type InsertContactMessage,
   type Session, type InsertSession,
   type PostLike,
-  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions, postLikes
+  type CommentVote,
+  type CommentReply,
+  type InsertCommentReply,
+  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions, postLikes, commentVotes, commentReplies
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, lt, gt, sql } from "drizzle-orm";
@@ -60,6 +63,16 @@ export interface IStorage {
   updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   createPostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
+
+  // Comment votes
+  getCommentVote(commentId: number, userId: string): Promise<CommentVote | undefined>;
+  removeCommentVote(commentId: number, userId: string): Promise<void>;
+  updateCommentVote(commentId: number, userId: string, isUpvote: boolean): Promise<void>;
+  createCommentVote(commentId: number, userId: string, isUpvote: boolean): Promise<void>;
+  getCommentVoteCounts(commentId: number): Promise<{ upvotes: number; downvotes: number }>;
+
+  // Comment replies
+  createCommentReply(reply: InsertCommentReply): Promise<CommentReply>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -274,8 +287,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePost(id: number): Promise<void> {
-    await db.delete(postsTable)
-      .where(eq(postsTable.id, id));
+    try {
+      const result = await db.delete(postsTable)
+        .where(eq(postsTable.id, id))
+        .returning();
+
+      if (!result.length) {
+        throw new Error("Post not found");
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      if (error instanceof Error && error.message === "Post not found") {
+        throw error;
+      }
+      throw new Error("Failed to delete post");
+    }
   }
 
   async updatePost(id: number, post: Partial<InsertPost>): Promise<Post> {
@@ -548,6 +574,78 @@ export class DatabaseStorage implements IStorage {
     await db.update(postsTable)
       .set({ likesCount: counts.likesCount, dislikesCount: counts.dislikesCount })
       .where(eq(postsTable.id, postId));
+  }
+
+  // Comment votes methods
+  async getCommentVote(commentId: number, userId: string): Promise<CommentVote | undefined> {
+    const [vote] = await db.select()
+      .from(commentVotes)
+      .where(and(
+        eq(commentVotes.commentId, commentId),
+        eq(commentVotes.userId, userId)
+      ))
+      .limit(1);
+    return vote;
+  }
+
+  async removeCommentVote(commentId: number, userId: string): Promise<void> {
+    await db.delete(commentVotes)
+      .where(and(
+        eq(commentVotes.commentId, commentId),
+        eq(commentVotes.userId, userId)
+      ));
+  }
+
+  async updateCommentVote(commentId: number, userId: string, isUpvote: boolean): Promise<void> {
+    await db.update(commentVotes)
+      .set({ isUpvote })
+      .where(and(
+        eq(commentVotes.commentId, commentId),
+        eq(commentVotes.userId, userId)
+      ));
+  }
+
+  async createCommentVote(commentId: number, userId: string, isUpvote: boolean): Promise<void> {
+    await db.insert(commentVotes)
+      .values({
+        commentId,
+        userId,
+        isUpvote,
+        createdAt: new Date()
+      });
+  }
+
+  async getCommentVoteCounts(commentId: number): Promise<{ upvotes: number; downvotes: number }> {
+    const upvotes = await db.select({ count: sql`count(*)` })
+      .from(commentVotes)
+      .where(and(
+        eq(commentVotes.commentId, commentId),
+        eq(commentVotes.isUpvote, true)
+      ));
+
+    const downvotes = await db.select({ count: sql`count(*)` })
+      .from(commentVotes)
+      .where(and(
+        eq(commentVotes.commentId, commentId),
+        eq(commentVotes.isUpvote, false)
+      ));
+
+    return {
+      upvotes: Number(upvotes[0]?.count || 0),
+      downvotes: Number(downvotes[0]?.count || 0)
+    };
+  }
+
+  // Comment replies method
+  async createCommentReply(reply: InsertCommentReply): Promise<CommentReply> {
+    const [newReply] = await db.insert(commentReplies)
+      .values({ ...reply, createdAt: new Date() })
+      .returning();
+
+    return {
+      ...newReply,
+      createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
+    };
   }
 }
 

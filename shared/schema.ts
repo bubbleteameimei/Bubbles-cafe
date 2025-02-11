@@ -68,6 +68,25 @@ export const comments = pgTable("comments", {
   approved: boolean("approved").default(false).notNull()
 });
 
+export const commentReplies = pgTable("comment_replies", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").notNull(),
+  content: text("content").notNull(),
+  author: text("author").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  approved: boolean("approved").default(false).notNull()
+});
+
+export const commentVotes = pgTable("comment_votes", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").notNull(),
+  userId: text("user_id").notNull(), 
+  isUpvote: boolean("is_upvote").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  commentUserIdx: unique().on(table.commentId, table.userId)
+}));
+
 export const readingProgress = pgTable("reading_progress", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull(),
@@ -122,6 +141,24 @@ export const insertCommentSchema = createInsertSchema(comments)
       .transform(val => val.trim()),
     approved: z.boolean().optional().default(false)
   });
+
+export const insertCommentReplySchema = createInsertSchema(commentReplies)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    author: z.string()
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name cannot exceed 50 characters")
+      .transform(val => val.trim()),
+    content: z.string()
+      .min(3, "Reply must be at least 3 characters")
+      .max(500, "Reply cannot exceed 500 characters")
+      .transform(val => val.trim()),
+    approved: z.boolean().optional().default(false)
+  });
+
+export const insertCommentVoteSchema = createInsertSchema(commentVotes)
+  .omit({ id: true, createdAt: true });
+
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
@@ -136,6 +173,8 @@ export type SecretProgress = typeof secretProgress.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type PostLike = typeof postLikes.$inferSelect;
+export type CommentReply = typeof commentReplies.$inferSelect;
+export type CommentVote = typeof commentVotes.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertPost = z.infer<typeof insertPostSchema>;
@@ -145,6 +184,8 @@ export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type InsertPostLike = z.infer<typeof insertPostLikeSchema>;
+export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
+export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
 
 export const adminLoginSchema = z.object({
   email: z.string().email(),

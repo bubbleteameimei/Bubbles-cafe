@@ -7,7 +7,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Loader2, MessageSquare } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Reply, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import bcrypt from "bcryptjs";
+
+interface CommentVote {
+  id: number;
+  isUpvote: boolean;
+  userId: string;
+}
+
+interface CommentReply {
+  id: number;
+  content: string;
+  author: string;
+  createdAt: Date | string;
+  approved: boolean;
+}
 
 interface Comment {
   id: number;
@@ -15,6 +31,10 @@ interface Comment {
   createdAt: Date | string;
   approved: boolean;
   author: string;
+  votes?: CommentVote[];
+  replies?: CommentReply[];
+  upvotes?: number;
+  downvotes?: number;
 }
 
 interface CommentSectionProps {
@@ -25,6 +45,8 @@ interface CommentSectionProps {
 export default function CommentSection({ postId, title }: CommentSectionProps) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyContent, setReplyContent] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -69,8 +91,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          author: sanitizedName, 
+        body: JSON.stringify({
+          author: sanitizedName,
           content: sanitizedContent
         })
       });
@@ -111,6 +133,61 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     }
   });
 
+  const voteMutation = useMutation({
+    mutationFn: async ({ commentId, isUpvote }: { commentId: number; isUpvote: boolean }) => {
+      const response = await fetch(`/api/comments/${commentId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isUpvote })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to vote");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to vote",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: async ({ commentId, content, author }: { commentId: number; content: string; author: string }) => {
+      const response = await fetch(`/api/comments/${commentId}/replies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, author })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to post reply");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      setReplyingTo(null);
+      setReplyContent("");
+      toast({
+        title: "Reply Posted!",
+        description: "Your reply has been added to the discussion.",
+        className: "bg-primary text-primary-foreground"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post reply",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -127,6 +204,35 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       await mutation.mutateAsync({ name, content });
     } catch (error) {
       console.error('Failed to submit comment:', error);
+    }
+  };
+
+  const handleVote = async (commentId: number, isUpvote: boolean) => {
+    try {
+      await voteMutation.mutateAsync({ commentId, isUpvote });
+    } catch (error) {
+      console.error('Failed to vote:', error);
+    }
+  };
+
+  const handleReply = async (commentId: number) => {
+    if (!replyContent.trim() || !name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await replyMutation.mutateAsync({
+        commentId,
+        content: replyContent,
+        author: name
+      });
+    } catch (error) {
+      console.error('Failed to submit reply:', error);
     }
   };
 
@@ -168,8 +274,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
               required
             />
           </div>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={mutation.isPending || !name.trim() || !content.trim()}
             className="w-full sm:w-auto"
           >
@@ -207,6 +313,92 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
                     </time>
                   </div>
                   <p className="text-foreground/90 whitespace-pre-wrap">{comment.content}</p>
+
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleVote(comment.id, true)}
+                        className={cn(
+                          "hover:bg-primary/10",
+                          comment.upvotes && "text-primary"
+                        )}
+                      >
+                        <ThumbsUp className="h-4 w-4 mr-1" />
+                        {comment.upvotes || 0}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleVote(comment.id, false)}
+                        className={cn(
+                          "hover:bg-primary/10",
+                          comment.downvotes && "text-primary"
+                        )}
+                      >
+                        <ThumbsDown className="h-4 w-4 mr-1" />
+                        {comment.downvotes || 0}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                        className="hover:bg-primary/10"
+                      >
+                        <Reply className="h-4 w-4 mr-1" />
+                        Reply
+                      </Button>
+                    </div>
+                  </div>
+
+                  {replyingTo === comment.id && (
+                    <div className="mt-4 space-y-2">
+                      <Input
+                        placeholder="Your name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="bg-background/50"
+                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Write a reply..."
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          className="flex-1 bg-background/50"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={() => handleReply(comment.id)}
+                          disabled={replyMutation.isPending}
+                        >
+                          {replyMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-4 space-y-3 pl-6 border-l-2 border-primary/20">
+                      {comment.replies.map(reply => (
+                        <div key={reply.id} className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm">{reply.author}</span>
+                            <time className="text-xs text-muted-foreground">
+                              {format(new Date(reply.createdAt), 'MMM d, yyyy')}
+                            </time>
+                          </div>
+                          <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                            {reply.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               ))}
           </div>

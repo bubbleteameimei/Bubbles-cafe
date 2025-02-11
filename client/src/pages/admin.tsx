@@ -140,6 +140,10 @@ const AdminPage = () => {
         description: error.message || "Failed to delete post",
         variant: "destructive",
       });
+      // If unauthorized, redirect to login
+      if (error.message.includes("Unauthorized")) {
+        setLocation("/admin/login");
+      }
     },
   });
 
@@ -172,22 +176,32 @@ const AdminPage = () => {
     mutationFn: async (id: number) => {
       const response = await apiRequest("DELETE", `/api/comments/${id}`);
       if (!response.ok) {
-        throw new Error("Failed to delete comment");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete comment");
       }
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedCommentId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
+      // Update local state
+      const currentComments = queryClient.getQueryData<Comment[]>(["/api/comments/pending"]) || [];
+      const updatedComments = currentComments.filter(comment => comment.id !== deletedCommentId);
+      queryClient.setQueryData(["/api/comments/pending"], updatedComments);
       toast({
         title: "Success",
         description: "Comment deleted successfully"
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Comment deletion error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete comment",
+        description: error.message || "Failed to delete comment",
         variant: "destructive"
       });
+      if (error.message.includes("Unauthorized")) {
+        setLocation("/admin/login");
+      }
     }
   });
 
@@ -411,7 +425,11 @@ const AdminPage = () => {
                                     deleteCommentMutation.mutate(comment.id);
                                   }
                                 }}
+                                disabled={deleteCommentMutation.isPending}
                               >
+                                {deleteCommentMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : null}
                                 Delete
                               </Button>
                             </div>

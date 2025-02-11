@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import { z } from "zod"; // Add zod import
-import { insertCommentSchema, insertPostSchema } from "@shared/schema"; // Add schema import
+import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema"; // Add schema import
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -150,10 +150,27 @@ export function registerRoutes(app: Express): Server {
 
   app.delete("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {
-      await storage.deletePost(parseInt(req.params.id));
+      const postId = parseInt(req.params.id);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+
+      // First check if post exists
+      const post = await storage.getPost(postId.toString());
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      await storage.deletePost(postId);
+      console.log(`Post ${postId} deleted successfully`);
       res.json({ message: "Post deleted successfully" });
     } catch (error) {
       console.error("Error deleting post:", error);
+      if (error instanceof Error) {
+        if (error.message === "Post not found") {
+          return res.status(404).json({ message: "Post not found" });
+        }
+      }
       res.status(500).json({ message: "Failed to delete post" });
     }
   });
@@ -367,10 +384,15 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  app.delete("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.delete("/api/comments/:id", isAuthenticated, async (req, res) => {
     try {
       const commentId = parseInt(req.params.id);
+      if (isNaN(commentId)) {
+        return res.status(400).json({ message: "Invalid comment ID" });
+      }
+
       await storage.deleteComment(commentId);
+      console.log(`Comment ${commentId} deleted successfully`);
       res.json({ message: "Comment deleted successfully" });
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -429,7 +451,7 @@ Timestamp: ${new Date().toLocaleString()}
         approved: !containsFilteredWord
       });
 
-      res.status(201).json(comment);
+      res.json(comment);
     } catch (error) {
       console.error("Error creating comment:", error);
       if (error instanceof z.ZodError) {
@@ -499,6 +521,90 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("Error fetching post likes:", error);
       res.status(500).json({ message: "Failed to fetch like counts" });
+    }
+  });
+
+  // Add these routes after existing comment routes
+  app.post("/api/comments/:commentId/vote", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId);
+      const { isUpvote } = req.body;
+
+      // Generate a user ID from IP if not logged in
+      let userId = req.user?.id;
+      if (!userId) {
+        const ip = req.ip || '127.0.0.1';
+        const salt = await bcrypt.genSalt(5);
+        const ipHash = await bcrypt.hash(ip, salt);
+        // Convert hash to a number for userId
+        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
+      }
+
+      // Check if user has already voted
+      const existingVote = await storage.getCommentVote(commentId, userId);
+      if (existingVote) {
+        if (existingVote.isUpvote === isUpvote) {
+          // Remove vote if clicking same button
+          await storage.removeCommentVote(commentId, userId);
+        } else {
+          // Change vote
+          await storage.updateCommentVote(commentId, userId, isUpvote);
+        }
+      } else {
+        // Create new vote
+        await storage.createCommentVote(commentId, userId, isUpvote);
+      }
+
+      // Get updated vote counts
+      const counts = await storage.getCommentVoteCounts(commentId);
+      res.json(counts);
+    } catch (error) {
+      console.error("Error handling comment vote:", error);
+      res.status(500).json({ message: "Failed to update vote" });
+    }
+  });
+
+  app.post("/api/comments/:commentId/replies", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId);
+      const { content, author } = req.body;
+
+      // Validate input
+      const replyData = insertCommentReplySchema.parse({
+        commentId,
+        content,
+        author
+      });
+
+      // Check for filtered words
+      const filteredWords = [
+        'hate', 'kill', 'racist', 'offensive', 'slur',
+        'violence', 'death', 'murder', 'abuse', 'discriminate'
+      ];
+
+      const containsFilteredWord = filteredWords.some(word =>
+        content.toLowerCase().includes(word.toLowerCase())
+      );
+
+      // Auto-approve if no filtered words
+      const reply = await storage.createCommentReply({
+        ...replyData,
+        approved: !containsFilteredWord
+      });
+
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Error creating reply:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Invalid reply data",
+          errors: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      res.status(500).json({ message: "Failed to create reply" });
     }
   });
 
