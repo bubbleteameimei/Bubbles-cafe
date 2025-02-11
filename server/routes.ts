@@ -6,7 +6,9 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import type { Request, Response, NextFunction } from "express";
 import { createTransport } from "nodemailer";
-import * as bcrypt from 'bcrypt'; // Import bcrypt
+import * as bcrypt from 'bcrypt';
+import { z } from "zod"; // Add zod import
+import { insertCommentSchema } from "@shared/schema"; // Add schema import
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -141,8 +143,8 @@ export function registerRoutes(app: Express): Server {
 
       // Validate pagination parameters
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
-        return res.status(400).json({ 
-          message: "Invalid pagination parameters. Page and limit must be positive numbers." 
+        return res.status(400).json({
+          message: "Invalid pagination parameters. Page and limit must be positive numbers."
         });
       }
 
@@ -358,7 +360,43 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  // Add these routes after the existing post routes
+  // Add comment routes after the existing post routes
+  app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+
+      // Get post to verify it exists
+      const posts = await storage.getPosts();
+      const post = posts.posts.find(p => p.id === postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Validate and parse the comment data using our schema
+      const commentData = insertCommentSchema.parse({
+        postId,
+        ...req.body
+      });
+
+      // Create the comment
+      const comment = await storage.createComment(commentData);
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Invalid comment data",
+          errors: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
   app.post("/api/posts/:postId/like", async (req, res) => {
     try {
       const postId = parseInt(req.params.postId);

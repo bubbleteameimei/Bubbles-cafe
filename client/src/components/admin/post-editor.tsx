@@ -19,39 +19,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { detectThemes, getReadingTime, type ThemeCategory } from "@/lib/content-analysis";
 
 interface PostEditorProps {
   post?: Post | null;
   onClose?: () => void;
 }
-
-type ThemeCategoryMapping = {
-  [K in ThemeCategory]: Record<string, never>;
-};
-
-const THEME_CATEGORIES: ThemeCategoryMapping = {
-  PARASITE: {},
-  LOVECRAFTIAN: {},
-  PSYCHOLOGICAL: {},
-  TECHNOLOGICAL: {},
-  SUICIDAL: {},
-  BODY_HORROR: {},
-  PSYCHOPATH: {},
-  SUPERNATURAL: {},
-  POSSESSION: {},
-  CANNIBALISM: {},
-  STALKING: {},
-  DEATH: {},
-  GOTHIC: {},
-  APOCALYPTIC: {},
-  ISOLATION: {},
-  AQUATIC: {},
-  VIRAL: {},
-  URBAN_LEGEND: {},
-  TIME_HORROR: {},
-  DREAMSCAPE: {}
-};
 
 export default function PostEditor({ post, onClose }: PostEditorProps) {
   const { toast } = useToast();
@@ -59,7 +31,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const form = useForm({
+  const form = useForm<InsertPost>({
     resolver: zodResolver(insertPostSchema),
     defaultValues: {
       title: post?.title || "",
@@ -67,70 +39,73 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       excerpt: post?.excerpt || "",
       isSecret: post?.isSecret || false,
       slug: post?.slug || "",
-      authorId: post?.authorId || 1
+      authorId: post?.authorId || 1,
+      themeCategory: post?.themeCategory || "PSYCHOLOGICAL",
+      triggerWarnings: post?.triggerWarnings || [],
+      matureContent: post?.matureContent || false
     }
   });
 
   // Optimistic update helper with proper type handling
   const getOptimisticPost = (formData: InsertPost): Post => {
     const content = formData.content;
-    const theme = detectThemes(content)[0];
-    const readingTime = Math.ceil(content.split(/\s+/).length / 200); // Calculate reading time
+    const readingTime = Math.ceil(content.split(/\s+/).length / 200);
+    const slug = formData.slug || formData.title.toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
 
     return {
       id: post?.id || Date.now(),
       title: formData.title,
       content: formData.content,
       excerpt: formData.excerpt,
-      isSecret: formData.isSecret || false,
-      slug: formData.slug || formData.title.toLowerCase().replace(/\s+/g, '-'),
+      isSecret: formData.isSecret,
+      slug,
       createdAt: post?.createdAt ? new Date(post.createdAt) : new Date(),
-      authorId: post?.authorId || 1,
+      authorId: formData.authorId,
       likesCount: post?.likesCount || 0,
       dislikesCount: post?.dislikesCount || 0,
-      originalSource: formData.originalSource || null,
-      originalAuthor: formData.originalAuthor || null,
-      originalPublishDate: formData.originalPublishDate || null,
-      themeCategory: theme || null,
-      triggerWarnings: formData.triggerWarnings || [],
-      matureContent: formData.matureContent || false,
+      themeCategory: formData.themeCategory,
+      triggerWarnings: formData.triggerWarnings,
+      matureContent: formData.matureContent,
       readingTimeMinutes: readingTime
     };
   };
 
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InsertPost) => {
       const endpoint = post ? `/api/posts/${post.id}` : "/api/posts";
       const method = post ? "PATCH" : "POST";
 
-      try {
-        const response = await apiRequest(method, endpoint, data);
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || `Failed to ${post ? 'update' : 'create'} post`);
-        }
-        const result = await response.json();
-        return result;
-      } catch (error) {
-        console.error('Post mutation error:', error);
-        throw error;
+      const response = await apiRequest(method, endpoint, data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Failed to ${post ? 'update' : 'create'} post`);
       }
+      return response.json();
     },
     onMutate: async (newPost) => {
       await queryClient.cancelQueries({ queryKey: ["/api/posts"] });
-      const previousPosts = queryClient.getQueryData<Post[]>(["/api/posts"]);
+      const previousPosts = queryClient.getQueryData<{ posts: Post[]; hasMore: boolean }>(["/api/posts"]);
 
-      queryClient.setQueryData<Post[]>(["/api/posts"], (old = []) => {
+      queryClient.setQueryData<{ posts: Post[]; hasMore: boolean }>(["/api/posts"], (old = { posts: [], hasMore: false }) => {
         const optimisticPost = getOptimisticPost(newPost);
         if (post) {
-          return old.map(p => p.id === post.id ? optimisticPost : p);
+          return {
+            posts: old.posts.map(p => p.id === post.id ? optimisticPost : p),
+            hasMore: old.hasMore
+          };
         }
-        return [...old, optimisticPost];
+        return {
+          posts: [...old.posts, optimisticPost],
+          hasMore: old.hasMore
+        };
       });
 
       return { previousPosts };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
         title: "Success",
@@ -201,7 +176,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
     }
   };
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: InsertPost) => {
     // Generate slug if not provided
     if (!data.slug) {
       data.slug = data.title.toLowerCase()
@@ -210,13 +185,10 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
         .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
     }
 
-    // Ensure all dates are properly formatted
-    const formattedData = {
-      ...data,
-      createdAt: post?.createdAt ? new Date(post.createdAt).toISOString() : new Date().toISOString()
-    };
+    // Handle trigger warnings - if empty array is submitted, ensure it's properly handled
+    data.triggerWarnings = data.triggerWarnings || [];
 
-    mutation.mutate(formattedData);
+    mutation.mutate(data);
   };
 
   return (
@@ -324,21 +296,75 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
 
             <FormField
               control={form.control}
-              name="isSecret"
+              name="themeCategory"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
+                <FormItem>
+                  <FormLabel>Theme Category</FormLabel>
                   <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className="rounded border-gray-300"
-                    />
+                    <select
+                      {...field}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="PSYCHOLOGICAL">Psychological</option>
+                      <option value="TECHNOLOGICAL">Technological</option>
+                      <option value="COSMIC">Cosmic</option>
+                      <option value="FOLK_HORROR">Folk Horror</option>
+                      <option value="BODY_HORROR">Body Horror</option>
+                      <option value="SURVIVAL">Survival</option>
+                      <option value="SUPERNATURAL">Supernatural</option>
+                      <option value="GOTHIC">Gothic</option>
+                      <option value="APOCALYPTIC">Apocalyptic</option>
+                      <option value="LOVECRAFTIAN">Lovecraftian</option>
+                      <option value="ISOLATION">Isolation</option>
+                      <option value="AQUATIC">Aquatic</option>
+                      <option value="VIRAL">Viral</option>
+                      <option value="URBAN_LEGEND">Urban Legend</option>
+                      <option value="TIME_HORROR">Time Horror</option>
+                      <option value="DREAMSCAPE">Dreamscape</option>
+                    </select>
                   </FormControl>
-                  <FormLabel className="!mt-0">Secret Post</FormLabel>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="flex gap-4">
+              <FormField
+                control={form.control}
+                name="isSecret"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="rounded border-gray-300"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Secret Post</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="matureContent"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="rounded border-gray-300"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Mature Content</FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex justify-end gap-2">
               <Button

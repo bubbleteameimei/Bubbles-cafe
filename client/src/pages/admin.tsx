@@ -11,6 +11,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import PostEditor from "@/components/admin/post-editor";
 import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface PostsResponse {
   posts: Post[];
@@ -193,6 +200,11 @@ export default function AdminPage() {
     window.open(`/story/${slug}`, '_blank');
   };
 
+  const closeEditor = () => {
+    setShowEditor(false);
+    setEditingPost(null);
+  };
+
   if (postsLoading || commentsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -206,187 +218,181 @@ export default function AdminPage() {
   return (
     <ErrorBoundary>
       <div className="container mx-auto space-y-8 p-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <Button
-            variant="outline"
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-          >
-            {logoutMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <LogOut className="h-4 w-4 mr-2" />
-            )}
-            {logoutMutation.isPending ? "Logging out..." : "Logout"}
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              variant="default"
+              onClick={() => setShowEditor(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Post
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="gap-2"
+            >
+              {logoutMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
+              {logoutMutation.isPending ? "Logging out..." : "Logout"}
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {(showEditor || editingPost) ? (
-            <Card className="lg:sticky lg:top-8 h-fit">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl">
-                  <div className="flex items-center justify-between">
-                    <span>{editingPost ? "Edit Post" : "New Post"}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setShowEditor(false);
-                        setEditingPost(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PostEditor
-                  post={editingPost}
-                  onClose={() => {
-                    setShowEditor(false);
-                    setEditingPost(null);
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ) : (
+        <Sheet open={showEditor || !!editingPost} onOpenChange={closeEditor}>
+          <SheetContent side="right" className="w-[95vw] sm:w-[90vw] md:w-[800px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>{editingPost ? "Edit Post" : "Create New Post"}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <PostEditor post={editingPost} onClose={closeEditor} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Tabs defaultValue="posts" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <TabsTrigger value="posts">Posts Management</TabsTrigger>
+            <TabsTrigger value="comments">Comment Moderation</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="posts" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">
-                  <Button
-                    onClick={() => setShowEditor(true)}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Post
-                  </Button>
-                </CardTitle>
+                <CardTitle className="text-2xl">Posts</CardTitle>
               </CardHeader>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Posts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
-                <div className="space-y-4">
-                  {Array.isArray(posts) && posts.map((post: Post) => (
-                    <div
-                      key={post.id}
-                      className={`p-4 border rounded-lg transition-colors ${
-                        editingPost?.id === post.id
-                          ? "bg-primary/5 border-primary"
-                          : "hover:bg-accent/5"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium truncate">{post.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                            {post.excerpt}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                            <time>{format(new Date(post.createdAt), 'MMM d, yyyy')}</time>
-                            {post.isSecret && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                Secret
-                              </span>
-                            )}
+              <CardContent>
+                <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+                  <div className="space-y-4">
+                    {Array.isArray(posts) && posts.map((post: Post) => (
+                      <div
+                        key={post.id}
+                        className="p-6 border rounded-lg transition-colors hover:bg-accent/5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl font-medium mb-2">{post.title}</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              {post.excerpt}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                              <time className="text-muted-foreground">
+                                {format(new Date(post.createdAt), 'MMM d, yyyy')}
+                              </time>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-primary">{post.themeCategory}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span>{post.readingTimeMinutes} min read</span>
+                              {post.isSecret && (
+                                <>
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                    Secret
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => viewPost(post.slug)}
+                              className="hover:bg-secondary/10"
+                              title="View Post"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingPost(post)}
+                              disabled={editingPost?.id === post.id}
+                              className="hover:bg-primary/10"
+                              title="Edit Post"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="hover:bg-destructive/10"
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this post?')) {
+                                  deletePostMutation.mutate(post.id);
+                                }
+                              }}
+                              disabled={deletePostMutation.isPending}
+                              title="Delete Post"
+                            >
+                              {deletePostMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2 shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => viewPost(post.slug)}
-                            className="hover:bg-secondary/10"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingPost(post)}
-                            disabled={editingPost?.id === post.id}
-                            className="hover:bg-primary/10"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-destructive/10"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this post?')) {
-                                deletePostMutation.mutate(post.id);
-                              }
-                            }}
-                            disabled={deletePostMutation.isPending}
-                          >
-                            {deletePostMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Comment Moderation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
-                <div className="space-y-4">
-                  {Array.isArray(comments) && comments.map((comment) => (
-                    <div key={comment.id} className="border p-4 rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{comment.author}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
-                          </p>
+          <TabsContent value="comments">
+            <Card>
+              <CardHeader>
+                <CardTitle>Comment Moderation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+                  <div className="space-y-4">
+                    {Array.isArray(comments) && comments.map((comment) => (
+                      <div key={comment.id} className="border p-6 rounded-lg">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <p className="font-medium text-lg">{comment.author}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(comment.createdAt), 'MMM d, yyyy HH:mm')}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant={comment.approved ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => moderateCommentMutation.mutate({ 
+                                id: comment.id, 
+                                approved: !comment.approved 
+                              })}
+                            >
+                              {comment.approved ? "Approved" : "Approve"}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteCommentMutation.mutate(comment.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={comment.approved ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => moderateCommentMutation.mutate({ 
-                              id: comment.id, 
-                              approved: !comment.approved 
-                            })}
-                          >
-                            {comment.approved ? "Approved" : "Approve"}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteCommentMutation.mutate(comment.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
                       </div>
-                      <p className="text-sm">{comment.content}</p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </ErrorBoundary>
   );

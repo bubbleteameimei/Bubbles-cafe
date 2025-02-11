@@ -56,27 +56,14 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
         throw new Error('Comment must be between 3 and 500 characters');
       }
 
-      // Validate name pattern (letters, numbers, spaces, and basic punctuation)
-      const namePattern = /^[a-zA-Z0-9\s.,!?-]{2,50}$/;
-      if (!namePattern.test(comment.name.trim())) {
-        throw new Error('Name contains invalid characters');
-      }
-
-      // Basic content validation (allow more characters but prevent HTML/scripts)
-      const contentPattern = /^[^<>{}]*$/;
-      if (!contentPattern.test(comment.content)) {
-        throw new Error('Comment contains invalid characters');
-      }
-
-      // Remove excessive whitespace and sanitize
+      // Basic content validation (prevent scripts and ensure readability)
       const sanitizedContent = comment.content
         .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/[^\w\s.,!?-]/g, '');
+        .replace(/\s+/g, ' ');  // normalize whitespace
+
       const sanitizedName = comment.name
         .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/[^\w\s.,!?-]/g, '');
+        .replace(/\s+/g, ' '); // normalize whitespace
 
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",

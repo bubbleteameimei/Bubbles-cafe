@@ -92,10 +92,10 @@ export const contactMessages = pgTable("contact_messages", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPostSchema = createInsertSchema(posts)
-  .omit({ 
-    id: true, 
-    createdAt: true, 
-    likesCount: true, 
+  .omit({
+    id: true,
+    createdAt: true,
+    likesCount: true,
     dislikesCount: true,
     readingTimeMinutes: true
   })
@@ -109,7 +109,18 @@ export const insertPostSchema = createInsertSchema(posts)
     triggerWarnings: z.array(z.string()).optional()
   });
 
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, approved: true });
+export const insertCommentSchema = createInsertSchema(comments)
+  .omit({ id: true, createdAt: true, approved: true })
+  .extend({
+    author: z.string()
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name cannot exceed 50 characters")
+      .transform(val => val.trim()),
+    content: z.string()
+      .min(3, "Comment must be at least 3 characters")
+      .max(500, "Comment cannot exceed 500 characters")
+      .transform(val => val.trim())
+  });
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
