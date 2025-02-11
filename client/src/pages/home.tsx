@@ -93,7 +93,7 @@ export default function Home() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="mt-24 text-center"
             >
-              <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide font-mono">Latest Story</p>
+              <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide">Latest Story</p>
               <h2 
                 className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
                 onClick={() => navigateToStory(posts[0].id)}
@@ -103,7 +103,7 @@ export default function Home() {
               <p className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4">
                 {posts[0].excerpt}
               </p>
-              <div className="text-sm text-muted-foreground font-mono">
+              <div className="text-sm text-muted-foreground">
                 {posts[0].createdAt && formatDate(posts[0].createdAt)}
               </div>
             </motion.div>

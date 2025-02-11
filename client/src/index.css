@@ -9,7 +9,6 @@
 
   body {
     @apply bg-background text-foreground min-h-screen;
-    /* Using system font stack for consistent rendering */
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 16px;
     line-height: 1.6;
@@ -19,8 +18,6 @@
 
   /* Typography */
   h1, h2, h3, h4, h5, h6 {
-    /* Using same system font stack for consistency */
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     @apply font-bold tracking-tight;
   }
 

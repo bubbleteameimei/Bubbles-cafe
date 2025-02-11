@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { detectThemes, calculateIntensity } from "@/lib/content-analysis";
+import { detectThemes, calculateIntensity, getReadingTime } from "@/lib/content-analysis";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Clock, Calendar, Gauge } from "lucide-react";
+import { ChevronRight, Clock, Calendar } from "lucide-react";
 import React from 'react';
 import { getIconComponent } from '@/components/ui/icons';
 import { LikeDislike } from "@/components/ui/like-dislike";
@@ -28,7 +28,7 @@ const getOrCreateStats = (postId: number) => {
   }
 
   const newStats = {
-    likes: Math.floor(Math.random() * 71) + 80, // Random between 80-150
+    likes: Math.floor(Math.random() * 71) + 80,
     dislikes: Math.floor(Math.random() * 15)
   };
 
@@ -36,7 +36,6 @@ const getOrCreateStats = (postId: number) => {
   return newStats;
 };
 
-// Update the excerpt function to be more concise
 const getExcerpt = (content: string) => {
   if (!content) return '';
 
@@ -54,19 +53,11 @@ const getExcerpt = (content: string) => {
   );
 
   const selectedParagraph = engagingParagraph || paragraphs[0];
-  const maxLength = 100; // Reduced from 120
+  const maxLength = 100;
   const trimmed = selectedParagraph.trim();
   return trimmed.length > maxLength 
     ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
     : trimmed;
-};
-
-const getReadingTime = (content: string) => {
-  if (!content) return '0 min read';
-  const wordsPerMinute = 200;
-  const words = content.trim().split(/\s+/).length;
-  const minutes = Math.ceil(words / wordsPerMinute);
-  return `${minutes} min read`;
 };
 
 export default function IndexView() {
@@ -121,7 +112,7 @@ export default function IndexView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground">Index</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">Index</h1>
             <Button 
               variant="ghost" 
               onClick={() => setLocation('/')}
@@ -154,11 +145,11 @@ export default function IndexView() {
                     <CardHeader className="relative py-2 px-3">
                       <div className="flex justify-between items-start gap-2">
                         <CardTitle 
-                          className="text-base font-serif group-hover:text-primary transition-colors"
+                          className="text-base group-hover:text-primary transition-colors"
                         >
                           {post.title}
                         </CardTitle>
-                        <div className="text-[10px] text-muted-foreground font-mono space-y-0.5">
+                        <div className="text-[10px] text-muted-foreground space-y-0.5">
                           <div className="flex items-center gap-1 justify-end">
                             <Calendar className="h-3 w-3" />
                             <time>{formatDate(post.createdAt)}</time>
@@ -174,7 +165,7 @@ export default function IndexView() {
                       onClick={() => navigateToStory(post.id)}
                       className="cursor-pointer py-1 px-3 flex-grow"
                     >
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-3 font-serif">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                         {excerpt}
                       </p>
 

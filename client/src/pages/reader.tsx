@@ -12,6 +12,7 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
+import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 
 interface PostsResponse {
@@ -62,7 +63,6 @@ export default function Reader() {
       });
       setPostStats(persistedStats);
 
-      // Save current index to session storage
       sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
   }, [postsData?.posts, currentIndex]);
@@ -103,6 +103,10 @@ export default function Reader() {
   }
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
+  const readingTime = getReadingTime(currentPost.content);
+  const themes = detectThemes(currentPost.content);
+  const primaryTheme = themes[0];
+  const themeInfo = primaryTheme ? THEME_CATEGORIES[primaryTheme] : null;
 
   return (
     <div className="relative min-h-screen">
@@ -119,11 +123,21 @@ export default function Reader() {
           >
             <article>
               <div className="flex items-center justify-between mb-4">
-                <h1 className="story-title text-4xl font-bold font-serif">{currentPost.title}</h1>
+                <h1 className="story-title text-4xl font-bold">{currentPost.title}</h1>
               </div>
 
-              <div className="story-meta flex items-center gap-2 mb-4 text-sm text-muted-foreground font-mono">
+              <div className="story-meta flex items-center gap-4 mb-4 text-sm text-muted-foreground">
                 <time>{formattedDate}</time>
+                <span>·</span>
+                <span>{readingTime}</span>
+                {themeInfo && (
+                  <>
+                    <span>·</span>
+                    <Badge variant={themeInfo.badgeVariant || "default"} className="capitalize">
+                      {primaryTheme.toLowerCase().replace('_', ' ')}
+                    </Badge>
+                  </>
+                )}
               </div>
 
               <div
@@ -137,7 +151,7 @@ export default function Reader() {
                     i % 2 === 0 ? (
                       <span key={i}>{text}</span>
                     ) : (
-                      <i key={i} className="italic text-primary/80 font-serif">{text}</i>
+                      <i key={i} className="italic text-primary/80">{text}</i>
                     )
                   ));
 
@@ -181,7 +195,7 @@ export default function Reader() {
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="page-counter text-sm text-muted-foreground font-mono">
+              <span className="page-counter text-sm text-muted-foreground">
                 {currentIndex + 1} / {posts.length}
               </span>
 

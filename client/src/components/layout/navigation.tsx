@@ -25,15 +25,15 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
     >
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1'}`}>
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-        <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
+        <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
 
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1 ml-4'}`}>
+        <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
-        <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
@@ -69,7 +69,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        relative px-3 py-2 text-sm transition-colors duration-300 w-full text-left font-serif tracking-wide
+        relative px-3 py-2 text-sm transition-colors duration-300 w-full text-left tracking-wide
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
         hover:bg-primary/5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 ${className}
       `}
@@ -129,7 +129,7 @@ export default function Navigation() {
               window.scrollTo({ top: 0, behavior: 'instant' });
               setLocation('/');
             }}
-            className="font-serif text-lg font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
+            className="text-lg font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
           >
             Bubble's Cafe
           </button>
