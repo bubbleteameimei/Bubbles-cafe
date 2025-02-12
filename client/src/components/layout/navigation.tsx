@@ -69,7 +69,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        relative px-3 py-2 text-sm transition-colors duration-300 w-full text-left tracking-wide
+        relative px-3 py-2 text-sm transition-colors duration-300 w-full text-left tracking-wide font-medium
         ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
         hover:bg-primary/5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 ${className}
       `}
@@ -129,7 +129,7 @@ export default function Navigation() {
               window.scrollTo({ top: 0, behavior: 'instant' });
               setLocation('/');
             }}
-            className="text-lg font-bold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
+            className="text-lg font-semibold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
           >
             Bubble's Cafe
           </button>

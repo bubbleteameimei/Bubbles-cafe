@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
     <div className="min-h-[calc(100vh-12rem)] flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm">
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-2 p-6">
-          <CardTitle className="text-2xl text-center font-serif">Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center font-semibold">Admin Login</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <Form {...form}>
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">Email</FormLabel>
+                    <FormLabel className="text-base font-semibold">Email</FormLabel>
                     <FormControl>
                       <Input 
                         type="email" 
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">Password</FormLabel>
+                    <FormLabel className="text-base font-semibold">Password</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
@@ -113,7 +113,7 @@ export default function AdminLoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base font-medium"
+                className="w-full h-12 text-base font-semibold"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? "Logging in..." : "Login"}
