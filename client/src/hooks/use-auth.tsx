@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 import { useLocation } from "wouter";
 
 interface User {
@@ -14,6 +14,7 @@ interface User {
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  authLoading: boolean;
   error: Error | null;
   loginMutation: any;
   logoutMutation: any;
@@ -24,9 +25,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
 
   // Query for checking authentication status
-  const { data: user, error, isLoading } = useQuery<User | null>({
+  const { data: user, error, isLoading: authLoading } = useQuery<User | null>({
     queryKey: ["/api/admin/user"],
     queryFn: async () => {
       try {
@@ -112,7 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user: user ?? null,
-      isLoading,
+      isLoading: authLoading,
+      authLoading,
       error,
       loginMutation,
       logoutMutation
