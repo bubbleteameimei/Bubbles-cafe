@@ -17,7 +17,7 @@ export async function apiRequest(
   body?: any,
   options: RequestInit = {}
 ): Promise<Response> {
-  // Use the correct port for development
+  // Use port 3000 for backend API calls in development
   const baseUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
 
