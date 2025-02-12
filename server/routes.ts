@@ -212,11 +212,12 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Public routes
+  // Update the get posts route to support filtering
   app.get("/api/posts", async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
+      const filter = req.query.filter as string | undefined;
 
       // Validate pagination parameters
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
@@ -225,8 +226,9 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      const { posts, hasMore } = await storage.getPosts(page, limit);
-      res.json({ posts, hasMore });
+      // Get posts based on filter
+      const { posts, hasMore } = await storage.getPosts(page, limit, filter);
+      res.json({ posts, hasMore }); //Corrected this line to include hasMore
     } catch (error) {
       console.error("Error fetching posts:", error);
       res.status(500).json({ message: "Failed to fetch posts" });
@@ -592,18 +594,18 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId.toString(), userId.toString());
+      const existingVote = await storage.getCommentVote(commentId, userId);
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId.toString(), userId.toString());
+          await storage.removeCommentVote(commentId, userId);
         } else {
           // Change vote
-          await storage.updateCommentVote(commentId.toString(), userId.toString(), isUpvote);
+          await storage.updateCommentVote(commentId, userId, isUpvote);
         }
       } else {
         // Create new vote
-        await storage.createCommentVote(commentId.toString(), userId.toString(), isUpvote);
+        await storage.createCommentVote(commentId, userId, isUpvote);
       }
 
       // Get updated vote counts

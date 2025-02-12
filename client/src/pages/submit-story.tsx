@@ -1,9 +1,9 @@
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import PostEditor from "@/components/admin/post-editor";
 import { Card } from "@/components/ui/card";
 
 export default function SubmitStoryPage() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   return (
     <div className="container py-8 max-w-7xl mx-auto">

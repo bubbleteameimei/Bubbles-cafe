@@ -23,6 +23,8 @@ const Privacy = lazy(() => import("@/pages/privacy"));
 const Contact = lazy(() => import("@/pages/contact"));
 const Reader = lazy(() => import("@/pages/reader"));
 const IndexView = lazy(() => import("@/pages/index"));
+const SubmitStory = lazy(() => import("@/pages/submit-story"));
+const Community = lazy(() => import("@/pages/community"));
 
 function App() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -31,7 +33,7 @@ function App() {
   // Prefetch critical routes
   React.useEffect(() => {
     const prefetchRoutes = async () => {
-      const routes = ['/', '/index', '/reader'];
+      const routes = ['/', '/index', '/reader', '/submit-story', '/community'];
       await Promise.all(
         routes.map(route =>
           queryClient.prefetchQuery({
@@ -79,6 +81,8 @@ function App() {
                     <Route path="/index" component={IndexView} />
                     <Route path="/reader" component={Reader} />
                     <Route path="/stories" component={Stories} />
+                    <Route path="/community" component={Community} />
+                    <Route path="/submit-story" component={SubmitStory} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>

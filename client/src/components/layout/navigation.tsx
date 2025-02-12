@@ -33,6 +33,8 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
 
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+        <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
+        <NavLink href="/submit-story" isActive={location === "/submit-story"} onNavigate={onNavigate}>Submit Story</NavLink>
         <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       </div>
 
