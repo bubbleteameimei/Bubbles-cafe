@@ -14,7 +14,7 @@ export default function CommunityPage() {
   const [, navigate] = useLocation();
 
   const { data, isLoading } = useQuery<PostsResponse>({
-    queryKey: ["/api/posts"],
+    queryKey: ["/api/posts", { filter: "community" }],
     queryFn: async () => {
       const response = await fetch("/api/posts?filter=community");
       if (!response.ok) throw new Error("Failed to fetch community posts");
@@ -30,25 +30,23 @@ export default function CommunityPage() {
     );
   }
 
-  const posts = data?.posts || [];
-
   return (
     <div className="container py-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold mb-2">Community Stories</h1>
           <p className="text-muted-foreground">
-            Explore horror stories written by our community members
+            Join our community of horror storytellers. Share your tales of terror with fellow enthusiasts.
           </p>
         </div>
         <Button onClick={() => navigate("/submit-story")}>
-          Submit Your Story
+          Share Your Story
         </Button>
       </div>
 
-      {posts.length > 0 ? (
+      {data?.posts && data.posts.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
+          {data.posts.map((post) => (
             <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
               <h2 className="text-2xl font-bold mb-2 line-clamp-2">{post.title}</h2>
               <p className="text-muted-foreground mb-4 line-clamp-3">
@@ -70,7 +68,7 @@ export default function CommunityPage() {
             Be the first to share your horror story with our community!
           </p>
           <Button onClick={() => navigate("/submit-story")}>
-            Submit Your Story
+            Share Your Story
           </Button>
         </div>
       )}

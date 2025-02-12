@@ -145,12 +145,19 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      // Get posts based on filter
-      const { posts, hasMore } = await storage.getPosts({
-        page,
-        limit,
-        filter // Pass filter as an option
-      });
+      // Filter posts based on the filter parameter
+      let posts, hasMore;
+      if (filter === 'community') {
+        // Only return approved community posts
+        const result = await storage.getPosts(page, limit);
+        posts = result.posts.filter(post => post.isCommunityPost && post.isApproved);
+        hasMore = result.hasMore;
+      } else {
+        // For other views, exclude community posts
+        const result = await storage.getPosts(page, limit);
+        posts = result.posts.filter(post => !post.isCommunityPost);
+        hasMore = result.hasMore;
+      }
 
       res.json({ posts, hasMore });
     } catch (error) {
@@ -601,32 +608,33 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote({
-        commentId: commentId.toString(),
-        userId: userId.toString()
-      });
+      const existingVote = await storage.getCommentVote(
+        commentId.toString(),
+        userId.toString()
+      );
+
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote({
-            commentId: commentId.toString(),
-            userId: userId.toString()
-          });
+          await storage.removeCommentVote(
+            commentId.toString(),
+            userId.toString()
+          );
         } else {
           // Change vote
-          await storage.updateCommentVote({
-            commentId: commentId.toString(),
-            userId: userId.toString(),
+          await storage.updateCommentVote(
+            commentId.toString(),
+            userId.toString(),
             isUpvote
-          });
+          );
         }
       } else {
         // Create new vote
-        await storage.createCommentVote({
-          commentId: commentId.toString(),
-          userId: userId.toString(),
+        await storage.createCommentVote(
+          commentId.toString(),
+          userId.toString(),
           isUpvote
-        });
+        );
       }
 
       // Get updated vote counts
