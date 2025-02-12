@@ -14,18 +14,18 @@ declare global {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || process.env.REPL_ID!, // Fallback to REPL_ID if SESSION_SECRET not set
+    secret: process.env.SESSION_SECRET || process.env.REPLIT_ID!, // Fallback to REPL_ID if SESSION_SECRET not set
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax',
       path: '/'
     },
     name: 'sessionId',
-    rolling: true // Refresh session with each request
+    rolling: true
   };
 
   if (app.get("env") === "production") {
@@ -93,9 +93,17 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Admin authentication middleware
+  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user?.isAdmin) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
   // Add JSON response endpoints with rate limiting and better error handling
-  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
-    console.log('[Auth] Login attempt for:', req.body.email);
+  app.post("/api/admin/login", (req: Request, res: Response, next: NextFunction) => {
+    console.log('[Auth] Admin login attempt for:', req.body.email);
     passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
       if (err) {
         console.error("[Auth] Login error:", err);
@@ -125,7 +133,7 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req: Request, res: Response) => {
+  app.post("/api/admin/logout", (req: Request, res: Response) => {
     const sessionId = req.sessionID;
     console.log('[Auth] Logout attempt for session:', sessionId);
     req.logout((err) => {
@@ -145,15 +153,16 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req: Request, res: Response) => {
-    console.log('[Auth] Checking user authentication status');
+  app.get("/api/admin/user", requireAdmin, (req: Request, res: Response) => {
+    console.log('[Auth] Checking admin authentication status');
     if (!req.isAuthenticated()) {
       console.log('[Auth] User not authenticated');
       return res.status(401).json({ message: "Not authenticated" });
     }
-    console.log('[Auth] User authenticated:', req.user?.email);
-    // Only send necessary user data
+    console.log('[Auth] Admin authenticated:', req.user?.email);
     const { id, email, isAdmin, username } = req.user!;
     res.json({ id, email, isAdmin, username });
   });
+
+  return { requireAdmin };
 }

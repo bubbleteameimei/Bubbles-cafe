@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
+import { setupAuth } from "./auth";
 
 const app = express();
 
@@ -56,6 +57,9 @@ app.use(limiter);
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Set up authentication with proper session secret
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || process.env.REPLIT_ID || 'development-secret';
 
 // API request logging middleware
 app.use((req, res, next) => {
@@ -151,6 +155,9 @@ async function startServer() {
       log(`Error seeding database: ${err}`);
     }
 
+    // Set up auth before routes
+    setupAuth(app);
+
     const server = registerRoutes(app);
     app.use(errorHandler);
 
@@ -162,7 +169,6 @@ async function startServer() {
 
     // Use environment port or default to 3000
     const startPort = parseInt(process.env.PORT || '3000', 10);
-
 
     const PORT = await findAvailablePort(startPort);
     process.env.PORT = PORT.toString();

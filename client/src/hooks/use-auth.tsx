@@ -8,6 +8,7 @@ interface User {
   id: number;
   email: string;
   isAdmin: boolean;
+  username?: string;
 }
 
 type AuthContextType = {
@@ -24,26 +25,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
+  // Query for checking authentication status
   const { data: user, error, isLoading } = useQuery<User | null>({
     queryKey: ["/api/admin/user"],
     queryFn: async () => {
       try {
         const response = await apiRequest("GET", "/api/admin/user");
-        if (response.status === 401) return null;
+        if (response.status === 401) {
+          console.log("User not authenticated");
+          return null;
+        }
         if (!response.ok) {
+          console.error("Failed to fetch user:", response.statusText);
           throw new Error("Failed to fetch user");
         }
-        return response.json();
+        const data = await response.json();
+        console.log("User data fetched:", data);
+        return data;
       } catch (error) {
         console.error("Auth error:", error);
         return null;
       }
     },
-    retry: false,
+    retry: 1,
     refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000 // Refresh every 5 minutes
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    staleTime: 4 * 60 * 1000, // Consider data stale after 4 minutes
   });
 
+  // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
       const response = await apiRequest("POST", "/api/admin/login", credentials);
@@ -62,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/admin");
     },
     onError: (error: Error) => {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error.message,
@@ -70,15 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/logout");
       if (!response.ok) {
-        throw new Error("Logout failed");
+        const error = await response.json();
+        throw new Error(error.message || "Logout failed");
       }
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/admin/user"], null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/user"] });
       toast({
         title: "Logged out",
         description: "Come back soon!",
@@ -86,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/");
     },
     onError: (error: Error) => {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: error.message,

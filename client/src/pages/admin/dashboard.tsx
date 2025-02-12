@@ -17,14 +17,15 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
-  // Redirect if not admin
+  // Redirect if not admin, but only after auth is confirmed
   useEffect(() => {
     if (!authLoading && !user?.isAdmin) {
+      console.log("Not admin, redirecting to login");
       navigate("/admin/login");
     }
-  }, [user, authLoading, navigate]);
+  }, [user?.isAdmin, authLoading, navigate]);
 
-  // If auth is still loading, show loading state
+  // Show loading state while checking auth
   if (authLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -33,7 +34,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // If not admin, don't render anything while redirecting
+  // If not admin and still loading, show nothing while redirecting
   if (!user?.isAdmin) {
     return null;
   }
@@ -43,10 +44,12 @@ export default function AdminDashboard() {
     queryKey: ["/api/posts/pending"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/posts/pending");
+      if (!res.ok) throw new Error("Failed to fetch posts");
       const data = await res.json();
       return data || [];
     },
-    enabled: !!user?.isAdmin,
+    enabled: !!user?.isAdmin, // Only fetch if user is admin
+    retry: false, // Don't retry on failure
   });
 
   // Fetch pending comments
@@ -54,16 +57,19 @@ export default function AdminDashboard() {
     queryKey: ["/api/comments/pending"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/comments/pending");
+      if (!res.ok) throw new Error("Failed to fetch comments");
       const data = await res.json();
       return data || [];
     },
     enabled: !!user?.isAdmin,
+    retry: false,
   });
 
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      await apiRequest("DELETE", `/api/posts/${postId}`);
+      const res = await apiRequest("DELETE", `/api/posts/${postId}`);
+      if (!res.ok) throw new Error("Failed to delete post");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts/pending"] });
@@ -72,10 +78,10 @@ export default function AdminDashboard() {
         description: "Post deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete post",
+        description: error.message || "Failed to delete post",
         variant: "destructive",
       });
     },
@@ -84,7 +90,8 @@ export default function AdminDashboard() {
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: number) => {
-      await apiRequest("DELETE", `/api/comments/${commentId}`);
+      const res = await apiRequest("DELETE", `/api/comments/${commentId}`);
+      if (!res.ok) throw new Error("Failed to delete comment");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
@@ -93,10 +100,10 @@ export default function AdminDashboard() {
         description: "Comment deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete comment",
+        description: error.message || "Failed to delete comment",
         variant: "destructive",
       });
     },
@@ -105,7 +112,8 @@ export default function AdminDashboard() {
   // Approve comment mutation
   const approveCommentMutation = useMutation({
     mutationFn: async (commentId: number) => {
-      await apiRequest("PATCH", `/api/comments/${commentId}`, { approved: true });
+      const res = await apiRequest("PATCH", `/api/comments/${commentId}`, { approved: true });
+      if (!res.ok) throw new Error("Failed to approve comment");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
@@ -114,15 +122,14 @@ export default function AdminDashboard() {
         description: "Comment approved successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to approve comment",
+        description: error.message || "Failed to approve comment",
         variant: "destructive",
       });
     },
   });
-
 
   return (
     <div className="container mx-auto p-8">

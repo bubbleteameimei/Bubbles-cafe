@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { adminLoginSchema, type AdminLogin } from "@shared/schema";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 
@@ -38,6 +38,7 @@ export default function AdminLoginPage() {
 
     try {
       await loginMutation.mutateAsync(data);
+      // Redirect will be handled by loginMutation's onSuccess
     } catch (error: any) {
       console.error('Login error:', error);
       const errorMessage = error?.message || "Failed to log in";
@@ -48,16 +49,16 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Show loading state
+  // Show loading state while checking auth status
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  // Redirect if already logged in as admin
+  // Don't render login form if already logged in
   if (user?.isAdmin) {
     return null;
   }
@@ -98,6 +99,7 @@ export default function AdminLoginPage() {
                         className={`h-12 text-base px-4 ${form.formState.errors.email ? "border-destructive" : ""}`}
                         autoComplete="new-email"
                         spellCheck="false"
+                        disabled={loginMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -117,6 +119,7 @@ export default function AdminLoginPage() {
                         {...field}
                         className={`h-12 text-base px-4 ${form.formState.errors.password ? "border-destructive" : ""}`}
                         autoComplete="new-password"
+                        disabled={loginMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -129,7 +132,14 @@ export default function AdminLoginPage() {
                 className="w-full h-12 text-base font-semibold"
                 disabled={loginMutation.isPending}
               >
-                {loginMutation.isPending ? "Logging in..." : "Login"}
+                {loginMutation.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Logging in...</span>
+                  </div>
+                ) : (
+                  "Login"
+                )}
               </Button>
             </form>
           </Form>
