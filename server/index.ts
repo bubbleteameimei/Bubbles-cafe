@@ -11,7 +11,7 @@ import { setupAuth } from "./auth";
 
 const app = express();
 const BASE_PORT = Number(process.env.PORT) || 3000;
-const MAX_PORT = BASE_PORT + 10; // Try up to 10 ports
+const MAX_PORT = BASE_PORT + 10;
 
 // Set trust proxy first
 app.set('trust proxy', 1);
@@ -52,6 +52,11 @@ app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Set up session secret
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || process.env.REPLIT_ID || 'development-secret';
 
@@ -71,9 +76,7 @@ app.use((req, res, next) => {
 function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
   const status = err.status || err.statusCode || 500;
   const isDevelopment = process.env.NODE_ENV !== 'production';
-
   log('Error occurred:', err);
-
   res.status(status).json({
     status,
     message: isDevelopment ? err.message : 'An error occurred',
@@ -81,12 +84,25 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
   });
 }
 
+let server: ReturnType<typeof registerRoutes> | null = null;
+
 async function startServer() {
   try {
-    // Verify database connection
+    // Verify database connection with retry logic
     log("Verifying database connection...");
-    await db.execute(sql`SELECT 1`);
-    log("Database connection verified successfully");
+    let retries = 5;
+    while (retries > 0) {
+      try {
+        await db.execute(sql`SELECT 1`);
+        log("Database connection verified successfully");
+        break;
+      } catch (err) {
+        retries--;
+        if (retries === 0) throw err;
+        log(`Database connection failed, retrying... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
 
     // Seed database
     try {
@@ -98,7 +114,7 @@ async function startServer() {
 
     // Set up auth and routes
     setupAuth(app);
-    const server = registerRoutes(app);
+    server = registerRoutes(app);
     app.use(errorHandler);
 
     // Set up Vite or static serving
@@ -108,33 +124,63 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Try ports sequentially until one works
+    // Try ports sequentially with improved error handling
     let currentPort = BASE_PORT;
     const tryPort = () => {
-      server.listen(currentPort, "0.0.0.0", () => {
-        log(`Server started on port ${currentPort}`);
-        if (process.send) {
-          process.send('ready');
-          process.send({ port: currentPort });
-        }
-      }).on('error', (error: NodeJS.ErrnoException) => {
-        if (error.code === 'EADDRINUSE') {
-          log(`Port ${currentPort} is in use`);
+      return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (server) {
+            server.close();
+          }
           if (currentPort < MAX_PORT) {
             currentPort++;
-            tryPort();
+            resolve();
           } else {
-            log('No available ports found');
-            process.exit(1);
+            reject(new Error('No available ports found'));
           }
-        } else {
-          log(`Server error: ${error.message}`);
-          process.exit(1);
-        }
+        }, 5000);
+
+        server?.listen(currentPort, "0.0.0.0", () => {
+          clearTimeout(timeoutId);
+          log(`Server started on port ${currentPort}`);
+          if (process.send) {
+            process.send('ready');
+            process.send({ port: currentPort });
+          }
+          resolve();
+        }).on('error', (error: NodeJS.ErrnoException) => {
+          clearTimeout(timeoutId);
+          if (error.code === 'EADDRINUSE') {
+            log(`Port ${currentPort} is in use`);
+            if (currentPort < MAX_PORT) {
+              currentPort++;
+              resolve();
+            } else {
+              reject(new Error('No available ports found'));
+            }
+          } else {
+            reject(error);
+          }
+        });
       });
     };
 
-    tryPort();
+    // Start trying ports
+    while (currentPort <= MAX_PORT) {
+      try {
+        await tryPort();
+        break;
+      } catch (error) {
+        if (error instanceof Error && error.message === 'No available ports found') {
+          log('No available ports found');
+          process.exit(1);
+        }
+        log(`Server error: ${error instanceof Error ? error.message : String(error)}`);
+        if (currentPort >= MAX_PORT) {
+          process.exit(1);
+        }
+      }
+    }
 
   } catch (error) {
     log(`Critical server error: ${error instanceof Error ? error.message : String(error)}`);
@@ -142,15 +188,47 @@ async function startServer() {
   }
 }
 
-// Error handlers
+// Graceful shutdown handler
+function gracefulShutdown(signal: string) {
+  return () => {
+    log(`Received ${signal}. Starting graceful shutdown...`);
+    if (server) {
+      server.close(() => {
+        log('Server closed');
+        process.exit(0);
+      });
+
+      // Force close after timeout
+      setTimeout(() => {
+        log('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 10000);
+    } else {
+      process.exit(0);
+    }
+  };
+}
+
+// Error handlers and graceful shutdown
+process.on('SIGTERM', gracefulShutdown('SIGTERM'));
+process.on('SIGINT', gracefulShutdown('SIGINT'));
+
 process.on('uncaughtException', (error) => {
   log(`Uncaught Exception: ${error.message}`);
-  process.exit(1);
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (error) => {
   log(`Unhandled Rejection: ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });
 
 startServer();
