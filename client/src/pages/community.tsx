@@ -5,10 +5,15 @@ import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 export default function CommunityPage() {
   const [, navigate] = useLocation();
 
-  const { data: posts, isLoading } = useQuery<Post[]>({
+  const { data, isLoading } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
       const response = await fetch("/api/posts?filter=community");
@@ -25,6 +30,8 @@ export default function CommunityPage() {
     );
   }
 
+  const posts = data?.posts || [];
+
   return (
     <div className="container py-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -39,24 +46,24 @@ export default function CommunityPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {posts?.map((post) => (
-          <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
-            <h2 className="text-2xl font-bold mb-2 line-clamp-2">{post.title}</h2>
-            <p className="text-muted-foreground mb-4 line-clamp-3">
-              {post.excerpt}
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate(`/story/${post.slug}`)}
-            >
-              Read More
-            </Button>
-          </Card>
-        ))}
-      </div>
-
-      {(!posts || posts.length === 0) && (
+      {posts.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
+              <h2 className="text-2xl font-bold mb-2 line-clamp-2">{post.title}</h2>
+              <p className="text-muted-foreground mb-4 line-clamp-3">
+                {post.excerpt}
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/story/${post.slug}`)}
+              >
+                Read More
+              </Button>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <div className="text-center py-12">
           <h3 className="text-xl font-semibold mb-2">No Stories Yet</h3>
           <p className="text-muted-foreground mb-4">

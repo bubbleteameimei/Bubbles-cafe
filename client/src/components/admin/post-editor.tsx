@@ -70,7 +70,7 @@ export default function PostEditor({ post, onClose, isCommunityPost = false }: P
       title: post?.title || "",
       content: post?.content || "",
       excerpt: post?.excerpt || "",
-      isSecret: post?.isSecret || false,
+      isSecret: false,
       slug: post?.slug || "",
       authorId: post?.authorId || 1,
       themeCategory: (post?.themeCategory || "PSYCHOLOGICAL") as ThemeCategory,
@@ -90,7 +90,7 @@ export default function PostEditor({ post, onClose, isCommunityPost = false }: P
       title: formData.title,
       content: formData.content,
       excerpt: formData.excerpt,
-      isSecret: formData.isSecret,
+      isSecret: formData.isSecret || false,
       slug: formData.slug || formData.title.toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s+/g, '-')
@@ -401,24 +401,26 @@ export default function PostEditor({ post, onClose, isCommunityPost = false }: P
             )}
 
             <div className="flex gap-4">
-              <FormField
-                control={form.control}
-                name="isSecret"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="rounded border-gray-300"
-                        disabled={mutation.isPending}
-                      />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Secret Post</FormLabel>
-                  </FormItem>
-                )}
-              />
+              {!isCommunityPost && (
+                <FormField
+                  control={form.control}
+                  name="isSecret"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="rounded border-gray-300"
+                          disabled={mutation.isPending}
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Secret Post</FormLabel>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

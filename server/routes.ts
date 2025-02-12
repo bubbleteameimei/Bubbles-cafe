@@ -131,25 +131,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Protected admin routes for posts
-  app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
+  // Update the get posts route to support filtering
+  app.get("/api/posts", async (req, res) => {
     try {
-      const postId = parseInt(req.params.id);
-      const updatedPost = await storage.updatePost(postId, req.body);
-      res.json(updatedPost);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const filter = req.query.filter as string | undefined;
+
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+        return res.status(400).json({
+          message: "Invalid pagination parameters. Page and limit must be positive numbers."
+        });
+      }
+
+      // Get posts based on filter
+      const { posts, hasMore } = await storage.getPosts({
+        page,
+        limit,
+        filter // Pass filter as an option
+      });
+
+      res.json({ posts, hasMore });
     } catch (error) {
-      console.error("Error updating post:", error);
-      res.status(500).json({ message: "Failed to update post" });
+      console.error("Error fetching posts:", error);
+      res.status(500).json({ message: "Failed to fetch posts" });
     }
   });
 
-  app.post("/api/posts", isAuthenticated, async (req, res) => {
+  // Update the post creation route to handle community posts
+  app.post("/api/posts", async (req, res) => {
     try {
       // Parse and validate the post data using our schema
       const postData = insertPostSchema.parse({
         ...req.body,
         authorId: req.user?.id || 1,
-        triggerWarnings: req.body.triggerWarnings || []
+        triggerWarnings: req.body.triggerWarnings || [],
+        isApproved: !req.body.isCommunityPost, // Auto-approve non-community posts
       });
 
       console.log('Creating new post:', postData);
@@ -176,7 +194,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update the delete post route
+
+  // Protected admin routes for posts
+  app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const updatedPost = await storage.updatePost(postId, req.body);
+      res.json(updatedPost);
+    } catch (error) {
+      console.error("Error updating post:", error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
   app.delete("/api/posts/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.id);
@@ -209,29 +239,6 @@ export function registerRoutes(app: Express): Server {
         }
       }
       res.status(500).json({ message: "Failed to delete post" });
-    }
-  });
-
-  // Update the get posts route to support filtering
-  app.get("/api/posts", async (req, res) => {
-    try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
-      const filter = req.query.filter as string | undefined;
-
-      // Validate pagination parameters
-      if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
-        return res.status(400).json({
-          message: "Invalid pagination parameters. Page and limit must be positive numbers."
-        });
-      }
-
-      // Get posts based on filter
-      const { posts, hasMore } = await storage.getPosts(page, limit, filter);
-      res.json({ posts, hasMore }); //Corrected this line to include hasMore
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      res.status(500).json({ message: "Failed to fetch posts" });
     }
   });
 
@@ -594,18 +601,32 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId, userId);
+      const existingVote = await storage.getCommentVote({
+        commentId: commentId.toString(),
+        userId: userId.toString()
+      });
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId, userId);
+          await storage.removeCommentVote({
+            commentId: commentId.toString(),
+            userId: userId.toString()
+          });
         } else {
           // Change vote
-          await storage.updateCommentVote(commentId, userId, isUpvote);
+          await storage.updateCommentVote({
+            commentId: commentId.toString(),
+            userId: userId.toString(),
+            isUpvote
+          });
         }
       } else {
         // Create new vote
-        await storage.createCommentVote(commentId, userId, isUpvote);
+        await storage.createCommentVote({
+          commentId: commentId.toString(),
+          userId: userId.toString(),
+          isUpvote
+        });
       }
 
       // Get updated vote counts
