@@ -8,6 +8,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
 import { setupAuth } from "./auth";
+import { createServer } from "http";
 
 const app = express();
 const BASE_PORT = Number(process.env.PORT) || 3000;
@@ -86,8 +87,37 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
 
 let server: ReturnType<typeof registerRoutes> | null = null;
 
+// Check if a port is available
+async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const testServer = createServer();
+    testServer.once('error', () => {
+      resolve(false);
+    });
+    testServer.once('listening', () => {
+      testServer.close();
+      resolve(true);
+    });
+    testServer.listen(port, '0.0.0.0');
+  });
+}
+
+async function findAvailablePort(): Promise<number> {
+  let currentPort = BASE_PORT;
+  while (currentPort <= MAX_PORT) {
+    log(`Checking port ${currentPort}...`);
+    if (await isPortAvailable(currentPort)) {
+      return currentPort;
+    }
+    currentPort++;
+  }
+  throw new Error('No available ports found');
+}
+
 async function startServer() {
   try {
+    log("Starting server initialization...");
+
     // Verify database connection with retry logic
     log("Verifying database connection...");
     let retries = 5;
@@ -113,74 +143,36 @@ async function startServer() {
     }
 
     // Set up auth and routes
+    log("Setting up authentication and routes...");
     setupAuth(app);
     server = registerRoutes(app);
     app.use(errorHandler);
 
     // Set up Vite or static serving
     if (app.get("env") === "development") {
+      log("Setting up Vite development server...");
       await setupVite(app, server);
     } else {
+      log("Setting up static file serving...");
       serveStatic(app);
     }
 
-    // Try ports sequentially with improved error handling
-    let currentPort = BASE_PORT;
-    const tryPort = () => {
-      return new Promise<void>((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          if (server) {
-            server.close();
-          }
-          if (currentPort < MAX_PORT) {
-            currentPort++;
-            resolve();
-          } else {
-            reject(new Error('No available ports found'));
-          }
-        }, 5000);
+    // Find available port and start server
+    const port = await findAvailablePort();
 
-        server?.listen(currentPort, "0.0.0.0", () => {
-          clearTimeout(timeoutId);
-          log(`Server started on port ${currentPort}`);
-          if (process.send) {
-            process.send('ready');
-            process.send({ port: currentPort });
-          }
-          resolve();
-        }).on('error', (error: NodeJS.ErrnoException) => {
-          clearTimeout(timeoutId);
-          if (error.code === 'EADDRINUSE') {
-            log(`Port ${currentPort} is in use`);
-            if (currentPort < MAX_PORT) {
-              currentPort++;
-              resolve();
-            } else {
-              reject(new Error('No available ports found'));
-            }
-          } else {
-            reject(error);
-          }
-        });
+    await new Promise<void>((resolve, reject) => {
+      server?.listen(port, "0.0.0.0", () => {
+        log(`Server started successfully on port ${port}`);
+        if (process.send) {
+          process.send('ready');
+          process.send({ port });
+        }
+        resolve();
+      }).on('error', (error: Error) => {
+        log(`Failed to start server: ${error.message}`);
+        reject(error);
       });
-    };
-
-    // Start trying ports
-    while (currentPort <= MAX_PORT) {
-      try {
-        await tryPort();
-        break;
-      } catch (error) {
-        if (error instanceof Error && error.message === 'No available ports found') {
-          log('No available ports found');
-          process.exit(1);
-        }
-        log(`Server error: ${error instanceof Error ? error.message : String(error)}`);
-        if (currentPort >= MAX_PORT) {
-          process.exit(1);
-        }
-      }
-    }
+    });
 
   } catch (error) {
     log(`Critical server error: ${error instanceof Error ? error.message : String(error)}`);
