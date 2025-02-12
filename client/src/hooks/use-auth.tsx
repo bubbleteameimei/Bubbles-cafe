@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/login", credentials);
+      const response = await apiRequest("POST", "/api/admin/login", credentials);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Login failed");
@@ -59,9 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: "Welcome back!",
       });
-      if (data.isAdmin) {
-        navigate("/admin");
-      }
+      navigate("/admin");
     },
     onError: (error: Error) => {
       toast({
@@ -74,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/logout");
+      const response = await apiRequest("POST", "/api/admin/logout");
       if (!response.ok) {
         throw new Error("Logout failed");
       }

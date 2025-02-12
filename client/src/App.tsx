@@ -4,6 +4,7 @@ import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 import Navigation from "./components/layout/navigation";
 import Footer from "./components/layout/footer";
 import { CookieConsent } from "@/components/ui/cookie-consent";
@@ -39,7 +40,7 @@ const ProtectedRoute = ({ component: Component, ...rest }: { component: React.Co
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <Loader2 className="h-8 w-8 animate-spin" />
     </div>;
   }
 
@@ -70,7 +71,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -86,7 +87,7 @@ function App() {
               <Suspense
                 fallback={
                   <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 }
               >
