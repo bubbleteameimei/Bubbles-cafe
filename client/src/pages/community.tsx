@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PostsResponse {
   posts: Post[];
@@ -14,10 +15,9 @@ export default function CommunityPage() {
   const [, navigate] = useLocation();
 
   const { data, isLoading } = useQuery<PostsResponse>({
-    queryKey: ["/api/posts", { filter: "community" }],
+    queryKey: ["/api/posts/community"],
     queryFn: async () => {
-      const response = await fetch("/api/posts?filter=community");
-      if (!response.ok) throw new Error("Failed to fetch community posts");
+      const response = await apiRequest("GET", "/api/posts/community");
       return response.json();
     }
   });
@@ -30,13 +30,15 @@ export default function CommunityPage() {
     );
   }
 
+  const posts = data?.posts || [];
+
   return (
     <div className="container py-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold mb-2">Community Stories</h1>
           <p className="text-muted-foreground">
-            Join our community of horror storytellers. Share your tales of terror with fellow enthusiasts.
+            Got a Story That'll Keep Us Up at Night? We're dying to read it!
           </p>
         </div>
         <Button onClick={() => navigate("/submit-story")}>
@@ -44,9 +46,9 @@ export default function CommunityPage() {
         </Button>
       </div>
 
-      {data?.posts && data.posts.length > 0 ? (
+      {posts.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {data.posts.map((post) => (
+          {posts.map((post) => (
             <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
               <h2 className="text-2xl font-bold mb-2 line-clamp-2">{post.title}</h2>
               <p className="text-muted-foreground mb-4 line-clamp-3">

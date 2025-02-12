@@ -2,6 +2,7 @@ import { createContext, ReactNode, useContext } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 interface User {
   id: number;
@@ -21,6 +22,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+
   const { data: user, error, isLoading } = useQuery<User | null>({
     queryKey: ["/api/admin/user"],
     queryFn: async () => {
@@ -50,8 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/user"] });
+    onSuccess: (data: User) => {
+      queryClient.setQueryData(["/api/admin/user"], data);
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      if (data.isAdmin) {
+        navigate("/admin");
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -70,7 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/user"] });
+      queryClient.setQueryData(["/api/admin/user"], null);
+      toast({
+        title: "Logged out",
+        description: "Come back soon!",
+      });
+      navigate("/");
     },
     onError: (error: Error) => {
       toast({

@@ -34,7 +34,6 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
-        <NavLink href="/secret" isActive={location === "/secret"} onNavigate={onNavigate}>Secret Stories</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
@@ -86,7 +85,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
 NavLink.displayName = "NavLink";
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 

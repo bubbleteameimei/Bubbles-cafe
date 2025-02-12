@@ -1,4 +1,4 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -32,65 +32,24 @@ export async function apiRequest(
   }
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw" | "redirect";
-export const getQueryFn = <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => {
-  const queryFn: QueryFunction<T> = async (context) => {
-    try {
-      const res = await fetch(context.queryKey[0] as string, {
-        credentials: "include",
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-
-      if (res.status === 401) {
-        console.log('401 Unauthorized response detected');
-        if (options.on401 === "returnNull") {
-          return null;
-        } else if (options.on401 === "redirect") {
-          window.location.href = "/admin/login";
-          return null;
-        }
-      }
-
-      await throwIfResNotOk(res);
-      return await res.json();
-    } catch (error) {
-      console.error('Query error:', error);
-      throw error;
-    }
-  };
-  return queryFn;
-};
-
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchOnWindowFocus: false,
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      gcTime: 60 * 60 * 1000, // 1 hour
       retry: (failureCount, error) => {
         if (error instanceof Error) {
           // Don't retry auth errors
-          if (error.message.includes('401')) {
-            return false;
-          }
+          if (error.message.includes('401')) return false;
           // Don't retry forbidden requests
-          if (error.message.includes('403')) {
-            return false;
-          }
+          if (error.message.includes('403')) return false;
           // Don't retry not found
-          if (error.message.includes('404')) {
-            return false;
-          }
+          if (error.message.includes('404')) return false;
         }
         return failureCount < 2; // Only retry twice for other errors
       },
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
     mutations: {
       retry: false,
@@ -100,6 +59,15 @@ export const queryClient = new QueryClient({
         if (error instanceof Error && error.message.includes('401')) {
           window.location.href = "/admin/login";
         }
+      },
+      // Add mutation options for better error handling
+      onMutate: (variables) => {
+        // Optionally log mutation attempts
+        console.log('Starting mutation:', variables);
+      },
+      onSettled: () => {
+        // Always refetch related queries after mutation
+        queryClient.invalidateQueries();
       }
     },
   },

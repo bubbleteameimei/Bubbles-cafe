@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Post, Comment } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -7,93 +7,122 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Trash2, ThumbsUp } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("posts");
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
-  // Fetch posts
-  const { data: posts, isLoading: postsLoading } = useQuery<Post[]>({
-    queryKey: ["/api/admin/posts"],
+  // Redirect if not admin
+  useEffect(() => {
+    if (!authLoading && !user?.isAdmin) {
+      navigate("/admin/login");
+    }
+  }, [user, authLoading, navigate]);
+
+  // If auth is still loading, show loading state
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // If not admin, don't render anything while redirecting
+  if (!user?.isAdmin) {
+    return null;
+  }
+
+  // Fetch pending posts
+  const { data: posts = [], isLoading: postsLoading } = useQuery({
+    queryKey: ["/api/posts/pending"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/posts");
-      return res.json();
+      const res = await apiRequest("GET", "/api/posts/pending");
+      const data = await res.json();
+      return data || [];
     },
     enabled: !!user?.isAdmin,
   });
 
   // Fetch pending comments
-  const { data: pendingComments, isLoading: commentsLoading } = useQuery<Comment[]>({
-    queryKey: ["/api/admin/comments/pending"],
+  const { data: pendingComments = [], isLoading: commentsLoading } = useQuery({
+    queryKey: ["/api/comments/pending"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/comments/pending");
-      return res.json();
+      const res = await apiRequest("GET", "/api/comments/pending");
+      const data = await res.json();
+      return data || [];
     },
     enabled: !!user?.isAdmin,
   });
 
-  const handleDeletePost = async (postId: number) => {
-    try {
-      await apiRequest("DELETE", `/api/admin/posts/${postId}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/posts"] });
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      await apiRequest("DELETE", `/api/posts/${postId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts/pending"] });
       toast({
         title: "Success",
-        description: "The post has been successfully deleted.",
+        description: "Post deleted successfully",
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete post. Please try again.",
+        description: "Failed to delete post",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
-  const handleDeleteComment = async (commentId: number) => {
-    try {
-      await apiRequest("DELETE", `/api/admin/comments/${commentId}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/comments/pending"] });
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await apiRequest("DELETE", `/api/comments/${commentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
       toast({
         title: "Success",
-        description: "The comment has been successfully deleted.",
+        description: "Comment deleted successfully",
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete comment. Please try again.",
+        description: "Failed to delete comment",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
-  const handleApproveComment = async (commentId: number) => {
-    try {
-      await apiRequest("PATCH", `/api/admin/comments/${commentId}`, { approved: true });
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/comments/pending"] });
+  // Approve comment mutation
+  const approveCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      await apiRequest("PATCH", `/api/comments/${commentId}`, { approved: true });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/pending"] });
       toast({
         title: "Success",
-        description: "The comment has been approved and is now visible.",
+        description: "Comment approved successfully",
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to approve comment. Please try again.",
+        description: "Failed to approve comment",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
-  if (!user?.isAdmin) {
-    return (
-      <div className="container mx-auto p-8">
-        <h1 className="text-2xl font-semibold mb-4">Access Denied</h1>
-        <p>You do not have permission to access this page.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto p-8">
@@ -101,7 +130,7 @@ export default function AdminDashboard() {
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-8">
-          <TabsTrigger value="posts">Manage Posts</TabsTrigger>
+          <TabsTrigger value="posts">Pending Posts</TabsTrigger>
           <TabsTrigger value="comments">Pending Comments</TabsTrigger>
         </TabsList>
 
@@ -112,35 +141,33 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="grid gap-6">
-              {posts?.map((post) => (
-                <Card key={post.id}>
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold">{post.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Created: {new Date(post.createdAt).toLocaleDateString()}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">{post.excerpt}</p>
-                    <div className="mt-2 flex gap-2 text-sm text-muted-foreground">
-                      <span>👍 {post.likesCount}</span>
-                      <span>👎 {post.dislikesCount}</span>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeletePost(post.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Post
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-              {posts?.length === 0 && (
-                <p className="text-center text-muted-foreground">No posts found.</p>
+              {posts.length > 0 ? (
+                posts.map((post: Post) => (
+                  <Card key={post.id}>
+                    <CardHeader>
+                      <h3 className="text-xl font-semibold">{post.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Created: {new Date(post.createdAt).toLocaleDateString()}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">{post.excerpt}</p>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deletePostMutation.mutate(post.id)}
+                        disabled={deletePostMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Post
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground">No pending posts.</p>
               )}
             </div>
           )}
@@ -153,38 +180,41 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="grid gap-6">
-              {pendingComments?.map((comment) => (
-                <Card key={comment.id}>
-                  <CardHeader>
-                    <h3 className="font-semibold">{comment.author}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Posted: {new Date(comment.createdAt).toLocaleDateString()}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">{comment.content}</p>
-                  </CardContent>
-                  <CardFooter className="flex gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleApproveComment(comment.id)}
-                    >
-                      <ThumbsUp className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteComment(comment.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-              {pendingComments?.length === 0 && (
+              {pendingComments.length > 0 ? (
+                pendingComments.map((comment: Comment) => (
+                  <Card key={comment.id}>
+                    <CardHeader>
+                      <h3 className="font-semibold">{comment.author}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Posted: {new Date(comment.createdAt).toLocaleDateString()}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">{comment.content}</p>
+                    </CardContent>
+                    <CardFooter className="flex gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => approveCommentMutation.mutate(comment.id)}
+                        disabled={approveCommentMutation.isPending}
+                      >
+                        <ThumbsUp className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteCommentMutation.mutate(comment.id)}
+                        disabled={deleteCommentMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
                 <p className="text-center text-muted-foreground">No pending comments.</p>
               )}
             </div>

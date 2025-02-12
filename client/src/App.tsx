@@ -16,24 +16,23 @@ const Home = lazy(() => import("@/pages/home"));
 const Stories = lazy(() => import("@/pages/stories"));
 const Secret = lazy(() => import("@/pages/secret"));
 const About = lazy(() => import("@/pages/about"));
-const Admin = lazy(() => import("@/pages/admin"));
+const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
 const AdminLogin = lazy(() => import("@/pages/admin-login"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const Contact = lazy(() => import("@/pages/contact"));
 const Reader = lazy(() => import("@/pages/reader"));
 const IndexView = lazy(() => import("@/pages/index"));
-const SubmitStory = lazy(() => import("@/pages/submit-story"));
 const Community = lazy(() => import("@/pages/community"));
 
 function App() {
-  const [isLoading, setIsLoading] = React.useState(true);
   const [location] = useLocation();
+  const [isLoading, setIsLoading] = React.useState(true);
 
   // Prefetch critical routes
   React.useEffect(() => {
     const prefetchRoutes = async () => {
-      const routes = ['/', '/index', '/reader', '/submit-story', '/community'];
+      const routes = ['/', '/index', '/reader', '/community'];
       await Promise.all(
         routes.map(route =>
           queryClient.prefetchQuery({
@@ -51,9 +50,7 @@ function App() {
       setIsLoading(false);
     }, 200);
 
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   // Scroll to top on route change
@@ -71,8 +68,6 @@ function App() {
         <AuthProvider>
           <div className="relative min-h-screen bg-background text-foreground antialiased">
             <Navigation />
-
-            {/* Main Content */}
             <main className="pt-14">
               <ErrorBoundary>
                 <Suspense fallback={<LoadingScreen />}>
@@ -82,22 +77,19 @@ function App() {
                     <Route path="/reader" component={Reader} />
                     <Route path="/stories" component={Stories} />
                     <Route path="/community" component={Community} />
-                    <Route path="/submit-story" component={SubmitStory} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
-                    <Route path="/secret" component={Secret} />
-                    <Route path="/privacy" component={Privacy} />
                     <Route path="/about" component={About} />
                     <Route path="/contact" component={Contact} />
+                    <Route path="/privacy" component={Privacy} />
                     <Route path="/admin/login" component={AdminLogin} />
-                    <Route path="/admin" component={Admin} />
+                    <Route path="/admin" component={AdminDashboard} />
                     <Route component={NotFound} />
                   </Switch>
                 </Suspense>
               </ErrorBoundary>
             </main>
-
             <Footer />
             <CookieConsent />
             <Toaster />
