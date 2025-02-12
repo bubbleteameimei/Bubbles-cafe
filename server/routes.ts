@@ -608,33 +608,19 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(
-        commentId.toString(),
-        userId.toString()
-      );
+      const existingVote = await storage.getCommentVote(commentId, userId);
 
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote(
-            commentId.toString(),
-            userId.toString()
-          );
+          await storage.removeCommentVote(commentId, userId);
         } else {
           // Change vote
-          await storage.updateCommentVote(
-            commentId.toString(),
-            userId.toString(),
-            isUpvote
-          );
+          await storage.updateCommentVote(commentId, userId, isUpvote);
         }
       } else {
         // Create new vote
-        await storage.createCommentVote(
-          commentId.toString(),
-          userId.toString(),
-          isUpvote
-        );
+        await storage.createCommentVote(commentId, userId, isUpvote);
       }
 
       // Get updated vote counts

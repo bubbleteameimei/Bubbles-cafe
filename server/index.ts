@@ -119,7 +119,7 @@ async function findAvailablePort(startPort: number, maxRetries = 10): Promise<nu
   });
 }
 
-async function waitForPort(port: number, retries = 10, timeout = 2000): Promise<void> {
+async function waitForPort(port: number, retries = 15, timeout = 5000): Promise<void> {
   let attempts = 0;
 
   const tryConnect = async (): Promise<void> => {
@@ -160,14 +160,8 @@ async function waitForPort(port: number, retries = 10, timeout = 2000): Promise<
         handleResult(new Error('Connection timeout'));
       }, timeout);
 
-      socket.once('error', (err) => {
-        handleResult(err);
-      });
-
-      socket.once('connect', () => {
-        handleResult();
-      });
-
+      socket.once('error', handleResult);
+      socket.once('connect', () => handleResult());
       socket.connect(port, '0.0.0.0');
     });
   };
@@ -191,16 +185,18 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
 
 async function startServer() {
   try {
-    // Verify database connection
+    // Verify database connection first
+    log("Verifying database connection...");
     await db.execute(sql`SELECT 1`);
-    log("Database connection verified");
+    log("Database connection verified successfully");
 
     // Seed database if needed
     try {
       await seedDatabase();
       log("Database seeded successfully!");
     } catch (err) {
-      log(`Error seeding database: ${err}`);
+      log(`Warning: Error seeding database: ${err}`);
+      // Continue startup even if seeding fails
     }
 
     // Set up auth before routes
@@ -215,7 +211,6 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Find an available port starting from the environment port or default
     const PORT = await findAvailablePort(startPort);
     process.env.PORT = PORT.toString();
     log(`Selected port: ${PORT}`);
@@ -228,7 +223,9 @@ async function startServer() {
       server.listen(PORT, "0.0.0.0", async () => {
         try {
           log(`Server started on port ${PORT}`);
-          await waitForPort(PORT);
+
+          // Wait for port to be available with increased timeout
+          await waitForPort(PORT, 15, 5000);
           log(`Server is ready and accepting connections on port ${PORT}`);
           clearTimeout(startupTimeout);
 
@@ -242,9 +239,7 @@ async function startServer() {
           resolve();
         } catch (error) {
           clearTimeout(startupTimeout);
-          const err = error instanceof Error ? error : new Error(String(error));
-          log(`Error during server startup: ${err.message}`);
-          reject(err);
+          reject(error);
         }
       });
 
@@ -277,8 +272,8 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  log('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (error) => {
+  log(`Unhandled Rejection: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 });
 
