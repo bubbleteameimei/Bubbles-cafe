@@ -10,10 +10,39 @@ import {
   type CommentVote,
   type CommentReply,
   type InsertCommentReply,
-  posts as postsTable, comments, readingProgress, secretProgress, users, contactMessages, sessions, postLikes, commentVotes, commentReplies
+  type StoryRating, type InsertStoryRating,
+  type AuthorStats,
+  type WritingChallenge, type InsertWritingChallenge,
+  type ChallengeEntry, type InsertChallengeEntry,
+  type ContentProtection, type InsertContentProtection,
+  type ReportedContent, type InsertReportedContent,
+  type AuthorTip, type InsertAuthorTip,
+  type NewsletterSubscription, type InsertNewsletterSubscription,
+  type Webhook, type InsertWebhook,
+  type Analytics,
+  posts as postsTable,
+  comments,
+  readingProgress,
+  secretProgress,
+  users,
+  contactMessages,
+  sessions,
+  postLikes,
+  commentVotes,
+  commentReplies,
+  storyRatings,
+  authorStats,
+  writingChallenges,
+  challengeEntries,
+  contentProtection,
+  reportedContent,
+  authorTips,
+  newsletterSubscriptions,
+  webhooks,
+  analytics
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, lt, gt, sql } from "drizzle-orm";
+import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -73,6 +102,49 @@ export interface IStorage {
 
   // Comment replies
   createCommentReply(reply: InsertCommentReply): Promise<CommentReply>;
+
+  // Story Ratings
+  getStoryRating(postId: number, userId: number): Promise<StoryRating | undefined>;
+  createStoryRating(rating: InsertStoryRating): Promise<StoryRating>;
+  updateStoryRating(postId: number, userId: number, fearRating: number): Promise<StoryRating>;
+  getAverageStoryRating(postId: number): Promise<number>;
+
+  // Author Stats
+  getAuthorStats(authorId: number): Promise<AuthorStats | undefined>;
+  updateAuthorStats(authorId: number): Promise<AuthorStats>;
+  getTopAuthors(limit?: number): Promise<AuthorStats[]>;
+
+  // Writing Challenges
+  createWritingChallenge(challenge: InsertWritingChallenge): Promise<WritingChallenge>;
+  getActiveWritingChallenges(): Promise<WritingChallenge[]>;
+  submitChallengeEntry(entry: InsertChallengeEntry): Promise<ChallengeEntry>;
+  getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]>;
+
+  // Content Protection
+  addContentProtection(protection: InsertContentProtection): Promise<ContentProtection>;
+  checkContentSimilarity(content: string): Promise<boolean>;
+  reportContent(report: InsertReportedContent): Promise<ReportedContent>;
+  getReportedContent(status?: string): Promise<ReportedContent[]>;
+
+  // Tips System
+  createTip(tip: InsertAuthorTip): Promise<AuthorTip>;
+  getAuthorTips(authorId: number): Promise<AuthorTip[]>;
+  getTotalTipsReceived(authorId: number): Promise<number>;
+
+  // Newsletter
+  subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
+  unsubscribeNewsletter(email: string): Promise<void>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
+
+  // Webhooks
+  registerWebhook(webhook: InsertWebhook): Promise<Webhook>;
+  getActiveWebhooks(): Promise<Webhook[]>;
+  updateWebhookStatus(id: number, active: boolean): Promise<void>;
+
+  // Analytics
+  updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
+  getPostAnalytics(postId: number): Promise<Analytics | undefined>;
+  getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -652,6 +724,271 @@ export class DatabaseStorage implements IStorage {
     return {
       ...newReply,
       createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
+    };
+  }
+
+  // Story Ratings Implementation
+  async getStoryRating(postId: number, userId: number): Promise<StoryRating | undefined> {
+    const [rating] = await db.select()
+      .from(storyRatings)
+      .where(and(
+        eq(storyRatings.postId, postId),
+        eq(storyRatings.userId, userId)
+      ))
+      .limit(1);
+    return rating;
+  }
+
+  async createStoryRating(rating: InsertStoryRating): Promise<StoryRating> {
+    const [newRating] = await db.insert(storyRatings)
+      .values({ ...rating, createdAt: new Date() })
+      .returning();
+
+    await this.updateAuthorStats(rating.postId);
+    return newRating;
+  }
+
+  async updateStoryRating(postId: number, userId: number, fearRating: number): Promise<StoryRating> {
+    const [updated] = await db.update(storyRatings)
+      .set({ fearRating })
+      .where(and(
+        eq(storyRatings.postId, postId),
+        eq(storyRatings.userId, userId)
+      ))
+      .returning();
+
+    await this.updateAuthorStats(postId);
+    return updated;
+  }
+
+  // Fix for getAverageStoryRating
+  async getAverageStoryRating(postId: number): Promise<number> {
+    const [result] = await db.select({
+      average: avg(storyRatings.fearRating)
+    })
+    .from(storyRatings)
+    .where(eq(storyRatings.postId, postId));
+
+    return Number(result.average) || 0;
+  }
+
+  // Author Stats Implementation
+  async getAuthorStats(authorId: number): Promise<AuthorStats | undefined> {
+    const [stats] = await db.select()
+      .from(authorStats)
+      .where(eq(authorStats.authorId, authorId))
+      .limit(1);
+    return stats;
+  }
+
+  async updateAuthorStats(authorId: number): Promise<AuthorStats> {
+    const [[totalPosts], [totalLikes], [avgRating], [totalTips]] = await Promise.all([
+      db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
+      db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
+      db.select({ avg: avg(storyRatings.fearRating) }).from(storyRatings),
+      db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
+    ]);
+
+    const [updated] = await db.update(authorStats)
+      .set({
+        totalPosts: Number(totalPosts.count),
+        totalLikes: Number(totalLikes.count),
+        avgFearRating: Number(avgRating.avg || 0),
+        totalTips: totalTips.sum || "0",
+        updatedAt: new Date()
+      })
+      .where(eq(authorStats.authorId, authorId))
+      .returning();
+
+    return updated;
+  }
+
+  async getTopAuthors(limit: number = 10): Promise<AuthorStats[]> {
+    return await db.select()
+      .from(authorStats)
+      .orderBy(desc(authorStats.totalLikes))
+      .limit(limit);
+  }
+
+  // Writing Challenges Implementation
+  async createWritingChallenge(challenge: InsertWritingChallenge): Promise<WritingChallenge> {
+    const [newChallenge] = await db.insert(writingChallenges)
+      .values({ ...challenge, createdAt: new Date() })
+      .returning();
+    return newChallenge;
+  }
+
+  async getActiveWritingChallenges(): Promise<WritingChallenge[]> {
+    return await db.select()
+      .from(writingChallenges)
+      .where(gt(writingChallenges.endDate, new Date()))
+      .orderBy(desc(writingChallenges.startDate));
+  }
+
+  async submitChallengeEntry(entry: InsertChallengeEntry): Promise<ChallengeEntry> {
+    const [newEntry] = await db.insert(challengeEntries)
+      .values(entry)
+      .returning();
+    return newEntry;
+  }
+
+  async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
+    return await db.select()
+      .from(challengeEntries)
+      .where(eq(challengeEntries.challengeId, challengeId))
+      .orderBy(desc(challengeEntries.submissionDate));
+  }
+
+  // Content Protection Implementation
+  async addContentProtection(protection: InsertContentProtection): Promise<ContentProtection> {
+    const [newProtection] = await db.insert(contentProtection)
+      .values({ ...protection, createdAt: new Date() })
+      .returning();
+    return newProtection;
+  }
+
+  async checkContentSimilarity(content: string): Promise<boolean> {
+    // TODO: Implement similarity checking logic
+    return false;
+  }
+
+  async reportContent(report: InsertReportedContent): Promise<ReportedContent> {
+    const [newReport] = await db.insert(reportedContent)
+      .values({ ...report, createdAt: new Date() })
+      .returning();
+    return newReport;
+  }
+
+  async getReportedContent(status: string = 'pending'): Promise<ReportedContent[]> {
+    return await db.select()
+      .from(reportedContent)
+      .where(eq(reportedContent.status, status))
+      .orderBy(desc(reportedContent.createdAt));
+  }
+
+  // Tips System Implementation
+  async createTip(tip: InsertAuthorTip): Promise<AuthorTip> {
+    const [newTip] = await db.insert(authorTips)
+      .values({ ...tip, createdAt: new Date() })
+      .returning();
+
+    await this.updateAuthorStats(tip.authorId);
+    return newTip;
+  }
+
+  async getAuthorTips(authorId: number): Promise<AuthorTip[]> {
+    return await db.select()
+      .from(authorTips)
+      .where(eq(authorTips.authorId, authorId))
+      .orderBy(desc(authorTips.createdAt));
+  }
+
+  async getTotalTipsReceived(authorId: number): Promise<number> {
+    const [result] = await db.select({
+      total: sql<string>`sum(amount)`
+    })
+    .from(authorTips)
+    .where(eq(authorTips.authorId, authorId));
+
+    return Number(result.total) || 0;
+  }
+
+  // Newsletter Implementation
+  async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+    const [newSubscription] = await db.insert(newsletterSubscriptions)
+      .values({ ...subscription, createdAt: new Date() })
+      .returning();
+    return newSubscription;
+  }
+
+  async unsubscribeNewsletter(email: string): Promise<void> {
+    await db.delete(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.email, email));
+  }
+
+  async getNewsletterSubscribers(): Promise<NewsletterSubscription[]> {
+    return await db.select()
+      .from(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.confirmed, true));
+  }
+
+  // Webhooks Implementation
+  async registerWebhook(webhook: InsertWebhook): Promise<Webhook> {
+    const [newWebhook] = await db.insert(webhooks)
+      .values({ ...webhook, createdAt: new Date() })
+      .returning();
+    return newWebhook;
+  }
+
+  async getActiveWebhooks(): Promise<Webhook[]> {
+    return await db.select()
+      .from(webhooks)
+      .where(eq(webhooks.active, true));
+  }
+
+  async updateWebhookStatus(id: number, active: boolean): Promise<void> {
+    await db.update(webhooks)
+      .set({ active })
+      .where(eq(webhooks.id, id));  }
+
+  // Fix for updateAnalytics
+  async updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics> {
+    const existingAnalytics = await db.select()
+      .from(analytics)
+      .where(eq(analytics.postId, postId))
+      .limit(1);
+
+    if (existingAnalytics.length > 0) {
+      const [updated] = await db.update(analytics)
+        .set({ 
+          ...data, 
+          updatedAt: new Date(),
+          pageViews: data.pageViews ?? existingAnalytics[0].pageViews,
+          uniqueVisitors: data.uniqueVisitors ?? existingAnalytics[0].uniqueVisitors,
+          averageReadTime: data.averageReadTime ?? existingAnalytics[0].averageReadTime,
+          bounceRate: data.bounceRate ?? existingAnalytics[0].bounceRate,
+          deviceStats: data.deviceStats ?? existingAnalytics[0].deviceStats
+        })
+        .where(eq(analytics.postId, postId))
+        .returning();
+      return updated;
+    } else {
+      const [newAnalytics] = await db.insert(analytics)
+        .values({ 
+          postId, 
+          ...data,
+          pageViews: data.pageViews ?? 0,
+          uniqueVisitors: data.uniqueVisitors ?? 0,
+          averageReadTime: data.averageReadTime ?? 0,
+          bounceRate: data.bounceRate ?? 0,
+          deviceStats: data.deviceStats ?? {},
+          updatedAt: new Date()
+        })
+        .returning();
+      return newAnalytics;
+    }
+  }
+
+  async getPostAnalytics(postId: number): Promise<Analytics | undefined> {
+    const [postAnalytics] = await db.select()
+      .from(analytics)
+      .where(eq(analytics.postId, postId))
+      .limit(1);
+    return postAnalytics;
+  }
+
+  async getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }> {
+    const [result] = await db.select({
+      totalViews: sql<number>`sum(page_views)`,
+      uniqueVisitors: sql<number>`sum(unique_visitors)`,
+      avgReadTime: avg(analytics.averageReadTime)
+    })
+    .from(analytics);
+
+    return {
+      totalViews: Number(result.totalViews) || 0,
+      uniqueVisitors: Number(result.uniqueVisitors) || 0,
+      avgReadTime: Number(result.avgReadTime) || 0
     };
   }
 }

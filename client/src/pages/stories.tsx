@@ -38,7 +38,8 @@ export default function Stories() {
       return response.json();
     },
     getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length + 1 : undefined,
-    initialPageParam: 1
+    initialPageParam: 1,
+    retry: 3
   });
 
   React.useEffect(() => {
@@ -52,10 +53,34 @@ export default function Stories() {
   }
 
   if (error || !data?.pages) {
-    return <div className="text-center p-8">Stories not found or error loading stories.</div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
+          <p className="text-muted-foreground">{error?.message || "Please try again later"}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const posts = data.pages.flatMap(page => page.posts);
+
+  if (!posts.length) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-foreground">No stories found</h2>
+          <p className="text-muted-foreground mt-2">Check back later for new content</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-background">

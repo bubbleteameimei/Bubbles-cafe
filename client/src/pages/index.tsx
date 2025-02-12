@@ -95,11 +95,35 @@ export default function IndexView() {
     return <LoadingScreen />;
   }
 
-  if (error || !postsData?.posts || postsData.posts.length === 0) {
-    return <div className="text-center p-8">Stories not found or error loading stories.</div>;
+  if (error || !postsData?.posts) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
+          <p className="text-muted-foreground">{error?.message || "Please try again later"}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const posts = postsData.posts;
+
+  if (!posts.length) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-foreground">No stories found</h2>
+          <p className="text-muted-foreground mt-2">Check back later for new content</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-background">
