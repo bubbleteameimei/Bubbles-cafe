@@ -7,8 +7,8 @@ import rateLimit from 'express-rate-limit';
 import type { Request, Response, NextFunction } from "express";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
-import { z } from "zod"; // Add zod import
-import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema"; // Add schema import
+import { z } from "zod";
+import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 
 // Configure nodemailer with optimized settings
@@ -68,7 +68,7 @@ export function registerRoutes(app: Express): Server {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // Remove unsafe-eval
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https:"],
@@ -603,24 +603,26 @@ Timestamp: ${new Date().toLocaleString()}
         const ip = req.ip || '127.0.0.1';
         const salt = await bcrypt.genSalt(5);
         const ipHash = await bcrypt.hash(ip, salt);
-        // Convert hash to a number for userId
         userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
       }
 
+      // Convert userId to string for storage functions
+      const userIdStr = userId.toString();
+
       // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId, userId);
+      const existingVote = await storage.getCommentVote(commentId, userIdStr);
 
       if (existingVote) {
         if (existingVote.isUpvote === isUpvote) {
           // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId, userId);
+          await storage.removeCommentVote(commentId, userIdStr);
         } else {
           // Change vote
-          await storage.updateCommentVote(commentId, userId, isUpvote);
+          await storage.updateCommentVote(commentId, userIdStr, isUpvote);
         }
       } else {
         // Create new vote
-        await storage.createCommentVote(commentId, userId, isUpvote);
+        await storage.createCommentVote(commentId, userIdStr, isUpvote);
       }
 
       // Get updated vote counts
