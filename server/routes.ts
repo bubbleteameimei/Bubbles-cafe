@@ -104,6 +104,33 @@ export function registerRoutes(app: Express): Server {
     res.json({ isAdmin: req.user!.isAdmin });
   });
 
+  // New route to get pending community posts
+  app.get("/api/posts/pending", isAuthenticated, async (_req, res) => {
+    try {
+      const posts = await storage.getPendingPosts();
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching pending posts:", error);
+      res.status(500).json({ message: "Failed to fetch pending posts" });
+    }
+  });
+
+  // New route to approve a community post
+  app.patch("/api/posts/:id/approve", isAuthenticated, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+
+      const post = await storage.approvePost(postId);
+      res.json(post);
+    } catch (error) {
+      console.error("Error approving post:", error);
+      res.status(500).json({ message: "Failed to approve post" });
+    }
+  });
+
   // Protected admin routes for posts
   app.patch("/api/posts/:id", isAuthenticated, async (req, res) => {
     try {
@@ -629,6 +656,68 @@ Timestamp: ${new Date().toLocaleString()}
         });
       }
       res.status(500).json({ message: "Failed to create reply" });
+    }
+  });
+
+  // Add these routes after existing routes
+  app.post("/api/stories/:postId/rate", async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { fearRating, userId } = req.body;
+
+      // Validate the rating
+      if (fearRating < 1 || fearRating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+
+      // Check if user has already rated
+      const existingRating = await storage.getStoryRating(parseInt(postId), userId);
+
+      let rating;
+      if (existingRating) {
+        // Update existing rating
+        rating = await storage.updateStoryRating(parseInt(postId), userId, fearRating);
+      } else {
+        // Create new rating
+        rating = await storage.createStoryRating({
+          postId: parseInt(postId),
+          userId,
+          fearRating
+        });
+      }
+
+      res.json(rating);
+    } catch (error) {
+      console.error("Error rating story:", error);
+      res.status(500).json({ message: "Failed to rate story" });
+    }
+  });
+
+  app.get("/api/stories/:postId/rating", async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { userId } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+
+      const rating = await storage.getStoryRating(parseInt(postId), parseInt(userId as string));
+      res.json(rating);
+    } catch (error) {
+      console.error("Error fetching rating:", error);
+      res.status(500).json({ message: "Failed to fetch rating" });
+    }
+  });
+
+  app.get("/api/stories/:postId/average-rating", async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const average = await storage.getAverageStoryRating(parseInt(postId));
+      res.json(average);
+    } catch (error) {
+      console.error("Error fetching average rating:", error);
+      res.status(500).json({ message: "Failed to fetch average rating" });
     }
   });
 

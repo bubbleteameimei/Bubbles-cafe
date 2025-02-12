@@ -40,7 +40,9 @@ export const posts = pgTable("posts", {
   themeCategory: text("theme_category"),
   triggerWarnings: text("trigger_warnings").array(),
   matureContent: boolean("mature_content").default(false).notNull(),
-  readingTimeMinutes: integer("reading_time_minutes").default(0).notNull()
+  readingTimeMinutes: integer("reading_time_minutes").default(0).notNull(),
+  isCommunityPost: boolean("is_community_post").default(false).notNull(),
+  isApproved: boolean("is_approved").default(false).notNull()
 }, (table) => ({
   slugIdx: index("slug_idx").on(table.slug),
   createdAtIdx: index("created_at_idx").on(table.createdAt),
@@ -230,7 +232,9 @@ export const insertPostSchema = createInsertSchema(posts)
       'APOCALYPTIC', 'LOVECRAFTIAN', 'ISOLATION', 'AQUATIC',
       'VIRAL', 'URBAN_LEGEND', 'TIME_HORROR', 'DREAMSCAPE'
     ]),
-    triggerWarnings: z.array(z.string()).optional()
+    triggerWarnings: z.array(z.string()).optional(),
+    isCommunityPost: z.boolean().optional().default(false),
+    isApproved: z.boolean().optional().default(false)
   });
 
 export const insertCommentSchema = createInsertSchema(comments)

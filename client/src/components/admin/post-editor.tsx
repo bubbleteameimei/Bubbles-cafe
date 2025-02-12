@@ -9,7 +9,8 @@ import {
   Redo,
   Check,
   X,
-  Loader2
+  Loader2,
+  Users
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { type Post, type InsertPost, insertPostSchema } from "@shared/schema";
@@ -24,6 +25,7 @@ import * as z from 'zod';
 interface PostEditorProps {
   post?: Post | null;
   onClose?: () => void;
+  isCommunityPost?: boolean;
 }
 
 type ThemeCategory =
@@ -44,7 +46,7 @@ type ThemeCategory =
   | "TIME_HORROR"
   | "DREAMSCAPE";
 
-export default function PostEditor({ post, onClose }: PostEditorProps) {
+export default function PostEditor({ post, onClose, isCommunityPost = false }: PostEditorProps) {
   const { toast } = useToast();
   const [selectedText, setSelectedText] = useState({ start: 0, end: 0 });
   const [history, setHistory] = useState<string[]>([]);
@@ -60,7 +62,9 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
         "BODY_HORROR", "SURVIVAL", "SUPERNATURAL", "GOTHIC",
         "APOCALYPTIC", "LOVECRAFTIAN", "ISOLATION", "AQUATIC",
         "VIRAL", "URBAN_LEGEND", "TIME_HORROR", "DREAMSCAPE"
-      ])
+      ]),
+      isApproved: z.boolean().optional(),
+      isCommunityPost: z.boolean().optional()
     })),
     defaultValues: {
       title: post?.title || "",
@@ -71,7 +75,9 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       authorId: post?.authorId || 1,
       themeCategory: (post?.themeCategory || "PSYCHOLOGICAL") as ThemeCategory,
       triggerWarnings: post?.triggerWarnings || [],
-      matureContent: post?.matureContent || false
+      matureContent: post?.matureContent || false,
+      isApproved: post?.isApproved || false,
+      isCommunityPost: isCommunityPost
     }
   });
 
@@ -96,7 +102,9 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
       themeCategory: formData.themeCategory,
       triggerWarnings: formData.triggerWarnings || [],
       matureContent: formData.matureContent || false,
-      readingTimeMinutes: readingTime
+      readingTimeMinutes: readingTime,
+      isApproved: formData.isApproved || false,
+      isCommunityPost: formData.isCommunityPost || false
     };
   };
 
@@ -115,6 +123,8 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
           triggerWarnings: formData.triggerWarnings || [],
           authorId: post?.authorId || 1,
           matureContent: formData.matureContent || false,
+          isApproved: !isCommunityPost, // Auto-approve non-community posts
+          isCommunityPost
         };
 
         console.log('Submitting post data:', processedData);
@@ -381,6 +391,15 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
               )}
             />
 
+            {isCommunityPost && (
+              <div className="bg-primary/5 p-4 rounded-lg mb-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>This story will be submitted to the community. It will be visible after moderator approval.</span>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-4">
               <FormField
                 control={form.control}
@@ -444,7 +463,7 @@ export default function PostEditor({ post, onClose }: PostEditorProps) {
                 ) : (
                   <>
                     <Check className="mr-2 h-4 w-4" />
-                    {post ? "Update Post" : "Create Post"}
+                    {post ? "Update Story" : isCommunityPost ? "Submit Story" : "Create Story"}
                   </>
                 )}
               </Button>

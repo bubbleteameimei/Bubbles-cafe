@@ -9,6 +9,7 @@ import Footer from "./components/layout/footer";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { StoryView } from "@/components/StoryView";
 
 // Lazy load components that aren't needed immediately
 const Home = lazy(() => import("@/pages/home"));
@@ -19,7 +20,6 @@ const Admin = lazy(() => import("@/pages/admin"));
 const AdminLogin = lazy(() => import("@/pages/admin-login"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Privacy = lazy(() => import("@/pages/privacy"));
-const StoryView = lazy(() => import("@/pages/story-view"));
 const Contact = lazy(() => import("@/pages/contact"));
 const Reader = lazy(() => import("@/pages/reader"));
 const IndexView = lazy(() => import("@/pages/index"));
@@ -78,11 +78,11 @@ function App() {
                     <Route path="/" component={Home} />
                     <Route path="/index" component={IndexView} />
                     <Route path="/reader" component={Reader} />
-                    <Route path="/secret" component={Secret} />
                     <Route path="/stories" component={Stories} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
+                    <Route path="/secret" component={Secret} />
                     <Route path="/privacy" component={Privacy} />
                     <Route path="/about" component={About} />
                     <Route path="/contact" component={Contact} />

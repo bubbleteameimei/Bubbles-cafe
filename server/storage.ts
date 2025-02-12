@@ -69,6 +69,8 @@ export interface IStorage {
   updatePost(id: number, post: Partial<InsertPost>): Promise<Post>;
   getPostWithComments(slug: string): Promise<Post & { comments: Comment[] }>;
   getPostsByAuthor(authorId: number, limit?: number): Promise<Post[]>;
+  getPendingPosts(): Promise<Post[]>;
+  approvePost(postId: number): Promise<Post>;
 
   // Comments
   getComments(postId: number): Promise<Comment[]>;
@@ -990,6 +992,49 @@ export class DatabaseStorage implements IStorage {
       uniqueVisitors: Number(result.uniqueVisitors) || 0,
       avgReadTime: Number(result.avgReadTime) || 0
     };
+  }
+
+  async getPendingPosts(): Promise<Post[]> {
+    try {
+      const posts = await db.select()
+        .from(postsTable)
+        .where(and(
+          eq(postsTable.isCommunityPost, true),
+          eq(postsTable.isApproved, false)
+        ))
+        .orderBy(desc(postsTable.createdAt));
+
+      return posts.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error("Error in getPendingPosts:", error);
+      throw new Error("Failed to fetch pending posts");
+    }
+  }
+
+  async approvePost(postId: number): Promise<Post> {
+    try {
+      const [updatedPost] = await db.update(postsTable)
+        .set({ isApproved: true })
+        .where(eq(postsTable.id, postId))
+        .returning();
+
+      if (!updatedPost) {
+        throw new Error("Post not found");
+      }
+
+      return {
+        ...updatedPost,
+        createdAt: updatedPost.createdAt instanceof Date 
+          ? updatedPost.createdAt 
+          : new Date(updatedPost.createdAt)
+      };
+    } catch (error) {
+      console.error("Error in approvePost:", error);
+      throw new Error("Failed to approve post");
+    }
   }
 }
 
