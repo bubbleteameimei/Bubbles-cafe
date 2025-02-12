@@ -17,7 +17,7 @@ app.set('trust proxy', 1);
 
 // Log port immediately for workflow
 const startPort = parseInt(process.env.PORT || '3000', 10);
-console.log(`PORT=${startPort}`);
+console.log(`Initial PORT=${startPort}`);
 
 // Enable Gzip compression
 app.use(compression());
@@ -44,8 +44,8 @@ app.use(helmet({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -73,58 +73,106 @@ app.use((req, res, next) => {
   next();
 });
 
-async function findAvailablePort(startPort: number): Promise<number> {
+async function findAvailablePort(startPort: number, maxRetries = 10): Promise<number> {
   return new Promise((resolve, reject) => {
-    const server = createServer();
+    let currentPort = startPort;
+    let attempts = 0;
 
-    server.listen(startPort, '0.0.0.0', () => {
-      const { port } = server.address() as { port: number };
-      server.close(() => {
+    const tryPort = () => {
+      const server = createServer();
+
+      const cleanup = () => {
+        try {
+          server.close();
+        } catch (err) {
+          // Ignore cleanup errors
+        }
+      };
+
+      server.on('error', (err: NodeJS.ErrnoException) => {
+        cleanup();
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${currentPort} is in use`);
+
+          if (attempts >= maxRetries) {
+            reject(new Error(`Could not find an available port after ${maxRetries} attempts`));
+            return;
+          }
+
+          attempts++;
+          currentPort++;
+          setTimeout(tryPort, 100); // Add small delay between attempts
+        } else {
+          reject(err);
+        }
+      });
+
+      server.listen(currentPort, '0.0.0.0', () => {
+        const { port } = server.address() as { port: number };
+        cleanup();
         log(`Found available port: ${port}`);
         resolve(port);
       });
-    });
+    };
 
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${startPort} is in use, trying next port`);
-        resolve(findAvailablePort(startPort + 1));
-      } else {
-        reject(err);
-      }
-    });
+    tryPort();
   });
 }
 
-// Simplified port check function
-async function waitForPort(port: number, retries = 5): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const socket = new Socket();
-    let attempts = 0;
+async function waitForPort(port: number, retries = 10, timeout = 2000): Promise<void> {
+  let attempts = 0;
 
-    const tryConnect = () => {
-      attempts++;
-      log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
+  const tryConnect = async (): Promise<void> => {
+    attempts++;
+    log(`Attempt ${attempts}/${retries} to connect to port ${port}`);
 
-      socket.connect(port, '0.0.0.0', () => {
+    return new Promise((resolve, reject) => {
+      const socket = new Socket();
+      let isHandled = false;
+
+      const handleResult = (err?: Error) => {
+        if (isHandled) return;
+        isHandled = true;
+
+        cleanup();
+
+        if (err) {
+          if (attempts >= retries) {
+            reject(new Error(`Failed to connect to port ${port} after ${retries} attempts: ${err.message}`));
+          } else {
+            setTimeout(() => {
+              tryConnect().then(resolve).catch(reject);
+            }, 1000);
+          }
+        } else {
+          log(`Successfully connected to port ${port}`);
+          resolve();
+        }
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        socket.removeAllListeners();
         socket.destroy();
-        log(`Successfully connected to port ${port}`);
-        resolve();
+      };
+
+      const timeoutId = setTimeout(() => {
+        handleResult(new Error('Connection timeout'));
+      }, timeout);
+
+      socket.once('error', (err) => {
+        handleResult(err);
       });
-    };
 
-    socket.on('error', (err) => {
-      socket.destroy();
+      socket.once('connect', () => {
+        handleResult();
+      });
 
-      if (attempts >= retries) {
-        reject(new Error(`Failed to connect to port ${port} after ${retries} attempts`));
-      } else {
-        setTimeout(tryConnect, 1000);
-      }
+      socket.connect(port, '0.0.0.0');
     });
+  };
 
-    tryConnect();
-  });
+  return tryConnect();
 }
 
 // Error handling middleware
@@ -167,40 +215,72 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Use environment port or default to 3000
-    const startPort = parseInt(process.env.PORT || '3000', 10);
-
+    // Find an available port starting from the environment port or default
     const PORT = await findAvailablePort(startPort);
     process.env.PORT = PORT.toString();
+    log(`Selected port: ${PORT}`);
 
     return new Promise<void>((resolve, reject) => {
+      const startupTimeout = setTimeout(() => {
+        reject(new Error(`Server startup timed out after 30 seconds`));
+      }, 30000);
+
       server.listen(PORT, "0.0.0.0", async () => {
         try {
           log(`Server started on port ${PORT}`);
           await waitForPort(PORT);
           log(`Server is ready and accepting connections on port ${PORT}`);
+          clearTimeout(startupTimeout);
 
+          // Signal to parent process that server is ready
           if (process.send) {
+            log('Sending ready signal to parent process');
             process.send('ready');
+            process.send({ port: PORT });
           }
 
           resolve();
         } catch (error) {
-          log(`Error during server startup: ${error}`);
-          reject(error);
+          clearTimeout(startupTimeout);
+          const err = error instanceof Error ? error : new Error(String(error));
+          log(`Error during server startup: ${err.message}`);
+          reject(err);
         }
       });
 
-      server.on('error', (error: Error) => {
-        log(`Server error: ${error}`);
-        reject(error);
+      server.on('error', (error: NodeJS.ErrnoException) => {
+        clearTimeout(startupTimeout);
+        if (error.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is already in use. Trying another port...`);
+          findAvailablePort(PORT + 1)
+            .then(newPort => {
+              process.env.PORT = newPort.toString();
+              server.listen(newPort, "0.0.0.0");
+            })
+            .catch(reject);
+        } else {
+          log(`Server error: ${error.message}`);
+          reject(error);
+        }
       });
     });
   } catch (error) {
-    log(`Critical server error: ${error}`);
+    const err = error instanceof Error ? error : new Error(String(error));
+    log(`Critical server error: ${err.message}`);
     process.exit(1);
   }
 }
+
+// Add process error handlers
+process.on('uncaughtException', (error) => {
+  log(`Uncaught Exception: ${error.message}`);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  log('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 
 startServer().catch((error) => {
   log(`Server startup failed: ${error}`);
