@@ -1,6 +1,6 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Switch, Route, useLocation } from "wouter";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -26,48 +26,19 @@ const IndexView = lazy(() => import("@/pages/index"));
 const Community = lazy(() => import("@/pages/community"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-
-// Protected Route Component
+// Protected Route Component with improved loading state handling
 const ProtectedRoute = ({ component: Component, ...rest }: { component: React.ComponentType, path: string }) => {
   const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isLoading && !user?.isAdmin) {
+      console.log("User not authorized, redirecting to login");
       navigate("/admin/login");
     }
   }, [isLoading, user, navigate]);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>;
-  }
-
-  return user?.isAdmin ? <Component /> : null;
-};
-
-function App() {
-  const [location] = useLocation();
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  // Prefetch critical routes
-  useEffect(() => {
-    const prefetchRoutes = async () => {
-      const routes = ['/', '/index', '/reader', '/community'];
-      await Promise.all(
-        routes.map(route =>
-          queryClient.prefetchQuery({
-            queryKey: [route],
-            queryFn: () => fetch(route).then(res => res.json())
-          })
-        )
-      );
-      setIsLoading(false);
-    };
-    prefetchRoutes();
-  }, []);
-
+  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -76,47 +47,58 @@ function App() {
     );
   }
 
+  // Don't render anything while redirecting
+  if (!user?.isAdmin) {
+    return null;
+  }
+
+  return <Component />;
+};
+
+function App() {
+  const [location] = useLocation();
+
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-      <AuthProvider>
-        <div className="relative min-h-screen bg-background text-foreground antialiased">
-          <Navigation />
-          <main className={location === "/" ? "" : "pt-16"}>
-            <ErrorBoundary>
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-[60vh]">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                }
-              >
-                <Switch>
-                  <Route path="/" component={Home} />
-                  <Route path="/index" component={IndexView} />
-                  <Route path="/reader" component={Reader} />
-                  <Route path="/stories" component={Stories} />
-                  <Route path="/community" component={Community} />
-                  <Route path="/story/:slug">
-                    {params => <StoryView slug={params.slug} />}
-                  </Route>
-                  <Route path="/about" component={About} />
-                  <Route path="/contact" component={Contact} />
-                  <Route path="/privacy" component={Privacy} />
-                  <Route path="/admin/login" component={AdminLogin} />
-                  <Route path="/admin">
-                    <ProtectedRoute component={AdminDashboard} path="/admin" />
-                  </Route>
-                  <Route component={NotFound} />
-                </Switch>
-              </Suspense>
-            </ErrorBoundary>
-          </main>
-          <Footer />
-          <CookieConsent />
-          <Toaster />
-        </div>
-      </AuthProvider>
+        <AuthProvider>
+          <div className="relative min-h-screen bg-background text-foreground antialiased">
+            <Navigation />
+            <main className={location === "/" ? "" : "pt-16"}>
+              <ErrorBoundary>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                  }
+                >
+                  <Switch>
+                    <Route path="/" component={Home} />
+                    <Route path="/index" component={IndexView} />
+                    <Route path="/reader" component={Reader} />
+                    <Route path="/stories" component={Stories} />
+                    <Route path="/community" component={Community} />
+                    <Route path="/story/:slug">
+                      {params => <StoryView slug={params.slug} />}
+                    </Route>
+                    <Route path="/about" component={About} />
+                    <Route path="/contact" component={Contact} />
+                    <Route path="/privacy" component={Privacy} />
+                    <Route path="/admin/login" component={AdminLogin} />
+                    <Route path="/admin">
+                      <ProtectedRoute component={AdminDashboard} path="/admin" />
+                    </Route>
+                    <Route component={NotFound} />
+                  </Switch>
+                </Suspense>
+              </ErrorBoundary>
+            </main>
+            <Footer />
+            <CookieConsent />
+            <Toaster />
+          </div>
+        </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

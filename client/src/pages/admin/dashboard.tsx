@@ -7,37 +7,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Trash2, ThumbsUp } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface DashboardStats {
+  totalUsers: number;
+  totalStories: number;
+  totalComments: number;
+  pendingStories: number;
+  pendingComments: number;
+  activeUsers: number;
+}
 
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("overview");
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
-  // Redirect if not admin, but only after auth is confirmed
-  useEffect(() => {
-    if (!authLoading && !user?.isAdmin) {
-      console.log("Not admin, redirecting to login");
-      navigate("/admin/login");
-    }
-  }, [user?.isAdmin, authLoading, navigate]);
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  // If not admin and still loading, show nothing while redirecting
-  if (!user?.isAdmin) {
-    return null;
-  }
+  // Fetch dashboard stats
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["/api/admin/stats"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/stats");
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      return response.json();
+    },
+    enabled: !!user?.isAdmin,
+  });
 
   // Fetch pending posts
   const { data: posts = [], isLoading: postsLoading } = useQuery({
@@ -45,11 +44,10 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/posts/pending");
       if (!res.ok) throw new Error("Failed to fetch posts");
-      const data = await res.json();
-      return data || [];
+      return res.json();
     },
-    enabled: !!user?.isAdmin, // Only fetch if user is admin
-    retry: false, // Don't retry on failure
+    enabled: !!user?.isAdmin,
+    retry: false,
   });
 
   // Fetch pending comments
@@ -58,8 +56,7 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/comments/pending");
       if (!res.ok) throw new Error("Failed to fetch comments");
-      const data = await res.json();
-      return data || [];
+      return res.json();
     },
     enabled: !!user?.isAdmin,
     retry: false,
@@ -131,17 +128,69 @@ export default function AdminDashboard() {
     },
   });
 
-  return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-3xl font-semibold mb-8">Admin Dashboard</h1>
+  useEffect(() => {
+    if (!authLoading && !user?.isAdmin) {
+      navigate("/admin/login");
+    }
+  }, [user?.isAdmin, authLoading, navigate]);
 
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-8">
-          <TabsTrigger value="posts">Pending Posts</TabsTrigger>
-          <TabsTrigger value="comments">Pending Comments</TabsTrigger>
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user?.isAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+      </div>
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="content">Content Moderation</TabsTrigger>
+          <TabsTrigger value="comments">Comment Moderation</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="posts" className="mt-6">
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="p-6">
+              <h3 className="text-sm font-medium">Total Users</h3>
+              <div className="mt-2 text-2xl font-bold">
+                {stats ? stats.totalUsers.toLocaleString() : <Skeleton className="h-8 w-20" />}
+              </div>
+            </Card>
+            <Card className="p-6">
+              <h3 className="text-sm font-medium">Total Stories</h3>
+              <div className="mt-2 text-2xl font-bold">
+                {stats ? stats.totalStories.toLocaleString() : <Skeleton className="h-8 w-20" />}
+              </div>
+            </Card>
+            <Card className="p-6">
+              <h3 className="text-sm font-medium">Pending Reviews</h3>
+              <div className="mt-2 text-2xl font-bold">
+                {stats ? (
+                  <>
+                    <span className="text-orange-500">{stats.pendingStories}</span>
+                    <span className="text-sm text-muted-foreground ml-2">stories</span>
+                    <span className="text-orange-500 ml-4">{stats.pendingComments}</span>
+                    <span className="text-sm text-muted-foreground ml-2">comments</span>
+                  </>
+                ) : (
+                  <Skeleton className="h-8 w-20" />
+                )}
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="content" className="space-y-4">
           {postsLoading ? (
             <div className="flex justify-center">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -180,7 +229,7 @@ export default function AdminDashboard() {
           )}
         </TabsContent>
 
-        <TabsContent value="comments" className="mt-6">
+        <TabsContent value="comments" className="space-y-4">
           {commentsLoading ? (
             <div className="flex justify-center">
               <Loader2 className="h-6 w-6 animate-spin" />
