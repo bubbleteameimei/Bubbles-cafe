@@ -14,6 +14,10 @@ const app = express();
 // Set trust proxy first, before other middleware
 app.set('trust proxy', 1);
 
+// Log port immediately for workflow
+const startPort = parseInt(process.env.PORT || '3000', 10);
+console.log(`PORT=${startPort}`);
+
 // Enable Gzip compression
 app.use(compression());
 
@@ -159,8 +163,6 @@ async function startServer() {
     // Use environment port or default to 3000
     const startPort = parseInt(process.env.PORT || '3000', 10);
 
-    // Print port immediately for workflow
-    console.log(`PORT=${startPort}`);
 
     const PORT = await findAvailablePort(startPort);
     process.env.PORT = PORT.toString();

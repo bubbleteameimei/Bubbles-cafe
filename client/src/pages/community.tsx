@@ -34,13 +34,11 @@ export default function CommunityPage() {
 
   return (
     <div className="container py-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Community Stories</h1>
-          <p className="text-muted-foreground">
-            Got a Story That'll Keep Us Up at Night? We're dying to read it!
-          </p>
-        </div>
+      <div className="flex flex-col items-center mb-12">
+        <h1 className="text-4xl font-bold mb-4 text-center">Community Stories</h1>
+        <p className="text-muted-foreground text-center mb-6">
+          Got a story that'll keep us up at night? We're dying to read it
+        </p>
         <Button onClick={() => navigate("/submit-story")}>
           Share Your Story
         </Button>

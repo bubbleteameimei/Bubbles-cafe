@@ -6,17 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { adminLoginSchema, type AdminLogin } from "@shared/schema";
-import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 export default function AdminLoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { loginMutation } = useAuth();
+  const { loginMutation, user, isLoading } = useAuth();
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (!isLoading && user?.isAdmin) {
+      setLocation("/admin");
+    }
+  }, [user, isLoading, setLocation]);
 
   const form = useForm<AdminLogin>({
     resolver: zodResolver(adminLoginSchema),
@@ -31,23 +37,30 @@ export default function AdminLoginPage() {
     if (loginMutation.isPending) return;
 
     try {
-      console.log('Attempting admin login...');
       await loginMutation.mutateAsync(data);
-      console.log('Login successful, redirecting to admin dashboard...');
-      toast({
-        title: "Success",
-        description: "Logged in successfully"
-      });
-      setLocation("/admin");
     } catch (error: any) {
       console.error('Login error:', error);
-      const errorMessage = error?.response?.data?.message || "Failed to log in";
+      const errorMessage = error?.message || "Failed to log in";
       form.setError("root", {
         type: "manual",
         message: errorMessage
       });
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Redirect if already logged in as admin
+  if (user?.isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-[calc(100vh-12rem)] flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm">
