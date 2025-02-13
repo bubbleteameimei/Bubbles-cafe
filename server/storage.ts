@@ -167,8 +167,6 @@ export class DatabaseStorage implements IStorage {
         createTableIfMissing: true,
         tableName: 'session',
         schemaName: 'public',
-        // Add error handling and connection options
-        connectionString: process.env.DATABASE_URL,
         ttl: 86400 // 1 day
       });
       console.log('[Storage] Session store initialized successfully');
@@ -360,8 +358,8 @@ export class DatabaseStorage implements IStorage {
       });
 
       const [newPost] = await db.insert(postsTable)
-        .values({ 
-          ...post, 
+        .values({
+          ...post,
           createdAt: new Date(),
           readingTimeMinutes: Math.ceil(post.content.split(/\s+/).length / 200)
         })
@@ -796,8 +794,8 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.select({
       average: avg(storyRatings.fearRating)
     })
-    .from(storyRatings)
-    .where(eq(storyRatings.postId, postId));
+      .from(storyRatings)
+      .where(eq(storyRatings.postId, postId));
 
     return Number(result.average) || 0;
   }
@@ -917,8 +915,8 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.select({
       total: sql<string>`sum(amount)`
     })
-    .from(authorTips)
-    .where(eq(authorTips.authorId, authorId));
+      .from(authorTips)
+      .where(eq(authorTips.authorId, authorId));
 
     return Number(result.total) || 0;
   }
@@ -927,12 +925,12 @@ export class DatabaseStorage implements IStorage {
   async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
     const [newSubscription] = await db.insert(newsletterSubscriptions)
       .values({ ...subscription, createdAt: new Date() })
-            .returning();
+      .returning();
     return newSubscription;
   }
 
   async unsubscribeNewsletter(email: string): Promise<void> {
-    await db.delete(newsletterSubscriptions)      .where(eq(newsletterSubscriptions.email, email));
+    await db.delete(newsletterSubscriptions).where(eq(newsletterSubscriptions.email, email));
   }
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscription[]> {
@@ -958,7 +956,8 @@ export class DatabaseStorage implements IStorage {
   async updateWebhookStatus(id: number, active: boolean): Promise<void> {
     await db.update(webhooks)
       .set({ active })
-      .where(eq(webhooks.id, id));  }
+      .where(eq(webhooks.id, id));
+  }
 
   // Fix for updateAnalytics
   async updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics> {
@@ -969,23 +968,21 @@ export class DatabaseStorage implements IStorage {
 
     if (existingAnalytics.length > 0) {
       const [updated] = await db.update(analytics)
-        .set({ 
-          ...data, 
-          updatedAt: new Date(),
-          pageViews: data.pageViews ?? existingAnalytics[0].pageViews,
-          uniqueVisitors: data.uniqueVisitors ?? existingAnalytics[0].uniqueVisitors,
-          averageReadTime: data.averageReadTime ?? existingAnalytics[0].averageReadTime,
-          bounceRate: data.bounceRate ?? existingAnalytics[0].bounceRate,
-          deviceStats: data.deviceStats ?? existingAnalytics[0].deviceStats
+        .set({
+          pageViews: data.pageViews,
+          uniqueVisitors: data.uniqueVisitors,
+          averageReadTime: data.averageReadTime,
+          bounceRate: data.bounceRate,
+          deviceStats: data.deviceStats,
+          updatedAt: new Date()
         })
         .where(eq(analytics.postId, postId))
         .returning();
       return updated;
     } else {
       const [newAnalytics] = await db.insert(analytics)
-        .values({ 
-          postId, 
-          ...data,
+        .values({
+          postId,
           pageViews: data.pageViews ?? 0,
           uniqueVisitors: data.uniqueVisitors ?? 0,
           averageReadTime: data.averageReadTime ?? 0,
@@ -1012,7 +1009,7 @@ export class DatabaseStorage implements IStorage {
       uniqueVisitors: sql<number>`sum(unique_visitors)`,
       avgReadTime: avg(analytics.averageReadTime)
     })
-    .from(analytics);
+      .from(analytics);
 
     return {
       totalViews: Number(result.totalViews) || 0,
@@ -1054,8 +1051,8 @@ export class DatabaseStorage implements IStorage {
 
       return {
         ...updatedPost,
-        createdAt: updatedPost.createdAt instanceof Date 
-          ? updatedPost.createdAt 
+        createdAt: updatedPost.createdAt instanceof Date
+          ? updatedPost.createdAt
           : new Date(updatedPost.createdAt)
       };
     } catch (error) {
