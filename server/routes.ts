@@ -36,32 +36,14 @@ const transporter = createTransport({
 });
 
 
-// Admin middleware - uses passport's authentication
+// Basic authentication middleware
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  console.log('[Auth] Checking authentication status:', {
-    isAuthenticated: req.isAuthenticated(),
-    hasUser: !!req.user,
-    isAdmin: req.user?.isAdmin
-  });
-
-  if (req.isAuthenticated() && req.user && req.user.isAdmin) {
-    console.log('[Auth] User authenticated successfully as admin');
+  if (req.isAuthenticated()) {
     next();
   } else {
-    console.log('[Auth] Authentication failed - User not authorized');
-    res.status(401).json({ message: "Unauthorized: Please log in again" });
+    res.status(401).json({ message: "Unauthorized" });
   }
 };
-
-// Rate limiting configuration at the top of the file
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
-  message: { message: "Too many login attempts, please try again later" },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // Don't count successful logins
-});
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

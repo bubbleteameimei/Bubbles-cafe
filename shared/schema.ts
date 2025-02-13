@@ -7,20 +7,11 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull(),
   password_hash: text("password_hash").notNull(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   emailIdx: index("email_idx").on(table.email),
   usernameIdx: index("username_idx").on(table.username)
 }));
-
-// Keep only the admin login schema and type
-export const adminLoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
-export type AdminLogin = z.infer<typeof adminLoginSchema>;
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
