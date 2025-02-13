@@ -16,8 +16,8 @@ const Home = lazy(() => import("@/pages/home"));
 const Stories = lazy(() => import("@/pages/stories"));
 const StoryView = lazy(() => import("@/pages/story-view"));
 const AdminLogin = lazy(() => import("@/pages/admin-login"));
-const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
-const AdminDashboardV2 = lazy(() => import("@/pages/admin-v2/dashboard")); // Add new dashboard
+const AdminDashboard = lazy(() => import("@/pages/admin"));
+const AdminDashboardV2 = lazy(() => import("@/pages/admin-v2/dashboard"));
 const Secret = lazy(() => import("@/pages/secret"));
 const About = lazy(() => import("@/pages/about"));
 const Privacy = lazy(() => import("@/pages/privacy"));
@@ -51,7 +51,7 @@ const ProtectedRoute = ({ component: Component, ...rest }: { component: React.Co
     return null;
   }
 
-  return <Component />;
+  return <Component {...rest} />;
 };
 
 function App() {

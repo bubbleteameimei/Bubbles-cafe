@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
   const { toast } = useToast();
   const { loginMutation, user, isLoading, authLoading } = useAuth();
 
-  // Redirect if already logged in as admin
+  // Add debug logging for auth state
   useEffect(() => {
     console.log("Auth state:", { user, authLoading });
     if (!authLoading && user?.isAdmin) {
@@ -38,14 +38,39 @@ export default function AdminLoginPage() {
   const onSubmit = async (data: AdminLogin) => {
     console.log("Form submitted", { email: data.email });
     try {
-      await loginMutation.mutateAsync(data);
+      // Log before mutation
+      console.log("Starting login mutation...");
+      const result = await loginMutation.mutateAsync(data);
+      console.log("Login result:", result);
+
+      if (!result.isAdmin) {
+        throw new Error("Unauthorized: User is not an admin");
+      }
     } catch (error: any) {
-      console.error("Form submission error:", error);
-      form.setError("root", {
-        type: "manual",
-        message: error?.message || "Failed to log in"
-      });
+      console.error("Login error details:", error);
+
+      // Handle specific error cases
+      const errorMessage = error?.message || "An unexpected error occurred";
+      if (errorMessage.includes("Unauthorized")) {
+        form.setError("root", {
+          type: "manual",
+          message: "Access denied: Admin privileges required"
+        });
+      } else {
+        form.setError("root", {
+          type: "manual",
+          message: errorMessage
+        });
+      }
+
       form.setValue('password', '');
+
+      // Show toast with detailed error
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
