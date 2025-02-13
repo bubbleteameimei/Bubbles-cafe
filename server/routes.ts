@@ -381,15 +381,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Get contact messages (admin only)
-  app.get("/api/admin/messages", isAuthenticated, async (_req, res) => {
-    try {
-      const messages = await storage.getContactMessages();
-      res.json(messages);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
-  });
+  
 
   // Comment routes
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
