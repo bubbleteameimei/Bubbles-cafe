@@ -57,7 +57,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Set up session configuration
 const PostgresSession = connectPgSimple(session);
-const sessionConfig: session.SessionOptions = {
+const sessionConfig = {
   store: new PostgresSession({
     conObject: {
       connectionString: process.env.DATABASE_URL,
@@ -76,11 +76,13 @@ const sessionConfig: session.SessionOptions = {
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   },
   name: 'horror.session'
-};
+} as session.SessionOptions;
 
 if (app.get('env') === 'production') {
   app.set('trust proxy', 1);
-  sessionConfig.cookie.secure = true;
+  if (sessionConfig.cookie) {
+    sessionConfig.cookie.secure = true;
+  }
 }
 
 app.use(session(sessionConfig));
@@ -189,7 +191,7 @@ async function startServer() {
     // Find available port and start server
     const port = await findAvailablePort();
 
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       server?.listen(port, "0.0.0.0", () => {
         log(`Server started successfully on port ${port}`);
         if (process.send) {

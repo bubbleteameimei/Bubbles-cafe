@@ -63,10 +63,9 @@ export default function AuthPage() {
   };
 
   const onRegister = (data: RegisterFormData) => {
-    // Transform the data to match the backend expectations
     registerMutation.mutate({
       ...data,
-      password_hash: data.password, // The backend will hash this
+      password_hash: data.password,
       isAdmin: false,
     });
   };
@@ -77,16 +76,16 @@ export default function AuthPage() {
         {/* Auth Forms */}
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle>Welcome to Horror Blog</CardTitle>
+            <CardTitle>Welcome to Bubble's Cafe</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one to start sharing your horror stories
+              Join our community of horror enthusiasts and start sharing your stories
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Create Account</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -123,7 +122,7 @@ export default function AuthPage() {
                       className="w-full"
                       disabled={loginMutation.isPending}
                     >
-                      {loginMutation.isPending ? "Logging in..." : "Login"}
+                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
                     </Button>
                   </form>
                 </Form>
@@ -188,10 +187,10 @@ export default function AuthPage() {
         {/* Hero Section */}
         <div className="hidden flex-1 flex-col justify-center space-y-6 rounded-lg bg-muted p-8 md:flex">
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Horror Blog Platform</h2>
+            <h2 className="text-2xl font-bold">Bubble's Cafe</h2>
             <p className="text-muted-foreground">
-              Share your scariest stories, connect with other horror enthusiasts, and explore the 
-              darkest corners of imagination.
+              Your portal to the darker side of storytelling. Share your scariest stories, 
+              connect with fellow horror enthusiasts, and explore the depths of imagination.
             </p>
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">

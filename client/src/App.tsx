@@ -36,15 +36,16 @@ function App() {
               <ErrorBoundary>
                 <Suspense
                   fallback={
-                    <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                       <Loader2 className="h-8 w-8 animate-spin" />
+                      <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
                     </div>
                   }
                 >
                   <Switch>
-                    <ProtectedRoute path="/" component={Home} />
-                    <ProtectedRoute path="/stories" component={Stories} />
-                    <ProtectedRoute path="/community" component={Community} />
+                    <Route path="/" component={Home} />
+                    <Route path="/stories" component={Stories} />
+                    <Route path="/community" component={Community} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
@@ -52,7 +53,7 @@ function App() {
                     <Route path="/about" component={About} />
                     <Route path="/contact" component={Contact} />
                     <Route path="/privacy" component={Privacy} />
-                    <Route component={NotFound} />
+                    <Route path="/:rest*" component={NotFound} />
                   </Switch>
                 </Suspense>
               </ErrorBoundary>

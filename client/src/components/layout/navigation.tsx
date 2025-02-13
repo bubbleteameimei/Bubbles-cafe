@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import { Moon, Sun, Menu, X, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { useState, useCallback, memo } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Sheet,
   SheetContent,
@@ -25,13 +26,6 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
     >
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1'}`}>
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-        <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
-        <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
-      </div>
-
-      {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
-
-      <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1 ml-4'}`}>
         <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
       </div>
@@ -86,21 +80,13 @@ NavLink.displayName = "NavLink";
 export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [, setLocation] = useLocation();
-
-  const handleNavigation = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
-
-  const handleLogoClick = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setLocation('/');
-  }, [setLocation]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -122,7 +108,7 @@ export default function Navigation() {
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close</span>
               </SheetClose>
-              <NavigationItems location={location} onNavigate={handleNavigation} isMobile={true} />
+              <NavigationItems location={location} onNavigate={() => setIsOpen(false)} isMobile={true} />
             </SheetContent>
           </Sheet>
         </div>
@@ -130,10 +116,13 @@ export default function Navigation() {
         {/* Logo */}
         <div className="flex-1 flex justify-center md:justify-start">
           <button 
-            onClick={handleLogoClick}
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'instant' });
+              setLocation('/');
+            }}
             className="text-lg font-semibold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
           >
-            Bubble's Cafe
+            BUBBLE'S CAFE
           </button>
         </div>
 
@@ -142,8 +131,19 @@ export default function Navigation() {
           <NavigationItems location={location} />
         </div>
 
-        {/* Theme Toggle */}
-        <div className="flex-1 flex justify-end">
+        {/* Right Section: Auth + Theme Toggle */}
+        <div className="flex items-center gap-2">
+          {!user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation('/auth')}
+              className="flex items-center gap-2 hover:bg-primary/10"
+            >
+              <LogIn className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign In</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
