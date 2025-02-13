@@ -47,32 +47,54 @@
   }
 
   /* Loading State */
-  .loading {
-    @apply relative pointer-events-none;
+  .loading-text {
+    @apply text-sm text-muted-foreground animate-pulse;
   }
 
-  .loading::after {
-    content: "";
-    @apply absolute inset-0;
-    background: linear-gradient(90deg, transparent, currentColor, transparent);
-    animation: loading 1.5s infinite;
-    opacity: 0.2;
+  /* Social Icons */
+  .card {
+    @apply w-fit h-fit bg-muted flex items-center justify-center p-6 gap-5 shadow-md rounded-lg;
   }
 
-  @keyframes loading {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(100%); }
+  .socialContainer {
+    @apply w-12 h-12 bg-background flex items-center justify-center overflow-hidden transition-all duration-300 rounded-md hover:scale-105;
   }
 
-  /* Prose */
-  .prose {
-    @apply text-foreground max-w-prose mx-auto;
-    font-size: clamp(16px, 1.5vw, 18px);
-    line-height: 1.75;
+  .containerOne:hover { @apply bg-[#d62976]; }
+  .containerTwo:hover { @apply bg-[#00acee]; }
+  .containerThree:hover { @apply bg-[#0072b1]; }
+  .containerFour:hover { @apply bg-[#128C7E]; }
+
+  .socialContainer:active {
+    @apply scale-90 transition-transform duration-300;
   }
 
-  .prose p {
-    @apply mb-4;
+  .socialSvg {
+    @apply w-5 h-5;
+  }
+
+  .socialSvg path {
+    @apply fill-current text-muted-foreground;
+  }
+
+  .socialContainer:hover .socialSvg path {
+    @apply text-background;
+  }
+
+  .socialContainer:hover .socialSvg {
+    animation: slide-in-top 0.3s both;
+  }
+
+  @keyframes slide-in-top {
+    0% {
+      transform: translateY(-50px);
+      opacity: 0;
+    }
+
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   /* Theme Transition */

@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Menu, X, LogIn } from "lucide-react";
+import { Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { useState, useCallback, memo } from "react";
@@ -28,6 +28,8 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
         <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
         <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
+        <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
+        <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
@@ -136,12 +138,10 @@ export default function Navigation() {
           {!user && (
             <Button
               variant="ghost"
-              size="sm"
+              className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setLocation('/auth')}
-              className="flex items-center gap-2 hover:bg-primary/10"
             >
-              <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign In</span>
+              Sign In
             </Button>
           )}
           <Button
