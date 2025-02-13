@@ -15,14 +15,16 @@ import { useEffect } from "react";
 export default function AdminLoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { loginMutation, user, isLoading } = useAuth();
+  const { loginMutation, user, isLoading, authLoading } = useAuth();
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (!isLoading && user?.isAdmin) {
+    console.log("Auth state:", { user, authLoading });
+    if (!authLoading && user?.isAdmin) {
+      console.log("Redirecting to admin dashboard");
       setLocation("/admin");
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, authLoading, setLocation]);
 
   const form = useForm<AdminLogin>({
     resolver: zodResolver(adminLoginSchema),
@@ -34,9 +36,11 @@ export default function AdminLoginPage() {
   });
 
   const onSubmit = async (data: AdminLogin) => {
+    console.log("Form submitted", { email: data.email });
     try {
       await loginMutation.mutateAsync(data);
     } catch (error: any) {
+      console.error("Form submission error:", error);
       form.setError("root", {
         type: "manual",
         message: error?.message || "Failed to log in"
@@ -46,7 +50,8 @@ export default function AdminLoginPage() {
   };
 
   // Show loading state while checking auth status
-  if (isLoading) {
+  if (authLoading) {
+    console.log("Showing auth loading state");
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -56,6 +61,7 @@ export default function AdminLoginPage() {
 
   // Don't render login form if already logged in
   if (user?.isAdmin) {
+    console.log("User is already logged in, not rendering form");
     return null;
   }
 
