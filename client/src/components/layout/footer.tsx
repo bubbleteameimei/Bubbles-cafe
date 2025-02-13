@@ -3,10 +3,12 @@ import { SocialIcons } from "@/components/ui/social-icons";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-primary/10">
+    <footer className="border-t border-primary/10 backdrop-blur-sm bg-background/80">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center gap-6">
-          <SocialIcons />
+          <div className="flex justify-center w-full">
+            <SocialIcons />
+          </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 w-full">
             <p className="text-sm text-muted-foreground/80 tracking-wide">
               © Bubble's Cafe {new Date().getFullYear()}. All rights reserved.

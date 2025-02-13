@@ -1,7 +1,8 @@
 import { SiWordpress, SiX, SiInstagram, SiGithub, SiLinkedin, SiFacebook } from "react-icons/si";
+import { useToast } from "@/hooks/use-toast";
 
 interface SocialButtonsProps {
-  links: {
+  links?: {
     wordpress?: string;
     twitter?: string;
     instagram?: string;
@@ -12,44 +13,85 @@ interface SocialButtonsProps {
   className?: string;
 }
 
-export function SocialButtons({ links, className = "" }: SocialButtonsProps) {
+export function SocialButtons({ links = {}, className = "" }: SocialButtonsProps) {
+  const { toast } = useToast();
+
+  const defaultLinks = {
+    wordpress: "https://bubbleteameimei.wordpress.com",
+    twitter: "https://x.com/Bubbleteameimei",
+    instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw",
+  };
+
+  const finalLinks = { ...defaultLinks, ...links };
+
+  const handleSocialClick = (url: string, platform: string) => {
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error(`Failed to open ${platform} link:`, error);
+      toast({
+        title: "Error",
+        description: `Unable to open ${platform}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className={`flex items-center gap-4 ${className}`}>
-      {links.wordpress && (
-        <a href={links.wordpress} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#21759b] transition-all duration-200 hover:scale-110">
+      {finalLinks.wordpress && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.wordpress!, "WordPress")}
+          className="text-muted-foreground hover:text-[#21759b] transition-all duration-200 hover:scale-110"
+          aria-label="Visit WordPress Blog"
+        >
           <SiWordpress className="h-5 w-5" />
-        </a>
+        </button>
       )}
-      {links.twitter && (
-        <a href={links.twitter} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#1DA1F2] transition-all duration-200 hover:scale-110">
+      {finalLinks.twitter && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.twitter!, "Twitter")}
+          className="text-muted-foreground hover:text-[#1DA1F2] transition-all duration-200 hover:scale-110"
+          aria-label="Visit Twitter/X Profile"
+        >
           <SiX className="h-5 w-5" />
-        </a>
+        </button>
       )}
-      {links.instagram && (
-        <a href={links.instagram} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#E4405F] transition-all duration-200 hover:scale-110">
+      {finalLinks.instagram && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.instagram!, "Instagram")}
+          className="text-muted-foreground hover:text-[#E4405F] transition-all duration-200 hover:scale-110"
+          aria-label="Visit Instagram Profile"
+        >
           <SiInstagram className="h-5 w-5" />
-        </a>
+        </button>
       )}
-      {links.github && (
-        <a href={links.github} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#333] transition-all duration-200 hover:scale-110">
+      {finalLinks.github && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.github!, "GitHub")}
+          className="text-muted-foreground hover:text-[#333] transition-all duration-200 hover:scale-110"
+          aria-label="Visit GitHub Profile"
+        >
           <SiGithub className="h-5 w-5" />
-        </a>
+        </button>
       )}
-      {links.linkedin && (
-        <a href={links.linkedin} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#0077B5] transition-all duration-200 hover:scale-110">
+      {finalLinks.linkedin && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.linkedin!, "LinkedIn")}
+          className="text-muted-foreground hover:text-[#0077B5] transition-all duration-200 hover:scale-110"
+          aria-label="Visit LinkedIn Profile"
+        >
           <SiLinkedin className="h-5 w-5" />
-        </a>
+        </button>
       )}
-      {links.facebook && (
-        <a href={links.facebook} target="_blank" rel="noopener noreferrer" 
-          className="text-muted-foreground hover:text-[#1877F2] transition-all duration-200 hover:scale-110">
+      {finalLinks.facebook && (
+        <button 
+          onClick={() => handleSocialClick(finalLinks.facebook!, "Facebook")}
+          className="text-muted-foreground hover:text-[#1877F2] transition-all duration-200 hover:scale-110"
+          aria-label="Visit Facebook Profile"
+        >
           <SiFacebook className="h-5 w-5" />
-        </a>
+        </button>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostsResponse {
   posts: Post[];
@@ -14,6 +15,26 @@ interface PostsResponse {
 
 export default function Sidebar() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  const socialLinks = {
+    wordpress: "https://bubbleteameimei.wordpress.com",
+    twitter: "https://x.com/Bubbleteameimei",
+    instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw"
+  };
+
+  const handleSocialClick = (url: string, platform: string) => {
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error(`Failed to open ${platform} link:`, error);
+      toast({
+        title: "Error",
+        description: `Unable to open ${platform}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: postsData, isLoading: isLoadingPosts } = useQuery<PostsResponse>({
     queryKey: ["/api/posts"],
@@ -141,33 +162,27 @@ export default function Sidebar() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-6 justify-center">
-            <a
-              href="https://bubbleteameimei.wordpress.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => handleSocialClick(socialLinks.wordpress, "WordPress")}
               className="text-muted-foreground hover:text-primary transition-colors hover:scale-110"
               aria-label="Visit WordPress Blog"
             >
               <SiWordpress className="h-6 w-6" />
-            </a>
-            <a
-              href="https://twitter.com/Bubbleteameimei"
-              target="_blank"
-              rel="noopener noreferrer"
+            </button>
+            <button
+              onClick={() => handleSocialClick(socialLinks.twitter, "Twitter")}
               className="text-muted-foreground hover:text-primary transition-colors hover:scale-110"
               aria-label="Visit Twitter/X Profile"
             >
               <SiX className="h-6 w-6" />
-            </a>
-            <a
-              href="https://www.instagram.com/bubbleteameimei"
-              target="_blank"
-              rel="noopener noreferrer"
+            </button>
+            <button
+              onClick={() => handleSocialClick(socialLinks.instagram, "Instagram")}
               className="text-muted-foreground hover:text-primary transition-colors hover:scale-110"
               aria-label="Visit Instagram Profile"
             >
               <SiInstagram className="h-6 w-6" />
-            </a>
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -176,16 +191,16 @@ export default function Sidebar() {
 }
 
 const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
     }
-  };
+  }
+};
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};

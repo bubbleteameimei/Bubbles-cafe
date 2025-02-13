@@ -61,7 +61,7 @@ export default function About() {
                     <span>WordPress</span>
                   </button>
                   <button
-                    onClick={() => handleSocialClick("https://twitter.com/Bubbleteameimei", "Twitter")}
+                    onClick={() => handleSocialClick("https://x.com/Bubbleteameimei", "Twitter")}
                     className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 flex items-center gap-2"
                     aria-label="Visit Twitter/X Profile"
                   >
@@ -69,7 +69,7 @@ export default function About() {
                     <span>Twitter</span>
                   </button>
                   <button
-                    onClick={() => handleSocialClick("https://www.instagram.com/bubbleteameimei", "Instagram")}
+                    onClick={() => handleSocialClick("https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw", "Instagram")}
                     className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 flex items-center gap-2"
                     aria-label="Visit Instagram Profile"
                   >

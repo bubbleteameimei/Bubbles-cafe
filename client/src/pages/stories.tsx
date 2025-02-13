@@ -36,13 +36,15 @@ export default function Stories() {
       const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       const data = await response.json();
-      if (!data.posts) {
-        return { posts: [], hasMore: false };
-      }
-      return data;
+      return {
+        posts: Array.isArray(data.posts) ? data.posts : [],
+        hasMore: !!data.hasMore
+      };
     },
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage?.hasMore) return undefined;
+      if (!lastPage || !lastPage.hasMore) {
+        return undefined;
+      }
       return allPages.length + 1;
     },
     initialPageParam: 1,
@@ -128,23 +130,23 @@ export default function Stories() {
                 className="group relative"
               >
                 <Card 
-                  className="cursor-pointer hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10"
+                  className="cursor-pointer hover:shadow-xl transition-all duration-300 bg-card/90 backdrop-blur-sm border-border/50 hover:border-primary/20 z-10"
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
                     setLocation(`/story/${post.slug || post.id}`);
                   }}
                 >
-                  <CardContent className="py-4 flex justify-between items-center">
-                    <div>
-                      <h2 className="text-lg font-medium">{post.title}</h2>
-                      {post.excerpt && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {post.excerpt}
-                        </p>
-                      )}
-                    </div>
-                    <time className="text-sm text-muted-foreground font-mono whitespace-nowrap ml-4">
-                      {format(new Date(post.createdAt), 'MMM d, yyyy')}
+                  <CardContent className="p-6">
+                    <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h2>
+                    {post.excerpt && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <time className="text-sm text-muted-foreground font-mono block mt-4">
+                      {format(new Date(post.createdAt), 'MMMM d, yyyy')}
                     </time>
                   </CardContent>
                 </Card>
