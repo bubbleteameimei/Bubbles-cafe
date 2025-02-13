@@ -107,7 +107,6 @@ export function registerRoutes(app: Express): Server {
 
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
-  app.use("/api/admin", authLimiter);
   app.use("/api", apiLimiter);
 
   // Set up authentication routes BEFORE other routes
@@ -120,39 +119,6 @@ export function registerRoutes(app: Express): Server {
       isAdmin: req.user?.isAdmin
     });
     res.json({ isAdmin: req.user!.isAdmin });
-  });
-
-  // Add v2 admin routes
-  app.get("/api/admin/v2/stats", isAuthenticated, async (_req, res) => {
-    try {
-      const [
-        totalUsers,
-        totalStories,
-        totalComments,
-        pendingStories,
-        pendingComments,
-        activeUsers
-      ] = await Promise.all([
-        storage.countUsers(),
-        storage.countStories(),
-        storage.countComments(),
-        storage.countPendingStories(),
-        storage.countPendingComments(),
-        storage.countActiveUsers()
-      ]);
-
-      res.json({
-        totalUsers,
-        totalStories,
-        totalComments,
-        pendingStories,
-        pendingComments,
-        activeUsers
-      });
-    } catch (error) {
-      console.error("Error fetching admin v2 stats:", error);
-      res.status(500).json({ message: "Failed to fetch admin statistics" });
-    }
   });
 
   // New route to get pending community posts

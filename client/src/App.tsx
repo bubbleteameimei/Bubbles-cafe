@@ -15,9 +15,6 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 const Home = lazy(() => import("@/pages/home"));
 const Stories = lazy(() => import("@/pages/stories"));
 const StoryView = lazy(() => import("@/pages/story-view"));
-const AdminLogin = lazy(() => import("@/pages/admin-login"));
-const AdminDashboard = lazy(() => import("@/pages/admin"));
-const AdminDashboardV2 = lazy(() => import("@/pages/admin-v2/dashboard"));
 const Secret = lazy(() => import("@/pages/secret"));
 const About = lazy(() => import("@/pages/about"));
 const Privacy = lazy(() => import("@/pages/privacy"));
@@ -26,33 +23,6 @@ const Reader = lazy(() => import("@/pages/reader"));
 const IndexView = lazy(() => import("@/pages/index"));
 const Community = lazy(() => import("@/pages/community"));
 const NotFound = lazy(() => import("@/pages/not-found"));
-
-// Protected Route Component
-const ProtectedRoute = ({ component: Component, ...rest }: { component: React.ComponentType, path: string }) => {
-  const { user, isLoading } = useAuth();
-  const [, navigate] = useLocation();
-
-  React.useEffect(() => {
-    if (!isLoading && !user?.isAdmin) {
-      console.log("User not authorized, redirecting to login");
-      navigate("/admin/login");
-    }
-  }, [isLoading, user, navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user?.isAdmin) {
-    return null;
-  }
-
-  return <Component {...rest} />;
-};
 
 function App() {
   const [location] = useLocation();
@@ -84,13 +54,6 @@ function App() {
                     <Route path="/about" component={About} />
                     <Route path="/contact" component={Contact} />
                     <Route path="/privacy" component={Privacy} />
-                    <Route path="/admin/login" component={AdminLogin} />
-                    <Route path="/admin">
-                      <ProtectedRoute component={AdminDashboard} path="/admin" />
-                    </Route>
-                    <Route path="/admin-v2">
-                      <ProtectedRoute component={AdminDashboardV2} path="/admin-v2" />
-                    </Route>
                     <Route component={NotFound} />
                   </Switch>
                 </Suspense>
