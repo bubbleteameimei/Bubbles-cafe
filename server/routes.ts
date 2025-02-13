@@ -7,12 +7,19 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import { z } from "zod";
-import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema";
+import { 
+  insertCommentSchema, 
+  insertPostSchema, 
+  insertCommentReplySchema,
+  type Post,
+  type UnlockProgress
+} from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import * as session from 'express-session';
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 // Configure rate limiters
 const authLimiter = rateLimit({
@@ -66,6 +73,14 @@ export function registerRoutes(app: Express): Server {
     res.status(401).json({ message: "Unauthorized" });
   };
 
+  // Add caching middleware for static content
+  const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
+    if (process.env.NODE_ENV === 'production') {
+      res.set('Cache-Control', `public, max-age=${duration}`);
+    }
+    next();
+  };
+
   // Add session configuration and security headers before route registration
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
@@ -102,24 +117,35 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Update the get posts route to support filtering
-  app.get("/api/posts", async (req, res) => {
+  app.get("/api/posts", cacheControl(300), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
       const filter = req.query.filter as string | undefined;
 
-      // Validate pagination parameters
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
         return res.status(400).json({
           message: "Invalid pagination parameters. Page and limit must be positive numbers."
         });
       }
 
-      // Get posts with proper type handling
       const result = await storage.getPosts(page, limit);
       const posts = filter === 'community'
-        ? result.posts.filter(post => post.metadata?.isCommunityPost && post.metadata?.isApproved)
-        : result.posts.filter(post => !post.metadata?.isCommunityPost);
+        ? result.posts.filter(post => 'metadata' in post && post.metadata?.isCommunityPost && post.metadata?.isApproved)
+        : result.posts.filter(post => !('metadata' in post) || !post.metadata?.isCommunityPost);
+
+      // Set ETag for caching
+      const etag = crypto
+        .createHash('md5')
+        .update(JSON.stringify(posts))
+        .digest('hex');
+
+      res.set('ETag', etag);
+
+      // Check If-None-Match header
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
 
       res.json({
         posts,
@@ -232,9 +258,9 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/posts/secret/:postId/unlock", async (req, res) => {
     try {
-      const progress = await storage.unlockSecretPost({
+      const progress: UnlockProgress = await storage.unlockSecretPost({
         postId: parseInt(req.params.postId),
-        unlockedBy: req.body.unlockedBy
+        userId: req.body.userId // Use userId instead of unlockedBy
       });
       res.json(progress);
     } catch (error) {
@@ -243,13 +269,26 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/posts/:slug", async (req, res) => {
+  app.get("/api/posts/:slug", cacheControl(300), async (req, res) => {
     try {
       const post = await storage.getPost(req.params.slug);
       if (!post) {
-        res.status(404).json({ message: "Post not found" });
-        return;
+        return res.status(404).json({ message: "Post not found" });
       }
+
+      // Set ETag for caching
+      const etag = crypto
+        .createHash('md5')
+        .update(JSON.stringify(post))
+        .digest('hex');
+
+      res.set('ETag', etag);
+
+      // Check If-None-Match header
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
+
       res.json(post);
     } catch (error) {
       console.error("Error fetching post:", error);
@@ -260,12 +299,11 @@ export function registerRoutes(app: Express): Server {
   // Contact form submission
   app.post("/api/contact", async (req, res) => {
     try {
-      const { name, email, message, showEmail } = req.body;
+      const { name, email, message, subject = 'Contact Form Message' } = req.body;
       console.log('Received contact form submission from:', name);
 
       // Input validation
       if (!name || !email || !message) {
-        console.log('Validation failed:', { name: !name, email: !email, message: !message });
         return res.status(400).json({
           message: "Please fill in all required fields",
           details: {
@@ -292,7 +330,7 @@ export function registerRoutes(app: Express): Server {
         name,
         email,
         message,
-        showEmail
+        subject
       });
       console.log('Message saved successfully with ID:', savedMessage.id);
 
@@ -453,9 +491,7 @@ Timestamp: ${new Date().toLocaleString()}
       const commentData = insertCommentSchema.parse({
         postId,
         ...req.body,
-        metadata: {
-          approved: false // Start as unapproved
-        }
+        approved: false // Use approved directly instead of metadata
       });
 
       const { isBlocked, moderatedText } = moderateComment(commentData.content);
@@ -463,10 +499,7 @@ Timestamp: ${new Date().toLocaleString()}
       const comment = await storage.createComment({
         ...commentData,
         content: moderatedText,
-        metadata: {
-          ...commentData.metadata,
-          approved: !isBlocked
-        }
+        approved: !isBlocked
       });
 
       return res.json({

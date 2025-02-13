@@ -50,23 +50,31 @@ export const queryClient = new QueryClient({
       gcTime: 30 * 60 * 1000, // 30 minutes
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
+      networkMode: 'online',
+      refetchInterval: false
     },
     mutations: {
       retry: false,
+      networkMode: 'online',
       onError: (error) => {
         console.error('Mutation error:', error);
         // Handle authentication errors globally
         if (error instanceof Error && error.message.includes('401')) {
-          window.location.href = "/admin/login";
+          window.location.href = "/auth";
         }
       },
-      // Add mutation options for better error handling
       onMutate: (variables) => {
-        // Optionally log mutation attempts
-        console.log('Starting mutation:', variables);
+        // Log mutation attempts in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Starting mutation:', variables);
+        }
       },
-      onSettled: () => {
+      onSettled: (_data, error, variables, context) => {
         // Always refetch related queries after mutation
+        if (error) {
+          console.error('Mutation failed:', { error, variables, context });
+        }
+        // Invalidate affected queries
         queryClient.invalidateQueries();
       }
     },

@@ -19,10 +19,19 @@ const MAX_PORT = BASE_PORT + 10;
 // Set trust proxy first
 app.set('trust proxy', 1);
 
-// Enable Gzip compression
-app.use(compression());
+// Enable Gzip compression with enhanced options
+app.use(compression({
+  level: 6, // Higher compression level
+  threshold: 1024, // Only compress responses bigger than 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
 
-// Security headers
+// Enhanced security headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -40,22 +49,26 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
-// Rate limiting
+// Enhanced rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count successful requests against the rate limit
+  keyGenerator: (req) => req.ip // Use IP address as the key
 });
 
 app.use(limiter);
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-// Set up session configuration
+// Enhanced session configuration
 const PostgresSession = connectPgSimple(session);
 const sessionConfig = {
   store: new PostgresSession({
@@ -92,7 +105,7 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// API request logging
+// Enhanced API request logging
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     const start = Date.now();

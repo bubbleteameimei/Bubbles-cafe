@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from "react";
 import { cn } from "@/lib/utils";
 
-interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'onError'> {
   src: string;
   alt: string;
   className?: string;
@@ -55,7 +55,7 @@ export const OptimizedImage = memo(({
     onLoad?.();
   };
 
-  const handleError = (e: any) => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
     const error = new Error(`Failed to load image: ${src}`);
     setError(error);
@@ -95,7 +95,7 @@ export const OptimizedImage = memo(({
           )}
           loading={priority ? "eager" : "lazy"}
           onLoad={handleLoad}
-          onError={handleError}
+          onError={handleImageError}
           {...props}
         />
       )}
