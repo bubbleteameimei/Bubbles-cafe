@@ -1,9 +1,8 @@
-import { motion } from "framer-motion";
+import { memo } from "react";
 
-export function LoadingScreen() {
+export const LoadingScreen = memo(() => {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-      {/* Loading Text Animation */}
       <div className="loader">
         <span>L</span>
         <span>O</span>
@@ -33,6 +32,7 @@ export function LoadingScreen() {
           line-height: 20px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
+          color: var(--primary);
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }
@@ -57,4 +57,6 @@ export function LoadingScreen() {
       `}</style>
     </div>
   );
-}
+});
+
+LoadingScreen.displayName = "LoadingScreen";

@@ -84,7 +84,7 @@ export default function Sidebar() {
             {Array.isArray(posts) && posts.map((post) => (
               <motion.li key={post.id} variants={itemVariants}>
                 <button 
-                  onClick={() => setLocation(`/story/${post.slug}`)}
+                  onClick={() => setLocation(`/story/${post.slug || post.id}`)}
                   className="text-muted-foreground hover:text-primary transition-colors text-left w-full line-clamp-2 hover:underline"
                 >
                   {post.title}
@@ -113,7 +113,7 @@ export default function Sidebar() {
                 className="border-b border-border/50 pb-3 last:border-0 last:pb-0"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-semibold text-sm">{comment.author}</p>
+                  <p className="font-semibold text-sm">Anonymous</p>
                   <time className="text-xs text-muted-foreground">
                     {format(new Date(comment.createdAt), 'MMM d')}
                   </time>
@@ -134,6 +134,7 @@ export default function Sidebar() {
           </motion.ul>
         </CardContent>
       </Card>
+
       <Card className="transition-colors hover:bg-accent/5">
         <CardHeader>
           <CardTitle>Follow Me</CardTitle>

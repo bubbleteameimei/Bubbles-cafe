@@ -22,6 +22,8 @@ const Contact = lazy(() => import("@/pages/contact"));
 const Community = lazy(() => import("@/pages/community"));
 const Auth = lazy(() => import("@/pages/auth"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const Index = lazy(() => import("@/pages/index"));
+const Reader = lazy(() => import("@/pages/reader"));
 
 function App() {
   const [location] = useLocation();
@@ -35,12 +37,7 @@ function App() {
             <main className={location === "/" ? "" : "pt-16"}>
               <ErrorBoundary>
                 <Suspense
-                  fallback={
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-                    </div>
-                  }
+                  fallback={<LoadingScreen />}
                 >
                   <Switch>
                     <Route path="/" component={Home} />
@@ -53,6 +50,8 @@ function App() {
                     <Route path="/about" component={About} />
                     <Route path="/contact" component={Contact} />
                     <Route path="/privacy" component={Privacy} />
+                    <Route path="/index" component={Index} />
+                    <Route path="/reader" component={Reader} />
                     <Route path="/:rest*" component={NotFound} />
                   </Switch>
                 </Suspense>

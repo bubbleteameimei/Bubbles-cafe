@@ -25,6 +25,11 @@ export default function About() {
                 please leave a comment below or drop me an email through the contact page. I will try to reply ASAP. 
                 If you do not hear back from me within a week, feel free to send another message.
               </p>
+              <p>
+                IMPORTANT: All stories on this site are original works. Any form of plagiarism or 
+                unauthorized reproduction of my content will be taken seriously and may result in legal action. 
+                If you would like to share or use my work, please contact me first for permission.
+              </p>
             </div>
           </CardContent>
         </Card>

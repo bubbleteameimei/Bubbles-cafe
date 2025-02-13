@@ -3,7 +3,7 @@ import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
-import { format } from "date-fns";
+import { format } from 'date-fns';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Mist from "@/components/effects/mist";
@@ -35,9 +35,16 @@ export default function Stories() {
     queryFn: async ({ pageParam = 1 }) => {
       const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
+      const data = await response.json();
+      if (!data.posts) {
+        return { posts: [], hasMore: false };
+      }
+      return data;
     },
-    getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length + 1 : undefined,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage?.hasMore) return undefined;
+      return allPages.length + 1;
+    },
     initialPageParam: 1,
     retry: 3
   });
@@ -69,7 +76,7 @@ export default function Stories() {
     );
   }
 
-  const posts = data.pages.flatMap(page => page.posts);
+  const posts = data.pages.flatMap(page => page?.posts || []);
 
   if (!posts.length) {
     return (
@@ -124,7 +131,7 @@ export default function Stories() {
                   className="cursor-pointer hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10"
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
-                    setLocation(`/story/${post.slug}`);
+                    setLocation(`/story/${post.slug || post.id}`);
                   }}
                 >
                   <CardContent className="py-4 flex justify-between items-center">

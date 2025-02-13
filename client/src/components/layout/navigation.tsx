@@ -26,10 +26,10 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
     >
       <div className={`${isMobile ? 'space-y-2' : 'flex items-center space-x-1'}`}>
         <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-        <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
-        <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
         <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
         <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
+        <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
+        <NavLink href="/community" isActive={location === "/community"} onNavigate={onNavigate}>Community</NavLink>
       </div>
 
       {isMobile && <div className="my-4 border-t border-border/20" aria-hidden="true" />}
@@ -137,9 +137,10 @@ export default function Navigation() {
         <div className="flex items-center gap-2">
           {!user && (
             <Button
-              variant="ghost"
-              className="text-sm font-medium hover:text-primary transition-colors"
+              variant="outline"
+              size="sm"
               onClick={() => setLocation('/auth')}
+              className="font-medium hover:bg-primary/10"
             >
               Sign In
             </Button>
