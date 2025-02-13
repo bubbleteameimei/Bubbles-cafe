@@ -32,24 +32,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/admin/user"],
     queryFn: async () => {
       try {
+        console.log('[Auth] Fetching user data...');
         const response = await apiRequest("GET", "/api/admin/user");
+
         if (response.status === 401) {
-          console.log("User not authenticated");
+          console.log('[Auth] User not authenticated');
           return null;
         }
+
         if (!response.ok) {
-          console.error("Failed to fetch user:", response.statusText);
-          throw new Error("Failed to fetch user");
+          console.error('[Auth] Failed to fetch user:', response.statusText);
+          throw new Error("Failed to fetch user data");
         }
+
         const data = await response.json();
-        console.log("User data fetched:", data);
+        console.log('[Auth] User data fetched successfully:', data);
         return data;
       } catch (error) {
-        console.error("Auth error:", error);
+        console.error('[Auth] Error fetching user data:', error);
         return null;
       }
     },
     retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: true,
     refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
     staleTime: 4 * 60 * 1000, // Consider data stale after 4 minutes
@@ -58,15 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
+      console.log('[Auth] Attempting login...');
       const response = await apiRequest("POST", "/api/admin/login", credentials);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('[Auth] Login failed:', error);
         throw new Error(error.message || "Login failed");
       }
-      return response.json();
+
+      const data = await response.json();
+      console.log('[Auth] Login successful:', data);
+      return data;
     },
     onSuccess: (data: User) => {
+      console.log('[Auth] Updating user data after login');
       queryClient.setQueryData(["/api/admin/user"], data);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/user"] });
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -74,25 +87,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/admin");
     },
     onError: (error: Error) => {
-      console.error("Login error:", error);
+      console.error('[Auth] Login mutation error:', error);
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Failed to log in",
         variant: "destructive"
       });
     }
   });
 
-  // Logout mutation
+  // Logout mutation with improved error handling
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      console.log('[Auth] Attempting logout...');
       const response = await apiRequest("POST", "/api/admin/logout");
       if (!response.ok) {
         const error = await response.json();
+        console.error('[Auth] Logout failed:', error);
         throw new Error(error.message || "Logout failed");
       }
+      console.log('[Auth] Logout successful');
     },
     onSuccess: () => {
+      console.log('[Auth] Clearing user data after logout');
       queryClient.setQueryData(["/api/admin/user"], null);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/user"] });
       toast({
@@ -102,10 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/");
     },
     onError: (error: Error) => {
-      console.error("Logout error:", error);
+      console.error('[Auth] Logout mutation error:', error);
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: error.message || "Failed to log out",
         variant: "destructive"
       });
     }

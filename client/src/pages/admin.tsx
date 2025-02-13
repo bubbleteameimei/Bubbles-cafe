@@ -16,6 +16,7 @@ export default function AdminPage() {
   // Redirect to login if not authenticated as admin
   useEffect(() => {
     if (!authLoading && !user?.isAdmin) {
+      console.log('[Admin] Redirecting to login - User not authenticated or not admin');
       setLocation("/admin/login");
     }
   }, [user, authLoading, setLocation]);
@@ -31,10 +32,11 @@ export default function AdminPage() {
 
   // If not admin, don't render anything while redirecting
   if (!user?.isAdmin) {
+    console.log('[Admin] User not admin, waiting for redirect...');
     return null;
   }
 
-  // Render the admin dashboard
+  console.log('[Admin] Rendering admin dashboard for user:', user);
   return <AdminDashboard />;
 }
 

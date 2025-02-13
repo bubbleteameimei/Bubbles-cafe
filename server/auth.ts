@@ -12,6 +12,19 @@ declare global {
   }
 }
 
+// Define requireAdmin middleware at the top level
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated() || !req.user?.isAdmin) {
+    console.log('[Auth] Admin check failed:', { 
+      isAuthenticated: req.isAuthenticated(), 
+      isAdmin: req.user?.isAdmin,
+      session: req.session?.id
+    });
+    return res.status(401).json({ message: "Unauthorized: Please log in again" });
+  }
+  next();
+};
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || process.env.REPLIT_ID!, // Fallback to REPL_ID if SESSION_SECRET not set
@@ -92,14 +105,6 @@ export function setupAuth(app: Express) {
       done(error);
     }
   });
-
-  // Admin authentication middleware
-  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || !req.user?.isAdmin) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    next();
-  };
 
   // Add JSON response endpoints with rate limiting and better error handling
   app.post("/api/admin/login", (req: Request, res: Response, next: NextFunction) => {

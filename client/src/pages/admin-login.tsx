@@ -20,6 +20,7 @@ export default function AdminLoginPage() {
   // Redirect if already logged in as admin
   useEffect(() => {
     if (!isLoading && user?.isAdmin) {
+      console.log('[AdminLogin] User is already logged in as admin, redirecting to /admin');
       setLocation("/admin");
     }
   }, [user, isLoading, setLocation]);
@@ -34,18 +35,25 @@ export default function AdminLoginPage() {
   });
 
   const onSubmit = async (data: AdminLogin) => {
-    if (loginMutation.isPending) return;
+    if (loginMutation.isPending) {
+      console.log('[AdminLogin] Login mutation is already pending, skipping');
+      return;
+    }
 
     try {
+      console.log('[AdminLogin] Attempting to log in with provided credentials');
       await loginMutation.mutateAsync(data);
       // Redirect will be handled by loginMutation's onSuccess
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('[AdminLogin] Login error:', error);
       const errorMessage = error?.message || "Failed to log in";
       form.setError("root", {
         type: "manual",
         message: errorMessage
       });
+
+      // Clear password field on error
+      form.setValue('password', '');
     }
   };
 
@@ -60,6 +68,7 @@ export default function AdminLoginPage() {
 
   // Don't render login form if already logged in
   if (user?.isAdmin) {
+    console.log('[AdminLogin] User is admin, not rendering login form');
     return null;
   }
 
