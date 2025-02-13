@@ -42,6 +42,7 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
         <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
         <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
         <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
+        <NavLink href="/admin-v2" isActive={location === "/admin-v2"} onNavigate={onNavigate}>Admin v2</NavLink>
       </div>
     </nav>
   );
@@ -88,6 +89,7 @@ export default function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const handleNavigation = useCallback(() => {
     setIsOpen(false);
@@ -96,6 +98,11 @@ export default function Navigation() {
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
+
+  const handleLogoClick = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setLocation('/');
+  }, [setLocation]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -125,10 +132,7 @@ export default function Navigation() {
         {/* Logo */}
         <div className="flex-1 flex justify-center md:justify-start">
           <button 
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'instant' });
-              setLocation('/');
-            }}
+            onClick={handleLogoClick}
             className="text-lg font-semibold text-primary hover:text-primary/90 transition-colors duration-300 tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-md px-2"
           >
             Bubble's Cafe

@@ -17,6 +17,7 @@ const Stories = lazy(() => import("@/pages/stories"));
 const StoryView = lazy(() => import("@/pages/story-view"));
 const AdminLogin = lazy(() => import("@/pages/admin-login"));
 const AdminDashboard = lazy(() => import("@/pages/admin/dashboard"));
+const AdminDashboardV2 = lazy(() => import("@/pages/admin-v2/dashboard")); // Add new dashboard
 const Secret = lazy(() => import("@/pages/secret"));
 const About = lazy(() => import("@/pages/about"));
 const Privacy = lazy(() => import("@/pages/privacy"));
@@ -26,7 +27,7 @@ const IndexView = lazy(() => import("@/pages/index"));
 const Community = lazy(() => import("@/pages/community"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-// Protected Route Component with improved loading state handling
+// Protected Route Component
 const ProtectedRoute = ({ component: Component, ...rest }: { component: React.ComponentType, path: string }) => {
   const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
@@ -38,7 +39,6 @@ const ProtectedRoute = ({ component: Component, ...rest }: { component: React.Co
     }
   }, [isLoading, user, navigate]);
 
-  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -47,7 +47,6 @@ const ProtectedRoute = ({ component: Component, ...rest }: { component: React.Co
     );
   }
 
-  // Don't render anything while redirecting
   if (!user?.isAdmin) {
     return null;
   }
@@ -88,6 +87,9 @@ function App() {
                     <Route path="/admin/login" component={AdminLogin} />
                     <Route path="/admin">
                       <ProtectedRoute component={AdminDashboard} path="/admin" />
+                    </Route>
+                    <Route path="/admin-v2">
+                      <ProtectedRoute component={AdminDashboardV2} path="/admin-v2" />
                     </Route>
                     <Route component={NotFound} />
                   </Switch>
