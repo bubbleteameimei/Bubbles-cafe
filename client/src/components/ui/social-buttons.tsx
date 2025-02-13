@@ -1,4 +1,4 @@
-import { SiWordpress, SiX, SiInstagram, SiGithub, SiLinkedin, SiFacebook } from "react-icons/si";
+import { SiWordpress, SiX, SiInstagram } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 interface SocialButtonsProps {
@@ -6,9 +6,6 @@ interface SocialButtonsProps {
     wordpress?: string;
     twitter?: string;
     instagram?: string;
-    github?: string;
-    linkedin?: string;
-    facebook?: string;
   };
   className?: string;
 }
@@ -19,7 +16,7 @@ export function SocialButtons({ links = {}, className = "" }: SocialButtonsProps
   const defaultLinks = {
     wordpress: "https://bubbleteameimei.wordpress.com",
     twitter: "https://x.com/Bubbleteameimei",
-    instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw",
+    instagram: "https://www.instagram.com/bubbleteameimei/"
   };
 
   const finalLinks = { ...defaultLinks, ...links };
@@ -64,33 +61,6 @@ export function SocialButtons({ links = {}, className = "" }: SocialButtonsProps
           aria-label="Visit Instagram Profile"
         >
           <SiInstagram className="h-5 w-5" />
-        </button>
-      )}
-      {finalLinks.github && (
-        <button 
-          onClick={() => handleSocialClick(finalLinks.github!, "GitHub")}
-          className="text-muted-foreground hover:text-[#333] transition-all duration-200 hover:scale-110"
-          aria-label="Visit GitHub Profile"
-        >
-          <SiGithub className="h-5 w-5" />
-        </button>
-      )}
-      {finalLinks.linkedin && (
-        <button 
-          onClick={() => handleSocialClick(finalLinks.linkedin!, "LinkedIn")}
-          className="text-muted-foreground hover:text-[#0077B5] transition-all duration-200 hover:scale-110"
-          aria-label="Visit LinkedIn Profile"
-        >
-          <SiLinkedin className="h-5 w-5" />
-        </button>
-      )}
-      {finalLinks.facebook && (
-        <button 
-          onClick={() => handleSocialClick(finalLinks.facebook!, "Facebook")}
-          className="text-muted-foreground hover:text-[#1877F2] transition-all duration-200 hover:scale-110"
-          aria-label="Visit Facebook Profile"
-        >
-          <SiFacebook className="h-5 w-5" />
         </button>
       )}
     </div>

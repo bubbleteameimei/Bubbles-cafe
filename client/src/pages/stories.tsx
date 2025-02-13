@@ -32,23 +32,19 @@ export default function Stories() {
     isFetchingNextPage 
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["/api/posts"],
-    queryFn: async ({ pageParam = 1 }) => {
+    queryFn: async ({ pageParam }) => {
       const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       const data = await response.json();
-      return {
-        posts: Array.isArray(data.posts) ? data.posts : [],
-        hasMore: !!data.hasMore
-      };
+      return data;
     },
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage) => {
       if (!lastPage || !lastPage.hasMore) {
         return undefined;
       }
-      return allPages.length + 1;
+      return lastPage.posts.length > 0 ? lastPage.posts.length / POSTS_PER_PAGE + 1 : undefined;
     },
-    initialPageParam: 1,
-    retry: 3
+    initialPageParam: 1
   });
 
   React.useEffect(() => {

@@ -1022,11 +1022,8 @@ export class DatabaseStorage implements IStorage {
     try {
       const posts = await db.select()
         .from(postsTable)
-        .where(and(
-          eq(postsTable.isCommunityPost, true),
-          eq(postsTable.isApproved, false)
-        ))
-        .orderBy(desc(postsTable.createdAt));
+        .orderBy(desc(postsTable.createdAt))
+        .limit(10);
 
       return posts.map(post => ({
         ...post,
@@ -1039,26 +1036,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async approvePost(postId: number): Promise<Post> {
-    try {
-      const [updatedPost] = await db.update(postsTable)
-        .set({ isApproved: true })
-        .where(eq(postsTable.id, postId))
-        .returning();
+    const [post] = await db.select()
+      .from(postsTable)
+      .where(eq(postsTable.id, postId))
+      .limit(1);
 
-      if (!updatedPost) {
-        throw new Error("Post not found");
-      }
-
-      return {
-        ...updatedPost,
-        createdAt: updatedPost.createdAt instanceof Date
-          ? updatedPost.createdAt
-          : new Date(updatedPost.createdAt)
-      };
-    } catch (error) {
-      console.error("Error in approvePost:", error);
-      throw new Error("Failed to approve post");
+    if (!post) {
+      throw new Error("Post not found");
     }
+
+    return {
+      ...post,
+      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+    };
   }
 }
 

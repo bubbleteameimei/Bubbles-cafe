@@ -20,7 +20,7 @@ export default function Sidebar() {
   const socialLinks = {
     wordpress: "https://bubbleteameimei.wordpress.com",
     twitter: "https://x.com/Bubbleteameimei",
-    instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw"
+    instagram: "https://www.instagram.com/bubbleteameimei/"
   };
 
   const handleSocialClick = (url: string, platform: string) => {

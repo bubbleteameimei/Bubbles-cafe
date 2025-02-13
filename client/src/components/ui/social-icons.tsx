@@ -5,7 +5,7 @@ export const SocialIcons = memo(() => {
   const { toast } = useToast();
 
   const socialLinks = {
-    instagram: "https://www.instagram.com/bubbleteameimei?igsh=dHRxNzM0YnpwanJw",
+    instagram: "https://www.instagram.com/bubbleteameimei/",
     twitter: "https://x.com/Bubbleteameimei",
     wordpress: "https://bubbleteameimei.wordpress.com"
   };
