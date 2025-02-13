@@ -97,15 +97,7 @@ export function registerRoutes(app: Express): Server {
   
 
   // New route to get pending community posts
-  app.get("/api/posts/pending", isAuthenticated, async (_req, res) => {
-    try {
-      const posts = await storage.getPendingPosts();
-      res.json(posts);
-    } catch (error) {
-      console.error("Error fetching pending posts:", error);
-      res.status(500).json({ message: "Failed to fetch pending posts" });
-    }
-  });
+  // Regular post routes
 
   // New route to approve a community post
   app.patch("/api/posts/:id/approve", isAuthenticated, async (req, res) => {
