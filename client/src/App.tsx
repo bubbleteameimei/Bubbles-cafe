@@ -10,18 +10,71 @@ import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
-// Lazy load components with proper error handling
-const Home = lazy(() => import("./pages/home"));
-const Stories = lazy(() => import("./pages/stories"));
-const StoryView = lazy(() => import("./pages/story-view"));
-const About = lazy(() => import("./pages/about"));
-const Privacy = lazy(() => import("./pages/privacy"));
-const Contact = lazy(() => import("./pages/contact"));
-const Community = lazy(() => import("./pages/community"));
-const Auth = lazy(() => import("./pages/auth"));
-const NotFound = lazy(() => import("./pages/not-found"));
-const Index = lazy(() => import("./pages/index"));
-const Reader = lazy(() => import("./pages/reader"));
+// Lazy load components with proper error handling and loading fallback
+const Home = lazy(() => import("./pages/home").catch(err => {
+  console.error("Failed to load Home page:", err);
+  return import("./pages/not-found");
+}));
+
+const Stories = lazy(() => import("./pages/stories").catch(err => {
+  console.error("Failed to load Stories page:", err);
+  return import("./pages/not-found");
+}));
+
+const StoryView = lazy(() => import("./pages/story-view").catch(err => {
+  console.error("Failed to load StoryView page:", err);
+  return import("./pages/not-found");
+}));
+
+const About = lazy(() => import("./pages/about").catch(err => {
+  console.error("Failed to load About page:", err);
+  return import("./pages/not-found");
+}));
+
+const Privacy = lazy(() => import("./pages/privacy").catch(err => {
+  console.error("Failed to load Privacy page:", err);
+  return import("./pages/not-found");
+}));
+
+const Contact = lazy(() => import("./pages/contact").catch(err => {
+  console.error("Failed to load Contact page:", err);
+  return import("./pages/not-found");
+}));
+
+const Community = lazy(() => import("./pages/community").catch(err => {
+  console.error("Failed to load Community page:", err);
+  return import("./pages/not-found");
+}));
+
+const Auth = lazy(() => import("./pages/auth").catch(err => {
+  console.error("Failed to load Auth page:", err);
+  return import("./pages/not-found");
+}));
+
+// Update NotFound to return proper module format
+const NotFound = lazy(() => import("./pages/not-found").catch(err => {
+  console.error("Failed to load NotFound page:", err);
+  return Promise.resolve({
+    default: () => (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
+          <p className="text-muted-foreground">The page you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    )
+  });
+}));
+
+const Index = lazy(() => import("./pages/index").catch(err => {
+  console.error("Failed to load Index page:", err);
+  return import("./pages/not-found");
+}));
+
+const Reader = lazy(() => import("./pages/reader").catch(err => {
+  console.error("Failed to load Reader page:", err);
+  return import("./pages/not-found");
+}));
 
 interface LazyComponentProps {
   component: React.ComponentType<any>;
