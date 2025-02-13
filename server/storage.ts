@@ -41,8 +41,12 @@ import {
   webhooks,
   analytics
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // Users
@@ -147,9 +151,33 @@ export interface IStorage {
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor() {
+    console.log('[Storage] Initializing PostgreSQL session store...');
+
+    try {
+      // Initialize session store with PostgreSQL
+      this.sessionStore = new PostgresSessionStore({
+        pool: pool,
+        createTableIfMissing: true,
+        tableName: 'session',
+        schemaName: 'public',
+        // Add error handling and connection options
+        connectionString: process.env.DATABASE_URL,
+        ttl: 86400 // 1 day
+      });
+      console.log('[Storage] Session store initialized successfully');
+    } catch (error) {
+      console.error('[Storage] Failed to initialize session store:', error);
+      throw error;
+    }
+  }
+
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select()
@@ -899,13 +927,12 @@ export class DatabaseStorage implements IStorage {
   async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
     const [newSubscription] = await db.insert(newsletterSubscriptions)
       .values({ ...subscription, createdAt: new Date() })
-      .returning();
+            .returning();
     return newSubscription;
   }
 
   async unsubscribeNewsletter(email: string): Promise<void> {
-    await db.delete(newsletterSubscriptions)
-      .where(eq(newsletterSubscriptions.email, email));
+    await db.delete(newsletterSubscriptions)      .where(eq(newsletterSubscriptions.email, email));
   }
 
   async getNewsletterSubscribers(): Promise<NewsletterSubscription[]> {

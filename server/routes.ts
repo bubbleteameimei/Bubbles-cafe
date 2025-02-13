@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { z } from "zod";
 import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
+import * as session from 'express-session';
 
 // Configure nodemailer with optimized settings
 const transporter = createTransport({
@@ -37,9 +38,17 @@ const transporter = createTransport({
 
 // Admin middleware - uses passport's authentication
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  console.log('[Auth] Checking authentication status:', {
+    isAuthenticated: req.isAuthenticated(),
+    hasUser: !!req.user,
+    isAdmin: req.user?.isAdmin
+  });
+
   if (req.isAuthenticated() && req.user && req.user.isAdmin) {
+    console.log('[Auth] User authenticated successfully as admin');
     next();
   } else {
+    console.log('[Auth] Authentication failed - User not authorized');
     res.status(401).json({ message: "Unauthorized: Please log in again" });
   }
 };
@@ -63,7 +72,21 @@ const apiLimiter = rateLimit({
 });
 
 export function registerRoutes(app: Express): Server {
-  // Security headers for both API and SPA
+  // Add session configuration and security headers before route registration
+  const sessionSettings: session.SessionOptions = {
+    secret: process.env.REPL_ID!,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: app.get('env') === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    store: storage.sessionStore,
+  };
+  app.use(session.default(sessionSettings));
+
+  // Add security headers for both API and SPA
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -76,18 +99,10 @@ export function registerRoutes(app: Express): Server {
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
-        sandbox: ['allow-forms', 'allow-scripts', 'allow-same-origin'],
-        upgradeInsecureRequests: [],
       },
     },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "same-site" },
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true
-    },
-    referrerPolicy: { policy: "same-origin" }
   }));
 
   // Apply rate limiting to specific routes
@@ -100,7 +115,10 @@ export function registerRoutes(app: Express): Server {
 
   // Admin-specific API routes with isAuthenticated middleware
   app.get("/api/admin/user", isAuthenticated, (req: Request, res: Response) => {
-    // Now TypeScript knows req.user exists due to isAuthenticated middleware
+    console.log('[Admin] Sending admin user data:', {
+      id: req.user?.id,
+      isAdmin: req.user?.isAdmin
+    });
     res.json({ isAdmin: req.user!.isAdmin });
   });
 
