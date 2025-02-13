@@ -20,7 +20,7 @@ type AuthContextType = {
 
 // Define the login data type
 const loginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(2),
   password: z.string().min(6)
 });
 
