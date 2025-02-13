@@ -9,6 +9,8 @@ import rateLimit from "express-rate-limit";
 import compression from "compression";
 import { setupAuth } from "./auth";
 import { createServer } from "http";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 
 const app = express();
 const BASE_PORT = Number(process.env.PORT) || 3000;
@@ -53,13 +55,40 @@ app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Set up session configuration
+const PostgresSession = connectPgSimple(session);
+const sessionConfig: session.SessionOptions = {
+  store: new PostgresSession({
+    conObject: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    },
+    createTableIfMissing: true,
+    pruneSessionInterval: 60
+  }),
+  secret: process.env.SESSION_SECRET || process.env.REPLIT_ID || 'development-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  },
+  name: 'horror.session'
+};
+
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1);
+  sessionConfig.cookie.secure = true;
+}
+
+app.use(session(sessionConfig));
+
 // Health check endpoint
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
-
-// Set up session secret
-process.env.SESSION_SECRET = process.env.SESSION_SECRET || process.env.REPLIT_ID || 'development-secret';
 
 // API request logging
 app.use((req, res, next) => {

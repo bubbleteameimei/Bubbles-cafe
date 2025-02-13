@@ -1,73 +1,37 @@
+import { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import type { Request, Response, NextFunction } from "express";
-import { createTransport } from "nodemailer";
-import * as bcrypt from 'bcrypt';
+import compression from 'compression';
 import { z } from "zod";
 import { insertCommentSchema, insertPostSchema, insertCommentReplySchema } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import * as session from 'express-session';
+import { log } from "./vite";
+import { createTransport } from "nodemailer";
+import * as bcrypt from 'bcrypt';
 
-// Configure nodemailer with optimized settings
-const transporter = createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER || 'vantalison@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD?.trim()
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  pool: true,
-  maxConnections: 3,
-  maxMessages: 10,
-  rateDelta: 1000,
-  rateLimit: 5,
-  tls: {
-    rejectUnauthorized: true,
-    minVersion: 'TLSv1.2'
-  }
+// Configure rate limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login attempts per windowMs
+  message: { message: "Too many login attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-
-
-// Basic authentication middleware
-const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
-    next();
-  } else {
-    res.status(401).json({ message: "Unauthorized" });
-  }
-};
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50, // Reduced from 100 to 50 requests per 15 minutes
+  max: 50,
   message: { message: "Too many requests, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 export function registerRoutes(app: Express): Server {
-  // Add session configuration and security headers before route registration
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: app.get('env') === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: storage.sessionStore,
-  };
-  app.use(session.default(sessionSettings));
-
   // Add security headers for both API and SPA
   app.use(helmet({
     contentSecurityPolicy: {
@@ -91,10 +55,32 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/login", authLimiter);
   app.use("/api", apiLimiter);
 
-  // Set up authentication routes BEFORE other routes
+  // Set up auth BEFORE routes
   setupAuth(app);
 
-  
+  // Protected middleware
+  const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+    if (req.isAuthenticated()) {
+      return next();
+    }
+    res.status(401).json({ message: "Unauthorized" });
+  };
+
+  // Add session configuration and security headers before route registration
+  const sessionSettings: session.SessionOptions = {
+    secret: process.env.REPL_ID!,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: app.get('env') === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    store: storage.sessionStore,
+  };
+  app.use(session.default(sessionSettings));
+  app.use(compression());
+
 
   // New route to get pending community posts
   // Regular post routes
@@ -129,21 +115,16 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      // Filter posts based on the filter parameter
-      let posts, hasMore;
-      if (filter === 'community') {
-        // Only return approved community posts
-        const result = await storage.getPosts(page, limit);
-        posts = result.posts.filter(post => post.isCommunityPost && post.isApproved);
-        hasMore = result.hasMore;
-      } else {
-        // For other views, exclude community posts
-        const result = await storage.getPosts(page, limit);
-        posts = result.posts.filter(post => !post.isCommunityPost);
-        hasMore = result.hasMore;
-      }
+      // Get posts with proper type handling
+      const result = await storage.getPosts(page, limit);
+      const posts = filter === 'community'
+        ? result.posts.filter(post => post.metadata?.isCommunityPost && post.metadata?.isApproved)
+        : result.posts.filter(post => !post.metadata?.isCommunityPost);
 
-      res.json({ posts, hasMore });
+      res.json({
+        posts,
+        hasMore: result.hasMore
+      });
     } catch (error) {
       console.error("Error fetching posts:", error);
       res.status(500).json({ message: "Failed to fetch posts" });
@@ -153,12 +134,18 @@ export function registerRoutes(app: Express): Server {
   // Update the post creation route to handle community posts
   app.post("/api/posts", async (req, res) => {
     try {
-      // Parse and validate the post data using our schema
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const postData = insertPostSchema.parse({
         ...req.body,
-        authorId: req.user?.id || 1,
-        triggerWarnings: req.body.triggerWarnings || [],
-        isApproved: !req.body.isCommunityPost, // Auto-approve non-community posts
+        authorId: req.user.id,
+        metadata: {
+          ...req.body.metadata,
+          isCommunityPost: req.body.isCommunityPost || false,
+          isApproved: !req.body.isCommunityPost
+        }
       });
 
       console.log('Creating new post:', postData);
@@ -373,7 +360,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Get contact messages (admin only)
-  
+
 
   // Comment routes
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
@@ -457,42 +444,37 @@ Timestamp: ${new Date().toLocaleString()}
   app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.postId);
-
-      // Get post to verify it exists
       const post = await storage.getPost(postId.toString());
+
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      // Validate and parse the comment data using our schema
       const commentData = insertCommentSchema.parse({
         postId,
-        ...req.body
+        ...req.body,
+        metadata: {
+          approved: false // Start as unapproved
+        }
       });
 
-      // Use the new moderation system
       const { isBlocked, moderatedText } = moderateComment(commentData.content);
 
-      // Create the comment with moderated content
       const comment = await storage.createComment({
         ...commentData,
         content: moderatedText,
-        approved: !isBlocked
+        metadata: {
+          ...commentData.metadata,
+          approved: !isBlocked
+        }
       });
-
-      // Return appropriate response
-      if (isBlocked) {
-        return res.json({
-          ...comment,
-          message: "Your comment contains inappropriate content and will be reviewed by moderators.",
-          status: "pending"
-        });
-      }
 
       return res.json({
         ...comment,
-        message: "Thank you for your comment!",
-        status: "approved"
+        message: isBlocked
+          ? "Your comment contains inappropriate content and will be reviewed by moderators."
+          : "Thank you for your comment!",
+        status: isBlocked ? "pending" : "approved"
       });
 
     } catch (error) {
@@ -713,6 +695,29 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("Error fetching average rating:", error);
       res.status(500).json({ message: "Failed to fetch average rating" });
+    }
+  });
+
+  // Configure nodemailer with optimized settings
+  const transporter = createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.GMAIL_USER || 'vantalison@gmail.com',
+      pass: process.env.GMAIL_APP_PASSWORD?.trim()
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 10,
+    rateDelta: 1000,
+    rateLimit: 5,
+    tls: {
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2'
     }
   });
 

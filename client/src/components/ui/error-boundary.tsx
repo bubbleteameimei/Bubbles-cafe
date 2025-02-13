@@ -85,7 +85,6 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!error.message) return "An unexpected error occurred.";
 
     if (error.message.includes('404')) {
-    if (error.message.includes('404')) {
       return "We couldn't find what you're looking for. The page might have been moved or deleted.";
     }
     if (error.message.includes('500')) {
