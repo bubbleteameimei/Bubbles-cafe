@@ -106,7 +106,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Add JSON response endpoints with rate limiting and better error handling
+  // Update login endpoint with better error handling
   app.post("/api/admin/login", (req: Request, res: Response, next: NextFunction) => {
     console.log('[Auth] Admin login attempt for:', req.body.email);
     passport.authenticate("local", (err: any, user: Express.User | false, info: any) => {
