@@ -84,12 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
   private getErrorMessage(error: Error): string {
     if (!error.message) return "An unexpected error occurred.";
 
-    if (error.message.includes('401')) {
-      return "You need to be logged in to access this page. Please log in and try again.";
-    }
-    if (error.message.includes('403')) {
-      return "You don't have permission to access this page. Please contact the administrator if you believe this is a mistake.";
-    }
+    if (error.message.includes('404')) {
     if (error.message.includes('404')) {
       return "We couldn't find what you're looking for. The page might have been moved or deleted.";
     }

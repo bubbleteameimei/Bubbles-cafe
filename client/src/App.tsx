@@ -15,12 +15,9 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 const Home = lazy(() => import("@/pages/home"));
 const Stories = lazy(() => import("@/pages/stories"));
 const StoryView = lazy(() => import("@/pages/story-view"));
-const Secret = lazy(() => import("@/pages/secret"));
 const About = lazy(() => import("@/pages/about"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const Contact = lazy(() => import("@/pages/contact"));
-const Reader = lazy(() => import("@/pages/reader"));
-const IndexView = lazy(() => import("@/pages/index"));
 const Community = lazy(() => import("@/pages/community"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 

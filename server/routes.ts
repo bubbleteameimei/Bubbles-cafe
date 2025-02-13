@@ -94,14 +94,7 @@ export function registerRoutes(app: Express): Server {
   // Set up authentication routes BEFORE other routes
   setupAuth(app);
 
-  // Admin-specific API routes with isAuthenticated middleware
-  app.get("/api/admin/user", isAuthenticated, (req: Request, res: Response) => {
-    console.log('[Admin] Sending admin user data:', {
-      id: req.user?.id,
-      isAdmin: req.user?.isAdmin
-    });
-    res.json({ isAdmin: req.user!.isAdmin });
-  });
+  
 
   // New route to get pending community posts
   app.get("/api/posts/pending", isAuthenticated, async (_req, res) => {
