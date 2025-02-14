@@ -52,34 +52,36 @@ function App() {
         <AuthProvider>
           <div className="relative min-h-screen bg-background text-foreground antialiased">
             <Navigation />
-            <React.Suspense fallback={<LoadingScreen />}>
-              <main className={location === "/" ? "" : "pt-16"}>
-                <Switch>
-                  <Route path="/" component={Home} />
-                  <Route path="/stories" component={Stories} />
-                  <Route path="/community" component={Community} />
-                  <Route path="/story/:slug">
-                    {params => <StoryView slug={params.slug} />}
-                  </Route>
-                  <Route path="/auth" component={Auth} />
-                  <Route path="/about" component={About} />
-                  <Route path="/contact" component={Contact} />
-                  <Route path="/privacy" component={Privacy} />
-                  <Route path="/index" component={Index} />
-                  <Route path="/reader" component={Reader} />
-                  <Route>
-                    {() => (
-                      <div className="min-h-screen flex items-center justify-center bg-background">
-                        <div className="text-center space-y-4">
-                          <h1 className="text-4xl font-bold text-foreground">404</h1>
-                          <p className="text-muted-foreground">Page not found</p>
+            <ErrorBoundary> {/* Added ErrorBoundary here to catch errors within Suspense */}
+              <React.Suspense fallback={<LoadingScreen />}>
+                <main className={location === "/" ? "" : "pt-16"}>
+                  <Switch>
+                    <Route path="/" component={Home} />
+                    <Route path="/stories" component={Stories} />
+                    <Route path="/community" component={Community} />
+                    <Route path="/story/:slug">
+                      {params => <StoryView slug={params.slug} />}
+                    </Route>
+                    <Route path="/auth" component={Auth} />
+                    <Route path="/about" component={About} />
+                    <Route path="/contact" component={Contact} />
+                    <Route path="/privacy" component={Privacy} />
+                    <Route path="/index" component={Index} />
+                    <Route path="/reader" component={Reader} />
+                    <Route>
+                      {() => (
+                        <div className="min-h-screen flex items-center justify-center bg-background">
+                          <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-bold text-foreground">404</h1>
+                            <p className="text-muted-foreground">Page not found</p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </Route>
-                </Switch>
-              </main>
-            </React.Suspense>
+                      )}
+                    </Route>
+                  </Switch>
+                </main>
+              </React.Suspense>
+            </ErrorBoundary>
             <Footer />
             <CookieConsent />
             <AtmosphericEffects />
