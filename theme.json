@@ -30,5 +30,9 @@
   "destructive": {
     "dark": "hsl(0, 100%, 30%)",
     "light": "hsl(0, 100%, 45%)"
+  },
+  "ring": {
+    "dark": "hsl(0, 0%, 20%)",
+    "light": "hsl(0, 0%, 85%)"
   }
 }

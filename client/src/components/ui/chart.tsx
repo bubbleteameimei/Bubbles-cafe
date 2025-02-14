@@ -171,9 +171,9 @@ const ChartTooltipContent = React.forwardRef<
       return null;
     }
 
-    // Check if ref is a function or an object and handle accordingly
-    const refCurrent = typeof ref === 'function' ? ref : ref.current;
-    if (!refCurrent) {
+    // Safely handle the ref
+    const refElement = ref as React.RefObject<HTMLDivElement>;
+    if (!refElement || typeof refElement === 'function') {
       return null;
     }
 
@@ -181,7 +181,7 @@ const ChartTooltipContent = React.forwardRef<
 
     return (
       <div
-        ref={ref}
+        ref={refElement}
         className={cn(
           "grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
           className
