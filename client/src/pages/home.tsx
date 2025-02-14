@@ -59,14 +59,15 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="min-h-[90vh] flex flex-col items-center justify-start pt-40 text-center max-w-3xl mx-auto"
+          className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
         >
-          <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed">
-            Each story here is a portal to the unexpected,
-            the unsettling, and the unexplained.
-          </p>
+          <div className="space-y-6 mb-12">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
+              Each story here is a portal to the unexpected,
+              the unsettling, and the unexplained.
+            </p>
 
-          <div className="grid gap-6 sm:grid-cols-2 w-full max-w-lg">
+            <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
             <Button
               size="lg"
               onClick={() => setLocation('/index')}

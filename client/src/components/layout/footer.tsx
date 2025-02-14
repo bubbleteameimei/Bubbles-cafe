@@ -3,9 +3,9 @@ import { SocialIcons } from "@/components/ui/social-icons";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-primary/10 backdrop-blur-sm bg-background/80">
+    <footer className="border-t border-primary/10 backdrop-blur-sm bg-background/60">
       <div className="container mx-auto px-4 py-1">
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1">
           <div className="flex justify-center w-full">
             <SocialIcons />
           </div>
