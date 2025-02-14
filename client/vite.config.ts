@@ -41,27 +41,25 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,ttf,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
-      },
     }),
   ],
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+    hmr: {
+      clientPort: 443,
+      host: process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co',
+      protocol: 'wss'
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true
+      }
+    }
+  },
   build: {
     outDir: path.resolve(__dirname, '../server/public'),
     emptyOutDir: true,
