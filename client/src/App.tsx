@@ -11,28 +11,17 @@ import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
 
-// Lazy load components with proper error handling
-const withLazyLoading = (importFn: () => Promise<{ default: React.ComponentType<any> }>) => {
-  const LazyComponent = React.lazy(importFn);
-  return (props: any) => (
-    <ErrorBoundary>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <LazyComponent {...props} />
-      </React.Suspense>
-    </ErrorBoundary>
-  );
-};
-
-const Home = withLazyLoading(() => import("./pages/home"));
-const Stories = withLazyLoading(() => import("./pages/stories"));
-const StoryView = withLazyLoading(() => import("./pages/story-view"));
-const About = withLazyLoading(() => import("./pages/about"));
-const Privacy = withLazyLoading(() => import("./pages/privacy"));
-const Contact = withLazyLoading(() => import("./pages/contact"));
-const Community = withLazyLoading(() => import("./pages/community"));
-const Auth = withLazyLoading(() => import("./pages/auth"));
-const Index = withLazyLoading(() => import("./pages/index"));
-const Reader = withLazyLoading(() => import("./pages/reader"));
+// Simple lazy loading
+const Home = React.lazy(() => import("./pages/home"));
+const Stories = React.lazy(() => import("./pages/stories"));
+const StoryView = React.lazy(() => import("./pages/story-view"));
+const About = React.lazy(() => import("./pages/about"));
+const Privacy = React.lazy(() => import("./pages/privacy"));
+const Contact = React.lazy(() => import("./pages/contact"));
+const Community = React.lazy(() => import("./pages/community"));
+const Auth = React.lazy(() => import("./pages/auth"));
+const Index = React.lazy(() => import("./pages/index"));
+const Reader = React.lazy(() => import("./pages/reader"));
 
 function App() {
   const [location] = useLocation();
@@ -54,9 +43,9 @@ function App() {
         <AuthProvider>
           <div className="relative min-h-screen bg-background text-foreground antialiased">
             <Navigation />
-            <ErrorBoundary> {/* Added ErrorBoundary here to catch errors within Suspense */}
-              <React.Suspense fallback={<LoadingScreen />}>
-                <main className={location === "/" ? "" : "pt-16"}>
+            <ErrorBoundary>
+              <main className={location === "/" ? "" : "pt-16"}>
+                <React.Suspense fallback={<LoadingScreen />}>
                   <Switch>
                     <Route path="/" component={Home} />
                     <Route path="/stories" component={Stories} />
