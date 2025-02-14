@@ -12,22 +12,35 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
 
 // Lazy load components with proper error handling
-const withErrorBoundary = (Component: React.ComponentType) => (props: any) => (
+// Lazy load components
+const Home = React.lazy(() => import("./pages/home"));
+const Stories = React.lazy(() => import("./pages/stories"));
+const StoryView = React.lazy(() => import("./pages/story-view"));
+const About = React.lazy(() => import("./pages/about"));
+const Privacy = React.lazy(() => import("./pages/privacy"));
+const Contact = React.lazy(() => import("./pages/contact"));
+const Community = React.lazy(() => import("./pages/community"));
+const Auth = React.lazy(() => import("./pages/auth"));
+const Index = React.lazy(() => import("./pages/index"));
+const Reader = React.lazy(() => import("./pages/reader"));
+
+// Wrap components with error boundary
+const withErrorBoundary = (Component: React.ComponentType<any>) => (props: any) => (
   <ErrorBoundary>
     <Component {...props} />
   </ErrorBoundary>
 );
 
-const Home = withErrorBoundary(React.lazy(() => import("./pages/home")));
-const Stories = withErrorBoundary(React.lazy(() => import("./pages/stories")));
-const StoryView = withErrorBoundary(React.lazy(() => import("./pages/story-view")));
-const About = withErrorBoundary(React.lazy(() => import("./pages/about")));
-const Privacy = withErrorBoundary(React.lazy(() => import("./pages/privacy")));
-const Contact = withErrorBoundary(React.lazy(() => import("./pages/contact")));
-const Community = withErrorBoundary(React.lazy(() => import("./pages/community")));
-const Auth = withErrorBoundary(React.lazy(() => import("./pages/auth")));
-const Index = withErrorBoundary(React.lazy(() => import("./pages/index")));
-const Reader = withErrorBoundary(React.lazy(() => import("./pages/reader")));
+const SafeHome = withErrorBoundary(Home);
+const SafeStories = withErrorBoundary(Stories);
+const SafeStoryView = withErrorBoundary(StoryView);
+const SafeAbout = withErrorBoundary(About);
+const SafePrivacy = withErrorBoundary(Privacy);
+const SafeContact = withErrorBoundary(Contact);
+const SafeCommunity = withErrorBoundary(Community);
+const SafeAuth = withErrorBoundary(Auth);
+const SafeIndex = withErrorBoundary(Index);
+const SafeReader = withErrorBoundary(Reader);
 
 function App() {
   const [location] = useLocation();
@@ -53,18 +66,18 @@ function App() {
               <React.Suspense fallback={<LoadingScreen />}>
                 <main className={location === "/" ? "" : "pt-16"}>
                   <Switch>
-                    <Route path="/" component={Home} />
-                    <Route path="/stories" component={Stories} />
-                    <Route path="/community" component={Community} />
+                    <Route path="/" component={SafeHome} />
+                    <Route path="/stories" component={SafeStories} />
+                    <Route path="/community" component={SafeCommunity} />
                     <Route path="/story/:slug">
-                      {params => <StoryView slug={params.slug} />}
+                      {params => <SafeStoryView slug={params.slug} />}
                     </Route>
-                    <Route path="/auth" component={Auth} />
-                    <Route path="/about" component={About} />
-                    <Route path="/contact" component={Contact} />
-                    <Route path="/privacy" component={Privacy} />
-                    <Route path="/index" component={Index} />
-                    <Route path="/reader" component={Reader} />
+                    <Route path="/auth" component={SafeAuth} />
+                    <Route path="/about" component={SafeAbout} />
+                    <Route path="/contact" component={SafeContact} />
+                    <Route path="/privacy" component={SafePrivacy} />
+                    <Route path="/index" component={SafeIndex} />
+                    <Route path="/reader" component={SafeReader} />
                     <Route>
                       {() => (
                         <div className="min-h-screen flex items-center justify-center bg-background">
