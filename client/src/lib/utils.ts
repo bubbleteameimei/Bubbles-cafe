@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import React, { type ComponentType, type ErrorInfo, type ReactNode } from "react";
-import { lazy, Suspense } from "react";
+import * as React from "react";
+import type { ComponentType } from "react";
 import type { RouteComponentProps } from "wouter";
 
 export function cn(...inputs: ClassValue[]) {
@@ -16,15 +16,14 @@ export type WithRouteProps<P = {}> = P & Partial<RouteComponentProps<RouteParams
 
 interface ErrorFallbackProps {
   error: Error;
-  errorInfo?: ErrorInfo;
+  errorInfo?: React.ErrorInfo;
 }
 
 interface LoadingFallbackProps {
   message?: string;
 }
 
-// Error fallback component as a function component
-const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo }) => {
+const ErrorFallbackComponent: React.FC<ErrorFallbackProps> = ({ error, errorInfo }) => {
   return (
     <div role="alert" className="flex flex-col items-center justify-center p-4 text-destructive">
       <p>{error.message}</p>
@@ -37,8 +36,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo }) => {
   );
 };
 
-// Loading fallback component as a function component
-const LoadingFallback: React.FC<LoadingFallbackProps> = ({ message = 'Loading...' }) => {
+const LoadingFallbackComponent: React.FC<LoadingFallbackProps> = ({ message = 'Loading...' }) => {
   return (
     <div role="status" className="flex items-center justify-center p-4">
       <div className="animate-pulse">{message}</div>
@@ -46,26 +44,30 @@ const LoadingFallback: React.FC<LoadingFallbackProps> = ({ message = 'Loading...
   );
 };
 
-export function createLazyComponent<P extends object>(
-  importFn: () => Promise<{ default: ComponentType<P> }>,
-): ComponentType<WithRouteProps<P>> {
-  const LazyComponent = lazy(async () => {
-    try {
-      return await importFn();
-    } catch (error) {
-      return {
-        default: () => <ErrorFallback error={error instanceof Error ? error : new Error('Failed to load component')} />
-      };
-    }
-  });
+export const ErrorFallback = React.memo(ErrorFallbackComponent);
+export const LoadingFallback = React.memo(LoadingFallbackComponent);
 
-  const WrappedComponent: React.FC<WithRouteProps<P>> = (props) => {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    );
-  };
+ErrorFallback.displayName = 'ErrorFallback';
+LoadingFallback.displayName = 'LoadingFallback';
+
+export function createLazyComponent<P extends object>(
+  importFn: () => Promise<{ default: ComponentType<P> }>
+): React.FC<WithRouteProps<P>> {
+  const LazyComponent = React.lazy(() =>
+    importFn().catch(error => ({
+      default: () => (
+        <ErrorFallback 
+          error={error instanceof Error ? error : new Error('Failed to load component')} 
+        />
+      )
+    }))
+  );
+
+  const WrappedComponent: React.FC<WithRouteProps<P>> = (props) => (
+    <React.Suspense fallback={<LoadingFallback />}>
+      <LazyComponent {...props} />
+    </React.Suspense>
+  );
 
   WrappedComponent.displayName = `LazyLoaded(${importFn.name || 'Component'})`;
   return WrappedComponent;

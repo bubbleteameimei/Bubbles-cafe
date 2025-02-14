@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedDatabase } from "./seed";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import helmet from "helmet";
@@ -53,7 +52,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
-// Enhanced rate limiting
+// Enhance the rate limiter configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -61,7 +60,10 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Count successful requests against the rate limit
-  keyGenerator: (req) => req.ip // Use IP address as the key
+  keyGenerator: (req) => {
+    const key = req.ip || req.headers['x-forwarded-for'] as string || '127.0.0.1';
+    return typeof key === 'string' ? key : key[0] || '127.0.0.1';
+  }
 });
 
 app.use(limiter);
@@ -178,14 +180,6 @@ async function startServer() {
       }
     }
 
-    // Seed database
-    try {
-      await seedDatabase();
-      log("Database seeded successfully!");
-    } catch (err) {
-      log(`Warning: Error seeding database: ${err}`);
-    }
-
     // Set up auth and routes
     log("Setting up authentication and routes...");
     setupAuth(app);
@@ -205,13 +199,26 @@ async function startServer() {
     const port = await findAvailablePort();
 
     return new Promise<void>((resolve, reject) => {
-      server?.listen(port, "0.0.0.0", () => {
-        log(`Server started successfully on port ${port}`);
-        if (process.send) {
-          process.send('ready');
-          process.send({ port });
+      server?.listen(port, "0.0.0.0", async () => {
+        try {
+          const startupMessage = `Server started successfully on port ${port}`;
+          log(startupMessage);
+
+          // Log additional startup information
+          log(`Server environment: ${app.get('env')}`);
+          log(`Database connected: true`);
+          log(`Server URL: http://0.0.0.0:${port}`);
+
+          // Notify parent process about readiness and port
+          if (process.send) {
+            process.send('ready');
+            process.send({ port });
+          }
+
+          resolve();
+        } catch (error) {
+          reject(error);
         }
-        resolve();
       }).on('error', (error: Error) => {
         log(`Failed to start server: ${error.message}`);
         reject(error);
@@ -219,7 +226,15 @@ async function startServer() {
     });
 
   } catch (error) {
-    log(`Critical server error: ${error instanceof Error ? error.message : String(error)}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log(`Critical server error: ${errorMessage}`);
+
+    // Ensure the error is properly propagated
+    if (process.send) {
+      process.send('error');
+      process.send({ error: errorMessage });
+    }
+
     process.exit(1);
   }
 }
