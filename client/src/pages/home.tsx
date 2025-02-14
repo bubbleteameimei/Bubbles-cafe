@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
@@ -68,49 +69,50 @@ export default function Home() {
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
-            <Button
-              size="lg"
-              onClick={() => setLocation('/index')}
-              className="text-lg h-14"
-            >
-              Browse Stories
-              <Book className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              onClick={() => setLocation('/reader')}
-              className="text-lg h-14"
-            >
-              Start Reading
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-
-          {posts && posts.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="mt-24 text-center"
-            >
-              <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide">Latest Story</p>
-              <h2 
-                className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                onClick={() => navigateToStory(posts[0].id)}
+              <Button
+                size="lg"
+                onClick={() => setLocation('/index')}
+                className="text-lg h-14"
               >
-                {posts[0].title}
-              </h2>
-              <p className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4">
-                {posts[0].excerpt}
-              </p>
-              <div className="text-sm text-muted-foreground">
-                {posts[0].createdAt && formatDate(posts[0].createdAt)}
-              </div>
-            </motion.div>
-          )}
+                Browse Stories
+                <Book className="ml-2 h-5 w-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => setLocation('/reader')}
+                className="text-lg h-14"
+              >
+                Start Reading
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+
+            {posts && posts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="mt-24 text-center"
+              >
+                <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide">Latest Story</p>
+                <h2 
+                  className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                  onClick={() => navigateToStory(posts[0].id)}
+                >
+                  {posts[0].title}
+                </h2>
+                <p className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4">
+                  {posts[0].excerpt}
+                </p>
+                <div className="text-sm text-muted-foreground">
+                  {posts[0].createdAt && formatDate(posts[0].createdAt)}
+                </div>
+              </motion.div>
+            )}
+          </div>
         </motion.div>
-        </div>
       </div>
+    </div>
   );
 }
