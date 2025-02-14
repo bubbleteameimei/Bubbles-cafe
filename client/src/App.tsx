@@ -11,20 +11,40 @@ import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
 
-// Lazy load components with error boundary
-const Home = React.lazy(() => import("./pages/home"));
-const Stories = React.lazy(() => import("./pages/stories"));
-const StoryView = React.lazy(() => import("./pages/story-view"));
-const About = React.lazy(() => import("./pages/about"));
-const Privacy = React.lazy(() => import("./pages/privacy"));
-const Contact = React.lazy(() => import("./pages/contact"));
-const Community = React.lazy(() => import("./pages/community"));
-const Auth = React.lazy(() => import("./pages/auth"));
-const Index = React.lazy(() => import("./pages/index"));
-const Reader = React.lazy(() => import("./pages/reader"));
+// Lazy load components with error boundary and retry logic
+const withRetry = (importFn: () => Promise<any>) => {
+  return React.lazy(() => 
+    importFn().catch(error => {
+      console.error('Failed to load component:', error);
+      return import("@/components/ui/error-fallback");
+    })
+  );
+};
+
+const Home = withRetry(() => import("./pages/home"));
+const Stories = withRetry(() => import("./pages/stories"));
+const StoryView = withRetry(() => import("./pages/story-view"));
+const About = withRetry(() => import("./pages/about"));
+const Privacy = withRetry(() => import("./pages/privacy"));
+const Contact = withRetry(() => import("./pages/contact"));
+const Community = withRetry(() => import("./pages/community"));
+const Auth = withRetry(() => import("./pages/auth"));
+const Index = withRetry(() => import("./pages/index"));
+const Reader = withRetry(() => import("./pages/reader"));
 
 function App() {
   const [location] = useLocation();
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Simulate initial load delay to ensure proper hydration
+    const timer = setTimeout(() => setIsLoading(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

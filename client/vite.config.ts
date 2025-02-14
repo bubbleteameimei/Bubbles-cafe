@@ -1,69 +1,32 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
-import runtimeErrorModalPlugin from "@replit/vite-plugin-runtime-error-modal";
-import shadcnThemeJsonPlugin from "@replit/vite-plugin-shadcn-theme-json";
-import { VitePWA } from 'vite-plugin-pwa';
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import path, { dirname } from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 export default defineConfig({
-  root: __dirname,
-  publicDir: path.resolve(__dirname, 'public'),
-  base: '/',
-  plugins: [
-    react(),
-    runtimeErrorModalPlugin(),
-    shadcnThemeJsonPlugin(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
-      manifest: {
-        name: "Bubble's Cafe - Horror Stories",
-        short_name: "Horror Stories",
-        description: "A horror-themed blog platform with advanced customization capabilities",
-        theme_color: '#000000',
-        background_color: '#ffffff',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-        ],
-      },
-    }),
-  ],
+  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+    },
+  },
   server: {
-    port: 3000,
+    port: 5000,
     host: '0.0.0.0',
     hmr: {
       clientPort: 443,
       host: process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co',
       protocol: 'wss'
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-        ws: true
-      }
     }
   },
   build: {
-    outDir: path.resolve(__dirname, '../server/public'),
+    outDir: path.resolve(__dirname, "../dist/public"),
     emptyOutDir: true,
-    copyPublicDir: true,
     assetsDir: 'assets',
     rollupOptions: {
       input: {
@@ -83,11 +46,5 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 1000,
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "../shared"),
-    },
   },
 });
