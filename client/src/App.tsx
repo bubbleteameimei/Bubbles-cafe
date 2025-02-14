@@ -73,8 +73,8 @@ function App() {
                       )}
                     </Route>
                   </Switch>
+                </React.Suspense>
                 </main>
-              </React.Suspense>
             </ErrorBoundary>
             <Footer />
             <CookieConsent />
