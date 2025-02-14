@@ -28,13 +28,16 @@ function App() {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    // Simulate initial load delay to ensure proper hydration
-    const timer = setTimeout(() => setIsLoading(false), 100);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
     return <LoadingScreen />;
+  }
+
+  if (typeof window === 'undefined') {
+    return null;
   }
 
   return (
