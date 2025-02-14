@@ -53,7 +53,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background bg-[url('/assets/homepage-bg.jpeg')] bg-cover bg-center bg-no-repeat">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
