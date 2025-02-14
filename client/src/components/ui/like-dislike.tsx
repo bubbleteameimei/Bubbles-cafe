@@ -30,58 +30,21 @@ export function LikeDislike({
     dislikes: initialDislikes
   });
 
-  // Load persisted stats on mount
-  useEffect(() => {
-    const storageKey = `post-stats-${postId}`;
-    const storedStats = localStorage.getItem(storageKey);
-    if (storedStats) {
-      const stats = JSON.parse(storedStats);
-      setCounts(stats);
-    }
-  }, [postId]);
-
-  const updateLocalStorage = (newCounts: { likes: number, dislikes: number }) => {
-    const storageKey = `post-stats-${postId}`;
-    localStorage.setItem(storageKey, JSON.stringify(newCounts));
-  };
-
   const likeMutation = useMutation({
     mutationFn: async (isLike: boolean) => {
-      const storageKey = `post-stats-${postId}`;
-      const currentStats = JSON.parse(localStorage.getItem(storageKey) || JSON.stringify(counts));
+      const response = await fetch(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isLike })
+      });
 
-      let newStats = { ...currentStats };
-      if (isLike) {
-        if (liked) {
-          newStats.likes = Math.max(0, newStats.likes - 1);
-        } else {
-          if (newStats.likes >= 150) {
-            throw new Error("Maximum likes reached");
-          }
-          newStats.likes = Math.min(150, newStats.likes + 1);
-          if (disliked) {
-            newStats.dislikes = Math.max(0, newStats.dislikes - 1);
-          }
-        }
-      } else {
-        if (disliked) {
-          newStats.dislikes = Math.max(0, newStats.dislikes - 1);
-        } else {
-          if (newStats.dislikes >= 15) {
-            throw new Error("Maximum dislikes reached");
-          }
-          newStats.dislikes = Math.min(15, newStats.dislikes + 1);
-          if (liked) {
-            newStats.likes = Math.max(0, newStats.likes - 1);
-          }
-        }
+      if (!response.ok) {
+        throw new Error('Failed to update like status');
       }
 
-      updateLocalStorage(newStats);
-      return newStats;
+      return response.json();
     },
-    onSuccess: (newStats) => {
-      setCounts(newStats);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
     },
     onError: (error: Error) => {
@@ -94,28 +57,17 @@ export function LikeDislike({
   });
 
   const handleLike = async () => {
-    if (counts.likes >= 150 && !liked) {
-      toast({
-        title: "Maximum likes reached",
-        description: "This post has reached its maximum number of likes.",
-        variant: "default"
-      });
-      return;
-    }
-
     if (liked) {
+      // Remove like
       setLiked(false);
-      setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
+      setCounts(prev => ({ ...prev, likes: prev.likes - 1 }));
     } else {
+      // Add like
       setLiked(true);
+      setCounts(prev => ({ ...prev, likes: prev.likes + 1 }));
       if (disliked) {
         setDisliked(false);
-        setCounts(prev => ({ 
-          likes: prev.likes + 1,
-          dislikes: Math.max(0, prev.dislikes - 1)
-        }));
-      } else {
-        setCounts(prev => ({ ...prev, likes: prev.likes + 1 }));
+        setCounts(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
       }
     }
 
@@ -125,34 +77,26 @@ export function LikeDislike({
     } catch (error) {
       // Revert on error
       setLiked(!liked);
-      setCounts(prev => ({ ...prev, likes: liked ? prev.likes + 1 : Math.max(0, prev.likes - 1) }));
-      if (disliked) setDisliked(true);
+      setCounts(prev => ({
+        ...prev,
+        likes: liked ? prev.likes + 1 : prev.likes - 1,
+        dislikes: disliked ? prev.dislikes + 1 : prev.dislikes
+      }));
     }
   };
 
   const handleDislike = async () => {
-    if (counts.dislikes >= 15 && !disliked) {
-      toast({
-        title: "Maximum dislikes reached",
-        description: "This post has reached its maximum number of dislikes.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (disliked) {
+      // Remove dislike
       setDisliked(false);
-      setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
+      setCounts(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
     } else {
+      // Add dislike
       setDisliked(true);
+      setCounts(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
       if (liked) {
         setLiked(false);
-        setCounts(prev => ({ 
-          dislikes: prev.dislikes + 1,
-          likes: Math.max(0, prev.likes - 1)
-        }));
-      } else {
-        setCounts(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
+        setCounts(prev => ({ ...prev, likes: prev.likes - 1 }));
       }
     }
 
@@ -162,8 +106,11 @@ export function LikeDislike({
     } catch (error) {
       // Revert on error
       setDisliked(!disliked);
-      setCounts(prev => ({ ...prev, dislikes: disliked ? prev.dislikes + 1 : Math.max(0, prev.dislikes - 1) }));
-      if (liked) setLiked(true);
+      setCounts(prev => ({
+        ...prev,
+        dislikes: disliked ? prev.dislikes + 1 : prev.dislikes - 1,
+        likes: liked ? prev.likes + 1 : prev.likes
+      }));
     }
   };
 
@@ -176,7 +123,7 @@ export function LikeDislike({
         className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
         } pointer-events-auto`}
-        disabled={likeMutation.isPending || (counts.likes >= 150 && !liked)}
+        disabled={likeMutation.isPending}
       >
         <ThumbsUp className={`h-4 w-4 transition-transform group-hover:scale-110 ${
           liked ? 'text-primary' : 'text-muted-foreground'
@@ -184,9 +131,6 @@ export function LikeDislike({
         <span className={`text-sm ${
           liked ? 'text-primary' : 'text-muted-foreground'
         }`}>{counts.likes}</span>
-        {liked && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-primary/50" />
-        )}
       </Button>
 
       <Button
@@ -196,7 +140,7 @@ export function LikeDislike({
         className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
         } pointer-events-auto`}
-        disabled={likeMutation.isPending || (counts.dislikes >= 15 && !disliked)}
+        disabled={likeMutation.isPending}
       >
         <ThumbsDown className={`h-4 w-4 transition-transform group-hover:scale-110 ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
@@ -204,9 +148,6 @@ export function LikeDislike({
         <span className={`text-sm ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
         }`}>{counts.dislikes}</span>
-        {disliked && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 animate-ping rounded-full bg-destructive/50" />
-        )}
       </Button>
     </div>
   );
