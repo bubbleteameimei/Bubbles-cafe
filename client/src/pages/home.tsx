@@ -110,7 +110,7 @@ export default function Home() {
             </motion.div>
           )}
         </motion.div>
+        </div>
       </div>
-    </div>
   );
 }
