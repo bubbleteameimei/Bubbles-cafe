@@ -103,15 +103,29 @@ export function LikeDislike({
       return;
     }
 
-    const newLiked = !liked;
-    setLiked(newLiked);
-    if (disliked) setDisliked(false);
+    if (liked) {
+      setLiked(false);
+      setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
+    } else {
+      setLiked(true);
+      if (disliked) {
+        setDisliked(false);
+        setCounts(prev => ({ 
+          likes: prev.likes + 1,
+          dislikes: Math.max(0, prev.dislikes - 1)
+        }));
+      } else {
+        setCounts(prev => ({ ...prev, likes: prev.likes + 1 }));
+      }
+    }
 
     try {
       await likeMutation.mutateAsync(true);
-      onLike?.(newLiked);
+      onLike?.(liked);
     } catch (error) {
-      setLiked(!newLiked);
+      // Revert on error
+      setLiked(!liked);
+      setCounts(prev => ({ ...prev, likes: liked ? prev.likes + 1 : Math.max(0, prev.likes - 1) }));
       if (disliked) setDisliked(true);
     }
   };
@@ -126,15 +140,29 @@ export function LikeDislike({
       return;
     }
 
-    const newDisliked = !disliked;
-    setDisliked(newDisliked);
-    if (liked) setLiked(false);
+    if (disliked) {
+      setDisliked(false);
+      setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
+    } else {
+      setDisliked(true);
+      if (liked) {
+        setLiked(false);
+        setCounts(prev => ({ 
+          dislikes: prev.dislikes + 1,
+          likes: Math.max(0, prev.likes - 1)
+        }));
+      } else {
+        setCounts(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
+      }
+    }
 
     try {
       await likeMutation.mutateAsync(false);
-      onDislike?.(newDisliked);
+      onDislike?.(disliked);
     } catch (error) {
-      setDisliked(!newDisliked);
+      // Revert on error
+      setDisliked(!disliked);
+      setCounts(prev => ({ ...prev, dislikes: disliked ? prev.dislikes + 1 : Math.max(0, prev.dislikes - 1) }));
       if (liked) setLiked(true);
     }
   };

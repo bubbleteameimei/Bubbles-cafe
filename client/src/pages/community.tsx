@@ -25,7 +25,7 @@ export default function CommunityPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
       </div>
     );
   }

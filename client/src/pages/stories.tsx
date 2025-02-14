@@ -74,7 +74,7 @@ export default function Stories() {
     );
   }
 
-  const posts = data.pages.flatMap(page => page?.posts || []);
+  const posts = data?.pages?.flatMap(page => page?.posts || []) || [];
 
   if (!posts.length) {
     return (
