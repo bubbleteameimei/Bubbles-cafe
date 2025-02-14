@@ -14,6 +14,7 @@ export type RouteParams = Record<string, string | undefined>;
 // Type for components that can receive route props
 export type WithRouteProps<P = {}> = P & Partial<RouteComponentProps<RouteParams>>;
 
+// Props interfaces
 interface ErrorFallbackProps {
   error: Error;
   errorInfo?: React.ErrorInfo;
@@ -23,51 +24,68 @@ interface LoadingFallbackProps {
   message?: string;
 }
 
-const ErrorFallbackComponent: React.FC<ErrorFallbackProps> = ({ error, errorInfo }) => {
-  return (
-    <div role="alert" className="flex flex-col items-center justify-center p-4 text-destructive">
-      <p>{error.message}</p>
-      {errorInfo && process.env.NODE_ENV === 'development' && (
-        <pre className="mt-2 text-xs overflow-auto max-h-40">
-          {errorInfo.componentStack}
-        </pre>
-      )}
-    </div>
+// Error fallback component
+const ErrorFallbackComponent = React.memo(function ErrorFallback({ 
+  error, 
+  errorInfo 
+}: ErrorFallbackProps) {
+  return React.createElement(
+    "div",
+    {
+      role: "alert",
+      className: "flex flex-col items-center justify-center p-4 text-destructive"
+    },
+    React.createElement("p", null, error.message),
+    errorInfo && process.env.NODE_ENV === 'development' && 
+      React.createElement(
+        "pre",
+        { className: "mt-2 text-xs overflow-auto max-h-40" },
+        errorInfo.componentStack
+      )
   );
-};
+});
 
-const LoadingFallbackComponent: React.FC<LoadingFallbackProps> = ({ message = 'Loading...' }) => {
-  return (
-    <div role="status" className="flex items-center justify-center p-4">
-      <div className="animate-pulse">{message}</div>
-    </div>
+// Loading fallback component
+const LoadingFallbackComponent = React.memo(function LoadingFallback({ 
+  message = 'Loading...' 
+}: LoadingFallbackProps) {
+  return React.createElement(
+    "div",
+    {
+      role: "status",
+      className: "flex items-center justify-center p-4"
+    },
+    React.createElement(
+      "div",
+      { className: "animate-pulse" },
+      message
+    )
   );
-};
+});
 
-export const ErrorFallback = React.memo(ErrorFallbackComponent);
-export const LoadingFallback = React.memo(LoadingFallbackComponent);
+// Export components
+export const ErrorFallback = ErrorFallbackComponent;
+export const LoadingFallback = LoadingFallbackComponent;
 
-ErrorFallback.displayName = 'ErrorFallback';
-LoadingFallback.displayName = 'LoadingFallback';
-
+// Create lazy-loaded component with error boundary
 export function createLazyComponent<P extends object>(
   importFn: () => Promise<{ default: ComponentType<P> }>
 ): React.FC<WithRouteProps<P>> {
   const LazyComponent = React.lazy(() =>
     importFn().catch(error => ({
-      default: () => (
-        <ErrorFallback 
-          error={error instanceof Error ? error : new Error('Failed to load component')} 
-        />
-      )
+      default: () => React.createElement(ErrorFallback, {
+        error: error instanceof Error ? error : new Error('Failed to load component')
+      })
     }))
   );
 
-  const WrappedComponent: React.FC<WithRouteProps<P>> = (props) => (
-    <React.Suspense fallback={<LoadingFallback />}>
-      <LazyComponent {...props} />
-    </React.Suspense>
-  );
+  const WrappedComponent: React.FC<WithRouteProps<P>> = (props) => {
+    return React.createElement(
+      React.Suspense,
+      { fallback: React.createElement(LoadingFallback) },
+      React.createElement(LazyComponent, { ...props } as any)
+    );
+  };
 
   WrappedComponent.displayName = `LazyLoaded(${importFn.name || 'Component'})`;
   return WrappedComponent;

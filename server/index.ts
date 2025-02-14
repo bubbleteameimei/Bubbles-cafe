@@ -12,16 +12,15 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 
 const app = express();
-const BASE_PORT = Number(process.env.PORT) || 3000;
-const MAX_PORT = BASE_PORT + 10;
+const PORT = parseInt(process.env.PORT || "5000", 10);
 
 // Set trust proxy first
 app.set('trust proxy', 1);
 
-// Enable Gzip compression with enhanced options
+// Enable Gzip compression
 app.use(compression({
-  level: 6, // Higher compression level
-  threshold: 1024, // Only compress responses bigger than 1KB
+  level: 6,
+  threshold: 1024,
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
       return false;
@@ -30,7 +29,7 @@ app.use(compression({
   }
 }));
 
-// Enhanced security headers
+// Security headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -52,17 +51,16 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "same-site" }
 }));
 
-// Enhance the rate limiter configuration
+// Rate limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false, // Count successful requests against the rate limit
+  skipSuccessfulRequests: false,
   keyGenerator: (req) => {
-    const key = req.ip || req.headers['x-forwarded-for'] as string || '127.0.0.1';
-    return typeof key === 'string' ? key : key[0] || '127.0.0.1';
+    return req.ip || req.headers['x-forwarded-for']?.toString() || '127.0.0.1';
   }
 });
 
@@ -70,7 +68,7 @@ app.use(limiter);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-// Enhanced session configuration
+// Session configuration
 const PostgresSession = connectPgSimple(session);
 const sessionConfig = {
   store: new PostgresSession({
@@ -81,13 +79,13 @@ const sessionConfig = {
     createTableIfMissing: true,
     pruneSessionInterval: 60
   }),
-  secret: process.env.SESSION_SECRET || process.env.REPLIT_ID || 'development-secret',
+  secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 24 * 60 * 60 * 1000,
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   },
   name: 'horror.session'
@@ -107,7 +105,7 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Enhanced API request logging
+// API request logging
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     const start = Date.now();
@@ -131,40 +129,14 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
   });
 }
 
-let server: ReturnType<typeof registerRoutes> | null = null;
+let server: ReturnType<typeof registerRoutes>;
 
-// Check if a port is available
-async function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const testServer = createServer();
-    testServer.once('error', () => {
-      resolve(false);
-    });
-    testServer.once('listening', () => {
-      testServer.close();
-      resolve(true);
-    });
-    testServer.listen(port, '0.0.0.0');
-  });
-}
-
-async function findAvailablePort(): Promise<number> {
-  let currentPort = BASE_PORT;
-  while (currentPort <= MAX_PORT) {
-    log(`Checking port ${currentPort}...`);
-    if (await isPortAvailable(currentPort)) {
-      return currentPort;
-    }
-    currentPort++;
-  }
-  throw new Error('No available ports found');
-}
-
+// Start server with port binding
 async function startServer() {
   try {
     log("Starting server initialization...");
 
-    // Verify database connection with retry logic
+    // Verify database connection
     log("Verifying database connection...");
     let retries = 5;
     while (retries > 0) {
@@ -187,7 +159,7 @@ async function startServer() {
     app.use(errorHandler);
 
     // Set up Vite or static serving
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV === "development") {
       log("Setting up Vite development server...");
       await setupVite(app, server);
     } else {
@@ -195,91 +167,82 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Find available port and start server
-    const port = await findAvailablePort();
-
+    // Start server with port binding
     return new Promise<void>((resolve, reject) => {
-      server?.listen(port, "0.0.0.0", async () => {
-        try {
-          const startupMessage = `Server started successfully on port ${port}`;
-          log(startupMessage);
+      const httpServer = server.listen(PORT, "0.0.0.0", () => {
+        log(`Server started successfully on port ${PORT}`);
 
-          // Log additional startup information
-          log(`Server environment: ${app.get('env')}`);
-          log(`Database connected: true`);
-          log(`Server URL: http://0.0.0.0:${port}`);
+        // Notify the workflow system that we're ready
+        if (process.send) {
+          process.send('ready');
+          process.send({ port: PORT });
+        }
 
-          // Notify parent process about readiness and port
-          if (process.send) {
-            process.send('ready');
-            process.send({ port });
-          }
+        resolve();
+      });
 
-          resolve();
-        } catch (error) {
+      httpServer.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'EADDRINUSE') {
+          log(`Port ${PORT} is already in use`);
+          reject(new Error(`Port ${PORT} is already in use`));
+        } else {
+          log(`Failed to start server: ${error.message}`);
           reject(error);
         }
-      }).on('error', (error: Error) => {
-        log(`Failed to start server: ${error.message}`);
-        reject(error);
+      });
+
+      // Add proper shutdown handling
+      httpServer.on('close', () => {
+        log('Server closed');
       });
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     log(`Critical server error: ${errorMessage}`);
 
-    // Ensure the error is properly propagated
     if (process.send) {
       process.send('error');
       process.send({ error: errorMessage });
     }
 
-    process.exit(1);
+    throw error;
   }
 }
 
 // Graceful shutdown handler
-function gracefulShutdown(signal: string) {
-  return () => {
-    log(`Received ${signal}. Starting graceful shutdown...`);
-    if (server) {
-      server.close(() => {
-        log('Server closed');
-        process.exit(0);
-      });
-
-      // Force close after timeout
-      setTimeout(() => {
-        log('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-      }, 10000);
-    } else {
+function handleShutdown(signal: string) {
+  log(`Received ${signal}. Starting graceful shutdown...`);
+  if (server) {
+    server.close(() => {
+      log('Server closed');
       process.exit(0);
-    }
-  };
+    });
+
+    // Force shutdown after timeout
+    setTimeout(() => {
+      log('Could not close connections in time, forcefully shutting down');
+      process.exit(1);
+    }, 10000);
+  } else {
+    process.exit(0);
+  }
 }
 
-// Error handlers and graceful shutdown
-process.on('SIGTERM', gracefulShutdown('SIGTERM'));
-process.on('SIGINT', gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));
 
 process.on('uncaughtException', (error) => {
   log(`Uncaught Exception: ${error.message}`);
-  if (server) {
-    server.close(() => process.exit(1));
-  } else {
-    process.exit(1);
-  }
+  handleShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (error) => {
   log(`Unhandled Rejection: ${error instanceof Error ? error.message : String(error)}`);
-  if (server) {
-    server.close(() => process.exit(1));
-  } else {
-    process.exit(1);
-  }
+  handleShutdown('unhandledRejection');
 });
 
-startServer();
+// Start the server
+startServer().catch((error) => {
+  log(`Failed to start server: ${error.message}`);
+  process.exit(1);
+});

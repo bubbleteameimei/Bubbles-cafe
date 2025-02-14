@@ -6,6 +6,7 @@ import shadcnThemeJsonPlugin from "@replit/vite-plugin-shadcn-theme-json";
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  root: __dirname,
   plugins: [
     react(),
     runtimeErrorModalPlugin(),
@@ -64,13 +65,10 @@ export default defineConfig({
     port: 5000,
     strictPort: true,
   },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "../shared"),
-    },
-  },
   build: {
+    outDir: path.resolve(__dirname, '../server/public'),
+    emptyOutDir: true,
+    copyPublicDir: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -86,5 +84,11 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 1000,
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+    },
   },
 });
