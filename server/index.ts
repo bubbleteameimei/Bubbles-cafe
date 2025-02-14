@@ -10,6 +10,11 @@ import { setupAuth } from "./auth";
 import { createServer } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "5000", 10);
@@ -29,7 +34,7 @@ app.use(compression({
   }
 }));
 
-// Security headers
+// Security headers with updated CSP for static assets
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -49,6 +54,13 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "same-site" }
+}));
+
+// Static file serving with proper caching
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  etag: true,
+  lastModified: true,
 }));
 
 // Rate limiter
@@ -131,64 +143,61 @@ function errorHandler(err: any, _req: Request, res: Response, _next: NextFunctio
 
 let server: ReturnType<typeof registerRoutes>;
 
+function getAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.listen(startPort, '0.0.0.0', () => {
+      const { port } = server.address() as { port: number };
+      server.close(() => resolve(port));
+    });
+    server.on('error', () => {
+      resolve(getAvailablePort(startPort + 1));
+    });
+  });
+}
+
+// Set up auth and routes
+setupAuth(app);
+server = registerRoutes(app);
+app.use(errorHandler);
+
+
+// Fallback route for SPA
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Start server with port binding
 async function startServer() {
   try {
     log("Starting server initialization...");
 
-    // Verify database connection
-    log("Verifying database connection...");
-    let retries = 5;
-    while (retries > 0) {
-      try {
-        await db.execute(sql`SELECT 1`);
-        log("Database connection verified successfully");
-        break;
-      } catch (err) {
-        retries--;
-        if (retries === 0) throw err;
-        log(`Database connection failed, retrying... (${retries} attempts left)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-
-    // Set up auth and routes
-    log("Setting up authentication and routes...");
-    setupAuth(app);
-    server = registerRoutes(app);
-    app.use(errorHandler);
-
-    // Set up Vite or static serving
-    if (process.env.NODE_ENV === "development") {
-      log("Setting up Vite development server...");
-      await setupVite(app, server);
-    } else {
-      log("Setting up static file serving...");
-      serveStatic(app);
+    // Get available port
+    const port = await getAvailablePort(PORT);
+    if (port !== PORT) {
+      log(`Port ${PORT} was in use, using port ${port} instead`);
     }
 
     // Start server with port binding
     return new Promise<void>((resolve, reject) => {
-      const httpServer = server.listen(PORT, "0.0.0.0", () => {
-        log(`Server started successfully on port ${PORT}`);
+      const httpServer = server.listen(port, "0.0.0.0", () => {
+        log(`Server started successfully on port ${port}`);
 
         // Notify the workflow system that we're ready
         if (process.send) {
           process.send('ready');
-          process.send({ port: PORT });
+          process.send({ port });
         }
 
         resolve();
       });
 
       httpServer.on('error', (error: NodeJS.ErrnoException) => {
-        if (error.code === 'EADDRINUSE') {
-          log(`Port ${PORT} is already in use`);
-          reject(new Error(`Port ${PORT} is already in use`));
-        } else {
-          log(`Failed to start server: ${error.message}`);
-          reject(error);
-        }
+        log(`Failed to start server: ${error.message}`);
+        reject(error);
       });
 
       // Add proper shutdown handling

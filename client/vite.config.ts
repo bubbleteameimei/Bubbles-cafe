@@ -7,6 +7,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   root: __dirname,
+  publicDir: path.resolve(__dirname, 'public'),
+  base: '/',
   plugins: [
     react(),
     runtimeErrorModalPlugin(),
@@ -60,16 +62,15 @@ export default defineConfig({
       },
     }),
   ],
-  server: {
-    host: "0.0.0.0",
-    port: 5000,
-    strictPort: true,
-  },
   build: {
     outDir: path.resolve(__dirname, '../server/public'),
     emptyOutDir: true,
     copyPublicDir: true,
+    assetsDir: 'assets',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html')
+      },
       output: {
         manualChunks: {
           vendor: [
