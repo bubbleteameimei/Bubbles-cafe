@@ -31,7 +31,7 @@ localPort = 5002
 externalPort = 3001
 
 [workflows]
-runButton = "Dev"
+runButton = "Start application"
 
 [[workflows.workflow]]
 name = "Project"
@@ -51,7 +51,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "cd client && npm run dev"
 
 [[workflows.workflow]]
 name = "Dev"
