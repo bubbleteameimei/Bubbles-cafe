@@ -9,6 +9,7 @@ import Footer from "./components/layout/footer";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
 
 // Enhanced lazy loading with retry mechanism and proper error handling
 const lazyLoad = (importFn: () => Promise<{ default: React.ComponentType<any> }>) => {
@@ -85,6 +86,7 @@ function App() {
             </main>
             <Footer />
             <CookieConsent />
+            <AtmosphericEffects />
             <Toaster />
           </div>
         </AuthProvider>

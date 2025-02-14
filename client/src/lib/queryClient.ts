@@ -1,17 +1,39 @@
 import { QueryClient } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+// Custom error types for better error handling
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public data?: unknown
+  ) {
+    super(message);
+    this.name = 'APIError';
   }
 }
 
-export async function apiRequest(
+async function throwIfResNotOk(res: Response) {
+  if (!res.ok) {
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+    throw new APIError(
+      `${res.status}: ${text || res.statusText}`,
+      res.status,
+      data
+    );
+  }
+}
+
+export async function apiRequest<T = unknown>(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<T> {
   try {
     const res = await fetch(url, {
       method,
@@ -25,7 +47,7 @@ export async function apiRequest(
     });
 
     await throwIfResNotOk(res);
-    return res;
+    return res.json();
   } catch (error) {
     console.error(`API Request failed (${method} ${url}):`, error);
     throw error;
@@ -36,13 +58,15 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        if (error instanceof Error) {
+        if (error instanceof APIError) {
           // Don't retry auth errors
-          if (error.message.includes('401')) return false;
+          if (error.status === 401) return false;
           // Don't retry forbidden requests
-          if (error.message.includes('403')) return false;
+          if (error.status === 403) return false;
           // Don't retry not found
-          if (error.message.includes('404')) return false;
+          if (error.status === 404) return false;
+          // Don't retry validation errors
+          if (error.status === 422) return false;
         }
         return failureCount < 2; // Only retry twice for other errors
       },
@@ -58,8 +82,8 @@ export const queryClient = new QueryClient({
       networkMode: 'online',
       onError: (error) => {
         console.error('Mutation error:', error);
-        // Handle authentication errors globally
-        if (error instanceof Error && error.message.includes('401')) {
+        if (error instanceof APIError && error.status === 401) {
+          // Handle authentication errors globally
           window.location.href = "/auth";
         }
       },

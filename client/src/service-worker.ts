@@ -5,6 +5,17 @@ import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
+// Extend ServiceWorkerGlobalScope to include skipWaiting
+declare global {
+  interface ServiceWorkerGlobalScope {
+    skipWaiting(): Promise<void>;
+    __WB_MANIFEST: Array<{
+      revision: string | null;
+      url: string;
+    }>;
+  }
+}
+
 declare const self: ServiceWorkerGlobalScope;
 
 // Take control of all pages immediately

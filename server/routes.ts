@@ -131,8 +131,8 @@ export function registerRoutes(app: Express): Server {
 
       const result = await storage.getPosts(page, limit);
       const posts = filter === 'community'
-        ? result.posts.filter(post => 'metadata' in post && post.metadata?.isCommunityPost && post.metadata?.isApproved)
-        : result.posts.filter(post => !('metadata' in post) || !post.metadata?.isCommunityPost);
+        ? result.posts.filter(post => post.metadata && post.metadata.isCommunityPost && post.metadata.isApproved)
+        : result.posts.filter(post => !post.metadata || !post.metadata.isCommunityPost);
 
       // Set ETag for caching
       const etag = crypto
@@ -338,36 +338,39 @@ export function registerRoutes(app: Express): Server {
       let emailSent = false;
       try {
         console.log('Attempting to send email notification...');
-        await transporter.sendMail({
-          from: 'vantalison@gmail.com',
-          to: 'vantalison@gmail.com',
-          subject: `New Contact Form Message from ${name}`,
-          text: `
+        const emailBody = `
 New message received from your horror blog contact form:
 
 Sender Details:
 --------------
 Name: ${name}
-Email: ${showEmail ? email : '(Email hidden by sender preference)'}
+Email: ${email}
 
 Message Content:
 ---------------
 ${message}
 
 Timestamp: ${new Date().toLocaleString()}
-          `,
-          html: `
-          <h2>New message received from your horror blog contact form</h2>
+`;
 
-          <h3>Sender Details:</h3>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${showEmail ? email : '<em>(Email hidden by sender preference)</em>'}</p>
+        const emailHtml = `
+<h2>New message received from your horror blog contact form</h2>
 
-          <h3>Message Content:</h3>
-          <p style="white-space: pre-wrap;">${message}</p>
+<h3>Sender Details:</h3>
+<p><strong>Name:</strong> ${name}</p>
+<p><strong>Email:</strong> ${email}</p>
 
-          <p><small>Received at: ${new Date().toLocaleString()}</small></p>
-          `
+<h3>Message Content:</h3>
+<p style="white-space: pre-wrap;">${message}</p>
+
+<p><small>Received at: ${new Date().toLocaleString()}</small></p>
+`;
+        await transporter.sendMail({
+          from: 'vantalison@gmail.com',
+          to: 'vantalison@gmail.com',
+          subject: `New Contact Form Message from ${name}`,
+          text: emailBody,
+          html: emailHtml
         });
         emailSent = true;
         console.log('Email notification sent successfully');
@@ -499,7 +502,9 @@ Timestamp: ${new Date().toLocaleString()}
       const comment = await storage.createComment({
         ...commentData,
         content: moderatedText,
-        approved: !isBlocked
+        metadata: {
+          approved: !isBlocked
+        }
       });
 
       return res.json({
