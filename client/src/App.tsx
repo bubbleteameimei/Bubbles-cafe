@@ -11,26 +11,23 @@ import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
 
-// Lazy load components with error boundary and retry logic
-const withRetry = (importFn: () => Promise<any>) => {
-  return React.lazy(() => 
-    importFn().catch(error => {
-      console.error('Failed to load component:', error);
-      return import("@/components/ui/error-fallback");
-    })
-  );
-};
+// Lazy load components with proper error handling
+const withErrorBoundary = (Component: React.ComponentType) => (props: any) => (
+  <ErrorBoundary>
+    <Component {...props} />
+  </ErrorBoundary>
+);
 
-const Home = withRetry(() => import("./pages/home"));
-const Stories = withRetry(() => import("./pages/stories"));
-const StoryView = withRetry(() => import("./pages/story-view"));
-const About = withRetry(() => import("./pages/about"));
-const Privacy = withRetry(() => import("./pages/privacy"));
-const Contact = withRetry(() => import("./pages/contact"));
-const Community = withRetry(() => import("./pages/community"));
-const Auth = withRetry(() => import("./pages/auth"));
-const Index = withRetry(() => import("./pages/index"));
-const Reader = withRetry(() => import("./pages/reader"));
+const Home = withErrorBoundary(React.lazy(() => import("./pages/home")));
+const Stories = withErrorBoundary(React.lazy(() => import("./pages/stories")));
+const StoryView = withErrorBoundary(React.lazy(() => import("./pages/story-view")));
+const About = withErrorBoundary(React.lazy(() => import("./pages/about")));
+const Privacy = withErrorBoundary(React.lazy(() => import("./pages/privacy")));
+const Contact = withErrorBoundary(React.lazy(() => import("./pages/contact")));
+const Community = withErrorBoundary(React.lazy(() => import("./pages/community")));
+const Auth = withErrorBoundary(React.lazy(() => import("./pages/auth")));
+const Index = withErrorBoundary(React.lazy(() => import("./pages/index")));
+const Reader = withErrorBoundary(React.lazy(() => import("./pages/reader")));
 
 function App() {
   const [location] = useLocation();
