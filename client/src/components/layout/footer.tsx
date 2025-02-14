@@ -4,12 +4,12 @@ import { SocialIcons } from "@/components/ui/social-icons";
 export default function Footer() {
   return (
     <footer className="border-t border-primary/10 backdrop-blur-sm bg-background/80">
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex flex-col items-center gap-3">
+      <div className="container mx-auto px-4 py-1">
+        <div className="flex flex-col items-center gap-2">
           <div className="flex justify-center w-full">
             <SocialIcons />
           </div>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 w-full text-sm">
             <p className="text-sm text-muted-foreground/80 tracking-wide">
               © Bubble's Cafe {new Date().getFullYear()}. All rights reserved.
             </p>

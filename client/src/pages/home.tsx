@@ -59,7 +59,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="min-h-[90vh] flex flex-col items-center justify-start pt-32 text-center max-w-3xl mx-auto"
+          className="min-h-[90vh] flex flex-col items-center justify-start pt-40 text-center max-w-3xl mx-auto"
         >
           <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed">
             Each story here is a portal to the unexpected,
