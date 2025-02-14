@@ -97,7 +97,7 @@ const sessionConfig = {
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 24 minutes
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   },
   name: 'horror.session'
@@ -160,7 +160,6 @@ function getAvailablePort(startPort: number): Promise<number> {
 setupAuth(app);
 server = registerRoutes(app);
 app.use(errorHandler);
-
 
 // Fallback route for SPA
 app.get('*', (req, res, next) => {
