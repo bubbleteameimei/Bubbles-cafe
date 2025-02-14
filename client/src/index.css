@@ -54,11 +54,11 @@
 
   /* Social Icons */
   .card {
-    @apply w-fit h-fit bg-transparent flex items-center justify-center p-6 gap-5 rounded-lg backdrop-blur-sm bg-card/90 border border-border/50 hover:border-primary/20 transition-all duration-300;
+    @apply w-fit h-fit bg-transparent flex items-center justify-center p-4 gap-3 rounded-lg backdrop-blur-sm bg-card/90 border border-border/50 hover:border-primary/20 transition-all duration-300;
   }
 
   .socialContainer {
-    @apply w-12 h-12 bg-background/80 backdrop-blur-sm flex items-center justify-center overflow-hidden transition-all duration-300 rounded-md hover:scale-110 border border-border/50 hover:border-primary/50 hover:shadow-lg cursor-pointer;
+    @apply w-9 h-9 bg-background/80 backdrop-blur-sm flex items-center justify-center overflow-hidden transition-all duration-300 rounded-md hover:scale-110 border border-border/50 hover:border-primary/50 hover:shadow-lg cursor-pointer;
   }
 
   .containerOne:hover { @apply bg-[#d62976]/90; }
