@@ -57,60 +57,72 @@ export function LikeDislike({
   });
 
   const handleLike = async () => {
-    if (liked) {
-      // Remove like
-      setLiked(false);
-      setCounts(prev => ({ ...prev, likes: prev.likes - 1 }));
-    } else {
-      // Add like
-      setLiked(true);
+    if (likeMutation.isPending) {
+      return;
+    }
+
+    const newLiked = !liked;
+    const previousState = {
+      liked,
+      disliked,
+      counts: { ...counts }
+    };
+
+    // Optimistically update UI
+    setLiked(newLiked);
+    if (newLiked) {
       setCounts(prev => ({ ...prev, likes: prev.likes + 1 }));
       if (disliked) {
         setDisliked(false);
-        setCounts(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
+        setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
       }
+    } else {
+      setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
     }
 
     try {
       await likeMutation.mutateAsync(true);
-      onLike?.(liked);
+      onLike?.(newLiked);
     } catch (error) {
       // Revert on error
-      setLiked(!liked);
-      setCounts(prev => ({
-        ...prev,
-        likes: liked ? prev.likes + 1 : prev.likes - 1,
-        dislikes: disliked ? prev.dislikes + 1 : prev.dislikes
-      }));
+      setLiked(previousState.liked);
+      setDisliked(previousState.disliked);
+      setCounts(previousState.counts);
     }
   };
 
   const handleDislike = async () => {
-    if (disliked) {
-      // Remove dislike
-      setDisliked(false);
-      setCounts(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
-    } else {
-      // Add dislike
-      setDisliked(true);
+    if (likeMutation.isPending) {
+      return;
+    }
+
+    const newDisliked = !disliked;
+    const previousState = {
+      liked,
+      disliked,
+      counts: { ...counts }
+    };
+
+    // Optimistically update UI
+    setDisliked(newDisliked);
+    if (newDisliked) {
       setCounts(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
       if (liked) {
         setLiked(false);
-        setCounts(prev => ({ ...prev, likes: prev.likes - 1 }));
+        setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
       }
+    } else {
+      setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
     }
 
     try {
       await likeMutation.mutateAsync(false);
-      onDislike?.(disliked);
+      onDislike?.(newDisliked);
     } catch (error) {
       // Revert on error
-      setDisliked(!disliked);
-      setCounts(prev => ({
-        ...prev,
-        dislikes: disliked ? prev.dislikes + 1 : prev.dislikes - 1,
-        likes: liked ? prev.likes + 1 : prev.likes
-      }));
+      setLiked(previousState.liked);
+      setDisliked(previousState.disliked);
+      setCounts(previousState.counts);
     }
   };
 
