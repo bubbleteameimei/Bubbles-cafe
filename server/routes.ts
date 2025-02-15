@@ -12,7 +12,6 @@ import {
   insertPostSchema, 
   insertCommentReplySchema,
   type Post,
-  type UnlockProgress
 } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import * as session from 'express-session';
@@ -258,9 +257,9 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/posts/secret/:postId/unlock", async (req, res) => {
     try {
-      const progress: UnlockProgress = await storage.unlockSecretPost({
+      const progress = await storage.unlockSecretPost({
         postId: parseInt(req.params.postId),
-        userId: req.body.userId // Use userId instead of unlockedBy
+        userId: req.body.userId 
       });
       res.json(progress);
     } catch (error) {
@@ -494,7 +493,7 @@ Timestamp: ${new Date().toLocaleString()}
       const commentData = insertCommentSchema.parse({
         postId,
         ...req.body,
-        approved: false // Use approved directly instead of metadata
+        approved: false 
       });
 
       const { isBlocked, moderatedText } = moderateComment(commentData.content);
@@ -756,6 +755,57 @@ Timestamp: ${new Date().toLocaleString()}
     tls: {
       rejectUnauthorized: true,
       minVersion: 'TLSv1.2'
+    }
+  });
+
+  // Protected admin routes
+  app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
+
+      // Get admin user details
+      const adminUser = await storage.getUser(req.user.id);
+      if (!adminUser) {
+        return res.status(404).json({ message: "Admin user not found" });
+      }
+
+      // Remove sensitive information
+      const { password_hash, ...safeAdminUser } = adminUser;
+
+      res.json({
+        ...safeAdminUser,
+        role: 'admin',
+        permissions: ['manage_posts', 'manage_users', 'manage_comments']
+      });
+    } catch (error) {
+      console.error("Error fetching admin profile:", error);
+      res.status(500).json({ message: "Failed to fetch admin profile" });
+    }
+  });
+
+  // Add admin dashboard data endpoint
+  app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
+
+      const [posts, comments, users] = await Promise.all([
+        storage.getPosts(1, 5),
+        storage.getRecentComments(),
+        storage.getAdminByEmail(req.user.email)
+      ]);
+
+      res.json({
+        recentPosts: posts.posts.slice(0, 5),
+        recentComments: comments,
+        adminUsers: users
+      });
+    } catch (error) {
+      console.error("Error fetching admin dashboard:", error);
+      res.status(500).json({ message: "Failed to fetch admin dashboard data" });
     }
   });
 
