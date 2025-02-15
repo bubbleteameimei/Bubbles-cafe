@@ -11,9 +11,9 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 export default function Home() {
   const [, setLocation] = useLocation();
   const { data: postsResponse, isLoading, error } = useQuery<{ posts: Post[], hasMore: boolean }>({
-    queryKey: ["home", "featured-posts"],
+    queryKey: ["pages", "home", "featured-posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?featured=true&limit=1');
+      const response = await fetch('/api/posts?page=home&featured=true&limit=1');
       if (!response.ok) throw new Error('Failed to fetch featured post');
       return response.json();
     },

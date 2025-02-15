@@ -62,9 +62,9 @@ const getExcerpt = (content: string) => {
 export default function IndexView() {
   const [, setLocation] = useLocation();
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
-    queryKey: ["index", "all-posts"],
+    queryKey: ["pages", "index", "all-posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=16&type=index');
+      const response = await fetch('/api/posts?section=index&page=1&limit=16&type=index');
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },

@@ -30,9 +30,9 @@ export default function Reader() {
   const [, setLocation] = useLocation();
 
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
-    queryKey: ["reader", "current-posts"],
+    queryKey: ["pages", "reader", "current-posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?limit=16&type=reader');
+      const response = await fetch('/api/posts?section=reader&limit=16&type=reader');
       if (!response.ok) throw new Error('Failed to fetch posts');
       const data = await response.json();
       if (!data.posts || !Array.isArray(data.posts)) {

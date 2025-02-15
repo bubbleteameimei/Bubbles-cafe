@@ -31,9 +31,9 @@ export default function Stories() {
     hasNextPage,
     isFetchingNextPage 
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ["stories", "infinite-posts"],
+    queryKey: ["pages", "stories", "infinite-posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}&type=story`);
+      const response = await fetch(`/api/posts?section=stories&page=${pageParam}&limit=${POSTS_PER_PAGE}&type=story`);
       if (!response.ok) throw new Error('Failed to fetch stories');
       return response.json();
     },
