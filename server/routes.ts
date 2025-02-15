@@ -12,7 +12,7 @@ import {
   insertPostSchema, 
   insertCommentReplySchema,
   type Post,
-  type UnlockProgress
+  type PostMetadata
 } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import * as session from 'express-session';
@@ -20,6 +20,7 @@ import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import adminRouter from './routes/admin';
 
 // Configure rate limiters
 const authLimiter = rateLimit({
@@ -62,8 +63,27 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/login", authLimiter);
   app.use("/api", apiLimiter);
 
-  // Set up auth BEFORE routes
+  // Set up session BEFORE routes
+  const sessionSettings: session.SessionOptions = {
+    secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    },
+    store: storage.sessionStore,
+    name: 'horror.session'
+  };
+  app.use(session.default(sessionSettings));
+
+  // Set up auth AFTER session but BEFORE routes
   setupAuth(app);
+
+  // Mount admin routes
+  app.use('/api/admin', adminRouter);
 
   // Protected middleware
   const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
@@ -81,19 +101,6 @@ export function registerRoutes(app: Express): Server {
     next();
   };
 
-  // Add session configuration and security headers before route registration
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: app.get('env') === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: storage.sessionStore,
-  };
-  app.use(session.default(sessionSettings));
   app.use(compression());
 
 
@@ -116,7 +123,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update the get posts route to support filtering
+  // Update the get posts route to handle metadata
   app.get("/api/posts", cacheControl(300), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
@@ -131,8 +138,8 @@ export function registerRoutes(app: Express): Server {
 
       const result = await storage.getPosts(page, limit);
       const posts = filter === 'community'
-        ? result.posts.filter(post => post.metadata && post.metadata.isCommunityPost && post.metadata.isApproved)
-        : result.posts.filter(post => !post.metadata || !post.metadata.isCommunityPost);
+        ? result.posts.filter(post => post.metadata?.isCommunityPost && post.metadata?.isApproved)
+        : result.posts.filter(post => !post.metadata?.isCommunityPost);
 
       // Set ETag for caching
       const etag = crypto
@@ -142,7 +149,6 @@ export function registerRoutes(app: Express): Server {
 
       res.set('ETag', etag);
 
-      // Check If-None-Match header
       if (req.headers['if-none-match'] === etag) {
         return res.status(304).end();
       }
@@ -258,9 +264,10 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/posts/secret/:postId/unlock", async (req, res) => {
     try {
-      const progress: UnlockProgress = await storage.unlockSecretPost({
+      const progress = await storage.unlockSecretPost({
         postId: parseInt(req.params.postId),
-        userId: req.body.userId // Use userId instead of unlockedBy
+        userId: req.body.userId,
+        discoveryDate: new Date()
       });
       res.json(progress);
     } catch (error) {

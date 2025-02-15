@@ -63,20 +63,7 @@ async function importWordPressMetadata() {
         'violence': /murder|kill|stab|shot|violence|brutal|assault|attack|fight|struggle|strangle/i,
         'body-horror': /transform|mutate|deform|grotesque|twist|morph|flesh|skin|bone|decay/i,
         'psychological': /mind|sanity|madness|paranoia|hallucination|delusion|reality|conscious|dream|nightmare/i,
-        'existential': /existence|meaning|purpose|void|empty|hollow|eternal|infinite|cosmic|universe/i,
-        'mindbending': /reality.*bend|perception|truth|illusion|fake|real|believe|trust|doubt/i,
-        'death': /death|die|corpse|dead|funeral|morgue|grave|cemetery|tomb|bury/i,
-        'suicide': /suicide|self-harm|end.*life|jump|blade|pills|overdose|despair/i,
-        'stalking': /follow|watch|stalk|spy|observe|trail|track|hunt|pursue|shadow/i,
-        'home-invasion': /break.*in|intruder|invaded|uninvited|stranger|door|window|lock|safe/i,
-        'isolation': /alone|lonely|isolated|abandoned|empty|desert|remote|cut.*off|trap/i,
-        'supernatural': /ghost|spirit|demon|haunt|paranormal|possess|curse|hex|witch|occult/i,
-        'cosmic-horror': /ancient|elder|cosmic|universe|vast|incomprehensible|knowledge|forbidden|cult/i,
-        'religious': /god|devil|hell|heaven|sin|divine|sacred|unholy|ritual|worship/i,
-        'claustrophobia': /tight|closed|trapped|confined|tunnel|cave|box|coffin|buried|space/i,
-        'darkness': /dark|shadow|black|night|blind|light.*fade|dim|visibility|sight/i,
-        'nature': /forest|ocean|mountain|wild|animal|creature|beast|predator|hunt/i,
-        'technology': /machine|computer|digital|virtual|cyber|network|screen|program|code|system/i
+        'existential': /existence|meaning|purpose|void|empty|hollow|eternal|infinite|cosmic|universe/i
       };
 
       Object.entries(triggerKeywords).forEach(([warning, regex]) => {
@@ -94,21 +81,6 @@ async function importWordPressMetadata() {
         ? impactfulSentences[0].trim() 
         : sentences[0].trim();
 
-      // Calculate content intensity rating (1-5)
-      const intensityFactors = {
-        triggerCount: triggerWarnings.length,
-        violentContent: (content.match(/blood|gore|kill|death|corpse/gi) || []).length,
-        psychologicalContent: (content.match(/mind|sanity|mad|paranoia|reality/gi) || []).length,
-        supernaturalContent: (content.match(/ghost|spirit|demon|curse|haunt/gi) || []).length
-      };
-
-      const intensityScore = Math.min(5, Math.ceil(
-        (intensityFactors.triggerCount * 0.5 + 
-         intensityFactors.violentContent * 0.3 +
-         intensityFactors.psychologicalContent * 0.2 +
-         intensityFactors.supernaturalContent * 0.2) / 2
-      ));
-
       // Import post with updated schema
       const [newPost] = await db.insert(posts).values({
         title,
@@ -117,20 +89,31 @@ async function importWordPressMetadata() {
         slug,
         authorId: adminUserId,
         isSecret: false,
-        matureContent: intensityScore > 3,
+        matureContent: false,
         readingTimeMinutes,
-        triggerWarnings: [...new Set(triggerWarnings)],
-        themeCategory: 'PSYCHOLOGICAL' // Default theme category
+        metadata: {
+          triggerWarnings: [...new Set(triggerWarnings)],
+          themeCategory: 'PSYCHOLOGICAL',
+          isCommunityPost: false,
+          isApproved: true
+        }
       }).returning({ id: posts.id });
 
       // Import comments if any
       if (item['wp:comment']) {
         const postComments = Array.isArray(item['wp:comment']) ? item['wp:comment'] : [item['wp:comment']];
         for (const comment of postComments) {
+          const [commentUser] = await db.insert(users).values({
+            username: comment['wp:comment_author'],
+            email: comment['wp:comment_author_email'] || `${comment['wp:comment_author'].toLowerCase()}@imported.com`,
+            password_hash: '$2b$10$dummyHashForImport',
+            isAdmin: false
+          }).returning({ id: users.id });
+
           await db.insert(comments).values({
-            postId: newPost.id,
             content: comment['wp:comment_content'],
-            author: comment['wp:comment_author'],
+            postId: newPost.id,
+            userId: commentUser.id,
             approved: true
           });
         }

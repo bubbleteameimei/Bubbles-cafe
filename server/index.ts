@@ -11,6 +11,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import path from "path";
 import { fileURLToPath } from "url";
+import { seedDatabase } from "./seed";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +56,7 @@ app.use(limiter);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-// Session setup
+// Session setup with type-safe configuration
 const PostgresSession = connectPgSimple(session);
 const sessionConfig = {
   store: new PostgresSession({
@@ -73,8 +74,8 @@ const sessionConfig = {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const
-  },
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  } as const,
   name: 'horror.session'
 };
 
@@ -90,6 +91,15 @@ registerRoutes(app);
 // Development vs Production setup
 async function startServer() {
   try {
+    // Initialize database with seed data
+    try {
+      await seedDatabase();
+      log("Database seeded successfully");
+    } catch (error) {
+      log("Error seeding database:", error);
+      // Continue starting the server even if seeding fails
+    }
+
     if (isDev) {
       // In development, set up Vite middleware
       await setupVite(app, server);

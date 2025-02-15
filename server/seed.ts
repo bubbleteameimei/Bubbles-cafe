@@ -1,9 +1,6 @@
 import { storage } from "./storage";
-import { XMLParser } from "fast-xml-parser";
-import fs from "fs/promises";
-import path from "path";
 import { db } from "./db";
-import { posts, users } from "@shared/schema";
+import { posts, users, comments } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -34,6 +31,74 @@ async function getOrCreateAdminUser() {
     return newAdmin;
   } catch (error) {
     console.error("Error in getOrCreateAdminUser:", error);
+    throw error;
+  }
+}
+
+async function createTestContent(adminId: number) {
+  try {
+    console.log("Creating test posts...");
+
+    // Create some test posts
+    const [post1] = await db.insert(posts).values({
+      title: "The Haunted Manor",
+      content: "A chilling tale of a haunted manor in the countryside...",
+      excerpt: "What lurks in the shadows of this ancient estate?",
+      slug: "the-haunted-manor",
+      authorId: adminId,
+      isSecret: false,
+      matureContent: true,
+      readingTimeMinutes: 5,
+      metadata: {
+        triggerWarnings: ["horror", "supernatural"],
+        themeCategory: "PSYCHOLOGICAL",
+        isCommunityPost: false,
+        isApproved: true
+      }
+    }).returning();
+
+    const [post2] = await db.insert(posts).values({
+      title: "Shadows in the Mist",
+      content: "The fog rolled in, bringing with it unspeakable horrors...",
+      excerpt: "When the mist descends, no one is safe.",
+      slug: "shadows-in-the-mist",
+      authorId: adminId,
+      isSecret: true,
+      matureContent: true,
+      readingTimeMinutes: 8,
+      metadata: {
+        triggerWarnings: ["horror", "psychological"],
+        themeCategory: "PSYCHOLOGICAL",
+        isCommunityPost: false,
+        isApproved: true
+      }
+    }).returning();
+
+    // Create some test comments
+    await db.insert(comments).values([
+      {
+        content: "This story gave me chills!",
+        postId: post1.id,
+        userId: adminId,
+        approved: true
+      },
+      {
+        content: "Waiting for moderator approval...",
+        postId: post1.id,
+        userId: adminId,
+        approved: false
+      },
+      {
+        content: "The atmosphere is incredible.",
+        postId: post2.id,
+        userId: adminId,
+        approved: true
+      }
+    ]);
+
+    console.log("Test content created successfully");
+  } catch (error) {
+    console.error("Error creating test content:", error);
     throw error;
   }
 }
@@ -140,10 +205,20 @@ async function parseWordPressXML() {
     throw error;
   }
 }
+import fs from "fs/promises";
+import path from "path";
+import { XMLParser } from "fast-xml-parser";
 
 export async function seedDatabase() {
   try {
     console.log("Starting database seeding...");
+
+    // Create admin user
+    const admin = await getOrCreateAdminUser();
+
+    // Create test content
+    await createTestContent(admin.id);
+
     const postsCreated = await parseWordPressXML();
     console.log(`Database seeded successfully with ${postsCreated} posts!`);
     return postsCreated;
