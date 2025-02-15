@@ -31,20 +31,17 @@ export default function Stories() {
     hasNextPage,
     isFetchingNextPage 
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ["/api/posts"],
-    queryFn: async ({ pageParam }) => {
-      const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}`);
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      const data = await response.json();
-      return data;
+    queryKey: ["stories", "infinite-posts"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/posts?page=${pageParam}&limit=${POSTS_PER_PAGE}&type=story`);
+      if (!response.ok) throw new Error('Failed to fetch stories');
+      return response.json();
     },
     getNextPageParam: (lastPage) => {
-      if (!lastPage || !lastPage.hasMore) {
-        return undefined;
-      }
+      if (!lastPage || !lastPage.hasMore) return undefined;
       return lastPage.posts.length > 0 ? lastPage.posts.length / POSTS_PER_PAGE + 1 : undefined;
     },
-    initialPageParam: 1
+    staleTime: 5 * 60 * 1000,
   });
 
   React.useEffect(() => {
@@ -53,28 +50,20 @@ export default function Stories() {
     }
   }, [isInView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
+  if (isLoading) return <LoadingScreen />;
   if (error || !data?.pages) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
           <p className="text-muted-foreground">{error?.message || "Please try again later"}</p>
-          <Button 
-            variant="outline" 
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
     );
   }
 
-  const posts = data?.pages?.flatMap(page => page?.posts || []) || [];
+  const posts = data.pages.flatMap(page => page?.posts || []);
 
   if (!posts.length) {
     return (

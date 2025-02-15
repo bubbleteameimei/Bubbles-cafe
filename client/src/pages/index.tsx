@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { detectThemes, calculateIntensity, getReadingTime } from "@/lib/content-analysis";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -40,10 +39,10 @@ const getExcerpt = (content: string) => {
   if (!content) return '';
 
   const paragraphs = content.split('\n\n');
-  const engagingParagraph = paragraphs.find(p => 
-    p.includes('!') || 
-    p.includes('?') || 
-    p.includes('...') || 
+  const engagingParagraph = paragraphs.find(p =>
+    p.includes('!') ||
+    p.includes('?') ||
+    p.includes('...') ||
     p.toLowerCase().includes('suddenly') ||
     p.toLowerCase().includes('horror') ||
     p.toLowerCase().includes('fear') ||
@@ -55,7 +54,7 @@ const getExcerpt = (content: string) => {
   const selectedParagraph = engagingParagraph || paragraphs[0];
   const maxLength = 100;
   const trimmed = selectedParagraph.trim();
-  return trimmed.length > maxLength 
+  return trimmed.length > maxLength
     ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
     : trimmed;
 };
@@ -63,13 +62,12 @@ const getExcerpt = (content: string) => {
 export default function IndexView() {
   const [, setLocation] = useLocation();
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
-    queryKey: ["/api/posts"],
+    queryKey: ["index", "all-posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=16');
+      const response = await fetch('/api/posts?page=1&limit=16&type=index');
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    retry: 3,
     staleTime: 5 * 60 * 1000
   });
 
@@ -101,8 +99,8 @@ export default function IndexView() {
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
           <p className="text-muted-foreground">{error?.message || "Please try again later"}</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => window.location.reload()}
           >
             Retry
@@ -130,15 +128,15 @@ export default function IndexView() {
       <Mist className="opacity-40" />
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <motion.div 
+          <motion.div
             className="flex items-center justify-between mb-12"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-4xl md:text-5xl font-bold text-foreground">Index</h1>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => setLocation('/')}
               className="text-muted-foreground hover:text-primary"
             >
@@ -146,7 +144,7 @@ export default function IndexView() {
             </Button>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 relative"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -168,7 +166,7 @@ export default function IndexView() {
                   <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10">
                     <CardHeader className="relative py-2 px-3">
                       <div className="flex justify-between items-start gap-2">
-                        <CardTitle 
+                        <CardTitle
                           className="text-base group-hover:text-primary transition-colors"
                         >
                           {post.title}
@@ -185,7 +183,7 @@ export default function IndexView() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent 
+                    <CardContent
                       onClick={() => navigateToStory(post.id)}
                       className="cursor-pointer py-1 px-3 flex-grow"
                     >

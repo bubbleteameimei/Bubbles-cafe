@@ -11,15 +11,12 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 export default function Home() {
   const [, setLocation] = useLocation();
   const { data: postsResponse, isLoading, error } = useQuery<{ posts: Post[], hasMore: boolean }>({
-    queryKey: ["/api/posts"],
+    queryKey: ["home", "featured-posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=1&limit=16');
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      const data = await response.json();
-      console.log('Home: Fetched posts data:', data);
-      return data;
+      const response = await fetch('/api/posts?featured=true&limit=1');
+      if (!response.ok) throw new Error('Failed to fetch featured post');
+      return response.json();
     },
-    retry: 3,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -29,7 +26,6 @@ export default function Home() {
   }
 
   if (error || !postsResponse?.posts) {
-    console.error('Error loading stories:', error);
     return <div className="text-center p-8">Error loading latest story.</div>;
   }
 
