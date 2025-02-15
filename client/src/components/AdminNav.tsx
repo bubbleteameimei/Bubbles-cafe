@@ -4,12 +4,13 @@ import { Link } from "wouter";
 export function AdminNav() {
   const { user } = useAuth();
 
+  // Only render admin navigation if user exists and is an admin
   if (!user?.isAdmin) {
     return null;
   }
 
   return (
-    <nav className="space-x-4">
+    <nav className="flex items-center space-x-4">
       <Link href="/admin/dashboard">
         <a className="text-sm font-medium transition-colors hover:text-primary">
           Admin Dashboard
@@ -28,3 +29,5 @@ export function AdminNav() {
     </nav>
   );
 }
+
+export default AdminNav;

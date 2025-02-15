@@ -58,16 +58,24 @@ export default function AuthPage() {
     },
   });
 
-  const onLogin = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onLogin = async (data: LoginFormData) => {
+    try {
+      await loginMutation.mutateAsync(data);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
-  const onRegister = (data: RegisterFormData) => {
-    registerMutation.mutate({
-      ...data,
-      password_hash: data.password,
-      isAdmin: false,
-    });
+  const onRegister = async (data: RegisterFormData) => {
+    try {
+      await registerMutation.mutateAsync({
+        ...data,
+        password_hash: data.password,
+        isAdmin: false,
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
   };
 
   return (
@@ -98,7 +106,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input 
+                              type="email" 
+                              placeholder="Enter your email"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -111,7 +123,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <Input 
+                              type="password" 
+                              placeholder="Enter your password"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -138,7 +154,10 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input 
+                              placeholder="Choose a username"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -151,7 +170,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input 
+                              type="email" 
+                              placeholder="Enter your email"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -164,7 +187,11 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" {...field} />
+                            <Input 
+                              type="password" 
+                              placeholder="Choose a password"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

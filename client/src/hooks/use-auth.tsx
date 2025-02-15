@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -46,7 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/user");
         if (res.status === 401) return null;
         if (!res.ok) throw new Error("Failed to fetch user");
-        return res.json() as Promise<SelectUser>;
+        const data = await res.json();
+        console.log("User data fetched:", data); // Debug log
+        return data;
       } catch (err) {
         console.error("Error fetching user:", err);
         return null;
@@ -56,37 +58,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const error = await res.json() as { message: string };
-        throw new Error(error.message || "Login failed");
+      try {
+        console.log("Attempting login with:", credentials.email); // Debug log
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Login failed");
+        }
+
+        const data = await res.json();
+        console.log("Login successful, user data:", data); // Debug log
+        return data;
+      } catch (error) {
+        console.error("Login error:", error); // Debug log
+        throw error instanceof Error ? error : new Error("Login failed");
       }
-      return res.json() as Promise<SelectUser>;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Welcome back!",
+        title: user.isAdmin ? "Welcome Admin!" : "Welcome back!",
         description: "Successfully logged in",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     },
   });
 
+  useEffect(() => {
+    if (user) {
+      console.log("Current user state:", user); // Debug log for user state changes
+    }
+  }, [user]);
+
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      if (!res.ok) {
-        const error = await res.json() as { message: string };
-        throw new Error(error.message || "Registration failed");
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Registration failed");
+        }
+
+        return await res.json();
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("Registration failed");
       }
-      return res.json() as Promise<SelectUser>;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -106,9 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
+      const res = await fetch("/api/logout", {
+        method: "POST",
+      });
       if (!res.ok) {
-        const error = await res.json() as { message: string };
+        const error = await res.json();
         throw new Error(error.message || "Logout failed");
       }
     },

@@ -57,7 +57,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Session setup
 const PostgresSession = connectPgSimple(session);
-const sessionConfig = {
+const sessionConfig: session.SessionOptions = {
   store: new PostgresSession({
     conObject: {
       connectionString: process.env.DATABASE_URL,
@@ -73,7 +73,7 @@ const sessionConfig = {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' as const
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   },
   name: 'horror.session'
 };
