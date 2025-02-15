@@ -11,6 +11,7 @@ import React from 'react';
 import { getIconComponent } from '@/components/ui/icons';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
+import { getReadingTime } from "@/lib/content-analysis";
 
 interface PostsResponse {
   posts: Post[];
