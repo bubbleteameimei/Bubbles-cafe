@@ -15,15 +15,7 @@ export const users = pgTable("users", {
   usernameIdx: index("username_idx").on(table.username)
 }));
 
-// Define metadata type for posts
-export type PostMetadata = {
-  isCommunityPost?: boolean;
-  isApproved?: boolean;
-  triggerWarnings?: string[];
-  themeCategory?: string;
-};
-
-// Update the posts table to include metadata
+// Posts table
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -33,19 +25,11 @@ export const posts = pgTable("posts", {
   authorId: integer("author_id").references(() => users.id).notNull(),
   isSecret: boolean("is_secret").default(false).notNull(),
   matureContent: boolean("mature_content").default(false).notNull(),
+  themeCategory: text("theme_category"),
   readingTimeMinutes: integer("reading_time_minutes"),
   likesCount: integer("likes_count").default(0),
   dislikesCount: integer("dislikes_count").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  metadata: json("metadata").$type<PostMetadata>().default({}).notNull()
-});
-
-// Secret Progress
-export const secretProgress = pgTable("secret_progress", {
-  id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  discoveryDate: timestamp("discovery_date").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // Comments table
@@ -58,13 +42,6 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Define types for secret progress
-export type UnlockProgress = {
-  postId: number;
-  userId: number;
-  discoveryDate: Date;
-};
-
 // Reading Progress
 export const readingProgress = pgTable("reading_progress", {
   id: serial("id").primaryKey(),
@@ -72,6 +49,14 @@ export const readingProgress = pgTable("reading_progress", {
   userId: integer("user_id").references(() => users.id).notNull(),
   progress: decimal("progress").notNull(),
   lastReadAt: timestamp("last_read_at").defaultNow().notNull()
+});
+
+// Secret Progress
+export const secretProgress = pgTable("secret_progress", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  discoveryDate: timestamp("discovery_date").defaultNow().notNull()
 });
 
 // Contact Messages
