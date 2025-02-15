@@ -37,6 +37,16 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Add this type definition for post metadata
+interface PostMetadata {
+  isCommunityPost?: boolean;
+  isSecret?: boolean;
+  status?: 'pending' | 'approved';
+  isApproved?: boolean;
+  triggerWarnings?: string[];
+  themeCategory?: string;
+}
+
 export function registerRoutes(app: Express): Server {
   // Add security headers for both API and SPA
   app.use(helmet({
@@ -133,26 +143,22 @@ export function registerRoutes(app: Express): Server {
       const result = await storage.getPosts(page, limit);
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
+      // For admin users, show all posts without filtering
       let filteredPosts = result.posts;
-      if (filter === 'community') {
+      if (!req.user?.isAdmin) {
         filteredPosts = result.posts.filter(post => {
-          const isCommunityPost = post.metadata && typeof post.metadata === 'object' && 
-            'isCommunityPost' in post.metadata && post.metadata.isCommunityPost;
-          const isApproved = post.metadata && typeof post.metadata === 'object' && 
-            'isApproved' in post.metadata && post.metadata.isApproved;
-          return isCommunityPost && isApproved;
-        });
-      } else {
-        filteredPosts = result.posts.filter(post => {
-          const isCommunityPost = post.metadata && typeof post.metadata === 'object' && 
-            'isCommunityPost' in post.metadata && post.metadata.isCommunityPost;
-          return !isCommunityPost;
+          const metadata = post.metadata as PostMetadata;
+          // Show all non-community posts and approved community posts
+          if (filter === 'community') {
+            return metadata?.isCommunityPost && metadata?.isApproved;
+          }
+          // For regular view, show official posts and approved community posts
+          return !metadata?.isCommunityPost || metadata?.isApproved;
         });
       }
 
       console.log('[GET /api/posts] Filtered posts count:', filteredPosts.length);
 
-      // Set ETag for caching
       const etag = crypto
         .createHash('md5')
         .update(JSON.stringify(filteredPosts))
@@ -499,6 +505,7 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
+  // Update the createComment function with proper metadata handling
   app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
       const postId = parseInt(req.params.postId);
@@ -510,8 +517,7 @@ Timestamp: ${new Date().toLocaleString()}
 
       const commentData = insertCommentSchema.parse({
         postId,
-        ...req.body,
-        approved: false 
+        ...req.body
       });
 
       const { isBlocked, moderatedText } = moderateComment(commentData.content);
@@ -519,8 +525,10 @@ Timestamp: ${new Date().toLocaleString()}
       const comment = await storage.createComment({
         ...commentData,
         content: moderatedText,
+        approved: !isBlocked,
         metadata: {
-          approved: !isBlocked
+          moderated: isBlocked,
+          originalContent: commentData.content
         }
       });
 
@@ -647,12 +655,13 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
+  // Update reply creation with proper metadata
   app.post("/api/comments/:commentId/replies", async (req, res) => {
     try {
       const commentId = parseInt(req.params.commentId);
       const { content, author } = req.body;
 
-      // Validate input
+      // Validate input using schema
       const replyData = insertCommentReplySchema.parse({
         commentId,
         content,
@@ -669,10 +678,14 @@ Timestamp: ${new Date().toLocaleString()}
         content.toLowerCase().includes(word.toLowerCase())
       );
 
-      // Auto-approve if no filtered words
+      // Create reply with proper metadata
       const reply = await storage.createCommentReply({
         ...replyData,
-        approved: !containsFilteredWord
+        approved: !containsFilteredWord,
+        metadata: {
+          moderated: containsFilteredWord,
+          originalContent: content
+        }
       });
 
       res.status(201).json(reply);
@@ -824,6 +837,64 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("Error fetching admin dashboard:", error);
       res.status(500).json({ message: "Failed to fetch admin dashboard data" });
+    }
+  });
+
+  //New admin routes
+  app.get("/api/admin/analytics", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
+
+      const analytics = await storage.getSiteAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics data" });
+    }
+  });
+
+  app.get("/api/admin/notifications", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
+
+      const notifications = await storage.getUnreadAdminNotifications();
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/admin/notifications/:id/read", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
+
+      const notificationId = parseInt(req.params.id);
+      await storage.markNotificationAsRead(notificationId);
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to update notification" });
+    }
+  });
+
+  app.get("/api/admin/activity", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });      }
+
+      const limit = parseInt(req.query.limit as string) || 50;
+      const logs = await storage.getRecentActivityLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      res.status(500).json({ message: "Failed to fetch activity logs" });
     }
   });
 

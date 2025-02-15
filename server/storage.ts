@@ -1005,8 +1005,8 @@ export class DatabaseStorage implements IStorage {
 
   async getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }> {
     const [result] = await db.select({
-      totalViews: sql<number>`sum(page_views)`,
-      uniqueVisitors: sql<number>`sum(unique_visitors)`,
+      totalViews: sql`sum(${analytics.pageViews})`,
+      uniqueVisitors: sql`sum(${analytics.uniqueVisitors})`,
       avgReadTime: avg(analytics.averageReadTime)
     })
       .from(analytics);
@@ -1018,28 +1018,26 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Admin operations
   async getPendingPosts(): Promise<Post[]> {
-    try {
-      const posts = await db.select()
-        .from(postsTable)
-        .orderBy(desc(postsTable.createdAt))
-        .limit(10);
+    const posts = await db.select()
+      .from(postsTable)
+      .where(eq(sql`metadata->>'status'`, 'pending'))
+      .orderBy(desc(postsTable.createdAt));
 
-      return posts.map(post => ({
-        ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-      }));
-    } catch (error) {
-      console.error("Error in getPendingPosts:", error);
-      throw new Error("Failed to fetch pending posts");
-    }
+    return posts.map(post => ({
+      ...post,
+      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+    }));
   }
 
   async approvePost(postId: number): Promise<Post> {
-    const [post] = await db.select()
-      .from(postsTable)
+    const [post] = await db.update(postsTable)
+      .set({
+        metadata: sql`jsonb_set(metadata, '{status}', '"approved"')`
+      })
       .where(eq(postsTable.id, postId))
-      .limit(1);
+      .returning();
 
     if (!post) {
       throw new Error("Post not found");
@@ -1049,6 +1047,65 @@ export class DatabaseStorage implements IStorage {
       ...post,
       createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
     };
+  }
+
+  // Admin notification methods
+  async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
+    const [newNotification] = await db.insert(adminNotifications)
+      .values({ ...notification, createdAt: new Date() })
+      .returning();
+    return newNotification;
+  }
+
+  async getUnreadAdminNotifications(): Promise<AdminNotification[]> {
+    return await db.select()
+      .from(adminNotifications)
+      .where(eq(adminNotifications.isRead, false))
+      .orderBy(desc(adminNotifications.createdAt));
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<void> {
+    await db.update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.id, notificationId));
+  }
+
+  // Site settings methods
+  async getSiteSettings(): Promise<SiteSetting[]> {
+    return await db.select()
+      .from(siteSettings)
+      .orderBy(siteSettings.category);
+  }
+
+  async updateSiteSetting(key: string, value: string): Promise<SiteSetting> {
+    const [updated] = await db.update(siteSettings)
+      .set({ 
+        value,
+        updatedAt: new Date()
+      })
+      .where(eq(siteSettings.key, key))
+      .returning();
+
+    if (!updated) {
+      throw new Error("Setting not found");
+    }
+
+    return updated;
+  }
+
+  // Activity logging
+  async logActivity(activity: InsertActivityLog): Promise<ActivityLog> {
+    const [newActivity] = await db.insert(activityLogs)
+      .values({ ...activity, createdAt: new Date() })
+      .returning();
+    return newActivity;
+  }
+
+  async getRecentActivityLogs(limit: number = 50): Promise<ActivityLog[]> {
+    return await db.select()
+      .from(activityLogs)
+      .orderBy(desc(activityLogs.createdAt))
+      .limit(limit);
   }
 }
 

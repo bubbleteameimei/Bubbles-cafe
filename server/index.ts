@@ -91,23 +91,23 @@ registerRoutes(app);
 async function startServer() {
   try {
     if (isDev) {
-      // In development, set up Vite middleware
       await setupVite(app, server);
       log("Vite middleware setup complete");
     } else {
-      // In production, serve static files
       serveStatic(app);
       log("Static file serving setup complete");
     }
 
-    // Start the server
     server.listen(PORT, "0.0.0.0", () => {
       log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 
-      // Notify the workflow system that we're ready
+      // Notify the workflow system that we're ready and send port information
       if (process.send) {
         process.send('ready');
-        process.send({ port: PORT });
+        process.send({ 
+          port: PORT,
+          wait_for_port: true 
+        });
       }
     });
 
