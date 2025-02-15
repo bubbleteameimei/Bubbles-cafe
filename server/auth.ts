@@ -12,8 +12,8 @@ declare global {
       id: number;
       email: string;
       username: string;
+      isAdmin: boolean;
       createdAt: Date;
-      updatedAt: Date;
     }
   }
 }
@@ -28,7 +28,7 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUserById(id);
+      const user = await storage.getUser(id);
       if (!user) {
         return done(new Error('User not found'));
       }
@@ -88,6 +88,7 @@ export function setupAuth(app: Express) {
         email,
         username,
         password_hash: hashedPassword,
+        isAdmin: false // New users are not admins by default
       });
 
       // Log user in after registration
