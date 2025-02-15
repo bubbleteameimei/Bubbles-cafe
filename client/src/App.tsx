@@ -22,7 +22,14 @@ const Contact = React.lazy(() => import("./pages/contact"));
 const Auth = React.lazy(() => import("./pages/auth"));
 const Index = React.lazy(() => import("./pages/index"));
 const Reader = React.lazy(() => import("./pages/reader"));
-const Admin = React.lazy(() => import("./pages/admin"));
+
+// Admin pages
+const AdminDashboard = React.lazy(() => import("./pages/admin"));
+const AdminContent = React.lazy(() => import("./pages/admin/content"));
+const AdminUsers = React.lazy(() => import("./pages/admin/users"));
+const AdminAnalytics = React.lazy(() => import("./pages/admin/analytics"));
+const AdminSettings = React.lazy(() => import("./pages/admin/settings"));
+const AdminNotifications = React.lazy(() => import("./pages/admin/notifications"));
 
 function App() {
   const [location] = useLocation();
@@ -58,7 +65,15 @@ function App() {
                     <Route path="/privacy" component={Privacy} />
                     <Route path="/index" component={Index} />
                     <Route path="/reader" component={Reader} />
-                    <ProtectedRoute path="/admin" component={Admin} />
+
+                    {/* Admin Routes */}
+                    <ProtectedRoute path="/admin" component={AdminDashboard} />
+                    <ProtectedRoute path="/admin/content" component={AdminContent} />
+                    <ProtectedRoute path="/admin/users" component={AdminUsers} />
+                    <ProtectedRoute path="/admin/analytics" component={AdminAnalytics} />
+                    <ProtectedRoute path="/admin/settings" component={AdminSettings} />
+                    <ProtectedRoute path="/admin/notifications" component={AdminNotifications} />
+
                     <Route>
                       {() => (
                         <div className="min-h-screen flex items-center justify-center bg-background">

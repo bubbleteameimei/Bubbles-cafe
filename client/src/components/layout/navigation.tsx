@@ -20,7 +20,12 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
   return (
     <nav 
       role="menu" 
-      className={isMobile ? 'flex flex-col space-y-6 px-8 py-8' : 'flex items-center space-x-8'} 
+      className={`
+        ${isMobile 
+          ? 'flex flex-col space-y-6 px-8 py-8' 
+          : 'flex items-center space-x-8'
+        }
+      `}
       aria-label="Main navigation"
     >
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
@@ -30,11 +35,11 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
       {user?.isAdmin && (
         <NavLink 
           href="/admin" 
-          isActive={location === "/admin"} 
+          isActive={location.startsWith("/admin")} 
           onNavigate={onNavigate} 
-          className="text-amber-500 hover:text-amber-400 transition-colors"
+          className="text-amber-500 hover:text-amber-400 transition-colors font-medium"
         >
-          Admin Panel
+          Admin Dashboard
         </NavLink>
       )}
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
@@ -52,13 +57,13 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
   onNavigate?: () => void;
   className?: string;
 }) => {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onNavigate?.();
-    setLocation(href);
-  }, [href, onNavigate, setLocation]);
+    navigate(href);
+  }, [href, onNavigate, navigate]);
 
   return (
     <button
@@ -91,7 +96,7 @@ export default function Navigation() {
   const { theme, setTheme } = useTheme();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
 
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -120,7 +125,7 @@ export default function Navigation() {
 
           {/* Logo */}
           <button
-            onClick={() => setLocation('/')}
+            onClick={() => navigate('/')}
             className="text-lg font-bold text-primary hover:text-primary/90 transition-colors tracking-wide"
           >
             BUBBLE'S CAFE
@@ -136,7 +141,7 @@ export default function Navigation() {
             {!user ? (
               <Button
                 variant="default"
-                onClick={() => setLocation('/auth')}
+                onClick={() => navigate('/auth')}
                 size="sm"
                 className="font-medium px-4 shadow-sm hover:shadow-md transition-all duration-200"
               >

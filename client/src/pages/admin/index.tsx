@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { 
   Book, 
   Users, 
@@ -12,6 +12,7 @@ import {
 
 export default function AdminPage() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   // Redirect if not admin
   if (!user?.isAdmin) {
@@ -61,12 +62,19 @@ export default function AdminPage() {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.title} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={card.title} 
+              className="hover:shadow-lg transition-shadow cursor-pointer group"
+              onClick={() => {
+                console.log('[Admin Dashboard] Navigating to:', card.link);
+                navigate(card.link);
+              }}
+            >
               <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                <div className="rounded-lg bg-primary/10 p-2">
+                <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
                   <Icon className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>{card.title}</CardTitle>
+                <CardTitle className="group-hover:text-primary transition-colors">{card.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">{card.description}</p>

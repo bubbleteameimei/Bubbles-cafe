@@ -122,6 +122,8 @@ export function registerRoutes(app: Express): Server {
       const limit = Number(req.query.limit) || 10;
       const filter = req.query.filter as string | undefined;
 
+      console.log('[GET /api/posts] Request params:', { page, limit, filter });
+
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
         return res.status(400).json({
           message: "Invalid pagination parameters. Page and limit must be positive numbers."
@@ -129,29 +131,45 @@ export function registerRoutes(app: Express): Server {
       }
 
       const result = await storage.getPosts(page, limit);
-      const posts = filter === 'community'
-        ? result.posts.filter(post => post.metadata && post.metadata.isCommunityPost && post.metadata.isApproved)
-        : result.posts.filter(post => !post.metadata || !post.metadata.isCommunityPost);
+      console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
+
+      let filteredPosts = result.posts;
+      if (filter === 'community') {
+        filteredPosts = result.posts.filter(post => {
+          const isCommunityPost = post.metadata && typeof post.metadata === 'object' && 
+            'isCommunityPost' in post.metadata && post.metadata.isCommunityPost;
+          const isApproved = post.metadata && typeof post.metadata === 'object' && 
+            'isApproved' in post.metadata && post.metadata.isApproved;
+          return isCommunityPost && isApproved;
+        });
+      } else {
+        filteredPosts = result.posts.filter(post => {
+          const isCommunityPost = post.metadata && typeof post.metadata === 'object' && 
+            'isCommunityPost' in post.metadata && post.metadata.isCommunityPost;
+          return !isCommunityPost;
+        });
+      }
+
+      console.log('[GET /api/posts] Filtered posts count:', filteredPosts.length);
 
       // Set ETag for caching
       const etag = crypto
         .createHash('md5')
-        .update(JSON.stringify(posts))
+        .update(JSON.stringify(filteredPosts))
         .digest('hex');
 
       res.set('ETag', etag);
 
-      // Check If-None-Match header
       if (req.headers['if-none-match'] === etag) {
         return res.status(304).end();
       }
 
       res.json({
-        posts,
+        posts: filteredPosts,
         hasMore: result.hasMore
       });
     } catch (error) {
-      console.error("Error fetching posts:", error);
+      console.error("[GET /api/posts] Error:", error);
       res.status(500).json({ message: "Failed to fetch posts" });
     }
   });
