@@ -18,20 +18,18 @@ type AuthContextType = {
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
 };
 
-// Define the login data type
+// Define the login schema using email
 const loginSchema = z.object({
-  username: z.string().min(2),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(6)
 });
 
 type LoginData = z.infer<typeof loginSchema>;
+type RegisterData = z.infer<typeof registerSchema>;
 
-// Define the registration data type
 const registerSchema = insertUserSchema.extend({
   password: z.string().min(6)
 });
-
-type RegisterData = z.infer<typeof registerSchema>;
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -48,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/user");
         if (res.status === 401) return null;
         if (!res.ok) throw new Error("Failed to fetch user");
-        return res.json();
+        return res.json() as Promise<SelectUser>;
       } catch (err) {
         console.error("Error fetching user:", err);
         return null;
@@ -60,10 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
       if (!res.ok) {
-        const error = await res.json();
+        const error = await res.json() as { message: string };
         throw new Error(error.message || "Login failed");
       }
-      return res.json();
+      return res.json() as Promise<SelectUser>;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -85,10 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: RegisterData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
       if (!res.ok) {
-        const error = await res.json();
+        const error = await res.json() as { message: string };
         throw new Error(error.message || "Registration failed");
       }
-      return res.json();
+      return res.json() as Promise<SelectUser>;
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -110,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/logout");
       if (!res.ok) {
-        const error = await res.json();
+        const error = await res.json() as { message: string };
         throw new Error(error.message || "Logout failed");
       }
     },

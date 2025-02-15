@@ -16,9 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Define validation schemas
+// Update login schema to use email instead of username
 const loginSchema = z.object({
-  username: z.string().min(2, "Username must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -39,16 +39,16 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
 
-  // Login form
+  // Login form with updated schema
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
 
-  // Register form
+  // Register form remains unchanged
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -93,12 +93,12 @@ export default function AuthPage() {
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
                     <FormField
                       control={loginForm.control}
-                      name="username"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input type="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -184,7 +184,6 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Hero Section */}
         <div className="hidden flex-1 flex-col justify-center space-y-6 rounded-lg bg-muted p-8 md:flex">
           <div className="space-y-2">
             <h2 className="text-2xl font-bold">Bubble's Cafe</h2>
