@@ -18,7 +18,6 @@ const StoryView = React.lazy(() => import("./pages/story-view"));
 const About = React.lazy(() => import("./pages/about"));
 const Privacy = React.lazy(() => import("./pages/privacy"));
 const Contact = React.lazy(() => import("./pages/contact"));
-const Community = React.lazy(() => import("./pages/community"));
 const Auth = React.lazy(() => import("./pages/auth"));
 const Index = React.lazy(() => import("./pages/index"));
 const Reader = React.lazy(() => import("./pages/reader"));
@@ -36,10 +35,6 @@ function App() {
     return <LoadingScreen />;
   }
 
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
@@ -52,7 +47,6 @@ function App() {
                   <Switch>
                     <Route path="/" component={Home} />
                     <Route path="/stories" component={Stories} />
-                    <Route path="/community" component={Community} />
                     <Route path="/story/:slug">
                       {params => <StoryView slug={params.slug} />}
                     </Route>
@@ -74,7 +68,7 @@ function App() {
                     </Route>
                   </Switch>
                 </React.Suspense>
-                </main>
+              </main>
             </ErrorBoundary>
             <Footer />
             <CookieConsent />
