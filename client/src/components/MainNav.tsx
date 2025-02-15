@@ -1,9 +1,11 @@
 import { AdminNav } from "./AdminNav";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export function MainNav() {
-  const { user } = useAuth();
+  const { user, isLoading, logoutMutation } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -22,21 +24,34 @@ export function MainNav() {
                 Posts
               </a>
             </Link>
-            {user ? (
+
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : user ? (
               <>
                 <Link href="/profile">
                   <a className="transition-colors hover:text-foreground/80">
                     Profile
                   </a>
                 </Link>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                >
+                  {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+                </Button>
                 <AdminNav />
               </>
             ) : (
-              <Link href="/auth">
-                <a className="transition-colors hover:text-foreground/80">
-                  Login
-                </a>
-              </Link>
+              <Button 
+                variant="default"
+                asChild
+              >
+                <Link href="/auth">
+                  <a>Sign In</a>
+                </Link>
+              </Button>
             )}
           </nav>
         </div>

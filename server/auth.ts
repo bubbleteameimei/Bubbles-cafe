@@ -40,23 +40,19 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Update LocalStrategy to use email with debug logging
+  // Update LocalStrategy to use email
   passport.use(new LocalStrategy({
     usernameField: 'email',
     passwordField: 'password'
   }, async (email: string, password: string, done) => {
     try {
-      console.log(`Attempting login for email: ${email}`);
       const user = await storage.getUserByEmail(email);
 
       if (!user) {
-        console.log('User not found');
         return done(null, false, { message: 'Invalid email or password' });
       }
 
-      console.log('User found, comparing passwords');
       const isValid = await bcrypt.compare(password, user.password_hash);
-      console.log(`Password validation result: ${isValid}`);
 
       if (!isValid) {
         return done(null, false, { message: 'Invalid email or password' });
@@ -66,7 +62,6 @@ export function setupAuth(app: Express) {
       const { password_hash, ...safeUser } = user;
       return done(null, safeUser);
     } catch (error) {
-      console.error('Login error:', error);
       done(error);
     }
   }));
@@ -98,7 +93,7 @@ export function setupAuth(app: Express) {
         email,
         username,
         password_hash: hashedPassword,
-        isAdmin: false // New users are not admins by default
+        isAdmin: false
       });
 
       // Omit password_hash before sending response
@@ -117,7 +112,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Add login endpoint with proper typing
+  // Add login endpoint
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {

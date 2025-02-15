@@ -46,9 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/user");
         if (res.status === 401) return null;
         if (!res.ok) throw new Error("Failed to fetch user");
-        const data = await res.json();
-        console.log("User data fetched:", data); // Debug log
-        return data;
+        return await res.json();
       } catch (err) {
         console.error("Error fetching user:", err);
         return null;
@@ -97,12 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useEffect(() => {
-    if (user) {
-      console.log("Current user state:", user); // Debug log for user state changes
-    }
-  }, [user]);
-
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
       try {
@@ -111,7 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(credentials),
+          body: JSON.stringify({
+            email: credentials.email,
+            username: credentials.username,
+            password: credentials.password
+          }),
         });
 
         if (!res.ok) {

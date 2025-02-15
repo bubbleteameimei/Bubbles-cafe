@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Update login schema to use email instead of username
+// Login schema using email
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -39,7 +39,6 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
 
-  // Login form with updated schema
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -48,7 +47,6 @@ export default function AuthPage() {
     },
   });
 
-  // Register form remains unchanged
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -70,7 +68,6 @@ export default function AuthPage() {
     try {
       await registerMutation.mutateAsync({
         ...data,
-        password_hash: data.password,
         isAdmin: false,
       });
     } catch (error) {
@@ -79,24 +76,23 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="container flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <div className="flex w-full max-w-5xl gap-8">
-        {/* Auth Forms */}
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle>Welcome to Bubble's Cafe</CardTitle>
+            <CardTitle>Welcome Back</CardTitle>
             <CardDescription>
-              Join our community of horror enthusiasts and start sharing your stories
+              Sign in to your account to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
+            <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="register">Create Account</TabsTrigger>
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login">
+              <TabsContent value="login" className="mt-4">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
                     <FormField
@@ -144,7 +140,7 @@ export default function AuthPage() {
                 </Form>
               </TabsContent>
 
-              <TabsContent value="register">
+              <TabsContent value="register" className="mt-4">
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
                     <FormField
@@ -211,19 +207,18 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        <div className="hidden flex-1 flex-col justify-center space-y-6 rounded-lg bg-muted p-8 md:flex">
+        <div className="hidden md:flex md:flex-1 md:flex-col md:justify-center md:gap-6 md:rounded-lg md:bg-muted md:p-8">
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Bubble's Cafe</h2>
+            <h2 className="text-2xl font-bold">Welcome to Bubble's Cafe</h2>
             <p className="text-muted-foreground">
-              Your portal to the darker side of storytelling. Share your scariest stories, 
-              connect with fellow horror enthusiasts, and explore the depths of imagination.
+              Join our community of horror enthusiasts and share your scariest stories
             </p>
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>✓ Create and share horror stories</li>
-            <li>✓ Customize your storytelling environment</li>
-            <li>✓ Connect with other horror writers</li>
-            <li>✓ Get feedback on your stories</li>
+            <li>✓ Connect with other writers</li>
+            <li>✓ Customize your reading experience</li>
+            <li>✓ Join writing challenges</li>
           </ul>
         </div>
       </div>
