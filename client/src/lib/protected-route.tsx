@@ -23,8 +23,8 @@ export function ProtectedRoute({
           );
         }
 
-        if (!user) {
-          return <Redirect to="/auth" />;
+        if (!user?.isAdmin) {
+          return <Redirect to="/" />;
         }
 
         return <Component />;

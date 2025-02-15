@@ -16,21 +16,26 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
   isMobile?: boolean
 }) => {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
 
   return (
     <nav 
       role="menu" 
-      className={isMobile ? 'flex flex-col space-y-4' : 'flex items-center space-x-6'} 
+      className={isMobile ? 'flex flex-col space-y-6 px-8 py-8' : 'flex items-center space-x-8'} 
       aria-label="Main navigation"
     >
       <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
       <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
       <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
-      <NavLink href="/secret-stories" isActive={location === "/secret-stories"} onNavigate={onNavigate}>Secret Stories</NavLink>
       <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
       {user?.isAdmin && (
-        <NavLink href="/admin" isActive={location === "/admin"} onNavigate={onNavigate}>Admin</NavLink>
+        <NavLink 
+          href="/admin" 
+          isActive={location === "/admin"} 
+          onNavigate={onNavigate} 
+          className="text-amber-500 hover:text-amber-400 transition-colors"
+        >
+          Admin Panel
+        </NavLink>
       )}
       <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
       <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
@@ -59,14 +64,22 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        text-sm font-medium transition-colors
-        ${isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"}
+        group relative text-sm font-medium transition-all duration-200 ease-in-out
+        ${isActive ? "text-foreground font-semibold" : "text-muted-foreground"}
+        hover:text-foreground/90
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
       role="menuitem"
     >
       {children}
+      <span 
+        className={`
+          absolute -bottom-1 left-0 h-[2px] w-full transform 
+          origin-left transition-all duration-300 ease-out
+          ${isActive ? 'bg-primary scale-x-100' : 'bg-primary/70 scale-x-0 group-hover:scale-x-100'}
+        `}
+      />
     </button>
   );
 });
@@ -85,19 +98,19 @@ export default function Navigation() {
   }, [theme, setTheme]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Mobile Menu Button */}
           <div className="flex md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="hover:bg-accent">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[300px]">
+              <SheetContent side="left" className="w-[300px] py-8">
                 <div className="mt-6">
                   <NavigationItems location={location} onNavigate={() => setIsOpen(false)} isMobile />
                 </div>
@@ -108,7 +121,7 @@ export default function Navigation() {
           {/* Logo */}
           <button
             onClick={() => setLocation('/')}
-            className="text-lg font-bold text-primary"
+            className="text-lg font-bold text-primary hover:text-primary/90 transition-colors tracking-wide"
           >
             BUBBLE'S CAFE
           </button>
@@ -119,20 +132,23 @@ export default function Navigation() {
           </div>
 
           {/* Auth & Theme Toggle */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             {!user ? (
               <Button
                 variant="default"
                 onClick={() => setLocation('/auth')}
-                className="hidden md:inline-flex"
+                size="sm"
+                className="font-medium px-4 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 Sign In
               </Button>
             ) : (
-              <Button
+              <Button 
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
+                size="sm"
+                className="font-medium hover:bg-accent px-4 transition-all duration-200"
               >
                 {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
               </Button>
@@ -141,7 +157,7 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={handleThemeToggle}
-              className="h-9 w-9"
+              className="h-9 w-9 hover:bg-accent transition-colors"
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (

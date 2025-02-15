@@ -10,6 +10,7 @@ import { CookieConsent } from "@/components/ui/cookie-consent";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AtmosphericEffects } from "@/components/effects/AtmosphericEffects";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 // Simple lazy loading
 const Home = React.lazy(() => import("./pages/home"));
@@ -21,6 +22,7 @@ const Contact = React.lazy(() => import("./pages/contact"));
 const Auth = React.lazy(() => import("./pages/auth"));
 const Index = React.lazy(() => import("./pages/index"));
 const Reader = React.lazy(() => import("./pages/reader"));
+const Admin = React.lazy(() => import("./pages/admin"));
 
 function App() {
   const [location] = useLocation();
@@ -56,6 +58,7 @@ function App() {
                     <Route path="/privacy" component={Privacy} />
                     <Route path="/index" component={Index} />
                     <Route path="/reader" component={Reader} />
+                    <ProtectedRoute path="/admin" component={Admin} />
                     <Route>
                       {() => (
                         <div className="min-h-screen flex items-center justify-center bg-background">
