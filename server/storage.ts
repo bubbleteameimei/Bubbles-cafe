@@ -20,6 +20,10 @@ import {
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type Webhook, type InsertWebhook,
   type Analytics,
+  type SiteSetting, type InsertSiteSetting,
+  type ActivityLog, type InsertActivityLog,
+  type AdminNotification, type InsertAdminNotification,
+  // Tables
   posts as postsTable,
   comments,
   readingProgress,
@@ -39,7 +43,10 @@ import {
   authorTips,
   newsletterSubscriptions,
   webhooks,
-  analytics
+  analytics,
+  siteSettings,
+  activityLogs,
+  adminNotifications
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
@@ -922,8 +929,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Newsletter Implementation
-  async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
-    const [newSubscription] = await db.insert(newsletterSubscriptions)
+  async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {    const [newSubscription] = await db.insert(newsletterSubscriptions)
       .values({ ...subscription, createdAt: new Date() })
       .returning();
     return newSubscription;

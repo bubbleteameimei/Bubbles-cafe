@@ -15,9 +15,13 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Create express app
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const isDev = process.env.NODE_ENV !== 'production';
+
+// Declare server variable in the module scope
+let server: ReturnType<typeof createServer>;
 
 // Set trust proxy first
 app.set('trust proxy', 1);
@@ -117,7 +121,7 @@ async function startServer() {
       log("Static file serving setup complete");
     }
 
-    const server = createServer(app);
+    server = createServer(app);
     server.listen(availablePort, "0.0.0.0", () => {
       log(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
 
@@ -146,10 +150,15 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   log('SIGTERM received. Starting graceful shutdown...');
-  server.close(() => {
-    log('Server closed');
+  if (server) {
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
+  } else {
+    log('Server not initialized');
     process.exit(0);
-  });
+  }
 });
 
 // Start the server
