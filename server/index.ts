@@ -84,28 +84,48 @@ app.use(session(sessionConfig));
 setupAuth(app);
 
 // Register API routes
-const server = createServer(app);
 registerRoutes(app);
 
-// Development vs Production setup
+// Function to find an available port
+function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const testServer = createServer();
+    testServer.listen(startPort, () => {
+      const { port } = testServer.address() as { port: number };
+      testServer.close(() => resolve(port));
+    });
+    testServer.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        findAvailablePort(startPort + 1).then(resolve, reject);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
 async function startServer() {
   try {
+    // Find available port
+    const availablePort = await findAvailablePort(PORT);
+
     if (isDev) {
-      await setupVite(app, server);
+      await setupVite(app, createServer(app));
       log("Vite middleware setup complete");
     } else {
       serveStatic(app);
       log("Static file serving setup complete");
     }
 
-    server.listen(PORT, "0.0.0.0", () => {
-      log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    const server = createServer(app);
+    server.listen(availablePort, "0.0.0.0", () => {
+      log(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
 
       // Notify the workflow system that we're ready and send port information
       if (process.send) {
         process.send('ready');
         process.send({ 
-          port: PORT,
+          port: availablePort,
           wait_for_port: true 
         });
       }

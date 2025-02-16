@@ -45,6 +45,7 @@ interface PostMetadata {
   isApproved?: boolean;
   triggerWarnings?: string[];
   themeCategory?: string;
+  isHidden?: boolean; // Added isHidden field
 }
 
 export function registerRoutes(app: Express): Server {
@@ -143,17 +144,14 @@ export function registerRoutes(app: Express): Server {
       const result = await storage.getPosts(page, limit);
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
-      // For admin users, show all posts without filtering
+      // Simplified filtering logic to ensure proper visibility
       let filteredPosts = result.posts;
       if (!req.user?.isAdmin) {
+        // For non-admin users, filter out hidden posts
         filteredPosts = result.posts.filter(post => {
           const metadata = post.metadata as PostMetadata;
-          // Show all non-community posts and approved community posts
-          if (filter === 'community') {
-            return metadata?.isCommunityPost && metadata?.isApproved;
-          }
-          // For regular view, show official posts and approved community posts
-          return !metadata?.isCommunityPost || metadata?.isApproved;
+          // Show all posts except those explicitly hidden
+          return !metadata?.isHidden;
         });
       }
 

@@ -59,6 +59,7 @@ export default function AdminContentPage() {
         title: "Post deleted",
         description: "The post has been successfully deleted.",
       });
+      setDeletePostId(null); // Reset deletePostId after successful deletion
     },
     onError: (error: Error) => {
       toast({
@@ -74,6 +75,14 @@ export default function AdminContentPage() {
     return <Redirect to="/" />;
   }
 
+  const handleDelete = async (postId: number) => {
+    try {
+      await deleteMutation.mutateAsync(postId);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -88,7 +97,12 @@ export default function AdminContentPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Content Management</h1>
-        <Button variant="default" size="sm" onClick={() => window.location.href = '/submit-story'}>
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={() => window.location.href = '/submit-story'}
+          className="flex items-center gap-2"
+        >
           Create New Story
         </Button>
       </div>
@@ -135,17 +149,27 @@ export default function AdminContentPage() {
             <CardContent>
               <p className="text-muted-foreground line-clamp-2">{post.excerpt}</p>
               <div className="mt-4 flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => window.location.href = `/story/${post.id}`}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => window.location.href = `/story/${post.id}`}
+                >
                   <Eye className="h-4 w-4" /> View
                 </Button>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => window.location.href = `/submit-story?edit=${post.id}`}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => window.location.href = `/submit-story?edit=${post.id}`}
+                >
                   <Edit className="h-4 w-4" /> Edit
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2 text-red-500 hover:text-red-600"
-                  onClick={() => setDeletePostId(post.id)}
+                  onClick={() => handleDelete(post.id)}
                 >
                   <Trash2 className="h-4 w-4" /> Delete
                 </Button>
@@ -170,8 +194,7 @@ export default function AdminContentPage() {
               className="bg-red-500 hover:bg-red-600"
               onClick={() => {
                 if (deletePostId) {
-                  deleteMutation.mutate(deletePostId);
-                  setDeletePostId(null);
+                  handleDelete(deletePostId);
                 }
               }}
             >
