@@ -1,9 +1,9 @@
 import { useLocation } from "wouter";
-import { Moon, Sun, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/hooks/use-theme";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   Sheet,
   SheetContent,
@@ -93,14 +93,9 @@ NavLink.displayName = "NavLink";
 
 export default function Navigation() {
   const [location] = useLocation();
-  const { theme, setTheme } = useTheme();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [, navigate] = useLocation();
-
-  const handleThemeToggle = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }, [theme, setTheme]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -158,51 +153,7 @@ export default function Navigation() {
                 {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleThemeToggle}
-              className="relative w-16 h-8 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 cursor-pointer transition-all duration-300 ease-in-out"
-              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              <div 
-                className={`
-                  absolute left-1 top-1 w-6 h-6 rounded-full 
-                  transform transition-all duration-500 ease-in-out
-                  ${theme === "dark" 
-                    ? "translate-x-8 rotate-[360deg] bg-[#F1C64B]" 
-                    : "translate-x-0 bg-white"
-                  }
-                `}
-              >
-                {/* Sun rays or moon craters */}
-                <div className="relative w-full h-full">
-                  {theme === "dark" ? (
-                    // Moon craters
-                    <>
-                      <span className="absolute top-1 left-1 w-1 h-1 rounded-full bg-purple-300/60" />
-                      <span className="absolute bottom-2 right-1 w-1.5 h-1.5 rounded-full bg-purple-300/60" />
-                      <span className="absolute top-2 right-2 w-1 h-1 rounded-full bg-purple-300/60" />
-                    </>
-                  ) : (
-                    // Sun rays
-                    <>
-                      {[...Array(8)].map((_, i) => (
-                        <span
-                          key={i}
-                          className="absolute w-1 h-1 bg-amber-300 rounded-full transform -translate-x-1/2 -translate-y-1/2"
-                          style={{
-                            left: '50%',
-                            top: '50%',
-                            transform: `rotate(${i * 45}deg) translateY(-8px)`
-                          }}
-                        />
-                      ))}
-                    </>
-                  )}
-                </div>
-              </div>
-            </Button>
+            <ThemeToggle />
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ type Theme = "dark" | "light";
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'dark';
+
     // Check local storage first
     const stored = localStorage.getItem("theme") as Theme;
     if (stored) return stored;
@@ -20,9 +21,6 @@ export function useTheme() {
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Apply transition class before theme change
-    root.classList.add('transition-colors', 'duration-300');
-
     // Remove existing theme classes
     root.classList.remove("light", "dark");
 
@@ -32,13 +30,11 @@ export function useTheme() {
     // Store theme preference
     localStorage.setItem("theme", theme);
 
-    // Optional: Remove transition classes after theme change to prevent transitions
-    // during other state changes
-    const cleanup = setTimeout(() => {
-      root.classList.remove('transition-colors', 'duration-300');
-    }, 300);
+    // Update body background based on theme
+    document.body.style.background = theme === 'dark' 
+      ? '#1C232A'
+      : 'radial-gradient(#74b9ff, #0984e3)';
 
-    return () => clearTimeout(cleanup);
   }, [theme]);
 
   return {
