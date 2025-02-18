@@ -1,0 +1,110 @@
+.login-wrap {
+  position: relative;
+  background: hsl(var(--card));
+  box-shadow: 0 12px 15px 0 rgba(0,0,0,.24),0 17px 50px 0 rgba(0,0,0,.19);
+}
+
+.login-html {
+  position: relative;
+  padding: 90px 70px 50px 70px;
+  min-height: 500px;
+}
+
+.login-html .sign-in,
+.login-html .sign-up {
+  display: none;
+}
+
+.login-html .tab {
+  font-size: 22px;
+  margin-right: 15px;
+  padding-bottom: 5px;
+  margin: 0 15px 10px 0;
+  display: inline-block;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.login-html .tab:hover {
+  color: hsl(var(--primary));
+}
+
+.login-html .sign-in:checked + .tab,
+.login-html .sign-up:checked + .tab {
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  text-shadow: 0 0 10px rgba(var(--primary), 0.5);
+}
+
+.login-form {
+  position: relative;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  min-height: 345px;
+}
+
+.sign-in-htm,
+.sign-up-htm {
+  top: 0;
+  left: 0;
+  right: 0;
+  position: absolute;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden;
+  opacity: 0;
+}
+
+.login-html .sign-in:checked + .tab + .sign-up + .tab + .login-form .sign-in-htm,
+.login-html .sign-up:checked + .tab + .login-form .sign-up-htm {
+  transform: rotateY(0);
+  visibility: visible;
+  opacity: 1;
+}
+
+.hr {
+  height: 2px;
+  margin: 30px 0;
+  background: hsl(var(--border));
+  position: relative;
+  overflow: hidden;
+}
+
+.hr::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  to {
+    left: 100%;
+  }
+}
+
+.foot-lnk {
+  text-align: center;
+  margin-top: 15px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.foot-lnk:hover {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .login-html {
+    padding: 40px 20px;
+  }
+}
