@@ -101,6 +101,7 @@ async function startServer() {
     // Start listening
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}`);
         enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 
         // Notify the workflow system about the port
