@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 export default defineConfig({
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   resolve: {
@@ -16,7 +17,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5000,
+    port: 3000,
     host: '0.0.0.0',
     hmr: {
       port: 443,
@@ -35,20 +36,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
-      },
-      output: {
-        manualChunks: {
-          vendor: [
-            'react',
-            'react-dom',
-            'react-query',
-            'wouter',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-alert-dialog',
-          ],
-        },
-      },
-    },
-    chunkSizeWarningLimit: 1000,
-  },
+      }
+    }
+  }
 });

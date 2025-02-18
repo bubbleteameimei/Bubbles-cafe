@@ -17,13 +17,13 @@ const __dirname = path.dirname(__filename);
 
 // Create express app
 const app = express();
-const PORT = parseInt(process.env.PORT || "5000", 10);
+const PORT = parseInt(process.env.PORT || "3001", 10);
 const isDev = process.env.NODE_ENV !== 'production';
 
 // Declare server variable in the module scope
 let server: ReturnType<typeof createServer>;
 
-// Enhance logging for startup process
+// Enhanced logging for startup process
 function enhancedLog(message: string, type: 'info' | 'error' = 'info') {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] [${type}] ${message}`);
@@ -37,20 +37,7 @@ app.use(compression());
 
 // Security headers with updated CSP for development
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-      connectSrc: ["'self'", 'wss:', 'https:'],
-      fontSrc: ["'self'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
-      formAction: ["'self'"],
-      frameAncestors: ["'self'"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  contentSecurityPolicy: isDev ? false : undefined
 }));
 
 // Rate limiter
@@ -100,16 +87,7 @@ async function startServer() {
     // Create server instance
     server = createServer(app);
 
-    // Notify the workflow system about the port immediately
-    if (process.send) {
-      process.send({
-        port: PORT,
-        wait_for_port: true
-      });
-      enhancedLog('Sent port information to workflow system');
-    }
-
-    // Setup routes and middleware
+    // Register routes and middleware
     if (isDev) {
       registerRoutes(app);
       enhancedLog("API routes registered successfully");
@@ -124,6 +102,15 @@ async function startServer() {
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
         enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+
+        // Notify the workflow system about the port
+        if (process.send) {
+          process.send({
+            port: PORT,
+            wait_for_port: true
+          });
+        }
+
         resolve();
       });
 
