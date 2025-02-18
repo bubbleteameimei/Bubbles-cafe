@@ -107,9 +107,54 @@ export function registerRoutes(app: Express): Server {
   app.use(compression());
 
 
-  // New route to get pending community posts
-  // Regular post routes
+  // Add this route before the existing post routes
+  app.get("/api/posts/community", cacheControl(300), async (req, res) => {
+    try {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
 
+      console.log('[GET /api/posts/community] Request params:', { page, limit });
+
+      if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+        return res.status(400).json({
+          message: "Invalid pagination parameters. Page and limit must be positive numbers."
+        });
+      }
+
+      const result = await storage.getPosts(page, limit);
+      console.log('[GET /api/posts/community] Retrieved posts count:', result.posts.length);
+
+      // Filter for community posts
+      const communityPosts = result.posts.filter(post => {
+        const metadata = post.metadata as PostMetadata;
+        return metadata?.isCommunityPost === true && 
+               (!metadata.isHidden || req.user?.isAdmin);
+      });
+
+      console.log('[GET /api/posts/community] Filtered community posts count:', communityPosts.length);
+
+      const etag = crypto
+        .createHash('md5')
+        .update(JSON.stringify(communityPosts))
+        .digest('hex');
+
+      res.set('ETag', etag);
+
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
+
+      res.json({
+        posts: communityPosts,
+        hasMore: result.hasMore && communityPosts.length === limit
+      });
+    } catch (error) {
+      console.error("[GET /api/posts/community] Error:", error);
+      res.status(500).json({ message: "Failed to fetch community posts" });
+    }
+  });
+
+  // Regular post routes
   // New route to approve a community post
   app.patch("/api/posts/:id/approve", isAuthenticated, async (req, res) => {
     try {
@@ -191,7 +236,7 @@ export function registerRoutes(app: Express): Server {
         metadata: {
           ...req.body.metadata,
           isCommunityPost: req.body.isCommunityPost || false,
-          isApproved: !req.body.isCommunityPost
+          isApproved: !req.body.isCommunityPost // Auto-approve non-community posts
         }
       });
 
@@ -849,7 +894,7 @@ Timestamp: ${new Date().toLocaleString()}
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics data" });
+      res.status(500).json({ message: "Failedto fetch analytics data" });
     }
   });
 
