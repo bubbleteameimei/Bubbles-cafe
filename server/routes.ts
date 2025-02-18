@@ -6,10 +6,11 @@ import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import express from 'express';
+import * as session from 'express-session';
 import { z } from "zod";
 import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
-import * as session from 'express-session';
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
@@ -87,9 +88,15 @@ export function registerRoutes(app: Express): Server {
     crossOriginResourcePolicy: { policy: "same-site" },
   }));
 
+  // Body parsing middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
+  app.use("/api/register", authLimiter); // Added rate limiting for /api/register
   app.use("/api", apiLimiter);
+
 
   // Set up session configuration before route registration
   const sessionSettings: session.SessionOptions = {
@@ -221,6 +228,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch community posts" });
     }
   });
+
 
 
   // Regular post routes
@@ -729,16 +737,16 @@ Timestamp: ${new Date().toLocaleString()}
       console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
       res.json({
         ...counts,
-        message: req.user?.id 
+        message: req.user?.id
           ? `Successfully ${isLike ? 'liked' : 'disliked'} the post`
           : 'Reaction recorded anonymously'
       });
     } catch (error) {
       console.error("[Reaction] Error handling post reaction:", error);
-      res.status(500).json({ 
-        message: error instanceof Error 
-          ? error.message 
-          : "Failed to update reaction status" 
+      res.status(500).json({
+        message: error instanceof Error
+          ? error.message
+          : "Failed to update reaction status"
       });
     }
   });
@@ -766,10 +774,10 @@ Timestamp: ${new Date().toLocaleString()}
       res.json(counts);
     } catch (error) {
       console.error("[Reaction] Error fetching post reactions:", error);
-      res.status(500).json({ 
-        message: error instanceof Error 
-          ? error.message 
-          : "Failed to fetch reaction counts" 
+      res.status(500).json({
+        message: error instanceof Error
+          ? error.message
+          : "Failed to fetch reaction counts"
       });
     }
   });

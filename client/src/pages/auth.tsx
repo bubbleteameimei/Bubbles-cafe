@@ -15,7 +15,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
+// Define schemas that match the backend expectations
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -37,6 +39,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [isSignIn, setIsSignIn] = useState(true);
+  const { toast } = useToast();
 
   // Redirect if already logged in
   if (user) {
@@ -66,6 +69,11 @@ export default function AuthPage() {
       await loginMutation.mutateAsync(data);
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "Failed to login",
+        variant: "destructive"
+      });
     }
   };
 
@@ -75,49 +83,64 @@ export default function AuthPage() {
       await registerMutation.mutateAsync(registrationData);
     } catch (error) {
       console.error('Registration error:', error);
+      toast({
+        title: "Registration Failed",
+        description: error instanceof Error ? error.message : "Failed to register",
+        variant: "destructive"
+      });
     }
   };
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-center p-4">
       <motion.div 
-        className="login-wrap"
+        className="login-wrap w-full max-w-[525px] min-h-[670px] relative bg-black/80 rounded-lg overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="login-html">
-          <input 
-            id="tab-1" 
-            type="radio" 
-            name="tab" 
-            className="sign-in" 
-            checked={isSignIn} 
-            onChange={() => setIsSignIn(true)}
-          />
-          <label 
-            htmlFor="tab-1" 
-            className="tab"
-            onClick={() => setIsSignIn(true)}
-          >
-            Sign In
-          </label>
+        <div className="login-html p-[90px_70px_50px]">
+          <div className="flex gap-4 mb-8">
+            <input 
+              id="tab-1" 
+              type="radio" 
+              name="tab" 
+              className="hidden" 
+              checked={isSignIn} 
+              onChange={() => setIsSignIn(true)}
+            />
+            <label 
+              htmlFor="tab-1" 
+              className={`text-2xl pb-2 border-b-2 transition-colors cursor-pointer ${
+                isSignIn
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground border-transparent"
+              }`}
+              onClick={() => setIsSignIn(true)}
+            >
+              Sign In
+            </label>
 
-          <input 
-            id="tab-2" 
-            type="radio" 
-            name="tab" 
-            className="sign-up"
-            checked={!isSignIn}
-            onChange={() => setIsSignIn(false)}
-          />
-          <label 
-            htmlFor="tab-2" 
-            className="tab"
-            onClick={() => setIsSignIn(false)}
-          >
-            Sign Up
-          </label>
+            <input 
+              id="tab-2" 
+              type="radio" 
+              name="tab" 
+              className="hidden"
+              checked={!isSignIn}
+              onChange={() => setIsSignIn(false)}
+            />
+            <label 
+              htmlFor="tab-2" 
+              className={`text-2xl pb-2 border-b-2 transition-colors cursor-pointer ${
+                !isSignIn
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground border-transparent"
+              }`}
+              onClick={() => setIsSignIn(false)}
+            >
+              Sign Up
+            </label>
+          </div>
 
           <div className="login-form">
             {isSignIn ? (
@@ -133,7 +156,7 @@ export default function AuthPage() {
                             <Input
                               type="email"
                               placeholder="Email"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
@@ -150,7 +173,7 @@ export default function AuthPage() {
                             <Input
                               type="password"
                               placeholder="Password"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
@@ -167,9 +190,9 @@ export default function AuthPage() {
                         {loginMutation.isPending ? "Signing in..." : "Sign In"}
                       </Button>
                     </div>
-                    <div className="hr" />
-                    <div className="foot-lnk">
-                      <a href="#forgot" className="text-sm text-muted-foreground hover:text-primary">
+                    <div className="h-[2px] bg-white/20 my-8" />
+                    <div className="text-center">
+                      <a href="#forgot" className="text-muted-foreground hover:text-primary">
                         Forgot Password?
                       </a>
                     </div>
@@ -188,7 +211,7 @@ export default function AuthPage() {
                           <FormControl>
                             <Input
                               placeholder="Username"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
@@ -205,7 +228,7 @@ export default function AuthPage() {
                             <Input
                               type="email"
                               placeholder="Email"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
@@ -222,7 +245,7 @@ export default function AuthPage() {
                             <Input
                               type="password"
                               placeholder="Password"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
@@ -239,7 +262,7 @@ export default function AuthPage() {
                             <Input
                               type="password"
                               placeholder="Confirm Password"
-                              className="input bg-background/50"
+                              className="input bg-white/10 border-none text-white"
                               {...field}
                             />
                           </FormControl>
