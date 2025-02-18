@@ -37,13 +37,19 @@ export function useTheme() {
     body.style.width = "100%";
     body.style.height = "100vh";
 
-    // Theme-specific styles
+    // Theme-specific styles with horror theme colors
     if (theme === 'dark') {
       body.style.background = `#1C232A`;
       document.documentElement.style.setProperty('--background', "hsl(215 28% 17%)");
+      // Add more horror-themed dark mode colors
+      document.documentElement.style.setProperty('--primary', "#8B0000"); // Deep blood red
+      document.documentElement.style.setProperty('--secondary', "#2C1810"); // Dark mahogany
     } else {
       body.style.background = `#ffffff`;
       document.documentElement.style.setProperty('--background', "hsl(0 0% 100%)");
+      // Add more horror-themed light mode colors
+      document.documentElement.style.setProperty('--primary', "#B22222"); // Lighter blood red
+      document.documentElement.style.setProperty('--secondary', "#8B4513"); // Lighter mahogany
     }
 
     // Match transition timing with toggle animation
