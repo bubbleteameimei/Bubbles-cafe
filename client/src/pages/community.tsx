@@ -17,8 +17,7 @@ export default function CommunityPage() {
   const { data, isLoading } = useQuery<PostsResponse>({
     queryKey: ["/api/posts/community"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/posts/community");
-      return response.json();
+      return apiRequest<PostsResponse>("GET", "/api/posts/community");
     }
   });
 

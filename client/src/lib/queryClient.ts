@@ -47,7 +47,8 @@ export async function apiRequest<T = unknown>(
     });
 
     await throwIfResNotOk(res);
-    return res.json();
+    const responseData: T = await res.json();
+    return responseData;
   } catch (error) {
     console.error(`API Request failed (${method} ${url}):`, error);
     throw error;
