@@ -23,6 +23,12 @@ const isDev = process.env.NODE_ENV !== 'production';
 // Declare server variable in the module scope
 let server: ReturnType<typeof createServer>;
 
+// Enhance logging for startup process
+function enhancedLog(message: string, type: 'info' | 'error' = 'info') {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [${type}] ${message}`);
+}
+
 // Set trust proxy first
 app.set('trust proxy', 1);
 
@@ -87,47 +93,53 @@ app.use(session(sessionConfig));
 // Set up auth
 setupAuth(app);
 
-// Create server instance first
-server = createServer(app);
-
-// Register API routes BEFORE Vite middleware
-registerRoutes(app);
-
 async function startServer() {
   try {
+    enhancedLog('Starting server initialization...');
+
     // Find available port
     const availablePort = await findAvailablePort(PORT);
+    enhancedLog(`Found available port: ${availablePort}`);
 
     if (isDev) {
+      // Register API routes BEFORE Vite middleware
+      registerRoutes(app);
+      enhancedLog("API routes registered successfully");
+
       // Setup Vite middleware AFTER API routes
       await setupVite(app, server);
-      log("Vite middleware setup complete");
+      enhancedLog("Vite middleware setup complete");
     } else {
       serveStatic(app);
-      log("Static file serving setup complete");
+      enhancedLog("Static file serving setup complete");
     }
 
-    server.listen(availablePort, "0.0.0.0", () => {
-      log(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
+    // Start listening
+    await new Promise<void>((resolve, reject) => {
+      server.listen(availablePort, "0.0.0.0", () => {
+        enhancedLog(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
 
-      // Notify the workflow system that we're ready and send port information
-      if (process.send) {
-        process.send('ready');
-        process.send({ 
-          port: availablePort,
-          wait_for_port: true 
-        });
-      }
-    });
+        // Notify the workflow system about the port first
+        if (process.send) {
+          process.send({ 
+            port: availablePort,
+            wait_for_port: true 
+          });
+          enhancedLog('Sent port information to workflow system');
 
-    // Handle server errors
-    server.on('error', (error: NodeJS.ErrnoException) => {
-      log(`Server error: ${error.message}`);
-      process.exit(1);
+          // Then send ready signal
+          process.send('ready');
+          enhancedLog('Sent ready signal to workflow system');
+        }
+
+        resolve();
+      });
+
+      server.once('error', reject);
     });
 
   } catch (error) {
-    log(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
+    enhancedLog(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`, 'error');
     process.exit(1);
   }
 }
@@ -152,20 +164,23 @@ function findAvailablePort(startPort: number): Promise<number> {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  log('SIGTERM received. Starting graceful shutdown...');
+  enhancedLog('SIGTERM received. Starting graceful shutdown...');
   if (server) {
     server.close(() => {
-      log('Server closed');
+      enhancedLog('Server closed');
       process.exit(0);
     });
   } else {
-    log('Server not initialized');
+    enhancedLog('Server not initialized');
     process.exit(0);
   }
 });
 
+// Initialize server before starting
+server = createServer(app);
+
 // Start the server
 startServer().catch((error) => {
-  log(`Critical error during server start: ${error.message}`);
+  enhancedLog(`Critical error during server start: ${error.message}`, 'error');
   process.exit(1);
 });
