@@ -16,7 +16,7 @@ export default function ThemeToggle() {
         className="theme-toggle"
         checked={theme === "light"}
         onChange={handleToggle}
-        aria-label="Toggle theme"
+        aria-label="Toggle between dark and light mode"
       />
       <label 
         htmlFor="theme-toggle" 

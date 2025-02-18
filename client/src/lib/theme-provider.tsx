@@ -1,8 +1,16 @@
-// Deprecated - Using hooks/use-theme.tsx instead
-// This file is kept temporarily to prevent import breaks
-// TODO: Remove this file after updating all imports to use hooks/use-theme.tsx
+import { type ReactNode } from "react";
+import { useTheme } from "@/hooks/use-theme";
 
-import { useTheme as useThemeHook } from '@/hooks/use-theme';
+interface ThemeProviderProps {
+  children: ReactNode;
+}
 
-export { useTheme as default } from '@/hooks/use-theme';
-export const useTheme = useThemeHook;
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  // Initialize theme hook to set up listeners and initial theme
+  useTheme();
+
+  return <>{children}</>;
+}
+
+// Re-export the useTheme hook for convenience
+export { useTheme } from "@/hooks/use-theme";

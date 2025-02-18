@@ -35,7 +35,7 @@
   background-repeat: no-repeat;
 }
 
-.theme-toggle:after {
+.theme-toggle::after {
   content: '';
   width: 26px;
   height: 26px;
@@ -50,7 +50,7 @@
   z-index: 2;
 }
 
-.theme-toggle:checked:after {
+.theme-toggle:checked::after {
   animation: on .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   box-shadow: inset -5px -5px 4px rgba(53, 53, 53, 0.3);
 }
@@ -85,90 +85,32 @@
   }
 }
 
-/* Sun/Moon animations */
-.theme-toggle:checked:before {
+.theme-toggle:checked::before {
   content: '';
+  position: absolute;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  position: absolute;
+  top: 50%;
   left: 8px;
-  top: 4px;
-  transform-origin: 35px 8px;
-  background-color: transparent;
-  box-shadow: 6px -1px 0px #fff;
-  filter: blur(0px);
-  animation: sun .7s forwards cubic-bezier(.8, .5, .2, 1.4);
-  z-index: 1;
+  transform: translateY(-50%);
+  background: #f5daaa;
+  box-shadow: 0 0 15px #f5deb4;
+  transition: all .7s cubic-bezier(.8, .5, .2, 1.4);
+  opacity: 1;
 }
 
-@keyframes sun {
-  0% {
-    transform: rotate(170deg);
-    background-color: transparent;
-    box-shadow: 6px -1px 0px #fff;
-    filter: blur(0px);
-  }
-  50% {
-    background-color: transparent;
-    box-shadow: 6px -1px 0px #fff;
-    filter: blur(0px);
-  }
-  90% {
-    background-color: #f5daaa;
-    box-shadow: 0px 0px 15px #f5deb4,
-                0px 0px 25px #f5deb4,
-                0px 0px 35px #f5deb4,
-                inset 0px 0px 2px #efd3a3;
-    filter: blur(1px);
-  }
-  100% {
-    transform: rotate(0deg);
-    background-color: #f5daaa;
-    box-shadow: 0px 0px 15px #f5deb4,
-                0px 0px 25px #f5deb4,
-                0px 0px 35px #f5deb4,
-                inset 0px 0px 2px #efd3a3;
-    filter: blur(1px);
-  }
-}
-
-.theme-toggle:before {
+.theme-toggle::before {
   content: '';
+  position: absolute;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  position: absolute;
+  top: 50%;
   left: 8px;
-  top: 4px;
-  filter: blur(1px);
-  background-color: #f5daaa;
-  box-shadow: 0px 0px 15px #f5deb4,
-              0px 0px 25px #f5deb4,
-              0px 0px 35px #f5deb4,
-              inset 0px 0px 2px #efd3a3;
-  transform-origin: 35px 8px;
-  animation: moon .7s forwards cubic-bezier(.8, .5, .2, 1.4);
-  z-index: 1;
-}
-
-@keyframes moon {
-  0% {
-    transform: rotate(0deg);
-    filter: blur(1px);
-  }
-  50% {
-    filter: blur(1px);
-  }
-  90% {
-    background-color: transparent;
-    box-shadow: 6px -1px 0px #fff;
-    filter: blur(0px);
-  }
-  100% {
-    transform: rotate(170deg);
-    background-color: transparent;
-    box-shadow: 6px -1px 0px #fff;
-    filter: blur(0px);
-  }
+  transform: translateY(-50%);
+  background: transparent;
+  box-shadow: 8px 0 0 0 #fff;
+  transition: all .7s cubic-bezier(.8, .5, .2, 1.4);
+  opacity: 0.8;
 }
