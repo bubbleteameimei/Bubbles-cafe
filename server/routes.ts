@@ -15,6 +15,7 @@ import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import moderationRouter from './routes/moderation';
 
 // Add slug generation function at the top with other utility functions
 function generateSlug(title: string): string {
@@ -874,6 +875,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add these routes after existing routes
+  // Update the story rating endpoint
   app.post("/api/stories/:postId/rate", async (req, res) => {
     try {
       const { postId } = req.params;
@@ -902,8 +904,7 @@ Timestamp: ${new Date().toLocaleString()}
 
       res.json(rating);
     } catch (error) {
-      console.error("Error rating story:", error);
-      res.status(500).json({ message: "Failed to rate story" });
+      console.error("Error rating story:", error);      res.status(500).json({ message: "Failed to rate story" });
     }
   });
 
@@ -1016,11 +1017,19 @@ Timestamp: ${new Date().toLocaleString()}
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
 
-      const analytics = await storage.getSiteAnalytics();
-      res.json(analytics);
+      // Get analytics data from storage
+      const [analyticsSummary, deviceStats] = await Promise.all([
+        storage.getAnalyticsSummary(),
+        storage.getDeviceDistribution()
+      ]);
+
+      res.json({
+        ...analyticsSummary,
+        deviceStats
+      });
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      res.status(500).json({ message: "Failedto fetch analytics data" });
+      res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
 
@@ -1076,7 +1085,10 @@ Timestamp: ${new Date().toLocaleString()}
     });
   });
 
+  // Register moderation routes with authentication
+  app.use("/api/moderation", isAuthenticated, moderationRouter);
+
   // Create HTTP server
-  const server = createServer(app);
-  return server;
+  const httpServer = createServer(app);
+  return httpServer;
 }

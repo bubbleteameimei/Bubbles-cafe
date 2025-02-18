@@ -1,13 +1,19 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Redirect } from "wouter";
-import { Loader2, TrendingUp, Users, Clock, Eye } from "lucide-react";
+import { Loader2, TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface SiteAnalytics {
   totalViews: number;
   uniqueVisitors: number;
   avgReadTime: number;
+  bounceRate: number;
+  deviceStats: {
+    desktop: number;
+    mobile: number;
+    tablet: number;
+  };
 }
 
 export default function AdminAnalyticsPage() {
@@ -68,6 +74,46 @@ export default function AdminAnalyticsPage() {
             <CardContent>
               <div className="text-2xl font-bold">{analytics?.avgReadTime.toFixed(1)} min</div>
               <p className="text-xs text-muted-foreground">Average time spent reading stories</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bounce Rate</CardTitle>
+              <ArrowDownUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{(analytics?.bounceRate || 0).toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground">Percentage of single-page sessions</p>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Device Distribution</CardTitle>
+              <Monitor className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Desktop</p>
+                  <div className="text-2xl font-bold">
+                    {((analytics?.deviceStats.desktop || 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Mobile</p>
+                  <div className="text-2xl font-bold">
+                    {((analytics?.deviceStats.mobile || 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Tablet</p>
+                  <div className="text-2xl font-bold">
+                    {((analytics?.deviceStats.tablet || 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

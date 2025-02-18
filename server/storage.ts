@@ -138,6 +138,7 @@ export interface IStorage {
   checkContentSimilarity(content: string): Promise<boolean>;
   reportContent(report: InsertReportedContent): Promise<ReportedContent>;
   getReportedContent(status?: string): Promise<ReportedContent[]>;
+  updateReportedContent(id: number, status: string): Promise<ReportedContent>;
 
   // Tips System
   createTip(tip: InsertAuthorTip): Promise<AuthorTip>;
@@ -158,6 +159,19 @@ export interface IStorage {
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
+  
+  // Analytics methods
+  getAnalyticsSummary(): Promise<{ 
+    totalViews: number; 
+    uniqueVisitors: number; 
+    avgReadTime: number; 
+    bounceRate: number; 
+  }>;
+  getDeviceDistribution(): Promise<{
+    desktop: number;
+    mobile: number;
+    tablet: number;
+  }>;
   sessionStore: session.Store;
 }
 
@@ -920,7 +934,7 @@ export class DatabaseStorage implements IStorage {
     return newChallenge;
   }
 
-  async getActiveWritingChallenges(): Promise<WritingChallenge[]> {
+async getActiveWritingChallenges(): Promise<WritingChallenge[]> {
     return await db.select()
       .from(writingChallenges)
       .where(gt(writingChallenges.endDate, new Date()))
@@ -934,7 +948,7 @@ export class DatabaseStorage implements IStorage {
     return newEntry;
   }
 
-async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
+  async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
     return await db.select()
       .from(challengeEntries)
       .where(eq(challengeEntries.challengeId, challengeId))
@@ -972,6 +986,25 @@ async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
       .from(reportedContent)
       .where(eq(reportedContent.status, status))
       .orderBy(desc(reportedContent.createdAt));
+  }
+
+  async updateReportedContent(id: number, status: string): Promise<ReportedContent> {
+    try {
+      console.log(`[Storage] Updating reported content ${id} to status: ${status}`);
+      const [updatedReport] = await db.update(reportedContent)
+        .set({ status })
+        .where(eq(reportedContent.id, id))
+        .returning();
+
+      if (!updatedReport) {
+        throw new Error("Reported content not found");
+      }
+
+      return updatedReport;
+    } catch (error) {
+      console.error('[Storage] Error updating reported content:', error);
+      throw error;
+    }
   }
 
   // Tips System Implementation
@@ -1185,6 +1218,65 @@ async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
       .from(activityLogs)
       .orderBy(desc(activityLogs.createdAt))
       .limit(limit);
+  }
+  async getAnalyticsSummary() {
+    try {
+      console.log('[Storage] Fetching analytics summary');
+      const [result] = await db
+        .select({
+          totalViews: sql`sum(views)`,
+          uniqueVisitors: sql`count(distinct visitor_id)`,
+          avgReadTime: sql`avg(read_time)`,
+          bounceRate: sql`(sum(case when page_views = 1 then 1 else 0 end) * 100.0 / count(*))`,
+        })
+        .from(analytics);
+
+      return {
+        totalViews: Number(result.totalViews) || 0,
+        uniqueVisitors: Number(result.uniqueVisitors) || 0,
+        avgReadTime: Number(result.avgReadTime) || 0,
+        bounceRate: Number(result.bounceRate) || 0,
+      };
+    } catch (error) {
+      console.error('[Storage] Error fetching analytics summary:', error);
+      throw error;
+    }
+  }
+
+  async getDeviceDistribution() {
+    try {
+      console.log('[Storage] Fetching device distribution');
+      const totalSessions = await db
+        .select({ count: sql`count(*)` })
+        .from(analytics);
+
+      const deviceCounts = await db
+        .select({
+          device: sql`device_type`,
+          count: sql`count(*)`
+        })
+        .from(analytics)
+        .groupBy(sql`device_type`);
+
+      const total = Number(totalSessions[0]?.count) || 1; // Avoid division by zero
+      const distribution = {
+        desktop: 0,
+        mobile: 0,
+        tablet: 0
+      };
+
+      deviceCounts.forEach(row => {
+        const device = row.device as keyof typeof distribution;
+        if (device in distribution) {
+          distribution[device] = Number(row.count) / total;
+        }
+      });
+
+      return distribution;
+    } catch (error) {
+      console.error('[Storage] Error fetching device distribution:', error);
+      throw error;
+    }
   }
 }
 
