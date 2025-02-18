@@ -30,30 +30,20 @@ export function useTheme() {
     // Store theme preference
     localStorage.setItem("theme", theme);
 
-    // Update body styles
+    // Base styles
     const body = document.body;
     body.style.padding = "0px";
     body.style.margin = "0px";
     body.style.width = "100%";
     body.style.height = "100vh";
 
-    // Enhanced background transitions
+    // Theme-specific styles
     if (theme === 'dark') {
-      body.style.background = `
-        radial-gradient(circle at 50% 50%, 
-          #1C232A 0%,
-          #121518 70%,
-          #0a0c0e 100%
-        )
-      `;
+      body.style.background = `#1C232A`;
+      document.documentElement.style.setProperty('--background', "hsl(215 28% 17%)");
     } else {
-      body.style.background = `
-        radial-gradient(circle at 50% 50%,
-          #8cc5ff 0%,
-          #74b9ff 40%,
-          #0984e3 100%
-        )
-      `;
+      body.style.background = `#ffffff`;
+      document.documentElement.style.setProperty('--background', "hsl(214 100% 90%)");
     }
 
     // Match transition timing with toggle animation

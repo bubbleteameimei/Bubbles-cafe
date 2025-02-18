@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 // Create express app
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "5000", 10);
 const isDev = process.env.NODE_ENV !== 'production';
 
 // Declare server variable in the module scope
@@ -97,17 +97,13 @@ async function startServer() {
   try {
     enhancedLog('Starting server initialization...');
 
-    // Find available port first
-    const availablePort = await findAvailablePort(PORT);
-    enhancedLog(`Found available port: ${availablePort}`);
-
     // Create server instance
     server = createServer(app);
 
     // Notify the workflow system about the port immediately
     if (process.send) {
       process.send({
-        port: availablePort,
+        port: PORT,
         wait_for_port: true
       });
       enhancedLog('Sent port information to workflow system');
@@ -126,8 +122,8 @@ async function startServer() {
 
     // Start listening
     return new Promise<void>((resolve, reject) => {
-      server.listen(availablePort, "0.0.0.0", () => {
-        enhancedLog(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
+      server.listen(PORT, "0.0.0.0", () => {
+        enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
         resolve();
       });
 
@@ -140,24 +136,6 @@ async function startServer() {
     enhancedLog(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`, 'error');
     process.exit(1);
   }
-}
-
-// Function to find an available port
-function findAvailablePort(startPort: number): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const testServer = createServer();
-    testServer.listen(startPort, () => {
-      const { port } = testServer.address() as { port: number };
-      testServer.close(() => resolve(port));
-    });
-    testServer.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        findAvailablePort(startPort + 1).then(resolve, reject);
-      } else {
-        reject(err);
-      }
-    });
-  });
 }
 
 // Graceful shutdown
