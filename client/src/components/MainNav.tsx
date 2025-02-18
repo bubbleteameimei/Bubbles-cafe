@@ -12,6 +12,11 @@ export default function MainNav() {
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [, setLocation] = useLocation();
 
+  const handleAuthClick = () => {
+    console.log('Navigating to auth page');
+    setLocation("/auth");
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
@@ -69,8 +74,8 @@ export default function MainNav() {
             <Button 
               variant="default" 
               size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-              onClick={() => setLocation("/auth")}
+              onClick={handleAuthClick}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Sign In
             </Button>

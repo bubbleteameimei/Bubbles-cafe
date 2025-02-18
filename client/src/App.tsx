@@ -18,6 +18,7 @@ const IndexPage = React.lazy(() => import('@/pages/index'));
 const AboutPage = React.lazy(() => import('@/pages/about'));
 const ContactPage = React.lazy(() => import('@/pages/contact'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
+const AuthPage = React.lazy(() => import('@/pages/auth'));
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
                   <Route path="/about" component={AboutPage} />
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/admin/dashboard" component={AdminDashboard} />
+                  <Route path="/auth" component={AuthPage} />
                 </Switch>
               </React.Suspense>
             </main>
