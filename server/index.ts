@@ -97,16 +97,26 @@ async function startServer() {
   try {
     enhancedLog('Starting server initialization...');
 
-    // Find available port
+    // Find available port first
     const availablePort = await findAvailablePort(PORT);
     enhancedLog(`Found available port: ${availablePort}`);
 
+    // Create server instance
+    server = createServer(app);
+
+    // Notify the workflow system about the port immediately
+    if (process.send) {
+      process.send({
+        port: availablePort,
+        wait_for_port: true
+      });
+      enhancedLog('Sent port information to workflow system');
+    }
+
+    // Setup routes and middleware
     if (isDev) {
-      // Register API routes BEFORE Vite middleware
       registerRoutes(app);
       enhancedLog("API routes registered successfully");
-
-      // Setup Vite middleware AFTER API routes
       await setupVite(app, server);
       enhancedLog("Vite middleware setup complete");
     } else {
@@ -115,29 +125,17 @@ async function startServer() {
     }
 
     // Start listening
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       server.listen(availablePort, "0.0.0.0", () => {
         enhancedLog(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
-
-        // Notify the workflow system about the port first
-        if (process.send) {
-          process.send({ 
-            port: availablePort,
-            wait_for_port: true 
-          });
-          enhancedLog('Sent port information to workflow system');
-        }
-
         resolve();
       });
 
-      server.once('error', reject);
+      server.once('error', (err) => {
+        enhancedLog(`Server error: ${err.message}`, 'error');
+        reject(err);
+      });
     });
-    if (process.send) {
-          process.send('ready');
-          enhancedLog('Sent ready signal to workflow system');
-        }
-
   } catch (error) {
     enhancedLog(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`, 'error');
     process.exit(1);
@@ -175,9 +173,6 @@ process.on('SIGTERM', () => {
     process.exit(0);
   }
 });
-
-// Initialize server before starting
-server = createServer(app);
 
 // Start the server
 startServer().catch((error) => {

@@ -31,7 +31,7 @@ async function cleanContent(content: string): Promise<string> {
 
 async function getOrCreateAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("powerPUFF70", 12);
+    const hashedPassword = await bcrypt.hash("admin123", 12);
     console.log("Creating admin user with email: vantalison@gmail.com");
 
     // First check if admin user exists
@@ -46,7 +46,7 @@ async function getOrCreateAdminUser() {
 
     // Create new admin user if doesn't exist
     const [newAdmin] = await db.insert(users).values({
-      username: "admin",
+      username: "vantalison",
       email: "vantalison@gmail.com",
       password_hash: hashedPassword,
       isAdmin: true
@@ -60,24 +60,18 @@ async function getOrCreateAdminUser() {
   }
 }
 
-export async function importWordPress() {
+async function importWordPress() {
   try {
     console.log("Starting WordPress import process...");
 
     // Read the WordPress export file
-    const xmlPath = path.join(__dirname, '..', 'attached_assets', 'bubblescafe.wordpress.2025-02-04.000.xml');
+    const xmlPath = path.join(process.cwd(), "attached_assets", "bubblescafe.wordpress.2025-02-04.000.xml");
     console.log("Reading XML file from:", xmlPath);
 
-    let xmlData: string;
-    try {
-      xmlData = await fs.readFile(xmlPath, 'utf-8');
-      console.log("Successfully read XML file, size:", xmlData.length, "bytes");
-    } catch (error) {
-      console.error("Failed to read XML file:", error);
-      throw new Error(`Failed to read WordPress export file: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const xmlData = await fs.readFile(xmlPath, 'utf-8');
+    console.log("Successfully read XML file, size:", xmlData.length, "bytes");
 
-    // Parse XML with enhanced options
+    // Parse XML
     const parser = new XMLParser({
       ignoreAttributes: false,
       parseTagValue: true,
@@ -87,27 +81,13 @@ export async function importWordPress() {
     });
 
     console.log("Parsing WordPress XML data...");
-    let jsonObj;
-    try {
-      jsonObj = parser.parse(xmlData);
-    } catch (error) {
-      console.error("Failed to parse XML:", error);
-      throw new Error(`Failed to parse WordPress XML: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const data = parser.parse(xmlData);
 
-    // Debug: Log the structure of the parsed XML
-    console.log("XML Structure:", {
-      hasRSS: !!jsonObj.rss,
-      hasChannel: !!jsonObj.rss?.channel,
-      channelKeys: Object.keys(jsonObj.rss?.channel || {}),
-      itemCount: jsonObj.rss?.channel?.item?.length || 0
-    });
-
-    if (!jsonObj.rss?.channel?.item) {
+    if (!data.rss?.channel?.item) {
       throw new Error("Invalid WordPress XML structure: Missing items array");
     }
 
-    const items = jsonObj.rss.channel.item;
+    const items = data.rss.channel.item;
     console.log(`Found ${items.length} items in WordPress export`);
 
     // Get admin user for post authorship
@@ -118,20 +98,16 @@ export async function importWordPress() {
     let createdCount = 0;
     let skippedCount = 0;
 
-    console.log(`Processing ${items.length} items from WordPress export...`);
-
     for (const item of items) {
       if (item["wp:post_type"] === "post" && item["wp:status"] === "publish") {
         try {
           console.log(`Processing post: "${item.title}"`);
 
-          // Clean and format content
           const content = await cleanContent(item["content:encoded"]);
           const excerpt = item["excerpt:encoded"]
             ? (await cleanContent(item["excerpt:encoded"])).split('\n')[0]
             : content.split('\n')[0];
 
-          // Generate unique slug
           let baseSlug = item["wp:post_name"] || item.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -146,8 +122,7 @@ export async function importWordPress() {
           existingSlugs.add(finalSlug);
 
           // Parse publication date properly
-          const pubDateStr = item.pubDate;
-          const pubDate = new Date(pubDateStr);
+          const pubDate = new Date(item.pubDate);
 
           // Check if post already exists
           const [existingPost] = await db.select()
@@ -201,8 +176,8 @@ export async function importWordPress() {
   }
 }
 
-// Run the import if this is the main module
-if (import.meta.url === `file://${process.cwd()}/scripts/import_wordpress.ts`) {
+// Only run if this is the main module
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   importWordPress()
     .then(results => {
       console.log("Import completed successfully:", results);
