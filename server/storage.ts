@@ -524,14 +524,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createComment(comment: InsertComment): Promise<Comment> {
-    const [newComment] = await db.insert(comments)
-      .values({ ...comment, createdAt: new Date() })
-      .returning();
+    try {
+      console.log('[Storage] Creating new comment');
+      const [newComment] = await db.insert(comments)
+        .values(comment)
+        .returning();
 
-    return {
-      ...newComment,
-      createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)
-    };
+      return {
+        ...newComment,
+        createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)
+      };
+    } catch (error) {
+      console.error('[Storage] Error creating comment:', error);
+      throw error;
+    }
   }
 
   async updateComment(id: number, comment: Partial<Comment>): Promise<Comment> {
@@ -630,64 +636,107 @@ export class DatabaseStorage implements IStorage {
   }
 
   async removePostLike(postId: number, userId: number): Promise<void> {
-    await db.delete(postLikes)
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.userId, userId)
-      ));
+    try {
+      console.log(`[Storage] Removing like/dislike for post ${postId} by user ${userId}`);
+      await db.delete(postLikes)
+        .where(and(
+          eq(postLikes.postId, postId),
+          eq(postLikes.userId, userId)
+        ));
 
-    await this.updatePostCounts(postId);
+      await this.updatePostCounts(postId);
+      console.log(`[Storage] Successfully removed reaction for post ${postId}`);
+    } catch (error) {
+      console.error(`[Storage] Error removing like for post ${postId}:`, error);
+      throw error;
+    }
   }
 
   async updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void> {
-    await db.update(postLikes)
-      .set({ isLike })
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.userId, userId)
-      ));
+    try {
+      console.log(`[Storage] Updating reaction for post ${postId} by user ${userId} to ${isLike ? 'like' : 'dislike'}`);
+      await db.update(postLikes)
+        .set({ isLike })
+        .where(and(
+          eq(postLikes.postId, postId),
+          eq(postLikes.userId, userId)
+        ));
 
-    await this.updatePostCounts(postId);
+      await this.updatePostCounts(postId);
+      console.log(`[Storage] Successfully updated reaction for post ${postId}`);
+    } catch (error) {
+      console.error(`[Storage] Error updating like for post ${postId}:`, error);
+      throw error;
+    }
   }
 
   async createPostLike(postId: number, userId: number, isLike: boolean): Promise<void> {
-    await db.insert(postLikes)
-      .values({
-        postId,
-        userId,
-        isLike,
-        createdAt: new Date()
-      });
+    try {
+      console.log(`[Storage] Creating new ${isLike ? 'like' : 'dislike'} for post ${postId} by user ${userId}`);
+      await db.insert(postLikes)
+        .values({
+          postId,
+          userId,
+          isLike
+        });
 
-    await this.updatePostCounts(postId);
+      await this.updatePostCounts(postId);
+      console.log(`[Storage] Successfully created reaction for post ${postId}`);
+    } catch (error) {
+      console.error(`[Storage] Error creating like for post ${postId}:`, error);
+      throw error;
+    }
   }
 
   async getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }> {
-    const likes = await db.select({ count: sql`count(*)` })
-      .from(postLikes)
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.isLike, true)
-      ));
+    try {
+      console.log(`[Storage] Getting like counts for post ${postId}`);
+      const [likes] = await db.select({
+        count: sql<string>`count(*)`
+      })
+        .from(postLikes)
+        .where(and(
+          eq(postLikes.postId, postId),
+          eq(postLikes.isLike, true)
+        ));
 
-    const dislikes = await db.select({ count: sql`count(*)` })
-      .from(postLikes)
-      .where(and(
-        eq(postLikes.postId, postId),
-        eq(postLikes.isLike, false)
-      ));
+      const [dislikes] = await db.select({
+        count: sql<string>`count(*)`
+      })
+        .from(postLikes)
+        .where(and(
+          eq(postLikes.postId, postId),
+          eq(postLikes.isLike, false)
+        ));
 
-    return {
-      likesCount: Number(likes[0]?.count || 0),
-      dislikesCount: Number(dislikes[0]?.count || 0)
-    };
+      const counts = {
+        likesCount: Number(likes?.count || 0),
+        dislikesCount: Number(dislikes?.count || 0)
+      };
+
+      console.log(`[Storage] Post ${postId} counts:`, counts);
+      return counts;
+    } catch (error) {
+      console.error(`[Storage] Error getting like counts for post ${postId}:`, error);
+      throw error;
+    }
   }
 
   private async updatePostCounts(postId: number): Promise<void> {
-    const counts = await this.getPostLikeCounts(postId);
-    await db.update(postsTable)
-      .set({ likesCount: counts.likesCount, dislikesCount: counts.dislikesCount })
-      .where(eq(postsTable.id, postId));
+    try {
+      const counts = await this.getPostLikeCounts(postId);
+      await db.update(postsTable)
+        .set({ 
+          likesCount: counts.likesCount, 
+          dislikesCount: counts.dislikesCount 
+        })
+        .where(eq(postsTable.id, postId));
+
+      console.log(`[Storage] Updated post ${postId} counts:`, counts);
+    } catch (error) {
+      console.error(`[Storage] Error updating post counts for ${postId}:`, error);
+      throw error;
+    }
   }
 
   // Comment votes methods
@@ -752,14 +801,20 @@ export class DatabaseStorage implements IStorage {
 
   // Comment replies method
   async createCommentReply(reply: InsertCommentReply): Promise<CommentReply> {
-    const [newReply] = await db.insert(commentReplies)
-      .values({ ...reply, createdAt: new Date() })
-      .returning();
+    try {
+      console.log('[Storage] Creating new comment reply');
+      const [newReply] = await db.insert(commentReplies)
+        .values(reply)
+        .returning();
 
-    return {
-      ...newReply,
-      createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
-    };
+      return {
+        ...newReply,
+        createdAt: newReply.createdAt instanceof Date ? newReply.createdAt : new Date(newReply.createdAt)
+      };
+    } catch (error) {
+      console.error('[Storage] Error creating comment reply:', error);
+      throw error;
+    }
   }
 
   // Story Ratings Implementation
@@ -883,8 +938,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkContentSimilarity(content: string): Promise<boolean> {
-    // TODO: Implement similarity checking logic
-    return false;
+    try {
+      // TODO: Implement similarity checking logic
+      console.log('[Storage] Checking content similarity');
+      return Promise.resolve(false);
+    } catch (error) {
+      console.error('[Storage] Error checking content similarity:', error);
+      throw error;
+    }
   }
 
   async reportContent(report: InsertReportedContent): Promise<ReportedContent> {

@@ -13,6 +13,12 @@ interface LikeDislikeProps {
   onDislike?: (disliked: boolean) => void;
 }
 
+interface ReactionResponse {
+  likesCount: number;
+  dislikesCount: number;
+  message?: string;
+}
+
 export function LikeDislike({
   postId,
   initialLikes = 0,
@@ -26,28 +32,54 @@ export function LikeDislike({
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [counts, setCounts] = useState({
-    likes: initialLikes,
-    dislikes: initialDislikes
+    likesCount: initialLikes,
+    dislikesCount: initialDislikes
   });
 
+  useEffect(() => {
+    console.log(`[LikeDislike] Initialized for post ${postId}:`, {
+      initialLikes,
+      initialDislikes,
+      userLikeStatus,
+      currentState: { liked, disliked, counts }
+    });
+  }, []);
+
   const likeMutation = useMutation({
-    mutationFn: async (isLike: boolean) => {
-      const response = await fetch(`/api/posts/${postId}/like`, {
+    mutationFn: async (action: { isLike: boolean }): Promise<ReactionResponse> => {
+      console.log(`[LikeDislike] Sending ${action.isLike ? 'like' : 'dislike'} reaction for post ${postId}`);
+      const response = await fetch(`/api/posts/${postId}/reaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isLike })
+        body: JSON.stringify(action),
+        credentials: 'include'
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update like status');
+        if (response.status === 401) {
+          throw new Error('Please log in to like or dislike posts');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update reaction');
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('[LikeDislike] Reaction response:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[LikeDislike] Mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
+      setCounts(data);
+      if (data.message) {
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+      }
     },
     onError: (error: Error) => {
+      console.error('[LikeDislike] Mutation error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update. Please try again.",
@@ -57,9 +89,7 @@ export function LikeDislike({
   });
 
   const handleLike = async () => {
-    if (likeMutation.isPending) {
-      return;
-    }
+    if (likeMutation.isPending) return;
 
     const newLiked = !liked;
     const previousState = {
@@ -68,22 +98,30 @@ export function LikeDislike({
       counts: { ...counts }
     };
 
+    console.log('[LikeDislike] Handling like click:', {
+      postId,
+      currentState: previousState,
+      newLiked
+    });
+
     // Optimistically update UI
     setLiked(newLiked);
     if (newLiked) {
-      setCounts(prev => ({ ...prev, likes: prev.likes + 1 }));
+      setCounts(prev => ({ ...prev, likesCount: prev.likesCount + 1 }));
       if (disliked) {
         setDisliked(false);
-        setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
+        setCounts(prev => ({ ...prev, dislikesCount: Math.max(0, prev.dislikesCount - 1) }));
       }
     } else {
-      setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
+      setCounts(prev => ({ ...prev, likesCount: Math.max(0, prev.likesCount - 1) }));
     }
 
     try {
-      await likeMutation.mutateAsync(true);
+      await likeMutation.mutateAsync({ isLike: true });
+      console.log('[LikeDislike] Like mutation completed successfully');
       onLike?.(newLiked);
     } catch (error) {
+      console.error('[LikeDislike] Error during like mutation:', error);
       // Revert on error
       setLiked(previousState.liked);
       setDisliked(previousState.disliked);
@@ -92,9 +130,7 @@ export function LikeDislike({
   };
 
   const handleDislike = async () => {
-    if (likeMutation.isPending) {
-      return;
-    }
+    if (likeMutation.isPending) return;
 
     const newDisliked = !disliked;
     const previousState = {
@@ -103,22 +139,30 @@ export function LikeDislike({
       counts: { ...counts }
     };
 
+    console.log('[LikeDislike] Handling dislike click:', {
+      postId,
+      currentState: previousState,
+      newDisliked
+    });
+
     // Optimistically update UI
     setDisliked(newDisliked);
     if (newDisliked) {
-      setCounts(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
+      setCounts(prev => ({ ...prev, dislikesCount: prev.dislikesCount + 1 }));
       if (liked) {
         setLiked(false);
-        setCounts(prev => ({ ...prev, likes: Math.max(0, prev.likes - 1) }));
+        setCounts(prev => ({ ...prev, likesCount: Math.max(0, prev.likesCount - 1) }));
       }
     } else {
-      setCounts(prev => ({ ...prev, dislikes: Math.max(0, prev.dislikes - 1) }));
+      setCounts(prev => ({ ...prev, dislikesCount: Math.max(0, prev.dislikesCount - 1) }));
     }
 
     try {
-      await likeMutation.mutateAsync(false);
+      await likeMutation.mutateAsync({ isLike: false });
+      console.log('[LikeDislike] Dislike mutation completed successfully');
       onDislike?.(newDisliked);
     } catch (error) {
+      console.error('[LikeDislike] Error during dislike mutation:', error);
       // Revert on error
       setLiked(previousState.liked);
       setDisliked(previousState.disliked);
@@ -142,7 +186,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           liked ? 'text-primary' : 'text-muted-foreground'
-        }`}>{counts.likes}</span>
+        }`}>{counts.likesCount}</span>
       </Button>
 
       <Button
@@ -159,7 +203,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
-        }`}>{counts.dislikes}</span>
+        }`}>{counts.dislikesCount}</span>
       </Button>
     </div>
   );

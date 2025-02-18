@@ -667,64 +667,113 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  app.post("/api/posts/:postId/like", async (req, res) => {
+  // Update the like/dislike route handler
+  app.post("/api/posts/:postId/reaction", async (req, res) => {
     try {
       const postId = parseInt(req.params.postId);
       const { isLike } = req.body;
-      let userId = req.user?.id;
 
-      // If no user is logged in, use a temporary ID based on their IP
-      if (!userId) {
-        const ip = req.ip || '127.0.0.1'; // Fallback to localhost if no IP
-        const salt = await bcrypt.genSalt(5);
-        const ipHash = await bcrypt.hash(ip, salt);
-        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
-      }
+      console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
 
-      console.log(`Processing like/dislike for post ${postId} by user ${userId}`);
+      // For logged-in users, use their ID
+      if (req.user?.id) {
+        const userId = req.user.id;
+        const existingLike = await storage.getPostLike(postId, userId);
 
-      // Get existing like status
-      const existingLike = await storage.getPostLike(postId, userId);
-
-      if (existingLike) {
-        // Update existing like
-        if (existingLike.isLike === isLike) {
-          console.log(`Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-          // Remove like/dislike if clicking the same button
-          await storage.removePostLike(postId, userId);
+        if (existingLike) {
+          if (existingLike.isLike === isLike) {
+            console.log(`[Reaction] Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            await storage.removePostLike(postId, userId);
+          } else {
+            console.log(`[Reaction] Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            await storage.updatePostLike(postId, userId, isLike);
+          }
         } else {
-          console.log(`Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-          // Change from like to dislike or vice versa
-          await storage.updatePostLike(postId, userId, isLike);
+          console.log(`[Reaction] Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          await storage.createPostLike(postId, userId, isLike);
         }
       } else {
-        console.log(`Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-        // Create new like
-        await storage.createPostLike(postId, userId, isLike);
+        // For anonymous users, store likes in session
+        if (!req.session.likes) {
+          req.session.likes = {};
+        }
+
+        const sessionLikes = req.session.likes;
+        const postKey = postId.toString();
+
+        if (sessionLikes[postKey] === isLike) {
+          // Remove like if same button clicked
+          delete sessionLikes[postKey];
+          console.log(`[Reaction] Anonymous user removed ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+        } else {
+          // Set or update like
+          sessionLikes[postKey] = isLike;
+          console.log(`[Reaction] Anonymous user ${isLike ? 'liked' : 'disliked'} post ${postId}`);
+        }
       }
 
-      // Get updated counts
-      const counts = await storage.getPostLikeCounts(postId);
-      console.log(`Updated counts for post ${postId}:`, counts);
-      res.json(counts);
+      // Get updated counts (combine database and session likes)
+      const dbCounts = await storage.getPostLikeCounts(postId);
+      const counts = {
+        likesCount: dbCounts.likesCount,
+        dislikesCount: dbCounts.dislikesCount
+      };
+
+      // Add session likes to counts
+      if (!req.user?.id && req.session.likes) {
+        const sessionLike = req.session.likes[postId.toString()];
+        if (sessionLike === true) counts.likesCount++;
+        if (sessionLike === false) counts.dislikesCount++;
+      }
+
+      console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
+      res.json({
+        ...counts,
+        message: req.user?.id 
+          ? `Successfully ${isLike ? 'liked' : 'disliked'} the post`
+          : 'Reaction recorded anonymously'
+      });
     } catch (error) {
-      console.error("Error handling post like:", error);
-      res.status(500).json({ message: "Failed to update like status" });
+      console.error("[Reaction] Error handling post reaction:", error);
+      res.status(500).json({ 
+        message: error instanceof Error 
+          ? error.message 
+          : "Failed to update reaction status" 
+      });
     }
   });
 
-  app.get("/api/posts/:postId/likes", async (req, res) => {
+  // Add a route to get current like/dislike counts
+  app.get("/api/posts/:postId/reactions", async (req, res) => {
     try {
       const postId = parseInt(req.params.postId);
-      const counts = await storage.getPostLikeCounts(postId);
+      console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
+
+      const dbCounts = await storage.getPostLikeCounts(postId);
+      const counts = {
+        likesCount: dbCounts.likesCount,
+        dislikesCount: dbCounts.dislikesCount
+      };
+
+      // Add session likes to counts for anonymous users
+      if (!req.user?.id && req.session.likes) {
+        const sessionLike = req.session.likes[postId.toString()];
+        if (sessionLike === true) counts.likesCount++;
+        if (sessionLike === false) counts.dislikesCount++;
+      }
+
+      console.log(`[Reaction] Current counts for post ${postId}:`, counts);
       res.json(counts);
     } catch (error) {
-      console.error("Error fetching post likes:", error);
-      res.status(500).json({ message: "Failed to fetch like counts" });
+      console.error("[Reaction] Error fetching post reactions:", error);
+      res.status(500).json({ 
+        message: error instanceof Error 
+          ? error.message 
+          : "Failed to fetch reaction counts" 
+      });
     }
   });
 
-  // Add these routes after existing comment routes
   app.post("/api/comments/:commentId/vote", async (req, res) => {
     try {
       const commentId = parseInt(req.params.commentId);
