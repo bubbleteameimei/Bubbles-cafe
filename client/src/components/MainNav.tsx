@@ -20,9 +20,9 @@ export default function MainNav() {
               <span className="font-bold text-lg">Horror Blog</span>
             </a>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="flex items-center space-x-6">
             <Link href="/community">
-              <a className="transition-colors hover:text-foreground/80">
+              <a className="text-sm font-medium transition-colors hover:text-foreground/80">
                 Community
               </a>
             </Link>
@@ -56,22 +56,25 @@ export default function MainNav() {
               </Link>
               <Button 
                 variant="ghost" 
+                size="sm"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
-                className="text-sm"
               >
                 {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
               </Button>
               <AdminNav />
             </>
           ) : (
-            <Button 
-              variant="default"
-              asChild
-              className="text-sm"
-            >
-              <Link href="/auth">Sign In</Link>
-            </Button>
+            <Link href="/auth">
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                asChild
+              >
+                <a className="cursor-pointer">Sign In</a>
+              </Button>
+            </Link>
           )}
         </div>
       </div>

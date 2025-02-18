@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
@@ -104,12 +104,6 @@ export default function Navigation() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [, navigate] = useLocation();
-
-  const handleAuthClick = () => {
-    navigate("/auth");
-    setIsOpen(false);
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -135,14 +129,16 @@ export default function Navigation() {
         <div className="flex items-center space-x-4">
           <ThemeToggle />
           {!user ? (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={handleAuthClick}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Sign In
-            </Button>
+            <Link href="/auth">
+              <Button 
+                variant="default" 
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                asChild
+              >
+                <a className="cursor-pointer">Sign In</a>
+              </Button>
+            </Link>
           ) : (
             <Button 
               variant="ghost" 
