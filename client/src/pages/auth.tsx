@@ -4,24 +4,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Redirect } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Form, 
   FormControl, 
   FormField, 
   FormItem, 
-  FormLabel, 
   FormMessage 
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
 
-// Login schema using email
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  rememberMe: z.boolean().optional()
 });
 
 const registerSchema = z.object({
@@ -39,6 +36,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
+  const [isSignIn, setIsSignIn] = useState(true);
 
   // Redirect if already logged in
   if (user) {
@@ -50,7 +48,6 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false
     },
   });
 
@@ -66,11 +63,7 @@ export default function AuthPage() {
 
   const onLogin = async (data: LoginFormData) => {
     try {
-      const { email, password } = data;
-      await loginMutation.mutateAsync({
-        email,
-        password,
-      });
+      await loginMutation.mutateAsync(data);
     } catch (error) {
       console.error('Login error:', error);
     }
@@ -79,10 +72,7 @@ export default function AuthPage() {
   const onRegister = async (data: RegisterFormData) => {
     try {
       const { confirmPassword, ...registrationData } = data;
-      await registerMutation.mutateAsync({
-        ...registrationData,
-        password_hash: registrationData.password
-      });
+      await registerMutation.mutateAsync(registrationData);
     } catch (error) {
       console.error('Registration error:', error);
     }
@@ -91,40 +81,60 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-center p-4">
       <motion.div 
-        className="login-wrap w-full max-w-md"
+        className="login-wrap"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="login-html">
-          <input id="tab-1" type="radio" name="tab" className="sign-in" defaultChecked />
-          <label htmlFor="tab-1" className="tab">Sign In</label>
+          <input 
+            id="tab-1" 
+            type="radio" 
+            name="tab" 
+            className="sign-in" 
+            checked={isSignIn} 
+            onChange={() => setIsSignIn(true)}
+          />
+          <label 
+            htmlFor="tab-1" 
+            className="tab"
+            onClick={() => setIsSignIn(true)}
+          >
+            Sign In
+          </label>
 
-          <input id="tab-2" type="radio" name="tab" className="sign-up" />
-          <label htmlFor="tab-2" className="tab">Sign Up</label>
+          <input 
+            id="tab-2" 
+            type="radio" 
+            name="tab" 
+            className="sign-up"
+            checked={!isSignIn}
+            onChange={() => setIsSignIn(false)}
+          />
+          <label 
+            htmlFor="tab-2" 
+            className="tab"
+            onClick={() => setIsSignIn(false)}
+          >
+            Sign Up
+          </label>
 
           <div className="login-form">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                className="sign-in-htm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+            {isSignIn ? (
+              <div className="sign-in-htm">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
                     <FormField
                       control={loginForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Email</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              type="email" 
-                              placeholder="Enter your email"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              type="email"
+                              placeholder="Email"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -135,74 +145,51 @@ export default function AuthPage() {
                       control={loginForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Password</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Enter your password"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              type="password"
+                              placeholder="Password"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={loginForm.control}
-                      name="rememberMe"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm text-muted-foreground">
-                            Keep me signed in
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      variant="default"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
-                    </Button>
+                    <div className="group">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loginMutation.isPending}
+                      >
+                        {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                      </Button>
+                    </div>
+                    <div className="hr" />
+                    <div className="foot-lnk">
+                      <a href="#forgot" className="text-sm text-muted-foreground hover:text-primary">
+                        Forgot Password?
+                      </a>
+                    </div>
                   </form>
                 </Form>
-                <div className="hr"></div>
-                <div className="foot-lnk">
-                  <a href="#forgot" className="text-sm text-muted-foreground hover:text-primary">
-                    Forgot Password?
-                  </a>
-                </div>
-              </motion.div>
-
-              <motion.div 
-                className="sign-up-htm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              </div>
+            ) : (
+              <div className="sign-up-htm">
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-6">
                     <FormField
                       control={registerForm.control}
                       name="username"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Username</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              placeholder="Choose a username"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              placeholder="Username"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -213,14 +200,13 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Email</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              type="email" 
-                              placeholder="Enter your email"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              type="email"
+                              placeholder="Email"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -231,14 +217,13 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Password</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Choose a password"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              type="password"
+                              placeholder="Password"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -249,32 +234,32 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="confirmPassword"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground/70">Confirm Password</FormLabel>
+                        <FormItem className="group">
                           <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="Confirm your password"
-                              className="bg-background/50"
-                              {...field} 
+                            <Input
+                              type="password"
+                              placeholder="Confirm Password"
+                              className="input bg-background/50"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      variant="default"
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? "Creating account..." : "Create Account"}
-                    </Button>
+                    <div className="group">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={registerMutation.isPending}
+                      >
+                        {registerMutation.isPending ? "Creating account..." : "Sign Up"}
+                      </Button>
+                    </div>
                   </form>
                 </Form>
-              </motion.div>
-            </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

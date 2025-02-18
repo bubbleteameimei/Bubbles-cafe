@@ -71,13 +71,13 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
   onNavigate?: () => void;
   className?: string;
 }) => {
-  const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onNavigate?.();
-    navigate(href);
-  }, [href, onNavigate, navigate]);
+    setLocation(href);
+  }, [href, onNavigate, setLocation]);
 
   return (
     <button
@@ -104,6 +104,12 @@ export default function Navigation() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [, setLocation] = useLocation();
+
+  const handleAuthClick = () => {
+    setLocation("/auth");
+    setIsOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -129,16 +135,14 @@ export default function Navigation() {
         <div className="flex items-center space-x-4">
           <ThemeToggle />
           {!user ? (
-            <Link href="/auth">
-              <Button 
-                variant="default" 
-                size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                asChild
-              >
-                <a className="cursor-pointer">Sign In</a>
-              </Button>
-            </Link>
+            <Button 
+              variant="default" 
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+              onClick={handleAuthClick}
+            >
+              Sign In
+            </Button>
           ) : (
             <Button 
               variant="ghost" 
