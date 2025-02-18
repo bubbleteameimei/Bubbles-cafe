@@ -7,10 +7,16 @@ import Navigation from '@/components/layout/navigation';
 import Footer from '@/components/layout/footer';
 import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
+import { Loader2 } from "lucide-react";
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
-const CommunityPage = React.lazy(() => import('@/pages/community'));
+const StoriesPage = React.lazy(() => import('@/pages/stories'));
+const ReaderPage = React.lazy(() => import('@/pages/reader'));
+const SecretStoriesPage = React.lazy(() => import('@/pages/secret-stories'));
+const IndexPage = React.lazy(() => import('@/pages/index'));
+const AboutPage = React.lazy(() => import('@/pages/about'));
+const ContactPage = React.lazy(() => import('@/pages/contact'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
 
 function App() {
@@ -24,15 +30,19 @@ function App() {
               <React.Suspense 
                 fallback={
                   <div className="flex items-center justify-center min-h-[60vh]">
-                    <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 }
               >
                 <Switch>
                   <Route path="/" component={HomePage} />
-                  <Route path="/community" component={CommunityPage} />
+                  <Route path="/stories" component={StoriesPage} />
+                  <Route path="/reader" component={ReaderPage} />
+                  <Route path="/secret-stories" component={SecretStoriesPage} />
+                  <Route path="/index" component={IndexPage} />
+                  <Route path="/about" component={AboutPage} />
+                  <Route path="/contact" component={ContactPage} />
                   <Route path="/admin/dashboard" component={AdminDashboard} />
-                  {/* Add other routes here */}
                 </Switch>
               </React.Suspense>
             </main>

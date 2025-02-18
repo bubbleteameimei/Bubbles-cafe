@@ -109,7 +109,7 @@ async function startServer() {
       enhancedLog("Static file serving setup complete", 'info');
     }
 
-    // Start listening with enhanced error handling
+    // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
         enhancedLog(`Server running at http://0.0.0.0:${PORT}`, 'info');

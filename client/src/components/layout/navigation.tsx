@@ -21,8 +21,10 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
     { href: '/', label: 'Home' },
     { href: '/stories', label: 'Stories' },
     { href: '/reader', label: 'Reader' },
+    { href: '/secret-stories', label: 'Secret Stories' },
     { href: '/index', label: 'Index' },
-    { href: '/community', label: 'Community' }
+    { href: '/about', label: 'About' },
+    { href: '/contact', label: 'Contact' }
   ];
 
   return (
@@ -48,10 +50,10 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
       ))}
       {user?.isAdmin && (
         <NavLink 
-          href="/admin" 
+          href="/admin/dashboard" 
           isActive={location.startsWith("/admin")} 
           onNavigate={onNavigate}
-          className="text-amber-500 hover:text-amber-400 transition-colors"
+          className="text-primary hover:text-primary/80 transition-colors"
         >
           Admin
         </NavLink>
@@ -102,7 +104,6 @@ export default function Navigation() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [, navigate] = useLocation();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -120,13 +121,6 @@ export default function Navigation() {
             </SheetContent>
           </Sheet>
 
-          <button
-            onClick={() => navigate('/')}
-            className="font-bold text-lg cursor-pointer hover:text-primary/90 transition-colors"
-          >
-            HORROR STORIES
-          </button>
-
           <div className="hidden md:flex">
             <NavigationItems location={location} />
           </div>
@@ -135,8 +129,8 @@ export default function Navigation() {
         <div className="flex items-center space-x-4">
           <ThemeToggle />
           {!user ? (
-            <Button variant="default" size="sm" onClick={() => navigate('/auth')}>
-              Sign In
+            <Button variant="default" size="sm" asChild>
+              <a href="/auth">Sign In</a>
             </Button>
           ) : (
             <Button 

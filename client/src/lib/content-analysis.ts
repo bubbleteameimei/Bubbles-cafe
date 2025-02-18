@@ -63,7 +63,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     keywords: [
       'flesh', 'transform', 'mutation', 'organic', 'grotesque', 'deform',
       'tissue', 'metamorphosis', 'skin', 'bone', 'blood', 'insect',
-      'crawl', 'bug', 'inside'
+      'crawl', 'bug', 'inside', 'pain'
     ],
     badgeVariant: "body",
     icon: 'Dna',
@@ -239,7 +239,10 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       'car': 'PSYCHOLOGICAL',
       'doll': 'PSYCHOPATH',
       'cookbook': 'CANNIBALISM',
-      'rain': 'PSYCHOLOGICAL'
+      'rain': 'PSYCHOLOGICAL',
+      'bug': 'BODY_HORROR',
+      'descent': 'DEATH',
+      'tunnel': 'STALKING'
     };
 
     const title = content.split('\n')[0].toLowerCase();
@@ -247,24 +250,15 @@ export const detectThemes = (content: string): ThemeCategory[] => {
       return [titleToTheme[title]];
     }
 
-    // Fallback content-based detection
-    if (content.toLowerCase().includes('nostalgia')) return ['PARASITE'];
-    if (content.toLowerCase().includes('cave')) return ['LOVECRAFTIAN'];
-    if (content.toLowerCase().includes('therapist')) return ['PSYCHOLOGICAL'];
-    if (content.toLowerCase().includes('bleach')) return ['SUICIDAL'];
-    if (content.toLowerCase().includes('machine')) return ['TECHNOLOGICAL'];
-    if (content.toLowerCase().includes('drive')) return ['PSYCHOPATH'];
-    if (content.toLowerCase().includes('mirror')) return ['SUPERNATURAL'];
-    if (content.toLowerCase().includes('car')) return ['PSYCHOLOGICAL'];
-    if (content.toLowerCase().includes('doll')) return ['PSYCHOPATH'];
-    if (content.toLowerCase().includes('cookbook')) return ['CANNIBALISM'];
-    // Theme detection for these stories removed as requested
-    if (content.toLowerCase().includes('bug')) return [];
-    if (content.toLowerCase().includes('skin')) return [];
-    if (content.toLowerCase().includes('tunnel')) return [];
-    if (content.toLowerCase().includes('chase')) return [];
-    if (content.toLowerCase().includes('descent')) return [];
+    // Content-based detection
     if (content.toLowerCase().includes('rain')) return ['PSYCHOLOGICAL'];
+    if (content.toLowerCase().includes('cave')) return ['LOVECRAFTIAN'];
+    if (content.toLowerCase().includes('bug')) return ['BODY_HORROR'];
+    if (content.toLowerCase().includes('skin')) return ['BODY_HORROR'];
+    if (content.toLowerCase().includes('tunnel')) return ['STALKING'];
+    if (content.toLowerCase().includes('chase')) return ['STALKING'];
+    if (content.toLowerCase().includes('descent')) return ['DEATH'];
+
 
     const themeCounts = new Map<ThemeCategory, number>();
     const lowerContent = content.toLowerCase();
