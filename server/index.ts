@@ -126,10 +126,6 @@ async function startServer() {
             wait_for_port: true 
           });
           enhancedLog('Sent port information to workflow system');
-
-          // Then send ready signal
-          process.send('ready');
-          enhancedLog('Sent ready signal to workflow system');
         }
 
         resolve();
@@ -137,6 +133,10 @@ async function startServer() {
 
       server.once('error', reject);
     });
+    if (process.send) {
+          process.send('ready');
+          enhancedLog('Sent ready signal to workflow system');
+        }
 
   } catch (error) {
     enhancedLog(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`, 'error');

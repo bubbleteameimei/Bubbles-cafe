@@ -6,7 +6,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   password_hash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
@@ -40,6 +40,7 @@ export const comments = pgTable("comments", {
   postId: integer("post_id").references(() => posts.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   approved: boolean("approved").default(false).notNull(),
+  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -104,6 +105,8 @@ export const commentReplies = pgTable("comment_replies", {
   commentId: integer("comment_id").references(() => comments.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
+  approved: boolean("approved").default(false).notNull(),
+  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -345,3 +348,9 @@ export type SiteSetting = typeof siteSettings.$inferSelect;
 export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({ id: true, createdAt: true });
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+// Add these interfaces after the PostMetadata interface
+export interface CommentMetadata {
+  moderated?: boolean;
+  originalContent?: string;
+}
