@@ -30,13 +30,34 @@ export function useTheme() {
     // Store theme preference
     localStorage.setItem("theme", theme);
 
-    // Update body background based on theme
-    document.body.style.background = theme === 'dark' 
-      ? 'url(https://raw.githubusercontent.com/ahmadbassamemran/dark-light-toggle/master/public/night.png)'
-      : 'url(https://raw.githubusercontent.com/ahmadbassamemran/dark-light-toggle/master/public/day.png)';
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundPosition = 'center';
-    document.body.style.transition = 'all 0.3s ease-in-out';
+    // Update body styles
+    const body = document.body;
+    body.style.padding = "0px";
+    body.style.margin = "0px";
+    body.style.width = "100%";
+    body.style.height = "100vh";
+
+    // Enhanced background transitions
+    if (theme === 'dark') {
+      body.style.background = `
+        radial-gradient(circle at 50% 50%, 
+          #1C232A 0%,
+          #121518 70%,
+          #0a0c0e 100%
+        )
+      `;
+    } else {
+      body.style.background = `
+        radial-gradient(circle at 50% 50%,
+          #8cc5ff 0%,
+          #74b9ff 40%,
+          #0984e3 100%
+        )
+      `;
+    }
+
+    // Match transition timing with toggle animation
+    body.style.transition = "background .7s cubic-bezier(.8, .5, .2, 1.4)";
 
   }, [theme]);
 

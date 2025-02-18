@@ -1,9 +1,5 @@
-body {
-  transition: all 0.3s ease-in-out;
-}
-
 .theme-toggle-wrapper {
-  width: 130px;
+  width: 80px;
   height: 50px;
   position: relative;
   display: flex;
@@ -13,56 +9,155 @@ body {
 
 .theme-toggle {
   position: relative;
-  width: 130px;
-  height: 50px;
+  width: 80px;
+  height: 40px;
   margin: 0px;
   appearance: none;
   -webkit-appearance: none;
   background-color: #1C232A;
   outline: none;
   border-radius: 20px;
-  box-shadow: inset 0 0 5px rgba(0,0,0, .2);
-  transition: 0.5s ease-in-out;
+  box-shadow: inset 0px 0px 2px rgba(255,255,255,.7);
+  transition: background-color .7s cubic-bezier(.8, .5, .2, 1.4);
   cursor: pointer;
+  overflow: hidden;
 }
 
 .theme-toggle:checked {
-  background: radial-gradient(#74b9ff, #0984e3);
+  background-color: transparent;
+  background: radial-gradient(circle at 50% 50%, #8cc5ff 0%, #74b9ff 40%, #0984e3 100%);
+}
+
+.theme-toggle:after {
+  content: '';
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #fff;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  transform: translateX(0px);
+  animation: off .7s forwards cubic-bezier(.8, .5, .2, 1.4);
+  box-shadow: inset 5px -5px 4px rgba(53, 53, 53, 0.3);
+}
+
+@keyframes off {
+  0% {
+    transform: translateX(40px);
+    width: 36px;
+  }
+  50% {
+    width: 45px;
+    border-radius: 25px;
+  }
+  100% {
+    transform: translateX(0px);
+    width: 36px;
+  }
+}
+
+.theme-toggle:checked:after {
+  animation: on .7s forwards cubic-bezier(.8, .5, .2, 1.4);
+  box-shadow: inset -5px -5px 4px rgba(53, 53, 53, 0.3);
+}
+
+@keyframes on {
+  0% {
+    transform: translateX(0px);
+    width: 36px;
+  }
+  50% {
+    width: 45px;
+    border-radius: 25px;
+  }
+  100% {
+    transform: translateX(40px);
+    width: 36px;
+  }
+}
+
+.theme-toggle:checked:before {
+  content: '';
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  position: absolute;
+  left: 15px;
+  top: 5px;
+  transform-origin: 53px 10px;
+  background-color: transparent;
+  box-shadow: 5px -1px 0px #fff;
+  filter: blur(0px);
+  animation: sun .7s forwards ease;
+}
+
+@keyframes sun {
+  0% {
+    transform: rotate(170deg);
+    background-color: transparent;
+    box-shadow: 5px -1px 0px #fff;
+    filter: blur(0px);
+  }
+  50% {
+    background-color: transparent;
+    box-shadow: 5px -1px 0px #fff;
+    filter: blur(0px);
+  }
+  90% {
+    background-color: #f5daaa;
+    box-shadow: 0px 0px 10px #f5deb4,
+    0px 0px 20px #f5deb4,
+    0px 0px 30px #f5deb4,
+    inset 0px 0px 2px #efd3a3;
+    filter: blur(1px);
+  }
+  100% {
+    transform: rotate(0deg);
+    background-color: #f5daaa;
+    box-shadow: 0px 0px 10px #f5deb4,
+    0px 0px 20px #f5deb4,
+    0px 0px 30px #f5deb4,
+    inset 0px 0px 2px #efd3a3;
+    filter: blur(1px);
+  }
 }
 
 .theme-toggle:before {
   content: '';
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  top: 5px;
-  left: 5px;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,.2);
-  transition: 0.5s ease-in-out;
-}
-
-.theme-toggle:checked:before {
-  left: 85px;
-  background: #FFE5B5;
-  box-shadow: 
-    inset -2px -2px 2px rgba(0,0,0,.2),
-    0 0 10px #FFE5B5,
-    0 0 20px #FFE5B5,
-    0 0 40px #FFE5B5;
-}
-
-.theme-toggle:checked:after {
-  content: '';
-  position: absolute;
-  width: 5px;
-  height: 5px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  background-color: rgba(0,0,0,.2);
-  left: 100px;
-  top: 15px;
-  box-shadow: 
-    10px 10px 0 rgba(0,0,0,.2),
-    -5px 15px 0 rgba(0,0,0,.2);
+  position: absolute;
+  left: 15px;
+  top: 5px;
+  filter: blur(1px);
+  background-color: #f5daaa;
+  box-shadow: 0px 0px 10px #f5deb4,
+  0px 0px 20px #f5deb4,
+  0px 0px 30px #f5deb4,
+  inset 0px 0px 2px #efd3a3;
+  transform-origin: 53px 10px;
+  animation: moon .7s forwards ease;
+}
+
+@keyframes moon {
+  0% {
+    transform: rotate(0deg);
+    filter: blur(1px);
+  }
+  50% {
+    filter: blur(1px);
+  }
+  90% {
+    background-color: transparent;
+    box-shadow: 5px -1px 0px #fff;
+    filter: blur(0px);
+  }
+  100% {
+    transform: rotate(170deg);
+    background-color: transparent;
+    box-shadow: 5px -1px 0px #fff;
+    filter: blur(0px);
+  }
 }
