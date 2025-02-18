@@ -43,7 +43,7 @@ export function useTheme() {
       document.documentElement.style.setProperty('--background', "hsl(215 28% 17%)");
     } else {
       body.style.background = `#ffffff`;
-      document.documentElement.style.setProperty('--background', "hsl(214 100% 90%)");
+      document.documentElement.style.setProperty('--background', "hsl(0 0% 100%)");
     }
 
     // Match transition timing with toggle animation

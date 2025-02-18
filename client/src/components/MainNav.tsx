@@ -3,11 +3,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, Moon, Sun } from "lucide-react";
 import { AdminNav } from "./AdminNav";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
