@@ -87,26 +87,11 @@ app.use(session(sessionConfig));
 // Set up auth
 setupAuth(app);
 
-// Register API routes
-registerRoutes(app);
+// Create server instance first
+server = createServer(app);
 
-// Function to find an available port
-function findAvailablePort(startPort: number): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const testServer = createServer();
-    testServer.listen(startPort, () => {
-      const { port } = testServer.address() as { port: number };
-      testServer.close(() => resolve(port));
-    });
-    testServer.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        findAvailablePort(startPort + 1).then(resolve, reject);
-      } else {
-        reject(err);
-      }
-    });
-  });
-}
+// Register API routes BEFORE Vite middleware
+registerRoutes(app);
 
 async function startServer() {
   try {
@@ -114,14 +99,14 @@ async function startServer() {
     const availablePort = await findAvailablePort(PORT);
 
     if (isDev) {
-      await setupVite(app, createServer(app));
+      // Setup Vite middleware AFTER API routes
+      await setupVite(app, server);
       log("Vite middleware setup complete");
     } else {
       serveStatic(app);
       log("Static file serving setup complete");
     }
 
-    server = createServer(app);
     server.listen(availablePort, "0.0.0.0", () => {
       log(`Server running on port ${availablePort} in ${process.env.NODE_ENV || 'development'} mode`);
 
@@ -145,6 +130,24 @@ async function startServer() {
     log(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
+}
+
+// Function to find an available port
+function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const testServer = createServer();
+    testServer.listen(startPort, () => {
+      const { port } = testServer.address() as { port: number };
+      testServer.close(() => resolve(port));
+    });
+    testServer.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        findAvailablePort(startPort + 1).then(resolve, reject);
+      } else {
+        reject(err);
+      }
+    });
+  });
 }
 
 // Graceful shutdown

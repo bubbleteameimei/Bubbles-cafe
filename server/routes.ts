@@ -7,18 +7,37 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import { z } from "zod";
-import { 
-  insertCommentSchema, 
-  insertPostSchema, 
-  insertCommentReplySchema,
-  type Post,
-} from "@shared/schema";
+import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import * as session from 'express-session';
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+
+// Add slug generation function at the top with other utility functions
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+// Protected middleware
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+};
+
+// Add caching middleware for static content
+const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.set('Cache-Control', `public, max-age=${duration}`);
+  }
+  next();
+};
 
 // Configure rate limiters
 const authLimiter = rateLimit({
@@ -49,7 +68,7 @@ interface PostMetadata {
 }
 
 export function registerRoutes(app: Express): Server {
-  // Add security headers for both API and SPA
+  // Add security headers and middleware first
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -72,26 +91,7 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/login", authLimiter);
   app.use("/api", apiLimiter);
 
-  // Set up auth BEFORE routes
-  setupAuth(app);
-
-  // Protected middleware
-  const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-    if (req.isAuthenticated()) {
-      return next();
-    }
-    res.status(401).json({ message: "Unauthorized" });
-  };
-
-  // Add caching middleware for static content
-  const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV === 'production') {
-      res.set('Cache-Control', `public, max-age=${duration}`);
-    }
-    next();
-  };
-
-  // Add session configuration and security headers before route registration
+  // Set up session configuration before route registration
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
     resave: false,
@@ -106,8 +106,76 @@ export function registerRoutes(app: Express): Server {
   app.use(session.default(sessionSettings));
   app.use(compression());
 
+  // Set up auth BEFORE routes
+  setupAuth(app);
 
-  // Add this route before the existing post routes
+  // API Routes - Add these before Vite middleware
+  app.post("/api/posts/community", isAuthenticated, async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { title, content } = req.body;
+
+      if (!title) {
+        return res.status(400).json({
+          message: "Invalid post data",
+          errors: [{ path: "title", message: "Title is required" }]
+        });
+      }
+
+      // Generate slug from title first
+      const slug = generateSlug(title);
+
+      // Prepare the complete post data before validation
+      const postData = {
+        title,
+        content,
+        slug,
+        authorId: req.user.id,
+        metadata: {
+          isCommunityPost: true,
+          isApproved: false,
+          status: 'pending'
+        }
+      };
+
+      console.log('[POST /api/posts/community] Post data before validation:', {
+        title: postData.title,
+        content: postData.content,
+        slug: postData.slug,
+        authorId: postData.authorId,
+        metadata: postData.metadata
+      });
+
+      // Validate the complete post data
+      const validatedData = insertPostSchema.parse(postData);
+
+      console.log('[POST /api/posts/community] Creating new community post:', validatedData);
+      const post = await storage.createPost(validatedData);
+
+      if (!post) {
+        throw new Error("Failed to create community post");
+      }
+
+      console.log('[POST /api/posts/community] Post created successfully:', post);
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("[POST /api/posts/community] Error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Invalid post data",
+          errors: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      res.status(500).json({ message: "Failed to create community post" });
+    }
+  });
+
   app.get("/api/posts/community", cacheControl(300), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
@@ -127,7 +195,7 @@ export function registerRoutes(app: Express): Server {
       // Filter for community posts
       const communityPosts = result.posts.filter(post => {
         const metadata = post.metadata as PostMetadata;
-        return metadata?.isCommunityPost === true && 
+        return metadata?.isCommunityPost === true &&
                (!metadata.isHidden || req.user?.isAdmin);
       });
 
@@ -153,6 +221,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch community posts" });
     }
   });
+
 
   // Regular post routes
   // New route to approve a community post
@@ -224,7 +293,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Update the post creation route to handle community posts
-  app.post("/api/posts", async (req, res) => {
+  app.post("/api/posts", isAuthenticated, async (req, res) => {
     try {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Authentication required" });
@@ -326,7 +395,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const progress = await storage.unlockSecretPost({
         postId: parseInt(req.params.postId),
-        userId: req.body.userId 
+        userId: req.body.userId
       });
       res.json(progress);
     } catch (error) {
@@ -939,6 +1008,15 @@ Timestamp: ${new Date().toLocaleString()}
       console.error("Error fetching activity logs:", error);
       res.status(500).json({ message: "Failed to fetch activity logs" });
     }
+  });
+
+  // Error handling middleware
+  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({
+      message: "An unexpected error occurred",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   });
 
   // Create HTTP server

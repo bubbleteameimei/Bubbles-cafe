@@ -240,7 +240,34 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true });
+// Update the insertPostSchema definition to explicitly include the slug
+export const insertPostSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  slug: z.string().min(1, "Slug is required"),
+  authorId: z.number(),
+  excerpt: z.string().optional(),
+  isSecret: z.boolean().optional(),
+  matureContent: z.boolean().optional(),
+  themeCategory: z.string().optional(),
+  readingTimeMinutes: z.number().optional(),
+  metadata: z.object({
+    isCommunityPost: z.boolean().optional(),
+    isApproved: z.boolean().optional(),
+    status: z.enum(['pending', 'approved']).optional(),
+    triggerWarnings: z.array(z.string()).optional(),
+    themeCategory: z.string().optional(),
+  }).optional(),
+});
+
+export type PostMetadata = {
+  isCommunityPost?: boolean;
+  isApproved?: boolean;
+  status?: 'pending' | 'approved';
+  triggerWarnings?: string[];
+  themeCategory?: string;
+};
+
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
 
