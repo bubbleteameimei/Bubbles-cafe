@@ -20,20 +20,23 @@ export function useTheme() {
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Remove existing classes before adding new ones
+    // Apply transition class before theme change
+    root.classList.add('transition-colors', 'duration-300');
+
+    // Remove existing theme classes
     root.classList.remove("light", "dark");
 
-    // Add new theme class with transition
+    // Add new theme class
     root.classList.add(theme);
-    root.style.setProperty('--theme-transition', 'all 0.15s ease');
 
     // Store theme preference
     localStorage.setItem("theme", theme);
 
-    // Clean up transition after theme change
+    // Optional: Remove transition classes after theme change to prevent transitions
+    // during other state changes
     const cleanup = setTimeout(() => {
-      root.style.removeProperty('--theme-transition');
-    }, 150);
+      root.classList.remove('transition-colors', 'duration-300');
+    }, 300);
 
     return () => clearTimeout(cleanup);
   }, [theme]);
