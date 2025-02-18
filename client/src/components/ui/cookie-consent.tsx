@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 
 const COOKIE_CONSENT_KEY = 'cookieConsent';
 
@@ -41,7 +42,6 @@ export function CookieConsent() {
       className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm"
       role="dialog"
       aria-labelledby="cookie-consent-title"
-      tabIndex={-1}
     >
       <div className="max-w-[300px] w-full mx-auto bg-card rounded-lg shadow-xl border border-border/50 p-6 space-y-4">
         <div className="flex justify-center relative">
@@ -61,20 +61,19 @@ export function CookieConsent() {
             <circle cx="25" cy="45" r="4" className="fill-[#3D1C02]" />
             <circle cx="82" cy="75" r="3" className="fill-[#3D1C02]" />
           </svg>
-          <div className="absolute -bottom-2 -right-1 w-2 h-2 rounded-full bg-[#C4A484] opacity-80" />
-          <div className="absolute -bottom-3 -left-1 w-1.5 h-1.5 rounded-full bg-[#C4A484] opacity-60" />
         </div>
 
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">We use cookies</h2>
+          <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
           <p className="text-sm text-muted-foreground">
-            This website uses cookies to ensure you get the best experience on our site.
+            This website uses cookies to enhance your experience. By continuing to use this site, you agree to our{' '}
+            <Link href="/privacy">
+              <a className="underline hover:text-foreground">privacy policy</a>
+            </Link>.
           </p>
         </div>
 
-        <div className="relative flex justify-center gap-4">
-          <div className="absolute -top-8 -left-6 w-2 h-2 rounded-full bg-[#C4A484] opacity-40 animate-float" />
-          <div className="absolute -top-4 -right-4 w-1.5 h-1.5 rounded-full bg-[#C4A484] opacity-30 animate-float-delayed" />
+        <div className="flex justify-center gap-4">
           <button
             onClick={handleAccept}
             className={cn(
@@ -82,7 +81,7 @@ export function CookieConsent() {
               "transition-all duration-300 hover:opacity-90 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
             )}
           >
-            Allow
+            Accept
           </button>
           <button
             onClick={handleDecline}
