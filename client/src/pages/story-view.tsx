@@ -8,41 +8,11 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useState, useEffect } from "react";
 
-// Helper function to generate deterministic stats based on post ID
-const getOrCreateStats = (postId: number) => {
-  const storageKey = `post-stats-${postId}`;
-  const existingStats = localStorage.getItem(storageKey);
-
-  if (existingStats) {
-    return JSON.parse(existingStats);
-  }
-
-  // Calculate deterministic likes and dislikes based on post ID
-  const likesBase = 80;
-  const likesRange = 40; // To get max of 120
-  const dislikesBase = 5;
-  const dislikesRange = 15; // To get max of 20
-
-  // Use post ID to generate deterministic but varying values
-  const likes = likesBase + (postId * 7) % likesRange;
-  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
-
-  const newStats = {
-    likes,
-    dislikes
-  };
-
-  localStorage.setItem(storageKey, JSON.stringify(newStats));
-  return newStats;
-};
-
 interface StoryViewProps {
   slug: string;
 }
 
 export default function StoryView({ slug }: StoryViewProps) {
-  const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
-
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", slug],
     queryFn: async () => {
@@ -54,15 +24,6 @@ export default function StoryView({ slug }: StoryViewProps) {
     retry: 2
   });
 
-  useEffect(() => {
-    if (post) {
-      const stats = getOrCreateStats(post.id);
-      setPostStats(prev => ({
-        ...prev,
-        [post.id]: stats
-      }));
-    }
-  }, [post]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -71,8 +32,6 @@ export default function StoryView({ slug }: StoryViewProps) {
   if (error || !post) {
     return <div className="text-center p-8">Story not found or error loading story.</div>;
   }
-
-  const stats = postStats[post.id] || { likes: 0, dislikes: 0 };
 
   return (
     <div className="relative min-h-screen">
@@ -100,8 +59,6 @@ export default function StoryView({ slug }: StoryViewProps) {
           <div className="border-t border-border pt-4">
             <LikeDislike
               postId={post.id}
-              initialLikes={stats.likes}
-              initialDislikes={stats.dislikes}
             />
           </div>
         </motion.article>

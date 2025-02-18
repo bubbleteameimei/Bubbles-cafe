@@ -8,7 +8,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Clock, Calendar } from "lucide-react";
 import React from 'react';
-import { getIconComponent } from '@/components/ui/icons';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
@@ -17,35 +16,6 @@ interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
 }
-
-// Update helper function to use deterministic fixed counts based on post ID
-const getOrCreateStats = (postId: number) => {
-  const storageKey = `post-stats-${postId}`;
-  const existingStats = localStorage.getItem(storageKey);
-
-  if (existingStats) {
-    return JSON.parse(existingStats);
-  }
-
-  // Calculate deterministic likes and dislikes based on post ID
-  // Using modulo to ensure values stay within desired ranges
-  const likesBase = 80;
-  const likesRange = 40; // To get max of 120
-  const dislikesBase = 5;
-  const dislikesRange = 15; // To get max of 20
-
-  // Use post ID to generate deterministic but varying values
-  const likes = likesBase + (postId * 7) % likesRange;
-  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
-
-  const newStats = {
-    likes,
-    dislikes
-  };
-
-  localStorage.setItem(storageKey, JSON.stringify(newStats));
-  return newStats;
-};
 
 const getExcerpt = (content: string) => {
   if (!content) return '';
@@ -167,8 +137,6 @@ export default function IndexView() {
             {posts.map((post, index) => {
               const readingTime = getReadingTime(post.content);
               const excerpt = getExcerpt(post.content);
-              const stats = getOrCreateStats(post.id);
-
               return (
                 <motion.div
                   key={post.id}
@@ -213,8 +181,6 @@ export default function IndexView() {
                       <div className="w-full">
                         <LikeDislike
                           postId={post.id}
-                          initialLikes={stats.likes}
-                          initialDislikes={stats.dislikes}
                         />
                       </div>
                     </CardFooter>

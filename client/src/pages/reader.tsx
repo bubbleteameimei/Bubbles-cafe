@@ -20,34 +20,6 @@ interface PostsResponse {
   hasMore: boolean;
 }
 
-// Helper function to generate deterministic stats based on post ID
-const getOrCreateStats = (postId: number) => {
-  const storageKey = `post-stats-${postId}`;
-  const existingStats = localStorage.getItem(storageKey);
-
-  if (existingStats) {
-    return JSON.parse(existingStats);
-  }
-
-  // Calculate deterministic likes and dislikes based on post ID
-  const likesBase = 80;
-  const likesRange = 40; // To get max of 120
-  const dislikesBase = 5;
-  const dislikesRange = 15; // To get max of 20
-
-  // Use post ID to generate deterministic but varying values
-  const likes = likesBase + (postId * 7) % likesRange;
-  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
-
-  const newStats = {
-    likes,
-    dislikes
-  };
-
-  localStorage.setItem(storageKey, JSON.stringify(newStats));
-  return newStats;
-};
-
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
@@ -184,8 +156,6 @@ useEffect(() => {
               <div className="border-t border-border pt-4">
                 <LikeDislike
                   postId={currentPost.id}
-                  initialLikes={postStats[currentPost.id]?.likes || 0}
-                  initialDislikes={postStats[currentPost.id]?.dislikes || 0}
                 />
               </div>
 
@@ -244,4 +214,31 @@ useEffect(() => {
       </div>
     </div>
   );
+}
+
+function getOrCreateStats(postId: number) {
+  const storageKey = `post-stats-${postId}`;
+  const existingStats = localStorage.getItem(storageKey);
+
+  if (existingStats) {
+    return JSON.parse(existingStats);
+  }
+
+  // Calculate deterministic likes and dislikes based on post ID
+  const likesBase = 80;
+  const likesRange = 40; // To get max of 120
+  const dislikesBase = 5;
+  const dislikesRange = 15; // To get max of 20
+
+  // Use post ID to generate deterministic but varying values
+  const likes = likesBase + (postId * 7) % likesRange;
+  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
+
+  const newStats = {
+    likes,
+    dislikes
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(newStats));
+  return newStats;
 }
