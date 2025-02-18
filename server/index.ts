@@ -24,23 +24,27 @@ const isDev = process.env.NODE_ENV !== 'production';
 let server: ReturnType<typeof createServer>;
 
 // Enhanced logging for startup process
-function enhancedLog(message: string, type: 'info' | 'error' = 'info') {
+function enhancedLog(message: string, type: 'info' | 'error' | 'debug' = 'info') {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] [${type}] ${message}`);
 }
 
 // Set trust proxy first
+enhancedLog('Setting up trust proxy', 'debug');
 app.set('trust proxy', 1);
 
 // Enable Gzip compression
+enhancedLog('Enabling compression', 'debug');
 app.use(compression());
 
 // Security headers with updated CSP for development
+enhancedLog('Configuring security headers', 'debug');
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : undefined
 }));
 
 // Rate limiter
+enhancedLog('Setting up rate limiter', 'debug');
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -53,56 +57,70 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Session setup
+enhancedLog('Initializing session configuration', 'debug');
 const PostgresSession = connectPgSimple(session);
-const sessionConfig: session.SessionOptions = {
-  store: new PostgresSession({
-    conObject: {
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    },
-    createTableIfMissing: true,
-    pruneSessionInterval: 60
-  }),
-  secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
-  },
-  name: 'horror.session'
-};
 
-app.use(session(sessionConfig));
+try {
+  const sessionConfig: session.SessionOptions = {
+    store: new PostgresSession({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      },
+      createTableIfMissing: true,
+      pruneSessionInterval: 60
+    }),
+    secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    },
+    name: 'horror.session'
+  };
+
+  app.use(session(sessionConfig));
+  enhancedLog('Session middleware configured successfully', 'debug');
+} catch (error) {
+  enhancedLog(`Session setup failed: ${error instanceof Error ? error.message : String(error)}`, 'error');
+  process.exit(1);
+}
 
 // Set up auth
+enhancedLog('Setting up authentication', 'debug');
 setupAuth(app);
 
 async function startServer() {
   try {
-    enhancedLog('Starting server initialization...');
+    enhancedLog('Starting server initialization...', 'info');
 
     // Create server instance
     server = createServer(app);
+    enhancedLog('HTTP server created', 'debug');
 
     // Register routes and middleware
     if (isDev) {
+      enhancedLog('Registering API routes', 'debug');
       registerRoutes(app);
-      enhancedLog("API routes registered successfully");
+      enhancedLog("API routes registered successfully", 'info');
+
+      enhancedLog('Setting up Vite middleware', 'debug');
       await setupVite(app, server);
-      enhancedLog("Vite middleware setup complete");
+      enhancedLog("Vite middleware setup complete", 'info');
     } else {
+      enhancedLog('Setting up static file serving', 'debug');
       serveStatic(app);
-      enhancedLog("Static file serving setup complete");
+      enhancedLog("Static file serving setup complete", 'info');
     }
 
     // Start listening
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
-        enhancedLog(`Server running at http://0.0.0.0:${PORT}`);
-        enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+        enhancedLog(`Server running at http://0.0.0.0:${PORT}`, 'info');
+        enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`, 'info');
 
         // Notify the workflow system about the port
         if (process.send) {
@@ -128,14 +146,14 @@ async function startServer() {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  enhancedLog('SIGTERM received. Starting graceful shutdown...');
+  enhancedLog('SIGTERM received. Starting graceful shutdown...', 'info');
   if (server) {
     server.close(() => {
-      enhancedLog('Server closed');
+      enhancedLog('Server closed', 'info');
       process.exit(0);
     });
   } else {
-    enhancedLog('Server not initialized');
+    enhancedLog('Server not initialized', 'info');
     process.exit(0);
   }
 });
