@@ -30,24 +30,20 @@ function enhancedLog(message: string, type: 'info' | 'error' | 'debug' = 'info')
 }
 
 // Set trust proxy first
-enhancedLog('Setting up trust proxy', 'debug');
 app.set('trust proxy', 1);
 
 // Enable Gzip compression
-enhancedLog('Enabling compression', 'debug');
 app.use(compression());
 
 // Security headers with updated CSP for development
-enhancedLog('Configuring security headers', 'debug');
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : undefined
 }));
 
-// Rate limiter
-enhancedLog('Setting up rate limiter', 'debug');
+// Rate limiter with adjusted settings for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: isDev ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -56,8 +52,7 @@ app.use(limiter);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-// Session setup
-enhancedLog('Initializing session configuration', 'debug');
+// Session setup with enhanced error handling
 const PostgresSession = connectPgSimple(session);
 
 try {
@@ -90,7 +85,6 @@ try {
 }
 
 // Set up auth
-enhancedLog('Setting up authentication', 'debug');
 setupAuth(app);
 
 async function startServer() {
@@ -99,7 +93,6 @@ async function startServer() {
 
     // Create server instance
     server = createServer(app);
-    enhancedLog('HTTP server created', 'debug');
 
     // Register routes and middleware
     if (isDev) {
@@ -116,17 +109,17 @@ async function startServer() {
       enhancedLog("Static file serving setup complete", 'info');
     }
 
-    // Start listening
+    // Start listening with enhanced error handling
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
         enhancedLog(`Server running at http://0.0.0.0:${PORT}`, 'info');
-        enhancedLog(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`, 'info');
 
-        // Notify the workflow system about the port
+        // Notify the workflow system about the port and readiness
         if (process.send) {
           process.send({
             port: PORT,
-            wait_for_port: true
+            wait_for_port: true,
+            ready: true
           });
         }
 
@@ -144,7 +137,7 @@ async function startServer() {
   }
 }
 
-// Graceful shutdown
+// Enhanced graceful shutdown
 process.on('SIGTERM', () => {
   enhancedLog('SIGTERM received. Starting graceful shutdown...', 'info');
   if (server) {
@@ -158,7 +151,7 @@ process.on('SIGTERM', () => {
   }
 });
 
-// Start the server
+// Start the server with enhanced error handling
 startServer().catch((error) => {
   enhancedLog(`Critical error during server start: ${error.message}`, 'error');
   process.exit(1);
