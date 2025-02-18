@@ -238,12 +238,36 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Schema types
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+// Add these new schemas after the table definitions but before the existing schema exports
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type LoginCredentials = z.infer<typeof loginSchema>;
+
+// Registration schema to handle the form input before processing
+export const registrationSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export type RegistrationCredentials = z.infer<typeof registrationSchema>;
+
+// Original type definitions for database operations
+export const insertUserSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  createdAt: true,
+  password_hash: true 
+}).extend({
+  password: z.string()
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Update the insertPostSchema definition to explicitly include the slug
+
 export const insertPostSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
