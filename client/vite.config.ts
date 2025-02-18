@@ -23,6 +23,9 @@ export default defineConfig({
       clientPort: 443,
       host: `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`,
       protocol: 'wss'
+    },
+    watch: {
+      usePolling: true
     }
   },
   build: {

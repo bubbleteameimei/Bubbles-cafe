@@ -1,6 +1,6 @@
 .theme-toggle-wrapper {
-  width: 110px;  /* Further reduced from 120px */
-  height: 70px;  /* Further reduced from 80px */
+  width: 90px;
+  height: 50px;
   position: relative;
   display: flex;
   align-items: center;
@@ -9,18 +9,19 @@
 
 .theme-toggle {
   position: relative;
-  width: 110px;
-  height: 42px;  /* Further reduced from 45px */
+  width: 90px;
+  height: 34px;
   margin: 0px;
   appearance: none;
   -webkit-appearance: none;
   background-color: #1C232A;
   background-image: url('/assets/dark-bg.jpeg');
   background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
-  border-radius: 25px;
+  border-radius: 18px;
   box-shadow: inset 0px 0px 2px rgba(255,255,255,.7);
-  transition: background-image .7s ease-in-out;
+  transition: all 0.7s cubic-bezier(.8, .5, .2, 1.4);
   outline: none;
   cursor: pointer;
   overflow: hidden;
@@ -29,13 +30,13 @@
 .theme-toggle:checked {
   background-image: url('/assets/light-bg.jpeg');
   background-size: cover;
-  transition: background-image 1s ease-in-out;
+  background-position: center;
 }
 
 .theme-toggle:after {
   content: '';
-  width: 38px;  /* Further reduced from 41px */
-  height: 38px;  /* Further reduced from 41px */
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background-color: #fff;
   position: absolute;
@@ -44,20 +45,21 @@
   transform: translateX(0px);
   animation: off .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   box-shadow: inset 5px -5px 4px rgba(53, 53, 53, 0.3);
+  z-index: 2;
 }
 
 @keyframes off {
   0% {
-    transform: translateX(68px);  /* Adjusted for new width */
-    width: 38px;
+    transform: translateX(56px);
+    width: 30px;
   }
   50% {
-    width: 60px;  /* Adjusted for new width */
-    border-radius: 25px;   
+    width: 45px;
+    border-radius: 25px;
   }
   100% {
-    transform: translateX(0px); 
-    width: 38px;
+    transform: translateX(0px);
+    width: 30px;
   }
 }
 
@@ -69,31 +71,32 @@
 @keyframes on {
   0% {
     transform: translateX(0px);
-    width: 38px;
+    width: 30px;
   }
   50% {
-    width: 60px;  /* Adjusted for new width */
-    border-radius: 25px;   
+    width: 45px;
+    border-radius: 25px;
   }
   100% {
-    transform: translateX(68px); 
-    width: 38px;
+    transform: translateX(56px);
+    width: 30px;
   }
 }
 
 .theme-toggle:checked:before {
   content: '';
-  width: 12px;  /* Reduced from 15px */
-  height: 12px;  /* Reduced from 15px */
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   position: absolute;
-  left: 13px;  /* Adjusted position */
-  top: 4px;  /* Adjusted position */
-  transform-origin: 48px 10px;  /* Adjusted for new size */
+  left: 11px;
+  top: 4px;
+  transform-origin: 38px 8px;
   background-color: transparent;
   box-shadow: 5px -1px 0px #fff;
   filter: blur(0px);
   animation: sun .7s forwards ease;
+  z-index: 1;
 }
 
 @keyframes sun {
@@ -113,8 +116,8 @@
     box-shadow: 0px 0px 10px #f5deb4,
     0px 0px 20px #f5deb4,
     0px 0px 30px #f5deb4,
-     inset 0px 0px 2px #efd3a3;
-     filter: blur(1px);
+    inset 0px 0px 2px #efd3a3;
+    filter: blur(1px);
   }
   100% {
     transform: rotate(0deg);
@@ -122,27 +125,28 @@
     box-shadow: 0px 0px 10px #f5deb4,
     0px 0px 20px #f5deb4,
     0px 0px 30px #f5deb4,
-     inset 0px 0px 2px #efd3a3;
-     filter: blur(1px);
+    inset 0px 0px 2px #efd3a3;
+    filter: blur(1px);
   }
 }
 
 .theme-toggle:before {
   content: '';
-  width: 12px;  /* Reduced from 15px */
-  height: 12px;  /* Reduced from 15px */
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   position: absolute;
-  left: 13px;  /* Adjusted position */
-  top: 4px;  /* Adjusted position */
+  left: 11px;
+  top: 4px;
   filter: blur(1px);
   background-color: #f5daaa;
   box-shadow: 0px 0px 10px #f5deb4,
   0px 0px 20px #f5deb4,
   0px 0px 30px #f5deb4,
-   inset 0px 0px 2px #efd3a3;
-   transform-origin: 48px 10px;  /* Adjusted for new size */
-   animation: moon .7s forwards ease;
+  inset 0px 0px 2px #efd3a3;
+  transform-origin: 38px 8px;
+  animation: moon .7s forwards ease;
+  z-index: 1;
 }
 
 @keyframes moon {
