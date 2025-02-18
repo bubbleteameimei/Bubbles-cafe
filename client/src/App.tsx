@@ -3,8 +3,8 @@ import { Route, Switch } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
-import MainNav from '@/components/MainNav';
-import Footer from '@/components/Footer';
+import Navigation from '@/components/layout/navigation';
+import Footer from '@/components/layout/footer';
 import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 
@@ -19,7 +19,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <div className="relative min-h-screen flex flex-col bg-background text-foreground">
-            <MainNav />
+            <Navigation />
             <main className="flex-grow">
               <React.Suspense 
                 fallback={

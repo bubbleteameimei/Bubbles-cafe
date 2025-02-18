@@ -17,33 +17,45 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
 }) => {
   const { user } = useAuth();
 
+  const items = [
+    { href: '/', label: 'Home' },
+    { href: '/stories', label: 'Stories' },
+    { href: '/reader', label: 'Reader' },
+    { href: '/index', label: 'Index' },
+    { href: '/community', label: 'Community' }
+  ];
+
   return (
     <nav 
       role="menu" 
       className={`
         ${isMobile 
-          ? 'flex flex-col space-y-6 px-8 py-8' 
-          : 'flex items-center space-x-8'
+          ? 'flex flex-col space-y-4 px-6 py-6' 
+          : 'flex items-center space-x-6'
         }
       `}
       aria-label="Main navigation"
     >
-      <NavLink href="/" isActive={location === "/"} onNavigate={onNavigate}>Home</NavLink>
-      <NavLink href="/stories" isActive={location === "/stories"} onNavigate={onNavigate}>Stories</NavLink>
-      <NavLink href="/reader" isActive={location === "/reader"} onNavigate={onNavigate}>Reader</NavLink>
-      <NavLink href="/index" isActive={location === "/index"} onNavigate={onNavigate}>Index</NavLink>
+      {items.map(item => (
+        <NavLink 
+          key={item.href}
+          href={item.href} 
+          isActive={location === item.href} 
+          onNavigate={onNavigate}
+        >
+          {item.label}
+        </NavLink>
+      ))}
       {user?.isAdmin && (
         <NavLink 
           href="/admin" 
           isActive={location.startsWith("/admin")} 
-          onNavigate={onNavigate} 
-          className="text-amber-500 hover:text-amber-400 transition-colors font-medium"
+          onNavigate={onNavigate}
+          className="text-amber-500 hover:text-amber-400 transition-colors"
         >
-          Admin Dashboard
+          Admin
         </NavLink>
       )}
-      <NavLink href="/about" isActive={location === "/about"} onNavigate={onNavigate}>About</NavLink>
-      <NavLink href="/contact" isActive={location === "/contact"} onNavigate={onNavigate}>Contact</NavLink>
     </nav>
   );
 });
@@ -69,22 +81,17 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        group relative text-sm font-medium transition-all duration-200 ease-in-out
-        ${isActive ? "text-foreground font-semibold" : "text-muted-foreground"}
-        hover:text-foreground/90
+        text-sm font-medium transition-colors
+        ${isActive 
+          ? "text-foreground" 
+          : "text-muted-foreground hover:text-foreground/80"
+        }
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
       role="menuitem"
     >
       {children}
-      <span 
-        className={`
-          absolute -bottom-1 left-0 h-[2px] w-full transform 
-          origin-left transition-all duration-300 ease-out
-          ${isActive ? 'bg-primary scale-x-100' : 'bg-primary/70 scale-x-0 group-hover:scale-x-100'}
-        `}
-      />
     </button>
   );
 });
@@ -98,63 +105,49 @@ export default function Navigation() {
   const [, navigate] = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-accent">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] py-8">
-                <div className="mt-6">
-                  <NavigationItems location={location} onNavigate={() => setIsOpen(false)} isMobile />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon" className="mr-2">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] sm:w-[280px]">
+              <NavigationItems location={location} onNavigate={() => setIsOpen(false)} isMobile />
+            </SheetContent>
+          </Sheet>
 
-          {/* Logo */}
           <button
             onClick={() => navigate('/')}
-            className="text-lg font-bold text-primary hover:text-primary/90 transition-colors tracking-wide"
+            className="font-bold text-lg cursor-pointer hover:text-primary/90 transition-colors"
           >
-            BUBBLE'S CAFE
+            HORROR STORIES
           </button>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:flex-1 md:justify-center">
+          <div className="hidden md:flex">
             <NavigationItems location={location} />
           </div>
+        </div>
 
-          {/* Auth & Theme Toggle */}
-          <div className="flex items-center gap-4">
-            {!user ? (
-              <Button
-                variant="default"
-                onClick={() => navigate('/auth')}
-                size="sm"
-                className="font-medium px-4 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                Sign In
-              </Button>
-            ) : (
-              <Button 
-                variant="ghost"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                size="sm"
-                className="font-medium hover:bg-accent px-4 transition-all duration-200"
-              >
-                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
-              </Button>
-            )}
-            <ThemeToggle />
-          </div>
+        <div className="flex items-center space-x-4">
+          <ThemeToggle />
+          {!user ? (
+            <Button variant="default" size="sm" onClick={() => navigate('/auth')}>
+              Sign In
+            </Button>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+            </Button>
+          )}
         </div>
       </div>
     </header>
