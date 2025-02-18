@@ -1,6 +1,6 @@
 .theme-toggle-wrapper {
-  width: 100px;  /* Reduced from 120px */
-  height: 55px;  /* Reduced from 65px */
+  width: 70px;
+  height: 38px;
   position: relative;
   display: flex;
   align-items: center;
@@ -9,93 +9,93 @@
 
 .theme-toggle {
   position: relative;
-  width: 100px;  /* Reduced from 120px */
-  height: 38px;  /* Reduced from 45px */
+  width: 70px;
+  height: 30px;
   margin: 0px;
   appearance: none;
   -webkit-appearance: none;
   background-color: #1C232A;
-  background-image: url('/assets/dark-theme-bg.jpeg');  /* Updated dark mode background */
+  background-image: url('/assets/dark-theme-bg.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  border-radius: 20px;  /* Reduced from 25px */
+  border-radius: 20px;
   box-shadow: inset 0px 0px 2px rgba(255,255,255,.7);
-  transition: all 0.7s cubic-bezier(.8, .5, .2, 1.4);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
   cursor: pointer;
   overflow: hidden;
 }
 
 .theme-toggle:checked {
-  background-image: url('/assets/light-theme-bg.jpeg');  /* Updated light mode background */
+  background-image: url('/assets/light-theme-bg.jpeg');
   background-size: cover;
   background-position: center;
 }
 
 .theme-toggle:after {
   content: '';
-  width: 34px;  /* Reduced from 41px */
-  height: 34px;  /* Reduced from 41px */
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background-color: #fff;
   position: absolute;
   left: 2px;
   top: 2px;
   transform: translateX(0px);
-  animation: off .7s forwards cubic-bezier(.8, .5, .2, 1.4);
+  animation: off 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 5px -5px 4px rgba(53, 53, 53, 0.3);
   z-index: 2;
 }
 
 @keyframes off {
   0% {
-    transform: translateX(62px);  /* Adjusted for new width */
-    width: 34px;
+    transform: translateX(40px);
+    width: 26px;
   }
   50% {
-    width: 50px;  /* Reduced from 60px */
+    width: 35px;
     border-radius: 25px;
   }
   100% {
     transform: translateX(0px);
-    width: 34px;
+    width: 26px;
   }
 }
 
 .theme-toggle:checked:after {
-  animation: on .7s forwards cubic-bezier(.8, .5, .2, 1.4);
+  animation: on 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset -5px -5px 4px rgba(53, 53, 53, 0.3);
 }
 
 @keyframes on {
   0% {
     transform: translateX(0px);
-    width: 34px;
+    width: 26px;
   }
   50% {
-    width: 50px;
+    width: 35px;
     border-radius: 25px;
   }
   100% {
-    transform: translateX(62px);
-    width: 34px;
+    transform: translateX(40px);
+    width: 26px;
   }
 }
 
 .theme-toggle:checked:before {
   content: '';
-  width: 15px;  /* Increased icon size */
-  height: 15px;  /* Increased icon size */
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   position: absolute;
-  left: 11px;  /* Adjusted inward */
-  top: 5px;
-  transform-origin: 45px 10px;
+  left: 8px;
+  top: 4px;
+  transform-origin: 35px 8px;
   background-color: transparent;
   box-shadow: 6px -1px 0px #fff;
   filter: blur(0px);
-  animation: sun .7s forwards ease;
+  animation: sun 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
 
@@ -113,18 +113,18 @@
   }
   90% {
     background-color: #f5daaa;
-    box-shadow: 0px 0px 15px #f5deb4,  /* Increased glow effect */
-    0px 0px 25px #f5deb4,  /* Increased glow effect */
-    0px 0px 35px #f5deb4,  /* Increased glow effect */
+    box-shadow: 0px 0px 15px #f5deb4,
+    0px 0px 25px #f5deb4,
+    0px 0px 35px #f5deb4,
     inset 0px 0px 2px #efd3a3;
     filter: blur(1px);
   }
   100% {
     transform: rotate(0deg);
     background-color: #f5daaa;
-    box-shadow: 0px 0px 15px #f5deb4,  /* Increased glow effect */
-    0px 0px 25px #f5deb4,  /* Increased glow effect */
-    0px 0px 35px #f5deb4,  /* Increased glow effect */
+    box-shadow: 0px 0px 15px #f5deb4,
+    0px 0px 25px #f5deb4,
+    0px 0px 35px #f5deb4,
     inset 0px 0px 2px #efd3a3;
     filter: blur(1px);
   }
@@ -132,20 +132,20 @@
 
 .theme-toggle:before {
   content: '';
-  width: 15px;  /* Increased icon size */
-  height: 15px;  /* Increased icon size */
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   position: absolute;
-  left: 11px;  /* Adjusted inward */
-  top: 5px;
+  left: 8px;
+  top: 4px;
   filter: blur(1px);
   background-color: #f5daaa;
-  box-shadow: 0px 0px 15px #f5deb4,  /* Increased glow effect */
-  0px 0px 25px #f5deb4,  /* Increased glow effect */
-  0px 0px 35px #f5deb4,  /* Increased glow effect */
+  box-shadow: 0px 0px 15px #f5deb4,
+  0px 0px 25px #f5deb4,
+  0px 0px 35px #f5deb4,
   inset 0px 0px 2px #efd3a3;
-  transform-origin: 45px 10px;
-  animation: moon .7s forwards ease;
+  transform-origin: 35px 8px;
+  animation: moon 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
 }
 

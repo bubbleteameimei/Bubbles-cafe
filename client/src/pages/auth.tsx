@@ -71,14 +71,11 @@ export default function AuthPage() {
     }
   };
 
-  // Update the onRegister function to remove confirmPassword before sending
   const onRegister = async (data: RegisterFormData) => {
     try {
+      // Remove confirmPassword from the data sent to the server
       const { confirmPassword, ...registrationData } = data;
-      await registerMutation.mutateAsync({
-        ...registrationData,
-        isAdmin: false,
-      });
+      await registerMutation.mutateAsync(registrationData);
     } catch (error) {
       console.error('Registration error:', error);
     }
