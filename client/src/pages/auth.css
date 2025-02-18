@@ -4,12 +4,29 @@
   box-shadow: 0 12px 15px 0 rgba(0,0,0,.24),0 17px 50px 0 rgba(0,0,0,.19);
   border-radius: 10px;
   overflow: hidden;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-html {
   position: relative;
   padding: 50px 40px;
   min-height: 570px;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--card)) 0%,
+    hsl(var(--card)/0.8) 100%
+  );
 }
 
 .login-html .sign-in,
@@ -103,6 +120,38 @@
 
 .foot-lnk:hover {
   opacity: 1;
+}
+
+/* Horror theme specific additions */
+.login-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    hsla(var(--destructive) / 0.1) 0%,
+    hsla(var(--card) / 0.2) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-form::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    hsl(var(--card)) 100%
+  );
+  opacity: 0.1;
+  z-index: -1;
 }
 
 @media (max-width: 640px) {

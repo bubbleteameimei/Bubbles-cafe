@@ -104,6 +104,12 @@ export default function Navigation() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [, navigate] = useLocation();
+
+  const handleAuthClick = () => {
+    navigate("/auth");
+    setIsOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -129,8 +135,13 @@ export default function Navigation() {
         <div className="flex items-center space-x-4">
           <ThemeToggle />
           {!user ? (
-            <Button variant="default" size="sm" asChild>
-              <a href="/auth">Sign In</a>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handleAuthClick}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Sign In
             </Button>
           ) : (
             <Button 
