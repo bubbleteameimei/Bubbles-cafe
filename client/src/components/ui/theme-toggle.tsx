@@ -9,14 +9,14 @@ export default function ThemeToggle() {
   };
 
   return (
-    <div className="wrapper" role="presentation">
+    <div className="wrapper">
       <input
         type="checkbox"
         id="theme-toggle"
         className="switch"
         checked={theme === "light"}
         onChange={handleToggle}
-        aria-label="Toggle between dark and light mode"
+        aria-label="Toggle theme"
       />
       <label 
         htmlFor="theme-toggle" 
