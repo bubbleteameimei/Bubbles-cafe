@@ -1,38 +1,6 @@
 {
-  "variant": "professional",
   "primary": "hsl(0, 0%, 0%)",
-  "appearance": "dark",
+  "variant": "professional",
   "radius": 0.5,
-  "background": {
-    "dark": "hsl(0, 0%, 0%)",
-    "light": "hsl(0, 0%, 100%)"
-  },
-  "foreground": {
-    "dark": "hsl(0, 0%, 100%)",
-    "light": "hsl(0, 0%, 0%)"
-  },
-  "muted": {
-    "dark": "hsl(0, 0%, 10%)",
-    "light": "hsl(0, 0%, 96%)"
-  },
-  "accent": {
-    "dark": "hsl(0, 0%, 15%)",
-    "light": "hsl(0, 0%, 94%)"
-  },
-  "card": {
-    "dark": "hsl(0, 0%, 5%)",
-    "light": "hsl(0, 0%, 100%)"
-  },
-  "border": {
-    "dark": "hsl(0, 0%, 15%)",
-    "light": "hsl(0, 0%, 90%)"
-  },
-  "destructive": {
-    "dark": "hsl(0, 100%, 30%)",
-    "light": "hsl(0, 100%, 45%)"
-  },
-  "ring": {
-    "dark": "hsl(0, 0%, 20%)",
-    "light": "hsl(0, 0%, 85%)"
-  }
+  "appearance": "system"
 }

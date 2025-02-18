@@ -8,15 +8,9 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-      "@shared": path.resolve(__dirname, "../shared"),
-    },
-  },
   server: {
     port: 5000,
-    host: true,
+    host: '0.0.0.0',
     strictPort: true,
     proxy: {
       '/api': {
@@ -25,9 +19,10 @@ export default defineConfig({
       }
     }
   },
-  build: {
-    outDir: path.resolve(__dirname, "../dist/public"),
-    emptyOutDir: true,
-    assetsDir: 'assets'
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+    },
   }
 });

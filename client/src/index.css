@@ -4,7 +4,13 @@
 
 @layer base {
   :root {
-    --theme-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
   }
 
   body {
