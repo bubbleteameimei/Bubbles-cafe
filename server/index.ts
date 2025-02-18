@@ -114,14 +114,12 @@ async function startServer() {
       server.listen(PORT, "0.0.0.0", () => {
         enhancedLog(`Server running at http://0.0.0.0:${PORT}`, 'info');
 
-        // Notify the workflow system about the port and readiness
-        if (process.send) {
-          process.send({
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          });
-        }
+        // Explicitly notify about port readiness
+        process.send?.({
+          port: PORT,
+          wait_for_port: true,
+          ready: true
+        });
 
         resolve();
       });
