@@ -3,7 +3,7 @@ import "./theme-toggle.css";
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  
+
   const handleToggle = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
@@ -15,7 +15,7 @@ export default function ThemeToggle() {
         className="theme-toggle"
         checked={theme === "light"}
         onChange={handleToggle}
-        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        aria-label="Toggle theme"
       />
     </div>
   );

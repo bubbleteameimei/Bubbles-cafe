@@ -32,8 +32,11 @@ export function useTheme() {
 
     // Update body background based on theme
     document.body.style.background = theme === 'dark' 
-      ? '#1C232A'
-      : 'radial-gradient(#74b9ff, #0984e3)';
+      ? 'url(https://raw.githubusercontent.com/ahmadbassamemran/dark-light-toggle/master/public/night.png)'
+      : 'url(https://raw.githubusercontent.com/ahmadbassamemran/dark-light-toggle/master/public/day.png)';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.transition = 'all 0.3s ease-in-out';
 
   }, [theme]);
 
