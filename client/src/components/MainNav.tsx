@@ -1,27 +1,25 @@
-import { AdminNav } from "./AdminNav";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { AdminNav } from "./AdminNav";
 
-export function MainNav() {
+export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <div className="mr-4 hidden md:flex">
+        <div className="mr-4 flex">
           <Link href="/">
             <a className="mr-6 flex items-center space-x-2">
-              <span className="hidden font-bold sm:inline-block">
-                Horror Blog
-              </span>
+              <span className="font-bold">Horror Blog</span>
             </a>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/posts">
+            <Link href="/community">
               <a className="transition-colors hover:text-foreground/80">
-                Posts
+                Community
               </a>
             </Link>
 
@@ -48,9 +46,7 @@ export function MainNav() {
                 variant="default"
                 asChild
               >
-                <Link href="/auth">
-                  <a>Sign In</a>
-                </Link>
+                <Link href="/auth">Sign In</Link>
               </Button>
             )}
           </nav>
