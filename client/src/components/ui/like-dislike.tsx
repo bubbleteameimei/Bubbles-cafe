@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
-import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface LikeDislikeProps {
@@ -27,7 +26,6 @@ export function LikeDislike({
   onLike,
   onDislike
 }: LikeDislikeProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
@@ -36,14 +34,13 @@ export function LikeDislike({
     dislikesCount: initialDislikes
   });
 
+  // Update counts when props change
   useEffect(() => {
-    console.log(`[LikeDislike] Initialized for post ${postId}:`, {
-      initialLikes,
-      initialDislikes,
-      userLikeStatus,
-      currentState: { liked, disliked, counts }
+    setCounts({
+      likesCount: initialLikes,
+      dislikesCount: initialDislikes
     });
-  }, []);
+  }, [initialLikes, initialDislikes]);
 
   const likeMutation = useMutation({
     mutationFn: async (action: { isLike: boolean }): Promise<ReactionResponse> => {
@@ -56,9 +53,6 @@ export function LikeDislike({
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Please log in to like or dislike posts');
-        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to update reaction');
       }
@@ -69,22 +63,19 @@ export function LikeDislike({
     },
     onSuccess: (data) => {
       console.log('[LikeDislike] Mutation succeeded:', data);
-      queryClient.invalidateQueries({ queryKey: ['/api/posts', postId] });
+      // Update the cache with new counts
+      queryClient.setQueryData(['/api/posts', postId], (oldData: any) => ({
+        ...oldData,
+        likesCount: data.likesCount,
+        dislikesCount: data.dislikesCount
+      }));
       setCounts(data);
-      if (data.message) {
-        toast({
-          title: "Success",
-          description: data.message,
-        });
-      }
     },
     onError: (error: Error) => {
       console.error('[LikeDislike] Mutation error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update. Please try again.",
-        variant: "destructive"
-      });
+      // Silent error handling - just reset the state
+      setLiked(false);
+      setDisliked(false);
     }
   });
 
@@ -98,30 +89,23 @@ export function LikeDislike({
       counts: { ...counts }
     };
 
-    console.log('[LikeDislike] Handling like click:', {
-      postId,
-      currentState: previousState,
-      newLiked
-    });
-
     // Optimistically update UI
     setLiked(newLiked);
     if (newLiked) {
-      setCounts(prev => ({ ...prev, likesCount: prev.likesCount + 1 }));
-      if (disliked) {
-        setDisliked(false);
-        setCounts(prev => ({ ...prev, dislikesCount: Math.max(0, prev.dislikesCount - 1) }));
-      }
+      setCounts(prev => ({ 
+        ...prev, 
+        likesCount: prev.likesCount + 1,
+        dislikesCount: disliked ? prev.dislikesCount - 1 : prev.dislikesCount
+      }));
+      if (disliked) setDisliked(false);
     } else {
       setCounts(prev => ({ ...prev, likesCount: Math.max(0, prev.likesCount - 1) }));
     }
 
     try {
       await likeMutation.mutateAsync({ isLike: true });
-      console.log('[LikeDislike] Like mutation completed successfully');
       onLike?.(newLiked);
     } catch (error) {
-      console.error('[LikeDislike] Error during like mutation:', error);
       // Revert on error
       setLiked(previousState.liked);
       setDisliked(previousState.disliked);
@@ -139,30 +123,23 @@ export function LikeDislike({
       counts: { ...counts }
     };
 
-    console.log('[LikeDislike] Handling dislike click:', {
-      postId,
-      currentState: previousState,
-      newDisliked
-    });
-
     // Optimistically update UI
     setDisliked(newDisliked);
     if (newDisliked) {
-      setCounts(prev => ({ ...prev, dislikesCount: prev.dislikesCount + 1 }));
-      if (liked) {
-        setLiked(false);
-        setCounts(prev => ({ ...prev, likesCount: Math.max(0, prev.likesCount - 1) }));
-      }
+      setCounts(prev => ({ 
+        ...prev, 
+        dislikesCount: prev.dislikesCount + 1,
+        likesCount: liked ? prev.likesCount - 1 : prev.likesCount
+      }));
+      if (liked) setLiked(false);
     } else {
       setCounts(prev => ({ ...prev, dislikesCount: Math.max(0, prev.dislikesCount - 1) }));
     }
 
     try {
       await likeMutation.mutateAsync({ isLike: false });
-      console.log('[LikeDislike] Dislike mutation completed successfully');
       onDislike?.(newDisliked);
     } catch (error) {
-      console.error('[LikeDislike] Error during dislike mutation:', error);
       // Revert on error
       setLiked(previousState.liked);
       setDisliked(previousState.disliked);

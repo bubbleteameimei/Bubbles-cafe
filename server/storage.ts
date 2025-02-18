@@ -527,7 +527,13 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Creating new comment');
       const [newComment] = await db.insert(comments)
-        .values(comment)
+        .values({
+          content: comment.content,
+          postId: comment.postId,
+          userId: comment.userId,
+          approved: comment.approved,
+          createdAt: new Date()
+        })
         .returning();
 
       return {
@@ -804,7 +810,13 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Creating new comment reply');
       const [newReply] = await db.insert(commentReplies)
-        .values(reply)
+        .values({
+          content: reply.content,
+          userId: reply.userId,
+          commentId: reply.commentId,
+          approved: reply.approved,
+          createdAt: new Date()
+        })
         .returning();
 
       return {
@@ -922,7 +934,7 @@ export class DatabaseStorage implements IStorage {
     return newEntry;
   }
 
-  async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
+async getChallengeEntries(challengeId: number): Promise<ChallengeEntry[]> {
     return await db.select()
       .from(challengeEntries)
       .where(eq(challengeEntries.challengeId, challengeId))

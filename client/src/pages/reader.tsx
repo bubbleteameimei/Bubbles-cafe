@@ -20,6 +20,34 @@ interface PostsResponse {
   hasMore: boolean;
 }
 
+// Helper function to generate deterministic stats based on post ID
+const getOrCreateStats = (postId: number) => {
+  const storageKey = `post-stats-${postId}`;
+  const existingStats = localStorage.getItem(storageKey);
+
+  if (existingStats) {
+    return JSON.parse(existingStats);
+  }
+
+  // Calculate deterministic likes and dislikes based on post ID
+  const likesBase = 80;
+  const likesRange = 40; // To get max of 120
+  const dislikesBase = 5;
+  const dislikesRange = 15; // To get max of 20
+
+  // Use post ID to generate deterministic but varying values
+  const likes = likesBase + (postId * 7) % likesRange;
+  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
+
+  const newStats = {
+    likes,
+    dislikes
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(newStats));
+  return newStats;
+};
+
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
@@ -41,30 +69,21 @@ export default function Reader() {
       return data;
     },
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 
-  useEffect(() => {
-    if (postsData?.posts && Array.isArray(postsData.posts)) {
-      const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
-      postsData.posts.forEach(post => {
-        const storageKey = `post-stats-${post.id}`;
-        const existingStats = localStorage.getItem(storageKey);
-        if (existingStats) {
-          persistedStats[post.id] = JSON.parse(existingStats);
-        } else {
-          const newStats = {
-            likes: Math.floor(Math.random() * 71) + 80,
-            dislikes: Math.floor(Math.random() * 15)
-          };
-          localStorage.setItem(storageKey, JSON.stringify(newStats));
-          persistedStats[post.id] = newStats;
-        }
-      });
-      setPostStats(persistedStats);
+useEffect(() => {
+  if (postsData?.posts && Array.isArray(postsData.posts)) {
+    const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
+    postsData.posts.forEach(post => {
+      persistedStats[post.id] = getOrCreateStats(post.id);
+    });
+    setPostStats(persistedStats);
 
-      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-    }
-  }, [postsData?.posts, currentIndex]);
+    sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+  }
+}, [postsData?.posts, currentIndex]);
 
   const goToPrevious = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;

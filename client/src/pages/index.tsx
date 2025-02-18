@@ -18,7 +18,7 @@ interface PostsResponse {
   hasMore: boolean;
 }
 
-// Helper function to generate and persist random stats
+// Update helper function to use deterministic fixed counts based on post ID
 const getOrCreateStats = (postId: number) => {
   const storageKey = `post-stats-${postId}`;
   const existingStats = localStorage.getItem(storageKey);
@@ -27,9 +27,20 @@ const getOrCreateStats = (postId: number) => {
     return JSON.parse(existingStats);
   }
 
+  // Calculate deterministic likes and dislikes based on post ID
+  // Using modulo to ensure values stay within desired ranges
+  const likesBase = 80;
+  const likesRange = 40; // To get max of 120
+  const dislikesBase = 5;
+  const dislikesRange = 15; // To get max of 20
+
+  // Use post ID to generate deterministic but varying values
+  const likes = likesBase + (postId * 7) % likesRange;
+  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
+
   const newStats = {
-    likes: Math.floor(Math.random() * 71) + 80,
-    dislikes: Math.floor(Math.random() * 15)
+    likes,
+    dislikes
   };
 
   localStorage.setItem(storageKey, JSON.stringify(newStats));
@@ -69,7 +80,9 @@ export default function IndexView() {
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   });
 
   const formatDate = (date: Date) => {
