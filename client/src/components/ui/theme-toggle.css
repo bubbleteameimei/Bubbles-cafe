@@ -21,16 +21,18 @@
   background-repeat: no-repeat;
   border-radius: 20px;
   box-shadow: inset 0px 0px 2px rgba(255,255,255,.7);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all .7s cubic-bezier(.8, .5, .2, 1.4);
   outline: none;
   cursor: pointer;
   overflow: hidden;
 }
 
 .theme-toggle:checked {
+  background-color: #ffffff;
   background-image: url('/assets/light-theme-bg.jpeg');
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 .theme-toggle:after {
@@ -43,7 +45,7 @@
   left: 2px;
   top: 2px;
   transform: translateX(0px);
-  animation: off 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+  animation: off .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   box-shadow: inset 5px -5px 4px rgba(53, 53, 53, 0.3);
   z-index: 2;
 }
@@ -53,8 +55,8 @@
     transform: translateX(40px);
     width: 26px;
   }
-  50% {
-    width: 35px;
+  40% {
+    width: 32px;
     border-radius: 25px;
   }
   100% {
@@ -64,7 +66,7 @@
 }
 
 .theme-toggle:checked:after {
-  animation: on 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+  animation: on .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   box-shadow: inset -5px -5px 4px rgba(53, 53, 53, 0.3);
 }
 
@@ -73,8 +75,8 @@
     transform: translateX(0px);
     width: 26px;
   }
-  50% {
-    width: 35px;
+  40% {
+    width: 32px;
     border-radius: 25px;
   }
   100% {
@@ -95,7 +97,7 @@
   background-color: transparent;
   box-shadow: 6px -1px 0px #fff;
   filter: blur(0px);
-  animation: sun 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+  animation: sun .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   z-index: 1;
 }
 
@@ -145,7 +147,7 @@
   0px 0px 35px #f5deb4,
   inset 0px 0px 2px #efd3a3;
   transform-origin: 35px 8px;
-  animation: moon 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+  animation: moon .7s forwards cubic-bezier(.8, .5, .2, 1.4);
   z-index: 1;
 }
 
