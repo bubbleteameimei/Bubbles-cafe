@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LikeDislike } from "@/components/ui/like-dislike";
+import { getReadingTime } from "@/lib/content-analysis";
 
 interface StoryViewProps {
   slug: string;
@@ -24,7 +25,7 @@ export function StoryView({ slug }: StoryViewProps) {
     return (
       <div className="text-center p-8">
         <h2 className="text-2xl font-bold text-red-500">Error Loading Story</h2>
-        <p className="text-gray-600 mt-2">{error.message}</p>
+        <p className="text-muted-foreground mt-2">{error.message}</p>
       </div>
     );
   }
@@ -33,10 +34,12 @@ export function StoryView({ slug }: StoryViewProps) {
     return (
       <div className="text-center p-8">
         <h2 className="text-2xl font-bold">Story Not Found</h2>
-        <p className="text-gray-600 mt-2">The requested story could not be found.</p>
+        <p className="text-muted-foreground mt-2">The requested story could not be found.</p>
       </div>
     );
   }
+
+  const readingTime = getReadingTime(story.content);
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-8">
@@ -46,18 +49,16 @@ export function StoryView({ slug }: StoryViewProps) {
           <div className="text-sm text-muted-foreground">
             {new Date(story.createdAt).toLocaleDateString()}
           </div>
-          {story.readingTimeMinutes && (
-            <div className="text-sm text-muted-foreground">
-              {story.readingTimeMinutes} min read
-            </div>
-          )}
+          <div className="read-time">
+            {readingTime}
+          </div>
         </div>
-        <div className="prose dark:prose-invert max-w-none">
+        <div className="prose dark:prose-invert max-w-none italic-text">
           {story.content}
         </div>
       </Card>
 
-      <LikeDislike postId={story.id} userId={user?.id} />
+      <LikeDislike postId={story.id} />
     </div>
   );
 }

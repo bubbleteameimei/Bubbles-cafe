@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Bug as Worm, Cpu, Brain, Pill, Dna, Footprints, Ghost, Castle, Radiation, Skull, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
-import { detectThemes, calculateIntensity, THEME_CATEGORIES } from "@/lib/content-analysis";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
+import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
   post: Post;
@@ -32,14 +32,6 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     const paragraphs = content.split('\n\n');
     const significantParagraph = paragraphs.find(p => p.trim().length >= 100) || paragraphs[0] || '';
     return significantParagraph.slice(0, 200) + (significantParagraph.length > 200 ? '...' : '');
-  };
-
-  const getReadingTime = (content: string) => {
-    if (!content) return '0 min read';
-    const wordsPerMinute = 200;
-    const words = content.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
   };
 
   const themes = post.content ? detectThemes(post.content) : [];
@@ -75,13 +67,13 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     >
       <Card className="h-full hover:bg-accent/5 transition-colors border-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="line-clamp-2 text-xl">{post.title}</CardTitle>
+          <CardTitle className="story-title text-xl">{post.title}</CardTitle>
           <div className="flex items-center flex-wrap gap-2 mt-2">
             <span className="text-sm text-muted-foreground">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </span>
             <span className="text-primary/50">•</span>
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <span className="read-time text-sm text-muted-foreground flex items-center gap-1">
               <Timer className="h-3.5 w-3.5" />
               {getReadingTime(post.content)}
             </span>

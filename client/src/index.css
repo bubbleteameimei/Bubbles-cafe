@@ -1,3 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lancelot&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Castoro+Titling&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Aquiline+Two&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,9 +33,10 @@
     --radius: 0.5rem;
   }
 
+  /* Base Typography */
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: "Georgia", "Times New Roman", serif;
+    font-family: "EB Garamond", serif; /* Body Text */
     font-size: 16px;
     line-height: 1.8;
     letter-spacing: 0.01em;
@@ -36,16 +44,55 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Typography - Horror Theme Style */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-bold tracking-tight text-foreground;
+  /* Main Titles and Key Headers */
+  h1, h2 {
+    font-family: "Castoro Titling", serif;
+    @apply font-bold tracking-tight text-foreground;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 
+  /* Subheadings and Secondary Headers */
+  h3, h4, h5, h6 {
+    font-family: "Cormorant Garamond", serif;
+    @apply font-semibold tracking-tight text-foreground;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Story Titles in Stories Page */
+  .story-title {
+    font-family: "Cinzel Decorative", cursive;
+    @apply font-bold text-xl md:text-2xl mb-2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Italic Text in Reader */
+  .italic-text {
+    font-family: "Aquiline Two", cursive;
+    font-style: italic;
+  }
+
+  /* Read Time Display */
+  .read-time {
+    @apply text-sm text-muted-foreground;
+    font-family: "Cormorant Garamond", serif;
+  }
+
+  /* Header Sizes */
   h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-8; }
   h2 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6; }
   h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4; }
   h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4; }
+
+  /* Utility classes for specific font usage */
+  .font-decorative {
+    font-family: "Lancelot", cursive;
+  }
+
+  /* Quotes and Epigraphs */
+  blockquote {
+    font-family: "Lancelot", cursive;
+    @apply pl-4 border-l-4 border-primary/50 italic my-6;
+  }
 
   /* Horror theme specific styles */
   .horror-text-shadow {
@@ -65,26 +112,6 @@
       hsl(var(--card)),
       hsl(var(--muted))
     );
-  }
-
-  /* Button and Interactive Elements */
-  button, a {
-    @apply transition-all duration-300;
-  }
-
-  .button-horror {
-    @apply px-4 py-2 rounded-md border border-border/50 bg-card hover:bg-accent/10
-           text-foreground shadow-sm transition-all duration-300;
-  }
-
-  /* Focus States */
-  *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
-  /* Loading States */
-  .loading-horror {
-    @apply text-sm text-muted-foreground animate-pulse;
   }
 
   /* Paper texture effect */
