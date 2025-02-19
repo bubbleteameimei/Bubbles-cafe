@@ -8,6 +8,7 @@ import Footer from '@/components/layout/footer';
 import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { CookieConsent } from '@/components/ui/cookie-consent';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
@@ -28,13 +29,7 @@ function App() {
           <div className="relative min-h-screen flex flex-col bg-background text-foreground">
             <Navigation />
             <main className="flex-grow">
-              <React.Suspense 
-                fallback={
-                  <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="text-muted-foreground">Loading...</div>
-                  </div>
-                }
-              >
+              <React.Suspense fallback={<LoadingScreen />}>
                 <Switch>
                   <Route path="/" component={HomePage} />
                   <Route path="/reader" component={ReaderPage} />

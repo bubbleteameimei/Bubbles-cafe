@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import * as React from "react";
 import type { ComponentType } from "react";
 import type { RouteComponentProps } from "wouter";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,9 +21,9 @@ interface ErrorFallbackProps {
   errorInfo?: React.ErrorInfo;
 }
 
-interface LoadingFallbackProps {
-  message?: string;
-}
+//interface LoadingFallbackProps {
+//  message?: string;
+//}
 
 // Error fallback component
 const ErrorFallbackComponent = React.memo(function ErrorFallback({ 
@@ -45,27 +46,11 @@ const ErrorFallbackComponent = React.memo(function ErrorFallback({
   );
 });
 
-// Loading fallback component
-const LoadingFallbackComponent = React.memo(function LoadingFallback({ 
-  message = 'Loading...' 
-}: LoadingFallbackProps) {
-  return React.createElement(
-    "div",
-    {
-      role: "status",
-      className: "flex items-center justify-center p-4"
-    },
-    React.createElement(
-      "div",
-      { className: "animate-pulse" },
-      message
-    )
-  );
-});
+// Loading fallback component is removed.
 
 // Export components
 export const ErrorFallback = ErrorFallbackComponent;
-export const LoadingFallback = LoadingFallbackComponent;
+export const LoadingFallback = LoadingScreen;
 
 // Create lazy-loaded component with error boundary
 export function createLazyComponent<P extends object>(

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,59 +8,50 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
-const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
-  location: string,
-  onNavigate?: () => void,
-  isMobile?: boolean
+const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
+  title: string;
+  items: { href: string; label: string; icon?: React.ReactNode }[];
+  isOpen: boolean;
+  onToggle: () => void;
+  location: string;
+  onNavigate?: () => void;
 }) => {
-  const { user } = useAuth();
-
-  const items = [
-    { href: '/', label: 'Home' },
-    { href: '/reader', label: 'Reader' },
-    { href: '/stories', label: 'Stories' },
-    { href: '/index', label: 'Index' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' }
-  ];
-
   return (
-    <nav 
-      role="menu" 
-      className={`
-        ${isMobile 
-          ? 'flex flex-col space-y-4 px-6 py-6' 
-          : 'flex items-center space-x-6'
-        }
-      `}
-      aria-label="Main navigation"
-    >
-      {items.map(item => (
-        <NavLink 
-          key={item.href}
-          href={item.href} 
-          isActive={location === item.href} 
-          onNavigate={onNavigate}
-        >
-          {item.label}
-        </NavLink>
-      ))}
-      {user?.isAdmin && (
-        <NavLink 
-          href="/admin/dashboard" 
-          isActive={location.startsWith("/admin")} 
-          onNavigate={onNavigate}
-          className="text-primary hover:text-primary/80 transition-colors"
-        >
-          Admin
-        </NavLink>
-      )}
-    </nav>
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-4 text-lg font-medium transition-colors hover:text-primary group">
+        <span className="flex items-center gap-3">
+          {title === 'Library' && <Book className="h-5 w-5" />}
+          {title === 'Explore' && <Compass className="h-5 w-5" />}
+          {title === 'Settings' && <Settings className="h-5 w-5" />}
+          {title}
+        </span>
+        <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pl-8 space-y-3">
+        {items.map(item => (
+          <NavLink
+            key={item.href}
+            href={item.href}
+            isActive={location === item.href}
+            onNavigate={onNavigate}
+            className="flex items-center gap-3 py-2.5"
+          >
+            {item.icon && <span className="w-5 h-5 flex items-center justify-center">{item.icon}</span>}
+            {item.label}
+          </NavLink>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 });
 
-NavigationItems.displayName = "NavigationItems";
+DropdownSection.displayName = "DropdownSection";
 
 const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
@@ -81,11 +72,12 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        text-sm font-medium transition-colors
-        ${isActive 
-          ? "text-foreground" 
-          : "text-muted-foreground hover:text-foreground/80"
+        text-lg font-eb-garamond transition-all duration-300
+        ${isActive
+          ? "text-primary font-semibold"
+          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
         }
+        w-full text-left px-4 py-2.5 rounded-sm
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
@@ -98,58 +90,163 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
 
 NavLink.displayName = "NavLink";
 
-export default function Navigation() {
-  const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
+  location: string;
+  onNavigate?: () => void;
+  isMobile?: boolean;
+}) => {
+  const { user } = useAuth();
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
-  const handleAuthClick = () => {
-    setLocation("/auth");
-    setIsOpen(false);
+  const sections = {
+    library: [
+      { href: '/stories', label: 'Stories' },
+      { href: '/index', label: 'Index' },
+      { href: '/reader', label: 'Reader' },
+    ],
+    explore: [
+      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" /> },
+      { href: '/secret', label: 'Secret Pages' },
+      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" /> },
+    ],
+    settings: [
+      { href: '/theme', label: 'Dark Mode' },
+      { href: '/accessibility', label: 'Font & Accessibility' },
+    ],
   };
 
   return (
+    <nav
+      role="menu"
+      className={`
+        flex flex-col space-y-4 p-8
+        font-eb-garamond text-lg
+        bg-background/95 backdrop-blur-sm
+        border-r border-border/50
+        ${isMobile ? 'w-full' : 'w-72 h-full'}
+      `}
+      aria-label="Main navigation"
+    >
+      <NavLink
+        href="/"
+        isActive={location === '/'}
+        onNavigate={onNavigate}
+        className="text-xl font-medium py-4"
+      >
+        Home
+      </NavLink>
+
+      <div className="space-y-3">
+        <DropdownSection
+          title="Library"
+          items={sections.library}
+          isOpen={openSection === 'library'}
+          onToggle={() => setOpenSection(openSection === 'library' ? null : 'library')}
+          location={location}
+          onNavigate={onNavigate}
+        />
+
+        <DropdownSection
+          title="Explore"
+          items={sections.explore}
+          isOpen={openSection === 'explore'}
+          onToggle={() => setOpenSection(openSection === 'explore' ? null : 'explore')}
+          location={location}
+          onNavigate={onNavigate}
+        />
+
+        <NavLink
+          href="/about"
+          isActive={location === '/about'}
+          onNavigate={onNavigate}
+          className="py-4"
+        >
+          About
+        </NavLink>
+
+        <NavLink
+          href="/contact"
+          isActive={location === '/contact'}
+          onNavigate={onNavigate}
+          className="py-4"
+        >
+          Contact
+        </NavLink>
+
+        <NavLink
+          href="/privacy"
+          isActive={location === '/privacy'}
+          onNavigate={onNavigate}
+          className="py-4"
+        >
+          Privacy Policy
+        </NavLink>
+
+        <DropdownSection
+          title="Settings"
+          items={sections.settings}
+          isOpen={openSection === 'settings'}
+          onToggle={() => setOpenSection(openSection === 'settings' ? null : 'settings')}
+          location={location}
+          onNavigate={onNavigate}
+        />
+      </div>
+
+      <div className="mt-auto pt-6 border-t border-border/50">
+        {!user ? (
+          <Button
+            variant="default"
+            size="lg"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg"
+            onClick={() => {
+              onNavigate?.();
+              setLocation("/auth");
+            }}
+          >
+            <User className="h-5 w-5 mr-2" />
+            Sign In
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="lg"
+            className="w-full text-lg"
+            onClick={() => {
+              // Handle logout
+            }}
+          >
+            Sign Out
+          </Button>
+        )}
+      </div>
+    </nav>
+  );
+});
+
+SidebarContent.displayName = "SidebarContent";
+
+export default function Navigation() {
+  const [location] = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="mr-2">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[240px] sm:w-[280px]">
-              <NavigationItems location={location} onNavigate={() => setIsOpen(false)} isMobile />
-            </SheetContent>
-          </Sheet>
-
-          <div className="hidden md:flex">
-            <NavigationItems location={location} />
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {!user ? (
-            <Button 
-              variant="default" 
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-              onClick={handleAuthClick}
-            >
-              Sign In
+      <div className="container flex h-16 items-center">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="mr-2">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle menu</span>
             </Button>
-          ) : (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-            >
-              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
-            </Button>
-          )}
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0">
+            <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
+          </SheetContent>
+        </Sheet>
+
+        <div className="hidden md:flex h-full">
+          <SidebarContent location={location} />
         </div>
       </div>
     </header>

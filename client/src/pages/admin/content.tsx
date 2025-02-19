@@ -2,8 +2,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Redirect } from "wouter";
-import { Post } from "@shared/schema";
-import { Loader2, Edit, Trash2, Eye, AlertCircle } from "lucide-react";
+import { type Post } from "@shared/schema";
+import { Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 interface PostMetadata {
   isCommunityPost?: boolean;
@@ -84,22 +85,16 @@ export default function AdminContentPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Content Management</h1>
-        <Button 
-          variant="default" 
-          size="sm" 
+        <Button
+          variant="default"
+          size="sm"
           onClick={() => window.location.href = '/submit-story'}
           className="flex items-center gap-2"
         >
@@ -149,18 +144,18 @@ export default function AdminContentPage() {
             <CardContent>
               <p className="text-muted-foreground line-clamp-2">{post.excerpt}</p>
               <div className="mt-4 flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2" 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
                   onClick={() => window.location.href = `/story/${post.id}`}
                 >
                   <Eye className="h-4 w-4" /> View
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2" 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
                   onClick={() => window.location.href = `/submit-story?edit=${post.id}`}
                 >
                   <Edit className="h-4 w-4" /> Edit
