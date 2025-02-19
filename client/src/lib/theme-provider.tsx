@@ -1,15 +1,44 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { useTheme } from "@/hooks/use-theme";
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  // Initialize theme hook to set up listeners and initial theme
-  useTheme();
+interface Theme {
+  primary: string;
+  variant: 'professional' | 'tint' | 'vibrant';
+  appearance: 'light' | 'dark' | 'system';
+  radius: number;
+}
 
-  return <>{children}</>;
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const { theme } = useTheme() as { theme: Theme };
+
+  // Apply sophisticated animations and transitions
+  useEffect(() => {
+    document.body.classList.add('animate-theme-transition');
+
+    // Add premium animation classes based on theme
+    if (theme?.appearance === 'dark') {
+      document.body.classList.add('dark-mode-premium');
+    } else {
+      document.body.classList.remove('dark-mode-premium');
+    }
+
+    // Cleanup
+    return () => {
+      document.body.classList.remove('animate-theme-transition');
+    };
+  }, [theme?.appearance]);
+
+  return (
+    <div className="theme-container premium-texture">
+      <div className="theme-content premium-animation">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // Re-export the useTheme hook for convenience
