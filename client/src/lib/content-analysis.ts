@@ -1,5 +1,5 @@
 import { type ThemeCategory, type ThemeInfo } from "../shared/types";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
+import { Bug, Machine, Car, Chase, Descent, Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
 
@@ -11,7 +11,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'whisper', 'dig', 'flesh', 'brain', 'skin'
     ],
     badgeVariant: "parasite",
-    icon: 'Worm',
+    icon: Worm,
     description: 'Parasitic and invasive horror',
     visualEffects: ['mist', 'shadows']
   },
@@ -22,7 +22,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'revelations', 'forbidden', 'cyclopean', 'eldritch'
     ],
     badgeVariant: "lovecraftian",
-    icon: 'Skull',
+    icon: Skull,
     description: 'Lovecraftian and cosmic horror',
     visualEffects: ['fog', 'darkness']
   },
@@ -33,7 +33,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'trauma', 'identity', 'control', 'manipulation', 'rain'
     ],
     badgeVariant: "psychological",
-    icon: 'Brain',
+    icon: Brain,
     description: 'Psychological manipulation and mental horror',
     visualEffects: ['distortion', 'flashbacks']
   },
@@ -44,7 +44,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'depression', 'despair', 'darkness'
     ],
     badgeVariant: "suicidal",
-    icon: 'Pill',
+    icon: Pill,
     description: 'Self-destructive and survival horror',
     visualEffects: ['grayscale', 'desaturation']
   },
@@ -55,7 +55,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'upload', 'transfer', 'merge', 'cybernetic'
     ],
     badgeVariant: "technological",
-    icon: 'Cpu',
+    icon: Machine,
     description: 'Technological and cybernetic horror',
     visualEffects: ['glitches', 'static']
   },
@@ -66,7 +66,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'crawl', 'bug', 'inside', 'pain'
     ],
     badgeVariant: "body",
-    icon: 'Dna',
+    icon: Bug,
     description: 'Body transformation horror',
     visualEffects: ['close-ups', 'detail']
   },
@@ -77,7 +77,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'excitement', 'thrill'
     ],
     badgeVariant: "psychopath",
-    icon: 'Axe',
+    icon: Car,
     description: 'Psychopathic and murderous horror',
     visualEffects: ['red', 'blood splatter']
   },
@@ -88,7 +88,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'presence', 'manifestation', 'swap', 'change'
     ],
     badgeVariant: "supernatural",
-    icon: 'Ghost',
+    icon: Ghost,
     description: 'Supernatural and paranormal horror',
     visualEffects: ['transparency', 'shimmer']
   },
@@ -99,7 +99,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'soul', 'corrupt', 'innocent'
     ],
     badgeVariant: "possession",
-    icon: 'Ghost',
+    icon: Ghost,
     description: 'Demonic possession horror',
     visualEffects: ['distortion', 'shadow']
   },
@@ -110,7 +110,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'cannibalism', 'human', 'meal'
     ],
     badgeVariant: "cannibalism",
-    icon: 'Axe',
+    icon: Axe,
     description: 'Cannibalistic horror',
     visualEffects: ['gore', 'blood']
   },
@@ -121,7 +121,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'dark', 'alone', 'fear', 'chase'
     ],
     badgeVariant: "stalking",
-    icon: 'Footprints',
+    icon: Chase,
     description: 'Stalking and pursuit horror',
     visualEffects: ['shadows', 'darkness']
   },
@@ -132,7 +132,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'spirit', 'beyond', 'mortal'
     ],
     badgeVariant: "death",
-    icon: 'Skull',
+    icon: Descent,
     description: 'Death and mortality horror',
     visualEffects: ['grayscale', 'fade']
   },
@@ -143,7 +143,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'ancestor', 'portrait', 'painting'
     ],
     badgeVariant: "gothic",
-    icon: 'Castle',
+    icon: Castle,
     description: 'Gothic and ancestral horror',
     visualEffects: ['darkness', 'shadows']
   },
@@ -154,7 +154,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'world', 'civilization', 'ruin'
     ],
     badgeVariant: "apocalyptic",
-    icon: 'Radiation',
+    icon: Radiation,
     description: 'Post-apocalyptic horror',
     visualEffects: ['destruction', 'ruin']
   },
@@ -165,7 +165,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'void', 'cut-off', 'separation'
     ],
     badgeVariant: "isolation",
-    icon: 'UserMinus2',
+    icon: UserMinus2,
     description: 'Isolation horror',
     visualEffects: ['emptiness', 'silence']
   },
@@ -176,7 +176,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'vessel', 'ship'
     ],
     badgeVariant: "aquatic",
-    icon: 'Anchor',
+    icon: Anchor,
     description: 'Deep sea horror',
     visualEffects: ['water', 'blue']
   },
@@ -187,7 +187,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'transmission', 'infected', 'pandemic'
     ],
     badgeVariant: "viral",
-    icon: 'AlertTriangle',
+    icon: AlertTriangle,
     description: 'Viral and epidemic horror',
     visualEffects: ['red', 'infection']
   },
@@ -198,7 +198,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'warning', 'curse'
     ],
     badgeVariant: "urban",
-    icon: 'Building',
+    icon: Building,
     description: 'Urban legend horror',
     visualEffects: ['city', 'night']
   },
@@ -209,7 +209,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'trapped', 'forever'
     ],
     badgeVariant: "time",
-    icon: 'Clock',
+    icon: Clock,
     description: 'Temporal horror',
     visualEffects: ['rewind', 'fast-forward']
   },
@@ -220,7 +220,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
       'reality', 'trance'
     ],
     badgeVariant: "dreamscape",
-    icon: 'Moon',
+    icon: Moon,
     description: 'Dream-based horror',
     visualEffects: ['blur', 'fade']
   }
