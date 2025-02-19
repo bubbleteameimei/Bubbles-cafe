@@ -1,15 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Loader2, Moon, Sun } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AdminNav } from "./AdminNav";
-import { useTheme } from "@/hooks/use-theme";
 
 export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
-  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [, setLocation] = useLocation();
 
   const handleAuthClick = () => {
@@ -36,21 +32,6 @@ export default function MainNav() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-9 w-9 rounded-full"
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              <Sun className="h-4 w-4 transition-all" />
-            ) : (
-              <Moon className="h-4 w-4 transition-all" />
-            )}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : user ? (

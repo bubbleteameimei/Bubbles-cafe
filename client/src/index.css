@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 32 15% 16%;    /* #34271f - Deep mahogany */
-    --foreground: 33 7% 21%;     /* #393833 - Rich text */
-    --card: 32 15% 16%;          /* #34271f - Antique wood */
-    --card-foreground: 33 7% 21%; /* #393833 */
-    --popover: 42 18% 30%;       /* #585544 - Aged parchment */
-    --popover-foreground: 33 7% 21%; /* #393833 */
-    --primary: 25 29% 28%;       /* #5e4d33 - Leather brown */
-    --primary-foreground: 33 7% 21%; /* #393833 */
-    --secondary: 50 12% 19%;     /* #383929 - Dark olive */
-    --secondary-foreground: 33 7% 21%; /* #393833 */
-    --muted: 165 23% 11%;        /* #17221c - Shadow green */
-    --muted-foreground: 33 7% 21%; /* #393833 */
-    --accent: 9 43% 22%;         /* #502a20 - Rustic red */
-    --accent-foreground: 33 7% 21%; /* #393833 */
-    --destructive: 0 84% 60%;    /* For error states */
-    --destructive-foreground: 33 7% 21%; /* #393833 */
-    --border: 165 23% 11%;       /* #17221c */
-    --input: 32 15% 16%;         /* #34271f */
-    --ring: 25 29% 28%;          /* #5e4d33 */
-    --radius: 0.25rem;
+    --background: 0 6% 8%;      /* #161314 - Gothic black */
+    --foreground: 20 15% 87%;   /* #e2dcd8 - Alabaster */
+    --card: 0 5% 9%;           /* #1a1717 - Dark marble */
+    --card-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --popover: 0 5% 9%;        /* #1a1717 - Dark marble */
+    --popover-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --primary: 359 34% 31%;    /* #6b3536 - Deep crimson */
+    --primary-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --secondary: 330 5% 15%;   /* #2a2527 - Dark slate */
+    --secondary-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --muted: 13 7% 20%;        /* #372f2d - Aged granite */
+    --muted-foreground: 12 5% 60%; /* #a09591 - Weathered stone */
+    --accent: 359 24% 45%;     /* #8c5657 - Faded crimson */
+    --accent-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --destructive: 0 70% 35%;  /* #991b1b - Blood red */
+    --destructive-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
+    --border: 20 5% 17%;       /* #2d2827 - Iron black */
+    --input: 0 5% 9%;         /* #1a1717 - Dark marble */
+    --ring: 359 34% 31%;      /* #6b3536 - Deep crimson */
+    --radius: 0.5rem;
   }
 
   body {
@@ -36,10 +36,10 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Typography - Dark Academia Style */
+  /* Typography - Horror Theme Style */
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif font-bold tracking-tight text-foreground;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-8; }
@@ -47,14 +47,14 @@
   h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4; }
   h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4; }
 
-  /* Dark Academia specific styles */
-  .academia-text-shadow {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  /* Horror theme specific styles */
+  .horror-text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
   }
 
-  .academia-border {
+  .horror-border {
     @apply border-[1px] border-border/50;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
   }
 
   /* Card styling */
@@ -72,19 +72,9 @@
     @apply transition-all duration-300;
   }
 
-  .button-academia {
+  .button-horror {
     @apply px-4 py-2 rounded-md border border-border/50 bg-card hover:bg-accent/10
            text-foreground shadow-sm transition-all duration-300;
-  }
-
-  /* Theme Picker Specific Styles */
-  .theme-option {
-    @apply flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer
-           hover:bg-accent/10 transition-colors duration-200;
-  }
-
-  .theme-option.active {
-    @apply bg-accent/20;
   }
 
   /* Focus States */
@@ -93,7 +83,7 @@
   }
 
   /* Loading States */
-  .loading-academia {
+  .loading-horror {
     @apply text-sm text-muted-foreground animate-pulse;
   }
 
