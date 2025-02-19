@@ -1,10 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { theme, type ThemeVariant } from "@/lib/theme";
 
-type Theme = "dark" | "light";
-
 interface ThemeState {
-  mode: Theme;
+  mode: "light" | "dark";
   variant: ThemeVariant;
 }
 
@@ -14,12 +12,16 @@ export function useTheme() {
 
     const stored = localStorage.getItem("theme-state");
     if (stored) {
-      return JSON.parse(stored) as ThemeState;
+      try {
+        return JSON.parse(stored) as ThemeState;
+      } catch (e) {
+        console.error('Failed to parse stored theme:', e);
+      }
     }
 
     return {
       mode: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
-      variant: 'classic'
+      variant: 'gothic' // Default to gothic theme for horror theme
     };
   });
 
@@ -37,41 +39,39 @@ export function useTheme() {
     const currentTheme = theme.variants[variant][mode === 'dark' ? 'darkMode' : 'lightMode'];
 
     // Apply theme colors
-    const body = document.body;
-    body.style.margin = "0px";
-    body.style.width = "100%";
-    body.style.height = "100vh";
-
-    // Set CSS variables for the selected theme variant
-    document.documentElement.style.setProperty('--background', currentTheme.ui.background);
-    document.documentElement.style.setProperty('--foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--card', currentTheme.ui.card);
-    document.documentElement.style.setProperty('--card-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--popover', currentTheme.ui.card);
-    document.documentElement.style.setProperty('--popover-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--primary', currentTheme.accentColors.primary);
-    document.documentElement.style.setProperty('--primary-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--secondary', currentTheme.accentColors.secondary);
-    document.documentElement.style.setProperty('--secondary-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--muted', currentTheme.accentColors.muted);
-    document.documentElement.style.setProperty('--muted-foreground', currentTheme.primaryColors.muted);
-    document.documentElement.style.setProperty('--accent', currentTheme.primaryColors.accent);
-    document.documentElement.style.setProperty('--accent-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--destructive', '#dc2626');
-    document.documentElement.style.setProperty('--destructive-foreground', currentTheme.primaryColors.text);
-    document.documentElement.style.setProperty('--border', currentTheme.ui.border);
-    document.documentElement.style.setProperty('--input', currentTheme.ui.background);
-    document.documentElement.style.setProperty('--ring', currentTheme.accentColors.primary);
+    Object.entries({
+      '--background': currentTheme.ui.background,
+      '--foreground': currentTheme.primaryColors.text,
+      '--card': currentTheme.ui.card,
+      '--card-foreground': currentTheme.primaryColors.text,
+      '--popover': currentTheme.ui.card,
+      '--popover-foreground': currentTheme.primaryColors.text,
+      '--primary': currentTheme.accentColors.primary,
+      '--primary-foreground': currentTheme.primaryColors.text,
+      '--secondary': currentTheme.accentColors.secondary,
+      '--secondary-foreground': currentTheme.primaryColors.text,
+      '--muted': currentTheme.accentColors.muted,
+      '--muted-foreground': currentTheme.primaryColors.muted,
+      '--accent': currentTheme.primaryColors.accent,
+      '--accent-foreground': currentTheme.primaryColors.text,
+      '--destructive': '#dc2626',
+      '--destructive-foreground': currentTheme.primaryColors.text,
+      '--border': currentTheme.ui.border,
+      '--input': currentTheme.ui.background,
+      '--ring': currentTheme.accentColors.primary
+    }).forEach(([key, value]) => {
+      document.documentElement.style.setProperty(key, value);
+    });
 
     // Add smooth transitions
-    body.style.transition = theme.effects.transition.smooth;
+    document.body.style.transition = theme.effects.transition.smooth;
 
   }, [themeState]);
 
   return {
     theme: themeState.mode,
     variant: themeState.variant,
-    setTheme: useCallback((newTheme: Theme) => {
+    setTheme: useCallback((newTheme: "light" | "dark") => {
       setThemeState(prev => ({ ...prev, mode: newTheme }));
     }, []),
     setVariant: useCallback((newVariant: ThemeVariant) => {

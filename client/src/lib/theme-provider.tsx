@@ -5,32 +5,34 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
-interface Theme {
-  primary: string;
-  variant: 'professional' | 'tint' | 'vibrant';
-  appearance: 'light' | 'dark' | 'system';
-  radius: number;
-}
+export type ThemeVariant = 'classic' | 'gothic' | 'scholarly' | 'antique';
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { theme } = useTheme() as { theme: Theme };
+  const { theme, variant } = useTheme();
 
   // Apply sophisticated animations and transitions
   useEffect(() => {
     document.body.classList.add('animate-theme-transition');
 
     // Add premium animation classes based on theme
-    if (theme?.appearance === 'dark') {
+    if (theme === 'dark') {
       document.body.classList.add('dark-mode-premium');
     } else {
       document.body.classList.remove('dark-mode-premium');
     }
 
+    // Add variant-specific classes
+    document.body.className = document.body.className
+      .split(' ')
+      .filter(cls => !cls.startsWith('theme-variant-'))
+      .concat(`theme-variant-${variant}`)
+      .join(' ');
+
     // Cleanup
     return () => {
       document.body.classList.remove('animate-theme-transition');
     };
-  }, [theme?.appearance]);
+  }, [theme, variant]);
 
   return (
     <div className="theme-container premium-texture">
