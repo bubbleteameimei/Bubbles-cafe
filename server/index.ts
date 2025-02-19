@@ -11,6 +11,9 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import path from "path";
 import { fileURLToPath } from "url";
+import { seedDatabase } from "./seed";
+import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,6 +93,16 @@ setupAuth(app);
 async function startServer() {
   try {
     enhancedLog('Starting server initialization...', 'info');
+
+    // Check if database needs seeding
+    const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+    if (postsCount === 0) {
+      enhancedLog('Database is empty, starting seeding process...', 'info');
+      await seedDatabase();
+      enhancedLog('Database seeding completed successfully', 'info');
+    } else {
+      enhancedLog(`Database already contains ${postsCount} posts, skipping seeding`, 'info');
+    }
 
     // Create server instance
     server = createServer(app);

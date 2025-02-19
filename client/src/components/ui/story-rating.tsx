@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Slider } from "@/components/ui/slider";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertStoryRatingSchema } from "@shared/schema";
+import type { InsertStoryRating } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Skull } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Skull } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface StoryRatingProps {
   postId: number;
@@ -12,11 +17,12 @@ interface StoryRatingProps {
 }
 
 export function StoryRating({ postId, userId }: StoryRatingProps) {
-  const [rating, setRating] = useState<number>(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [localRating, setLocalRating] = useState<number>(0);
 
-  const { data: existingRating } = useQuery({
+  // Fetch existing rating if any
+  const { data: existingRating, isLoading: isLoadingRating } = useQuery({
     queryKey: [`/api/stories/${postId}/rating`, userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -27,6 +33,7 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
     enabled: !!userId
   });
 
+  // Fetch average rating
   const { data: averageRating } = useQuery({
     queryKey: [`/api/stories/${postId}/average-rating`],
     queryFn: async () => {
@@ -36,14 +43,25 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
     }
   });
 
+  const form = useForm<InsertStoryRating>({
+    resolver: zodResolver(insertStoryRatingSchema),
+    defaultValues: {
+      postId,
+      userId: userId || 0,
+      fearRating: existingRating?.fearRating || 3
+    }
+  });
+
   const rateMutation = useMutation({
     mutationFn: async (fearRating: number) => {
       if (!userId) throw new Error("Must be logged in to rate");
-      return apiRequest(
-        existingRating ? "PATCH" : "POST",
-        `/api/stories/${postId}/rate`,
-        { fearRating, userId }
-      );
+      const response = await fetch(`/api/stories/${postId}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fearRating, userId })
+      });
+      if (!response.ok) throw new Error("Failed to submit rating");
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/stories/${postId}/rating`] });
@@ -66,8 +84,20 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
     return index < rating ? "opacity-100" : "opacity-30";
   };
 
+  if (isLoadingRating) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 p-4 border rounded-lg bg-card">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-md mx-auto p-4 space-y-4 bg-card rounded-lg shadow-sm border"
+    >
       <div className="text-center space-y-2">
         <h3 className="text-lg font-semibold">Fear Rating</h3>
         <div className="flex justify-center space-x-2">
@@ -87,30 +117,54 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
       </div>
 
       {userId ? (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Your Rating</label>
-            <Slider
-              value={[rating]}
-              onValueChange={(value) => setRating(value[0])}
-              max={5}
-              step={1}
-              className="w-full"
+        <Form {...form}>
+          <form className="space-y-4">
+            <FormField
+              control={form.control}
+              name="fearRating"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center justify-between">
+                    Your Rating
+                    <span className="text-sm text-muted-foreground">
+                      {localRating}/5
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-4">
+                      <Skull className="h-4 w-4 text-muted-foreground" />
+                      <Slider
+                        min={1}
+                        max={5}
+                        step={1}
+                        value={[localRating]}
+                        onValueChange={([value]) => {
+                          setLocalRating(value);
+                          field.onChange(value);
+                        }}
+                        className="flex-1"
+                      />
+                      <Skull className="h-6 w-6 text-destructive" />
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
-          <Button
-            onClick={() => rateMutation.mutate(rating)}
-            disabled={rateMutation.isPending}
-            className="w-full"
-          >
-            {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
-          </Button>
-        </div>
+            <Button
+              type="button"
+              onClick={() => rateMutation.mutate(localRating)}
+              disabled={rateMutation.isPending}
+              className="w-full"
+            >
+              {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
+            </Button>
+          </form>
+        </Form>
       ) : (
         <p className="text-sm text-center text-muted-foreground">
           Log in to rate this story
         </p>
       )}
-    </div>
+    </motion.div>
   );
 }

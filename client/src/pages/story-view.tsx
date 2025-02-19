@@ -6,7 +6,7 @@ import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { StoryRating } from "@/components/StoryRating";
+import { StoryRating } from "@/components/ui/story-rating";
 import { useAuth } from "@/hooks/use-auth";
 
 interface StoryViewProps {
