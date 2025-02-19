@@ -39,8 +39,9 @@ export function ThemePicker() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="min-w-[140px] justify-start">
-            <span>{theme.variants[variant].name}</span>
+          <Button variant="outline" className="min-w-[140px] justify-start" aria-label="Select theme variant">
+            <span className="mr-2">{theme.variants[variant].name}</span>
+            <span className="text-xs text-muted-foreground">({variant})</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
