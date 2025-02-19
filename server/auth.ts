@@ -76,7 +76,7 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  // Add registration endpoint
+  // Update the registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
       console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
@@ -97,15 +97,11 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      // Create user
+      // Create user with plain password (storage layer will handle hashing)
       const user = await storage.createUser({
         email,
         username,
-        password_hash: hashedPassword,
+        password,
         isAdmin: false
       });
 

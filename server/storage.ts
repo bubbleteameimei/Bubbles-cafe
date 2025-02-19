@@ -52,6 +52,7 @@ import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import bcrypt from 'bcrypt';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -232,10 +233,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users)
-      .values({ ...user, createdAt: new Date() })
-      .returning();
-    return newUser;
+    try {
+      // Hash the password before storing
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(user.password, salt);
+
+      // Insert user with hashed password
+      const [newUser] = await db.insert(users)
+        .values({
+          username: user.username,
+          email: user.email,
+          password_hash: hashedPassword,
+          isAdmin: user.isAdmin ?? false
+        })
+        .returning();
+
+      return newUser;
+    } catch (error) {
+      console.error("Error in createUser:", error);
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key')) {
+          throw new Error("User with this email already exists");
+        }
+      }
+      throw new Error("Failed to create user");
+    }
   }
 
   // Sessions
@@ -934,7 +956,7 @@ export class DatabaseStorage implements IStorage {
     return newChallenge;
   }
 
-async getActiveWritingChallenges(): Promise<WritingChallenge[]> {
+  async getActiveWritingChallenges(): Promise<WritingChallenge[]> {
     return await db.select()
       .from(writingChallenges)
       .where(gt(writingChallenges.endDate, new Date()))
