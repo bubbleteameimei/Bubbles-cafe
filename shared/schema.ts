@@ -169,7 +169,6 @@ export const authorTips = pgTable("author_tips", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-
 // Webhooks
 export const webhooks = pgTable("webhooks", {
   id: serial("id").primaryKey(),
@@ -223,7 +222,6 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Add these new schemas after the table definitions but before the existing schema exports
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -231,7 +229,6 @@ export const loginSchema = z.object({
 
 export type LoginCredentials = z.infer<typeof loginSchema>;
 
-// Registration schema to handle the form input before processing
 export const registrationSchema = z.object({
   username: z.string().min(1, "Username is required"),
   email: z.string().email("Invalid email address"),
@@ -240,7 +237,6 @@ export const registrationSchema = z.object({
 
 export type RegistrationCredentials = z.infer<typeof registrationSchema>;
 
-// Original type definitions for database operations
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   createdAt: true,
@@ -352,7 +348,6 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
-// Add these interfaces after the PostMetadata interface
 export interface CommentMetadata {
   moderated?: boolean;
   originalContent?: string;

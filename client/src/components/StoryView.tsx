@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Post } from "@shared/schema";
-import { StoryRating } from "@/components/ui/story-rating";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LikeDislike } from "@/components/ui/like-dislike";
 
 interface StoryViewProps {
   slug: string;
@@ -57,7 +57,7 @@ export function StoryView({ slug }: StoryViewProps) {
         </div>
       </Card>
 
-      <StoryRating postId={story.id} userId={user?.id} />
+      <LikeDislike postId={story.id} userId={user?.id} />
     </div>
   );
 }
