@@ -21,8 +21,9 @@ export const theme = {
   },
   typography: {
     fonts: {
-      serif: 'Georgia, "Times New Roman", serif',
-      sans: 'system-ui, -apple-system, sans-serif'
+      serif: '"Cormorant Garamond", "EB Garamond", Georgia, serif',
+      decorative: '"Cinzel Decorative", "Cormorant Garamond", serif',
+      body: '"Lancelot", "EB Garamond", serif'
     },
     weights: {
       normal: 400,
@@ -33,11 +34,16 @@ export const theme = {
     styles: {
       heading: {
         letterSpacing: '-0.02em',
-        lineHeight: 1.2
+        lineHeight: 1.2,
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3), 4px 4px 8px rgba(0, 0, 0, 0.1)'
       },
       body: {
         letterSpacing: '0.01em',
-        lineHeight: 1.6
+        lineHeight: 1.8
+      },
+      decorative: {
+        letterSpacing: '0.03em',
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3), 3px 3px 6px rgba(107, 53, 54, 0.2)'
       }
     }
   },

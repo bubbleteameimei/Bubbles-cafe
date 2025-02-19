@@ -18,6 +18,16 @@ export function useTheme() {
       body.style.width = "100%";
       body.style.height = "100vh";
       body.style.transition = theme.effects.transition.smooth;
+
+      // Debug log
+      console.log('Theme applied:', {
+        fonts: {
+          body: window.getComputedStyle(body).fontFamily,
+          size: window.getComputedStyle(body).fontSize,
+          lineHeight: window.getComputedStyle(body).lineHeight
+        },
+        colors: theme.colors
+      });
     }
   }, []);
 
