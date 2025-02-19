@@ -3,7 +3,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import ThemeToggle from "@/components/ui/theme-toggle";
+import { ThemePicker } from "@/components/ui/theme-picker";
 import {
   Sheet,
   SheetContent,
@@ -133,7 +133,7 @@ export default function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <ThemeToggle />
+          <ThemePicker />
           {!user ? (
             <Button 
               variant="default" 

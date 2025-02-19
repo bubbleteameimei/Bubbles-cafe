@@ -4,19 +4,19 @@
 
 @layer base {
   :root {
-    --background: 32 15% 16%;    /* #34271f */
-    --foreground: 33 7% 21%;     /* #393833 */
-    --card: 32 15% 16%;          /* #34271f */
+    --background: 32 15% 16%;    /* #34271f - Deep mahogany */
+    --foreground: 33 7% 21%;     /* #393833 - Rich text */
+    --card: 32 15% 16%;          /* #34271f - Antique wood */
     --card-foreground: 33 7% 21%; /* #393833 */
-    --popover: 42 18% 30%;       /* #585544 */
+    --popover: 42 18% 30%;       /* #585544 - Aged parchment */
     --popover-foreground: 33 7% 21%; /* #393833 */
-    --primary: 25 29% 28%;       /* #5e4d33 */
+    --primary: 25 29% 28%;       /* #5e4d33 - Leather brown */
     --primary-foreground: 33 7% 21%; /* #393833 */
-    --secondary: 50 12% 19%;     /* #383929 */
+    --secondary: 50 12% 19%;     /* #383929 - Dark olive */
     --secondary-foreground: 33 7% 21%; /* #393833 */
-    --muted: 165 23% 11%;        /* #17221c */
+    --muted: 165 23% 11%;        /* #17221c - Shadow green */
     --muted-foreground: 33 7% 21%; /* #393833 */
-    --accent: 9 43% 22%;         /* #502a20 */
+    --accent: 9 43% 22%;         /* #502a20 - Rustic red */
     --accent-foreground: 33 7% 21%; /* #393833 */
     --destructive: 0 84% 60%;    /* For error states */
     --destructive-foreground: 33 7% 21%; /* #393833 */
@@ -26,82 +26,40 @@
     --radius: 0.25rem;
   }
 
-  .dark {
-    --background: 32 15% 16%;    /* #34271f */
-    --foreground: 33 7% 21%;     /* #393833 */
-    --card: 32 15% 16%;          /* #34271f */
-    --card-foreground: 33 7% 21%; /* #393833 */
-    --popover: 42 18% 30%;       /* #585544 */
-    --popover-foreground: 33 7% 21%; /* #393833 */
-    --primary: 25 29% 28%;       /* #5e4d33 */
-    --primary-foreground: 33 7% 21%; /* #393833 */
-    --secondary: 50 12% 19%;     /* #383929 */
-    --secondary-foreground: 33 7% 21%; /* #393833 */
-    --muted: 165 23% 11%;        /* #17221c */
-    --muted-foreground: 33 7% 21%; /* #393833 */
-    --accent: 9 43% 22%;         /* #502a20 */
-    --accent-foreground: 33 7% 21%; /* #393833 */
-    --destructive: 0 84% 60%;    /* For error states */
-    --destructive-foreground: 33 7% 21%; /* #393833 */
-    --border: 165 23% 11%;       /* #17221c */
-    --input: 32 15% 16%;         /* #34271f */
-    --ring: 25 29% 28%;          /* #5e4d33 */
-  }
-
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: "Georgia", "Times New Roman", serif; /* Academic serif font */
+    font-family: "Georgia", "Times New Roman", serif;
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.8;
+    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    transition: var(--theme-transition);
   }
 
-  /* Typography - Academic style */
+  /* Typography - Dark Academia Style */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-foreground font-serif;
+    @apply font-serif font-bold tracking-tight text-foreground;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
   }
 
-  h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl; }
-  h2 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
-  h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
-  h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+  h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-8; }
+  h2 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6; }
+  h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4; }
+  h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4; }
 
   /* Dark Academia specific styles */
-  .horror-text-shadow {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  .academia-text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  .horror-glow {
-    @apply relative;
-    &::after {
-      content: '';
-      @apply absolute inset-0 bg-destructive/20 blur-lg opacity-0 transition-opacity duration-300;
-    }
-    &:hover::after {
-      @apply opacity-100;
-    }
+  .academia-border {
+    @apply border-[1px] border-border/50;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
-  /* Interactive Elements */
-  button, a {
-    @apply transition-all duration-200;
-  }
-
-  /* Focus States */
-  *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
-  /* Loading State */
-  .loading-text {
-    @apply text-sm text-muted-foreground animate-pulse;
-  }
-
-  /* Dark Academia Card */
+  /* Card styling */
   .card {
-    @apply bg-card text-card-foreground rounded-lg border border-border shadow-md;
+    @apply bg-card text-card-foreground rounded-lg border border-border/50 shadow-md;
     background-image: linear-gradient(
       to bottom right,
       hsl(var(--card)),
@@ -109,19 +67,24 @@
     );
   }
 
-  /* Layout */
-  .container {
-    @apply px-4 mx-auto;
-    max-width: min(100% - 2rem, 75ch);
-  }
-
-  main {
-    @apply min-h-screen bg-background transition-colors duration-200;
-  }
-
-  /* Interactive Elements */
+  /* Button and Interactive Elements */
   button, a {
-    @apply transition-all duration-200;
+    @apply transition-all duration-300;
+  }
+
+  .button-academia {
+    @apply px-4 py-2 rounded-md border border-border/50 bg-card hover:bg-accent/10
+           text-foreground shadow-sm transition-all duration-300;
+  }
+
+  /* Theme Picker Specific Styles */
+  .theme-option {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer
+           hover:bg-accent/10 transition-colors duration-200;
+  }
+
+  .theme-option.active {
+    @apply bg-accent/20;
   }
 
   /* Focus States */
@@ -129,58 +92,14 @@
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Loading State */
-  .loading-text {
+  /* Loading States */
+  .loading-academia {
     @apply text-sm text-muted-foreground animate-pulse;
   }
 
-  /* Social Icons */
-  .card {
-    @apply w-fit h-fit flex items-center justify-center p-2 gap-4;
-  }
-
-  .socialContainer {
-    @apply w-10 h-10 flex items-center justify-center overflow-hidden transition-all duration-300 rounded-full hover:scale-110 hover:bg-background/10 cursor-pointer;
-  }
-
-  .containerOne:hover { @apply bg-[#d62976]/90; }
-  .containerTwo:hover { @apply bg-[#00acee]/90; }
-  .containerThree:hover { @apply bg-[#21759b]/90; }
-
-  .socialContainer:active {
-    @apply scale-90 transition-transform duration-300;
-  }
-
-  .socialSvg {
-    @apply w-5 h-5 transition-all duration-300;
-  }
-
-  .socialSvg path {
-    @apply fill-current text-muted-foreground transition-colors duration-300;
-  }
-
-  .socialContainer:hover .socialSvg path {
-    @apply text-background;
-  }
-
-  .socialContainer:hover .socialSvg {
-    animation: slide-in-top 0.3s both;
-  }
-
-  @keyframes slide-in-top {
-    0% {
-      transform: translateY(-50px);
-      opacity: 0;
-    }
-
-    100% {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  /* Button Enhancements */
-  .button {
-    @apply rounded-md px-4 py-2 font-medium transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  /* Paper texture effect */
+  .paper-texture {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.15' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
   }
 }
