@@ -1,1 +1,1 @@
-// This file can be deleted as the newsletter system has been removed
+// This file can be safely deleted as the newsletter system has been removed

@@ -8,7 +8,6 @@ import Footer from '@/components/layout/footer';
 import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Loader2 } from "lucide-react";
-import { NewsletterSubscribe } from '@/components/NewsletterSubscribe';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
@@ -48,9 +47,6 @@ function App() {
                   <Route path="/auth" component={AuthPage} />
                 </Switch>
               </React.Suspense>
-              <div className="container mx-auto py-8">
-                <NewsletterSubscribe />
-              </div>
             </main>
             <Footer />
             <Toaster />

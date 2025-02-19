@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table
+// Users table and schema remain unchanged
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),
@@ -15,7 +15,7 @@ export const users = pgTable("users", {
   usernameIdx: index("username_idx").on(table.username)
 }));
 
-// Posts table
+// Posts table - removed fear rating system
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -33,7 +33,17 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Comments table
+// Author Stats - removed fear rating
+export const authorStats = pgTable("author_stats", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  totalPosts: integer("total_posts").default(0).notNull(),
+  totalLikes: integer("total_likes").default(0).notNull(),
+  totalTips: text("total_tips").default("0").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Rest of the tables remain unchanged
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
@@ -81,7 +91,7 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Post Likes
+// Keep post likes table intact
 export const postLikes = pgTable("post_likes", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").references(() => posts.id).notNull(),
@@ -110,17 +120,6 @@ export const commentReplies = pgTable("comment_replies", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-
-// Author Stats
-export const authorStats = pgTable("author_stats", {
-  id: serial("id").primaryKey(),
-  authorId: integer("author_id").references(() => users.id).notNull(),
-  totalPosts: integer("total_posts").default(0).notNull(),
-  totalLikes: integer("total_likes").default(0).notNull(),
-  avgFearRating: doublePrecision("avg_fear_rating").default(0).notNull(),
-  totalTips: text("total_tips").default("0").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
-});
 
 // Writing Challenges
 export const writingChallenges = pgTable("writing_challenges", {
@@ -248,7 +247,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-
 export const insertPostSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
@@ -306,7 +304,6 @@ export const insertCommentReplySchema = createInsertSchema(commentReplies).omit(
 export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
 export type CommentReply = typeof commentReplies.$inferSelect;
 
-
 export type AuthorStats = typeof authorStats.$inferSelect;
 
 export const insertWritingChallengeSchema = createInsertSchema(writingChallenges).omit({ id: true, createdAt: true });
@@ -328,7 +325,6 @@ export type ReportedContent = typeof reportedContent.$inferSelect;
 export const insertAuthorTipSchema = createInsertSchema(authorTips).omit({ id: true, createdAt: true });
 export type InsertAuthorTip = z.infer<typeof insertAuthorTipSchema>;
 export type AuthorTip = typeof authorTips.$inferSelect;
-
 
 export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true });
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
