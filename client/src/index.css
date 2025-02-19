@@ -4,18 +4,53 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 32 15% 16%;    /* #34271f */
+    --foreground: 33 7% 21%;     /* #393833 */
+    --card: 32 15% 16%;          /* #34271f */
+    --card-foreground: 33 7% 21%; /* #393833 */
+    --popover: 42 18% 30%;       /* #585544 */
+    --popover-foreground: 33 7% 21%; /* #393833 */
+    --primary: 25 29% 28%;       /* #5e4d33 */
+    --primary-foreground: 33 7% 21%; /* #393833 */
+    --secondary: 50 12% 19%;     /* #383929 */
+    --secondary-foreground: 33 7% 21%; /* #393833 */
+    --muted: 165 23% 11%;        /* #17221c */
+    --muted-foreground: 33 7% 21%; /* #393833 */
+    --accent: 9 43% 22%;         /* #502a20 */
+    --accent-foreground: 33 7% 21%; /* #393833 */
+    --destructive: 0 84% 60%;    /* For error states */
+    --destructive-foreground: 33 7% 21%; /* #393833 */
+    --border: 165 23% 11%;       /* #17221c */
+    --input: 32 15% 16%;         /* #34271f */
+    --ring: 25 29% 28%;          /* #5e4d33 */
+    --radius: 0.25rem;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 32 15% 16%;    /* #34271f */
+    --foreground: 33 7% 21%;     /* #393833 */
+    --card: 32 15% 16%;          /* #34271f */
+    --card-foreground: 33 7% 21%; /* #393833 */
+    --popover: 42 18% 30%;       /* #585544 */
+    --popover-foreground: 33 7% 21%; /* #393833 */
+    --primary: 25 29% 28%;       /* #5e4d33 */
+    --primary-foreground: 33 7% 21%; /* #393833 */
+    --secondary: 50 12% 19%;     /* #383929 */
+    --secondary-foreground: 33 7% 21%; /* #393833 */
+    --muted: 165 23% 11%;        /* #17221c */
+    --muted-foreground: 33 7% 21%; /* #393833 */
+    --accent: 9 43% 22%;         /* #502a20 */
+    --accent-foreground: 33 7% 21%; /* #393833 */
+    --destructive: 0 84% 60%;    /* For error states */
+    --destructive-foreground: 33 7% 21%; /* #393833 */
+    --border: 165 23% 11%;       /* #17221c */
+    --input: 32 15% 16%;         /* #34271f */
+    --ring: 25 29% 28%;          /* #5e4d33 */
   }
 
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: "Georgia", "Times New Roman", serif; /* Academic serif font */
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -23,15 +58,56 @@
     transition: var(--theme-transition);
   }
 
-  /* Typography */
+  /* Typography - Academic style */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-foreground;
+    @apply font-bold tracking-tight text-foreground font-serif;
   }
 
-  h1 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
-  h2 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
-  h3 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
-  h4 { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+  h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl; }
+  h2 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
+  h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl; }
+  h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+
+  /* Dark Academia specific styles */
+  .horror-text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .horror-glow {
+    @apply relative;
+    &::after {
+      content: '';
+      @apply absolute inset-0 bg-destructive/20 blur-lg opacity-0 transition-opacity duration-300;
+    }
+    &:hover::after {
+      @apply opacity-100;
+    }
+  }
+
+  /* Interactive Elements */
+  button, a {
+    @apply transition-all duration-200;
+  }
+
+  /* Focus States */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Loading State */
+  .loading-text {
+    @apply text-sm text-muted-foreground animate-pulse;
+  }
+
+  /* Dark Academia Card */
+  .card {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-md;
+    background-image: linear-gradient(
+      to bottom right,
+      hsl(var(--card)),
+      hsl(var(--muted))
+    );
+  }
 
   /* Layout */
   .container {
@@ -103,21 +179,6 @@
     }
   }
 
-  /* Horror Theme Specific */
-  .horror-text-shadow {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  }
-
-  .horror-glow {
-    @apply relative;
-    &::after {
-      content: '';
-      @apply absolute inset-0 bg-destructive/20 blur-lg opacity-0 transition-opacity duration-300;
-    }
-    &:hover::after {
-      @apply opacity-100;
-    }
-  }
   /* Button Enhancements */
   .button {
     @apply rounded-md px-4 py-2 font-medium transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;

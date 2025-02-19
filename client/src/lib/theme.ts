@@ -2,36 +2,36 @@ export const theme = {
   colorPalette: {
     darkMode: {
       primaryColors: {
-        base: '#000000',
-        subtle: '#0A0A0A',
-        accent: '#141414'
+        base: '#34271f',        // Deep brown
+        subtle: '#393833',      // Dark charcoal
+        accent: '#585544'       // Warm beige-brown
       },
       accentColors: {
-        primary: '#FFFFFF',
-        secondary: '#E0E0E0',
-        muted: '#808080'
+        primary: '#5e4d33',     // Rich terracotta brown
+        secondary: '#383929',   // Olive green
+        muted: '#17221c'        // Dark forest green
       },
       horror: {
-        blood: 'hsl(0, 100%, 30%)',
-        shadow: 'hsl(0, 0%, 10%)',
-        fog: 'hsla(0, 0%, 100%, 0.05)'
+        blood: '#502a20',       // Rusty red-brown
+        shadow: '#1a1614',      // Darker shade of base
+        fog: 'hsla(32, 15%, 16%, 0.05)'
       }
     },
     lightMode: {
       primaryColors: {
-        base: '#FFFFFF',
-        subtle: '#F8F8F8',
-        accent: '#F0F0F0'
+        base: '#c6a477',        // Creamy beige
+        subtle: '#875b36',      // Golden brown
+        accent: '#947c60'       // Light taupe
       },
       accentColors: {
-        primary: '#000000',
-        secondary: '#1A1A1A',
-        muted: '#4D4D4D'
+        primary: '#8c6949',     // Medium brown
+        secondary: '#6e614f',   // Neutral brown
+        muted: '#947c60'        // Light taupe
       },
       horror: {
-        blood: 'hsl(0, 100%, 45%)',
-        shadow: 'hsl(0, 0%, 90%)',
-        fog: 'hsla(0, 0%, 0%, 0.05)'
+        blood: '#502a20',       // Rusty red-brown (consistent across modes)
+        shadow: '#f5f1ec',      // Light cream shadow
+        fog: 'hsla(35, 50%, 62%, 0.05)'
       }
     }
   },
@@ -42,7 +42,7 @@ export const theme = {
   },
   effects: {
     textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
-    horrorGlow: '0 0 10px rgba(255, 0, 0, 0.3)',
-    fogOverlay: 'linear-gradient(to bottom, transparent, hsla(0, 0%, 0%, 0.1))'
+    horrorGlow: '0 0 10px rgba(80, 42, 32, 0.3)',  // Using rusty red-brown
+    fogOverlay: 'linear-gradient(to bottom, transparent, hsla(32, 15%, 16%, 0.1))'
   }
 };

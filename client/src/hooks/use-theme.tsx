@@ -6,11 +6,9 @@ export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'dark';
 
-    // Check local storage first
     const stored = localStorage.getItem("theme") as Theme;
     if (stored) return stored;
 
-    // Then check system preference
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       return "dark";
     }
@@ -20,40 +18,38 @@ export function useTheme() {
 
   useEffect(() => {
     const root = window.document.documentElement;
-
-    // Remove existing theme classes
     root.classList.remove("light", "dark");
-
-    // Add new theme class
     root.classList.add(theme);
-
-    // Store theme preference
     localStorage.setItem("theme", theme);
 
-    // Base styles
     const body = document.body;
-    body.style.padding = "0px";
     body.style.margin = "0px";
     body.style.width = "100%";
     body.style.height = "100vh";
 
-    // Theme-specific styles with horror theme colors
+    // Dark Academia theme colors
     if (theme === 'dark') {
-      body.style.background = `#1C232A`;
-      document.documentElement.style.setProperty('--background', "hsl(215 28% 17%)");
-      // Add more horror-themed dark mode colors
-      document.documentElement.style.setProperty('--primary', "#8B0000"); // Deep blood red
-      document.documentElement.style.setProperty('--secondary', "#2C1810"); // Dark mahogany
+      // Deep brown background
+      document.documentElement.style.setProperty('--background', "32 15% 16%"); // #34271f
+      document.documentElement.style.setProperty('--foreground', "33 7% 21%"); // #393833
+      document.documentElement.style.setProperty('--card', "32 15% 16%"); // #34271f
+      document.documentElement.style.setProperty('--primary', "25 29% 28%"); // #5e4d33
+      document.documentElement.style.setProperty('--secondary', "50 12% 19%"); // #383929
+      document.documentElement.style.setProperty('--muted', "165 23% 11%"); // #17221c
+      document.documentElement.style.setProperty('--accent', "9 43% 22%"); // #502a20
     } else {
-      body.style.background = `#ffffff`;
-      document.documentElement.style.setProperty('--background', "hsl(0 0% 100%)");
-      // Add more horror-themed light mode colors
-      document.documentElement.style.setProperty('--primary', "#B22222"); // Lighter blood red
-      document.documentElement.style.setProperty('--secondary', "#8B4513"); // Lighter mahogany
+      // Light mode colors
+      document.documentElement.style.setProperty('--background', "35 50% 62%"); // #c6a477
+      document.documentElement.style.setProperty('--foreground', "27 41% 37%"); // #875b36
+      document.documentElement.style.setProperty('--card', "35 50% 62%"); // #c6a477
+      document.documentElement.style.setProperty('--primary', "27 41% 37%"); // #875b36
+      document.documentElement.style.setProperty('--secondary', "24 29% 42%"); // #8c6949
+      document.documentElement.style.setProperty('--muted', "33 11% 37%"); // #6e614f
+      document.documentElement.style.setProperty('--accent', "27 41% 37%"); // #875b36
     }
 
-    // Match transition timing with toggle animation
-    body.style.transition = "background .7s cubic-bezier(.8, .5, .2, 1.4)";
+    // Smooth transition
+    body.style.transition = "background-color .3s ease-in-out, color .3s ease-in-out";
 
   }, [theme]);
 
