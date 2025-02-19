@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Clock, Calendar } from "lucide-react";
+import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import React from 'react';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
@@ -178,10 +178,16 @@ export default function IndexView() {
                       </div>
                     </CardContent>
                     <CardFooter className="relative mt-auto py-2 px-3 border-t border-border bg-card">
-                      <div className="w-full">
-                        <LikeDislike
-                          postId={post.id}
-                        />
+                      <div className="w-full flex items-center justify-between">
+                        <LikeDislike postId={post.id} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigateToStory(post.id)}
+                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                        >
+                          Read More <ArrowRight className="h-3 w-3" />
+                        </Button>
                       </div>
                     </CardFooter>
                   </Card>

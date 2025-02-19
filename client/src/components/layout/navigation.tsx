@@ -75,12 +75,12 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
     <button
       onClick={handleClick}
       className={`
-        text-xs font-eb-garamond transition-all duration-300
+        text-[11px] font-eb-garamond transition-all duration-300
         ${isActive
           ? "text-primary font-semibold"
           : "text-muted-foreground hover:text-primary hover:bg-primary/5"
         }
-        w-full text-left px-2 py-0.5 rounded-sm
+        w-full text-left px-1.5 py-0.5 rounded-sm
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
@@ -105,7 +105,6 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
 
   const sections = {
     library: [
-      { href: '/stories', label: 'Stories', dataTutorial: 'library' },
       { href: '/index', label: 'Index', dataTutorial: 'library' },
       { href: '/reader', label: 'Reader', dataTutorial: 'reader' },
     ],
@@ -124,11 +123,11 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     <nav
       role="menu"
       className={`
-        flex flex-col space-y-1 p-3
-        font-eb-garamond text-xs
+        flex flex-col space-y-0.5 p-2
+        font-eb-garamond text-[11px]
         bg-background/95 backdrop-blur-sm
         border-r border-border/50
-        ${isMobile ? 'w-full' : 'w-56 h-full'}
+        ${isMobile ? 'w-full' : 'w-48 h-full'}
       `}
       aria-label="Main navigation"
     >
@@ -136,7 +135,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         href="/"
         isActive={location === '/'}
         onNavigate={onNavigate}
-        className="text-sm font-medium py-1 mb-1"
+        className="text-xs font-medium py-0.5 mb-1"
         dataTutorial="home"
       >
         Home

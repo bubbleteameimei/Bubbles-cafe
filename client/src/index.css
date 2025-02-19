@@ -156,26 +156,26 @@
   /* Blood Dripping Animation Styles */
   @keyframes drip {
     0% {
-      transform: scale(1, 0);
+      transform: scaleY(0);
       opacity: 1;
     }
     100% {
-      transform: scale(1, 30);
+      transform: scaleY(20);
       opacity: 0;
     }
   }
 
   @keyframes droplet {
     0% {
-      transform: scale(1, 1) translateY(0);
+      transform: translateY(0) scale(1);
       opacity: 1;
     }
-    70% {
-      transform: scale(1, 1.5) translateY(20px);
+    50% {
+      transform: translateY(15px) scale(1.1);
       opacity: 0.8;
     }
     100% {
-      transform: scale(1, 1) translateY(40px);
+      transform: translateY(30px) scale(1);
       opacity: 0;
     }
   }
@@ -183,7 +183,7 @@
   @keyframes ripple {
     0% {
       transform: scale(1);
-      opacity: 1;
+      opacity: 0.8;
     }
     100% {
       transform: scale(2);
@@ -194,24 +194,26 @@
   .menu-button-container {
     position: relative;
     z-index: 50;
+    display: inline-block;
   }
 
   .blood-container {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -40px;
-    height: 40px;
+    bottom: -30px;
+    height: 30px;
     display: flex;
     justify-content: center;
     pointer-events: none;
     z-index: 49;
+    overflow: visible;
   }
 
   .blood-drip {
     position: absolute;
     top: 0;
-    width: 3px;
+    width: 2px;
     height: 1px;
     background: rgb(139, 0, 0);
     transform-origin: top;
@@ -219,35 +221,35 @@
   }
 
   .blood-drip.animate {
-    animation: drip 2s ease-in forwards;
+    animation: drip 1.5s ease-in forwards;
   }
 
   .blood-droplet {
     position: absolute;
     top: -2px;
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
     background: rgb(139, 0, 0);
     border-radius: 50%;
     opacity: 0;
   }
 
   .blood-droplet.animate {
-    animation: droplet 1.5s ease-in forwards;
+    animation: droplet 1.2s ease-in forwards;
   }
 
   .blood-ripple {
     position: absolute;
     top: -3px;
-    width: 12px;
-    height: 12px;
+    width: 8px;
+    height: 8px;
     border: 1px solid rgb(139, 0, 0);
     border-radius: 50%;
     opacity: 0;
   }
 
   .blood-ripple.animate {
-    animation: ripple 1s ease-out forwards;
+    animation: ripple 0.8s ease-out forwards;
   }
 
   /* Keep existing animations but enhance them */

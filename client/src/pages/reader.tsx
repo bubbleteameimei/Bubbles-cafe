@@ -1,8 +1,8 @@
+import React, { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
-import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -141,13 +141,38 @@ export default function Reader() {
               <div className="story-meta flex items-center gap-4 mb-4 text-sm text-muted-foreground justify-center">
                 <time>{formattedDate}</time>
                 <span>·</span>
-                <span>{readingTime}</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{readingTime}</span>
+                </div>
                 {themeInfo && (
                   <>
                     <span>·</span>
-                    <Badge variant={themeInfo.badgeVariant || "default"} className="capitalize">
-                      {primaryTheme.toLowerCase().replace('_', ' ')}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {React.createElement(
+                        themeInfo.icon === 'Worm' ? Book :
+                        themeInfo.icon === 'Skull' ? Skull :
+                        themeInfo.icon === 'Brain' ? Brain :
+                        themeInfo.icon === 'Pill' ? Pill :
+                        themeInfo.icon === 'Cpu' ? Cpu :
+                        themeInfo.icon === 'Dna' ? Dna :
+                        themeInfo.icon === 'Axe' ? Axe :
+                        themeInfo.icon === 'Ghost' ? Ghost :
+                        themeInfo.icon === 'Footprints' ? Footprints :
+                        themeInfo.icon === 'Castle' ? Castle :
+                        themeInfo.icon === 'Radiation' ? Radiation :
+                        themeInfo.icon === 'UserMinus2' ? UserMinus2 :
+                        themeInfo.icon === 'Anchor' ? Anchor :
+                        themeInfo.icon === 'AlertTriangle' ? AlertTriangle :
+                        themeInfo.icon === 'Building' ? Building :
+                        themeInfo.icon === 'Clock' ? Clock :
+                        themeInfo.icon === 'Moon' ? Moon : Book,
+                        { className: "h-4 w-4" }
+                      )}
+                      <Badge variant={themeInfo.badgeVariant || "default"} className="capitalize">
+                        {primaryTheme.toLowerCase().replace('_', ' ')}
+                      </Badge>
+                    </div>
                   </>
                 )}
               </div>
@@ -191,7 +216,7 @@ export default function Reader() {
 
         {/* Floating Navigation Bar */}
         <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
-          <motion.div 
+          <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-full shadow-xl border border-border/50 hover:bg-background/70 transition-all mx-4"
