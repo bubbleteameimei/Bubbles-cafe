@@ -77,6 +77,23 @@ export default function Privacy() {
             </section>
 
             <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Content Ownership</h2>
+              <p className="text-muted-foreground">
+                All user-submitted horror stories remain the intellectual property of their respective authors. 
+                By submitting content to our platform, you grant us a non-exclusive license to display, 
+                distribute, and promote your content within our platform.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Age Restrictions</h2>
+              <p className="text-muted-foreground">
+                Due to the horror-themed nature of our content, our platform is intended for users aged 13 and above. 
+                Users under 18 should have parental consent before using our services.
+              </p>
+            </section>
+
+            <section className="space-y-3">
               <h2 className="text-xl font-semibold">Contact</h2>
               <p className="text-muted-foreground">
                 If you have questions about this privacy policy or your data, please contact us through our contact form 

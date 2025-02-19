@@ -18,7 +18,6 @@ const NavigationItems = memo(({ location, onNavigate, isMobile = false }: {
 
   const items = [
     { href: '/', label: 'Home' },
-    { href: '/stories', label: 'Stories' },
     { href: '/reader', label: 'Reader' },
     { href: '/secret-stories', label: 'Secret Stories' },
     { href: '/index', label: 'Index' },

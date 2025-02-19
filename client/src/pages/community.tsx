@@ -34,7 +34,7 @@ export default function CommunityPage() {
   return (
     <div className="container py-8 max-w-7xl mx-auto">
       <div className="flex flex-col items-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 text-center">Community Stories</h1>
+        <h1 className="stories-page-title mb-4 text-4xl font-bold text-center">Community Stories</h1>
         <p className="text-muted-foreground text-center mb-6">
           Got a story that'll keep us up at night? We're dying to read it
         </p>
@@ -47,7 +47,7 @@ export default function CommunityPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
             <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
-              <h2 className="text-2xl font-bold mb-2 line-clamp-2">{post.title}</h2>
+              <h2 className="story-title mb-2 text-2xl font-bold line-clamp-2"> {post.title}</h2>
               <p className="text-muted-foreground mb-4 line-clamp-3">
                 {post.excerpt}
               </p>

@@ -118,7 +118,7 @@ export default function IndexView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground">Index</h1>
+            <h1 className="stories-page-title mb-4">INDEX</h1>
             <Button
               variant="ghost"
               onClick={() => setLocation('/')}

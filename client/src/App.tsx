@@ -11,7 +11,6 @@ import { Loader2 } from "lucide-react";
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
-const StoriesPage = React.lazy(() => import('@/pages/stories'));
 const ReaderPage = React.lazy(() => import('@/pages/reader'));
 const SecretStoriesPage = React.lazy(() => import('@/pages/secret-stories'));
 const IndexPage = React.lazy(() => import('@/pages/index'));
@@ -37,7 +36,6 @@ function App() {
               >
                 <Switch>
                   <Route path="/" component={HomePage} />
-                  <Route path="/stories" component={StoriesPage} />
                   <Route path="/reader" component={ReaderPage} />
                   <Route path="/secret-stories" component={SecretStoriesPage} />
                   <Route path="/index" component={IndexPage} />

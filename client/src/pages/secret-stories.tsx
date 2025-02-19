@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Ghost, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -15,8 +15,8 @@ export default function SecretStories() {
   const { data: postsResponse, isLoading, error } = useQuery<{ posts: Post[], hasMore: boolean }>({
     queryKey: ["pages", "secret-stories"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?category=secret&limit=10');
-      if (!response.ok) throw new Error('Failed to fetch secret stories');
+      const response = await fetch('/api/posts?category=secret&limit=16');
+      if (!response.ok) throw new Error('Failed to fetch stories');
       return response.json();
     },
     staleTime: 5 * 60 * 1000,
@@ -28,7 +28,7 @@ export default function SecretStories() {
   }
 
   if (error || !postsResponse?.posts) {
-    return <div className="text-center p-8">Error loading secret stories.</div>;
+    return <div className="text-center p-8">Error loading stories.</div>;
   }
 
   const posts = postsResponse.posts;
@@ -43,8 +43,7 @@ export default function SecretStories() {
           className="max-w-4xl mx-auto"
         >
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl font-bold">Secret Stories</h1>
-            <Ghost className="h-8 w-8 text-muted-foreground" />
+            <h1 className="stories-page-title">Stories</h1>
           </div>
 
           {posts.length > 0 ? (
@@ -56,7 +55,7 @@ export default function SecretStories() {
                   animate={{ opacity: 1 }}
                   className="p-6 border rounded-lg bg-card hover:bg-card/80 transition-colors"
                 >
-                  <h2 className="text-2xl font-semibold mb-2">{post.title}</h2>
+                  <h2 className="story-title">{post.title}</h2>
                   <p className="text-muted-foreground mb-4 line-clamp-2">
                     {post.excerpt}
                   </p>
@@ -78,7 +77,7 @@ export default function SecretStories() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No secret stories found.</p>
+              <p className="text-muted-foreground">No stories found.</p>
             </div>
           )}
         </motion.div>

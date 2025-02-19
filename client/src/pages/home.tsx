@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
@@ -58,6 +57,9 @@ export default function Home() {
           transition={{ duration: 0.8 }}
           className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
         >
+          <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider">
+            BUBBLE'S CAFE
+          </h1>
           <div className="space-y-6 mb-12">
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
               Each story here is a portal to the unexpected,
