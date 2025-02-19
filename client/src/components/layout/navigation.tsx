@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Menu, ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User } from "lucide-react";
+import { ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { LiquidMenuButton } from "@/components/ui/liquid-menu-button";
 import {
   Sheet,
   SheetContent,
@@ -252,10 +253,10 @@ export default function Navigation() {
       <div className="container flex h-14 items-center">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="mr-2">
-              <Menu className="h-4 w-4" />
+            <div className="mr-6 ml-6">
+              <LiquidMenuButton onClick={() => setIsOpen(!isOpen)} />
               <span className="sr-only">Toggle menu</span>
-            </Button>
+            </div>
           </SheetTrigger>
           <SheetContent side="left" className="p-0">
             <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
