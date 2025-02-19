@@ -16,6 +16,7 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
+import ratingsRouter from './routes/ratings';
 
 // Add slug generation function at the top with other utility functions
 function generateSlug(title: string): string {
@@ -896,7 +897,7 @@ Timestamp: ${new Date().toLocaleString()}
       } else {
         // Create new rating
         rating = await storage.createStoryRating({
-          postId: parseInt(postId),
+          postId:parseInt(postId),
           userId,
           fearRating
         });
@@ -1087,6 +1088,7 @@ Timestamp: ${new Date().toLocaleString()}
 
   // Register moderation routes with authentication
   app.use("/api/moderation", isAuthenticated, moderationRouter);
+  app.use('/api/ratings', ratingsRouter); // Add this line after the newsletter route registration around line 120
 
   // Create HTTP server
   const httpServer = createServer(app);

@@ -6,13 +6,15 @@ import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { useState, useEffect } from "react";
+import { StoryRating } from "@/components/StoryRating";
+import { useAuth } from "@/hooks/use-auth";
 
 interface StoryViewProps {
   slug: string;
 }
 
 export default function StoryView({ slug }: StoryViewProps) {
+  const { user } = useAuth();
   const { data: post, isLoading, error } = useQuery<Post>({
     queryKey: ["/api/posts", slug],
     queryFn: async () => {
@@ -23,7 +25,6 @@ export default function StoryView({ slug }: StoryViewProps) {
     staleTime: 5 * 60 * 1000,
     retry: 2
   });
-
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -56,10 +57,9 @@ export default function StoryView({ slug }: StoryViewProps) {
               </p>
             ))}
           </div>
-          <div className="border-t border-border pt-4">
-            <LikeDislike
-              postId={post.id}
-            />
+          <div className="border-t border-border pt-4 space-y-4">
+            <LikeDislike postId={post.id} />
+            {user && <StoryRating postId={post.id} userId={user.id} />}
           </div>
         </motion.article>
 
