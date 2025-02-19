@@ -16,7 +16,7 @@ import {
 
 const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
-  items: { href: string; label: string; icon?: React.ReactNode }[];
+  items: { href: string; label: string; icon?: React.ReactNode; dataTutorial?: string }[];
   isOpen: boolean;
   onToggle: () => void;
   location: string;
@@ -24,25 +24,26 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-4 text-lg font-medium transition-colors hover:text-primary group">
-        <span className="flex items-center gap-3">
-          {title === 'Library' && <Book className="h-5 w-5" />}
-          {title === 'Explore' && <Compass className="h-5 w-5" />}
-          {title === 'Settings' && <Settings className="h-5 w-5" />}
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-base font-medium transition-colors hover:text-primary group">
+        <span className="flex items-center gap-2">
+          {title === 'Library' && <Book className="h-4 w-4" />}
+          {title === 'Explore' && <Compass className="h-4 w-4" />}
+          {title === 'Settings' && <Settings className="h-4 w-4" />}
           {title}
         </span>
-        <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>
-      <CollapsibleContent className="pl-8 space-y-3">
+      <CollapsibleContent className="pl-6 space-y-2">
         {items.map(item => (
           <NavLink
             key={item.href}
             href={item.href}
             isActive={location === item.href}
             onNavigate={onNavigate}
-            className="flex items-center gap-3 py-2.5"
+            className="flex items-center gap-2 py-1.5"
+            dataTutorial={item.dataTutorial}
           >
-            {item.icon && <span className="w-5 h-5 flex items-center justify-center">{item.icon}</span>}
+            {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
             {item.label}
           </NavLink>
         ))}
@@ -53,12 +54,13 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 
 DropdownSection.displayName = "DropdownSection";
 
-const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
+const NavLink = memo(({ href, isActive, children, onNavigate, className = "", dataTutorial }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
   onNavigate?: () => void;
   className?: string;
+  dataTutorial?: string;
 }) => {
   const [, setLocation] = useLocation();
 
@@ -72,16 +74,17 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
     <button
       onClick={handleClick}
       className={`
-        text-lg font-eb-garamond transition-all duration-300
+        text-base font-eb-garamond transition-all duration-300
         ${isActive
           ? "text-primary font-semibold"
           : "text-muted-foreground hover:text-primary hover:bg-primary/5"
         }
-        w-full text-left px-4 py-2.5 rounded-sm
+        w-full text-left px-4 py-1.5 rounded-sm
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
       role="menuitem"
+      data-tutorial={dataTutorial}
     >
       {children}
     </button>
@@ -101,18 +104,18 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
 
   const sections = {
     library: [
-      { href: '/stories', label: 'Stories' },
-      { href: '/index', label: 'Index' },
-      { href: '/reader', label: 'Reader' },
+      { href: '/stories', label: 'Stories', dataTutorial: 'library' },
+      { href: '/index', label: 'Index', dataTutorial: 'library' },
+      { href: '/reader', label: 'Reader', dataTutorial: 'reader' },
     ],
     explore: [
-      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" /> },
-      { href: '/secret', label: 'Secret Pages' },
-      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" /> },
+      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" />, dataTutorial: 'explore' },
+      { href: '/secret', label: 'Secret Pages', dataTutorial: 'explore' },
+      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" />, dataTutorial: 'explore' },
     ],
     settings: [
-      { href: '/theme', label: 'Dark Mode' },
-      { href: '/accessibility', label: 'Font & Accessibility' },
+      { href: '/theme', label: 'Dark Mode', dataTutorial: 'theme' },
+      { href: '/accessibility', label: 'Font & Accessibility', dataTutorial: undefined },
     ],
   };
 
@@ -120,8 +123,8 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     <nav
       role="menu"
       className={`
-        flex flex-col space-y-4 p-8
-        font-eb-garamond text-lg
+        flex flex-col space-y-2 p-6
+        font-eb-garamond text-base
         bg-background/95 backdrop-blur-sm
         border-r border-border/50
         ${isMobile ? 'w-full' : 'w-72 h-full'}
@@ -132,12 +135,13 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         href="/"
         isActive={location === '/'}
         onNavigate={onNavigate}
-        className="text-xl font-medium py-4"
+        className="text-lg font-medium py-2 mb-1"
+        dataTutorial="home"
       >
         Home
       </NavLink>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         <DropdownSection
           title="Library"
           items={sections.library}
@@ -160,7 +164,8 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/about"
           isActive={location === '/about'}
           onNavigate={onNavigate}
-          className="py-4"
+          className="py-1.5"
+          dataTutorial="about"
         >
           About
         </NavLink>
@@ -169,7 +174,8 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/contact"
           isActive={location === '/contact'}
           onNavigate={onNavigate}
-          className="py-4"
+          className="py-1.5"
+          dataTutorial="contact"
         >
           Contact
         </NavLink>
@@ -178,7 +184,8 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/privacy"
           isActive={location === '/privacy'}
           onNavigate={onNavigate}
-          className="py-4"
+          className="py-1.5"
+          dataTutorial="privacy"
         >
           Privacy Policy
         </NavLink>
@@ -193,25 +200,25 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         />
       </div>
 
-      <div className="mt-auto pt-6 border-t border-border/50">
+      <div className="mt-auto pt-4 space-y-2 border-t border-border/50">
         {!user ? (
           <Button
             variant="default"
             size="lg"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base"
             onClick={() => {
               onNavigate?.();
               setLocation("/auth");
             }}
           >
-            <User className="h-5 w-5 mr-2" />
+            <User className="h-4 w-4 mr-2" />
             Sign In
           </Button>
         ) : (
           <Button
             variant="ghost"
             size="lg"
-            className="w-full text-lg"
+            className="w-full text-base"
             onClick={() => {
               // Handle logout
             }}
@@ -219,6 +226,16 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
             Sign Out
           </Button>
         )}
+
+        <NavLink
+          href="/report-bug"
+          isActive={location === '/report-bug'}
+          onNavigate={onNavigate}
+          className="text-base py-1.5"
+          dataTutorial="reportBug"
+        >
+          Report a Bug
+        </NavLink>
       </div>
     </nav>
   );
@@ -232,11 +249,11 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+      <div className="container flex h-14 items-center">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="mr-2">
-              <Menu className="h-5 w-5" />
+              <Menu className="h-4 w-4" />
               <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>

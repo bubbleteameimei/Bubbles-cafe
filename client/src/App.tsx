@@ -9,6 +9,8 @@ import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { TutorialProvider } from '@/hooks/use-tutorial';
+import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
@@ -20,33 +22,38 @@ const ContactPage = React.lazy(() => import('@/pages/contact'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
 const AuthPage = React.lazy(() => import('@/pages/auth'));
 const PrivacyPage = React.lazy(() => import('@/pages/privacy'));
+const ReportBugPage = React.lazy(() => import('@/pages/report-bug'));
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <div className="relative min-h-screen flex flex-col bg-background text-foreground">
-            <Navigation />
-            <main className="flex-grow">
-              <React.Suspense fallback={<LoadingScreen />}>
-                <Switch>
-                  <Route path="/" component={HomePage} />
-                  <Route path="/reader" component={ReaderPage} />
-                  <Route path="/stories" component={StoriesPage} />
-                  <Route path="/index" component={IndexPage} />
-                  <Route path="/about" component={AboutPage} />
-                  <Route path="/contact" component={ContactPage} />
-                  <Route path="/admin/dashboard" component={AdminDashboard} />
-                  <Route path="/auth" component={AuthPage} />
-                  <Route path="/privacy" component={PrivacyPage} />
-                </Switch>
-              </React.Suspense>
-            </main>
-            <Footer />
-            <Toaster />
-            <CookieConsent />
-          </div>
+          <TutorialProvider>
+            <div className="relative min-h-screen flex flex-col bg-background text-foreground">
+              <Navigation />
+              <main className="flex-grow">
+                <React.Suspense fallback={<LoadingScreen />}>
+                  <Switch>
+                    <Route path="/" component={HomePage} />
+                    <Route path="/reader" component={ReaderPage} />
+                    <Route path="/stories" component={StoriesPage} />
+                    <Route path="/index" component={IndexPage} />
+                    <Route path="/about" component={AboutPage} />
+                    <Route path="/contact" component={ContactPage} />
+                    <Route path="/admin/dashboard" component={AdminDashboard} />
+                    <Route path="/auth" component={AuthPage} />
+                    <Route path="/privacy" component={PrivacyPage} />
+                    <Route path="/report-bug" component={ReportBugPage} />
+                  </Switch>
+                </React.Suspense>
+              </main>
+              <Footer />
+              <TutorialTooltip />
+              <Toaster />
+              <CookieConsent />
+            </div>
+          </TutorialProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
