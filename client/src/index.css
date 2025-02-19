@@ -36,7 +36,7 @@
   /* Base Typography */
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: "EB Garamond", serif; /* Body Text */
+    font-family: "EB Garamond"; /* Body Text */
     font-size: 16px;
     line-height: 1.8;
     letter-spacing: 0.01em;
@@ -46,35 +46,35 @@
 
   /* Main Titles and Key Headers */
   h1, h2 {
-    font-family: "Castoro Titling", serif;
+    font-family: "Castoro Titling";
     @apply font-bold tracking-tight text-foreground;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   /* Subheadings and Secondary Headers */
   h3, h4, h5, h6 {
-    font-family: "Cormorant Garamond", serif;
+    font-family: "Cormorant Garamond";
     @apply font-semibold tracking-tight text-foreground;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   /* Story Titles in Stories Page */
   .story-title {
-    font-family: "Cinzel Decorative", cursive;
+    font-family: "Lancelot";
     @apply font-bold text-xl md:text-2xl mb-2;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   /* Italic Text in Reader */
   .italic-text {
-    font-family: "Aquiline Two", cursive;
+    font-family: "Cinzel Decorative";
     font-style: italic;
   }
 
   /* Read Time Display */
   .read-time {
     @apply text-sm text-muted-foreground;
-    font-family: "Cormorant Garamond", serif;
+    font-family: "Cormorant Garamond";
   }
 
   /* Header Sizes */
@@ -85,12 +85,12 @@
 
   /* Utility classes for specific font usage */
   .font-decorative {
-    font-family: "Lancelot", cursive;
+    font-family: "Lancelot";
   }
 
   /* Quotes and Epigraphs */
   blockquote {
-    font-family: "Lancelot", cursive;
+    font-family: "Lancelot";
     @apply pl-4 border-l-4 border-primary/50 italic my-6;
   }
 
