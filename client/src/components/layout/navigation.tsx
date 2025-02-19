@@ -25,26 +25,26 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-base font-medium transition-colors hover:text-primary group">
-        <span className="flex items-center gap-2">
-          {title === 'Library' && <Book className="h-4 w-4" />}
-          {title === 'Explore' && <Compass className="h-4 w-4" />}
-          {title === 'Settings' && <Settings className="h-4 w-4" />}
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-1 text-xs font-medium transition-colors hover:text-primary group">
+        <span className="flex items-center gap-1">
+          {title === 'Library' && <Book className="h-3 w-3" />}
+          {title === 'Explore' && <Compass className="h-3 w-3" />}
+          {title === 'Settings' && <Settings className="h-3 w-3" />}
           {title}
         </span>
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>
-      <CollapsibleContent className="pl-6 space-y-2">
+      <CollapsibleContent className="pl-3 space-y-1">
         {items.map(item => (
           <NavLink
             key={item.href}
             href={item.href}
             isActive={location === item.href}
             onNavigate={onNavigate}
-            className="flex items-center gap-2 py-1.5"
+            className="flex items-center gap-1 py-0.5"
             dataTutorial={item.dataTutorial}
           >
-            {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
+            {item.icon && <span className="w-3 h-3 flex items-center justify-center">{item.icon}</span>}
             {item.label}
           </NavLink>
         ))}
@@ -75,12 +75,12 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
     <button
       onClick={handleClick}
       className={`
-        text-base font-eb-garamond transition-all duration-300
+        text-xs font-eb-garamond transition-all duration-300
         ${isActive
           ? "text-primary font-semibold"
           : "text-muted-foreground hover:text-primary hover:bg-primary/5"
         }
-        w-full text-left px-4 py-1.5 rounded-sm
+        w-full text-left px-2 py-0.5 rounded-sm
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
@@ -110,9 +110,9 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
       { href: '/reader', label: 'Reader', dataTutorial: 'reader' },
     ],
     explore: [
-      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" />, dataTutorial: 'explore' },
+      { href: '/search', label: 'Search', icon: <Search className="h-3 w-3" />, dataTutorial: 'explore' },
       { href: '/secret', label: 'Secret Pages', dataTutorial: 'explore' },
-      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" />, dataTutorial: 'explore' },
+      { href: '/live', label: 'Live Readings', icon: <Radio className="h-3 w-3" />, dataTutorial: 'explore' },
     ],
     settings: [
       { href: '/theme', label: 'Dark Mode', dataTutorial: 'theme' },
@@ -124,11 +124,11 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     <nav
       role="menu"
       className={`
-        flex flex-col space-y-2 p-6
-        font-eb-garamond text-base
+        flex flex-col space-y-1 p-3
+        font-eb-garamond text-xs
         bg-background/95 backdrop-blur-sm
         border-r border-border/50
-        ${isMobile ? 'w-full' : 'w-72 h-full'}
+        ${isMobile ? 'w-full' : 'w-56 h-full'}
       `}
       aria-label="Main navigation"
     >
@@ -136,13 +136,13 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         href="/"
         isActive={location === '/'}
         onNavigate={onNavigate}
-        className="text-lg font-medium py-2 mb-1"
+        className="text-sm font-medium py-1 mb-1"
         dataTutorial="home"
       >
         Home
       </NavLink>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <DropdownSection
           title="Library"
           items={sections.library}
@@ -165,7 +165,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/about"
           isActive={location === '/about'}
           onNavigate={onNavigate}
-          className="py-1.5"
+          className="py-0.5"
           dataTutorial="about"
         >
           About
@@ -175,7 +175,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/contact"
           isActive={location === '/contact'}
           onNavigate={onNavigate}
-          className="py-1.5"
+          className="py-0.5"
           dataTutorial="contact"
         >
           Contact
@@ -185,7 +185,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/privacy"
           isActive={location === '/privacy'}
           onNavigate={onNavigate}
-          className="py-1.5"
+          className="py-0.5"
           dataTutorial="privacy"
         >
           Privacy Policy
@@ -201,25 +201,25 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         />
       </div>
 
-      <div className="mt-auto pt-4 space-y-2 border-t border-border/50">
+      <div className="mt-auto pt-2 space-y-1 border-t border-border/50">
         {!user ? (
           <Button
             variant="default"
-            size="lg"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base"
+            size="sm"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
             onClick={() => {
               onNavigate?.();
               setLocation("/auth");
             }}
           >
-            <User className="h-4 w-4 mr-2" />
+            <User className="h-3 w-3 mr-1" />
             Sign In
           </Button>
         ) : (
           <Button
             variant="ghost"
-            size="lg"
-            className="w-full text-base"
+            size="sm"
+            className="w-full text-xs"
             onClick={() => {
               // Handle logout
             }}
@@ -232,7 +232,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/report-bug"
           isActive={location === '/report-bug'}
           onNavigate={onNavigate}
-          className="text-base py-1.5"
+          className="text-xs py-0.5"
           dataTutorial="reportBug"
         >
           Report a Bug
@@ -250,10 +250,10 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      <div className="container flex h-12 items-center">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <div className="mr-6 ml-6">
+            <div className="mr-4 ml-4">
               <LiquidMenuButton onClick={() => setIsOpen(!isOpen)} />
               <span className="sr-only">Toggle menu</span>
             </div>

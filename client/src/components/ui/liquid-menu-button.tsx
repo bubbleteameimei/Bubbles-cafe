@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from "@/lib/utils";
 
 interface LiquidMenuButtonProps {
@@ -8,51 +8,79 @@ interface LiquidMenuButtonProps {
 
 export function LiquidMenuButton({ onClick, className }: LiquidMenuButtonProps) {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [droplets, setDroplets] = useState<{ id: number; delay: number }[]>([]);
 
-  const handleClick = () => {
-    setIsAnimating(true);
+  const createDroplet = useCallback(() => {
+    const id = Date.now();
+    const delay = Math.random() * 500;
+    return { id, delay };
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      // Create multiple droplets with different delays
+      setDroplets([
+        createDroplet(),
+        createDroplet(),
+        createDroplet()
+      ]);
+
+      // Reset animation after completion
+      setTimeout(() => {
+        setIsAnimating(false);
+        setDroplets([]);
+      }, 2000);
+    }
     onClick();
-    // Reset animation after completion
-    setTimeout(() => setIsAnimating(false), 2000);
-  };
+  }, [isAnimating, onClick, createDroplet]);
+
+  useEffect(() => {
+    return () => {
+      setIsAnimating(false);
+      setDroplets([]);
+    };
+  }, []);
 
   return (
-    <button 
-      onClick={handleClick}
-      className={cn(
-        "relative w-12 h-12 rounded-lg bg-primary/90 text-primary-foreground",
-        "hover:bg-primary/80 transition-colors duration-200",
-        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-        isAnimating && "animate-liquid",
-        className
-      )}
-    >
-      <div className="absolute inset-0 overflow-hidden rounded-lg">
-        <div className="absolute inset-0 bg-[#6b3536] liquid-bg" />
-        {isAnimating && (
-          <div className="drops">
-            <div className="drop1" />
-            <div className="drop2" />
-          </div>
+    <div className="menu-button-container">
+      <button 
+        onClick={handleClick}
+        className={cn(
+          "liquid-menu-button",
+          "relative w-8 h-8 rounded-lg bg-[hsl(0,100%,15%)] text-primary-foreground",
+          "hover:bg-[hsl(0,100%,12%)] transition-colors duration-200",
+          "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          className
         )}
-      </div>
-      
-      {/* SVG Filter for liquid effect */}
-      <svg width="0" height="0">
-        <defs>
-          <filter id="liquid">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="liquid" />
-          </filter>
-        </defs>
-      </svg>
+      >
+        {/* Menu Icon */}
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full gap-0.5">
+          <span className="w-3.5 h-0.5 bg-primary-foreground rounded-full transition-transform duration-200" />
+          <span className="w-3.5 h-0.5 bg-primary-foreground rounded-full transition-transform duration-200" />
+          <span className="w-3.5 h-0.5 bg-primary-foreground rounded-full transition-transform duration-200" />
+        </div>
+      </button>
 
-      {/* Menu Icon */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full gap-1.5">
-        <span className="w-5 h-0.5 bg-primary-foreground rounded-full" />
-        <span className="w-5 h-0.5 bg-primary-foreground rounded-full" />
-        <span className="w-5 h-0.5 bg-primary-foreground rounded-full" />
+      {/* Blood dripping effects */}
+      <div className="blood-container">
+        {isAnimating && droplets.map(({ id, delay }) => (
+          <div key={id} style={{ animationDelay: `${delay}ms` }}>
+            <div 
+              className={cn("blood-drip", isAnimating && "animate")}
+              style={{ left: `${Math.random() * 20 - 10}px` }}
+            />
+            <div 
+              className={cn("blood-droplet", isAnimating && "animate")}
+              style={{ left: `${Math.random() * 20 - 10}px` }}
+            />
+            <div 
+              className={cn("blood-ripple", isAnimating && "animate")}
+              style={{ left: `${Math.random() * 20 - 10}px` }}
+            />
+          </div>
+        ))}
       </div>
-    </button>
+    </div>
   );
 }

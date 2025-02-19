@@ -153,111 +153,124 @@
 }
 
 @layer components {
-  /* Enhanced Liquid Menu Button Animations */
-  @keyframes liquid-wave {
+  /* Blood Dripping Animation Styles */
+  @keyframes drip {
     0% {
-      background-position: 0 160px;
-      background-size: 170px 300px;
-      opacity: 0.9;
-    }
-    100% {
-      background-position: 500px -18px;
-      background-size: 250px 150px;
+      transform: scale(1, 0);
       opacity: 1;
     }
+    100% {
+      transform: scale(1, 30);
+      opacity: 0;
+    }
   }
 
-  @keyframes blood-drip {
+  @keyframes droplet {
     0% {
-      transform: scaleY(0.3);
-      bottom: 0px;
-      opacity: 0.9;
-    }
-    40% {
-      transform: scaleY(1.2);
+      transform: scale(1, 1) translateY(0);
       opacity: 1;
     }
-    80% {
-      transform: scaleY(1);
-      opacity: 0.95;
+    70% {
+      transform: scale(1, 1.5) translateY(20px);
+      opacity: 0.8;
     }
     100% {
-      transform: scaleY(0.8);
-      bottom: -200px;
-      opacity: 0.7;
+      transform: scale(1, 1) translateY(40px);
+      opacity: 0;
     }
   }
 
-  .liquid-bg {
-    background-image: linear-gradient(
-      to bottom,
-      hsl(0, 70%, 20%),
-      hsl(0, 80%, 15%)
-    );
-    animation: liquid-wave 1.2s ease-out forwards;
-    box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  @keyframes ripple {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
   }
 
-  .drops {
-    filter: url('#liquid');
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    opacity: 0;
-    animation: fade-in 0.15s linear 0.3s forwards;
+  .menu-button-container {
+    position: relative;
+    z-index: 50;
   }
 
-  .drop1, .drop2 {
-    width: 21px;
-    height: 24px;
-    border-radius: 50%;
+  .blood-container {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
-    margin: auto;
-    background-color: hsl(0, 80%, 20%);
-    box-shadow: 0 2px 8px rgba(139, 0, 0, 0.4);
+    bottom: -40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 49;
   }
 
-  .drop1 {
-    width: 90px;
-    height: 16px;
-    bottom: 2px;
-    border-radius: 0;
-    transform-origin: center bottom;
+  .blood-drip {
+    position: absolute;
+    top: 0;
+    width: 3px;
+    height: 1px;
+    background: rgb(139, 0, 0);
+    transform-origin: top;
+    opacity: 0;
   }
 
-  .drop2 {
-    animation: blood-drip 1.8s cubic-bezier(0.6, 0.1, 0.9, 0.2) 0.4s infinite;
+  .blood-drip.animate {
+    animation: drip 2s ease-in forwards;
   }
 
-  /* Enhanced Floating Reader Navigation */
-  .floating-nav {
-    @apply fixed right-4 top-1/2 -translate-y-1/2 z-50 
-           bg-background/95 backdrop-blur-sm 
-           rounded-lg border border-primary/30
-           shadow-lg shadow-primary/20
-           p-3 space-y-3;
-    animation: float 6s ease-in-out infinite;
-    box-shadow: 0 4px 20px rgba(107, 53, 54, 0.2),
-                0 2px 8px rgba(0, 0, 0, 0.15);
+  .blood-droplet {
+    position: absolute;
+    top: -2px;
+    width: 6px;
+    height: 6px;
+    background: rgb(139, 0, 0);
+    border-radius: 50%;
+    opacity: 0;
   }
 
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(-50%) translateX(0);
-    }
-    50% {
-      transform: translateY(-50%) translateX(-10px);
-    }
+  .blood-droplet.animate {
+    animation: droplet 1.5s ease-in forwards;
   }
 
-  .floating-nav-button {
-    @apply w-10 h-10 rounded-md flex items-center justify-center
-           text-muted-foreground hover:text-primary
-           transition-all duration-300
-           hover:bg-primary/15 active:scale-95
-           hover:shadow-md hover:shadow-primary/10;
+  .blood-ripple {
+    position: absolute;
+    top: -3px;
+    width: 12px;
+    height: 12px;
+    border: 1px solid rgb(139, 0, 0);
+    border-radius: 50%;
+    opacity: 0;
+  }
+
+  .blood-ripple.animate {
+    animation: ripple 1s ease-out forwards;
+  }
+
+  /* Keep existing animations but enhance them */
+  .liquid-menu-button {
+    position: relative;
+    overflow: visible !important;
+  }
+
+  .liquid-menu-button::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: rgb(139, 0, 0);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .liquid-menu-button:hover::after {
+    opacity: 1;
   }
 }
