@@ -13,56 +13,62 @@ export default function Privacy() {
         <CardContent>
           <div className="space-y-6 prose prose-invert max-w-none">
             <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Content Protection Notice</h2>
+              <p className="text-muted-foreground whitespace-pre-line">
+                ALL CONTENT ON THIS SITE IS ORIGINAL AND PROTECTED. UNAUTHORIZED REPRODUCTION, PLAGIARISM, OR COMMERCIAL TRANSLATION OF MY WORK IS STRICTLY PROHIBITED AND MAY RESULT IN LEGAL ACTION. IF YOU WISH TO SHARE OR USE ANY CONTENT, PLEASE OBTAIN PRIOR PERMISSION BY CONTACTING ME DIRECTLY.
+
+                THANK YOU FOR YOUR SUPPORT, AND ENJOY THE STORIES.
+              </p>
+            </section>
+
+            <section className="space-y-3">
               <h2 className="text-xl font-semibold">Information We Collect</h2>
-              <p className="text-muted-foreground">We collect information you voluntarily provide when you:</p>
+              <p className="text-muted-foreground">We may collect the following types of information:</p>
+
+              <h3 className="text-lg font-semibold mt-4">Personal Information</h3>
+              <p className="text-muted-foreground">
+                When you register, comment, or interact with our Website, we may collect:
+              </p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                <li>Create an account or update your profile</li>
-                <li>Submit or edit horror stories</li>
-                <li>Leave comments on stories</li>
-                <li>Rate or review content</li>
-                <li>Contact us through the contact form</li>
-                <li>Track your reading progress</li>
+                <li>Name</li>
+                <li>Email address</li>
+                <li>Any other information you voluntarily provide</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold mt-4">Non-Personal Information</h3>
+              <p className="text-muted-foreground">
+                We may collect data that does not directly identify you, such as:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Browser type and version</li>
+                <li>IP address</li>
+                <li>Device information</li>
+                <li>Usage data (e.g., pages visited, time spent on the Website)</li>
               </ul>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-xl font-semibold">How We Use Your Information</h2>
-              <p className="text-muted-foreground">We use the information we collect to:</p>
+              <p className="text-muted-foreground">We use the collected information to:</p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                <li>Provide and maintain the horror story platform</li>
-                <li>Personalize your experience</li>
-                <li>Process and manage your account</li>
-                <li>Respond to your messages and comments</li>
-                <li>Save your reading progress and preferences</li>
-                <li>Improve our website and content</li>
+                <li>Provide and improve our services</li>
+                <li>Customize your experience on the Website</li>
+                <li>Enable interactive features (e.g., commenting, story tracking)</li>
+                <li>Respond to inquiries or requests</li>
+                <li>Monitor Website security and prevent fraud</li>
+                <li>Comply with legal obligations</li>
               </ul>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Data Storage</h2>
               <p className="text-muted-foreground">
-                Your data is stored securely in our database and is not shared with third parties except when required by law. 
-                We implement appropriate security measures to protect your personal information.
+                We do not sell or share your personal data with third parties for marketing purposes.
               </p>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Content Moderation</h2>
+              <h2 className="text-xl font-semibold">Data Security</h2>
               <p className="text-muted-foreground">
-                We maintain the right to moderate user-submitted content to ensure it meets our community guidelines 
-                and content policies. This includes reviewing and potentially removing content that violates our terms of service.
+                We implement appropriate security measures to protect your data. However, no online platform is completely secure. 
+                We encourage you to use strong passwords and exercise caution when sharing personal information.
               </p>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Cookies</h2>
-              <p className="text-muted-foreground">We use cookies to:</p>
-              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                <li>Remember your login status</li>
-                <li>Track your reading progress</li>
-                <li>Save your theme preferences</li>
-                <li>Analyze site usage to improve user experience</li>
-              </ul>
             </section>
 
             <section className="space-y-3">
@@ -77,26 +83,9 @@ export default function Privacy() {
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Content Ownership</h2>
+              <h2 className="text-xl font-semibold">Contact Us</h2>
               <p className="text-muted-foreground">
-                All user-submitted horror stories remain the intellectual property of their respective authors. 
-                By submitting content to our platform, you grant us a non-exclusive license to display, 
-                distribute, and promote your content within our platform.
-              </p>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Age Restrictions</h2>
-              <p className="text-muted-foreground">
-                Due to the horror-themed nature of our content, our platform is intended for users aged 13 and above. 
-                Users under 18 should have parental consent before using our services.
-              </p>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">Contact</h2>
-              <p className="text-muted-foreground">
-                If you have questions about this privacy policy or your data, please contact us through our contact form 
+                For questions or concerns about this privacy policy or your data, please contact us through our contact form 
                 or email us at privacy@bubblescafe.com
               </p>
             </section>

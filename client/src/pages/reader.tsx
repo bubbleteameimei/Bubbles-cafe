@@ -62,20 +62,20 @@ export default function Reader() {
   const goToPrevious = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
     setCurrentIndex((prev) => (prev === 0 ? postsData.posts.length - 1 : prev - 1));
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [postsData?.posts]);
 
   const goToNext = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
     setCurrentIndex((prev) => (prev === postsData.posts.length - 1 ? 0 : prev + 1));
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [postsData?.posts]);
 
   const randomize = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
     const newIndex = Math.floor(Math.random() * postsData.posts.length);
     setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [postsData?.posts]);
 
   if (isLoading) {
@@ -101,7 +101,7 @@ export default function Reader() {
   const themeInfo = primaryTheme ? THEME_CATEGORIES[primaryTheme] : null;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen pb-32">
       <Mist />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
@@ -114,11 +114,31 @@ export default function Reader() {
             className="mb-8"
           >
             <article>
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="story-title text-4xl font-bold">{currentPost.title}</h1>
+              <div className="flex flex-col items-center space-y-4 mb-8">
+                <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
+
+                {/* Story Navigation Buttons */}
+                <div className="flex items-center gap-4 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={goToPrevious}
+                    className="group hover:bg-primary/10 transition-all duration-300"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                    Previous Story
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={goToNext}
+                    className="group hover:bg-primary/10 transition-all duration-300"
+                  >
+                    Next Story
+                    <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="story-meta flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+              <div className="story-meta flex items-center gap-4 mb-4 text-sm text-muted-foreground justify-center">
                 <time>{formattedDate}</time>
                 <span>·</span>
                 <span>{readingTime}</span>
@@ -169,29 +189,34 @@ export default function Reader() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="controls-container">
-          <div className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-2xl shadow-xl border border-border/50 hover:bg-background/70 transition-all">
-            <div className="nav-controls flex items-center justify-between">
+        {/* Floating Navigation Bar */}
+        <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-full shadow-xl border border-border/50 hover:bg-background/70 transition-all mx-4"
+          >
+            <div className="nav-controls flex items-center gap-6">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={goToPrevious} className="hover:bg-primary/10">
-                      <ChevronLeft className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={goToPrevious} className="hover:bg-primary/10 transition-all duration-300">
+                      <ChevronLeft className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Previous Story</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-              <span className="page-counter text-sm text-muted-foreground">
+              <span className="text-sm font-medium">
                 {currentIndex + 1} / {posts.length}
               </span>
 
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={randomize} className="hover:bg-primary/10">
-                      <Shuffle className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={randomize} className="hover:bg-primary/10 transition-all duration-300">
+                      <Shuffle className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Random Story</TooltipContent>
@@ -201,15 +226,15 @@ export default function Reader() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={goToNext} className="hover:bg-primary/10">
-                      <ChevronRight className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={goToNext} className="hover:bg-primary/10 transition-all duration-300">
+                      <ChevronRight className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Next Story</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
