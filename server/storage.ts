@@ -10,14 +10,12 @@ import {
   type CommentVote,
   type CommentReply,
   type InsertCommentReply,
-  type StoryRating, type InsertStoryRating,
   type AuthorStats,
   type WritingChallenge, type InsertWritingChallenge,
   type ChallengeEntry, type InsertChallengeEntry,
   type ContentProtection, type InsertContentProtection,
   type ReportedContent, type InsertReportedContent,
   type AuthorTip, type InsertAuthorTip,
-  type NewsletterSubscription, type InsertNewsletterSubscription,
   type Webhook, type InsertWebhook,
   type Analytics,
   type SiteSetting, type InsertSiteSetting,
@@ -34,14 +32,12 @@ import {
   postLikes,
   commentVotes,
   commentReplies,
-  storyRatings,
   authorStats,
   writingChallenges,
   challengeEntries,
   contentProtection,
   reportedContent,
   authorTips,
-  newsletterSubscriptions,
   webhooks,
   analytics,
   siteSettings,
@@ -117,12 +113,6 @@ export interface IStorage {
   // Comment replies
   createCommentReply(reply: InsertCommentReply): Promise<CommentReply>;
 
-  // Story Ratings
-  getStoryRating(postId: number, userId: number): Promise<StoryRating | undefined>;
-  createStoryRating(rating: InsertStoryRating): Promise<StoryRating>;
-  updateStoryRating(postId: number, userId: number, fearRating: number): Promise<StoryRating>;
-  getAverageStoryRating(postId: number): Promise<number>;
-
   // Author Stats
   getAuthorStats(authorId: number): Promise<AuthorStats | undefined>;
   updateAuthorStats(authorId: number): Promise<AuthorStats>;
@@ -146,10 +136,6 @@ export interface IStorage {
   getAuthorTips(authorId: number): Promise<AuthorTip[]>;
   getTotalTipsReceived(authorId: number): Promise<number>;
 
-  // Newsletter
-  subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
-  unsubscribeNewsletter(email: string): Promise<void>;
-  getNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
 
   // Webhooks
   registerWebhook(webhook: InsertWebhook): Promise<Webhook>;
@@ -865,50 +851,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Story Ratings Implementation
-  async getStoryRating(postId: number, userId: number): Promise<StoryRating | undefined> {
-    const [rating] = await db.select()
-      .from(storyRatings)
-      .where(and(
-        eq(storyRatings.postId, postId),
-        eq(storyRatings.userId, userId)
-      ))
-      .limit(1);
-    return rating;
-  }
-
-  async createStoryRating(rating: InsertStoryRating): Promise<StoryRating> {
-    const [newRating] = await db.insert(storyRatings)
-      .values({ ...rating, createdAt: new Date() })
-      .returning();
-
-    await this.updateAuthorStats(rating.postId);
-    return newRating;
-  }
-
-  async updateStoryRating(postId: number, userId: number, fearRating: number): Promise<StoryRating> {
-    const [updated] = await db.update(storyRatings)
-      .set({ fearRating })
-      .where(and(
-        eq(storyRatings.postId, postId),
-        eq(storyRatings.userId, userId)
-      ))
-      .returning();
-
-    await this.updateAuthorStats(postId);
-    return updated;
-  }
-
-  // Fix for getAverageStoryRating
-  async getAverageStoryRating(postId: number): Promise<number> {
-    const [result] = await db.select({
-      average: avg(storyRatings.fearRating)
-    })
-      .from(storyRatings)
-      .where(eq(storyRatings.postId, postId));
-
-    return Number(result.average) || 0;
-  }
 
   // Author Stats Implementation
   async getAuthorStats(authorId: number): Promise<AuthorStats | undefined> {
@@ -920,10 +862,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAuthorStats(authorId: number): Promise<AuthorStats> {
-    const [[totalPosts], [totalLikes], [avgRating], [totalTips]] = await Promise.all([
+    const [[totalPosts], [totalLikes], [totalTips]] = await Promise.all([
       db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
       db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
-      db.select({ avg: avg(storyRatings.fearRating) }).from(storyRatings),
       db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
     ]);
 
@@ -931,7 +872,6 @@ export class DatabaseStorage implements IStorage {
       .set({
         totalPosts: Number(totalPosts.count),
         totalLikes: Number(totalLikes.count),
-        avgFearRating: Number(avgRating.avg || 0),
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
@@ -1056,22 +996,6 @@ export class DatabaseStorage implements IStorage {
     return Number(result.total) || 0;
   }
 
-  // Newsletter Implementation
-  async subscribeNewsletter(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {    const [newSubscription] = await db.insert(newsletterSubscriptions)
-      .values({ ...subscription, createdAt: new Date() })
-      .returning();
-    return newSubscription;
-  }
-
-  async unsubscribeNewsletter(email: string): Promise<void> {
-    await db.delete(newsletterSubscriptions).where(eq(newsletterSubscriptions.email, email));
-  }
-
-  async getNewsletterSubscribers(): Promise<NewsletterSubscription[]> {
-    return await db.select()
-      .from(newsletterSubscriptions)
-      .where(eq(newsletterSubscriptions.confirmed, true));
-  }
 
   // Webhooks Implementation
   async registerWebhook(webhook: InsertWebhook): Promise<Webhook> {

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ContactForm from "@/components/contact/contact-form";
-import { NewsletterForm } from "@/components/ui/newsletter-form";
 import Mist from "@/components/effects/mist";
 
 export default function Contact() {
@@ -16,8 +15,6 @@ export default function Contact() {
             <ContactForm />
           </CardContent>
         </Card>
-
-        <NewsletterForm />
       </div>
     </div>
   );

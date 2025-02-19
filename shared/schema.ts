@@ -110,14 +110,6 @@ export const commentReplies = pgTable("comment_replies", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Story Ratings
-export const storyRatings = pgTable("story_ratings", {
-  id: serial("id").primaryKey(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  fearRating: integer("fear_rating").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
 
 // Author Stats
 export const authorStats = pgTable("author_stats", {
@@ -177,13 +169,6 @@ export const authorTips = pgTable("author_tips", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Newsletter Subscriptions
-export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  confirmed: boolean("confirmed").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
 
 // Webhooks
 export const webhooks = pgTable("webhooks", {
@@ -325,9 +310,6 @@ export const insertCommentReplySchema = createInsertSchema(commentReplies).omit(
 export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
 export type CommentReply = typeof commentReplies.$inferSelect;
 
-export const insertStoryRatingSchema = createInsertSchema(storyRatings).omit({ id: true, createdAt: true });
-export type InsertStoryRating = z.infer<typeof insertStoryRatingSchema>;
-export type StoryRating = typeof storyRatings.$inferSelect;
 
 export type AuthorStats = typeof authorStats.$inferSelect;
 
@@ -351,9 +333,6 @@ export const insertAuthorTipSchema = createInsertSchema(authorTips).omit({ id: t
 export type InsertAuthorTip = z.infer<typeof insertAuthorTipSchema>;
 export type AuthorTip = typeof authorTips.$inferSelect;
 
-export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({ id: true, createdAt: true });
-export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
-export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 
 export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true });
 export type InsertWebhook = z.infer<typeof insertWebhookSchema>;

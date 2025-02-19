@@ -16,7 +16,6 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
-import ratingsRouter from './routes/ratings';
 
 // Add slug generation function at the top with other utility functions
 function generateSlug(title: string): string {
@@ -876,91 +875,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add these routes after existing routes
-  // Update the story rating endpoint
-  app.post("/api/stories/:postId/rate", async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const { fearRating, userId } = req.body;
 
-      // Validate the rating
-      if (fearRating < 1 || fearRating > 5) {
-        return res.status(400).json({ message: "Rating must be between 1 and 5" });
-      }
-
-      // Check if user has already rated
-      const existingRating = await storage.getStoryRating(parseInt(postId), userId);
-
-      let rating;
-      if (existingRating) {
-        // Update existing rating
-        rating = await storage.updateStoryRating(parseInt(postId), userId, fearRating);
-      } else {
-        // Create new rating
-        rating = await storage.createStoryRating({
-          postId:parseInt(postId),
-          userId,
-          fearRating
-        });
-      }
-
-      res.json(rating);
-    } catch (error) {
-      console.error("Error rating story:", error);      res.status(500).json({ message: "Failed to rate story" });
-    }
-  });
-
-  app.get("/api/stories/:postId/rating", async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const { userId } = req.query;
-
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-
-      const rating = await storage.getStoryRating(parseInt(postId), parseInt(userId as string));
-      res.json(rating);
-    } catch (error) {
-      console.error("Error fetching rating:", error);
-      res.status(500).json({ message: "Failed to fetch rating" });
-    }
-  });
-
-  app.get("/api/stories/:postId/average-rating", async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const average = await storage.getAverageStoryRating(parseInt(postId));
-      res.json(average);
-    } catch (error) {
-      console.error("Error fetching average rating:", error);
-      res.status(500).json({ message: "Failed to fetch average rating" });
-    }
-  });
-
-  // Configure nodemailer with optimized settings
-  const transporter = createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.GMAIL_USER || 'vantalison@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD?.trim()
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    pool: true,
-    maxConnections: 3,
-    maxMessages: 10,
-    rateDelta: 1000,
-    rateLimit: 5,
-    tls: {
-      rejectUnauthorized: true,
-      minVersion: 'TLSv1.2'
-    }
-  });
-
-  // Protected admin routes
   app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
@@ -983,12 +898,11 @@ Timestamp: ${new Date().toLocaleString()}
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });
-    }
+      res.status(500).json({ message: "Failed to fetch admin profile" });    }
   });
 
   // Add admin dashboard data endpoint
-  app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/apiadmin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
@@ -1088,9 +1002,31 @@ Timestamp: ${new Date().toLocaleString()}
 
   // Register moderation routes with authentication
   app.use("/api/moderation", isAuthenticated, moderationRouter);
-  app.use('/api/ratings', ratingsRouter); // Add this line after the newsletter route registration around line 120
 
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
 }
+
+// Configure nodemailer with optimized settings
+const transporter = createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.GMAIL_USER || 'vantalison@gmail.com',
+    pass: process.env.GMAIL_APP_PASSWORD?.trim()
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  pool: true,
+  maxConnections: 3,
+  maxMessages: 10,
+  rateDelta: 1000,
+  rateLimit: 5,
+  tls: {
+    rejectUnauthorized: true,
+    minVersion: 'TLSv1.2'
+  }
+});

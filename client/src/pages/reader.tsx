@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { format } from "date-fns";
+import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PostsResponse {
   posts: Post[];
@@ -21,6 +22,7 @@ interface PostsResponse {
 }
 
 export default function Reader() {
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
     return savedIndex ? parseInt(savedIndex, 10) : 0;
@@ -45,17 +47,17 @@ export default function Reader() {
     refetchOnWindowFocus: false
   });
 
-useEffect(() => {
-  if (postsData?.posts && Array.isArray(postsData.posts)) {
-    const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
-    postsData.posts.forEach(post => {
-      persistedStats[post.id] = getOrCreateStats(post.id);
-    });
-    setPostStats(persistedStats);
+  useEffect(() => {
+    if (postsData?.posts && Array.isArray(postsData.posts)) {
+      const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
+      postsData.posts.forEach(post => {
+        persistedStats[post.id] = getOrCreateStats(post.id);
+      });
+      setPostStats(persistedStats);
 
-    sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-  }
-}, [postsData?.posts, currentIndex]);
+      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+    }
+  }, [postsData?.posts, currentIndex]);
 
   const goToPrevious = useCallback(() => {
     if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
@@ -154,9 +156,7 @@ useEffect(() => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <LikeDislike
-                  postId={currentPost.id}
-                />
+                <LikeDislike postId={currentPost.id} />
               </div>
 
               <div className="mt-8 pt-8 border-t border-border">

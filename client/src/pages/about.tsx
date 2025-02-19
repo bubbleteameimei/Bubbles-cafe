@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { SiWordpress, SiX, SiInstagram } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
-import { NewsletterForm } from "@/components/ui/newsletter-form";
 
 export default function About() {
   const { toast } = useToast();
@@ -83,8 +82,6 @@ export default function About() {
           </CardContent>
         </Card>
       </motion.div>
-
-      <NewsletterForm />
     </div>
   );
 }
