@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,50 +28,38 @@
 
   body {
     @apply bg-background text-foreground min-h-screen;
-    font-family: "Crimson Text", Georgia, "Times New Roman", serif;
+    font-family: "Georgia", "Times New Roman", serif;
     font-size: 16px;
     line-height: 1.8;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  /* Enhanced Typography */
+  /* Typography - Dark Academia Style */
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif font-bold tracking-tight text-foreground;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  h1 { @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-8; }
+  h2 { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6; }
+  h3 { @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4; }
+  h4 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4; }
+
+  /* Dark Academia specific styles */
+  .academia-text-shadow {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    margin-bottom: 1em;
-    transition: text-shadow 0.3s ease;
   }
 
-  h1 { 
-    @apply text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-8 leading-tight;
-    letter-spacing: -0.02em;
+  .academia-border {
+    @apply border-[1px] border-border/50;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
-  h2 { 
-    @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-6 leading-tight;
-    letter-spacing: -0.01em;
-  }
-
-  h3 { 
-    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-4 leading-tight;
-  }
-
-  h4 { 
-    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 leading-snug;
-  }
-
-  p {
-    @apply mb-6 text-lg leading-relaxed;
-    transition: color 0.3s ease;
-  }
-
-  /* Premium UI Elements with Enhanced Animations */
-  .premium-card {
-    @apply bg-card text-card-foreground rounded-lg border border-border/50;
-    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Card styling */
+  .card {
+    @apply bg-card text-card-foreground rounded-lg border border-border/50 shadow-md;
     background-image: linear-gradient(
       to bottom right,
       hsl(var(--card)),
@@ -81,120 +67,39 @@
     );
   }
 
-  .premium-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px -6px rgba(0, 0, 0, 0.4);
+  /* Button and Interactive Elements */
+  button, a {
+    @apply transition-all duration-300;
   }
 
-  .premium-border {
-    @apply border-[1px] border-border/50;
-    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
-    transition: box-shadow 0.3s ease;
+  .button-academia {
+    @apply px-4 py-2 rounded-md border border-border/50 bg-card hover:bg-accent/10
+           text-foreground shadow-sm transition-all duration-300;
   }
 
-  /* Sophisticated Interactions */
-  .premium-button {
-    @apply px-6 py-3 rounded-md border border-border/50 bg-card 
-           hover:bg-accent/10 text-foreground shadow-md transition-all duration-300
-           hover:shadow-lg hover:scale-[1.02];
-    position: relative;
-    overflow: hidden;
+  /* Theme Picker Specific Styles */
+  .theme-option {
+    @apply flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer
+           hover:bg-accent/10 transition-colors duration-200;
   }
 
-  .premium-button::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.1),
-      transparent
-    );
-    transition: 0.5s;
+  .theme-option.active {
+    @apply bg-accent/20;
   }
 
-  .premium-button:hover::after {
-    left: 100%;
-  }
-
-  /* Theme Transition Animation */
-  .animate-theme-transition {
-    transition: background-color 0.5s ease-in-out,
-                color 0.5s ease-in-out;
-  }
-
-  .dark-mode-premium {
-    transition: all 0.5s ease-in-out;
-  }
-
-  /* Premium Container Animation */
-  .theme-container {
-    min-height: 100vh;
-    transition: background-color 0.5s ease-in-out;
-  }
-
-  .theme-content {
-    opacity: 0;
-    animation: fadeIn 0.5s ease-out forwards;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Premium Loading States */
-  .loading-premium {
-    @apply text-sm text-muted-foreground;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  /* Enhanced Paper Texture */
-  .premium-texture {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.15' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-  }
-
-  /* Advanced Focus States */
+  /* Focus States */
   *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-4 ring-offset-background;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Enhanced Scroll Experience */
-  ::-webkit-scrollbar {
-    width: 12px;
+  /* Loading States */
+  .loading-academia {
+    @apply text-sm text-muted-foreground animate-pulse;
   }
 
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
-    border-left: 1px solid hsl(var(--border));
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted));
-    border: 3px solid hsl(var(--background));
-    border-radius: 6px;
-    transition: background-color 0.3s ease;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--accent));
-  }
-
-  /* Premium Text Selection */
-  ::selection {
-    background: hsl(var(--accent) / 0.2);
-    color: hsl(var(--accent));
+  /* Paper texture effect */
+  .paper-texture {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.15' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
   }
 }
