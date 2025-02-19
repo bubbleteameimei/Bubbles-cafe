@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Skull } from "lucide-react";
+import { Skull } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface StoryRatingProps {
@@ -21,8 +21,7 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
   const queryClient = useQueryClient();
   const [localRating, setLocalRating] = useState<number>(0);
 
-  // Fetch existing rating if any
-  const { data: existingRating, isLoading: isLoadingRating } = useQuery({
+  const { data: existingRating } = useQuery({
     queryKey: [`/api/stories/${postId}/rating`, userId],
     queryFn: async () => {
       if (!userId) return null;
@@ -33,7 +32,6 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
     enabled: !!userId
   });
 
-  // Fetch average rating
   const { data: averageRating } = useQuery({
     queryKey: [`/api/stories/${postId}/average-rating`],
     queryFn: async () => {
@@ -68,7 +66,7 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/stories/${postId}/average-rating`] });
       toast({
         title: "Rating submitted",
-        description: "Thank you for rating this story!",
+        description: "Thank you for rating this story! 👻",
       });
     },
     onError: (error: Error) => {
@@ -84,55 +82,47 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
     return index < rating ? "opacity-100" : "opacity-30";
   };
 
-  if (isLoadingRating) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md mx-auto p-4 space-y-4 bg-card rounded-lg shadow-sm border"
+      className="w-full max-w-xs mx-auto p-2 space-y-2 bg-card rounded-lg shadow-sm border"
     >
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">Fear Rating</h3>
-        <div className="flex justify-center space-x-2">
+      <div className="text-center space-y-1">
+        <h3 className="text-xs font-medium">Spooky Rating</h3>
+        <div className="flex justify-center space-x-0.5">
           {[1, 2, 3, 4, 5].map((value) => (
             <Skull
               key={value}
-              className={`w-6 h-6 transition-opacity ${getSkullOpacity(
+              className={`w-3 h-3 transition-opacity hover:scale-110 ${getSkullOpacity(
                 value,
                 averageRating || 0
               )}`}
             />
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Average: {averageRating?.toFixed(1) || "No ratings yet"}
+        <p className="text-[10px] text-muted-foreground">
+          Average: {averageRating?.toFixed(1) || "No ratings"}
         </p>
       </div>
 
       {userId ? (
         <Form {...form}>
-          <form className="space-y-4">
+          <form className="space-y-2">
             <FormField
               control={form.control}
               name="fearRating"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center justify-between">
+                  <FormLabel className="flex items-center justify-between text-[10px]">
                     Your Rating
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground">
                       {localRating}/5
                     </span>
                   </FormLabel>
                   <FormControl>
-                    <div className="flex items-center gap-4">
-                      <Skull className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <Skull className="h-2 w-2 text-muted-foreground" />
                       <Slider
                         min={1}
                         max={5}
@@ -144,7 +134,7 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
                         }}
                         className="flex-1"
                       />
-                      <Skull className="h-6 w-6 text-destructive" />
+                      <Skull className="h-3 w-3 text-destructive" />
                     </div>
                   </FormControl>
                 </FormItem>
@@ -154,15 +144,16 @@ export function StoryRating({ postId, userId }: StoryRatingProps) {
               type="button"
               onClick={() => rateMutation.mutate(localRating)}
               disabled={rateMutation.isPending}
-              className="w-full"
+              className="w-full text-xs h-6"
+              variant="secondary"
             >
-              {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
+              {rateMutation.isPending ? "Rating..." : "Rate Story"}
             </Button>
           </form>
         </Form>
       ) : (
-        <p className="text-sm text-center text-muted-foreground">
-          Log in to rate this story
+        <p className="text-[10px] text-center text-muted-foreground">
+          Sign in to rate this story 👻
         </p>
       )}
     </motion.div>

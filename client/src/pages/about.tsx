@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { SiWordpress, SiX, SiInstagram } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { NewsletterForm } from "@/components/ui/newsletter-form";
 
 export default function About() {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ export default function About() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -33,19 +34,19 @@ export default function About() {
           <CardContent>
             <div className="space-y-4 text-foreground">
               <p>
-                Hi hi, My name is Vanessa Chiwetalu, I made this website for my writing. 
-                Writing stories is one of my big passions. Fluent in English and Chinese. 
+                Hi hi, My name is Vanessa Chiwetalu, I made this website for my writing.
+                Writing stories is one of my big passions. Fluent in English and Chinese.
                 I'm a big fan of horror themed stories and existential dread.
               </p>
               <p>
-                I don't like making FAQs so if you have anything you need to ask or comment about 
-                please leave a comment below or drop me an email through the contact page. I will try to reply ASAP. 
+                I don't like making FAQs so if you have anything you need to ask or comment about
+                please leave a comment below or drop me an email through the contact page. I will try to reply ASAP.
                 If you do not hear back from me within a week, feel free to send another message.
               </p>
               <p className="font-bold">
-                ALL STORIES ON THIS SITE ARE ORIGINAL WORKS. ANY FORM OF PLAGIARISM OR UNAUTHORISED 
-                REPRODUCTION OF MY CONTENT WILL BE TAKEN SERIOUSLY AND MAY RESULT IN LEGAL ACTION. 
-                RETRANSLATING OF MY WORK INTO ANOTHER LANGUAGE FOR PROFIT IS NOT ALLOWED. IF YOU 
+                ALL STORIES ON THIS SITE ARE ORIGINAL WORKS. ANY FORM OF PLAGIARISM OR UNAUTHORISED
+                REPRODUCTION OF MY CONTENT WILL BE TAKEN SERIOUSLY AND MAY RESULT IN LEGAL ACTION.
+                RETRANSLATING OF MY WORK INTO ANOTHER LANGUAGE FOR PROFIT IS NOT ALLOWED. IF YOU
                 WOULD LIKE TO SHARE OR USE MY WORK, PLEASE CONTACT ME FIRST FOR PERMISSION.
               </p>
 
@@ -82,6 +83,8 @@ export default function About() {
           </CardContent>
         </Card>
       </motion.div>
+
+      <NewsletterForm />
     </div>
   );
 }
