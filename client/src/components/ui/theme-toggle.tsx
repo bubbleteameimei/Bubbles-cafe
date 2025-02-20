@@ -1,20 +1,33 @@
 import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
-import { Toggle } from "./toggle";
+import "./theme-toggle.css";
 
 interface ThemeToggleProps {
-  variant?: 'full' | 'icon';
+  variant?: 'full' | 'icon' | 'animated';
 }
 
 export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
 
+  if (variant === 'animated') {
+    return (
+      <div className="wrapper">
+        <input
+          type="checkbox"
+          className="switch"
+          checked={theme === 'dark'}
+          onChange={toggleTheme}
+          aria-label="Toggle theme"
+        />
+      </div>
+    );
+  }
+
   if (variant === 'icon') {
     return (
-      <Toggle
-        variant="ghost"
+      <button
         onClick={toggleTheme}
-        className="w-10 h-10 p-0"
+        className="theme-toggle-icon"
         aria-label="Toggle theme"
       >
         {theme === 'dark' ? (
@@ -22,15 +35,14 @@ export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
         ) : (
           <Moon className="h-5 w-5" />
         )}
-      </Toggle>
+      </button>
     );
   }
 
   return (
-    <Toggle
-      variant="outline"
+    <button
       onClick={toggleTheme}
-      className="flex items-center gap-2 px-4 py-2 w-full text-base"
+      className="theme-toggle-full"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
@@ -44,6 +56,6 @@ export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
           <span>Dark Mode</span>
         </>
       )}
-    </Toggle>
+    </button>
   );
 }

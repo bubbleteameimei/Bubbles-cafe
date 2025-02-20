@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, HelpCircle, AlertTriangle } from "lucide-react";
+import { Loader2, ChevronDown, HelpCircle, AlertTriangle, Building, Mail, Lock } from "lucide-react";
 import { AdminNav } from "./AdminNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
@@ -29,7 +29,7 @@ export default function MainNav() {
               <span className="font-bold text-xl">Horror Blog</span>
             </a>
           </Link>
-          <nav className="flex items-center space-x-6 text-base">
+          <nav className="flex items-center space-x-6 text-sm md:text-base">
             <Link href="/community">
               <a className="font-medium transition-colors hover:text-foreground/80">
                 Community
@@ -46,17 +46,26 @@ export default function MainNav() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuItem asChild>
                   <Link href="/about">
-                    <a className="w-full text-base">About Us</a>
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <Building className="h-4 w-4" />
+                      <span>About Us</span>
+                    </a>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/contact">
-                    <a className="w-full text-base">Contact Support</a>
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <Mail className="h-4 w-4" />
+                      <span>Contact Support</span>
+                    </a>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/privacy">
-                    <a className="w-full text-base">Privacy Policy</a>
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <Lock className="h-4 w-4" />
+                      <span>Privacy Policy</span>
+                    </a>
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -65,7 +74,7 @@ export default function MainNav() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="full" />
+          <ThemeToggle variant="icon" />
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : user ? (
