@@ -14,10 +14,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
-  items: { href: string; label: string; icon?: React.ReactNode; dataTutorial?: string }[];
+  items: { href: string; label: string; icon?: React.ReactNode; dataTutorial?: string; component?: React.ReactNode }[];
   isOpen: boolean;
   onToggle: () => void;
   location: string;
@@ -36,17 +37,19 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
       </CollapsibleTrigger>
       <CollapsibleContent className="pl-3 space-y-1">
         {items.map(item => (
-          <NavLink
-            key={item.href}
-            href={item.href}
-            isActive={location === item.href}
-            onNavigate={onNavigate}
-            className="flex items-center gap-1 py-0.5"
-            dataTutorial={item.dataTutorial}
-          >
-            {item.icon && <span className="w-3 h-3 flex items-center justify-center">{item.icon}</span>}
-            {item.label}
-          </NavLink>
+          <div key={item.href} className="flex items-center justify-between">
+            <NavLink
+              href={item.href}
+              isActive={location === item.href}
+              onNavigate={onNavigate}
+              className="flex items-center gap-1 py-0.5"
+              dataTutorial={item.dataTutorial}
+            >
+              {item.icon && <span className="w-3 h-3 flex items-center justify-center">{item.icon}</span>}
+              {item.label}
+            </NavLink>
+            {item.component}
+          </div>
         ))}
       </CollapsibleContent>
     </Collapsible>
@@ -114,7 +117,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
       { href: '/live', label: 'Live Readings', icon: <Radio className="h-3 w-3" />, dataTutorial: 'explore' },
     ],
     settings: [
-      { href: '/theme', label: 'Dark Mode', dataTutorial: 'theme' },
+      { href: '/theme', label: 'Theme Mode', dataTutorial: 'theme', component: <ThemeToggle /> },
       { href: '/accessibility', label: 'Font & Accessibility', dataTutorial: undefined },
     ],
   };

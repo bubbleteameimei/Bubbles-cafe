@@ -1,0 +1,76 @@
+.theme-toggle-wrapper {
+  width: 130px;
+  height: 50px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-switch {
+  position: relative;
+  width: 130px;
+  height: 50px;
+  margin: 0;
+  appearance: none;
+  background: linear-gradient(0deg, #242424, #434343);
+  border-radius: 100px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-switch::before {
+  content: "";
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: linear-gradient(180deg, #ffcc89, #d8860b);
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-switch::after {
+  content: "";
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: linear-gradient(180deg, #777, #3a3a3a);
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.theme-toggle-switch:checked {
+  background: linear-gradient(0deg, #749dd6, #b6d5ff);
+}
+
+.theme-toggle-switch:checked::before {
+  opacity: 0;
+}
+
+.theme-toggle-switch:checked::after {
+  opacity: 1;
+  transform: translateX(80px);
+}
+
+/* Add smooth transitions for theme changes */
+:root {
+  --transition-duration: 0.3s;
+}
+
+.dark {
+  transition: background-color var(--transition-duration) ease,
+              color var(--transition-duration) ease;
+}
+
+.light {
+  transition: background-color var(--transition-duration) ease,
+              color var(--transition-duration) ease;
+}
