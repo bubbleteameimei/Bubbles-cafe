@@ -27,12 +27,55 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     }
   };
 
-  const getEngagingExcerpt = (content: string): string => {
-    if (!content) return '';
-    const paragraphs = content.split('\n\n');
-    const significantParagraph = paragraphs.find(p => p.trim().length >= 100) || paragraphs[0] || '';
-    return significantParagraph.slice(0, 200) + (significantParagraph.length > 200 ? '...' : '');
-  };
+const getEngagingExcerpt = (content: string): string => {
+  if (!content) return '';
+
+  // Split content into paragraphs
+  const paragraphs = content.split('\n\n');
+
+  // Find paragraphs that contain engaging elements
+  const engagingParagraphs = paragraphs.filter(p => {
+    const hasDialogue = p.includes('"') || p.includes('"');
+    const hasAction = /(?:ed|ing)\b/.test(p) || /!\s*$/.test(p) || 
+      /(ran|jumped|moved|turned|gasped|screamed|trembled|shuddered|stumbled|crashed)\b/i.test(p);
+    const hasVividDescription = /(felt|heard|saw|smelled|tasted|sensed|noticed|realized|discovered|observed|watched|stared|glanced)\b/i.test(p);
+    const hasEmotionalContent = /(fear|terror|horror|dread|panic|anxiety|shocked|terrified|frightened|horrified|petrified|paranoid)\b/i.test(p);
+    const hasSuspense = /(suddenly|unexpectedly|without warning|to my horror|to my surprise)\b/i.test(p);
+    const hasAtmosphere = /(darkness|shadow|silence|cold|dark|quiet|eerie|mysterious|strange|odd)\b/i.test(p);
+
+    return hasDialogue || hasAction || hasVividDescription || hasEmotionalContent || hasSuspense || hasAtmosphere;
+  });
+
+  // Score paragraphs based on engagement factors
+  const scoredParagraphs = engagingParagraphs.map(p => {
+    let score = 0;
+    if (p.includes('"')) score += 2; // Dialogue is highly engaging
+    if (/!\s*$/.test(p)) score += 2; // Exclamations indicate intensity
+    if (/(suddenly|unexpectedly|without warning)\b/i.test(p)) score += 2; // Surprise elements
+    if (/(fear|terror|horror|dread)\b/i.test(p)) score += 1; // Horror elements
+    if (/(darkness|shadow|silence)\b/i.test(p)) score += 1; // Atmosphere
+    return { paragraph: p, score };
+  });
+
+  // Sort by score and length (prefer longer paragraphs if scores are equal)
+  scoredParagraphs.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.paragraph.length - a.paragraph.length;
+  });
+
+  // Use the highest-scoring paragraph, or fall back to the first one
+  const significantParagraph = (scoredParagraphs[0]?.paragraph || paragraphs[0] || '').trim();
+
+  // Extract a compelling snippet
+  let excerpt = significantParagraph;
+  if (excerpt.length > 200) {
+    // Try to end at a natural break point
+    const breakPoint = excerpt.substring(0, 200).lastIndexOf('.');
+    excerpt = excerpt.substring(0, breakPoint > 150 ? breakPoint + 1 : 200) + '...';
+  }
+
+  return excerpt;
+};
 
   const themes = post.content ? detectThemes(post.content) : [];
   const theme = themes.length > 0 ? themes[0] : null;

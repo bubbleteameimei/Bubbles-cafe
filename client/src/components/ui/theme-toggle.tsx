@@ -1,41 +1,49 @@
 import { useTheme } from "@/lib/theme-provider";
-import { cn } from "@/lib/utils";
-import { useEffect } from "react";
-import "./theme-toggle.css";
+import { Moon, Sun } from "lucide-react";
+import { Toggle } from "./toggle";
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+interface ThemeToggleProps {
+  variant?: 'full' | 'icon';
+}
 
-  useEffect(() => {
-    // Load theme from localStorage on mount
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    document.documentElement.classList.toggle('light', savedTheme === 'light');
-  }, [setTheme]);
+export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
+  const { theme, toggleTheme } = useTheme();
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    document.documentElement.classList.toggle('light', newTheme === 'light');
-  };
+  if (variant === 'icon') {
+    return (
+      <Toggle
+        variant="ghost"
+        onClick={toggleTheme}
+        className="w-10 h-10 p-0"
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? (
+          <Sun className="h-5 w-5" />
+        ) : (
+          <Moon className="h-5 w-5" />
+        )}
+      </Toggle>
+    );
+  }
 
   return (
-    <div className="theme-toggle-wrapper">
-      <input
-        type="checkbox"
-        id="theme-toggle"
-        name="theme-toggle"
-        className="theme-toggle-switch"
-        checked={theme === 'light'}
-        onChange={toggleTheme}
-        aria-label="Toggle theme"
-      />
-      <label htmlFor="theme-toggle" className="sr-only">
-        Toggle theme
-      </label>
-    </div>
+    <Toggle
+      variant="outline"
+      onClick={toggleTheme}
+      className="flex items-center gap-2 px-4 py-2 w-full text-base"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? (
+        <>
+          <Sun className="h-5 w-5" />
+          <span>Light Mode</span>
+        </>
+      ) : (
+        <>
+          <Moon className="h-5 w-5" />
+          <span>Dark Mode</span>
+        </>
+      )}
+    </Toggle>
   );
 }
