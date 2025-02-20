@@ -252,8 +252,8 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-12 items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="container flex h-14 max-w-screen-2xl items-center px-4">
+        <div className="flex flex-1 items-center gap-4">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <div>
@@ -271,7 +271,7 @@ export default function Navigation() {
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center justify-end px-8">
           <ThemeToggle />
         </div>
       </div>
