@@ -221,6 +221,57 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// New tables for achievement system
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'reader' or 'writer'
+  condition: json("condition").notNull(), // {type: 'streak', days: 7} or {type: 'posts', count: 10}
+  badgeIcon: text("badge_icon"), // SVG or icon identifier
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  achievementId: integer("achievement_id").references(() => achievements.id).notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+  progress: json("progress").default({}).notNull(), // {current: 5, required: 7}
+}, (table) => ({
+  userAchievementUnique: unique().on(table.userId, table.achievementId)
+}));
+
+export const readingStreaks = pgTable("reading_streaks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
+  totalReads: integer("total_reads").default(0).notNull()
+});
+
+export const writerStreaks = pgTable("writer_streaks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastWriteAt: timestamp("last_write_at").defaultNow().notNull(),
+  totalPosts: integer("total_posts").default(0).notNull()
+});
+
+export const featuredAuthors = pgTable("featured_authors", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  monthYear: text("month_year").notNull(), // Format: 'YYYY-MM'
+  description: text("description").notNull(),
+  achievements: json("achievements").default([]).notNull(),
+  stats: json("stats").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  monthYearUnique: unique().on(table.monthYear)
+}));
+
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
@@ -343,6 +394,48 @@ export type SiteSetting = typeof siteSettings.$inferSelect;
 export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({ id: true, createdAt: true });
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+// Add new insert schemas and types
+export const insertAchievementSchema = createInsertSchema(achievements).omit({ 
+  id: true,
+  createdAt: true 
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({ 
+  id: true,
+  unlockedAt: true 
+});
+
+export const insertReadingStreakSchema = createInsertSchema(readingStreaks).omit({ 
+  id: true,
+  lastReadAt: true 
+});
+
+export const insertWriterStreakSchema = createInsertSchema(writerStreaks).omit({ 
+  id: true,
+  lastWriteAt: true 
+});
+
+export const insertFeaturedAuthorSchema = createInsertSchema(featuredAuthors).omit({ 
+  id: true,
+  createdAt: true 
+});
+
+// Export types
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
+
+export type ReadingStreak = typeof readingStreaks.$inferSelect;
+export type InsertReadingStreak = z.infer<typeof insertReadingStreakSchema>;
+
+export type WriterStreak = typeof writerStreaks.$inferSelect;
+export type InsertWriterStreak = z.infer<typeof insertWriterStreakSchema>;
+
+export type FeaturedAuthor = typeof featuredAuthors.$inferSelect;
+export type InsertFeaturedAuthor = z.infer<typeof insertFeaturedAuthorSchema>;
 
 export interface CommentMetadata {
   moderated?: boolean;

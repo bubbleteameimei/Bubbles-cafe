@@ -898,7 +898,7 @@ Timestamp: ${new Date().toLocaleString()}
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });    }
+      res.status(500).json({ message: "Failed to fetchadmin profile" });    }
   });
 
   // Add admin dashboard data endpoint
@@ -1002,6 +1002,84 @@ Timestamp: ${new Date().toLocaleString()}
 
   // Register moderation routes with authentication
   app.use("/api/moderation", isAuthenticated, moderationRouter);
+
+  // User statistics endpoint
+  app.get("/api/users/stats", isAuthenticated, async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userId = req.user.id;
+      console.log('[GET /api/users/stats] Fetching stats for user:', userId);
+
+      // Fetch all user-related data in parallel
+      const [
+        userAchievements,
+        readingStreak,
+        writerStreak,
+        featuredAuthor,
+        posts,
+        totalLikes
+      ] = await Promise.all([
+        storage.getUserAchievements(userId),
+        storage.getReadingStreak(userId),
+        storage.getWriterStreak(userId),
+        storage.getFeaturedAuthor(userId),
+        storage.getUserPosts(userId),
+        storage.getUserTotalLikes(userId)
+      ]);
+
+      // Get all available achievements for progress tracking
+      const allAchievements = await storage.getAllAchievements();
+
+      // Calculate achievement progress
+      const achievementsWithProgress = allAchievements.map(achievement => {
+        const userAchievement = userAchievements.find(ua => ua.achievementId === achievement.id);
+        return {
+          ...achievement,
+          unlocked: !!userAchievement,
+          unlockedAt: userAchievement?.unlockedAt || null,
+          progress: userAchievement?.progress || { current: 0, required: 0 }
+        };
+      });
+
+      console.log('[GET /api/users/stats] Stats compiled for user:', userId);
+
+      res.json({
+        achievements: achievementsWithProgress,
+        readingStreak: readingStreak || {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastReadAt: null,
+          totalReads: 0
+        },
+        writerStreak: writerStreak || {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastWriteAt: null,
+          totalPosts: 0
+        },
+        featured: featuredAuthor ? {
+          monthYear: featuredAuthor.monthYear,
+          description: featuredAuthor.description
+        } : null,
+        stats: {
+          totalPosts: posts.length,
+          totalLikes,
+          postsThisMonth: posts.filter(post => {
+            const postDate = new Date(post.createdAt);
+            const now = new Date();
+            return postDate.getMonth() === now.getMonth() && 
+                   postDate.getFullYear() === now.getFullYear();
+          }).length
+        }
+      });
+    } catch (error) {
+      console.error("[GET /api/users/stats] Error:", error);
+      res.status(500).json({ message: "Failed to fetch user statistics" });
+    }
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
