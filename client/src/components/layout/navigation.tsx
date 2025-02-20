@@ -252,21 +252,27 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-12 items-center">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <div className="mr-4 ml-4">
-              <LiquidMenuButton onClick={() => setIsOpen(!isOpen)} />
-              <span className="sr-only">Toggle menu</span>
-            </div>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0">
-            <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
-          </SheetContent>
-        </Sheet>
+      <div className="container flex h-12 items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <div>
+                <LiquidMenuButton onClick={() => setIsOpen(!isOpen)} />
+                <span className="sr-only">Toggle menu</span>
+              </div>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0">
+              <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
+            </SheetContent>
+          </Sheet>
 
-        <div className="hidden md:flex h-full">
-          <SidebarContent location={location} />
+          <div className="hidden md:flex h-full">
+            <SidebarContent location={location} />
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <ThemeToggle />
         </div>
       </div>
     </header>
