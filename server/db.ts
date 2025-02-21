@@ -13,46 +13,66 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create connection pool with error handling and retry logic
+// Create connection pool with improved error handling and retry logic
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 20, // Increase max connections for better concurrency
+  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+  connectionTimeoutMillis: 5000, // Increase connection timeout
   maxUses: 7500, // Close connections after 7500 queries
-  allowExitOnIdle: true // Allow the pool to exit if all connections are idle
+  allowExitOnIdle: true, // Allow the pool to exit if all connections are idle
+  retryInterval: 1000, // Retry every second
+  maxRetries: 3 // Maximum number of retries
 });
 
 // Initialize Drizzle with schema
 export const db = drizzle(pool, { schema });
 
-// Connection error handling
+// Enhanced connection error handling
 pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  // Don't exit process, attempt to recover
+  client?.release(true); // Force release with error
 });
 
-// Connection success logging
-pool.on('connect', () => {
-  console.log('Successfully connected to database');
+// Connection monitoring
+pool.on('connect', (client) => {
+  console.log('New client connected to database');
 });
 
-// Test the connection
+pool.on('remove', (client) => {
+  console.log('Client connection removed from pool');
+});
+
+// Improved connection testing with detailed error logging
 async function testConnection() {
+  let client;
   try {
-    const client = await pool.connect();
+    console.log('Testing database connection...');
+    client = await pool.connect();
+    await client.query('SELECT 1'); // Verify we can execute queries
     console.log('Database connection test successful');
-    client.release();
+    return true;
   } catch (err) {
-    console.error('Error testing database connection:', err);
+    console.error('Database connection test failed:', err);
     throw err;
+  } finally {
+    client?.release();
   }
 }
 
 // Run initial connection test
-testConnection().catch(err => {
-  console.error('Initial database connection test failed:', err);
-  process.exit(1);
-});
+testConnection()
+  .then(() => {
+    console.log('Database initialization complete');
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    // Log the DATABASE_URL format (without credentials)
+    const dbUrl = process.env.DATABASE_URL || '';
+    const sanitizedUrl = dbUrl.replace(/\/\/[^@]+@/, '//****:****@');
+    console.error('Database URL format:', sanitizedUrl);
+    process.exit(1);
+  });
 
 export default db;

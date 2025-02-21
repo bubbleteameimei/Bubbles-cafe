@@ -1,7 +1,9 @@
 {
   "Start application": {
     "command": "npm run dev",
-    "environment": {},
+    "environment": {
+      "NODE_ENV": "development"
+    },
     "wait_for_port": 3001,
     "persistent": true,
     "restart_on": [
@@ -9,7 +11,8 @@
       "package-lock.json",
       "client/src/**/*",
       "server/**/*",
-      "shared/**/*"
+      "shared/**/*",
+      "drizzle.config.ts"
     ]
   }
 }

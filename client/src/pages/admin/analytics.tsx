@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SiteAnalytics {
   totalViews: number;
@@ -40,7 +41,12 @@ export default function AdminAnalyticsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: analytics, isLoading: analyticsLoading } = useQuery<SiteAnalytics>({
+  // Redirect if not admin
+  if (!user?.isAdmin) {
+    return <Redirect to="/" />;
+  }
+
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery<SiteAnalytics>({
     queryKey: ["/api/admin/analytics"],
     queryFn: async () => {
       const response = await fetch('/api/admin/analytics');
@@ -76,13 +82,20 @@ export default function AdminAnalyticsPage() {
     }
   });
 
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
-
   if (analyticsLoading || notificationsLoading || logsLoading) {
     return <LoadingScreen />;
+  }
+
+  if (analyticsError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Failed to load analytics data. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
@@ -166,7 +179,7 @@ export default function AdminAnalyticsPage() {
         </Card>
       </div>
 
-      {/* New Notifications Section */}
+      {/* Notifications Section */}
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card>
           <CardHeader>
