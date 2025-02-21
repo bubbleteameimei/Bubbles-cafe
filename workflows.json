@@ -4,6 +4,12 @@
     "environment": {},
     "wait_for_port": 3001,
     "persistent": true,
-    "restart_on": ["package.json", "package-lock.json"]
+    "restart_on": [
+      "package.json",
+      "package-lock.json",
+      "client/src/**/*",
+      "server/**/*",
+      "shared/**/*"
+    ]
   }
 }

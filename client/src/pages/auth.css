@@ -1,3 +1,4 @@
+/* Dark, horror-themed auth page styling */
 .login-wrap {
   width: 100%;
   margin: auto;
@@ -13,7 +14,11 @@
   height: 100%;
   position: absolute;
   padding: 90px 70px 50px 70px;
-  background: hsl(var(--card));
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--card)) 0%,
+    hsl(var(--card) / 0.95) 100%
+  );
 }
 
 .login-html .sign-in-htm,
@@ -26,12 +31,6 @@
   transform: rotateY(180deg);
   backface-visibility: hidden;
   transition: all .4s linear;
-}
-
-.login-html .sign-in,
-.login-html .sign-up,
-.login-form .group .check {
-  display: none;
 }
 
 .login-html .tab {
@@ -48,12 +47,7 @@
 
 .login-html .tab:hover {
   color: hsl(var(--primary));
-}
-
-.login-html .sign-in:checked + .tab,
-.login-html .sign-up:checked + .tab {
-  color: hsl(var(--primary));
-  border-color: hsl(var(--primary));
+  text-shadow: 0 0 8px hsl(var(--primary) / 0.5);
 }
 
 .login-form {
@@ -67,35 +61,177 @@
   margin-bottom: 15px;
 }
 
-.login-form .group .label,
-.login-form .group .input,
-.login-form .group .button {
-  width: 100%;
-  display: block;
-}
-
 .login-form .group .input {
   border: 1px solid hsl(var(--border));
   padding: 15px 20px;
-  border-radius: 25px;
-  background: hsl(var(--background));
+  border-radius: 6px;
+  background: hsl(var(--background) / 0.1);
   color: hsl(var(--foreground));
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
 }
 
 .login-form .group .input:focus {
   outline: none;
   border-color: hsl(var(--primary));
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.2);
 }
 
-.login-form .group label .icon {
-  width: 15px;
-  height: 15px;
-  border-radius: 2px;
+/* Horror theme specific additions */
+.login-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(45deg, 
+      hsla(var(--destructive) / 0.1) 0%,
+      hsla(var(--card) / 0.2) 100%
+    );
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 10px;
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Error message animation */
+.group [role="alert"] {
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Form transition animations */
+.sign-in-htm,
+.sign-up-htm {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s ease-out;
+}
+
+.sign-in-htm.active,
+.sign-up-htm.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Loading state animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .login-html {
+    padding: 40px 20px;
+  }
+
+  .login-wrap {
+    margin: 20px;
+  }
+}
+
+/* Custom checkbox styling */
+.checkbox {
   position: relative;
-  display: inline-block;
-  background: rgba(255,255,255,.1);
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(var(--primary));
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.checkbox:checked {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: hsl(var(--primary-foreground));
+}
+
+/* Button hover effect */
+.button {
+  position: relative;
+  overflow: hidden;
+}
+
+.button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    hsl(var(--primary) / 0.2),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  from {
+    transform: rotate(45deg) translateX(-200%);
+  }
+  to {
+    transform: rotate(45deg) translateX(200%);
+  }
+}
+
+/* Preserving styles not redefined in edited code */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-wrap {
+  animation: fadeIn 0.5s ease-out;
+}
+
+
+.login-html .sign-in:checked + .tab,
+.login-html .sign-up:checked + .tab {
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
 }
 
 .login-html .sign-in:checked + .tab + .sign-up + .tab + .login-form .sign-in-htm {
@@ -117,36 +253,16 @@
   margin-top: 15px;
 }
 
-/* Animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.login-form .group .label,
+.login-form .group .input,
+.login-form .group .button {
+  width: 100%;
+  display: block;
 }
 
-.login-wrap {
-  animation: fadeIn 0.5s ease-out;
-}
 
-/* Horror theme specific additions */
-.login-wrap::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, 
-    hsla(var(--destructive) / 0.1) 0%,
-    hsla(var(--card) / 0.2) 100%
-  );
-  pointer-events: none;
-  z-index: 1;
+.login-form .group .check {
+  display: none;
 }
 
 .login-form::after {
@@ -165,19 +281,12 @@
   z-index: -1;
 }
 
-/* Responsive adjustments */
 @media (max-width: 640px) {
   .login-html {
     padding: 40px 20px;
   }
 }
 
-/* Preserving styles not redefined in edited code */
-@keyframes shine {
-  to {
-    left: 100%;
-  }
-}
 .button {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
@@ -247,4 +356,13 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
   animation: shine 2s infinite;
+}
+
+.login-html .sign-in,
+.login-html .sign-up {
+  display: none;
+}
+
+.login-form .group .check {
+  display: none;
 }

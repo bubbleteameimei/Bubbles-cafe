@@ -40,7 +40,8 @@ app.use(compression());
 
 // Security headers with updated CSP for development
 app.use(helmet({
-  contentSecurityPolicy: isDev ? false : undefined
+  contentSecurityPolicy: isDev ? false : undefined,
+  crossOriginEmbedderPolicy: false // Allow embedding resources from other origins in development
 }));
 
 // Rate limiter with adjusted settings for development
