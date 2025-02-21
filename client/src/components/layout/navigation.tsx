@@ -70,6 +70,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    console.log(`NavLink clicked: ${href}`); // Debug log
     onNavigate?.();
     setLocation(href);
   }, [href, onNavigate, setLocation]);
@@ -102,9 +103,15 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   onNavigate?: () => void;
   isMobile?: boolean;
 }) => {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [, setLocation] = useLocation();
+
+  const handleAuthClick = useCallback(() => {
+    console.log("Auth button clicked"); // Debug log
+    onNavigate?.();
+    setLocation("/auth");
+  }, [onNavigate, setLocation]);
 
   const sections = {
     library: [
@@ -209,10 +216,8 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
             variant="default"
             size="sm"
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
-            onClick={() => {
-              onNavigate?.();
-              setLocation("/auth");
-            }}
+            onClick={handleAuthClick}
+            data-tutorial="auth"
           >
             <User className="h-3 w-3 mr-1" />
             Sign In
@@ -223,7 +228,9 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
             size="sm"
             className="w-full text-xs"
             onClick={() => {
-              // Handle logout
+              if (logoutMutation) {
+                logoutMutation.mutate();
+              }
             }}
           >
             Sign Out
@@ -249,6 +256,14 @@ SidebarContent.displayName = "SidebarContent";
 export default function Navigation() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [, setLocation] = useLocation();
+  const { user } = useAuth();
+
+  const handleAuthClick = useCallback(() => {
+    console.log("Auth button clicked"); // Debug log
+    setIsOpen(false); // Close the mobile menu if open
+    setLocation("/auth");
+  }, [setLocation]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -271,8 +286,18 @@ export default function Navigation() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end px-8">
+        <div className="flex items-center justify-end space-x-4">
           <ThemeToggle />
+          {!user && (
+            <Button 
+              variant="default" 
+              onClick={handleAuthClick}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          )}
         </div>
       </div>
     </header>

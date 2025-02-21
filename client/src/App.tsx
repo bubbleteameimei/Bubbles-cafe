@@ -35,6 +35,7 @@ function App() {
               <main className="flex-grow">
                 <React.Suspense fallback={<LoadingScreen />}>
                   <Switch>
+                    <Route path="/auth" component={AuthPage} />
                     <Route path="/" component={HomePage} />
                     <Route path="/reader" component={ReaderPage} />
                     <Route path="/stories" component={StoriesPage} />
@@ -42,9 +43,13 @@ function App() {
                     <Route path="/about" component={AboutPage} />
                     <Route path="/contact" component={ContactPage} />
                     <Route path="/admin/dashboard" component={AdminDashboard} />
-                    <Route path="/auth" component={AuthPage} />
                     <Route path="/privacy" component={PrivacyPage} />
                     <Route path="/report-bug" component={ReportBugPage} />
+                    <Route path="/:rest*">
+                      <div className="flex items-center justify-center min-h-[60vh]">
+                        <h1 className="text-2xl">404 - Page Not Found</h1>
+                      </div>
+                    </Route>
                   </Switch>
                 </React.Suspense>
               </main>

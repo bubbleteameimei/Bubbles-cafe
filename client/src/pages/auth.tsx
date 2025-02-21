@@ -10,8 +10,8 @@ import {
   FormControl, 
   FormField, 
   FormItem, 
-  FormMessage,
   FormLabel,
+  FormMessage,
   FormDescription
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,8 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [isSignIn, setIsSignIn] = useState(true);
   const { toast } = useToast();
+
+  console.log("AuthPage rendered"); // Debug log
 
   // Redirect if already logged in
   if (user) {

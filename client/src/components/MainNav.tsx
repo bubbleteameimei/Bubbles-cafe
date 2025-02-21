@@ -13,10 +13,10 @@ import {
 
 export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const handleAuthClick = () => {
-    console.log('Navigating to auth page');
+    console.log('Navigating to auth page'); // Debug log
     setLocation("/auth");
   };
 

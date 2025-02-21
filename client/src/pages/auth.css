@@ -21,35 +21,6 @@
   );
 }
 
-.login-html .sign-in-htm,
-.login-html .sign-up-htm {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  position: absolute;
-  transform: rotateY(180deg);
-  backface-visibility: hidden;
-  transition: all .4s linear;
-}
-
-.login-html .tab {
-  font-size: 22px;
-  margin-right: 15px;
-  padding-bottom: 5px;
-  margin: 0 15px 10px 0;
-  display: inline-block;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  color: hsl(var(--muted-foreground));
-  transition: all 0.3s ease;
-}
-
-.login-html .tab:hover {
-  color: hsl(var(--primary));
-  text-shadow: 0 0 8px hsl(var(--primary) / 0.5);
-}
-
 .login-form {
   min-height: 345px;
   position: relative;
@@ -105,21 +76,6 @@
   }
 }
 
-/* Error message animation */
-.group [role="alert"] {
-  color: hsl(var(--destructive));
-  font-size: 0.875rem;
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-  transform: translate3d(0, 0, 0);
-}
-
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
 /* Form transition animations */
 .sign-in-htm,
 .sign-up-htm {
@@ -142,41 +98,6 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-/* Responsive design */
-@media (max-width: 640px) {
-  .login-html {
-    padding: 40px 20px;
-  }
-
-  .login-wrap {
-    margin: 20px;
-  }
-}
-
-/* Custom checkbox styling */
-.checkbox {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  border: 2px solid hsl(var(--primary));
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.checkbox:checked {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-}
-
-.checkbox:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: hsl(var(--primary-foreground));
 }
 
 /* Button hover effect */
@@ -260,10 +181,6 @@
   display: block;
 }
 
-
-.login-form .group .check {
-  display: none;
-}
 
 .login-form::after {
   content: '';
