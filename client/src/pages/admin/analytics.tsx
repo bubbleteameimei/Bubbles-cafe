@@ -1,9 +1,13 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Redirect } from "wouter";
-import { TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp, Bell, Activity } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { apiRequest } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 
 interface SiteAnalytics {
   totalViews: number;
@@ -17,9 +21,26 @@ interface SiteAnalytics {
   };
 }
 
+interface Notification {
+  id: number;
+  message: string;
+  createdAt: string;
+  type: 'info' | 'warning' | 'error';
+}
+
+interface ActivityLog {
+  id: number;
+  action: string;
+  performedBy: string;
+  timestamp: string;
+  details?: string;
+}
+
 export default function AdminAnalyticsPage() {
   const { user } = useAuth();
-  const { data: analytics, isLoading } = useQuery<SiteAnalytics>({
+  const queryClient = useQueryClient();
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<SiteAnalytics>({
     queryKey: ["/api/admin/analytics"],
     queryFn: async () => {
       const response = await fetch('/api/admin/analytics');
@@ -28,12 +49,39 @@ export default function AdminAnalyticsPage() {
     }
   });
 
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery<Notification[]>({
+    queryKey: ["/api/admin/notifications"],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/notifications');
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return response.json();
+    }
+  });
+
+  const { data: activityLogs = [], isLoading: logsLoading } = useQuery<ActivityLog[]>({
+    queryKey: ["/api/admin/activity"],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/activity');
+      if (!response.ok) throw new Error('Failed to fetch activity logs');
+      return response.json();
+    }
+  });
+
+  const markAsRead = useMutation({
+    mutationFn: async (notificationId: number) => {
+      await apiRequest('POST', `/api/admin/notifications/${notificationId}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+    }
+  });
+
   // Redirect if not admin
   if (!user?.isAdmin) {
     return <Redirect to="/" />;
   }
 
-  if (isLoading) {
+  if (analyticsLoading || notificationsLoading || logsLoading) {
     return <LoadingScreen />;
   }
 
@@ -43,7 +91,7 @@ export default function AdminAnalyticsPage() {
         <h1 className="text-4xl font-bold">Analytics Dashboard</h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Views</CardTitle>
@@ -114,6 +162,82 @@ export default function AdminAnalyticsPage() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* New Notifications Section */}
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Notifications</CardTitle>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>Recent system notifications and alerts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px] w-full">
+              {notifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No new notifications</p>
+              ) : (
+                <div className="space-y-4">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="flex items-start justify-between gap-4 p-2 rounded-lg bg-muted/50">
+                      <div>
+                        <p className="text-sm">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(notification.createdAt), 'MMM dd, yyyy HH:mm')}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => markAsRead.mutate(notification.id)}
+                        disabled={markAsRead.isPending}
+                      >
+                        Mark as read
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Activity Logs Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Activity Log</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>Recent admin activities and actions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px] w-full">
+              {activityLogs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No activity logs found</p>
+              ) : (
+                <div className="space-y-4">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="p-2 rounded-lg bg-muted/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium">{log.action}</p>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.timestamp), 'MMM dd, HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">By: {log.performedBy}</p>
+                      {log.details && (
+                        <p className="text-xs mt-1 text-muted-foreground">{log.details}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
