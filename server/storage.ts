@@ -53,7 +53,6 @@ import {
   readingStreaks,
   writerStreaks,
   featuredAuthors
-
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
@@ -171,6 +170,8 @@ export interface IStorage {
     tablet: number;
   }>;
   sessionStore: session.Store;
+
+  // Add achievement methods to IStorage interface
   getAllAchievements(): Promise<Achievement[]>;
   getUserAchievements(userId: number): Promise<UserAchievement[]>;
   getReadingStreak(userId: number): Promise<ReadingStreak | undefined>;
@@ -938,7 +939,7 @@ export class DatabaseStorage implements IStorage {
   // Content Protection Implementation
   async addContentProtection(protection: InsertContentProtection): Promise<ContentProtection> {
     const [newProtection] = await db.insert(contentProtection)
-      .values({ ...protection, createdAt: new Date() })
+      .values({ ...protection, createdAt: new Date()})
       .returning();
     return newProtection;
   }
@@ -1257,7 +1258,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserAchievements(userId: number): Promise<UserAchievement[]> {
     try {
-      console.log('[Storage] Fetching achievements for user:', userId);
+      console.log(`[Storage] Fetching achievements for user: ${userId}`);
       const userAchievementList = await db.select()
         .from(userAchievements)
         .where(eq(userAchievements.userId, userId))
@@ -1271,7 +1272,7 @@ export class DatabaseStorage implements IStorage {
 
   async getReadingStreak(userId: number): Promise<ReadingStreak | undefined> {
     try {
-      console.log('[Storage] Fetching reading streak for user:', userId);
+      console.log(`[Storage] Fetching reading streak for user: ${userId}`);
       const [streak] = await db.select()
         .from(readingStreaks)
         .where(eq(readingStreaks.userId, userId))
@@ -1285,7 +1286,7 @@ export class DatabaseStorage implements IStorage {
 
   async getWriterStreak(userId: number): Promise<WriterStreak | undefined> {
     try {
-      console.log('[Storage] Fetching writer streak for user:', userId);
+      console.log(`[Storage] Fetching writer streak for user: ${userId}`);
       const [streak] = await db.select()
         .from(writerStreaks)
         .where(eq(writerStreaks.userId, userId))
@@ -1299,26 +1300,33 @@ export class DatabaseStorage implements IStorage {
 
   async getFeaturedAuthor(userId: number): Promise<FeaturedAuthor | undefined> {
     try {
-      console.log('[Storage] Checking featured author status for user:', userId);
+      console.log(`[Storage] Checking featured author status for user: ${userId}`);
+      const currentDate = new Date();
+      const monthYear = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
       const [featured] = await db.select()
         .from(featuredAuthors)
-        .where(eq(featuredAuthors.userId, userId))
-        .orderBy(desc(featuredAuthors.monthYear))
+        .where(and(
+          eq(featuredAuthors.userId, userId),
+          eq(featuredAuthors.monthYear, monthYear)
+        ))
         .limit(1);
+
       return featured;
     } catch (error) {
-      console.error('[Storage] Error fetching featured author status:', error);
+      console.error('[Storage] Error fetching featured author:', error);
       throw error;
     }
   }
 
   async getUserPosts(userId: number): Promise<Post[]> {
     try {
-      console.log('[Storage] Fetching posts for user:', userId);
+      console.log(`[Storage] Fetching posts for user: ${userId}`);
       const posts = await db.select()
         .from(postsTable)
         .where(eq(postsTable.authorId, userId))
         .orderBy(desc(postsTable.createdAt));
+
       return posts;
     } catch (error) {
       console.error('[Storage] Error fetching user posts:', error);
@@ -1328,9 +1336,9 @@ export class DatabaseStorage implements IStorage {
 
   async getUserTotalLikes(userId: number): Promise<number> {
     try {
-      console.log('[Storage] Calculating total likes for user:', userId);
+      console.log(`[Storage] Calculating total likes for user: ${userId}`);
       const [result] = await db.select({
-        total: sql<string>`count(*)`
+        totalLikes: sql<number>`COUNT(*)`
       })
         .from(postLikes)
         .innerJoin(postsTable, eq(postLikes.postId, postsTable.id))
@@ -1339,7 +1347,7 @@ export class DatabaseStorage implements IStorage {
           eq(postLikes.isLike, true)
         ));
 
-      return Number(result?.total || 0);
+      return result?.totalLikes || 0;
     } catch (error) {
       console.error('[Storage] Error calculating user total likes:', error);
       throw error;
