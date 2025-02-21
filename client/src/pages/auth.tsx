@@ -10,17 +10,22 @@ import {
   FormControl, 
   FormField, 
   FormItem, 
-  FormMessage 
+  FormMessage,
+  FormLabel,
+  FormDescription
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 // Define schemas that match the backend expectations
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  rememberMe: z.boolean().default(false)
 });
 
 const registerSchema = z.object({
@@ -51,6 +56,7 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false
     },
   });
 
@@ -152,6 +158,7 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Email</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
@@ -169,6 +176,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Password</FormLabel>
                           <FormControl>
                             <Input
                               type="password"
@@ -181,13 +189,43 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={loginForm.control}
+                      name="rememberMe"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="bg-white/10 border-white/20"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-foreground">
+                              Remember me
+                            </FormLabel>
+                            <FormDescription className="text-muted-foreground">
+                              Stay signed in on this device
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
                     <div className="group">
                       <Button
                         type="submit"
                         className="w-full"
                         disabled={loginMutation.isPending}
                       >
-                        {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                        {loginMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Signing in...
+                          </>
+                        ) : (
+                          "Sign In"
+                        )}
                       </Button>
                     </div>
                     <div className="h-[2px] bg-white/20 my-8" />
@@ -208,6 +246,7 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Username</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="Username"
@@ -224,6 +263,7 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Email</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
@@ -241,6 +281,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Password</FormLabel>
                           <FormControl>
                             <Input
                               type="password"
@@ -258,6 +299,7 @@ export default function AuthPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem className="group">
+                          <FormLabel className="text-foreground">Confirm Password</FormLabel>
                           <FormControl>
                             <Input
                               type="password"
@@ -276,7 +318,14 @@ export default function AuthPage() {
                         className="w-full"
                         disabled={registerMutation.isPending}
                       >
-                        {registerMutation.isPending ? "Creating account..." : "Sign Up"}
+                        {registerMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          "Sign Up"
+                        )}
                       </Button>
                     </div>
                   </form>
