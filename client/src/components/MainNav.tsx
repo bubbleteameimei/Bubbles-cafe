@@ -1,7 +1,16 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, HelpCircle, AlertTriangle, Building, Mail, Lock } from "lucide-react";
+import { 
+  Loader2, 
+  ChevronDown, 
+  HelpCircle, 
+  AlertTriangle, 
+  Building, 
+  Mail, 
+  Lock,
+  User 
+} from "lucide-react";
 import { AdminNav } from "./AdminNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
@@ -13,7 +22,7 @@ import {
 
 export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
   const handleAuthClick = () => {
     console.log('Navigating to auth page'); // Debug log
@@ -30,11 +39,6 @@ export default function MainNav() {
             </a>
           </Link>
           <nav className="flex items-center space-x-6 text-sm md:text-base">
-            <Link href="/community">
-              <a className="font-medium transition-colors hover:text-foreground/80">
-                Community
-              </a>
-            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-1 font-medium">
@@ -74,16 +78,11 @@ export default function MainNav() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
+          <ThemeToggle />
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : user ? (
             <>
-              <Link href="/profile">
-                <a className="text-base font-medium transition-colors hover:text-foreground/80">
-                  Profile
-                </a>
-              </Link>
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -93,7 +92,7 @@ export default function MainNav() {
               >
                 {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
               </Button>
-              <AdminNav />
+              {user.isAdmin && <AdminNav />}
             </>
           ) : (
             <Button 
@@ -102,6 +101,7 @@ export default function MainNav() {
               onClick={handleAuthClick}
               className="bg-primary text-primary-foreground hover:bg-primary/90 text-base"
             >
+              <User className="h-4 w-4 mr-2" />
               Sign In
             </Button>
           )}

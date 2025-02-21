@@ -11,6 +11,7 @@ import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { TutorialProvider } from '@/hooks/use-tutorial';
 import { TutorialTooltip } from '@/components/ui/tutorial-tooltip';
+import { ProtectedRoute } from '@/lib/protected-route';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
@@ -35,16 +36,27 @@ function App() {
               <main className="flex-grow">
                 <React.Suspense fallback={<LoadingScreen />}>
                   <Switch>
+                    {/* Public Routes */}
                     <Route path="/auth" component={AuthPage} />
-                    <Route path="/" component={HomePage} />
-                    <Route path="/reader" component={ReaderPage} />
-                    <Route path="/stories" component={StoriesPage} />
-                    <Route path="/index" component={IndexPage} />
                     <Route path="/about" component={AboutPage} />
-                    <Route path="/contact" component={ContactPage} />
-                    <Route path="/admin/dashboard" component={AdminDashboard} />
                     <Route path="/privacy" component={PrivacyPage} />
-                    <Route path="/report-bug" component={ReportBugPage} />
+                    <Route path="/contact" component={ContactPage} />
+
+                    {/* Protected Routes */}
+                    <ProtectedRoute path="/" component={HomePage} />
+                    <ProtectedRoute path="/reader" component={ReaderPage} />
+                    <ProtectedRoute path="/stories" component={StoriesPage} />
+                    <ProtectedRoute path="/index" component={IndexPage} />
+                    <ProtectedRoute path="/report-bug" component={ReportBugPage} />
+
+                    {/* Admin Routes */}
+                    <ProtectedRoute 
+                      path="/admin/dashboard" 
+                      component={AdminDashboard} 
+                      requireAdmin={true} 
+                    />
+
+                    {/* 404 Route */}
                     <Route path="/:rest*">
                       <div className="flex items-center justify-center min-h-[60vh]">
                         <h1 className="text-2xl">404 - Page Not Found</h1>

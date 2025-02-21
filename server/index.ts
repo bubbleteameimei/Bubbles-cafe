@@ -128,12 +128,14 @@ async function startServer() {
       server.listen(PORT, "0.0.0.0", () => {
         enhancedLog(`Server running at http://0.0.0.0:${PORT}`, 'info');
 
-        // Explicitly notify about port readiness
-        process.send?.({
-          port: PORT,
-          wait_for_port: true,
-          ready: true
-        });
+        // Send port readiness signal
+        if (process.send) {
+          process.send({
+            port: PORT,
+            wait_for_port: true,
+            ready: true
+          });
+        }
 
         resolve();
       });

@@ -901,8 +901,8 @@ Timestamp: ${new Date().toLocaleString()}
       res.status(500).json({ message: "Failed to fetchadmin profile" });    }
   });
 
-  // Add admin dashboard data endpoint
-  app.get("/apiadmin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
+  // Fix the typo in the admin dashboard route
+  app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
@@ -924,6 +924,8 @@ Timestamp: ${new Date().toLocaleString()}
       res.status(500).json({ message: "Failed to fetch admin dashboard data" });
     }
   });
+
+  // Add admin dashboard data endpoint
 
   //New admin routes
   app.get("/api/admin/analytics", isAuthenticated, async (req: Request, res: Response) => {
