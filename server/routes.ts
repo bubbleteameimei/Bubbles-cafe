@@ -638,16 +638,19 @@ Timestamp: ${new Date().toLocaleString()}
         });
       }
 
-      // Create the comment with simplified data
+      // Create the comment with properly typed metadata
       const comment = await storage.createComment({
         postId,
         content: content.trim(),
-        author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
-        authorId: req.user?.id || null, // Allow null for anonymous users
+        userId: req.user?.id || null, // Allow null for anonymous users
         approved: true, // Auto-approve comments
         metadata: {
+          author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
           moderated: false,
-          isAnonymous: !req.user?.id
+          isAnonymous: !req.user?.id,
+          upvotes: 0,
+          downvotes: 0,
+          replyCount: 0
         }
       });
 
@@ -859,36 +862,38 @@ Timestamp: ${new Date().toLocaleString()}
 
   // Add these routes after existing routes
 
+  // Fix the admin profile route
   app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
 
-      // Get admin user details      const adminUser = await storage.getUser(req.user.id);
-      if (!adminUser) {
+      // Get admin user details from storage
+      const adminData = await storage.getUser(req.user.id);
+      if (!adminData) {
         return res.status(404).json({ message: "Admin user not found" });
       }
 
       // Remove sensitive information
-      const { password_hash, ...safeAdminUser } = adminUser;
+      const { password_hash, ...safeAdminData } = adminData;
 
       res.json({
-        ...safeAdminUser,
+        ...safeAdminData,
         role: 'admin',
         permissions: ['manage_posts', 'manage_users', 'manage_comments']
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetchadmin profile" });
+      res.status(500).json({ message: "Failed to fetch admin profile" });
     }
   });
 
-  // Fix the typo in the admin dashboard route
+  // Fix the admin dashboard route
   app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: ""Access denied: Admin privileges required" });
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
       const [posts, comments, users] = await Promise.all([
         storage.getPosts(1, 5),

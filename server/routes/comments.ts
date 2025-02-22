@@ -21,10 +21,18 @@ router.get('/:postId', async (req, res) => {
         sortedComments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         break;
       case 'most_voted':
-        sortedComments.sort((a, b) => ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0)));
+        // Use vote counts from metadata
+        sortedComments.sort((a, b) => {
+          const aVotes = (a.metadata?.upvotes || 0) - (a.metadata?.downvotes || 0);
+          const bVotes = (b.metadata?.upvotes || 0) - (b.metadata?.downvotes || 0);
+          return bVotes - aVotes;
+        });
         break;
       case 'most_discussed':
-        sortedComments.sort((a, b) => (b.replies?.length || 0) - (a.replies?.length || 0));
+        // Use replies count from metadata
+        sortedComments.sort((a, b) =>
+          (b.metadata?.replyCount || 0) - (a.metadata?.replyCount || 0)
+        );
         break;
       default: // newest
         sortedComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -42,23 +50,33 @@ router.post('/:postId', async (req, res) => {
   try {
     const schema = z.object({
       content: z.string().min(3).max(2000),
-      author: z.string().min(2).max(50)
+      author: z.string().optional().default('Anonymous')
     });
 
     const { content, author } = schema.parse(req.body);
     const postId = parseInt(req.params.postId);
 
-    // Create comment with anonymous userId
+    if (isNaN(postId)) {
+      return res.status(400).json({ error: 'Invalid post ID' });
+    }
+
+    // Create comment with metadata
     const newComment = await storage.createComment({
       postId,
       content,
-      userId: 0, // Use 0 for anonymous users
+      userId: req.user?.id || null, // Allow null for anonymous users
+      approved: true, // Auto-approve comments for now
       metadata: {
-        author // Store author name in metadata
-      },
-      approved: true // Auto-approve comments for now
+        author: author || 'Anonymous',
+        isAnonymous: !req.user?.id,
+        moderated: false,
+        upvotes: 0,
+        downvotes: 0,
+        replyCount: 0
+      }
     });
 
+    console.log('Created new comment:', newComment);
     res.status(201).json(newComment);
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -85,16 +103,19 @@ router.patch('/:commentId', async (req, res) => {
     const { content } = schema.parse(req.body);
     const commentId = parseInt(req.params.commentId);
 
-    const comment = await storage.getComments(commentId);
+    const comment = await storage.getComment(commentId);
     if (!comment) {
       return res.status(404).json({ error: 'Comment not found' });
     }
 
-    const updatedComment = await storage.updateComment({
-      id: commentId,
+    const updatedComment = await storage.updateComment(commentId, {
       content,
       edited: true,
-      editedAt: new Date()
+      editedAt: new Date(),
+      metadata: {
+        ...comment.metadata,
+        moderated: false
+      }
     });
 
     res.json(updatedComment);

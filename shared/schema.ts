@@ -48,7 +48,7 @@ export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id), // Make userId optional
   approved: boolean("approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
@@ -462,6 +462,7 @@ export type InsertWriterStreak = z.infer<typeof insertWriterStreakSchema>;
 export type FeaturedAuthor = typeof featuredAuthors.$inferSelect;
 export type InsertFeaturedAuthor = z.infer<typeof insertFeaturedAuthorSchema>;
 
+// Update CommentMetadata interface
 export interface CommentMetadata {
   moderated?: boolean;
   originalContent?: string;
@@ -469,4 +470,9 @@ export interface CommentMetadata {
     content: string;
     editedAt: string;
   }>;
+  isAnonymous?: boolean;
+  author?: string;
+  upvotes?: number;
+  downvotes?: number;
+  replyCount?: number;
 }

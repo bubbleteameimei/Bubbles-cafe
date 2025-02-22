@@ -567,17 +567,26 @@ export class DatabaseStorage implements IStorage {
 
   async createComment(comment: InsertComment): Promise<Comment> {
     try {
-      console.log('[Storage] Creating new comment');
+      console.log('[Storage] Creating new comment:', {
+        postId: comment.postId,
+        isAnonymous: !comment.userId
+      });
+
       const [newComment] = await db.insert(comments)
         .values({
           content: comment.content,
           postId: comment.postId,
-          userId: comment.userId,
-          approved: comment.approved,
+          userId: comment.userId || null, // Handle anonymous comments
+          approved: true, // Auto-approve comments
+          metadata: {
+            ...comment.metadata,
+            isAnonymous: !comment.userId
+          },
           createdAt: new Date()
         })
         .returning();
 
+      console.log('[Storage] Comment created successfully:', newComment.id);
       return {
         ...newComment,
         createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)

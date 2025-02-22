@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Settings, User, Bug, X, Menu, Book, type Icon } from "lucide-react";
+import { ChevronDown, Settings, User, Bug, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,9 +14,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Slider } from "@/components/ui/slider";
 
-const DropdownSection = memo(({ title, items, isOpen: propIsOpen, onToggle, location, onNavigate }: {
+const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
   items: { href: string; label: string; icon?: React.ReactNode }[];
   isOpen: boolean;
@@ -24,18 +23,11 @@ const DropdownSection = memo(({ title, items, isOpen: propIsOpen, onToggle, loca
   location: string;
   onNavigate?: () => void;
 }) => {
-  const [isOpen, setIsOpen] = useState(propIsOpen);
-
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-    onToggle();
-  };
-
   return (
-    <Collapsible open={isOpen} onOpenChange={handleToggle}>
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
       <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-base font-medium transition-colors hover:text-primary group">
         <span className="flex items-center gap-1">
-          {title === 'Support & Legal' && <Book className="h-4 w-4" />}
+          {title === 'Support & Legal' && <Bug className="h-4 w-4" />}
           {title === 'Settings' && <Settings className="h-4 w-4" />}
           {title}
         </span>
@@ -107,6 +99,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   const { user, logoutMutation } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const sections = {
     support: [
@@ -247,7 +240,7 @@ SidebarContent.displayName = "SidebarContent";
 
 const MenuIcon = () => (
   <div className="relative w-6 h-6">
-    <Menu className="w-6 h-6 transition-all hover:scale-110 text-primary" />
+    <PanelLeftOpen className="w-6 h-6 transition-all hover:scale-110 text-primary" />
   </div>
 );
 
@@ -268,7 +261,12 @@ export default function Navigation() {
         <div className="flex flex-1 items-center gap-4">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="hover:bg-transparent">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-transparent"
+                title="Toggle navigation menu"
+              >
                 <MenuIcon />
                 <span className="sr-only">Toggle menu</span>
               </Button>
