@@ -43,16 +43,54 @@ export const authorStats = pgTable("author_stats", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Rest of the tables remain unchanged
+// Update comments table with new fields
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   postId: integer("post_id").references(() => posts.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   approved: boolean("approved").default(false).notNull(),
+  edited: boolean("edited").default(false).notNull(),
+  editedAt: timestamp("edited_at"),
   metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
+
+// Add comment reactions table
+export const commentReactions = pgTable("comment_reactions", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: text("user_id").notNull(),
+  emoji: text("emoji").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userReactionUnique: unique().on(table.commentId, table.userId, table.emoji)
+}));
+
+// Update comment votes table
+export const commentVotes = pgTable("comment_votes", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: text("user_id").notNull(),
+  isUpvote: boolean("is_upvote").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userVoteUnique: unique().on(table.commentId, table.userId)
+}));
+
+// Comment replies table remains unchanged
+export const commentReplies = pgTable("comment_replies", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  approved: boolean("approved").default(false).notNull(),
+  edited: boolean("edited").default(false).notNull(),
+  editedAt: timestamp("edited_at"),
+  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 
 // Reading Progress
 export const readingProgress = pgTable("reading_progress", {
@@ -97,26 +135,6 @@ export const postLikes = pgTable("post_likes", {
   postId: integer("post_id").references(() => posts.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   isLike: boolean("is_like").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
-
-// Comment Votes
-export const commentVotes = pgTable("comment_votes", {
-  id: serial("id").primaryKey(),
-  commentId: integer("comment_id").references(() => comments.id).notNull(),
-  userId: text("user_id").notNull(),
-  isUpvote: boolean("is_upvote").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
-
-// Comment Replies
-export const commentReplies = pgTable("comment_replies", {
-  id: serial("id").primaryKey(),
-  commentId: integer("comment_id").references(() => comments.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  approved: boolean("approved").default(false).notNull(),
-  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -328,9 +346,17 @@ export type PostMetadata = {
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
 
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, edited: true, editedAt: true });
+export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({ id: true, createdAt: true });
+export const insertCommentVoteSchema = createInsertSchema(commentVotes).omit({ id: true, createdAt: true });
+
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+export type CommentReaction = typeof commentReactions.$inferSelect;
+export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
+export type CommentVote = typeof commentVotes.$inferSelect;
+export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
+
 
 export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
 export type InsertProgress = z.infer<typeof insertProgressSchema>;
@@ -349,9 +375,8 @@ export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
 
 export type PostLike = typeof postLikes.$inferSelect;
-export type CommentVote = typeof commentVotes.$inferSelect;
 
-export const insertCommentReplySchema = createInsertSchema(commentReplies).omit({ id: true, createdAt: true });
+export const insertCommentReplySchema = createInsertSchema(commentReplies).omit({ id: true, createdAt: true, edited: true, editedAt: true });
 export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
 export type CommentReply = typeof commentReplies.$inferSelect;
 
@@ -440,4 +465,8 @@ export type InsertFeaturedAuthor = z.infer<typeof insertFeaturedAuthorSchema>;
 export interface CommentMetadata {
   moderated?: boolean;
   originalContent?: string;
+  editHistory?: Array<{
+    content: string;
+    editedAt: string;
+  }>;
 }
