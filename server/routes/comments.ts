@@ -223,25 +223,29 @@ router.post('/:commentId/replies', async (req, res) => {
 
     const { content, author } = schema.parse(req.body);
     const commentId = parseInt(req.params.commentId);
-    const userId = req.user?.id;
+
+    // Check if parent comment exists
+    const parentComment = await storage.getComment(commentId);
+    if (!parentComment) {
+      return res.status(404).json({ error: 'Parent comment not found' });
+    }
 
     const newReply = await storage.createCommentReply({
       commentId,
       content,
-      userId: userId || 0,
+      userId: req.user?.id || null, // Use null for anonymous users
       approved: true,
       metadata: {
+        author: author || 'Anonymous',
+        isAnonymous: !req.user?.id,
         moderated: false,
         originalContent: content,
-        isAnonymous: !userId,
-        author: author || 'Anonymous',
         upvotes: 0,
         downvotes: 0
       }
     });
 
     // Update the parent comment's reply count
-    const parentComment = await storage.getComment(commentId);
     if (parentComment) {
       await storage.updateComment(commentId, {
         metadata: {

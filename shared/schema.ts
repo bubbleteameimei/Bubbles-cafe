@@ -78,19 +78,16 @@ export const commentVotes = pgTable("comment_votes", {
   userVoteUnique: unique().on(table.commentId, table.userId)
 }));
 
-// Comment replies table remains unchanged
+// Comment replies table with nullable userId
 export const commentReplies = pgTable("comment_replies", {
   id: serial("id").primaryKey(),
   commentId: integer("comment_id").references(() => comments.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id), // Make nullable
   content: text("content").notNull(),
   approved: boolean("approved").default(false).notNull(),
-  edited: boolean("edited").default(false).notNull(),
-  editedAt: timestamp("edited_at"),
   metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
-
 
 // Reading Progress
 export const readingProgress = pgTable("reading_progress", {
@@ -376,7 +373,21 @@ export type Session = typeof sessions.$inferSelect;
 
 export type PostLike = typeof postLikes.$inferSelect;
 
-export const insertCommentReplySchema = createInsertSchema(commentReplies).omit({ id: true, createdAt: true, edited: true, editedAt: true });
+// Update the insert schema for comment replies to match
+export const insertCommentReplySchema = createInsertSchema(commentReplies)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    userId: z.number().nullable(),
+    metadata: z.object({
+      author: z.string(),
+      isAnonymous: z.boolean().default(true),
+      moderated: z.boolean().default(false),
+      originalContent: z.string().optional(),
+      upvotes: z.number().default(0),
+      downvotes: z.number().default(0)
+    }).optional()
+  });
+
 export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
 export type CommentReply = typeof commentReplies.$inferSelect;
 
