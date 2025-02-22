@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Settings, User, Bug, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, Settings, User, Scale, Book, PanelLeftOpen, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,8 +27,8 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
     <Collapsible open={isOpen} onOpenChange={onToggle}>
       <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-base font-medium transition-colors hover:text-primary group">
         <span className="flex items-center gap-1">
-          {title === 'Support & Legal' && <Bug className="h-4 w-4" />}
-          {title === 'Settings' && <Settings className="h-4 w-4" />}
+          {title === 'Support & Legal' && <Book className="h-4 w-4" />}
+          {title === 'Settings & Accessibility' && <Settings className="h-4 w-4" />}
           {title}
         </span>
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -108,7 +108,11 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
       { href: '/privacy', label: 'Privacy Policy' },
     ],
     settings: [
-      { href: '/accessibility', label: 'Accessibility' },
+      { href: '/settings/theme', label: 'Dark Mode' },
+      { href: '/settings/font', label: 'Font Size' },
+      { href: '/settings/reading', label: 'Reading Mode' },
+      { href: '/settings/offline', label: 'Offline Mode' },
+      { href: '/accessibility', label: 'Accessibility Options' },
     ],
   };
 
@@ -174,7 +178,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
 
         <div className="mt-auto pt-4 space-y-4">
           <DropdownSection
-            title="Settings"
+            title="Settings & Accessibility"
             items={sections.settings}
             isOpen={settingsOpen}
             onToggle={() => setSettingsOpen(!settingsOpen)}
@@ -249,6 +253,23 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+
+  const sections = {
+    settings: [
+      { href: '/settings/theme', label: 'Dark Mode' },
+      { href: '/settings/font', label: 'Font Size' },
+      { href: '/settings/reading', label: 'Reading Mode' },
+      { href: '/settings/offline', label: 'Offline Mode' },
+      { href: '/accessibility', label: 'Accessibility Options' },
+    ],
+    support: [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+      { href: '/privacy', label: 'Privacy Policy' },
+    ],
+  };
 
   const handleAuthClick = useCallback(() => {
     setIsOpen(false);
@@ -261,9 +282,9 @@ export default function Navigation() {
         <div className="flex flex-1 items-center gap-4">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="hover:bg-transparent"
                 title="Toggle navigation menu"
               >
@@ -277,7 +298,24 @@ export default function Navigation() {
           </Sheet>
 
           <div className="hidden md:flex h-full">
-            <SidebarContent location={location} />
+            <nav className="flex items-center space-x-6">
+              <DropdownSection
+                title="Settings & Accessibility"
+                items={sections.settings}
+                isOpen={settingsOpen}
+                onToggle={() => setSettingsOpen(!settingsOpen)}
+                location={location}
+                onNavigate={() => setIsOpen(false)}
+              />
+              <DropdownSection
+                title="Support & Legal"
+                items={sections.support}
+                isOpen={supportOpen}
+                onToggle={() => setSupportOpen(!supportOpen)}
+                location={location}
+                onNavigate={() => setIsOpen(false)}
+              />
+            </nav>
           </div>
         </div>
 

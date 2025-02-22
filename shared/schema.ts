@@ -78,11 +78,11 @@ export const commentVotes = pgTable("comment_votes", {
   userVoteUnique: unique().on(table.commentId, table.userId)
 }));
 
-// Comment replies table with nullable userId
+// Update comment replies table schema
 export const commentReplies = pgTable("comment_replies", {
   id: serial("id").primaryKey(),
   commentId: integer("comment_id").references(() => comments.id).notNull(),
-  userId: integer("user_id").references(() => users.id), // Make nullable
+  userId: integer("user_id").references(() => users.id), // Nullable for anonymous users
   content: text("content").notNull(),
   approved: boolean("approved").default(false).notNull(),
   metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
@@ -373,7 +373,7 @@ export type Session = typeof sessions.$inferSelect;
 
 export type PostLike = typeof postLikes.$inferSelect;
 
-// Update the insert schema for comment replies to match
+// Update the insert schema for comment replies
 export const insertCommentReplySchema = createInsertSchema(commentReplies)
   .omit({ id: true, createdAt: true })
   .extend({
@@ -382,10 +382,10 @@ export const insertCommentReplySchema = createInsertSchema(commentReplies)
       author: z.string(),
       isAnonymous: z.boolean().default(true),
       moderated: z.boolean().default(false),
-      originalContent: z.string().optional(),
+      originalContent: z.string(),
       upvotes: z.number().default(0),
       downvotes: z.number().default(0)
-    }).optional()
+    })
   });
 
 export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;

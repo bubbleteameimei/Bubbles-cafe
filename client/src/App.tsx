@@ -21,6 +21,7 @@ const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
 const PrivacyPage = React.lazy(() => import('@/pages/privacy'));
 const ReportBugPage = React.lazy(() => import('@/pages/report-bug'));
 const CommunityPage = React.lazy(() => import('@/pages/community'));
+const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage'));
 
 function App() {
   return (
@@ -43,6 +44,10 @@ function App() {
                   <Route path="/community" component={CommunityPage} />
                   <Route path="/report-bug" component={ReportBugPage} />
                   <Route path="/admin/dashboard" component={AdminDashboard} />
+
+                  {/* Settings Routes */}
+                  <Route path="/settings" component={SettingsPage} />
+                  <Route path="/settings/:section" component={SettingsPage} />
 
                   {/* 404 Route */}
                   <Route path="/:rest*">
