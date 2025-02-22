@@ -47,19 +47,30 @@ router.post('/:postId', async (req, res) => {
 
     const { content, author } = schema.parse(req.body);
     const postId = parseInt(req.params.postId);
-    const userId = req.user?.id || 0; // Default to 0 for anonymous users
 
+    // Create comment with anonymous userId
     const newComment = await storage.createComment({
       postId,
       content,
-      author,
-      userId,
+      userId: 0, // Use 0 for anonymous users
+      metadata: {
+        author // Store author name in metadata
+      },
       approved: true // Auto-approve comments for now
     });
 
     res.status(201).json(newComment);
   } catch (error) {
     console.error('Error creating comment:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid comment data",
+        errors: error.errors.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        }))
+      });
+    }
     res.status(500).json({ error: 'Failed to create comment' });
   }
 });

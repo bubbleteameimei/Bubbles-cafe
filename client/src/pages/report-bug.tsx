@@ -188,8 +188,8 @@ export default function ReportBugPage() {
       <div className="mt-8 text-center text-base text-muted-foreground">
         <p>
           For critical issues, you can also email us directly at{" "}
-          <a href="mailto:support@example.com" className="text-primary hover:underline">
-            support@example.com
+          <a href="mailto:vanessachiwetalu@gmail.com" className="text-primary hover:underline">
+            vanessachiwetalu@gmail.com
           </a>
         </p>
       </div>

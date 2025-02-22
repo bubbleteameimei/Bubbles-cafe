@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Minus, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -16,10 +16,10 @@ import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-an
 import type { ThemeCategory } from "../shared/types";
 import { useAuth } from "@/hooks/use-auth";
 
-interface PostsResponse {
-  posts: Post[];
-  hasMore: boolean;
-}
+// Add this near the top of the file
+const MIN_FONT_SIZE = 14;
+const MAX_FONT_SIZE = 24;
+const FONT_SIZE_STEP = 2;
 
 export default function Reader() {
   const { user } = useAuth();
@@ -30,6 +30,27 @@ export default function Reader() {
 
   const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
   const [, setLocation] = useLocation();
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('reader-font-size');
+    return saved ? parseInt(saved, 10) : 16;
+  });
+
+  // Add font size adjustment functions
+  const increaseFontSize = () => {
+    setFontSize(prev => {
+      const newSize = Math.min(prev + FONT_SIZE_STEP, MAX_FONT_SIZE);
+      localStorage.setItem('reader-font-size', newSize.toString());
+      return newSize;
+    });
+  };
+
+  const decreaseFontSize = () => {
+    setFontSize(prev => {
+      const newSize = Math.max(prev - FONT_SIZE_STEP, MIN_FONT_SIZE);
+      localStorage.setItem('reader-font-size', newSize.toString());
+      return newSize;
+    });
+  };
 
   const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
     queryKey: ["pages", "reader", "current-posts"],
@@ -115,6 +136,43 @@ export default function Reader() {
           >
             <article>
               <div className="flex flex-col items-center space-y-4 mb-8">
+                {/* Add font size controls */}
+                <div className="self-end flex items-center gap-2 mb-4">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={decreaseFontSize}
+                          className="h-8 w-8 rounded-full hover:bg-accent/50"
+                          disabled={fontSize <= MIN_FONT_SIZE}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Decrease font size</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={increaseFontSize}
+                          className="h-8 w-8 rounded-full hover:bg-accent/50"
+                          disabled={fontSize >= MAX_FONT_SIZE}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Increase font size</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
                 <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
 
                 {/* Story Navigation Buttons */}
@@ -151,22 +209,22 @@ export default function Reader() {
                     <div className="flex items-center gap-1">
                       {React.createElement(
                         themeInfo.icon === 'Worm' ? Book :
-                        themeInfo.icon === 'Skull' ? Skull :
-                        themeInfo.icon === 'Brain' ? Brain :
-                        themeInfo.icon === 'Pill' ? Pill :
-                        themeInfo.icon === 'Cpu' ? Cpu :
-                        themeInfo.icon === 'Dna' ? Dna :
-                        themeInfo.icon === 'Axe' ? Axe :
-                        themeInfo.icon === 'Ghost' ? Ghost :
-                        themeInfo.icon === 'Footprints' ? Footprints :
-                        themeInfo.icon === 'Castle' ? Castle :
-                        themeInfo.icon === 'Radiation' ? Radiation :
-                        themeInfo.icon === 'UserMinus2' ? UserMinus2 :
-                        themeInfo.icon === 'Anchor' ? Anchor :
-                        themeInfo.icon === 'AlertTriangle' ? AlertTriangle :
-                        themeInfo.icon === 'Building' ? Building :
-                        themeInfo.icon === 'Clock' ? Clock :
-                        themeInfo.icon === 'Moon' ? Moon : Book,
+                          themeInfo.icon === 'Skull' ? Skull :
+                            themeInfo.icon === 'Brain' ? Brain :
+                              themeInfo.icon === 'Pill' ? Pill :
+                                themeInfo.icon === 'Cpu' ? Cpu :
+                                  themeInfo.icon === 'Dna' ? Dna :
+                                    themeInfo.icon === 'Axe' ? Axe :
+                                      themeInfo.icon === 'Ghost' ? Ghost :
+                                        themeInfo.icon === 'Footprints' ? Footprints :
+                                          themeInfo.icon === 'Castle' ? Castle :
+                                            themeInfo.icon === 'Radiation' ? Radiation :
+                                              themeInfo.icon === 'UserMinus2' ? UserMinus2 :
+                                                themeInfo.icon === 'Anchor' ? Anchor :
+                                                  themeInfo.icon === 'AlertTriangle' ? AlertTriangle :
+                                                    themeInfo.icon === 'Building' ? Building :
+                                                      themeInfo.icon === 'Clock' ? Clock :
+                                                        themeInfo.icon === 'Moon' ? Moon : Book,
                         { className: "h-4 w-4" }
                       )}
                       <Badge variant={themeInfo.badgeVariant || "default"} className="capitalize">
@@ -177,9 +235,14 @@ export default function Reader() {
                 )}
               </div>
 
+              {/* Story content with dynamic font size */}
               <div
                 className="story-content mb-8 prose dark:prose-invert max-w-none"
-                style={{ whiteSpace: 'pre-wrap' }}
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  fontSize: `${fontSize}px`,
+                  lineHeight: '1.6'
+                }}
               >
                 {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => {
                   if (!paragraph.trim()) return null;
@@ -291,4 +354,9 @@ function getOrCreateStats(postId: number) {
 
   localStorage.setItem(storageKey, JSON.stringify(newStats));
   return newStats;
+}
+
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
 }

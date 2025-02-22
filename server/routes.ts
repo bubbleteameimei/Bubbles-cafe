@@ -627,62 +627,36 @@ Timestamp: ${new Date().toLocaleString()}
     try {
       const postId = parseInt(req.params.postId);
       if (isNaN(postId)) {
-        console.log('[Comments] Invalid post ID format:', req.params.postId);
         return res.status(400).json({ message: "Invalid post ID format" });
       }
 
-      console.log(`[Comments] Attempting to create comment for post ${postId}`);
-
-      // Try to get the post using the new getPostById method
-      const post = await storage.getPostById(postId);
-      console.log(`[Comments] Post lookup result:`, post);
-
-      if (!post) {
-        console.log(`[Comments] Post ${postId} not found`);
-        return res.status(404).json({ message: "Post not found" });
+      // Validate required fields
+      const { author, content } = req.body;
+      if (!author?.trim() || !content?.trim()) {
+        return res.status(400).json({
+          message: "Invalid comment data",
+          errors: {
+            author: !author?.trim() ? "Name is required" : null,
+            content: !content?.trim() ? "Comment content is required" : null
+          }
+        });
       }
 
-      const commentData = insertCommentSchema.parse({
-        postId,
-        ...req.body,
-        authorId: req.user?.id || null // Make authorId optional
-      });
-
-      console.log(`[Comments] Creating comment with data:`, commentData);
-
-      const { isBlocked, moderatedText } = moderateComment(commentData.content);
-
+      // Create the comment
       const comment = await storage.createComment({
-        ...commentData,
-        content: moderatedText,
-        approved: !isBlocked,
+        postId,
+        content: content.trim(),
+        author: author.trim(),
+        authorId: req.user?.id || null,
+        approved: true, // Auto-approve comments for now
         metadata: {
-          moderated: isBlocked,
-          originalContent: commentData.content
+          moderated: false
         }
       });
 
-      console.log(`[Comments] Comment created successfully:`, comment);
-
-      return res.status(201).json({
-        ...comment,
-        message: isBlocked
-          ? "Your comment contains inappropriate content and will be reviewed by moderators."
-          : "Thank you for your comment!",
-        status: isBlocked ? "pending" : "approved"
-      });
-
+      return res.status(201).json(comment);
     } catch (error) {
       console.error("[Comments] Error creating comment:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Invalid comment data",
-          errors: error.errors.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          }))
-        });
-      }
       res.status(500).json({ message: "Failed to create comment" });
     }
   });
@@ -917,7 +891,6 @@ Timestamp: ${new Date().toLocaleString()}
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
-
       const [posts, comments, users] = await Promise.all([
         storage.getPosts(1, 5),
         storage.getRecentComments(),

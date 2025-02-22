@@ -71,7 +71,6 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    console.log(`NavLink clicked: ${href}`); // Debug log
     onNavigate?.();
     setLocation(href);
   }, [href, onNavigate, setLocation]);
@@ -80,12 +79,12 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
     <button
       onClick={handleClick}
       className={`
-        text-[11px] font-eb-garamond transition-all duration-300
+        text-base font-eb-garamond transition-all duration-300
         ${isActive
           ? "text-primary font-semibold"
           : "text-muted-foreground hover:text-primary hover:bg-primary/5"
         }
-        w-full text-left px-1.5 py-0.5 rounded-sm
+        w-full text-left px-2 py-1.5 rounded-sm
         ${className}
       `}
       aria-current={isActive ? "page" : undefined}
@@ -106,32 +105,24 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
 }) => {
   const { user, logoutMutation } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const [, setLocation] = useLocation();
-  const [fontSize, setFontSize] = useState(14); // Default font size
-
-  const handleAuthClick = useCallback(() => {
-    console.log("Auth button clicked"); // Debug log
-    onNavigate?.();
-    setLocation("/auth");
-  }, [onNavigate, setLocation]);
+  const [fontSize, setFontSize] = useState(14);
 
   const sections = {
     library: [
-      { href: '/index', label: 'Index', dataTutorial: 'library' },
-      { href: '/reader', label: 'Reader', dataTutorial: 'reader' },
-      { href: '/community', label: 'Community', dataTutorial: 'community' },
-      { href: '/secret', label: 'Secret Pages', dataTutorial: 'secret' },
+      { href: '/index', label: 'Index' },
+      { href: '/reader', label: 'Reader' },
+      { href: '/community', label: 'Community' },
+      { href: '/secret', label: 'Secret Pages' },
     ],
-    explore: [
-      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" />, dataTutorial: 'explore' },
-      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" />, dataTutorial: 'explore' },
+    support: [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+      { href: '/privacy', label: 'Privacy Policy' },
     ],
     settings: [
-      { href: '/theme', label: 'Theme Mode', dataTutorial: 'theme', component: <ThemeToggle /> },
       {
         href: '/accessibility',
         label: 'Font Size',
-        dataTutorial: 'accessibility',
         component: (
           <div className="w-24 flex items-center">
             <Slider
@@ -164,15 +155,16 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
       aria-label="Main navigation"
       style={{ fontSize: `${fontSize}px` }}
     >
-      <NavLink
-        href="/"
-        isActive={location === '/'}
-        onNavigate={onNavigate}
-        className="text-lg font-medium py-2 mb-2"
-        dataTutorial="home"
-      >
-        Home
-      </NavLink>
+      <div className="flex items-center justify-between mb-4">
+        <NavLink
+          href="/"
+          isActive={location === '/'}
+          onNavigate={onNavigate}
+          className="text-lg font-medium"
+        >
+          Home
+        </NavLink>
+      </div>
 
       <div className="space-y-4 flex-grow">
         <DropdownSection
@@ -185,43 +177,13 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         />
 
         <DropdownSection
-          title="Explore"
-          items={sections.explore}
-          isOpen={openSection === 'explore'}
-          onToggle={() => setOpenSection(openSection === 'explore' ? null : 'explore')}
+          title="Support & Legal"
+          items={sections.support}
+          isOpen={openSection === 'support'}
+          onToggle={() => setOpenSection(openSection === 'support' ? null : 'support')}
           location={location}
           onNavigate={onNavigate}
         />
-
-        <NavLink
-          href="/about"
-          isActive={location === '/about'}
-          onNavigate={onNavigate}
-          className="py-2 text-base"
-          dataTutorial="about"
-        >
-          About
-        </NavLink>
-
-        <NavLink
-          href="/contact"
-          isActive={location === '/contact'}
-          onNavigate={onNavigate}
-          className="py-2 text-base"
-          dataTutorial="contact"
-        >
-          Contact
-        </NavLink>
-
-        <NavLink
-          href="/privacy"
-          isActive={location === '/privacy'}
-          onNavigate={onNavigate}
-          className="py-2 text-base"
-          dataTutorial="privacy"
-        >
-          Privacy Policy
-        </NavLink>
 
         <DropdownSection
           title="Settings"
@@ -233,13 +195,16 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         />
       </div>
 
-      <div className="mt-auto pt-4 space-y-2 border-t border-border/50">
+      <div className="mt-auto pt-4 space-y-4 border-t border-border/50 text-center">
         {!user ? (
           <Button
             variant="default"
             size="sm"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base"
-            onClick={handleAuthClick}
+            className="w-full text-base bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => {
+              onNavigate?.();
+              setLocation("/auth");
+            }}
             data-tutorial="auth"
           >
             <User className="h-4 w-4 mr-2" />
@@ -264,8 +229,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/report-bug"
           isActive={location === '/report-bug'}
           onNavigate={onNavigate}
-          className="py-2 text-base flex items-center gap-2"
-          dataTutorial="reportBug"
+          className="py-2 text-base flex items-center justify-center gap-2"
         >
           <Bug className="h-4 w-4" />
           Report a Bug
@@ -313,8 +277,8 @@ export default function Navigation() {
         <div className="flex items-center justify-end space-x-4">
           <ThemeToggle />
           {!user && (
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               onClick={handleAuthClick}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >

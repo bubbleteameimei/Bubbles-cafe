@@ -86,7 +86,7 @@ export default function Privacy() {
               <h2 className="text-xl font-semibold">Contact Us</h2>
               <p className="text-muted-foreground">
                 For questions or concerns about this privacy policy or your data, please contact us through our contact form 
-                or email us at privacy@bubblescafe.com
+                or email us at vanessachiwetalu@gmail.com
               </p>
             </section>
           </div>
