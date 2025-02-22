@@ -13,34 +13,34 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create connection pool with improved error handling and retry logic
+// Create connection pool with improved error handling
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   max: 20, // Increase max connections for better concurrency
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
   connectionTimeoutMillis: 5000, // Increase connection timeout
   maxUses: 7500, // Close connections after 7500 queries
-  allowExitOnIdle: true, // Allow the pool to exit if all connections are idle
-  retryInterval: 1000, // Retry every second
-  maxRetries: 3 // Maximum number of retries
+  allowExitOnIdle: true // Allow the pool to exit if all connections are idle
 });
 
 // Initialize Drizzle with schema
 export const db = drizzle(pool, { schema });
 
 // Enhanced connection error handling
-pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle client', err);
-  // Don't exit process, attempt to recover
-  client?.release(true); // Force release with error
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', {
+    message: err.message,
+    stack: err.stack
+  });
+  // Don't try to release the client here, just log the error
 });
 
 // Connection monitoring
-pool.on('connect', (client) => {
+pool.on('connect', () => {
   console.log('New client connected to database');
 });
 
-pool.on('remove', (client) => {
+pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
@@ -57,7 +57,14 @@ async function testConnection() {
     console.error('Database connection test failed:', err);
     throw err;
   } finally {
-    client?.release();
+    if (client) {
+      try {
+        await client.release();
+      } catch (releaseErr) {
+        console.error('Error releasing client:', releaseErr);
+        // Don't throw here, we've already handled the main operation
+      }
+    }
   }
 }
 
