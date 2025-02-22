@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Minus, Plus, Type } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -16,7 +16,6 @@ import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-an
 import type { ThemeCategory } from "../shared/types";
 import { useAuth } from "@/hooks/use-auth";
 
-// Add this near the top of the file
 const MIN_FONT_SIZE = 14;
 const MAX_FONT_SIZE = 24;
 const FONT_SIZE_STEP = 2;
@@ -35,7 +34,6 @@ export default function Reader() {
     return saved ? parseInt(saved, 10) : 16;
   });
 
-  // Add font size adjustment functions
   const increaseFontSize = () => {
     setFontSize(prev => {
       const newSize = Math.min(prev + FONT_SIZE_STEP, MAX_FONT_SIZE);
@@ -136,8 +134,9 @@ export default function Reader() {
           >
             <article>
               <div className="flex flex-col items-center space-y-4 mb-8">
-                {/* Add font size controls */}
-                <div className="self-end flex items-center gap-2 mb-4">
+                <div className="self-end flex items-center gap-2 mb-4 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border border-border/50">
+                  <Type className="h-4 w-4 text-muted-foreground" />
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -145,15 +144,21 @@ export default function Reader() {
                           variant="ghost"
                           size="icon"
                           onClick={decreaseFontSize}
-                          className="h-8 w-8 rounded-full hover:bg-accent/50"
+                          className="h-7 w-7 rounded-full hover:bg-accent/50 transition-colors"
                           disabled={fontSize <= MIN_FONT_SIZE}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-3 w-3" />
+                          <span className="sr-only">Decrease font size</span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Decrease font size</TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Make text smaller</p>
+                        <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+
+                  <span className="text-sm font-medium min-w-[1.5rem] text-center">{fontSize}</span>
 
                   <TooltipProvider>
                     <Tooltip>
@@ -162,20 +167,23 @@ export default function Reader() {
                           variant="ghost"
                           size="icon"
                           onClick={increaseFontSize}
-                          className="h-8 w-8 rounded-full hover:bg-accent/50"
+                          className="h-7 w-7 rounded-full hover:bg-accent/50 transition-colors"
                           disabled={fontSize >= MAX_FONT_SIZE}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3 w-3" />
+                          <span className="sr-only">Increase font size</span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Increase font size</TooltipContent>
+                      <TooltipContent side="bottom">
+                        <p>Make text larger</p>
+                        <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
 
                 <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
 
-                {/* Story Navigation Buttons */}
                 <div className="flex items-center gap-4 mt-4">
                   <Button
                     variant="outline"
@@ -235,7 +243,6 @@ export default function Reader() {
                 )}
               </div>
 
-              {/* Story content with dynamic font size */}
               <div
                 className="story-content mb-8 prose dark:prose-invert max-w-none"
                 style={{
@@ -277,7 +284,6 @@ export default function Reader() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Floating Navigation Bar */}
         <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
           <motion.div
             initial={{ y: 100, opacity: 0 }}
@@ -337,13 +343,11 @@ function getOrCreateStats(postId: number) {
     return JSON.parse(existingStats);
   }
 
-  // Calculate deterministic likes and dislikes based on post ID
   const likesBase = 80;
-  const likesRange = 40; // To get max of 120
+  const likesRange = 40;
   const dislikesBase = 5;
-  const dislikesRange = 15; // To get max of 20
+  const dislikesRange = 15;
 
-  // Use post ID to generate deterministic but varying values
   const likes = likesBase + (postId * 7) % likesRange;
   const dislikes = dislikesBase + (postId * 3) % dislikesRange;
 

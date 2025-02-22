@@ -42,13 +42,7 @@ function App() {
                   <Route path="/contact" component={ContactPage} />
                   <Route path="/community" component={CommunityPage} />
                   <Route path="/report-bug" component={ReportBugPage} />
-
-                  {/* Admin Routes - Keep Protected */}
-                  <ProtectedRoute 
-                    path="/admin/dashboard" 
-                    component={AdminDashboard} 
-                    requireAdmin={true} 
-                  />
+                  <Route path="/admin/dashboard" component={AdminDashboard} />
 
                   {/* 404 Route */}
                   <Route path="/:rest*">

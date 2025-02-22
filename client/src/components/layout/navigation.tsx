@@ -1,9 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User, Bug } from "lucide-react";
+import { ChevronDown, Settings, User, Bug, X, Menu, Book, type Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { LiquidMenuButton } from "@/components/ui/liquid-menu-button";
 import {
   Sheet,
   SheetContent,
@@ -17,20 +16,26 @@ import {
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Slider } from "@/components/ui/slider";
 
-const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
+const DropdownSection = memo(({ title, items, isOpen: propIsOpen, onToggle, location, onNavigate }: {
   title: string;
-  items: { href: string; label: string; icon?: React.ReactNode; dataTutorial?: string; component?: React.ReactNode }[];
+  items: { href: string; label: string; icon?: React.ReactNode }[];
   isOpen: boolean;
   onToggle: () => void;
   location: string;
   onNavigate?: () => void;
 }) => {
+  const [isOpen, setIsOpen] = useState(propIsOpen);
+
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+    onToggle();
+  };
+
   return (
-    <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium transition-colors hover:text-primary group">
+    <Collapsible open={isOpen} onOpenChange={handleToggle}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-base font-medium transition-colors hover:text-primary group">
         <span className="flex items-center gap-1">
-          {title === 'Library' && <Book className="h-4 w-4" />}
-          {title === 'Explore' && <Compass className="h-4 w-4" />}
+          {title === 'Support & Legal' && <Book className="h-4 w-4" />}
           {title === 'Settings' && <Settings className="h-4 w-4" />}
           {title}
         </span>
@@ -43,13 +48,11 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
               href={item.href}
               isActive={location === item.href}
               onNavigate={onNavigate}
-              className="flex items-center gap-2"
-              dataTutorial={item.dataTutorial}
+              className="flex items-center gap-2 text-base"
             >
               {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
               {item.label}
             </NavLink>
-            {item.component}
           </div>
         ))}
       </CollapsibleContent>
@@ -59,13 +62,12 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 
 DropdownSection.displayName = "DropdownSection";
 
-const NavLink = memo(({ href, isActive, children, onNavigate, className = "", dataTutorial }: {
+const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
   href: string;
   isActive: boolean;
   children: React.ReactNode;
   onNavigate?: () => void;
   className?: string;
-  dataTutorial?: string;
 }) => {
   const [, setLocation] = useLocation();
 
@@ -79,7 +81,7 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
     <button
       onClick={handleClick}
       className={`
-        text-base font-eb-garamond transition-all duration-300
+        text-base transition-all duration-300
         ${isActive
           ? "text-primary font-semibold"
           : "text-muted-foreground hover:text-primary hover:bg-primary/5"
@@ -89,7 +91,6 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "", da
       `}
       aria-current={isActive ? "page" : undefined}
       role="menuitem"
-      data-tutorial={dataTutorial}
     >
       {children}
     </button>
@@ -104,41 +105,17 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   isMobile?: boolean;
 }) => {
   const { user, logoutMutation } = useAuth();
-  const [openSection, setOpenSection] = useState<string | null>(null);
-  const [fontSize, setFontSize] = useState(14);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const sections = {
-    library: [
-      { href: '/index', label: 'Index' },
-      { href: '/reader', label: 'Reader' },
-      { href: '/community', label: 'Community' },
-      { href: '/secret', label: 'Secret Pages' },
-    ],
     support: [
       { href: '/about', label: 'About' },
       { href: '/contact', label: 'Contact' },
       { href: '/privacy', label: 'Privacy Policy' },
     ],
     settings: [
-      {
-        href: '/accessibility',
-        label: 'Font Size',
-        component: (
-          <div className="w-24 flex items-center">
-            <Slider
-              value={[fontSize]}
-              onValueChange={([value]) => {
-                setFontSize(value);
-                document.documentElement.style.fontSize = `${value}px`;
-              }}
-              min={12}
-              max={20}
-              step={1}
-              className="w-full"
-            />
-          </div>
-        )
-      },
+      { href: '/accessibility', label: 'Accessibility' },
     ],
   };
 
@@ -147,55 +124,83 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
       role="menu"
       className={`
         flex flex-col space-y-2 p-4
-        font-eb-garamond text-base
+        text-base
         bg-background/95 backdrop-blur-sm
         border-r border-border/50
         ${isMobile ? 'w-full' : 'w-56 h-full'}
       `}
       aria-label="Main navigation"
-      style={{ fontSize: `${fontSize}px` }}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <NavLink
           href="/"
           isActive={location === '/'}
           onNavigate={onNavigate}
-          className="text-lg font-medium"
+          className="text-xl font-medium"
         >
           Home
         </NavLink>
       </div>
 
       <div className="space-y-4 flex-grow">
-        <DropdownSection
-          title="Library"
-          items={sections.library}
-          isOpen={openSection === 'library'}
-          onToggle={() => setOpenSection(openSection === 'library' ? null : 'library')}
-          location={location}
+        <NavLink
+          href="/index"
+          isActive={location === '/index'}
           onNavigate={onNavigate}
-        />
+          className="text-base"
+        >
+          Index
+        </NavLink>
 
-        <DropdownSection
-          title="Support & Legal"
-          items={sections.support}
-          isOpen={openSection === 'support'}
-          onToggle={() => setOpenSection(openSection === 'support' ? null : 'support')}
-          location={location}
+        <NavLink
+          href="/reader"
+          isActive={location === '/reader'}
           onNavigate={onNavigate}
-        />
+          className="text-base"
+        >
+          Reader
+        </NavLink>
 
-        <DropdownSection
-          title="Settings"
-          items={sections.settings}
-          isOpen={openSection === 'settings'}
-          onToggle={() => setOpenSection(openSection === 'settings' ? null : 'settings')}
-          location={location}
+        <NavLink
+          href="/community"
+          isActive={location === '/community'}
           onNavigate={onNavigate}
-        />
+          className="text-base"
+        >
+          Community
+        </NavLink>
+
+        <NavLink
+          href="/secret"
+          isActive={location === '/secret'}
+          onNavigate={onNavigate}
+          className="text-base"
+        >
+          Secret Pages
+        </NavLink>
+
+        <div className="mt-auto pt-4 space-y-4">
+          <DropdownSection
+            title="Settings"
+            items={sections.settings}
+            isOpen={settingsOpen}
+            onToggle={() => setSettingsOpen(!settingsOpen)}
+            location={location}
+            onNavigate={onNavigate}
+          />
+
+          <DropdownSection
+            title="Support & Legal"
+            items={sections.support}
+            isOpen={supportOpen}
+            onToggle={() => setSupportOpen(!supportOpen)}
+            location={location}
+            onNavigate={onNavigate}
+          />
+        </div>
       </div>
 
-      <div className="mt-auto pt-4 space-y-4 border-t border-border/50 text-center">
+      <div className="pt-4 space-y-4 border-t border-border/50">
         {!user ? (
           <Button
             variant="default"
@@ -205,7 +210,6 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
               onNavigate?.();
               setLocation("/auth");
             }}
-            data-tutorial="auth"
           >
             <User className="h-4 w-4 mr-2" />
             Sign In
@@ -229,7 +233,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/report-bug"
           isActive={location === '/report-bug'}
           onNavigate={onNavigate}
-          className="py-2 text-base flex items-center justify-center gap-2"
+          className="text-base flex items-center justify-center gap-2"
         >
           <Bug className="h-4 w-4" />
           Report a Bug
@@ -241,6 +245,12 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
 
 SidebarContent.displayName = "SidebarContent";
 
+const MenuIcon = () => (
+  <div className="relative w-6 h-6">
+    <Menu className="w-6 h-6 transition-all hover:scale-110 text-primary" />
+  </div>
+);
+
 export default function Navigation() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -248,8 +258,7 @@ export default function Navigation() {
   const { user } = useAuth();
 
   const handleAuthClick = useCallback(() => {
-    console.log("Auth button clicked"); // Debug log
-    setIsOpen(false); // Close the mobile menu if open
+    setIsOpen(false);
     setLocation("/auth");
   }, [setLocation]);
 
@@ -259,10 +268,10 @@ export default function Navigation() {
         <div className="flex flex-1 items-center gap-4">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <div>
-                <LiquidMenuButton onClick={() => setIsOpen(!isOpen)} />
+              <Button variant="ghost" size="icon" className="hover:bg-transparent">
+                <MenuIcon />
                 <span className="sr-only">Toggle menu</span>
-              </div>
+              </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0">
               <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />

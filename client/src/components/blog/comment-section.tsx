@@ -14,7 +14,6 @@ interface Comment {
   content: string;
   createdAt: Date | string;
   author: string;
-  approved: boolean;
 }
 
 interface CommentSectionProps {
@@ -34,8 +33,7 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     queryFn: async () => {
       const response = await fetch(`/api/posts/${postId}/comments`);
       if (!response.ok) throw new Error('Failed to fetch comments');
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      return response.json();
     }
   });
 
@@ -107,14 +105,14 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
             onChange={(e) => setName(e.target.value)}
             maxLength={50}
             minLength={2}
-            className="bg-background/50 focus:ring-2 focus:ring-primary/20"
+            className="bg-background/50"
             required
           />
           <Textarea
             placeholder="Share your thoughts..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[100px] bg-background/50 focus:ring-2 focus:ring-primary/20"
+            className="min-h-[100px] bg-background/50"
             required
           />
           <Button
@@ -135,38 +133,32 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-medium text-lg text-foreground/90">
-          {comments.filter(comment => comment.approved).length} Comments
-        </h3>
-
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : comments.filter(comment => comment.approved).length > 0 ? (
+        ) : comments.length > 0 ? (
           <div className="space-y-4">
-            {comments
-              .filter(comment => comment.approved)
-              .map(comment => (
-                <Card key={comment.id} className="p-4 bg-card/50 backdrop-blur-sm">
-                  <div className="flex items-start gap-3">
-                    <Avatar>
-                      <AvatarFallback>{comment.author[0].toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{comment.author}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(comment.createdAt), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-muted-foreground whitespace-pre-wrap">
-                        {comment.content}
-                      </p>
+            {comments.map(comment => (
+              <Card key={comment.id} className="p-4 bg-card/50 backdrop-blur-sm">
+                <div className="flex items-start gap-3">
+                  <Avatar>
+                    <AvatarFallback>{comment.author[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{comment.author}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(comment.createdAt), 'MMM d, yyyy')}
+                      </span>
                     </div>
+                    <p className="mt-2 text-muted-foreground whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
                   </div>
-                </Card>
-              ))}
+                </div>
+              </Card>
+            ))}
           </div>
         ) : (
           <p className="text-center py-8 text-muted-foreground">

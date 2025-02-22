@@ -630,30 +630,28 @@ Timestamp: ${new Date().toLocaleString()}
         return res.status(400).json({ message: "Invalid post ID format" });
       }
 
-      // Validate required fields
-      const { author, content } = req.body;
-      if (!author?.trim() || !content?.trim()) {
+      // Simplified validation for required fields
+      const { content, author } = req.body;
+      if (!content?.trim()) {
         return res.status(400).json({
-          message: "Invalid comment data",
-          errors: {
-            author: !author?.trim() ? "Name is required" : null,
-            content: !content?.trim() ? "Comment content is required" : null
-          }
+          message: "Comment content is required"
         });
       }
 
-      // Create the comment
+      // Create the comment with simplified data
       const comment = await storage.createComment({
         postId,
         content: content.trim(),
-        author: author.trim(),
-        authorId: req.user?.id || null,
-        approved: true, // Auto-approve comments for now
+        author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
+        authorId: req.user?.id || null, // Allow null for anonymous users
+        approved: true, // Auto-approve comments
         metadata: {
-          moderated: false
+          moderated: false,
+          isAnonymous: !req.user?.id
         }
       });
 
+      console.log('[Comments] Successfully created comment:', comment);
       return res.status(201).json(comment);
     } catch (error) {
       console.error("[Comments] Error creating comment:", error);
@@ -879,17 +877,18 @@ Timestamp: ${new Date().toLocaleString()}
         ...safeAdminUser,
         role: 'admin',
         permissions: ['manage_posts', 'manage_users', 'manage_comments']
-            });
+      });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetchadmin profile" });    }
+      res.status(500).json({ message: "Failed to fetchadmin profile" });
+    }
   });
 
   // Fix the typo in the admin dashboard route
   app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+        return res.status(403).json({ message: ""Access denied: Admin privileges required" });
       }
       const [posts, comments, users] = await Promise.all([
         storage.getPosts(1, 5),
@@ -965,7 +964,8 @@ Timestamp: ${new Date().toLocaleString()}
   app.get("/api/admin/activity", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });      }
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
 
       const limit = parseInt(req.query.limit as string) || 50;
       const logs = await storage.getRecentActivityLogs(limit);
@@ -1055,7 +1055,7 @@ Timestamp: ${new Date().toLocaleString()}
           postsThisMonth: posts.filter(post => {
             const postDate = new Date(post.createdAt);
             const now = new Date();
-            return postDate.getMonth() === now.getMonth() && 
+            return postDate.getMonth() === now.getMonth() &&
                    postDate.getFullYear() === now.getFullYear();
           }).length
         }
