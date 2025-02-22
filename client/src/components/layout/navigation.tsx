@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User } from "lucide-react";
+import { ChevronDown, Moon, Sun, Book, Compass, Settings, Search, Radio, User, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,6 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Slider } from "@/components/ui/slider";
 
 const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
@@ -26,26 +27,26 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-1 text-xs font-medium transition-colors hover:text-primary group">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-sm font-medium transition-colors hover:text-primary group">
         <span className="flex items-center gap-1">
-          {title === 'Library' && <Book className="h-3 w-3" />}
-          {title === 'Explore' && <Compass className="h-3 w-3" />}
-          {title === 'Settings' && <Settings className="h-3 w-3" />}
+          {title === 'Library' && <Book className="h-4 w-4" />}
+          {title === 'Explore' && <Compass className="h-4 w-4" />}
+          {title === 'Settings' && <Settings className="h-4 w-4" />}
           {title}
         </span>
-        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>
-      <CollapsibleContent className="pl-3 space-y-1">
+      <CollapsibleContent className="pl-4 space-y-2">
         {items.map(item => (
           <div key={item.href} className="flex items-center justify-between">
             <NavLink
               href={item.href}
               isActive={location === item.href}
               onNavigate={onNavigate}
-              className="flex items-center gap-1 py-0.5"
+              className="flex items-center gap-2"
               dataTutorial={item.dataTutorial}
             >
-              {item.icon && <span className="w-3 h-3 flex items-center justify-center">{item.icon}</span>}
+              {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
               {item.label}
             </NavLink>
             {item.component}
@@ -106,6 +107,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   const { user, logoutMutation } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [, setLocation] = useLocation();
+  const [fontSize, setFontSize] = useState(14); // Default font size
 
   const handleAuthClick = useCallback(() => {
     console.log("Auth button clicked"); // Debug log
@@ -117,15 +119,35 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     library: [
       { href: '/index', label: 'Index', dataTutorial: 'library' },
       { href: '/reader', label: 'Reader', dataTutorial: 'reader' },
+      { href: '/community', label: 'Community', dataTutorial: 'community' },
+      { href: '/secret', label: 'Secret Pages', dataTutorial: 'secret' },
     ],
     explore: [
-      { href: '/search', label: 'Search', icon: <Search className="h-3 w-3" />, dataTutorial: 'explore' },
-      { href: '/secret', label: 'Secret Pages', dataTutorial: 'explore' },
-      { href: '/live', label: 'Live Readings', icon: <Radio className="h-3 w-3" />, dataTutorial: 'explore' },
+      { href: '/search', label: 'Search', icon: <Search className="h-4 w-4" />, dataTutorial: 'explore' },
+      { href: '/live', label: 'Live Readings', icon: <Radio className="h-4 w-4" />, dataTutorial: 'explore' },
     ],
     settings: [
       { href: '/theme', label: 'Theme Mode', dataTutorial: 'theme', component: <ThemeToggle /> },
-      { href: '/accessibility', label: 'Font & Accessibility', dataTutorial: undefined },
+      {
+        href: '/accessibility',
+        label: 'Font Size',
+        dataTutorial: 'accessibility',
+        component: (
+          <div className="w-24 flex items-center">
+            <Slider
+              value={[fontSize]}
+              onValueChange={([value]) => {
+                setFontSize(value);
+                document.documentElement.style.fontSize = `${value}px`;
+              }}
+              min={12}
+              max={20}
+              step={1}
+              className="w-full"
+            />
+          </div>
+        )
+      },
     ],
   };
 
@@ -133,25 +155,26 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     <nav
       role="menu"
       className={`
-        flex flex-col space-y-0.5 p-2
-        font-eb-garamond text-[11px]
+        flex flex-col space-y-2 p-4
+        font-eb-garamond text-base
         bg-background/95 backdrop-blur-sm
         border-r border-border/50
-        ${isMobile ? 'w-full' : 'w-48 h-full'}
+        ${isMobile ? 'w-full' : 'w-56 h-full'}
       `}
       aria-label="Main navigation"
+      style={{ fontSize: `${fontSize}px` }}
     >
       <NavLink
         href="/"
         isActive={location === '/'}
         onNavigate={onNavigate}
-        className="text-xs font-medium py-0.5 mb-1"
+        className="text-lg font-medium py-2 mb-2"
         dataTutorial="home"
       >
         Home
       </NavLink>
 
-      <div className="space-y-1">
+      <div className="space-y-4 flex-grow">
         <DropdownSection
           title="Library"
           items={sections.library}
@@ -174,7 +197,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/about"
           isActive={location === '/about'}
           onNavigate={onNavigate}
-          className="py-0.5"
+          className="py-2 text-base"
           dataTutorial="about"
         >
           About
@@ -184,7 +207,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/contact"
           isActive={location === '/contact'}
           onNavigate={onNavigate}
-          className="py-0.5"
+          className="py-2 text-base"
           dataTutorial="contact"
         >
           Contact
@@ -194,7 +217,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/privacy"
           isActive={location === '/privacy'}
           onNavigate={onNavigate}
-          className="py-0.5"
+          className="py-2 text-base"
           dataTutorial="privacy"
         >
           Privacy Policy
@@ -210,23 +233,23 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
         />
       </div>
 
-      <div className="mt-auto pt-2 space-y-1 border-t border-border/50">
+      <div className="mt-auto pt-4 space-y-2 border-t border-border/50">
         {!user ? (
           <Button
             variant="default"
             size="sm"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base"
             onClick={handleAuthClick}
             data-tutorial="auth"
           >
-            <User className="h-3 w-3 mr-1" />
+            <User className="h-4 w-4 mr-2" />
             Sign In
           </Button>
         ) : (
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs"
+            className="w-full text-base"
             onClick={() => {
               if (logoutMutation) {
                 logoutMutation.mutate();
@@ -241,9 +264,10 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           href="/report-bug"
           isActive={location === '/report-bug'}
           onNavigate={onNavigate}
-          className="text-xs py-0.5"
+          className="py-2 text-base flex items-center gap-2"
           dataTutorial="reportBug"
         >
+          <Bug className="h-4 w-4" />
           Report a Bug
         </NavLink>
       </div>

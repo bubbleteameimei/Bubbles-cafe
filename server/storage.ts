@@ -179,6 +179,7 @@ export interface IStorage {
   getFeaturedAuthor(userId: number): Promise<FeaturedAuthor | undefined>;
   getUserPosts(userId: number): Promise<Post[]>;
   getUserTotalLikes(userId: number): Promise<number>;
+  getPostById(id: number): Promise<Post | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1354,6 +1355,29 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getPostById(id: number): Promise<Post | undefined> {
+    try {
+      console.log(`[Storage] Getting post by ID: ${id}`);
+      const [post] = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.id, id))
+        .limit(1);
+
+      if (!post) {
+        console.log(`[Storage] No post found with ID: ${id}`);
+        return undefined;
+      }
+
+      console.log(`[Storage] Found post:`, post);
+      return {
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      };
+    } catch (error) {
+      console.error(`[Storage] Error getting post by ID ${id}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

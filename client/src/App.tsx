@@ -21,9 +21,9 @@ const IndexPage = React.lazy(() => import('@/pages/index'));
 const AboutPage = React.lazy(() => import('@/pages/about'));
 const ContactPage = React.lazy(() => import('@/pages/contact'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
-const AuthPage = React.lazy(() => import('@/pages/auth'));
 const PrivacyPage = React.lazy(() => import('@/pages/privacy'));
 const ReportBugPage = React.lazy(() => import('@/pages/report-bug'));
+const CommunityPage = React.lazy(() => import('@/pages/community'));
 
 function App() {
   return (
@@ -37,19 +37,17 @@ function App() {
                 <React.Suspense fallback={<LoadingScreen />}>
                   <Switch>
                     {/* Public Routes */}
-                    <Route path="/auth" component={AuthPage} />
+                    <Route path="/" component={HomePage} />
+                    <Route path="/reader" component={ReaderPage} />
+                    <Route path="/stories" component={StoriesPage} />
+                    <Route path="/index" component={IndexPage} />
                     <Route path="/about" component={AboutPage} />
                     <Route path="/privacy" component={PrivacyPage} />
                     <Route path="/contact" component={ContactPage} />
+                    <Route path="/community" component={CommunityPage} />
+                    <Route path="/report-bug" component={ReportBugPage} />
 
-                    {/* Protected Routes */}
-                    <ProtectedRoute path="/" component={HomePage} />
-                    <ProtectedRoute path="/reader" component={ReaderPage} />
-                    <ProtectedRoute path="/stories" component={StoriesPage} />
-                    <ProtectedRoute path="/index" component={IndexPage} />
-                    <ProtectedRoute path="/report-bug" component={ReportBugPage} />
-
-                    {/* Admin Routes */}
+                    {/* Admin Routes - Keep Protected */}
                     <ProtectedRoute 
                       path="/admin/dashboard" 
                       component={AdminDashboard} 
