@@ -3,7 +3,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { db } from '../db';
 import { comments, commentReactions, commentVotes, commentReplies } from '@shared/schema';
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.get('/:postId', async (req, res) => {
     const replies = commentIds.length > 0 ? 
       await db.select().from(commentReplies)
         .where(
-          commentReplies.commentId.in(commentIds)
+          inArray(commentReplies.commentId, commentIds)
         ) : [];
 
     // Attach replies to their parent comments
@@ -246,14 +246,14 @@ router.post('/:commentId/replies', async (req, res) => {
       return res.status(404).json({ error: 'Parent comment not found' });
     }
 
-    // Create reply
+    // Create reply with proper metadata
     const newReply = await db.insert(commentReplies).values({
       commentId,
       content,
       userId: req.user?.id || null,
       approved: true,
       metadata: {
-        author: author || 'Anonymous',
+        author: author || req.user?.username || 'Anonymous',
         isAnonymous: !req.user?.id,
         moderated: false,
         originalContent: content,

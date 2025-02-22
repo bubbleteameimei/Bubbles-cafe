@@ -377,6 +377,7 @@ export type PostLike = typeof postLikes.$inferSelect;
 export const insertCommentReplySchema = createInsertSchema(commentReplies)
   .omit({ id: true, createdAt: true })
   .extend({
+    content: z.string().min(3, "Reply must be at least 3 characters"),
     userId: z.number().nullable(),
     metadata: z.object({
       author: z.string(),

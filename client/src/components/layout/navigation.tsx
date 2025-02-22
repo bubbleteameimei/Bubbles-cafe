@@ -1,5 +1,17 @@
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Settings, User, Scale, Book, PanelLeftOpen, Bug } from "lucide-react";
+import { 
+  ChevronDown, 
+  Settings, 
+  Monitor, 
+  Type, 
+  ScrollText, 
+  Cloud,
+  Book, 
+  Mail, 
+  Scale,
+  Bug,
+  PanelLeftClose 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -102,17 +114,16 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   const [, setLocation] = useLocation();
 
   const sections = {
-    support: [
-      { href: '/about', label: 'About' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/privacy', label: 'Privacy Policy' },
-    ],
     settings: [
-      { href: '/settings/theme', label: 'Dark Mode' },
-      { href: '/settings/font', label: 'Font Size' },
-      { href: '/settings/reading', label: 'Reading Mode' },
-      { href: '/settings/offline', label: 'Offline Mode' },
-      { href: '/accessibility', label: 'Accessibility Options' },
+      { href: '/settings', label: 'Display & Theme', icon: <Monitor className="h-4 w-4" /> },
+      { href: '/settings#font', label: 'Text & Typography', icon: <Type className="h-4 w-4" /> },
+      { href: '/settings#reading', label: 'Reading Experience', icon: <ScrollText className="h-4 w-4" /> },
+      { href: '/settings#offline', label: 'Offline Access', icon: <Cloud className="h-4 w-4" /> },
+    ],
+    support: [
+      { href: '/about', label: 'About', icon: <Book className="h-4 w-4" /> },
+      { href: '/contact', label: 'Contact', icon: <Scale className="h-4 w-4" /> },
+      { href: '/privacy', label: 'Privacy Policy', icon: <Scale className="h-4 w-4" /> },
     ],
   };
 
@@ -244,7 +255,7 @@ SidebarContent.displayName = "SidebarContent";
 
 const MenuIcon = () => (
   <div className="relative w-6 h-6">
-    <PanelLeftOpen className="w-6 h-6 transition-all hover:scale-110 text-primary" />
+    <PanelLeftClose className="w-6 h-6 transition-all hover:scale-110 text-primary" />
   </div>
 );
 
@@ -258,16 +269,15 @@ export default function Navigation() {
 
   const sections = {
     settings: [
-      { href: '/settings/theme', label: 'Dark Mode' },
-      { href: '/settings/font', label: 'Font Size' },
-      { href: '/settings/reading', label: 'Reading Mode' },
-      { href: '/settings/offline', label: 'Offline Mode' },
-      { href: '/accessibility', label: 'Accessibility Options' },
+      { href: '/settings', label: 'Display & Theme', icon: <Monitor className="h-4 w-4" /> },
+      { href: '/settings#font', label: 'Text & Typography', icon: <Type className="h-4 w-4" /> },
+      { href: '/settings#reading', label: 'Reading Experience', icon: <ScrollText className="h-4 w-4" /> },
+      { href: '/settings#offline', label: 'Offline Access', icon: <Cloud className="h-4 w-4" /> },
     ],
     support: [
-      { href: '/about', label: 'About' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/privacy', label: 'Privacy Policy' },
+      { href: '/about', label: 'About', icon: <Book className="h-4 w-4" /> },
+      { href: '/contact', label: 'Contact', icon: <Mail className="h-4 w-4" /> },
+      { href: '/privacy', label: 'Privacy Policy', icon: <Scale className="h-4 w-4" /> },
     ],
   };
 
@@ -327,7 +337,6 @@ export default function Navigation() {
               onClick={handleAuthClick}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <User className="h-4 w-4 mr-2" />
               Sign In
             </Button>
           )}

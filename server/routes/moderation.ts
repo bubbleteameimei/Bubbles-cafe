@@ -68,10 +68,10 @@ router.post('/comments/:commentId/replies', async (req, res) => {
     const reply = await storage.createCommentReply({
       content,
       commentId,
-      userId: -1, // Use -1 for anonymous users
+      userId: req.user?.id || null,
       metadata: {
-        author,
-        isAnonymous: true,
+        author: author || 'Anonymous',
+        isAnonymous: !req.user?.id,
         moderated: false,
         originalContent: content,
         upvotes: 0,
