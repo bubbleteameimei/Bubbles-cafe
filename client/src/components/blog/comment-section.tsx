@@ -9,11 +9,22 @@ import { Card } from "@/components/ui/card";
 import { Loader2, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+interface CommentMetadata {
+  moderated: boolean;
+  originalContent: string;
+  isAnonymous: boolean;
+  author: string;
+  upvotes: number;
+  downvotes: number;
+  replyCount: number;
+}
+
 interface Comment {
   id: number;
   content: string;
   createdAt: Date | string;
-  author: string;
+  metadata: CommentMetadata;
+  approved: boolean;
 }
 
 interface CommentSectionProps {
@@ -32,7 +43,10 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
       const response = await fetch(`/api/posts/${postId}/comments`);
-      if (!response.ok) throw new Error('Failed to fetch comments');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch comments');
+      }
       return response.json();
     }
   });
@@ -44,14 +58,14 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          author: name.trim(),
-          content: content.trim()
+          content: content.trim(),
+          author: name.trim()
         })
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to post comment');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to post comment');
       }
 
       return response.json();
@@ -67,9 +81,10 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       });
     },
     onError: (error: Error) => {
+      console.error('Comment posting error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to post comment. Please try again.",
         variant: "destructive"
       });
     }
@@ -143,11 +158,11 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
               <Card key={comment.id} className="p-4 bg-card/50 backdrop-blur-sm">
                 <div className="flex items-start gap-3">
                   <Avatar>
-                    <AvatarFallback>{comment.author[0].toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{comment.metadata.author[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{comment.author}</span>
+                      <span className="font-medium">{comment.metadata.author}</span>
                       <span className="text-sm text-muted-foreground">
                         {format(new Date(comment.createdAt), 'MMM d, yyyy')}
                       </span>

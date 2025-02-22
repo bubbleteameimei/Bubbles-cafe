@@ -3,7 +3,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { db } from '../db';
 import { comments, commentReactions, commentVotes } from '@shared/schema';
-import { and, eq, desc, asc } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 
 const router = Router();
 
@@ -45,12 +45,12 @@ router.get('/:postId', async (req, res) => {
   }
 });
 
-// Create a new comment
+// Update the comment creation endpoint
 router.post('/:postId', async (req, res) => {
   try {
     const schema = z.object({
-      content: z.string().min(3).max(2000),
-      author: z.string().optional().default('Anonymous')
+      content: z.string().min(3, "Comment must be at least 3 characters").max(2000, "Comment cannot exceed 2000 characters"),
+      author: z.string().optional()
     });
 
     const { content, author } = schema.parse(req.body);
@@ -97,7 +97,7 @@ router.post('/:postId', async (req, res) => {
 router.patch('/:commentId', async (req, res) => {
   try {
     const schema = z.object({
-      content: z.string().min(3).max(2000)
+      content: z.string().min(3, "Comment must be at least 3 characters").max(2000, "Comment cannot exceed 2000 characters")
     });
 
     const { content } = schema.parse(req.body);
@@ -121,6 +121,15 @@ router.patch('/:commentId', async (req, res) => {
     res.json(updatedComment);
   } catch (error) {
     console.error('Error updating comment:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid comment data",
+        errors: error.errors.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        }))
+      });
+    }
     res.status(500).json({ error: 'Failed to update comment' });
   }
 });
@@ -208,25 +217,52 @@ router.post('/:commentId/react', async (req, res) => {
 router.post('/:commentId/replies', async (req, res) => {
   try {
     const schema = z.object({
-      content: z.string().min(3).max(2000),
-      author: z.string().min(2).max(50)
+      content: z.string().min(3, "Reply must be at least 3 characters").max(2000, "Reply cannot exceed 2000 characters"),
+      author: z.string().optional()
     });
 
     const { content, author } = schema.parse(req.body);
     const commentId = parseInt(req.params.commentId);
-    const userId = req.user?.id || 0; // Default to 0 for anonymous users
+    const userId = req.user?.id;
 
     const newReply = await storage.createCommentReply({
       commentId,
       content,
-      author,
-      userId,
-      approved: true // Auto-approve replies for now
+      userId: userId || 0,
+      approved: true,
+      metadata: {
+        moderated: false,
+        originalContent: content,
+        isAnonymous: !userId,
+        author: author || 'Anonymous',
+        upvotes: 0,
+        downvotes: 0
+      }
     });
+
+    // Update the parent comment's reply count
+    const parentComment = await storage.getComment(commentId);
+    if (parentComment) {
+      await storage.updateComment(commentId, {
+        metadata: {
+          ...parentComment.metadata,
+          replyCount: (parentComment.metadata?.replyCount || 0) + 1
+        }
+      });
+    }
 
     res.status(201).json(newReply);
   } catch (error) {
     console.error('Error creating reply:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid reply data",
+        errors: error.errors.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        }))
+      });
+    }
     res.status(500).json({ error: 'Failed to create reply' });
   }
 });

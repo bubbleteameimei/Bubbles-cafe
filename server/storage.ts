@@ -97,6 +97,7 @@ export interface IStorage {
   updateComment(id: number, comment: Partial<Comment>): Promise<Comment>;
   deleteComment(id: number): Promise<Comment>;
   getPendingComments(): Promise<Comment[]>;
+  getComment(id: number): Promise<Comment | undefined>;
 
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
@@ -564,7 +565,6 @@ export class DatabaseStorage implements IStorage {
       createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
     }));
   }
-
   async createComment(comment: InsertComment): Promise<Comment> {
     try {
       console.log('[Storage] Creating new comment:', {
@@ -572,16 +572,23 @@ export class DatabaseStorage implements IStorage {
         isAnonymous: !comment.userId
       });
 
+      const commentMetadata: CommentMetadata = {
+        moderated: false,
+        originalContent: comment.content,
+        isAnonymous: !comment.userId,
+        author: comment.metadata?.author || 'Anonymous',
+        upvotes: 0,
+        downvotes: 0,
+        replyCount: 0
+      };
+
       const [newComment] = await db.insert(comments)
         .values({
           content: comment.content,
           postId: comment.postId,
-          userId: comment.userId || null, // Handle anonymous comments
-          approved: true, // Auto-approve comments
-          metadata: {
-            ...comment.metadata,
-            isAnonymous: !comment.userId
-          },
+          userId: comment.userId,
+          approved: comment.approved ?? true,
+          metadata: commentMetadata,
           createdAt: new Date()
         })
         .returning();
@@ -638,6 +645,25 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("[Storage] Error in deleteComment:", error);
       throw error;
+    }
+  }
+
+  async getComment(id: number): Promise<Comment | undefined> {
+    try {
+      const [comment] = await db.select()
+        .from(comments)
+        .where(eq(comments.id, id))
+        .limit(1);
+
+      if (!comment) return undefined;
+
+      return {
+        ...comment,
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+      };
+    } catch (error) {
+      console.error("Error in getComment:", error);
+      throw new Error("Failed to fetch comment");
     }
   }
 
@@ -949,7 +975,7 @@ export class DatabaseStorage implements IStorage {
   // Content Protection Implementation
   async addContentProtection(protection: InsertContentProtection): Promise<ContentProtection> {
     const [newProtection] = await db.insert(contentProtection)
-      .values({ ...protection, createdAt: new Date()})
+      .values({ ...protection, createdAt: new Date() })
       .returning();
     return newProtection;
   }
