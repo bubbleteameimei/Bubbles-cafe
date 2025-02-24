@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -40,14 +41,27 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     };
 
+    // Handle both history API and manual navigation
     window.addEventListener('popstate', handleRouteChange);
-    window.addEventListener('pushState', handleRouteChange);
-    window.addEventListener('replaceState', handleRouteChange);
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function() {
+      const result = originalPushState.apply(this, arguments);
+      handleRouteChange();
+      return result;
+    };
+
+    window.history.replaceState = function() {
+      const result = originalReplaceState.apply(this, arguments);
+      handleRouteChange();
+      return result;
+    };
 
     this.cleanup = () => {
       window.removeEventListener('popstate', handleRouteChange);
-      window.removeEventListener('pushState', handleRouteChange);
-      window.removeEventListener('replaceState', handleRouteChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
     };
   }
 
@@ -61,6 +75,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     if (this.mounted) {
+      // Preserve component stack trace
       this.setState({
         error,
         errorInfo,
@@ -84,6 +99,13 @@ export class ErrorBoundary extends Component<Props, State> {
   private getErrorMessage(error: Error): string {
     if (!error.message) return "An unexpected error occurred.";
 
+    // Handle common route-related errors
+    if (error.message.includes('Suspense') || error.message.includes('loading')) {
+      return "There was an error loading this page component. Please refresh and try again.";
+    }
+    if (error.message.includes('chunk') || error.message.includes('failed to load')) {
+      return "A required page component failed to load. This might be due to a network issue or recent update.";
+    }
     if (error.message.includes('404')) {
       return "We couldn't find what you're looking for. The page might have been moved or deleted.";
     }
@@ -92,9 +114,6 @@ export class ErrorBoundary extends Component<Props, State> {
     }
     if (error.message.includes('network')) {
       return "Unable to connect to the server. Please check your internet connection and try again.";
-    }
-    if (error.message.includes('chunk') || error.message.includes('loading')) {
-      return "There was an error loading this page. Please refresh and try again.";
     }
     if (error.message.includes('route') || error.message.includes('navigation')) {
       return "There was an error with page navigation. Please try going back or refreshing the page.";
@@ -113,6 +132,11 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    // Use custom fallback if provided
+    if (this.props.fallback) {
+      return this.props.fallback;
     }
 
     const errorMessage = this.getErrorMessage(this.state.error!);

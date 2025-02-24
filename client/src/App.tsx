@@ -12,22 +12,50 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { usePerformanceMonitoring } from '@/hooks/use-performance-monitoring';
 
-// Enhanced lazy loading with prefetch and retry logic
-const loadComponent = (importFn: () => Promise<any>, priority: 'high' | 'low' = 'low') => {
+// Enhanced lazy loading with better error handling and retries
+const loadComponent = (
+  importFn: () => Promise<any>,
+  options: {
+    priority?: 'high' | 'low';
+    retries?: number;
+    fallback?: React.ReactNode;
+  } = {}
+) => {
+  const {
+    priority = 'low',
+    retries = 1,
+    fallback
+  } = options;
+
   const Component = React.lazy(() =>
-    importFn().catch((error) => {
+    importFn().catch(async (error) => {
       console.error('Failed to load component:', error);
-      return importFn(); // Retry once
+
+      // Implement retry logic with delay
+      let lastError = error;
+      for (let i = 0; i < retries; i++) {
+        try {
+          // Exponential backoff delay
+          await new Promise(resolve => 
+            setTimeout(resolve, Math.min(1000 * Math.pow(2, i), 5000))
+          );
+          return await importFn();
+        } catch (retryError) {
+          console.error(`Retry ${i + 1} failed:`, retryError);
+          lastError = retryError;
+        }
+      }
+      throw lastError;
     })
   );
 
-  // Return wrapped component with prefetch capability
+  // Return wrapped component with error boundary and suspense
   const WrappedComponent = (props: any) => (
-    <React.Suspense fallback={<LoadingScreen />}>
-      <ErrorBoundary>
+    <ErrorBoundary fallback={fallback}>
+      <React.Suspense fallback={<LoadingScreen />}>
         <Component {...props} />
-      </ErrorBoundary>
-    </React.Suspense>
+      </React.Suspense>
+    </ErrorBoundary>
   );
 
   // Enhanced prefetch method with priority
@@ -53,10 +81,19 @@ const loadComponent = (importFn: () => Promise<any>, priority: 'high' | 'low' = 
   return WrappedComponent;
 };
 
-// Lazy load pages with priority
-const HomePage = loadComponent(() => import('@/pages/home'), 'high');
-const ReaderPage = loadComponent(() => import('@/pages/reader'), 'high');
-const StoriesPage = loadComponent(() => import('@/pages/secret-stories'), 'high');
+// Lazy load pages with enhanced options
+const HomePage = loadComponent(() => import('@/pages/home'), { 
+  priority: 'high',
+  retries: 2 
+});
+const ReaderPage = loadComponent(() => import('@/pages/reader'), { 
+  priority: 'high',
+  retries: 2 
+});
+const StoriesPage = loadComponent(() => import('@/pages/secret-stories'), { 
+  priority: 'high',
+  retries: 2 
+});
 const IndexPage = loadComponent(() => import('@/pages/index'));
 const AboutPage = loadComponent(() => import('@/pages/about'));
 const ContactPage = loadComponent(() => import('@/pages/contact'));
@@ -69,7 +106,10 @@ const PrivacyPage = loadComponent(() => import('@/pages/privacy'));
 const ReportBugPage = loadComponent(() => import('@/pages/report-bug'));
 const CommunityPage = loadComponent(() => import('@/pages/community'));
 const SettingsPage = loadComponent(() => import('@/pages/settings/SettingsPage'));
-const AuthPage = loadComponent(() => import('@/pages/auth'), 'high');
+const AuthPage = loadComponent(() => import('@/pages/auth'), { 
+  priority: 'high',
+  retries: 2 
+});
 
 function AdminRoute({ 
   component: Component, 
@@ -88,27 +128,43 @@ function AdminRoute({
     return <Redirect to="/" />;
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <ErrorBoundary>
+      <Route path={path} component={Component} />
+    </ErrorBoundary>
+  );
 }
 
-// Enhanced prefetching strategy
+// Enhanced prefetching strategy with error handling
 const prefetchCriticalRoutes = () => {
   // High priority routes
-  Promise.all([
+  Promise.allSettled([
     HomePage.prefetch(),
     ReaderPage.prefetch(),
     StoriesPage.prefetch(),
     AuthPage.prefetch()
-  ]);
+  ]).then(results => {
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to prefetch critical route ${index}:`, result.reason);
+      }
+    });
+  });
 
   // Low priority routes prefetched during idle time
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => {
-      Promise.all([
+      Promise.allSettled([
         AboutPage.prefetch(),
         ContactPage.prefetch(),
         CommunityPage.prefetch()
-      ]);
+      ]).then(results => {
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.error(`Failed to prefetch non-critical route ${index}:`, result.reason);
+          }
+        });
+      });
     });
   }
 };

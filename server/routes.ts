@@ -843,7 +843,9 @@ Timestamp: ${new Date().toLocaleString()}
         approved: !containsFilteredWord,
         metadata: {
           moderated: containsFilteredWord,
-          originalContent: content
+          originalContent: content,
+          upvotes: 0,
+          downvotes: 0
         }
       });
 
@@ -893,7 +895,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Fix the admin dashboard route
-  app.get("/api/admin/dashboard", isAuthenticated, async ((req: Request, res: Response) => {
+  app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
