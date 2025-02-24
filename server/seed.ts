@@ -9,7 +9,7 @@ import bcrypt from "bcryptjs";
 
 async function getOrCreateAdminUser() {
   try {
-    const hashedPassword = await bcrypt.hash("powerPUFF70", 12);
+    const hashedPassword = await bcrypt.hash("powerPUFF7", 12);
     console.log("Creating admin user with email: vantalison@gmail.com");
 
     // First check if admin user exists
