@@ -47,6 +47,26 @@ export default function IndexView() {
     queryKey: ["pages", "index", "all-posts"],
     queryFn: async () => {
       const response = await fetch('/api/posts?section=index&page=1&limit=16&type=index');
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.story-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.story-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
@@ -110,19 +130,22 @@ export default function IndexView() {
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-40" />
-      <div className="container mx-auto px-4 py-12 relative z-10">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div
-            className="flex items-center justify-between mb-12"
+            className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-card/30 backdrop-blur-sm p-6 rounded-lg border border-border/50"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="stories-page-title mb-4">INDEX</h1>
+            <div>
+              <h1 className="stories-page-title text-4xl font-decorative mb-2">INDEX</h1>
+              <p className="text-muted-foreground">Explore our collection of haunting tales</p>
+            </div>
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => setLocation('/')}
-              className="text-muted-foreground hover:text-primary"
+              className="hover:bg-primary/20 transition-colors"
             >
               Back to Home
             </Button>
