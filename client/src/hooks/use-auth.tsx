@@ -26,11 +26,7 @@ export const loginSchema = z.object({
 });
 
 type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
-
-const registerSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters")
-});
+type RegisterData = z.infer<typeof insertUserSchema>;
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 

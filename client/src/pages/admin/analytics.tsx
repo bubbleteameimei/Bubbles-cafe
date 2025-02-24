@@ -48,29 +48,14 @@ export default function AdminAnalyticsPage() {
 
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery<SiteAnalytics>({
     queryKey: ["/api/admin/analytics"],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/analytics');
-      if (!response.ok) throw new Error('Failed to fetch analytics');
-      return response.json();
-    }
   });
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery<Notification[]>({
     queryKey: ["/api/admin/notifications"],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/notifications');
-      if (!response.ok) throw new Error('Failed to fetch notifications');
-      return response.json();
-    }
   });
 
   const { data: activityLogs = [], isLoading: logsLoading } = useQuery<ActivityLog[]>({
     queryKey: ["/api/admin/activity"],
-    queryFn: async () => {
-      const response = await fetch('/api/admin/activity');
-      if (!response.ok) throw new Error('Failed to fetch activity logs');
-      return response.json();
-    }
   });
 
   const markAsRead = useMutation({

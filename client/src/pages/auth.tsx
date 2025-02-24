@@ -8,9 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema, registrationSchema } from "@shared/schema";
+import { loginSchema, registrationSchema, type User } from "@shared/schema";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import "./auth.css";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -194,10 +195,10 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="reg-email">Email</Label>
                 <div className="space-y-1">
                   <Input
-                    id="email"
+                    id="reg-email"
                     type="email"
                     {...registerForm.register("email")}
                   />

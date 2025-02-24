@@ -10,7 +10,12 @@ import {
   Mail, 
   Scale,
   Bug,
-  PanelLeftClose 
+  PanelLeftClose,
+  LayoutDashboard,
+  LineChart,
+  Users,
+  Settings2,
+  FileEdit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
@@ -41,6 +46,7 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
         <span className="flex items-center gap-1">
           {title === 'Support & Legal' && <Book className="h-4 w-4" />}
           {title === 'Settings & Accessibility' && <Settings className="h-4 w-4" />}
+          {title === 'Admin' && <Settings2 className="h-4 w-4"/>}
           {title}
         </span>
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -111,6 +117,7 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
   const { user, logoutMutation } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [, setLocation] = useLocation();
 
   const sections = {
@@ -122,8 +129,15 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
     ],
     support: [
       { href: '/about', label: 'About', icon: <Book className="h-4 w-4" /> },
-      { href: '/contact', label: 'Contact', icon: <Scale className="h-4 w-4" /> },
+      { href: '/contact', label: 'Contact', icon: <Mail className="h-4 w-4" /> },
       { href: '/privacy', label: 'Privacy Policy', icon: <Scale className="h-4 w-4" /> },
+    ],
+    admin: [
+      { href: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
+      { href: '/admin/posts', label: 'Posts Management', icon: <FileEdit className="h-4 w-4" /> },
+      { href: '/admin/analytics', label: 'Analytics', icon: <LineChart className="h-4 w-4" /> },
+      { href: '/admin/users', label: 'User Management', icon: <Users className="h-4 w-4" /> },
+      { href: '/admin/settings', label: 'Admin Settings', icon: <Settings2 className="h-4 w-4" /> },
     ],
   };
 
@@ -178,15 +192,6 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
           Community
         </NavLink>
 
-        <NavLink
-          href="/secret"
-          isActive={location === '/secret'}
-          onNavigate={onNavigate}
-          className="text-base"
-        >
-          Secret Pages
-        </NavLink>
-
         <div className="mt-auto pt-4 space-y-4">
           <DropdownSection
             title="Settings & Accessibility"
@@ -205,6 +210,17 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
             location={location}
             onNavigate={onNavigate}
           />
+
+          {user?.isAdmin && (
+            <DropdownSection
+              title="Admin"
+              items={sections.admin}
+              isOpen={adminOpen}
+              onToggle={() => setAdminOpen(!adminOpen)}
+              location={location}
+              onNavigate={onNavigate}
+            />
+          )}
         </div>
       </div>
 
@@ -219,7 +235,6 @@ const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
               setLocation("/auth");
             }}
           >
-            <User className="h-4 w-4 mr-2" />
             Sign In
           </Button>
         ) : (
@@ -262,79 +277,39 @@ const MenuIcon = () => (
 export default function Navigation() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-
-  const sections = {
-    settings: [
-      { href: '/settings', label: 'Display & Theme', icon: <Monitor className="h-4 w-4" /> },
-      { href: '/settings#font', label: 'Text & Typography', icon: <Type className="h-4 w-4" /> },
-      { href: '/settings#reading', label: 'Reading Experience', icon: <ScrollText className="h-4 w-4" /> },
-      { href: '/settings#offline', label: 'Offline Access', icon: <Cloud className="h-4 w-4" /> },
-    ],
-    support: [
-      { href: '/about', label: 'About', icon: <Book className="h-4 w-4" /> },
-      { href: '/contact', label: 'Contact', icon: <Mail className="h-4 w-4" /> },
-      { href: '/privacy', label: 'Privacy Policy', icon: <Scale className="h-4 w-4" /> },
-    ],
-  };
-
-  const handleAuthClick = useCallback(() => {
-    setIsOpen(false);
-    setLocation("/auth");
-  }, [setLocation]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center px-4">
-        <div className="flex flex-1 items-center gap-4">
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-transparent"
-                title="Toggle navigation menu"
-              >
-                <MenuIcon />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-              <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
-            </SheetContent>
-          </Sheet>
+      <div className="container flex h-14 max-w-screen-2xl items-center">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-transparent"
+              title="Toggle navigation menu"
+            >
+              <MenuIcon />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0">
+            <SidebarContent location={location} onNavigate={() => setIsOpen(false)} isMobile />
+          </SheetContent>
+        </Sheet>
 
-          <div className="hidden md:flex h-full">
-            <nav className="flex items-center space-x-6">
-              <DropdownSection
-                title="Settings & Accessibility"
-                items={sections.settings}
-                isOpen={settingsOpen}
-                onToggle={() => setSettingsOpen(!settingsOpen)}
-                location={location}
-                onNavigate={() => setIsOpen(false)}
-              />
-              <DropdownSection
-                title="Support & Legal"
-                items={sections.support}
-                isOpen={supportOpen}
-                onToggle={() => setSupportOpen(!supportOpen)}
-                location={location}
-                onNavigate={() => setIsOpen(false)}
-              />
-            </nav>
-          </div>
-        </div>
+        <div className="flex-1" />
 
         <div className="flex items-center justify-end space-x-4">
           <ThemeToggle />
           {!user && (
             <Button
               variant="default"
-              onClick={handleAuthClick}
+              onClick={() => {
+                setIsOpen(false);
+                setLocation("/auth");
+              }}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Sign In
