@@ -204,6 +204,18 @@ export const analytics = pgTable("analytics", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Add performance metrics table definition after the analytics table
+export const performanceMetrics = pgTable("performance_metrics", {
+  id: serial("id").primaryKey(),
+  metricName: text("metric_name").notNull(),
+  value: doublePrecision("value").notNull(),
+  identifier: text("identifier").notNull(),
+  navigationType: text("navigation_type"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  url: text("url").notNull(),
+  userAgent: text("user_agent"),
+});
+
 // Activity Logs
 export const activityLogs = pgTable("activity_logs", {
   id: serial("id").primaryKey(),
@@ -488,3 +500,12 @@ export interface CommentMetadata {
   downvotes?: number;
   replyCount?: number;
 }
+
+// Add insert schema and types for performance metrics
+export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({ 
+  id: true,
+  timestamp: true 
+});
+
+export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
+export type PerformanceMetric = typeof performanceMetrics.$inferSelect;

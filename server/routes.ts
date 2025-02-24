@@ -893,7 +893,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Fix the admin dashboard route
-  app.get("/api/admin/dashboard", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/dashboard", isAuthenticated, async ((req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
@@ -916,6 +916,35 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add admin dashboard data endpoint
+  app.post("/api/analytics/vitals", async (req, res) => {
+    try {
+      const { name, value, id, navigationType, timestamp, url } = req.body;
+
+      console.log('[Analytics] Received performance metric:', {
+        name,
+        value: Math.round(value * 100) / 100,
+        id,
+        navigationType,
+        url
+      });
+
+      // Store the metric in database
+      await storage.storePerformanceMetric({
+        metricName: name,
+        value: Math.round(value * 100) / 100, // Round to 2 decimal places
+        identifier: id,
+        navigationType: navigationType || null,
+        timestamp: new Date(timestamp),
+        url,
+        userAgent: req.headers['user-agent'] || null
+      });
+
+      res.status(201).json({ message: "Metric recorded successfully" });
+    } catch (error) {
+      console.error("[Analytics] Error storing performance metric:", error);
+      res.status(500).json({ message: "Failed to store performance metric" });
+    }
+  });
 
   //New admin routes
   app.get("/api/admin/analytics", isAuthenticated, async (req: Request, res: Response) => {

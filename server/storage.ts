@@ -52,7 +52,9 @@ import {
   userAchievements,
   readingStreaks,
   writerStreaks,
-  featuredAuthors
+  featuredAuthors,
+  type PerformanceMetric, type InsertPerformanceMetric,
+  performanceMetrics
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
@@ -181,6 +183,9 @@ export interface IStorage {
   getUserPosts(userId: number): Promise<Post[]>;
   getUserTotalLikes(userId: number): Promise<number>;
   getPostById(id: number): Promise<Post | undefined>;
+
+  // Add performance metrics method
+  storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -936,7 +941,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getTopAuthors(limit: number = 10): Promise<AuthorStats[]> {
+  async getTopAuthors(limit: number =10): Promise<AuthorStats[]> {
     return await db.select()
       .from(authorStats)
       .orderBy(desc(authorStats.totalLikes))
@@ -1411,6 +1416,27 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`[Storage] Error getting post by ID ${id}:`, error);
       throw error;
+    }
+  }
+  async storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric> {
+    try {
+      console.log('[Storage] Storing performance metric:', {
+        name: metric.metricName,
+        value: metric.value,
+        url: metric.url
+      });
+
+      const [newMetric] = await db.insert(performanceMetrics)
+        .values({
+          ...metric,
+          timestamp: new Date()
+        })
+        .returning();
+
+      return newMetric;
+    } catch (error) {
+      console.error('[Storage] Error storing performance metric:', error);
+      throw new Error('Failed to store performance metric');
     }
   }
 }
