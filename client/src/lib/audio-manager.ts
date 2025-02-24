@@ -8,10 +8,15 @@ export class AudioManager {
   private sources: Map<string, AudioBufferSourceNode> = new Map();
 
   private constructor() {
+    // Initialize on first interaction
     const initializeAudio = () => {
       if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('[Audio] AudioContext initialized');
+        try {
+          this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          console.log('[Audio] AudioContext initialized successfully');
+        } catch (error) {
+          console.error('[Audio] Failed to initialize AudioContext:', error);
+        }
       }
       document.removeEventListener('click', initializeAudio);
     };
@@ -27,30 +32,27 @@ export class AudioManager {
 
   async loadSound(id: string, url: string): Promise<void> {
     if (!this.audioContext) {
-      console.warn('[Audio] AudioContext not initialized');
+      console.warn('[Audio] AudioContext not initialized, cannot load sound');
       return;
     }
 
     try {
-      console.log(`[Audio] Starting to load sound: ${id}`);
+      console.log(`[Audio] Starting to load sound: ${id} from URL: ${url}`);
 
-      // Use the local audio file path
       const response = await fetch(url);
       if (!response.ok) {
+        console.error(`[Audio] HTTP error loading sound: ${response.status} ${response.statusText}`);
         throw new Error(`Failed to load audio: ${response.statusText}`);
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('audio')) {
-        console.warn('[Audio] Unexpected content type:', contentType);
-      }
-
-      console.log('[Audio] Fetched audio data, decoding...');
       const arrayBuffer = await response.arrayBuffer();
+      console.log(`[Audio] Successfully fetched audio data for ${id}, size: ${arrayBuffer.byteLength} bytes`);
+
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      console.log(`[Audio] Successfully decoded audio data for ${id}, duration: ${audioBuffer.duration}s`);
 
       this.sounds.set(id, audioBuffer);
-      console.log(`[Audio] Successfully loaded and decoded sound: ${id}`);
+      console.log(`[Audio] Sound ${id} loaded and ready for playback`);
     } catch (error) {
       console.error(`[Audio] Failed to load sound ${id}:`, error);
       throw error;
@@ -58,14 +60,19 @@ export class AudioManager {
   }
 
   playSound(id: string, options: { loop?: boolean; volume?: number } = {}): void {
-    if (!this.audioContext || !this.sounds.has(id)) {
-      console.warn(`[Audio] Cannot play sound ${id}: context not ready or sound not loaded`);
+    if (!this.audioContext) {
+      console.error(`[Audio] Cannot play sound ${id}: AudioContext not initialized`);
+      return;
+    }
+
+    if (!this.sounds.has(id)) {
+      console.error(`[Audio] Cannot play sound ${id}: Sound not loaded`);
       return;
     }
 
     try {
-      console.log(`[Audio] Playing sound: ${id}`);
-      this.stopSound(id);
+      console.log(`[Audio] Starting playback of sound: ${id}`);
+      this.stopSound(id); // Stop any existing playback
 
       const source = this.audioContext.createBufferSource();
       source.buffer = this.sounds.get(id)!;
@@ -81,12 +88,24 @@ export class AudioManager {
       this.sources.set(id, source);
       this.gainNodes.set(id, gainNode);
 
+      source.onended = () => {
+        console.log(`[Audio] Sound ${id} finished playing`);
+        if (!source.loop) {
+          this.sources.delete(id);
+          this.gainNodes.delete(id);
+        }
+      };
+
       console.log(`[Audio] Sound ${id} started playing:`, {
         loop: source.loop,
-        volume: gainNode.gain.value
+        volume: gainNode.gain.value,
+        duration: source.buffer?.duration
       });
     } catch (error) {
       console.error(`[Audio] Error playing sound ${id}:`, error);
+      // Clean up failed playback
+      this.sources.delete(id);
+      this.gainNodes.delete(id);
     }
   }
 
@@ -108,11 +127,14 @@ export class AudioManager {
     const gainNode = this.gainNodes.get(id);
     if (gainNode) {
       gainNode.gain.value = Math.max(0, Math.min(1, volume));
-      console.log(`[Audio] Set volume for ${id}:`, gainNode.gain.value);
+      console.log(`[Audio] Set volume for ${id}: ${gainNode.gain.value}`);
+    } else {
+      console.warn(`[Audio] Cannot set volume: no active gain node for ${id}`);
     }
   }
 
   dispose(): void {
+    console.log('[Audio] Disposing AudioManager...');
     this.sources.forEach((source, id) => {
       try {
         source.stop();
@@ -142,7 +164,7 @@ export function useAudio() {
         console.log('[Audio] Starting to load ambient sound...');
         await audioManager.loadSound(
           'horror-ambient',
-          '/audio/ambient.mp3' // This URL will be handled by Express static middleware
+          '/audio/ambient.mp3'
         );
         setIsReady(true);
         setError(null);
@@ -150,6 +172,7 @@ export function useAudio() {
       } catch (error) {
         console.error('[Audio] Failed to load sounds:', error);
         setError(error instanceof Error ? error.message : 'Failed to load audio');
+        setIsReady(false);
       }
     };
 
@@ -161,14 +184,17 @@ export function useAudio() {
   }, []);
 
   const playSound = useCallback((id: string, options?: { loop?: boolean; volume?: number }) => {
+    console.log(`[Audio] Attempting to play sound: ${id}`, options);
     audioManager.playSound(id, options);
   }, []);
 
   const stopSound = useCallback((id: string) => {
+    console.log(`[Audio] Attempting to stop sound: ${id}`);
     audioManager.stopSound(id);
   }, []);
 
   const setVolume = useCallback((id: string, volume: number) => {
+    console.log(`[Audio] Setting volume for ${id} to ${volume}`);
     audioManager.setVolume(id, volume);
   }, []);
 

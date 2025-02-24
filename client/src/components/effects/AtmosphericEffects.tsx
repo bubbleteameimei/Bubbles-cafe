@@ -3,6 +3,7 @@ import { useAudio } from '@/lib/audio-manager';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface AtmosphericEffectsProps {
   className?: string;
@@ -13,38 +14,91 @@ interface AtmosphericEffectsProps {
 export function AtmosphericEffects({ 
   className,
   autoPlay = false,
-  soundId = 'horror-ambient' // Default sound ID
+  soundId = 'horror-ambient'
 }: AtmosphericEffectsProps) {
-  const { isReady, playSound, stopSound, setVolume } = useAudio();
+  const { isReady, error, playSound, stopSound, setVolume } = useAudio();
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(0.5);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isReady && autoPlay) {
-      playSound(soundId, { loop: true, volume });
-      setIsPlaying(true);
+      console.log('[AtmosphericEffects] Attempting autoplay...');
+      try {
+        playSound(soundId, { loop: true, volume });
+        setIsPlaying(true);
+        console.log('[AtmosphericEffects] Autoplay started successfully');
+      } catch (error) {
+        console.error('[AtmosphericEffects] Autoplay failed:', error);
+        toast({
+          title: "Audio Error",
+          description: "Failed to start audio playback automatically. Please try the play button.",
+          variant: "destructive",
+        });
+      }
     }
     return () => {
-      stopSound(soundId);
+      if (isPlaying) {
+        console.log('[AtmosphericEffects] Cleaning up audio...');
+        stopSound(soundId);
+      }
     };
   }, [isReady, autoPlay, playSound, stopSound, volume, soundId]);
 
+  useEffect(() => {
+    if (error) {
+      console.error('[AtmosphericEffects] Audio error:', error);
+      toast({
+        title: "Audio Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
   const toggleSound = () => {
-    if (isPlaying) {
-      stopSound(soundId);
-      setIsPlaying(false);
-    } else {
-      playSound(soundId, { loop: true, volume });
-      setIsPlaying(true);
+    console.log('[AtmosphericEffects] Toggle sound clicked, current state:', isPlaying);
+    if (!isReady) {
+      toast({
+        title: "Audio Not Ready",
+        description: "Please wait while the audio system initializes...",
+        variant: "default",
+      });
+      return;
+    }
+
+    try {
+      if (isPlaying) {
+        stopSound(soundId);
+        setIsPlaying(false);
+        console.log('[AtmosphericEffects] Sound stopped');
+      } else {
+        playSound(soundId, { loop: true, volume });
+        setIsPlaying(true);
+        console.log('[AtmosphericEffects] Sound started');
+      }
+    } catch (error) {
+      console.error('[AtmosphericEffects] Error toggling sound:', error);
+      toast({
+        title: "Playback Error",
+        description: "Failed to toggle audio playback. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleVolumeChange = (newVolume: number) => {
+    console.log('[AtmosphericEffects] Volume change:', newVolume);
     setVolumeState(newVolume);
-    setVolume(soundId, newVolume);
+    if (isPlaying) {
+      setVolume(soundId, newVolume);
+    }
   };
 
-  if (!isReady) return null;
+  if (!isReady) {
+    console.log('[AtmosphericEffects] Audio system not ready yet');
+    return null;
+  }
 
   return (
     <div className={cn(

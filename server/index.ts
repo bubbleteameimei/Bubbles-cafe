@@ -68,8 +68,12 @@ app.use(helmet({
 app.use('/audio', express.static(audioDir, {
   maxAge: '1h',
   setHeaders: (res, path) => {
+    res.set('Cache-Control', 'public, max-age=3600');
     if (path.endsWith('.mp3')) {
       res.setHeader('Content-Type', 'audio/mpeg');
+      // Enable CORS for audio files
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
     }
   }
 }));
