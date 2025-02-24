@@ -16,18 +16,5 @@
       "drizzle.config.ts",
       ".env"
     ]
-  },
-  "Check TypeScript": {
-    "command": "tsc --noEmit",
-    "environment": {
-      "NODE_ENV": "development"
-    },
-    "persistent": false,
-    "restart_on": [
-      "client/src/**/*.ts",
-      "client/src/**/*.tsx",
-      "server/**/*.ts",
-      "shared/**/*.ts"
-    ]
   }
 }
