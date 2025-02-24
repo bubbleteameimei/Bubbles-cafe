@@ -287,20 +287,20 @@ export const featuredAuthors = pgTable("featured_authors", {
   monthYearUnique: unique().on(table.monthYear)
 }));
 
+// Update login schema to use email instead of username
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
 export type LoginCredentials = z.infer<typeof loginSchema>;
 
+// Registration schema remains unchanged as it already uses email
 export const registrationSchema = z.object({
   username: z.string().min(1, "Username is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
-
-export type RegistrationCredentials = z.infer<typeof registrationSchema>;
 
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 

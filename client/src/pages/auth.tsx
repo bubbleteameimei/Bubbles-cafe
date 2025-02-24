@@ -23,7 +23,7 @@ export default function AuthPage() {
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -44,10 +44,10 @@ export default function AuthPage() {
 
   const handleLogin = async (data: any) => {
     try {
-      if (!data.username || !data.password) {
+      if (!data.email || !data.password) {
         toast({
           title: "Missing credentials",
-          description: "Please enter both username and password",
+          description: "Please enter both email and password",
           variant: "destructive",
         });
         return;
@@ -99,16 +99,16 @@ export default function AuthPage() {
           {isLogin ? (
             <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="space-y-1">
                   <Input
-                    id="username"
-                    type="text"
-                    {...loginForm.register("username")}
+                    id="email"
+                    type="email"
+                    {...loginForm.register("email")}
                   />
-                  {loginForm.formState.errors.username?.message && (
+                  {loginForm.formState.errors.email?.message && (
                     <p className="text-sm text-destructive">
-                      {loginForm.formState.errors.username?.message}
+                      {loginForm.formState.errors.email?.message}
                     </p>
                   )}
                 </div>
