@@ -18,6 +18,8 @@ declare global {
   }
 }
 
+const SALT_ROUNDS = 10; // Consistent salt rounds
+
 export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
@@ -58,6 +60,7 @@ export function setupAuth(app: Express) {
         return done(null, false, { message: 'Invalid email or password' });
       }
 
+      // Compare plain password with stored hash
       const isValid = await bcrypt.compare(password, user.password_hash);
       console.log('[Auth] Password validation result:', isValid);
 
@@ -97,11 +100,15 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Create user with plain password (storage layer will handle hashing)
+      // Hash password with consistent salt rounds
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      console.log('[Auth] Password hashed successfully');
+
+      // Create user with hashed password
       const user = await storage.createUser({
         email,
         username,
-        password,
+        password: hashedPassword,
         isAdmin: false
       });
 
@@ -126,8 +133,8 @@ export function setupAuth(app: Express) {
   // Add login endpoint with enhanced logging
   app.post("/api/login", (req, res, next) => {
     console.log('[Auth] Login request received:', { 
-      body: req.body,
-      contentType: req.headers['content-type']
+      email: req.body.email,
+      hasPassword: !!req.body.password
     });
 
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
