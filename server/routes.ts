@@ -890,7 +890,7 @@ Timestamp: ${new Date().toLocaleString()}
         role: 'admin',
         permissions: ['manage_posts', 'manage_users', 'manage_comments']
       });
-        } catch (error) {
+    } catch (error) {
       console.error("Error fetching admin profile:", error);
       res.status(500).json({ message: "Failed to fetch admin profile" });
     }
@@ -1112,7 +1112,6 @@ Timestamp: ${new Date().toLocaleString()}
     try {
       const videoUrl = req.query.url;
       if (!videoUrl || typeof videoUrl !== "string") {
-        console.error('[Audio] Missing or invalid URL parameter:', videoUrl);
         return res.status(400).json({ error: "Missing or invalid 'url' query parameter" });
       }
 
@@ -1124,73 +1123,82 @@ Timestamp: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Invalid YouTube URL" });
       }
 
-      // Get video info first to ensure it exists and is accessible
-      const info = await ytdl.getInfo(videoUrl);
-      console.log('[Audio] Successfully retrieved video info:', {
+      // Get video info with timeout
+      const info = await Promise.race([
+        ytdl.getInfo(videoUrl),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout getting video info')), 10000)
+        )
+      ]);
+
+      console.log('[Audio] Processing video:', {
         title: info.videoDetails.title,
         lengthSeconds: info.videoDetails.lengthSeconds
       });
 
-      // Get the audio format with highest quality
-      const audioFormat = ytdl.chooseFormat(info.formats, { 
-        quality: 'highestaudio',
-        filter: 'audioonly' 
-      });
-
-      if (!audioFormat) {
-        console.error('[Audio] No suitable audio format found');
-        return res.status(400).json({ error: "No suitable audio format found" });
-      }
-
-      console.log('[Audio] Selected format:', {
-        container: audioFormat.container,
-        quality: audioFormat.quality,
-        bitrate: audioFormat.bitrate
-      });
-
-      // Create the audio stream
-      const stream = ytdl(videoUrl, { format: audioFormat });
-
-      // Set appropriate headers for streaming
+      // Set headers for audio streaming
       res.setHeader('Content-Type', 'audio/mpeg');
       res.setHeader('Transfer-Encoding', 'chunked');
 
-      // Create ffmpeg command with specific options
-      const command = ffmpeg(stream)
-        .toFormat('mp3')
-        .audioBitrate('128k')
+      // Create a stream with basic audio-only format
+      const stream = ytdl(videoUrl, {
+        filter: 'audioonly',
+        quality: 'lowestaudio'
+      });
+
+      // Simple ffmpeg conversion
+      const command = ffmpeg()
+        .input(stream)
+        .inputFormat('mp3')
+        .audioCodec('libmp3lame')
+        .audioBitrate('64k')
+        .format('mp3')
         .on('start', cmd => {
-          console.log('[Audio] FFmpeg process started:', cmd);
-        })
-        .on('progress', progress => {
-          console.log('[Audio] Processing:', progress);
-        })
-        .on('end', () => {
-          console.log('[Audio] FFmpeg processing completed');
+          console.log('[Audio] FFmpeg started with command:', cmd);
         })
         .on('error', (err) => {
           console.error('[Audio] FFmpeg error:', err);
           if (!res.headersSent) {
-            res.status(500).json({ error: 'Error processing audio' });
+            res.status(500).json({
+              error: 'FFmpeg processing failed',
+              details: err.message
+            });
           }
+        })
+        .on('end', () => {
+          console.log('[Audio] FFmpeg processing completed');
         });
 
       // Handle stream errors
       stream.on('error', (err) => {
-        console.error('[Audio] Stream error:', err);
+        console.error('[Audio] YouTube stream error:', err);
         if (!res.headersSent) {
-          res.status(500).json({ error: 'Error streaming from YouTube' });
+          res.status(500).json({
+            error: 'Error streaming from YouTube',
+            details: err.message
+          });
         }
       });
 
-      // Pipe the output to response
-      command.pipe(res, { end: true });
+      // Start streaming
+      command.pipe(res);
+
+      // Cleanup on client disconnect
+      req.on('close', () => {
+        try {
+          stream.destroy();
+          command.kill();
+          console.log('[Audio] Client disconnected, cleaned up resources');
+        } catch (error) {
+          console.error('[Audio] Error during cleanup:', error);
+        }
+      });
 
     } catch (error) {
-      console.error("[Audio] Error processing YouTube audio:", error);
+      console.error("[Audio] Error:", error);
       if (!res.headersSent) {
-        res.status(500).json({ 
-          error: "Error processing audio",
+        res.status(500).json({
+          error: "Failed to process audio",
           details: error instanceof Error ? error.message : String(error)
         });
       }
