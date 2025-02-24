@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { usePerformanceMonitoring } from '@/hooks/use-performance-monitoring';
 
 // Enhanced lazy loading with prefetch and retry logic
 const loadComponent = (importFn: () => Promise<any>, priority: 'high' | 'low' = 'low') => {
@@ -113,6 +114,9 @@ const prefetchCriticalRoutes = () => {
 };
 
 function App() {
+  // Add performance monitoring
+  usePerformanceMonitoring();
+
   // Prefetch critical routes on mount and cache them
   React.useEffect(() => {
     prefetchCriticalRoutes();
