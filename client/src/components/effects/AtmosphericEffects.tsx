@@ -22,13 +22,7 @@ export function AtmosphericEffects({
   const [volume, setVolumeState] = useState(0.5);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isReady && autoPlay) {
-      console.log('[AtmosphericEffects] Attempting autoplay...');
-      handlePlaySound();
-    }
-  }, [isReady, autoPlay]);
-
+  // Handle errors
   useEffect(() => {
     if (error) {
       console.error('[AtmosphericEffects] Audio error:', error);
@@ -40,76 +34,40 @@ export function AtmosphericEffects({
     }
   }, [error, toast]);
 
-  const handlePlaySound = useCallback(async () => {
+  const handleClick = useCallback(async () => {
+    if (isLoading) return;
+
     try {
-      console.log('[AtmosphericEffects] Attempting to play sound...');
       setIsLoading(true);
-      await playSound(soundId, { loop: true, volume });
-      setIsPlaying(true);
-      console.log('[AtmosphericEffects] Sound started successfully');
-      toast({
-        title: "Audio Started",
-        description: "Background ambient sound is now playing.",
-        variant: "default",
-      });
+      if (isPlaying) {
+        console.log('[AtmosphericEffects] Stopping playback...');
+        stopSound(soundId);
+        setIsPlaying(false);
+        toast({
+          title: "Audio Stopped",
+          description: "Background sound has been stopped."
+        });
+      } else {
+        console.log('[AtmosphericEffects] Starting playback...');
+        await playSound(soundId, { loop: true, volume });
+        setIsPlaying(true);
+        toast({
+          title: "Audio Started",
+          description: "Background sound is now playing."
+        });
+      }
     } catch (error) {
-      console.error('[AtmosphericEffects] Failed to play sound:', error);
+      console.error('[AtmosphericEffects] Audio operation failed:', error);
       setIsPlaying(false);
       toast({
-        title: "Playback Error",
-        description: "Failed to start audio playback. Please try again.",
+        title: "Audio Error",
+        description: error instanceof Error ? error.message : "Failed to control audio",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [playSound, soundId, volume, toast]);
-
-  const handleStopSound = useCallback(() => {
-    try {
-      console.log('[AtmosphericEffects] Attempting to stop sound...');
-      stopSound(soundId);
-      setIsPlaying(false);
-      console.log('[AtmosphericEffects] Sound stopped successfully');
-      toast({
-        title: "Audio Stopped",
-        description: "Background ambient sound has been stopped.",
-        variant: "default",
-      });
-    } catch (error) {
-      console.error('[AtmosphericEffects] Failed to stop sound:', error);
-      toast({
-        title: "Playback Error",
-        description: "Failed to stop audio playback. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [stopSound, soundId, toast]);
-
-  const toggleSound = useCallback(async () => {
-    if (isLoading) return;
-
-    console.log('[AtmosphericEffects] Toggle sound clicked, current state:', {
-      isPlaying,
-      isReady,
-      volume
-    });
-
-    if (!isReady) {
-      toast({
-        title: "Audio Not Ready",
-        description: "Please click anywhere on the page to initialize the audio system.",
-        variant: "default",
-      });
-      return;
-    }
-
-    if (isPlaying) {
-      handleStopSound();
-    } else {
-      await handlePlaySound();
-    }
-  }, [isPlaying, isReady, isLoading, handlePlaySound, handleStopSound, toast]);
+  }, [isPlaying, isLoading, soundId, volume, playSound, stopSound, toast]);
 
   const handleVolumeChange = useCallback((newVolume: number) => {
     console.log('[AtmosphericEffects] Volume change:', newVolume);
@@ -119,8 +77,8 @@ export function AtmosphericEffects({
     }
   }, [isPlaying, setVolume, soundId]);
 
+  // Show muted button while audio system initializes
   if (!isReady) {
-    console.log('[AtmosphericEffects] Audio system not ready yet');
     return (
       <div className={cn(
         "fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-background/20 backdrop-blur-sm p-2 rounded-full shadow-lg",
@@ -129,8 +87,8 @@ export function AtmosphericEffects({
         <Button
           variant="ghost"
           size="icon"
-          className="w-10 h-10 rounded-full hover:bg-background/40 transition-all duration-200 cursor-not-allowed opacity-50"
           disabled
+          className="w-10 h-10 rounded-full hover:bg-background/40 transition-all duration-200 cursor-not-allowed opacity-50"
           title="Click anywhere on the page to initialize audio"
         >
           <VolumeX className="h-4 w-4" />
@@ -147,10 +105,10 @@ export function AtmosphericEffects({
       <Button
         variant="ghost"
         size="icon"
-        onClick={toggleSound}
+        onClick={handleClick}
         disabled={isLoading}
         className="w-10 h-10 rounded-full hover:bg-background/40 transition-all duration-200"
-        title={isPlaying ? "Disable ambient sounds" : "Enable ambient sounds"}
+        title={isPlaying ? "Stop ambient sounds" : "Play ambient sounds"}
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
