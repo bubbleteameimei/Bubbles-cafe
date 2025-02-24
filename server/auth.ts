@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-const SALT_ROUNDS = 10; // Consistent salt rounds
+const SALT_ROUNDS = 10;
 
 export function setupAuth(app: Express) {
   app.use(passport.initialize());
@@ -63,6 +63,11 @@ export function setupAuth(app: Express) {
       // Compare plain password with stored hash
       const isValid = await bcrypt.compare(password, user.password_hash);
       console.log('[Auth] Password validation result:', isValid);
+      console.log('[Auth] Login attempt details:', {
+        email,
+        hashedPassword: user.password_hash,
+        isValid
+      });
 
       if (!isValid) {
         console.log('[Auth] Invalid password for user:', email);
@@ -79,7 +84,35 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  // Update the registration endpoint
+  // Add login endpoint with enhanced logging
+  app.post("/api/login", (req, res, next) => {
+    console.log('[Auth] Login request received:', { 
+      email: req.body.email,
+      hasPassword: !!req.body.password,
+      body: JSON.stringify(req.body)
+    });
+
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
+      if (err) {
+        console.error('[Auth] Login error:', err);
+        return next(err);
+      }
+      if (!user) {
+        console.log('[Auth] Login failed:', info?.message);
+        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      }
+      req.login(user, (err) => {
+        if (err) {
+          console.error('[Auth] Session creation error:', err);
+          return next(err);
+        }
+        console.log('[Auth] Login successful:', { id: user.id, email: user.email });
+        return res.json(user);
+      });
+    })(req, res, next);
+  });
+
+  // Add other routes...
   app.post("/api/register", async (req, res) => {
     try {
       console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
@@ -100,11 +133,11 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Hash password with consistent salt rounds
+      // Hash password
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
       console.log('[Auth] Password hashed successfully');
 
-      // Create user with hashed password
+      // Create user
       const user = await storage.createUser({
         email,
         username,
@@ -130,34 +163,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Add login endpoint with enhanced logging
-  app.post("/api/login", (req, res, next) => {
-    console.log('[Auth] Login request received:', { 
-      email: req.body.email,
-      hasPassword: !!req.body.password
-    });
-
-    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
-      if (err) {
-        console.error('[Auth] Login error:', err);
-        return next(err);
-      }
-      if (!user) {
-        console.log('[Auth] Login failed:', info?.message);
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      }
-      req.login(user, (err) => {
-        if (err) {
-          console.error('[Auth] Session creation error:', err);
-          return next(err);
-        }
-        console.log('[Auth] Login successful:', { id: user.id, email: user.email });
-        return res.json(user);
-      });
-    })(req, res, next);
-  });
-
-  // Add logout endpoint
   app.post("/api/logout", (req, res) => {
     const userId = req.user?.id;
     console.log('[Auth] Logout request received:', { userId });
@@ -171,7 +176,6 @@ export function setupAuth(app: Express) {
     });
   });
 
-  // Add user info endpoint
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       console.log('[Auth] Unauthenticated user info request');
