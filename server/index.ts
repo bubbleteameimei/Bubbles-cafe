@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 
 // Create express app
 const app = express();
-const PORT = parseInt(process.env.PORT || "3001", 10);
+const PORT = parseInt(process.env.PORT || "5000", 10);
 const isDev = process.env.NODE_ENV !== 'production';
 
 // Declare server variable in the module scope
