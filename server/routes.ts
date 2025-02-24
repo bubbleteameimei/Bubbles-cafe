@@ -825,7 +825,7 @@ Timestamp: ${new Date().toLocaleString()}
       const replyData = insertCommentReplySchema.parse({
         commentId,
         content,
-        author
+        author: author?.trim() || 'Anonymous'
       });
 
       // Check for filtered words
@@ -843,8 +843,10 @@ Timestamp: ${new Date().toLocaleString()}
         ...replyData,
         approved: !containsFilteredWord,
         metadata: {
+          author: author?.trim() || 'Anonymous',
           moderated: containsFilteredWord,
           originalContent: content,
+          isAnonymous: !req.user?.id,
           upvotes: 0,
           downvotes: 0
         }
@@ -867,6 +869,436 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add these routes after existing routes
+  // Update YouTube video info route with correct format handling
+  app.get("/api/videos/:videoId/info", async (req: Request, res: Response) => {
+    try {
+      const { videoId } = req.params;
+      const info = await ytdl.getInfo(videoId);
+
+      // Filter for audio formats and prefer m4a
+      const formats = ytdl.filterFormats(info.formats, 'audioonly');
+      const format = formats.find(f => f.mimeType?.includes('audio/mp4')) || formats[0];
+
+      if (!format) {
+        return res.status(404).json({ message: "No suitable audio format found" });
+      }
+
+      res.json({
+        title: infodetails.title,
+        thumbnail: info.videoDetails.thumbnails[0]?.url,
+        duration: parseInt(info.videoDetails.lengthSeconds),
+        format: format.container
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("[Video Info] Error:", {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      res.status(500).json({ message: "Failed to fetch video info" });
+    }
+  });
+
+  // Remove the getAdminInfo endpoint since it's not implemented in storage
+  app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Get basic stats from existing storage methods
+      const [posts, comments, users] = await Promise.all([
+        storage.getPosts(1, 1),
+        storage.getRecentComments(),
+        storage.getAdminByEmail(req.user.email)
+      ]);
+
+      res.json({
+        totalPosts: posts.total || 0,
+        recentComments: comments.length,
+        adminCount: users.length
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("[Admin Stats] Error:", {
+        message: err.message,
+        stack: err.stack
+      });
+      res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
+  // Comment routes
+  app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const comments = await storage.getComments(postId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.get("/api/comments/recent", async (_req: Request, res: Response) => {
+    try {
+      const comments = await storage.getRecentComments();
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching recent comments:", error);
+      res.status(500).json({ message: "Failed to fetch recent comments" });
+    }
+  });
+
+  app.patch("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      const comment = await storage.updateComment(commentId, req.body);
+      res.json(comment);
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          return res.status(404).json({ message: "Comment not found" });
+        }
+      }
+      res.status(500).json({ message: "Failed to update comment" });
+    }
+  });
+
+  // Update the delete comment route
+  app.delete("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      if (isNaN(commentId)) {
+        console.log('[Delete Comment] Invalid comment ID:', req.params.id);
+        return res.status(400).json({ message: "Invalid comment ID" });
+      }
+
+      console.log(`[Delete Comment] Attempting to delete comment with ID: ${commentId}`);
+
+      // Delete the comment
+      const result = await storage.deleteComment(commentId);
+      console.log(`[Delete Comment] Comment ${commentId} deleted successfully:`, result);
+      res.json({ message: "Comment deleted successfully", commentId });
+    } catch (error) {
+      console.error("[Delete Comment] Error:", error);
+      if (error instanceof Error) {
+        if (error.message === "Comment not found") {
+          return res.status(404).json({ message: "Comment not found" });
+        }
+        if (error.message.includes("Unauthorized")) {
+          return res.status(401).json({ message: "Unauthorized: Please log in again" });
+        }
+      }
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // Add comment routes after the existing post routes
+  app.get("/api/comments/pending", isAuthenticated, async (_req: Request, res: Response) => {
+    try {
+      const comments = await storage.getPendingComments();
+      console.log('Fetched pending comments:', comments);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching pending comments:", error);
+      res.status(500).json({ message: "Failed to fetch pending comments" });
+    }
+  });
+
+  // Update the createComment function with proper metadata handling
+  app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid post ID format" });
+      }
+
+      // Simplified validation for required fields
+      const { content, author } = req.body;
+      if (!content?.trim()) {
+        return res.status(400).json({
+          message: "Comment content is required"
+        });
+      }
+
+      // Create the comment with properly typed metadata
+      const comment = await storage.createComment({
+        postId,
+        content: content.trim(),
+        userId: req.user?.id || null, // Allow null for anonymous users
+        approved: true, // Auto-approve comments
+        metadata: {
+          author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
+          moderated: false,
+          isAnonymous: !req.user?.id,
+          upvotes: 0,
+          downvotes: 0,
+          replyCount: 0
+        }
+      });
+
+      console.log('[Comments] Successfully created comment:', comment);
+      return res.status(201).json(comment);
+    } catch (error) {
+      console.error("[Comments] Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Update the like/dislike route handler
+  app.post("/api/posts/:postId/reaction", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { isLike } = req.body;
+
+      console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
+
+      // For logged-in users, use their ID
+      if (req.user?.id) {
+        const userId = req.user.id;
+        const existingLike = await storage.getPostLike(postId, userId);
+
+        if (existingLike) {
+          if (existingLike.isLike === isLike) {
+            console.log(`[Reaction] Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            await storage.removePostLike(postId, userId);
+          } else {
+            console.log(`[Reaction] Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+            await storage.updatePostLike(postId, userId, isLike);
+          }
+        } else {
+          console.log(`[Reaction] Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+          await storage.createPostLike(postId, userId, isLike);
+        }
+      } else {
+        // For anonymous users, store likes in session
+        if (!req.session.likes) {
+          req.session.likes = {};
+        }
+
+        const sessionLikes = req.session.likes;
+        const postKey = postId.toString();
+
+        if (sessionLikes[postKey] === isLike) {
+          // Remove like if same button clicked
+          delete sessionLikes[postKey];
+          console.log(`[Reaction] Anonymous user removed ${isLike ? 'like' : 'dislike'} for post ${postId}`);
+        } else {
+          // Set or update like
+          sessionLikes[postKey] = isLike;
+          console.log(`[Reaction] Anonymous user ${isLike ? 'liked' : 'disliked'} post ${postId}`);
+        }
+      }
+
+      // Get updated counts (combine database and session likes)
+      const dbCounts = await storage.getPostLikeCounts(postId);
+      const counts = {
+        likesCount: dbCounts.likesCount,
+        dislikesCount: dbCounts.dislikesCount
+      };
+
+      // Add session likes to counts
+      if (!req.user?.id && req.session.likes) {
+        const sessionLike = req.session.likes[postId.toString()];
+        if (sessionLike === true) counts.likesCount++;
+        if (sessionLike === false) counts.dislikesCount++;
+      }
+
+      console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
+      res.json({
+        ...counts,
+        message: req.user?.id
+          ? `Successfully ${isLike ? 'liked' : 'disliked'} the post`
+          : 'Reaction recorded anonymously'
+      });
+    } catch (error) {
+      console.error("[Reaction] Error handling post reaction:", error);
+      res.status(500).json({
+        message: error instanceof Error
+          ? error.message
+          : "Failed to update reaction status"
+      });
+    }
+  });
+
+  // Add a route to get current like/dislike counts
+  app.get("/api/posts/:postId/reactions", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
+
+      const dbCounts = await storage.getPostLikeCounts(postId);
+      const counts = {
+        likesCount: dbCounts.likesCount,
+        dislikesCount: dbCounts.dislikesCount
+      };
+
+      // Add session likes to counts for anonymous users
+      if (!req.user?.id && req.session.likes) {
+        const sessionLike = req.session.likes[postId.toString()];
+        if (sessionLike === true) counts.likesCount++;
+        if (sessionLike === false) counts.dislikesCount++;
+      }
+
+      console.log(`[Reaction] Current counts for post ${postId}:`, counts);
+      res.json(counts);
+    } catch (error) {
+      console.error("[Reaction] Error fetching post reactions:", error);
+      res.status(500).json({
+        message: error instanceof Error
+          ? error.message
+          : "Failed to fetch reaction counts"
+      });
+    }
+  });
+
+  app.post("/api/comments/:commentId/vote", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId);
+      const { isUpvote } = req.body;
+
+      // Generate a user ID from IP if not logged in
+      let userId = req.user?.id;
+      if (!userId) {
+        const ip = req.ip || '127.0.0.1';
+        const salt = await bcrypt.genSalt(5);
+        const ipHash = await bcrypt.hash(ip, salt);
+        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
+      }
+
+      // Convert userId to string for storage functions
+      const userIdStr = userId.toString();
+
+      // Check if user has already voted
+      const existingVote = await storage.getCommentVote(commentId, userIdStr);
+
+      if (existingVote) {
+        if (existingVote.isUpvote === isUpvote) {
+          // Remove vote if clicking same button
+          await storage.removeCommentVote(commentId, userIdStr);
+        } else {
+          // Change vote
+          await storage.updateCommentVote(commentId, userIdStr, isUpvote);
+        }
+      } else {
+        // Create new vote
+        await storage.createCommentVote(commentId, userIdStr, isUpvote);
+      }
+
+      // Get updated vote counts
+      const counts = await storage.getCommentVoteCounts(commentId);
+      res.json(counts);
+    } catch (error) {
+      console.error("Error handling comment vote:", error);
+      res.status(500).json({ message: "Failed to update vote" });
+    }
+  });
+
+  // Update reply creation with proper metadata
+  app.post("/api/comments/:commentId/replies", async (req, res) => {
+    try {
+      const commentId = parseInt(req.params.commentId);
+      const { content, author } = req.body;
+
+      // Validate input using schema
+      const replyData = insertCommentReplySchema.parse({
+        commentId,
+        content,
+        author: author?.trim() || 'Anonymous'
+      });
+
+      // Check for filtered words
+      const filteredWords = [
+        'hate', 'kill', 'racist', 'offensive', 'slur',
+        'violence', 'death', 'murder', 'abuse', 'discriminate'
+      ];
+
+      const containsFilteredWord = filteredWords.some(word =>
+        content.toLowerCase().includes(word.toLowerCase())
+      );
+
+      // Create reply with proper metadata
+      const reply = await storage.createCommentReply({
+        ...replyData,
+        approved: !containsFilteredWord,
+        metadata: {
+          author: author?.trim() || 'Anonymous',
+          moderated: containsFilteredWord,
+          originalContent: content,
+          isAnonymous: !req.user?.id,
+          upvotes: 0,
+          downvotes: 0
+        }
+      });
+
+      res.status(201).json(reply);
+    } catch (error) {
+      console.error("Error creating reply:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Invalid reply data",
+          errors: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      res.status(500).json({ message: "Failed to create reply" });
+    }
+  });
+
+  // Add these routes after existing routes
+  // Update YouTube video info route with proper type annotations
+  app.get("/api/videos/:videoId/info", async (req: Request, res: Response) => {
+    try {
+      const { videoId } = req.params;
+      const info = await ytdl.getInfo(videoId);
+
+      const formats = ytdl.filterFormats(info.formats, 'audioonly');
+      const format = formats.find(f => f.container === 'm4a') || formats[0];
+
+      if (!format) {
+        return res.status(404).json({ message: "No suitable audio format found" });
+      }
+
+      res.json({
+        title: info.videoDetails.title,
+        thumbnail: info.videoDetails.thumbnails[0]?.url,
+        duration: parseInt(info.videoDetails.lengthSeconds),
+        format: format.container
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("[Video Info] Error:", {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      res.status(500).json({ message: "Failed to fetch video info" });
+    }
+  });
+
+  // Fix type annotations in error handlers
+  app.get("/api/admin/info", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const info = await storage.getAdminInfo();
+      res.json(info);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("[Admin Info] Error:", {
+        message: err.message,
+        stack: err.stack
+      });
+      res.status(500).json({ message: "Failed to fetch admin info" });
+    }
+  });
 
   // Fix the admin profile route
   app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
@@ -891,7 +1323,8 @@ Timestamp: ${new Date().toLocaleString()}
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });    }
+      res.status(500).json({ message: "Failed to fetch admin profile" });    
+    }
   });
 
   // Fix the admin dashboard route
@@ -917,34 +1350,45 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
-  // Add admin dashboard data endpoint
-  app.post("/api/analytics/vitals", async (req, res) => {
+  // Update analytics endpoint to handle the new metric format
+  app.post("/api/analytics/vitals", async (req: Request, res: Response) => {
     try {
-      const { name, value, id, navigationType, timestamp, url } = req.body;
+      const { metricName, value, identifier, navigationType, url, userAgent } = req.body;
 
       console.log('[Analytics] Received performance metric:', {
-        name,
+        name: metricName,
         value: Math.round(value * 100) / 100,
-        id,
+        id: identifier,
         navigationType,
         url
       });
 
+      // Validate required fields
+      if (!metricName || typeof value !== 'number' || isNaN(value)) {
+        return res.status(400).json({ 
+          message: "Invalid metric data", 
+          details: "Metric name and numeric value are required" 
+        });
+      }
+
       // Store the metric in database
       await storage.storePerformanceMetric({
-        metricName: name,
-        value: Math.round(value * 100) / 100, // Round to 2 decimal places
-        identifier: id,
+        metricName,
+        value: Math.round(value * 100) / 100,
+        identifier,
         navigationType: navigationType || null,
-        timestamp: new Date(timestamp),
         url,
-        userAgent: req.headers['user-agent'] || null
+        userAgent: userAgent || null
       });
 
       res.status(201).json({ message: "Metric recorded successfully" });
-    } catch (error) {
-      console.error("[Analytics] Error storing performance metric:", error);
-      res.status(500).json({ message: "Failed to store performance metric" });
+    } catch (error: unknown) {
+      console.error('[Analytics] Error storing metric:', error);
+      const err = error as Error;
+      res.status(500).json({ 
+        message: "Failed to store metric",
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
   });
 
@@ -1024,8 +1468,8 @@ Timestamp: ${new Date().toLocaleString()}
     });
   });
 
-  // Register moderation routes with authentication
-  app.use("/api/moderation", isAuthenticated, moderationRouter);
+  // Mount the moderation router
+  app.use('/api/moderation', moderationRouter);
 
   // User statistics endpoint
   app.get("/api/users/stats", isAuthenticated, async (req, res) => {

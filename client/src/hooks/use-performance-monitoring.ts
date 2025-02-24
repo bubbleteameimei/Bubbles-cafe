@@ -9,16 +9,29 @@ interface PerformanceMetric {
 }
 
 const reportMetric = async (metric: PerformanceMetric) => {
+  // Validate metric data before sending
+  if (!metric.name || typeof metric.value !== 'number' || isNaN(metric.value)) {
+    console.warn('[Performance] Invalid metric data:', metric);
+    return;
+  }
+
   // Log to console in development
   if (import.meta.env.DEV) {
-    console.log('[Performance]', metric);
+    console.log('[Performance]', {
+      name: metric.name,
+      value: Math.round(metric.value * 100) / 100,
+      id: metric.id
+    });
   }
 
   try {
     const body = JSON.stringify({
-      ...metric,
-      timestamp: Date.now(),
+      metricName: metric.name,
+      value: Math.round(metric.value * 100) / 100,
+      identifier: metric.id,
+      navigationType: metric.navigationType,
       url: window.location.href,
+      userAgent: navigator.userAgent
     });
 
     // Use sendBeacon for better reliability during page unload
@@ -42,11 +55,55 @@ const reportMetric = async (metric: PerformanceMetric) => {
 export const usePerformanceMonitoring = () => {
   const measureCoreWebVitals = useCallback(() => {
     try {
-      onCLS(reportMetric);
-      onFID(reportMetric);
-      onLCP(reportMetric);
-      onFCP(reportMetric);
-      onTTFB(reportMetric);
+      onCLS((metric) => {
+        if (metric.value) {
+          reportMetric({
+            name: 'CLS',
+            value: metric.value,
+            id: metric.id
+          });
+        }
+      });
+
+      onFID((metric) => {
+        if (metric.value) {
+          reportMetric({
+            name: 'FID',
+            value: metric.value,
+            id: metric.id
+          });
+        }
+      });
+
+      onLCP((metric) => {
+        if (metric.value) {
+          reportMetric({
+            name: 'LCP',
+            value: metric.value,
+            id: metric.id
+          });
+        }
+      });
+
+      onFCP((metric) => {
+        if (metric.value) {
+          reportMetric({
+            name: 'FCP',
+            value: metric.value,
+            id: metric.id
+          });
+        }
+      });
+
+      onTTFB((metric) => {
+        if (metric.value) {
+          reportMetric({
+            name: 'TTFB',
+            value: metric.value,
+            id: metric.id
+          });
+        }
+      });
     } catch (error) {
       console.error('[Performance] Failed to measure Core Web Vitals:', error);
     }
@@ -57,26 +114,32 @@ export const usePerformanceMonitoring = () => {
       if (performance.getEntriesByType) {
         const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
         if (navigation) {
-          reportMetric({
-            name: 'TTFB',
-            value: navigation.responseStart - navigation.requestStart,
-            id: 'nav-timing',
-            navigationType: navigation.type,
-          });
+          if (navigation.responseStart && navigation.requestStart) {
+            reportMetric({
+              name: 'TTFB',
+              value: navigation.responseStart - navigation.requestStart,
+              id: 'nav-timing',
+              navigationType: navigation.type,
+            });
+          }
 
           // Add DNS lookup time
-          reportMetric({
-            name: 'DNS',
-            value: navigation.domainLookupEnd - navigation.domainLookupStart,
-            id: 'dns-timing',
-          });
+          if (navigation.domainLookupEnd && navigation.domainLookupStart) {
+            reportMetric({
+              name: 'DNS',
+              value: navigation.domainLookupEnd - navigation.domainLookupStart,
+              id: 'dns-timing',
+            });
+          }
 
           // Add connection time
-          reportMetric({
-            name: 'TCP',
-            value: navigation.connectEnd - navigation.connectStart,
-            id: 'tcp-timing',
-          });
+          if (navigation.connectEnd && navigation.connectStart) {
+            reportMetric({
+              name: 'TCP',
+              value: navigation.connectEnd - navigation.connectStart,
+              id: 'tcp-timing',
+            });
+          }
         }
       }
     } catch (error) {
