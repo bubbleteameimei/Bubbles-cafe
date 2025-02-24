@@ -17,7 +17,6 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import ytdl from "ytdl-core";
-import ffmpeg from "fluent-ffmpeg";
 
 // Add cacheControl middleware at the top with other middleware definitions
 const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
@@ -888,12 +887,11 @@ Timestamp: ${new Date().toLocaleString()}
       res.json({
         ...safeAdminData,
         role: 'admin',
-        permissions: ['manage_posts', 'manage_users', 'manage_comments']
+        permissions: ['manageposts', 'manage_users', 'manage_comments']
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });
-    }
+      res.status(500).json({ message: "Failed to fetch admin profile" });    }
   });
 
   // Fix the admin dashboard route
@@ -1117,89 +1115,127 @@ Timestamp: ${new Date().toLocaleString()}
 
       console.log('[Audio] Processing YouTube URL:', videoUrl);
 
-      // Validate video URL first
-      if (!ytdl.validateURL(videoUrl)) {
-        console.error('[Audio] Invalid YouTube URL:', videoUrl);
-        return res.status(400).json({ error: "Invalid YouTube URL" });
+      // Get video info with detailed error logging
+      let info;
+      try {
+        info = await ytdl.getInfo(videoUrl);
+        console.log('[Audio] Video info retrieved:', {
+          title: info.videoDetails.title,
+          duration: info.videoDetails.lengthSeconds
+        });
+      } catch (infoError) {
+        console.error('[Audio] Failed to get video info:', {
+          error: infoError,
+          message: infoError.message,
+          stack: infoError.stack
+        });
+        return res.status(500).json({
+          error: 'Failed to get video info',
+          details: infoError.message
+        });
       }
 
-      // Get video info with timeout
-      const info = await Promise.race([
-        ytdl.getInfo(videoUrl),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout getting video info')), 10000)
-        )
-      ]);
+      // Get audio formats and log them
+      const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+      console.log('[Audio] Available audio formats:', 
+        audioFormats.map(f => ({
+          itag: f.itag,
+          container: f.container,
+          audioBitrate: f.audioBitrate,
+          contentLength: f.contentLength
+        }))
+      );
 
-      console.log('[Audio] Processing video:', {
-        title: info.videoDetails.title,
-        lengthSeconds: info.videoDetails.lengthSeconds
+      // Find the smallest audio format to reduce size
+      const format = audioFormats
+        .filter(f => f.audioBitrate)
+        .sort((a, b) => (a.audioBitrate || 0) - (b.audioBitrate || 0))[0];
+
+      if (!format) {
+        console.error('[Audio] No suitable audio format found');
+        return res.status(400).json({ 
+          error: 'No suitable audio format found',
+          formats: audioFormats.map(f => f.itag)
+        });
+      }
+
+      console.log('[Audio] Selected format:', {
+        itag: format.itag,
+        container: format.container,
+        audioBitrate: format.audioBitrate
       });
 
-      // Set headers for audio streaming
-      res.setHeader('Content-Type', 'audio/mpeg');
+      // Create stream with the selected format
+      const stream = ytdl(videoUrl, {
+        format: format,
+        requestOptions: {
+          // Add headers to avoid throttling
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        }
+      });
+
+      // Set response headers based on format
+      const contentType = format.container === 'webm' ? 'audio/webm' :
+                         format.container === 'm4a' ? 'audio/mp4' :
+                         'audio/mpeg';
+
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Transfer-Encoding', 'chunked');
 
-      // Create a stream with basic audio-only format
-      const stream = ytdl(videoUrl, {
-        filter: 'audioonly',
-        quality: 'lowestaudio'
+      // Track streaming progress
+      let totalBytes = 0;
+      stream.on('data', chunk => {
+        totalBytes += chunk.length;
+        if (totalBytes % (1024 * 1024) === 0) {
+          console.log('[Audio] Streamed:', Math.round(totalBytes / (1024 * 1024)), 'MB');
+        }
       });
 
-      // Simple ffmpeg conversion
-      const command = ffmpeg()
-        .input(stream)
-        .inputFormat('mp3')
-        .audioCodec('libmp3lame')
-        .audioBitrate('64k')
-        .format('mp3')
-        .on('start', cmd => {
-          console.log('[Audio] FFmpeg started with command:', cmd);
-        })
-        .on('error', (err) => {
-          console.error('[Audio] FFmpeg error:', err);
-          if (!res.headersSent) {
-            res.status(500).json({
-              error: 'FFmpeg processing failed',
-              details: err.message
-            });
-          }
-        })
-        .on('end', () => {
-          console.log('[Audio] FFmpeg processing completed');
+      // Error handling for stream
+      stream.on('error', err => {
+        console.error('[Audio] Stream error:', {
+          error: err,
+          message: err.message,
+          stack: err.stack
         });
-
-      // Handle stream errors
-      stream.on('error', (err) => {
-        console.error('[Audio] YouTube stream error:', err);
         if (!res.headersSent) {
           res.status(500).json({
-            error: 'Error streaming from YouTube',
+            error: 'Stream error',
             details: err.message
           });
         }
       });
 
-      // Start streaming
-      command.pipe(res);
+      // Log when streaming ends
+      stream.on('end', () => {
+        console.log('[Audio] Streaming completed, total bytes:', totalBytes);
+      });
 
-      // Cleanup on client disconnect
+      // Pipe the stream to response
+      stream.pipe(res);
+
+      // Handle client disconnect
       req.on('close', () => {
         try {
           stream.destroy();
-          command.kill();
-          console.log('[Audio] Client disconnected, cleaned up resources');
+          console.log('[Audio] Client disconnected, stream destroyed');
         } catch (error) {
           console.error('[Audio] Error during cleanup:', error);
         }
       });
 
     } catch (error) {
-      console.error("[Audio] Error:", error);
+      console.error('[Audio] Unexpected error:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       if (!res.headersSent) {
         res.status(500).json({
-          error: "Failed to process audio",
-          details: error instanceof Error ? error.message : String(error)
+          error: 'Unexpected error',
+          details: error.message
         });
       }
     }
