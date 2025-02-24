@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 
+const YOUTUBE_VIDEO_ID = '26Ch2vKsgTg';
+
 export class AudioManager {
   private static instance: AudioManager;
   private audioContext: AudioContext | null = null;
-  private sounds: Map<string, AudioBuffer> = new Map();
-  private gainNodes: Map<string, GainNode> = new Map();
-  private sources: Map<string, AudioBufferSourceNode> = new Map();
+  private mediaElement: HTMLAudioElement | null = null;
+  private gainNode: GainNode | null = null;
 
   private constructor() {}
 
@@ -27,139 +28,117 @@ export class AudioManager {
       await this.audioContext.resume();
     }
     console.log('[Audio] AudioContext ready:', this.audioContext.state);
+
+    // Initialize audio element if needed
+    if (!this.mediaElement) {
+      this.mediaElement = new Audio();
+      this.mediaElement.crossOrigin = "anonymous";
+
+      // Connect audio element to gain node for volume control
+      const source = this.audioContext.createMediaElementSource(this.mediaElement);
+      this.gainNode = this.audioContext.createGain();
+      source.connect(this.gainNode);
+      this.gainNode.connect(this.audioContext.destination);
+    }
   }
 
-  async loadSound(id: string, url: string, bufferSize: number = 65536): Promise<void> {
+  async loadSound(): Promise<void> {
     if (!this.audioContext) {
       await this.initialize();
     }
 
-    if (this.sounds.has(id)) {
-      console.log(`[Audio] Sound ${id} already loaded`);
-      return;
-    }
-
     try {
-      console.log(`[Audio] Loading initial ${bufferSize}B buffer...`);
-      const initialResponse = await fetch(url, {
-        headers: {
-          'Range': `bytes=0-${bufferSize - 1}`
-        }
-      });
-
-      if (!initialResponse.ok) {
-        throw new Error(`Failed to load audio file (${initialResponse.status})`);
-      }
-
-      const initialBuffer = await initialResponse.arrayBuffer();
-      const audioBuffer = await this.audioContext!.decodeAudioData(initialBuffer);
-      this.sounds.set(id, audioBuffer);
-      console.log('[Audio] Initial buffer loaded and decoded');
-
-      // Load the rest in background
-      this.loadFullAudio(id, url, bufferSize);
-    } catch (error) {
-      console.error('[Audio] Failed to load initial buffer:', error);
-      throw new Error('Failed to load audio file');
-    }
-  }
-
-  private async loadFullAudio(id: string, url: string, skipBytes: number): Promise<void> {
-    try {
-      console.log('[Audio] Loading full audio in background...');
-      const response = await fetch(url, {
-        headers: {
-          'Range': `bytes=${skipBytes}-`
-        }
-      });
-
+      // Fetch audio info from our backend
+      const response = await fetch(`/api/videos/${YOUTUBE_VIDEO_ID}/info`);
       if (!response.ok) {
-        throw new Error(`Failed to load full audio (${response.status})`);
+        throw new Error(`Failed to get video info (${response.status})`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-      this.sounds.set(id, audioBuffer);
-      console.log('[Audio] Full audio loaded and decoded successfully');
+      const info = await response.json();
+      if (!this.mediaElement) {
+        throw new Error('Audio element not initialized');
+      }
+
+      // Set up audio element
+      this.mediaElement.src = `/api/videos/${YOUTUBE_VIDEO_ID}/audio`;
+      this.mediaElement.load();
+
+      console.log('[Audio] Audio source configured');
     } catch (error) {
-      console.error('[Audio] Failed to load full audio:', error);
+      console.error('[Audio] Failed to load audio:', error);
+      throw new Error('Failed to load audio source');
     }
   }
 
-  async playSound(id: string, options: { loop?: boolean; volume?: number; bufferSize?: number } = {}): Promise<void> {
+  async playSound(options: { 
+    loop?: boolean; 
+    volume?: number;
+    startTime?: number;
+    endTime?: number;
+  } = {}): Promise<void> {
     try {
-      if (!this.audioContext) {
+      if (!this.audioContext || !this.mediaElement) {
         await this.initialize();
+        await this.loadSound();
       }
 
-      if (!this.sounds.has(id)) {
-        await this.loadSound(id, '/audio/ambient.mp3', options.bufferSize);
-      }
-
-      // Stop any existing playback
-      this.stopSound(id);
-
-      // Resume context if needed
-      if (this.audioContext!.state === 'suspended') {
-        await this.audioContext!.resume();
-      }
-
-      const source = this.audioContext!.createBufferSource();
-      source.buffer = this.sounds.get(id)!;
-      source.loop = options.loop ?? false;
-
-      const gainNode = this.audioContext!.createGain();
-      gainNode.gain.value = options.volume ?? 1;
-
-      source.connect(gainNode);
-      gainNode.connect(this.audioContext!.destination);
-
-      source.start();
-      this.sources.set(id, source);
-      this.gainNodes.set(id, gainNode);
-
-      console.log('[Audio] Started playback:', {
-        loop: source.loop,
-        volume: gainNode.gain.value,
-        contextState: this.audioContext!.state
-      });
-
-      source.onended = () => {
-        if (!source.loop) {
-          this.cleanup(id);
+      // Set options
+      if (this.mediaElement) {
+        this.mediaElement.loop = options.loop ?? false;
+        if (this.gainNode) {
+          this.gainNode.gain.value = options.volume ?? 1;
         }
-      };
+
+        // Set start time if provided
+        if (typeof options.startTime === 'number') {
+          this.mediaElement.currentTime = options.startTime;
+        }
+
+        // Add end time handler if provided
+        if (typeof options.endTime === 'number') {
+          const handleTimeUpdate = () => {
+            if (this.mediaElement && this.mediaElement.currentTime >= options.endTime!) {
+              this.stopSound();
+              this.mediaElement.removeEventListener('timeupdate', handleTimeUpdate);
+            }
+          };
+          this.mediaElement.addEventListener('timeupdate', handleTimeUpdate);
+        }
+
+        // Play audio
+        await this.mediaElement.play();
+        console.log('[Audio] Started playback:', {
+          loop: this.mediaElement.loop,
+          volume: this.gainNode?.gain.value,
+          startTime: options.startTime,
+          endTime: options.endTime,
+          contextState: this.audioContext?.state
+        });
+      }
     } catch (error) {
       console.error('[Audio] Playback failed:', error);
-      this.cleanup(id);
       throw error;
     }
   }
 
-  private cleanup(id: string): void {
-    this.sources.delete(id);
-    this.gainNodes.delete(id);
-  }
-
-  stopSound(id: string): void {
-    const source = this.sources.get(id);
-    if (source) {
+  stopSound(): void {
+    if (this.mediaElement) {
       try {
-        source.stop();
+        this.mediaElement.pause();
+        this.mediaElement.currentTime = 0;
+        // Remove any timeupdate listeners
+        this.mediaElement.removeEventListener('timeupdate', () => {});
         console.log('[Audio] Stopped playback');
       } catch (error) {
         console.error('[Audio] Failed to stop playback:', error);
-      } finally {
-        this.cleanup(id);
       }
     }
   }
 
-  setVolume(id: string, volume: number): void {
-    const gainNode = this.gainNodes.get(id);
-    if (gainNode) {
-      gainNode.gain.value = Math.max(0, Math.min(1, volume));
-      console.log('[Audio] Volume set to:', gainNode.gain.value);
+  setVolume(volume: number): void {
+    if (this.gainNode) {
+      this.gainNode.gain.value = Math.max(0, Math.min(1, volume));
+      console.log('[Audio] Volume set to:', this.gainNode.gain.value);
     }
   }
 }
@@ -175,7 +154,7 @@ export function useAudio() {
     const setup = async () => {
       try {
         await audioManager.initialize();
-        await audioManager.loadSound('horror-ambient', '/audio/ambient.mp3', 64 * 1024);
+        await audioManager.loadSound();
 
         if (mounted) {
           setIsReady(true);

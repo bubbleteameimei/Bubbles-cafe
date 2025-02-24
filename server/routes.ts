@@ -869,419 +869,144 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Add these routes after existing routes
-  // Update YouTube video info route with correct format handling
-  app.get("/api/videos/:videoId/info", async (req: Request, res: Response) => {
-    try {
-      const { videoId } = req.params;
-      const info = await ytdl.getInfo(videoId);
-
-      // Filter for audio formats and prefer m4a
-      const formats = ytdl.filterFormats(info.formats, 'audioonly');
-      const format = formats.find(f => f.mimeType?.includes('audio/mp4')) || formats[0];
-
-      if (!format) {
-        return res.status(404).json({ message: "No suitable audio format found" });
-      }
-
-      res.json({
-        title: infodetails.title,
-        thumbnail: info.videoDetails.thumbnails[0]?.url,
-        duration: parseInt(info.videoDetails.lengthSeconds),
-        format: format.container
-      });
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error("[Video Info] Error:", {
-        message: err.message,
-        name: err.name,
-        stack: err.stack
-      });
-      res.status(500).json({ message: "Failed to fetch video info" });
-    }
-  });
-
-  // Remove the getAdminInfo endpoint since it's not implemented in storage
-  app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Get basic stats from existing storage methods
-      const [posts, comments, users] = await Promise.all([
-        storage.getPosts(1, 1),
-        storage.getRecentComments(),
-        storage.getAdminByEmail(req.user.email)
-      ]);
-
-      res.json({
-        totalPosts: posts.total || 0,
-        recentComments: comments.length,
-        adminCount: users.length
-      });
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error("[Admin Stats] Error:", {
-        message: err.message,
-        stack: err.stack
-      });
-      res.status(500).json({ message: "Failed to fetch admin stats" });
-    }
-  });
-
-  // Comment routes
-  app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const comments = await storage.getComments(postId);
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      res.status(500).json({ message: "Failed to fetch comments" });
-    }
-  });
-
-  app.get("/api/comments/recent", async (_req: Request, res: Response) => {
-    try {
-      const comments = await storage.getRecentComments();
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching recent comments:", error);
-      res.status(500).json({ message: "Failed to fetch recent comments" });
-    }
-  });
-
-  app.patch("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const commentId = parseInt(req.params.id);
-      const comment = await storage.updateComment(commentId, req.body);
-      res.json(comment);
-    } catch (error) {
-      console.error("Error updating comment:", error);
-      if (error instanceof Error) {
-        if (error.message === "Comment not found") {
-          return res.status(404).json({ message: "Comment not found" });
-        }
-      }
-      res.status(500).json({ message: "Failed to update comment" });
-    }
-  });
-
-  // Update the delete comment route
-  app.delete("/api/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const commentId = parseInt(req.params.id);
-      if (isNaN(commentId)) {
-        console.log('[Delete Comment] Invalid comment ID:', req.params.id);
-        return res.status(400).json({ message: "Invalid comment ID" });
-      }
-
-      console.log(`[Delete Comment] Attempting to delete comment with ID: ${commentId}`);
-
-      // Delete the comment
-      const result = await storage.deleteComment(commentId);
-      console.log(`[Delete Comment] Comment ${commentId} deleted successfully:`, result);
-      res.json({ message: "Comment deleted successfully", commentId });
-    } catch (error) {
-      console.error("[Delete Comment] Error:", error);
-      if (error instanceof Error) {
-        if (error.message === "Comment not found") {
-          return res.status(404).json({ message: "Comment not found" });
-        }
-        if (error.message.includes("Unauthorized")) {
-          return res.status(401).json({ message: "Unauthorized: Please log in again" });
-        }
-      }
-      res.status(500).json({ message: "Failed to delete comment" });
-    }
-  });
-
-  // Add comment routes after the existing post routes
-  app.get("/api/comments/pending", isAuthenticated, async (_req: Request, res: Response) => {
-    try {
-      const comments = await storage.getPendingComments();
-      console.log('Fetched pending comments:', comments);
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching pending comments:", error);
-      res.status(500).json({ message: "Failed to fetch pending comments" });
-    }
-  });
-
-  // Update the createComment function with proper metadata handling
-  app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: "Invalid post ID format" });
-      }
-
-      // Simplified validation for required fields
-      const { content, author } = req.body;
-      if (!content?.trim()) {
-        return res.status(400).json({
-          message: "Comment content is required"
-        });
-      }
-
-      // Create the comment with properly typed metadata
-      const comment = await storage.createComment({
-        postId,
-        content: content.trim(),
-        userId: req.user?.id || null, // Allow null for anonymous users
-        approved: true, // Auto-approve comments
-        metadata: {
-          author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
-          moderated: false,
-          isAnonymous: !req.user?.id,
-          upvotes: 0,
-          downvotes: 0,
-          replyCount: 0
-        }
-      });
-
-      console.log('[Comments] Successfully created comment:', comment);
-      return res.status(201).json(comment);
-    } catch (error) {
-      console.error("[Comments] Error creating comment:", error);
-      res.status(500).json({ message: "Failed to create comment" });
-    }
-  });
-
-  // Update the like/dislike route handler
-  app.post("/api/posts/:postId/reaction", async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const { isLike } = req.body;
-
-      console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
-
-      // For logged-in users, use their ID
-      if (req.user?.id) {
-        const userId = req.user.id;
-        const existingLike = await storage.getPostLike(postId, userId);
-
-        if (existingLike) {
-          if (existingLike.isLike === isLike) {
-            console.log(`[Reaction] Removing ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-            await storage.removePostLike(postId, userId);
-          } else {
-            console.log(`[Reaction] Changing from ${existingLike.isLike ? 'like' : 'dislike'} to ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-            await storage.updatePostLike(postId, userId, isLike);
-          }
-        } else {
-          console.log(`[Reaction] Creating new ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-          await storage.createPostLike(postId, userId, isLike);
-        }
-      } else {
-        // For anonymous users, store likes in session
-        if (!req.session.likes) {
-          req.session.likes = {};
-        }
-
-        const sessionLikes = req.session.likes;
-        const postKey = postId.toString();
-
-        if (sessionLikes[postKey] === isLike) {
-          // Remove like if same button clicked
-          delete sessionLikes[postKey];
-          console.log(`[Reaction] Anonymous user removed ${isLike ? 'like' : 'dislike'} for post ${postId}`);
-        } else {
-          // Set or update like
-          sessionLikes[postKey] = isLike;
-          console.log(`[Reaction] Anonymous user ${isLike ? 'liked' : 'disliked'} post ${postId}`);
-        }
-      }
-
-      // Get updated counts (combine database and session likes)
-      const dbCounts = await storage.getPostLikeCounts(postId);
-      const counts = {
-        likesCount: dbCounts.likesCount,
-        dislikesCount: dbCounts.dislikesCount
-      };
-
-      // Add session likes to counts
-      if (!req.user?.id && req.session.likes) {
-        const sessionLike = req.session.likes[postId.toString()];
-        if (sessionLike === true) counts.likesCount++;
-        if (sessionLike === false) counts.dislikesCount++;
-      }
-
-      console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
-      res.json({
-        ...counts,
-        message: req.user?.id
-          ? `Successfully ${isLike ? 'liked' : 'disliked'} the post`
-          : 'Reaction recorded anonymously'
-      });
-    } catch (error) {
-      console.error("[Reaction] Error handling post reaction:", error);
-      res.status(500).json({
-        message: error instanceof Error
-          ? error.message
-          : "Failed to update reaction status"
-      });
-    }
-  });
-
-  // Add a route to get current like/dislike counts
-  app.get("/api/posts/:postId/reactions", async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
-
-      const dbCounts = await storage.getPostLikeCounts(postId);
-      const counts = {
-        likesCount: dbCounts.likesCount,
-        dislikesCount: dbCounts.dislikesCount
-      };
-
-      // Add session likes to counts for anonymous users
-      if (!req.user?.id && req.session.likes) {
-        const sessionLike = req.session.likes[postId.toString()];
-        if (sessionLike === true) counts.likesCount++;
-        if (sessionLike === false) counts.dislikesCount++;
-      }
-
-      console.log(`[Reaction] Current counts for post ${postId}:`, counts);
-      res.json(counts);
-    } catch (error) {
-      console.error("[Reaction] Error fetching post reactions:", error);
-      res.status(500).json({
-        message: error instanceof Error
-          ? error.message
-          : "Failed to fetch reaction counts"
-      });
-    }
-  });
-
-  app.post("/api/comments/:commentId/vote", async (req, res) => {
-    try {
-      const commentId = parseInt(req.params.commentId);
-      const { isUpvote } = req.body;
-
-      // Generate a user ID from IP if not logged in
-      let userId = req.user?.id;
-      if (!userId) {
-        const ip = req.ip || '127.0.0.1';
-        const salt = await bcrypt.genSalt(5);
-        const ipHash = await bcrypt.hash(ip, salt);
-        userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
-      }
-
-      // Convert userId to string for storage functions
-      const userIdStr = userId.toString();
-
-      // Check if user has already voted
-      const existingVote = await storage.getCommentVote(commentId, userIdStr);
-
-      if (existingVote) {
-        if (existingVote.isUpvote === isUpvote) {
-          // Remove vote if clicking same button
-          await storage.removeCommentVote(commentId, userIdStr);
-        } else {
-          // Change vote
-          await storage.updateCommentVote(commentId, userIdStr, isUpvote);
-        }
-      } else {
-        // Create new vote
-        await storage.createCommentVote(commentId, userIdStr, isUpvote);
-      }
-
-      // Get updated vote counts
-      const counts = await storage.getCommentVoteCounts(commentId);
-      res.json(counts);
-    } catch (error) {
-      console.error("Error handling comment vote:", error);
-      res.status(500).json({ message: "Failed to update vote" });
-    }
-  });
-
-  // Update reply creation with proper metadata
-  app.post("/api/comments/:commentId/replies", async (req, res) => {
-    try {
-      const commentId = parseInt(req.params.commentId);
-      const { content, author } = req.body;
-
-      // Validate input using schema
-      const replyData = insertCommentReplySchema.parse({
-        commentId,
-        content,
-        author: author?.trim() || 'Anonymous'
-      });
-
-      // Check for filtered words
-      const filteredWords = [
-        'hate', 'kill', 'racist', 'offensive', 'slur',
-        'violence', 'death', 'murder', 'abuse', 'discriminate'
-      ];
-
-      const containsFilteredWord = filteredWords.some(word =>
-        content.toLowerCase().includes(word.toLowerCase())
-      );
-
-      // Create reply with proper metadata
-      const reply = await storage.createCommentReply({
-        ...replyData,
-        approved: !containsFilteredWord,
-        metadata: {
-          author: author?.trim() || 'Anonymous',
-          moderated: containsFilteredWord,
-          originalContent: content,
-          isAnonymous: !req.user?.id,
-          upvotes: 0,
-          downvotes: 0
-        }
-      });
-
-      res.status(201).json(reply);
-    } catch (error) {
-      console.error("Error creating reply:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Invalid reply data",
-          errors: error.errors.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          }))
-        });
-      }
-      res.status(500).json({ message: "Failed to create reply" });
-    }
-  });
-
-  // Add these routes after existing routes
   // Update YouTube video info route with proper type annotations
   app.get("/api/videos/:videoId/info", async (req: Request, res: Response) => {
     try {
       const { videoId } = req.params;
-      const info = await ytdl.getInfo(videoId);
+      console.log('[Video Info] Fetching info for video:', videoId);
 
-      const formats = ytdl.filterFormats(info.formats, 'audioonly');
-      const format = formats.find(f => f.container === 'm4a') || formats[0];
+      const info = await ytdl.getInfo(videoId, {
+        requestOptions: {
+          headers: {
+            // Add user-agent to avoid throttling
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/37.36',
+          }
+        }
+      });
+
+      console.log('[Video Info] Video details:', {
+        title: info.videoDetails.title,
+        length: info.videoDetails.lengthSeconds
+      });
+
+      const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+      console.log('[Video Info] Available formats:', audioFormats.length);
+
+      // Get the best audio format
+      const format = audioFormats
+        .filter(f => f.hasAudio)
+        .sort((a, b) => b.audioBitrate! - a.audioBitrate!)[0];
 
       if (!format) {
+        console.error('[Video Info] No suitable audio format found');
         return res.status(404).json({ message: "No suitable audio format found" });
       }
+
+      console.log('[Video Info] Selected format:', {
+        container: format.container,
+        quality: format.quality,
+        audioBitrate: format.audioBitrate
+      });
 
       res.json({
         title: info.videoDetails.title,
         thumbnail: info.videoDetails.thumbnails[0]?.url,
         duration: parseInt(info.videoDetails.lengthSeconds),
-        format: format.container
+        format: format.container,
+        quality: format.quality
       });
     } catch (error: unknown) {
       const err = error as Error;
       console.error("[Video Info] Error:", {
-        message: err.message,
         name: err.name,
+        message: err.message,
         stack: err.stack
       });
-      res.status(500).json({ message: "Failed to fetch video info" });
+      res.status(500).json({
+        message: "Failed to fetch video info",
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
   });
 
-  // Fix type annotations in error handlers
+  // Update audio streaming endpoint with simpler ytdl options
+  app.get("/api/videos/:videoId/audio", async (req: Request, res: Response) => {
+    try {
+      const { videoId } = req.params;
+      console.log('[Audio Stream] Starting stream for video:', videoId);
+
+      const info = await ytdl.getInfo(videoId, {
+        requestOptions: {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }
+        }
+      });
+
+      const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+      const format = audioFormats
+        .filter(f => f.hasAudio)
+        .sort((a, b) => b.audioBitrate! - a.audioBitrate!)[0];
+
+      if (!format) {
+        console.error('[Audio Stream] No suitable audio format found');
+        return res.status(404).json({ message: "No suitable audio format found" });
+      }
+
+      console.log('[Audio Stream] Selected format:', {
+        container: format.container,
+        quality: format.quality,
+        audioBitrate: format.audioBitrate
+      });
+
+      // Set appropriate headers for audio streaming
+      res.setHeader('Content-Type', 'audio/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      // Create audio stream with specific format
+      const audioStream = ytdl(videoId, {
+        format: format,
+        requestOptions: {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }
+        }
+      });
+
+      // Handle stream errors
+      audioStream.on('error', (error) => {
+        console.error('[Audio Stream] Stream error:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Audio streaming failed" });
+        }
+        audioStream.destroy();
+      });
+
+      // Handle client disconnect
+      res.on('close', () => {
+        console.log('[Audio Stream] Client disconnected, cleaning up stream');
+        audioStream.destroy();
+      });
+
+      // Pipe the audio stream to response
+      audioStream.pipe(res);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("[Audio Stream] Error:", {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          message: "Failed to stream audio",
+          details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+      }
+    }
+  });
+
   app.get("/api/admin/info", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
@@ -1323,7 +1048,7 @@ Timestamp: ${new Date().toLocaleString()}
       });
     } catch (error) {
       console.error("Error fetching admin profile:", error);
-      res.status(500).json({ message: "Failed to fetch admin profile" });    
+      res.status(500).json({ message: "Failed to fetch admin profile" });
     }
   });
 
@@ -1365,9 +1090,9 @@ Timestamp: ${new Date().toLocaleString()}
 
       // Validate required fields
       if (!metricName || typeof value !== 'number' || isNaN(value)) {
-        return res.status(400).json({ 
-          message: "Invalid metric data", 
-          details: "Metric name and numeric value are required" 
+        return res.status(400).json({
+          message: "Invalid metric data",
+          details: "Metric name and numeric value are required"
         });
       }
 
@@ -1385,7 +1110,7 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error: unknown) {
       console.error('[Analytics] Error storing metric:', error);
       const err = error as Error;
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to store metric",
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
@@ -1581,7 +1306,7 @@ Timestamp: ${new Date().toLocaleString()}
 
       // Get audio formats and log them
       const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
-      console.log('[Audio] Available audio formats:', 
+      console.log('[Audio] Available audio formats:',
         audioFormats.map(f => ({
           itag: f.itag,
           container: f.container,
@@ -1597,7 +1322,7 @@ Timestamp: ${new Date().toLocaleString()}
 
       if (!format) {
         console.error('[Audio] No suitable audio format found');
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'No suitable audio format found',
           formats: audioFormats.map(f => f.itag)
         });
