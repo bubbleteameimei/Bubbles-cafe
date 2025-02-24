@@ -17,6 +17,14 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 
+// Add cacheControl middleware at the top with other middleware definitions
+const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.set('Cache-Control', `public, max-age=${duration}`);
+  }
+  next();
+};
+
 // Add slug generation function at the top with other utility functions
 function generateSlug(title: string): string {
   return title
@@ -31,14 +39,6 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
-};
-
-// Add caching middleware for static content
-const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
-  if (process.env.NODE_ENV === 'production') {
-    res.set('Cache-Control', `public, max-age=${duration}`);
-  }
-  next();
 };
 
 // Configure rate limiters
@@ -69,6 +69,7 @@ interface PostMetadata {
   isHidden?: boolean; // Added isHidden field
 }
 
+// Update the registerRoutes function to add compression and proper caching
 export function registerRoutes(app: Express): Server {
   // Add security headers and middleware first
   app.use(helmet({
@@ -89,15 +90,17 @@ export function registerRoutes(app: Express): Server {
     crossOriginResourcePolicy: { policy: "same-site" },
   }));
 
+  // Enable compression for all routes
+  app.use(compression());
+
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
-  app.use("/api/register", authLimiter); // Added rate limiting for /api/register
+  app.use("/api/register", authLimiter);
   app.use("/api", apiLimiter);
-
 
   // Set up session configuration before route registration
   const sessionSettings: session.SessionOptions = {

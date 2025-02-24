@@ -11,8 +11,8 @@ import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-// Lazy load pages with retry logic and prefetch
-const loadComponent = (importFn: () => Promise<any>) => {
+// Enhanced lazy loading with prefetch and retry logic
+const loadComponent = (importFn: () => Promise<any>, priority: 'high' | 'low' = 'low') => {
   const Component = React.lazy(() =>
     importFn().catch((error) => {
       console.error('Failed to load component:', error);
@@ -29,16 +29,33 @@ const loadComponent = (importFn: () => Promise<any>) => {
     </React.Suspense>
   );
 
-  // Add prefetch method
-  WrappedComponent.prefetch = () => importFn();
+  // Enhanced prefetch method with priority
+  WrappedComponent.prefetch = () => {
+    if (priority === 'high') {
+      // Immediately prefetch high priority routes
+      return importFn();
+    }
+    // Low priority routes are prefetched when idle
+    return new Promise((resolve) => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => {
+          importFn().then(resolve);
+        });
+      } else {
+        setTimeout(() => {
+          importFn().then(resolve);
+        }, 0);
+      }
+    });
+  };
 
   return WrappedComponent;
 };
 
-// Lazy load pages
-const HomePage = loadComponent(() => import('@/pages/home'));
-const ReaderPage = loadComponent(() => import('@/pages/reader'));
-const StoriesPage = loadComponent(() => import('@/pages/secret-stories'));
+// Lazy load pages with priority
+const HomePage = loadComponent(() => import('@/pages/home'), 'high');
+const ReaderPage = loadComponent(() => import('@/pages/reader'), 'high');
+const StoriesPage = loadComponent(() => import('@/pages/secret-stories'), 'high');
 const IndexPage = loadComponent(() => import('@/pages/index'));
 const AboutPage = loadComponent(() => import('@/pages/about'));
 const ContactPage = loadComponent(() => import('@/pages/contact'));
@@ -51,7 +68,7 @@ const PrivacyPage = loadComponent(() => import('@/pages/privacy'));
 const ReportBugPage = loadComponent(() => import('@/pages/report-bug'));
 const CommunityPage = loadComponent(() => import('@/pages/community'));
 const SettingsPage = loadComponent(() => import('@/pages/settings/SettingsPage'));
-const AuthPage = loadComponent(() => import('@/pages/auth'));
+const AuthPage = loadComponent(() => import('@/pages/auth'), 'high');
 
 function AdminRoute({ 
   component: Component, 
@@ -73,15 +90,30 @@ function AdminRoute({
   return <Route path={path} component={Component} />;
 }
 
-// Prefetch critical routes
+// Enhanced prefetching strategy
 const prefetchCriticalRoutes = () => {
-  HomePage.prefetch();
-  ReaderPage.prefetch();
-  StoriesPage.prefetch();
+  // High priority routes
+  Promise.all([
+    HomePage.prefetch(),
+    ReaderPage.prefetch(),
+    StoriesPage.prefetch(),
+    AuthPage.prefetch()
+  ]);
+
+  // Low priority routes prefetched during idle time
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => {
+      Promise.all([
+        AboutPage.prefetch(),
+        ContactPage.prefetch(),
+        CommunityPage.prefetch()
+      ]);
+    });
+  }
 };
 
 function App() {
-  // Prefetch critical routes on mount
+  // Prefetch critical routes on mount and cache them
   React.useEffect(() => {
     prefetchCriticalRoutes();
   }, []);
