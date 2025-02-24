@@ -1,21 +1,23 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Redirect, Route, RouteComponentProps } from "wouter";
+
+interface ProtectedRouteProps {
+  path: string;
+  component: React.ComponentType<RouteComponentProps>;
+  requireAdmin?: boolean;
+}
 
 export function ProtectedRoute({
   path,
   component: Component,
   requireAdmin = false
-}: {
-  path: string;
-  component: React.ComponentType;
-  requireAdmin?: boolean;
-}) {
+}: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
   return (
     <Route path={path}>
-      {() => {
+      {(params) => {
         if (isLoading) {
           return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -33,7 +35,7 @@ export function ProtectedRoute({
           return <Redirect to="/" />;
         }
 
-        return <Component />;
+        return <Component params={params} />;
       }}
     </Route>
   );

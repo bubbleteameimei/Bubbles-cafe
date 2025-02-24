@@ -1,6 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
 import { Redirect, useLocation } from "wouter";
 import { 
   Book, 
@@ -24,7 +23,7 @@ export default function AdminPage() {
       title: "Content Management",
       description: "Manage stories and content",
       icon: Book,
-      link: "/admin/content"
+      link: "/admin/posts"
     },
     {
       title: "User Management",
@@ -66,7 +65,6 @@ export default function AdminPage() {
               key={card.title} 
               className="hover:shadow-lg transition-shadow cursor-pointer group"
               onClick={() => {
-                console.log('[Admin Dashboard] Navigating to:', card.link);
                 navigate(card.link);
               }}
             >
