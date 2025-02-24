@@ -275,7 +275,7 @@ const MenuIcon = () => (
 );
 
 export default function Navigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation(); 
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 

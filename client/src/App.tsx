@@ -11,23 +11,47 @@ import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
-// Lazy load pages for better performance
-const HomePage = React.lazy(() => import('@/pages/home'));
-const ReaderPage = React.lazy(() => import('@/pages/reader'));
-const StoriesPage = React.lazy(() => import('@/pages/secret-stories'));
-const IndexPage = React.lazy(() => import('@/pages/index'));
-const AboutPage = React.lazy(() => import('@/pages/about'));
-const ContactPage = React.lazy(() => import('@/pages/contact'));
-const AdminDashboard = React.lazy(() => import('@/pages/admin/dashboard'));
-const AdminAnalytics = React.lazy(() => import('@/pages/admin/analytics'));
-const AdminUsers = React.lazy(() => import('@/pages/admin/users'));
-const AdminSettings = React.lazy(() => import('@/pages/admin/settings'));
-const AdminPosts = React.lazy(() => import('@/pages/admin/posts'));
-const PrivacyPage = React.lazy(() => import('@/pages/privacy'));
-const ReportBugPage = React.lazy(() => import('@/pages/report-bug'));
-const CommunityPage = React.lazy(() => import('@/pages/community'));
-const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage'));
-const AuthPage = React.lazy(() => import('@/pages/auth'));
+// Lazy load pages with retry logic and prefetch
+const loadComponent = (importFn: () => Promise<any>) => {
+  const Component = React.lazy(() =>
+    importFn().catch((error) => {
+      console.error('Failed to load component:', error);
+      return importFn(); // Retry once
+    })
+  );
+
+  // Return wrapped component with prefetch capability
+  const WrappedComponent = (props: any) => (
+    <React.Suspense fallback={<LoadingScreen />}>
+      <ErrorBoundary>
+        <Component {...props} />
+      </ErrorBoundary>
+    </React.Suspense>
+  );
+
+  // Add prefetch method
+  WrappedComponent.prefetch = () => importFn();
+
+  return WrappedComponent;
+};
+
+// Lazy load pages
+const HomePage = loadComponent(() => import('@/pages/home'));
+const ReaderPage = loadComponent(() => import('@/pages/reader'));
+const StoriesPage = loadComponent(() => import('@/pages/secret-stories'));
+const IndexPage = loadComponent(() => import('@/pages/index'));
+const AboutPage = loadComponent(() => import('@/pages/about'));
+const ContactPage = loadComponent(() => import('@/pages/contact'));
+const AdminDashboard = loadComponent(() => import('@/pages/admin/dashboard'));
+const AdminAnalytics = loadComponent(() => import('@/pages/admin/analytics'));
+const AdminUsers = loadComponent(() => import('@/pages/admin/users'));
+const AdminSettings = loadComponent(() => import('@/pages/admin/settings'));
+const AdminPosts = loadComponent(() => import('@/pages/admin/posts'));
+const PrivacyPage = loadComponent(() => import('@/pages/privacy'));
+const ReportBugPage = loadComponent(() => import('@/pages/report-bug'));
+const CommunityPage = loadComponent(() => import('@/pages/community'));
+const SettingsPage = loadComponent(() => import('@/pages/settings/SettingsPage'));
+const AuthPage = loadComponent(() => import('@/pages/auth'));
 
 function AdminRoute({ 
   component: Component, 
@@ -49,7 +73,19 @@ function AdminRoute({
   return <Route path={path} component={Component} />;
 }
 
+// Prefetch critical routes
+const prefetchCriticalRoutes = () => {
+  HomePage.prefetch();
+  ReaderPage.prefetch();
+  StoriesPage.prefetch();
+};
+
 function App() {
+  // Prefetch critical routes on mount
+  React.useEffect(() => {
+    prefetchCriticalRoutes();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -58,39 +94,37 @@ function App() {
             <div className="relative min-h-screen flex flex-col bg-background text-foreground">
               <Navigation />
               <main className="flex-grow">
-                <React.Suspense fallback={<LoadingScreen />}>
-                  <Switch>
-                    {/* Public Routes */}
-                    <Route path="/" component={HomePage} />
-                    <Route path="/reader" component={ReaderPage} />
-                    <Route path="/stories" component={StoriesPage} />
-                    <Route path="/index" component={IndexPage} />
-                    <Route path="/about" component={AboutPage} />
-                    <Route path="/privacy" component={PrivacyPage} />
-                    <Route path="/contact" component={ContactPage} />
-                    <Route path="/community" component={CommunityPage} />
-                    <Route path="/report-bug" component={ReportBugPage} />
-                    <Route path="/auth" component={AuthPage} />
+                <Switch>
+                  {/* Public Routes */}
+                  <Route path="/" component={HomePage} />
+                  <Route path="/reader" component={ReaderPage} />
+                  <Route path="/stories" component={StoriesPage} />
+                  <Route path="/index" component={IndexPage} />
+                  <Route path="/about" component={AboutPage} />
+                  <Route path="/privacy" component={PrivacyPage} />
+                  <Route path="/contact" component={ContactPage} />
+                  <Route path="/community" component={CommunityPage} />
+                  <Route path="/report-bug" component={ReportBugPage} />
+                  <Route path="/auth" component={AuthPage} />
 
-                    {/* Settings Routes */}
-                    <Route path="/settings" component={SettingsPage} />
-                    <Route path="/settings/:section" component={SettingsPage} />
+                  {/* Settings Routes */}
+                  <Route path="/settings" component={SettingsPage} />
+                  <Route path="/settings/:section" component={SettingsPage} />
 
-                    {/* Admin Routes - Protected */}
-                    <AdminRoute path="/admin/dashboard" component={AdminDashboard} />
-                    <AdminRoute path="/admin/posts" component={AdminPosts} />
-                    <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
-                    <AdminRoute path="/admin/users" component={AdminUsers} />
-                    <AdminRoute path="/admin/settings" component={AdminSettings} />
+                  {/* Admin Routes - Protected */}
+                  <AdminRoute path="/admin/dashboard" component={AdminDashboard} />
+                  <AdminRoute path="/admin/posts" component={AdminPosts} />
+                  <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
+                  <AdminRoute path="/admin/users" component={AdminUsers} />
+                  <AdminRoute path="/admin/settings" component={AdminSettings} />
 
-                    {/* 404 Route */}
-                    <Route path="/:rest*">
-                      <div className="flex items-center justify-center min-h-[60vh]">
-                        <h1 className="text-2xl">404 - Page Not Found</h1>
-                      </div>
-                    </Route>
-                  </Switch>
-                </React.Suspense>
+                  {/* 404 Route */}
+                  <Route path="/:rest*">
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                      <h1 className="text-2xl">404 - Page Not Found</h1>
+                    </div>
+                  </Route>
+                </Switch>
               </main>
               <Footer />
               <Toaster />

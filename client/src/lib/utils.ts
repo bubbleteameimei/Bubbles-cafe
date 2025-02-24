@@ -21,10 +21,6 @@ interface ErrorFallbackProps {
   errorInfo?: React.ErrorInfo;
 }
 
-//interface LoadingFallbackProps {
-//  message?: string;
-//}
-
 // Error fallback component
 const ErrorFallbackComponent = React.memo(function ErrorFallback({ 
   error, 
@@ -45,8 +41,6 @@ const ErrorFallbackComponent = React.memo(function ErrorFallback({
       )
   );
 });
-
-// Loading fallback component is removed.
 
 // Export components
 export const ErrorFallback = ErrorFallbackComponent;
