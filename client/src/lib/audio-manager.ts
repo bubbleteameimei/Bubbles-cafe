@@ -6,34 +6,67 @@ export class AudioManager {
   private sounds: Map<string, AudioBuffer> = new Map();
   private gainNodes: Map<string, GainNode> = new Map();
   private sources: Map<string, AudioBufferSourceNode> = new Map();
+  private isInitialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
 
   private constructor() {
-    // Initialize on first interaction
-    const initializeAudio = () => {
-      if (!this.audioContext) {
-        try {
-          this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          console.log('[Audio] AudioContext initialized successfully');
-        } catch (error) {
-          console.error('[Audio] Failed to initialize AudioContext:', error);
-        }
-      }
-      document.removeEventListener('click', initializeAudio);
-    };
-    document.addEventListener('click', initializeAudio);
+    console.log('[Audio] AudioManager constructor called');
   }
 
   static getInstance(): AudioManager {
     if (!AudioManager.instance) {
+      console.log('[Audio] Creating new AudioManager instance');
       AudioManager.instance = new AudioManager();
     }
     return AudioManager.instance;
   }
 
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      console.log('[Audio] AudioManager already initialized');
+      return;
+    }
+
+    if (this.initializationPromise) {
+      console.log('[Audio] Initialization already in progress, waiting...');
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = new Promise<void>(async (resolve, reject) => {
+      try {
+        console.log('[Audio] Creating new AudioContext...');
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log('[Audio] AudioContext created, state:', this.audioContext.state);
+
+        // Attempt to resume context if it's suspended
+        if (this.audioContext.state === 'suspended') {
+          console.log('[Audio] AudioContext is suspended, attempting to resume...');
+          await this.audioContext.resume();
+          console.log('[Audio] AudioContext resumed successfully, new state:', this.audioContext.state);
+        }
+
+        this.isInitialized = true;
+        console.log('[Audio] AudioManager initialized successfully');
+        resolve();
+      } catch (error) {
+        console.error('[Audio] Failed to initialize AudioContext:', error);
+        this.isInitialized = false;
+        reject(error);
+      } finally {
+        this.initializationPromise = null;
+      }
+    });
+
+    return this.initializationPromise;
+  }
+
   async loadSound(id: string, url: string): Promise<void> {
     if (!this.audioContext) {
-      console.warn('[Audio] AudioContext not initialized, cannot load sound');
-      return;
+      await this.initialize();
+    }
+
+    if (!this.audioContext) {
+      throw new Error('AudioContext not initialized');
     }
 
     try {
@@ -41,8 +74,7 @@ export class AudioManager {
 
       const response = await fetch(url);
       if (!response.ok) {
-        console.error(`[Audio] HTTP error loading sound: ${response.status} ${response.statusText}`);
-        throw new Error(`Failed to load audio: ${response.statusText}`);
+        throw new Error(`HTTP error loading sound: ${response.status} ${response.statusText}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
@@ -59,20 +91,27 @@ export class AudioManager {
     }
   }
 
-  playSound(id: string, options: { loop?: boolean; volume?: number } = {}): void {
-    if (!this.audioContext) {
-      console.error(`[Audio] Cannot play sound ${id}: AudioContext not initialized`);
-      return;
+  async playSound(id: string, options: { loop?: boolean; volume?: number } = {}): Promise<void> {
+    if (!this.isInitialized || !this.audioContext) {
+      await this.initialize();
     }
 
     if (!this.sounds.has(id)) {
-      console.error(`[Audio] Cannot play sound ${id}: Sound not loaded`);
-      return;
+      throw new Error(`Cannot play sound ${id}: Sound not loaded`);
     }
 
     try {
+      // Resume context if it's suspended
+      if (this.audioContext?.state === 'suspended') {
+        console.log('[Audio] AudioContext is suspended, attempting to resume...');
+        await this.audioContext.resume();
+        console.log('[Audio] AudioContext resumed successfully, new state:', this.audioContext.state);
+      }
+
       console.log(`[Audio] Starting playback of sound: ${id}`);
       this.stopSound(id); // Stop any existing playback
+
+      if (!this.audioContext) throw new Error('AudioContext not available');
 
       const source = this.audioContext.createBufferSource();
       source.buffer = this.sounds.get(id)!;
@@ -83,6 +122,13 @@ export class AudioManager {
 
       source.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
+
+      console.log(`[Audio] Starting playback for ${id} with options:`, {
+        loop: source.loop,
+        volume: gainNode.gain.value,
+        duration: source.buffer?.duration,
+        contextState: this.audioContext.state
+      });
 
       source.start(0);
       this.sources.set(id, source);
@@ -96,16 +142,13 @@ export class AudioManager {
         }
       };
 
-      console.log(`[Audio] Sound ${id} started playing:`, {
-        loop: source.loop,
-        volume: gainNode.gain.value,
-        duration: source.buffer?.duration
-      });
+      console.log(`[Audio] Sound ${id} started playing successfully`);
     } catch (error) {
       console.error(`[Audio] Error playing sound ${id}:`, error);
       // Clean up failed playback
       this.sources.delete(id);
       this.gainNodes.delete(id);
+      throw error;
     }
   }
 
@@ -113,13 +156,18 @@ export class AudioManager {
     const source = this.sources.get(id);
     if (source) {
       try {
+        console.log(`[Audio] Stopping sound: ${id}`);
         source.stop();
-        console.log(`[Audio] Stopped sound: ${id}`);
+        console.log(`[Audio] Sound ${id} stopped successfully`);
       } catch (error) {
-        console.warn(`[Audio] Error stopping sound ${id}:`, error);
+        console.error(`[Audio] Error stopping sound ${id}:`, error);
+        throw error;
+      } finally {
+        this.sources.delete(id);
+        this.gainNodes.delete(id);
       }
-      this.sources.delete(id);
-      this.gainNodes.delete(id);
+    } else {
+      console.log(`[Audio] No active source found for sound: ${id}`);
     }
   }
 
@@ -127,7 +175,7 @@ export class AudioManager {
     const gainNode = this.gainNodes.get(id);
     if (gainNode) {
       gainNode.gain.value = Math.max(0, Math.min(1, volume));
-      console.log(`[Audio] Set volume for ${id}: ${gainNode.gain.value}`);
+      console.log(`[Audio] Set volume for ${id} to ${gainNode.gain.value}`);
     } else {
       console.warn(`[Audio] Cannot set volume: no active gain node for ${id}`);
     }
@@ -138,7 +186,7 @@ export class AudioManager {
     this.sources.forEach((source, id) => {
       try {
         source.stop();
-        console.log(`[Audio] Stopped sound during disposal: ${id}`);
+        console.log(`[Audio] Stopped sound: ${id}`);
       } catch (error) {
         console.warn(`[Audio] Error stopping source during disposal: ${id}`, error);
       }
@@ -148,6 +196,7 @@ export class AudioManager {
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
+      this.isInitialized = false;
       console.log('[Audio] AudioContext closed and disposed');
     }
   }
@@ -159,42 +208,76 @@ export function useAudio() {
   const audioManager = AudioManager.getInstance();
 
   useEffect(() => {
-    const loadSounds = async () => {
+    console.log('[Audio Hook] Initializing audio hook...');
+    let mounted = true;
+
+    const initializeAudio = async () => {
       try {
-        console.log('[Audio] Starting to load ambient sound...');
+        console.log('[Audio Hook] Starting audio initialization...');
+        await audioManager.initialize();
+
+        if (!mounted) return;
+
+        console.log('[Audio Hook] Starting to load ambient sound...');
         await audioManager.loadSound(
           'horror-ambient',
           '/audio/ambient.mp3'
         );
+
+        if (!mounted) return;
+
         setIsReady(true);
         setError(null);
-        console.log('[Audio] Ambient sound loaded successfully');
+        console.log('[Audio Hook] Ambient sound loaded successfully');
       } catch (error) {
-        console.error('[Audio] Failed to load sounds:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load audio');
-        setIsReady(false);
+        console.error('[Audio Hook] Failed to initialize audio:', error);
+        if (mounted) {
+          setError(error instanceof Error ? error.message : 'Failed to initialize audio');
+          setIsReady(false);
+        }
       }
     };
 
-    loadSounds();
+    // Initialize audio on first user interaction
+    const handleInteraction = () => {
+      console.log('[Audio Hook] User interaction detected, initializing audio...');
+      initializeAudio();
+      document.removeEventListener('click', handleInteraction);
+    };
+
+    document.addEventListener('click', handleInteraction);
 
     return () => {
-      audioManager.dispose();
+      console.log('[Audio Hook] Cleaning up audio hook...');
+      mounted = false;
+      document.removeEventListener('click', handleInteraction);
     };
   }, []);
 
-  const playSound = useCallback((id: string, options?: { loop?: boolean; volume?: number }) => {
-    console.log(`[Audio] Attempting to play sound: ${id}`, options);
-    audioManager.playSound(id, options);
+  const playSound = useCallback(async (id: string, options?: { loop?: boolean; volume?: number }) => {
+    console.log(`[Audio Hook] Attempting to play sound: ${id}`, options);
+    try {
+      await audioManager.playSound(id, options);
+      console.log(`[Audio Hook] Successfully started playing sound: ${id}`);
+    } catch (error) {
+      console.error(`[Audio Hook] Error in playSound hook: ${id}`, error);
+      throw error;
+    }
   }, []);
 
   const stopSound = useCallback((id: string) => {
-    console.log(`[Audio] Attempting to stop sound: ${id}`);
-    audioManager.stopSound(id);
+    console.log(`[Audio Hook] Attempting to stop sound: ${id}`);
+    try {
+      audioManager.stopSound(id);
+      console.log(`[Audio Hook] Successfully stopped sound: ${id}`);
+    } catch (error) {
+      console.error(`[Audio Hook] Error stopping sound: ${id}`, error);
+      throw error;
+    }
   }, []);
 
   const setVolume = useCallback((id: string, volume: number) => {
-    console.log(`[Audio] Setting volume for ${id} to ${volume}`);
+    console.log(`[Audio Hook] Setting volume for ${id} to ${volume}`);
     audioManager.setVolume(id, volume);
   }, []);
 
