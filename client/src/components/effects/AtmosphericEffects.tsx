@@ -7,11 +7,13 @@ import { Volume2, VolumeX } from 'lucide-react';
 interface AtmosphericEffectsProps {
   className?: string;
   autoPlay?: boolean;
+  soundId?: string;
 }
 
 export function AtmosphericEffects({ 
   className,
-  autoPlay = false 
+  autoPlay = false,
+  soundId = 'horror-ambient' // Default sound ID
 }: AtmosphericEffectsProps) {
   const { isReady, playSound, stopSound, setVolume } = useAudio();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -19,43 +21,49 @@ export function AtmosphericEffects({
 
   useEffect(() => {
     if (isReady && autoPlay) {
-      playSound('ambient', { loop: true, volume });
+      playSound(soundId, { loop: true, volume });
       setIsPlaying(true);
     }
     return () => {
-      stopSound('ambient');
+      stopSound(soundId);
     };
-  }, [isReady, autoPlay, playSound, stopSound, volume]);
+  }, [isReady, autoPlay, playSound, stopSound, volume, soundId]);
 
   const toggleSound = () => {
     if (isPlaying) {
-      stopSound('ambient');
+      stopSound(soundId);
       setIsPlaying(false);
     } else {
-      playSound('ambient', { loop: true, volume });
+      playSound(soundId, { loop: true, volume });
       setIsPlaying(true);
     }
   };
 
   const handleVolumeChange = (newVolume: number) => {
     setVolumeState(newVolume);
-    setVolume('ambient', newVolume);
+    setVolume(soundId, newVolume);
   };
 
   if (!isReady) return null;
 
   return (
-    <div className={cn("fixed bottom-4 right-4 flex items-center gap-2", className)}>
+    <div className={cn(
+      "fixed bottom-4 right-4 flex items-center gap-2 z-50 bg-background/20 backdrop-blur-sm p-2 rounded-full shadow-lg",
+      className
+    )}>
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
         onClick={toggleSound}
-        className="w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm"
-        title={isPlaying ? "Disable atmospheric sounds" : "Enable atmospheric sounds"}
+        className="w-10 h-10 rounded-full hover:bg-background/40 transition-all duration-200"
+        title={isPlaying ? "Disable ambient sounds" : "Enable ambient sounds"}
       >
         {isPlaying ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
       </Button>
-      {isPlaying && (
+      <div className={cn(
+        "overflow-hidden transition-all duration-200",
+        isPlaying ? "w-24" : "w-0"
+      )}>
         <input
           type="range"
           min="0"
@@ -63,10 +71,10 @@ export function AtmosphericEffects({
           step="0.1"
           value={volume}
           onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-          className="w-24 h-2 bg-background/80 rounded-full appearance-none cursor-pointer"
+          className="w-24 h-2 bg-background/40 rounded-full appearance-none cursor-pointer"
           title="Adjust volume"
         />
-      )}
+      </div>
     </div>
   );
 }

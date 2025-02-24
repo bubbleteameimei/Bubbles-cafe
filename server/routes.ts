@@ -16,6 +16,8 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
+import ytdl from "ytdl-core";
+import ffmpeg from "fluent-ffmpeg";
 
 // Add cacheControl middleware at the top with other middleware definitions
 const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
@@ -888,7 +890,7 @@ Timestamp: ${new Date().toLocaleString()}
         role: 'admin',
         permissions: ['manage_posts', 'manage_users', 'manage_comments']
       });
-    } catch (error) {
+        } catch (error) {
       console.error("Error fetching admin profile:", error);
       res.status(500).json({ message: "Failed to fetch admin profile" });
     }
@@ -1102,6 +1104,96 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("[GET /api/users/stats] Error:", error);
       res.status(500).json({ message: "Failed to fetch user statistics" });
+    }
+  });
+
+  // YouTube audio extraction endpoint
+  app.get("/api/audio/youtube", async (req, res) => {
+    try {
+      const videoUrl = req.query.url;
+      if (!videoUrl || typeof videoUrl !== "string") {
+        console.error('[Audio] Missing or invalid URL parameter:', videoUrl);
+        return res.status(400).json({ error: "Missing or invalid 'url' query parameter" });
+      }
+
+      console.log('[Audio] Processing YouTube URL:', videoUrl);
+
+      // Validate video URL first
+      if (!ytdl.validateURL(videoUrl)) {
+        console.error('[Audio] Invalid YouTube URL:', videoUrl);
+        return res.status(400).json({ error: "Invalid YouTube URL" });
+      }
+
+      // Get video info first to ensure it exists and is accessible
+      const info = await ytdl.getInfo(videoUrl);
+      console.log('[Audio] Successfully retrieved video info:', {
+        title: info.videoDetails.title,
+        lengthSeconds: info.videoDetails.lengthSeconds
+      });
+
+      // Get the audio format with highest quality
+      const audioFormat = ytdl.chooseFormat(info.formats, { 
+        quality: 'highestaudio',
+        filter: 'audioonly' 
+      });
+
+      if (!audioFormat) {
+        console.error('[Audio] No suitable audio format found');
+        return res.status(400).json({ error: "No suitable audio format found" });
+      }
+
+      console.log('[Audio] Selected format:', {
+        container: audioFormat.container,
+        quality: audioFormat.quality,
+        bitrate: audioFormat.bitrate
+      });
+
+      // Create the audio stream
+      const stream = ytdl(videoUrl, { format: audioFormat });
+
+      // Set appropriate headers for streaming
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Transfer-Encoding', 'chunked');
+
+      // Create ffmpeg command with specific options
+      const command = ffmpeg(stream)
+        .toFormat('mp3')
+        .audioBitrate('128k')
+        .on('start', cmd => {
+          console.log('[Audio] FFmpeg process started:', cmd);
+        })
+        .on('progress', progress => {
+          console.log('[Audio] Processing:', progress);
+        })
+        .on('end', () => {
+          console.log('[Audio] FFmpeg processing completed');
+        })
+        .on('error', (err) => {
+          console.error('[Audio] FFmpeg error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: 'Error processing audio' });
+          }
+        });
+
+      // Handle stream errors
+      stream.on('error', (err) => {
+        console.error('[Audio] Stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Error streaming from YouTube' });
+        }
+      });
+
+      // Pipe the output to response
+      command.pipe(res, { end: true });
+
+    } catch (error) {
+      console.error("[Audio] Error processing YouTube audio:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: "Error processing audio",
+          details: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
   });
 

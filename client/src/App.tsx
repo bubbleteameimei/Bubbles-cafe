@@ -11,6 +11,7 @@ import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { usePerformanceMonitoring } from '@/hooks/use-performance-monitoring';
+import { AtmosphericEffects } from '@/components/effects/AtmosphericEffects';
 
 // Enhanced lazy loading with better error handling and retries
 const loadComponent = (
@@ -36,7 +37,7 @@ const loadComponent = (
       for (let i = 0; i < retries; i++) {
         try {
           // Exponential backoff delay
-          await new Promise(resolve => 
+          await new Promise(resolve =>
             setTimeout(resolve, Math.min(1000 * Math.pow(2, i), 5000))
           );
           return await importFn();
@@ -82,17 +83,17 @@ const loadComponent = (
 };
 
 // Lazy load pages with enhanced options
-const HomePage = loadComponent(() => import('@/pages/home'), { 
+const HomePage = loadComponent(() => import('@/pages/home'), {
   priority: 'high',
-  retries: 2 
+  retries: 2
 });
-const ReaderPage = loadComponent(() => import('@/pages/reader'), { 
+const ReaderPage = loadComponent(() => import('@/pages/reader'), {
   priority: 'high',
-  retries: 2 
+  retries: 2
 });
-const StoriesPage = loadComponent(() => import('@/pages/secret-stories'), { 
+const StoriesPage = loadComponent(() => import('@/pages/secret-stories'), {
   priority: 'high',
-  retries: 2 
+  retries: 2
 });
 const IndexPage = loadComponent(() => import('@/pages/index'));
 const AboutPage = loadComponent(() => import('@/pages/about'));
@@ -106,17 +107,17 @@ const PrivacyPage = loadComponent(() => import('@/pages/privacy'));
 const ReportBugPage = loadComponent(() => import('@/pages/report-bug'));
 const CommunityPage = loadComponent(() => import('@/pages/community'));
 const SettingsPage = loadComponent(() => import('@/pages/settings/SettingsPage'));
-const AuthPage = loadComponent(() => import('@/pages/auth'), { 
+const AuthPage = loadComponent(() => import('@/pages/auth'), {
   priority: 'high',
-  retries: 2 
+  retries: 2
 });
 
-function AdminRoute({ 
-  component: Component, 
-  path 
-}: { 
-  component: React.ComponentType<RouteComponentProps>, 
-  path: string 
+function AdminRoute({
+  component: Component,
+  path
+}: {
+  component: React.ComponentType<RouteComponentProps>,
+  path: string
 }) {
   const { user, isLoading } = useAuth();
 
@@ -219,6 +220,7 @@ function App() {
                 </Switch>
               </main>
               <Footer />
+              <AtmosphericEffects autoPlay={false} />
               <Toaster />
               <CookieConsent />
             </div>
