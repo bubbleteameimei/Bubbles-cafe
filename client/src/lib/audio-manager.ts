@@ -34,12 +34,7 @@ export class AudioManager {
     try {
       console.log(`[Audio] Starting to load sound: ${id}`);
 
-      if (url.includes('youtu')) {
-        const encodedUrl = encodeURIComponent(url);
-        url = `/api/audio/youtube?url=${encodedUrl}`;
-        console.log(`[Audio] Using YouTube extraction endpoint: ${url}`);
-      }
-
+      // Use the local audio file path
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to load audio: ${response.statusText}`);
@@ -58,7 +53,7 @@ export class AudioManager {
       console.log(`[Audio] Successfully loaded and decoded sound: ${id}`);
     } catch (error) {
       console.error(`[Audio] Failed to load sound ${id}:`, error);
-      throw error; // Propagate error to caller
+      throw error;
     }
   }
 
@@ -147,7 +142,7 @@ export function useAudio() {
         console.log('[Audio] Starting to load ambient sound...');
         await audioManager.loadSound(
           'horror-ambient',
-          'https://youtu.be/26Ch2vKsgTg?si=oQ5W1rTnWlT38I0p'
+          '/audio/ambient.mp3' // This URL will be handled by Express static middleware
         );
         setIsReady(true);
         setError(null);
