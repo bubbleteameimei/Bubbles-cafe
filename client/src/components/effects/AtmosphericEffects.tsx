@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAudio } from '@/lib/audio-manager';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface AtmosphericEffectsProps {
   className?: string;
@@ -15,55 +14,40 @@ export function AtmosphericEffects({
   className,
   soundId = 'horror-ambient'
 }: AtmosphericEffectsProps) {
-  const { isReady, error, playSound, stopSound, setVolume } = useAudio();
+  const { isReady, playSound, stopSound, setVolume } = useAudio();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolumeState] = useState(0.5);
   const { toast } = useToast();
-
-  // Show initialization message
-  useEffect(() => {
-    toast({
-      title: "Audio Controls",
-      description: "Click the volume button to start ambient sounds"
-    });
-  }, []);
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Audio Error",
-        description: error,
-        variant: "destructive",
-      });
-    }
-  }, [error, toast]);
 
   const handleClick = async () => {
     if (isLoading) return;
 
     try {
       setIsLoading(true);
-      console.log('[Audio UI] Button clicked, current state:', { isPlaying, isReady, volume });
+      console.log('[Audio UI] Button clicked, state:', { isPlaying, isReady, volume });
 
       if (isPlaying) {
         stopSound(soundId);
         setIsPlaying(false);
         toast({
-          title: "Audio Stopped",
-          description: "Background sound has been stopped"
+          title: "Sound Stopped",
+          description: "Background audio disabled"
         });
       } else {
-        await playSound(soundId, { loop: true, volume });
+        await playSound(soundId, {
+          loop: true,
+          volume,
+          bufferSize: 64 * 1024  // Use smaller initial buffer
+        });
         setIsPlaying(true);
         toast({
-          title: "Audio Started",
-          description: "Background sound is now playing"
+          title: "Sound Playing",
+          description: "Background audio enabled"
         });
       }
     } catch (error) {
-      console.error('[Audio UI] Operation failed:', error);
+      console.error('[Audio UI] Error:', error);
       setIsPlaying(false);
       toast({
         title: "Audio Error",
@@ -83,32 +67,27 @@ export function AtmosphericEffects({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ 
-        duration: 0.3,
-        ease: "easeOut"
-      }}
-      className={cn(
-        "fixed bottom-4 right-4 flex items-center gap-2",
-        "z-[100]", // Ensure controls stay above other content
-        "bg-background/20 backdrop-blur-sm p-2 rounded-full shadow-lg",
-        "transform-gpu will-change-transform select-none",
-        className
-      )}
-    >
+    <div className={cn(
+      "fixed bottom-4 right-4",
+      "flex items-center gap-2",
+      "z-[100]",
+      "p-2 rounded-full",
+      "bg-background/20 backdrop-blur-sm shadow-lg",
+      "transform-gpu",
+      className
+    )}>
       <Button
         variant="ghost"
         size="icon"
         onClick={handleClick}
-        disabled={isLoading}
+        disabled={!isReady || isLoading}
         className={cn(
-          "w-10 h-10 rounded-full transition-all duration-200",
+          "w-10 h-10 rounded-full",
+          "transition-transform duration-200",
           "hover:bg-background/40 active:scale-95",
-          "transform-gpu will-change-transform"
+          "transform-gpu"
         )}
-        title={isPlaying ? "Stop ambient sounds" : "Play ambient sounds"}
+        title={!isReady ? "Initializing audio..." : isPlaying ? "Stop ambient sounds" : "Play ambient sounds"}
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -119,42 +98,29 @@ export function AtmosphericEffects({
         )}
       </Button>
 
-      <AnimatePresence mode="wait">
-        {isPlaying && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ 
-              width: "6rem",
-              opacity: 1,
-            }}
-            exit={{ 
-              width: 0,
-              opacity: 0
-            }}
-            transition={{ 
-              duration: 0.2,
-              ease: "easeInOut"
-            }}
-            className="overflow-hidden"
-          >
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={volume}
-              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className={cn(
-                "w-24 h-2 rounded-full appearance-none cursor-pointer",
-                "bg-background/40 hover:bg-background/60",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                "transition-all duration-200 transform-gpu will-change-transform"
-              )}
-              title="Adjust volume"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {/* Volume slider with simplified transitions */}
+      <div className={cn(
+        "w-24",
+        "transition-opacity duration-200",
+        isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+      )}>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={volume}
+          onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+          className={cn(
+            "w-full h-2 rounded-full",
+            "bg-background/40",
+            "appearance-none cursor-pointer",
+            "focus:outline-none focus:ring-2 focus:ring-ring",
+            "transform-gpu"
+          )}
+          title="Adjust volume"
+        />
+      </div>
+    </div>
   );
 }
