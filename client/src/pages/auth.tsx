@@ -9,13 +9,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, registrationSchema } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -42,20 +44,36 @@ export default function AuthPage() {
 
   const handleLogin = async (data: any) => {
     try {
+      if (!data.username || !data.password) {
+        toast({
+          title: "Missing credentials",
+          description: "Please enter both username and password",
+          variant: "destructive",
+        });
+        return;
+      }
       await loginMutation.mutateAsync(data);
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+        variant: "destructive",
+      });
     }
   };
 
   const handleRegister = async (data: any) => {
     try {
       await registerMutation.mutateAsync(data);
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "Please try again with different credentials",
+        variant: "destructive",
+      });
     }
   };
 
@@ -98,18 +116,30 @@ export default function AuthPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="space-y-1">
+                <div className="relative">
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     {...loginForm.register("password")}
+                    className="pr-10"
                   />
-                  {loginForm.formState.errors.password?.message && (
-                    <p className="text-sm text-destructive">
-                      {loginForm.formState.errors.password?.message}
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
+                {loginForm.formState.errors.password?.message && (
+                  <p className="text-sm text-destructive">
+                    {loginForm.formState.errors.password?.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
@@ -181,18 +211,30 @@ export default function AuthPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="reg-password">Password</Label>
-                <div className="space-y-1">
+                <div className="relative">
                   <Input
                     id="reg-password"
-                    type="password"
+                    type={showRegPassword ? "text" : "password"}
                     {...registerForm.register("password")}
+                    className="pr-10"
                   />
-                  {registerForm.formState.errors.password?.message && (
-                    <p className="text-sm text-destructive">
-                      {registerForm.formState.errors.password?.message}
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showRegPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
+                {registerForm.formState.errors.password?.message && (
+                  <p className="text-sm text-destructive">
+                    {registerForm.formState.errors.password?.message}
+                  </p>
+                )}
               </div>
 
               <Button
