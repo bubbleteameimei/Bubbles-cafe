@@ -158,7 +158,7 @@ async function startServer() {
       server.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running at http://0.0.0.0:${PORT}`);
 
-        // Send port readiness signal
+        // Send port readiness signal with explicit wait_for_port flag
         if (process.send) {
           process.send({
             port: PORT,
@@ -181,6 +181,12 @@ async function startServer() {
   }
 }
 
+// Start the server with enhanced error handling
+startServer().catch((error) => {
+  console.error(`Critical error during server start: ${error.message}`);
+  process.exit(1);
+});
+
 // Enhanced graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Starting graceful shutdown...');
@@ -193,10 +199,4 @@ process.on('SIGTERM', () => {
     console.log('Server not initialized');
     process.exit(0);
   }
-});
-
-// Start the server with enhanced error handling
-startServer().catch((error) => {
-  console.error(`Critical error during server start: ${error.message}`);
-  process.exit(1);
 });

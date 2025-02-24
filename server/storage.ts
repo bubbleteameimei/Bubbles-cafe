@@ -56,6 +56,7 @@ import {
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
+import type { CommentMetadata } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
 import session from "express-session";
@@ -1425,6 +1426,11 @@ export class DatabaseStorage implements IStorage {
         value: metric.value,
         url: metric.url
       });
+
+      // Validate metric data before insertion
+      if (!metric.metricName || Number.isNaN(metric.value)) {
+        throw new Error('Invalid metric data: metric name and value are required');
+      }
 
       const [newMetric] = await db.insert(performanceMetrics)
         .values({
