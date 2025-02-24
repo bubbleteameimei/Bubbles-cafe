@@ -13,48 +13,57 @@ export class AudioManager {
 
   static getInstance(): AudioManager {
     if (!AudioManager.instance) {
-      console.log('[Audio] Creating new AudioManager instance');
       AudioManager.instance = new AudioManager();
     }
     return AudioManager.instance;
   }
 
   async initialize(): Promise<void> {
-    try {
-      if (!this.audioContext) {
-        console.log('[Audio] Creating new AudioContext...');
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
+    if (this.audioContext) {
+      // If context exists but is suspended, try to resume it
       if (this.audioContext.state === 'suspended') {
         console.log('[Audio] Resuming suspended AudioContext...');
         await this.audioContext.resume();
       }
+      return;
+    }
 
-      console.log('[Audio] AudioContext ready, state:', this.audioContext.state);
-    } catch (error) {
-      console.error('[Audio] AudioContext initialization failed:', error);
-      throw new Error('Failed to initialize audio system');
+    console.log('[Audio] Creating new AudioContext...');
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    console.log('[Audio] AudioContext initialized:', this.audioContext.state);
+
+    // Attempt to resume immediately if suspended
+    if (this.audioContext.state === 'suspended') {
+      console.log('[Audio] New AudioContext is suspended, attempting to resume...');
+      await this.audioContext.resume();
+      console.log('[Audio] AudioContext state after resume:', this.audioContext.state);
     }
   }
 
   async loadSound(id: string, url: string): Promise<void> {
-    try {
-      if (!this.audioContext) {
-        await this.initialize();
-      }
+    await this.initialize();
 
-      console.log(`[Audio] Loading sound: ${id} from ${url}`);
+    if (!this.audioContext) {
+      throw new Error('Failed to initialize audio system');
+    }
+
+    if (this.sounds.has(id)) {
+      console.log(`[Audio] Sound ${id} already loaded`);
+      return;
+    }
+
+    try {
+      console.log(`[Audio] Loading sound: ${id}`);
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`Failed to load audio file (${response.status})`);
+        throw new Error(`HTTP error: ${response.status}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
       this.sounds.set(id, audioBuffer);
-      console.log(`[Audio] Sound loaded successfully: ${id}`);
+      console.log(`[Audio] Sound ${id} loaded successfully`);
     } catch (error) {
       console.error(`[Audio] Failed to load sound ${id}:`, error);
       throw new Error('Failed to load audio file');
@@ -62,21 +71,17 @@ export class AudioManager {
   }
 
   async playSound(id: string, options: { loop?: boolean; volume?: number } = {}): Promise<void> {
+    await this.initialize();
+
+    if (!this.audioContext) {
+      throw new Error('Failed to initialize audio system');
+    }
+
+    if (!this.sounds.has(id)) {
+      await this.loadSound(id, '/audio/ambient.mp3');
+    }
+
     try {
-      if (!this.audioContext) {
-        throw new Error('Audio system not initialized');
-      }
-
-      if (!this.sounds.has(id)) {
-        throw new Error('Sound not loaded');
-      }
-
-      // Resume the context if it's suspended
-      if (this.audioContext.state === 'suspended') {
-        console.log('[Audio] Resuming AudioContext before playback...');
-        await this.audioContext.resume();
-      }
-
       // Stop any existing playback
       this.stopSound(id);
 
@@ -94,29 +99,38 @@ export class AudioManager {
       this.sources.set(id, source);
       this.gainNodes.set(id, gainNode);
 
-      console.log(`[Audio] Started playing: ${id}`, {
+      console.log(`[Audio] Started playing ${id}:`, {
         loop: source.loop,
         volume: gainNode.gain.value,
-        duration: source.buffer.duration
+        contextState: this.audioContext.state
       });
+
+      source.onended = () => {
+        if (!source.loop) {
+          this.sources.delete(id);
+          this.gainNodes.delete(id);
+        }
+      };
     } catch (error) {
-      console.error(`[Audio] Playback failed for ${id}:`, error);
+      console.error(`[Audio] Failed to play ${id}:`, error);
+      this.sources.delete(id);
+      this.gainNodes.delete(id);
       throw error;
     }
   }
 
   stopSound(id: string): void {
-    try {
-      const source = this.sources.get(id);
-      if (source) {
+    const source = this.sources.get(id);
+    if (source) {
+      try {
         source.stop();
-        console.log(`[Audio] Stopped: ${id}`);
+        console.log(`[Audio] Stopped ${id}`);
+      } catch (error) {
+        console.error(`[Audio] Error stopping ${id}:`, error);
+      } finally {
+        this.sources.delete(id);
+        this.gainNodes.delete(id);
       }
-    } catch (error) {
-      console.error(`[Audio] Error stopping ${id}:`, error);
-    } finally {
-      this.sources.delete(id);
-      this.gainNodes.delete(id);
     }
   }
 
@@ -135,38 +149,35 @@ export function useAudio() {
   const audioManager = AudioManager.getInstance();
 
   useEffect(() => {
-    let mounted = true;
-    console.log('[Audio Hook] Setting up audio system...');
-
-    const handleInteraction = async () => {
+    const initializeAudio = async () => {
       try {
         await audioManager.initialize();
-
-        if (!mounted) return;
-
-        // Load the ambient sound
         await audioManager.loadSound('horror-ambient', '/audio/ambient.mp3');
-
-        if (!mounted) return;
-
         setIsReady(true);
         setError(null);
-        console.log('[Audio Hook] Audio system ready');
       } catch (error) {
-        console.error('[Audio Hook] Setup failed:', error);
-        if (mounted) {
-          setError(error instanceof Error ? error.message : 'Failed to initialize audio');
-          setIsReady(false);
-        }
+        console.error('[Audio] Setup failed:', error);
+        setError(error instanceof Error ? error.message : 'Failed to initialize audio');
+        setIsReady(false);
       }
     };
 
-    // Add click listener for first interaction
-    document.addEventListener('click', handleInteraction, { once: true });
+    // Try to initialize immediately
+    initializeAudio();
+
+    // Also initialize on first click if needed
+    const handleFirstClick = () => {
+      if (!isReady) {
+        console.log('[Audio] User interaction detected, initializing...');
+        initializeAudio();
+      }
+      document.removeEventListener('click', handleFirstClick);
+    };
+
+    document.addEventListener('click', handleFirstClick);
 
     return () => {
-      mounted = false;
-      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('click', handleFirstClick);
     };
   }, []);
 
