@@ -48,25 +48,6 @@ export default function IndexView() {
     queryFn: async () => {
       const response = await fetch('/api/posts?section=index&page=1&limit=16&type=index');
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.story-card {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  transition: all 0.2s ease-in-out;
-}
-
-.story-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
