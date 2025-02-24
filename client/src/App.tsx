@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { CookieConsent } from '@/components/ui/cookie-consent';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/home'));
@@ -22,46 +23,50 @@ const PrivacyPage = React.lazy(() => import('@/pages/privacy'));
 const ReportBugPage = React.lazy(() => import('@/pages/report-bug'));
 const CommunityPage = React.lazy(() => import('@/pages/community'));
 const SettingsPage = React.lazy(() => import('@/pages/settings/SettingsPage'));
+const AuthPage = React.lazy(() => import('@/pages/auth'));
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <div className="relative min-h-screen flex flex-col bg-background text-foreground">
-            <Navigation />
-            <main className="flex-grow">
-              <React.Suspense fallback={<LoadingScreen />}>
-                <Switch>
-                  {/* Public Routes */}
-                  <Route path="/" component={HomePage} />
-                  <Route path="/reader" component={ReaderPage} />
-                  <Route path="/stories" component={StoriesPage} />
-                  <Route path="/index" component={IndexPage} />
-                  <Route path="/about" component={AboutPage} />
-                  <Route path="/privacy" component={PrivacyPage} />
-                  <Route path="/contact" component={ContactPage} />
-                  <Route path="/community" component={CommunityPage} />
-                  <Route path="/report-bug" component={ReportBugPage} />
-                  <Route path="/admin/dashboard" component={AdminDashboard} />
+          <ErrorBoundary>
+            <div className="relative min-h-screen flex flex-col bg-background text-foreground">
+              <Navigation />
+              <main className="flex-grow">
+                <React.Suspense fallback={<LoadingScreen />}>
+                  <Switch>
+                    {/* Public Routes */}
+                    <Route path="/" component={HomePage} />
+                    <Route path="/reader" component={ReaderPage} />
+                    <Route path="/stories" component={StoriesPage} />
+                    <Route path="/index" component={IndexPage} />
+                    <Route path="/about" component={AboutPage} />
+                    <Route path="/privacy" component={PrivacyPage} />
+                    <Route path="/contact" component={ContactPage} />
+                    <Route path="/community" component={CommunityPage} />
+                    <Route path="/report-bug" component={ReportBugPage} />
+                    <Route path="/admin/dashboard" component={AdminDashboard} />
+                    <Route path="/auth" component={AuthPage} />
 
-                  {/* Settings Routes */}
-                  <Route path="/settings" component={SettingsPage} />
-                  <Route path="/settings/:section" component={SettingsPage} />
+                    {/* Settings Routes */}
+                    <Route path="/settings" component={SettingsPage} />
+                    <Route path="/settings/:section" component={SettingsPage} />
 
-                  {/* 404 Route */}
-                  <Route path="/:rest*">
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                      <h1 className="text-2xl">404 - Page Not Found</h1>
-                    </div>
-                  </Route>
-                </Switch>
-              </React.Suspense>
-            </main>
-            <Footer />
-            <Toaster />
-            <CookieConsent />
-          </div>
+                    {/* 404 Route */}
+                    <Route path="/:rest*">
+                      <div className="flex items-center justify-center min-h-[60vh]">
+                        <h1 className="text-2xl">404 - Page Not Found</h1>
+                      </div>
+                    </Route>
+                  </Switch>
+                </React.Suspense>
+              </main>
+              <Footer />
+              <Toaster />
+              <CookieConsent />
+            </div>
+          </ErrorBoundary>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
