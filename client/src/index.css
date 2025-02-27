@@ -31,28 +31,51 @@
 @tailwind utilities;
 
 @layer base {
-  /* Root Variables - Keep existing color variables */
+  /* Light mode variables */
   :root {
-    --background: 0 6% 8%;      /* #161314 - Gothic black */
-    --foreground: 20 15% 87%;   /* #e2dcd8 - Alabaster */
-    --card: 0 5% 9%;           /* #1a1717 - Dark marble */
-    --card-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --popover: 0 5% 9%;        /* #1a1717 - Dark marble */
-    --popover-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --primary: 359 34% 31%;    /* #6b3536 - Deep crimson */
-    --primary-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --secondary: 330 5% 15%;   /* #2a2527 - Dark slate */
-    --secondary-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --muted: 13 7% 20%;        /* #372f2d - Aged granite */
-    --muted-foreground: 12 5% 60%; /* #a09591 - Weathered stone */
-    --accent: 359 24% 45%;     /* #8c5657 - Faded crimson */
-    --accent-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --destructive: 0 70% 35%;  /* #991b1b - Blood red */
-    --destructive-foreground: 20 15% 87%; /* #e2dcd8 - Alabaster */
-    --border: 20 5% 17%;       /* #2d2827 - Iron black */
-    --input: 0 5% 9%;         /* #1a1717 - Dark marble */
-    --ring: 359 34% 31%;      /* #6b3536 - Deep crimson */
+    --background: 35 30% 75%;   /* Light variant of #d8c3a5 */
+    --foreground: 240 9% 13%;   /* #1e1e24 */
+    --card: 35 33% 72%;         /* #d8c3a5 */
+    --card-foreground: 240 9% 13%; /* #1e1e24 */
+    --popover: 35 33% 72%;      /* #d8c3a5 */
+    --popover-foreground: 240 9% 13%; /* #1e1e24 */
+    --primary: 27 20% 55%;      /* #b0a698 */
+    --primary-foreground: 240 9% 13%; /* #1e1e24 */
+    --secondary: 24 16% 42%;    /* #7d6759 */
+    --secondary-foreground: 35 30% 75%; /* Light variant of #d8c3a5 */
+    --muted: 27 20% 85%;        /* Lighter variant of #b0a698 */
+    --muted-foreground: 24 19% 26%; /* #4f3d36 */
+    --accent: 24 16% 42%;       /* #7d6759 */
+    --accent-foreground: 35 33% 72%; /* #d8c3a5 */
+    --destructive: 0 84% 60%;   /* Reddish color */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 */
+    --border: 27 20% 65%;       /* Medium variant of #b0a698 */
+    --input: 35 33% 72%;        /* #d8c3a5 */
+    --ring: 24 16% 42%;         /* #7d6759 */
     --radius: 0.5rem;
+  }
+
+  /* Dark mode variables */
+  .dark {
+    --background: 240 9% 13%;    /* #1e1e24 */
+    --foreground: 35 33% 72%;    /* #d8c3a5 */
+    --card: 24 19% 26%;          /* #4f3d36 */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 */
+    --popover: 24 19% 26%;       /* #4f3d36 */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 */
+    --primary: 24 16% 42%;       /* #7d6759 */
+    --primary-foreground: 35 33% 72%; /* #d8c3a5 */
+    --secondary: 27 20% 55%;     /* #b0a698 */
+    --secondary-foreground: 240 9% 13%; /* #1e1e24 */
+    --muted: 24 19% 20%;         /* Darker variant of #4f3d36 */
+    --muted-foreground: 27 20% 65%; /* Medium variant of #b0a698 */
+    --accent: 27 20% 55%;        /* #b0a698 */
+    --accent-foreground: 240 9% 13%; /* #1e1e24 */
+    --destructive: 0 84% 60%;    /* Reddish color */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 */
+    --border: 24 19% 32%;        /* Slightly lighter variant of #4f3d36 */
+    --input: 24 19% 26%;         /* #4f3d36 */
+    --ring: 27 20% 55%;          /* #b0a698 */
   }
 
   /* Enhanced Base Typography */
@@ -112,9 +135,9 @@
     line-height: 1.2;
     letter-spacing: 0.02em;
     margin-bottom: 0.75em;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4),
-                 3px 3px 6px rgba(107, 53, 54, 0.3),
-                 0 0 15px rgba(139, 0, 0, 0.2);
+    text-shadow: 2px 2px 4px rgba(30, 30, 36, 0.4),
+                 3px 3px 6px rgba(125, 103, 89, 0.3),
+                 0 0 15px rgba(79, 61, 54, 0.2);
   }
 
   /* Enhanced Body Text */
@@ -129,19 +152,19 @@
   /* Improved Quotes and Epigraphs */
   blockquote {
     font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
-    @apply pl-6 border-l-4 border-primary/50 italic my-8;
+    @apply pl-6 border-l-4 border-primary/70 italic my-8;
     font-size: clamp(1.2rem, 1.3vw + 1rem, 1.4rem);
     line-height: 1.6;
     letter-spacing: 0.02em;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(to right, rgba(107, 53, 54, 0.1), transparent);
+    text-shadow: 1px 1px 2px rgba(30, 30, 36, 0.2);
+    background: linear-gradient(to right, rgba(125, 103, 89, 0.1), transparent);
   }
 
-  /* Horror-themed Selection */
+  /* Themed Selection */
   ::selection {
-    background-color: rgba(107, 53, 54, 0.3);
+    background-color: rgba(176, 166, 152, 0.4);
     color: hsl(var(--foreground));
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 1px 1px 2px rgba(30, 30, 36, 0.2);
   }
 
   /* Smooth Scrolling */
@@ -149,6 +172,70 @@
     scroll-behavior: smooth;
     scroll-padding-top: 2rem;
     -webkit-text-size-adjust: 100%;
+  }
+  
+  /* Card and Button Enhancements */
+  .card {
+    @apply transition-all duration-300;
+    box-shadow: 0 4px 12px rgba(79, 61, 54, 0.1);
+  }
+  
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(79, 61, 54, 0.15);
+  }
+  
+  .btn, button {
+    @apply transition-all duration-200;
+  }
+  
+  .btn:hover, button:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Link Animations */
+  a:not(.btn):not(button):not(.card) {
+    position: relative;
+    text-decoration: none;
+    @apply text-primary font-medium;
+  }
+  
+  a:not(.btn):not(button):not(.card)::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: 0;
+    left: 0;
+    @apply bg-primary;
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-out;
+  }
+  
+  a:not(.btn):not(button):not(.card):hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+  
+  /* Dark Mode Transitions */
+  .dark .card {
+    box-shadow: 0 4px 12px rgba(30, 30, 36, 0.2);
+  }
+  
+  .dark .card:hover {
+    box-shadow: 0 10px 25px rgba(30, 30, 36, 0.3);
+  }
+  
+  /* Transition between light and dark modes */
+  html.dark, html.light {
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+  
+  * {
+    transition: background-color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
   }
 
   /* Global styles */

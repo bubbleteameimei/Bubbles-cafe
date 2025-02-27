@@ -1,23 +1,23 @@
-// Define our horror theme colors and styles
+// Define our theme colors and styles based on the new color scheme
 export const theme = {
   colors: {
-    background: '#161314',        // Gothic black
-    foreground: '#e2dcd8',        // Alabaster
-    card: '#1a1717',             // Dark marble
-    cardForeground: '#e2dcd8',    // Alabaster
-    primary: '#6b3536',          // Deep crimson
-    primaryForeground: '#e2dcd8', // Alabaster
-    secondary: '#2a2527',        // Dark slate
-    secondaryForeground: '#e2dcd8', // Alabaster
-    muted: '#372f2d',            // Aged granite
-    mutedForeground: '#a09591',   // Weathered stone
-    accent: '#8c5657',           // Faded crimson
-    accentForeground: '#e2dcd8',  // Alabaster
-    destructive: '#991b1b',      // Blood red
-    destructiveForeground: '#e2dcd8', // Alabaster
-    border: '#2d2827',           // Iron black
-    input: '#1a1717',            // Dark marble
-    ring: '#6b3536',             // Deep crimson
+    background: '#1e1e24',        // Dark slate
+    foreground: '#d8c3a5',        // Cream
+    card: '#4f3d36',              // Deep brown
+    cardForeground: '#d8c3a5',    // Cream
+    primary: '#7d6759',           // Medium brown
+    primaryForeground: '#d8c3a5', // Cream
+    secondary: '#b0a698',         // Light taupe
+    secondaryForeground: '#1e1e24', // Dark slate
+    muted: '#3a2e29',             // Darker brown
+    mutedForeground: '#b0a698',   // Light taupe
+    accent: '#b0a698',            // Light taupe
+    accentForeground: '#1e1e24',  // Dark slate
+    destructive: '#e63946',       // Reddish
+    destructiveForeground: '#d8c3a5', // Cream
+    border: '#5d4a40',            // Medium-dark brown
+    input: '#4f3d36',             // Deep brown
+    ring: '#b0a698',              // Light taupe
   },
   typography: {
     fonts: {
@@ -74,6 +74,27 @@ export const theme = {
         base: '18px',
         scale: 1.333
       }
+    }
+  },
+  lightMode: {
+    colors: {
+      background: '#f2e9de',        // Lighter cream
+      foreground: '#1e1e24',        // Dark slate
+      card: '#d8c3a5',              // Cream
+      cardForeground: '#1e1e24',    // Dark slate
+      primary: '#b0a698',           // Light taupe
+      primaryForeground: '#1e1e24', // Dark slate
+      secondary: '#7d6759',         // Medium brown
+      secondaryForeground: '#f2e9de', // Lighter cream
+      muted: '#e8dfd2',             // Lightest cream
+      mutedForeground: '#4f3d36',   // Deep brown
+      accent: '#7d6759',            // Medium brown
+      accentForeground: '#f2e9de',  // Lighter cream
+      destructive: '#e63946',       // Reddish
+      destructiveForeground: '#f2e9de', // Lighter cream
+      border: '#c3b5a6',            // Medium-light cream
+      input: '#d8c3a5',             // Cream
+      ring: '#7d6759',              // Medium brown
     }
   },
   effects: {
