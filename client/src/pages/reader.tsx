@@ -15,6 +15,7 @@ import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 import { useAuth } from "@/hooks/use-auth";
+import "../components/ui/font-size-controls.css"; // Import font size controls CSS
 
 interface PostsResponse {
   posts: Post[];
@@ -160,50 +161,59 @@ export default function Reader() {
                 <div className="self-end flex items-center gap-2 mb-4 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border border-border/50">
                   <Type className="h-4 w-4 text-muted-foreground" />
 
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={decreaseFontSize}
-                          className="h-7 w-7 rounded-full hover:bg-accent/50 transition-colors"
-                          disabled={fontSize <= MIN_FONT_SIZE}
-                        >
-                          <Minus className="h-3 w-3" />
-                          <span className="sr-only">Decrease font size</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Make text smaller</p>
-                        <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="font-size-controls">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={decreaseFontSize}
+                              className="font-size-btn decrease"
+                              disabled={fontSize <= MIN_FONT_SIZE}
+                            >
+                              <Minus className="h-4 w-4" />
+                              <span className="sr-only">Decrease font size</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p>Make text smaller</p>
+                            <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
 
-                  <span className="text-sm font-medium min-w-[1.5rem] text-center">{fontSize}</span>
+                      <span 
+                        className={`font-size-display text-sm font-medium ${
+                          fontSize === parseInt(localStorage.getItem('reader-font-size') || '16') ? '' : 'font-size-changed'
+                        }`}
+                      >
+                        {fontSize}
+                      </span>
 
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={increaseFontSize}
-                          className="h-7 w-7 rounded-full hover:bg-accent/50 transition-colors"
-                          disabled={fontSize >= MAX_FONT_SIZE}
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span className="sr-only">Increase font size</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Make text larger</p>
-                        <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={increaseFontSize}
+                              className="font-size-btn increase"
+                              disabled={fontSize >= MAX_FONT_SIZE}
+                            >
+                              <Plus className="h-4 w-4" />
+                              <span className="sr-only">Increase font size</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">
+                            <p>Make text larger</p>
+                            <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
 
                 <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
 

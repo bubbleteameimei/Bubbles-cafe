@@ -150,6 +150,15 @@
     scroll-padding-top: 2rem;
     -webkit-text-size-adjust: 100%;
   }
+
+  /* Global styles */
+  .story-content {
+    transition: font-size 0.3s ease-out;
+  }
+
+  .story-content.transitioning {
+    transition: font-size 0.3s ease-out;
+  }
 }
 
 @layer components {
