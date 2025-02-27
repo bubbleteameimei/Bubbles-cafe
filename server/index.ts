@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 import { seedDatabase } from "./seed";
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
-import fs from 'fs';
+import { promises as fs } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,24 +27,12 @@ const isDev = process.env.NODE_ENV !== 'production';
 // Declare server variable in module scope
 let server: Server;
 
-// Create public directories if they don't exist
+// Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, 'public');
-const audioDir = path.join(publicDir, 'audio');
-
-// Ensure directories exist
-if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true });
-}
-if (!fs.existsSync(audioDir)) {
-  fs.mkdirSync(audioDir, { recursive: true });
-}
-
-// Copy audio file if it doesn't exist in the target location
-const sourceAudio = path.join(__dirname, '..', 'attached_assets', 'Audio.mp3');
-const targetAudio = path.join(audioDir, 'ambient.mp3');
-if (fs.existsSync(sourceAudio) && !fs.existsSync(targetAudio)) {
-  fs.copyFileSync(sourceAudio, targetAudio);
-  console.log('Audio file copied to public directory');
+try {
+  await fs.mkdir(publicDir, { recursive: true });
+} catch (error) {
+  console.error('Error creating public directory:', error);
 }
 
 // Set trust proxy first
@@ -53,29 +41,14 @@ app.set('trust proxy', 1);
 // Enable Gzip compression
 app.use(compression());
 
-// Security headers with updated CSP for audio
+// Security headers
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      mediaSrc: ["'self'"],
     }
   },
   crossOriginEmbedderPolicy: false
-}));
-
-// Serve static files with proper cache control
-app.use('/audio', express.static(audioDir, {
-  maxAge: '1h',
-  setHeaders: (res, path) => {
-    res.set('Cache-Control', 'public, max-age=3600');
-    if (path.endsWith('.mp3')) {
-      res.setHeader('Content-Type', 'audio/mpeg');
-      // Enable CORS for audio files
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
-    }
-  }
 }));
 
 // Rate limiter with adjusted settings for development
