@@ -68,3 +68,19 @@ author = 39775130
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "WordPress Sync"
+author = 40059171
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/wordpress-api-sync.ts"
+
+[[workflows.workflow]]
+name = "WordPress Scheduler"
+author = 40059171
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/sync-scheduler.ts"
