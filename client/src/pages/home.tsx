@@ -52,7 +52,7 @@ export default function Home() {
     <div 
       className="min-h-screen bg-background"
       style={{
-        backgroundImage: `url('/attached_assets/IMG_4848.jpeg')`,
+        backgroundImage: `url('/assets/IMG_4848.jpeg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
