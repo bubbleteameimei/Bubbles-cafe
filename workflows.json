@@ -18,8 +18,23 @@
     ]
   },
   "WordPress Sync": {
-    "command": "tsx scripts/wordpress-api-sync.ts",
-    "environment": {},
+    "command": "npx tsx scripts/wordpress-api-sync.ts",
+    "environment": {
+      "NODE_ENV": "development",
+      "DEBUG": "wordpress-sync:*"
+    },
     "persistent": false
+  },
+  "WordPress Scheduler": {
+    "command": "npx tsx scripts/sync-scheduler.ts",
+    "environment": {
+      "NODE_ENV": "development",
+      "DEBUG": "wordpress-sync:*"
+    },
+    "persistent": true,
+    "restart_on": [
+      "scripts/sync-scheduler.ts",
+      "scripts/wordpress-api-sync.ts"
+    ]
   }
 }

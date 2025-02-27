@@ -5,8 +5,7 @@ import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 import cron from 'node-cron';
 
-// WordPress site URL and API endpoint
-const WP_SITE_URL = 'https://bubbleteameimei.wordpress.com';
+// WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
 // Interface for WordPress API response
@@ -73,27 +72,23 @@ async function cleanContent(content: string): Promise<string> {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
-    .replace(/&#8211;/g, '–') // en dash
-    .replace(/&#8212;/g, '—') // em dash
-    .replace(/&#8216;/g, '‘') // left single quote
-    .replace(/&#8217;/g, '’') // right single quote
-    .replace(/&#8220;/g, '“') // left double quote
-    .replace(/&#8221;/g, '”') // right double quote
-    .replace(/&#8230;/g, '…') // ellipsis
-    // Convert any remaining numeric HTML entities
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#8216;/g, '‘')
+    .replace(/&#8217;/g, '’')
+    .replace(/&#8220;/g, '“')
+    .replace(/&#8221;/g, '”')
+    .replace(/&#8230;/g, '…')
     .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec));
 
   // Final pass: Clean up whitespace and formatting
   cleaned = cleaned
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Reduce multiple newlines
-    .replace(/[ \t]+/g, ' ') // Normalize spaces and tabs
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
     .split('\n')
-    .map(line => line.trim()) // Trim each line
+    .map(line => line.trim())
     .join('\n')
     .trim();
-
-  console.log('Cleaned content length:', cleaned.length);
-  console.log('Sample of cleaned content:', cleaned.substring(0, 200));
 
   return cleaned;
 }
@@ -132,7 +127,7 @@ async function getOrCreateAdminUser() {
 async function fetchWordPressPosts(): Promise<WordPressPost[]> {
   try {
     console.log("Fetching posts from WordPress API...");
-    const response = await fetch(`${WP_API_URL}/posts?per_page=100`);
+    const response = await fetch(`${WP_API_URL}/posts?per_page=100&_fields=id,date,title,content,excerpt,slug`);
 
     if (!response.ok) {
       throw new Error(`WordPress API responded with status: ${response.status}`);
@@ -158,10 +153,7 @@ async function syncWordPressPosts() {
     const wpPosts = await fetchWordPressPosts();
     console.log(`Retrieved ${wpPosts.length} posts from WordPress API`);
 
-    // Track existing slugs to prevent duplicates
-    const existingSlugs = new Set<string>();
     let createdCount = 0;
-    let skippedCount = 0;
     let updatedCount = 0;
 
     for (const wpPost of wpPosts) {
@@ -175,21 +167,10 @@ async function syncWordPressPosts() {
           ? (await cleanContent(wpPost.excerpt.rendered)).substring(0, 200) + '...'
           : content.substring(0, 200) + '...';
 
-        // Generate slug from post data
-        let baseSlug = wpPost.slug || title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
+        // Use WordPress post slug
+        const finalSlug = wpPost.slug;
 
-        let finalSlug = baseSlug;
-        let counter = 1;
-        while (existingSlugs.has(finalSlug)) {
-          finalSlug = `${baseSlug}-${counter}`;
-          counter++;
-        }
-        existingSlugs.add(finalSlug);
-
-        // Check if post already exists by WordPress ID
+        // Check if post exists by WordPress ID in metadata
         const [existingPost] = await db.select()
           .from(posts)
           .where(eq(posts.slug, finalSlug));
@@ -221,7 +202,7 @@ async function syncWordPressPosts() {
           createdCount++;
           console.log(`Created post: "${title}" (ID: ${newPost.id})`);
         } else {
-          // Always update existing posts to ensure we have the latest content
+          // Update existing post
           await db.update(posts)
             .set({
               title: title,
@@ -249,12 +230,10 @@ async function syncWordPressPosts() {
     console.log(`- Total items processed: ${wpPosts.length}`);
     console.log(`- Posts created: ${createdCount}`);
     console.log(`- Posts updated: ${updatedCount}`);
-    console.log(`- Posts skipped: ${skippedCount}`);
 
     return {
       created: createdCount,
       updated: updatedCount,
-      skipped: skippedCount,
       newContent: createdCount > 0 || updatedCount > 0
     };
   } catch (error) {
@@ -277,8 +256,8 @@ if (process.argv[1].includes('wordpress-api-sync.ts')) {
     });
 }
 
-// Schedule regular syncing (every 6 hours by default)
-export function scheduleWordPressSync(cronSchedule = '0 */6 * * *') {
+// Schedule regular syncing (default every 5 minutes)
+export function scheduleWordPressSync(cronSchedule = '*/5 * * * *') {
   console.log(`Scheduling WordPress sync with cron schedule: ${cronSchedule}`);
 
   return cron.schedule(cronSchedule, async () => {
