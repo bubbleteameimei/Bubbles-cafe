@@ -43,16 +43,16 @@ export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
     <button
       onClick={toggleTheme}
       className="theme-toggle-full"
-      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
         <>
-          <Sun className="h-5 w-5" aria-hidden="true" />
+          <Sun className="h-5 w-5" />
           <span>Light Mode</span>
         </>
       ) : (
         <>
-          <Moon className="h-5 w-5" aria-hidden="true" />
+          <Moon className="h-5 w-5" />
           <span>Dark Mode</span>
         </>
       )}
