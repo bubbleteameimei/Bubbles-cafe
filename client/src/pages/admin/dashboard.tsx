@@ -69,3 +69,91 @@ export default function AdminDashboard() {
     </div>
   );
 }
+"use client"
+
+import { VisitorAnalytics } from "@/components/admin/VisitorAnalytics"
+import { StoryInsights } from "@/components/admin/StoryInsights"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useUser } from "@/lib/auth"
+import { useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { BarChart3, LineChart, Users, BookOpen, ThumbsUp, MessageSquare } from "lucide-react"
+
+export default function AdminDashboard() {
+  const { user, isLoading } = useUser()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== "admin")) {
+      navigate("/")
+    }
+  }, [user, isLoading, navigate])
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+  }
+
+  if (!user || user.role !== "admin") {
+    return null
+  }
+
+  return (
+    <div className="container mx-auto py-6 space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <Button onClick={() => window.location.reload()}>Refresh Data</Button>
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+2,350</div>
+            <p className="text-xs text-muted-foreground">+180 from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Stories</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+573</div>
+            <p className="text-xs text-muted-foreground">+58 from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Likes</CardTitle>
+            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+12,234</div>
+            <p className="text-xs text-muted-foreground">+1,643 from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Comments</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+4,387</div>
+            <p className="text-xs text-muted-foreground">+573 from last month</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <VisitorAnalytics />
+        <StoryInsights />
+      </div>
+    </div>
+  )
+}

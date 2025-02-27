@@ -302,7 +302,7 @@ export default function Navigation() {
         </Sheet>
 
         <div className="flex-1" />
-        
+
         {/* Notifications Dropdown */}
         <div className="mr-2">
           <NotificationsDropdown />

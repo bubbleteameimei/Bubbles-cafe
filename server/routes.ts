@@ -16,6 +16,16 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
+import contactRoutes from "./routes/contact";
+import webhookRoutes from "./routes/webhooks";
+import userRoutes from "./routes/users";
+import authRoutes from "./routes/auth";
+import storyRoutes from "./routes/stories";
+import commentRoutes from "./routes/comments";
+import adminRoutes from "./routes/admin";
+import tipRoutes from "./routes/tips";
+import challengeRoutes from "./routes/challenges";
+import analyticsRoutes from "./routes/analytics";
 
 // Add cacheControl middleware at the top with other middleware definitions
 const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
@@ -1252,6 +1262,16 @@ Timestamp: ${new Date().toLocaleString()}
 
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
+  app.use("/api/contact", contactRoutes);
+  app.use("/api/webhooks", webhookRoutes);
+  app.use("/api/users", userRoutes);
+  app.use("/api/auth", authRoutes);
+  app.use("/api/stories", storyRoutes);
+  app.use("/api/comments", commentRoutes);
+  app.use("/api/admin", adminRoutes);
+  app.use("/api/tips", tipRoutes);
+  app.use("/api/challenges", challengeRoutes);
+  app.use("/api/analytics", analyticsRoutes);
 
   // User statistics endpoint
   app.get("/api/users/stats", isAuthenticated, async (req, res) => {
