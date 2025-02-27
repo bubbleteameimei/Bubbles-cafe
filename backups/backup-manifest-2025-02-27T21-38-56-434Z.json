@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-02-27T21-38-56-434Z",
+  "components": [
+    "Database (SQL dump)",
+    "Configuration files",
+    "Client source code",
+    "Server source code",
+    "Shared code",
+    "Scripts"
+  ],
+  "createdAt": "2025-02-27T21:39:03.341Z"
+}
