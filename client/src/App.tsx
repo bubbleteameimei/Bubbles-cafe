@@ -19,11 +19,11 @@ const loadComponent = (importFn: () => Promise<any>) => {
   const Component = React.lazy(importFn);
 
   return (props: any) => (
-    <ErrorBoundary>
-      <React.Suspense fallback={<LoadingScreen />}>
+    <React.Suspense fallback={<LoadingScreen />}>
+      <ErrorBoundary>
         <Component {...props} />
-      </React.Suspense>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </React.Suspense>
   );
 };
 
@@ -45,8 +45,6 @@ const CommunityPage = loadComponent(() => import('./pages/community'));
 const SettingsPage = loadComponent(() => import('./pages/settings/SettingsPage'));
 const AuthPage = loadComponent(() => import('./pages/auth'));
 
-console.log('[App] Initializing application with SidebarProvider...');
-
 function App() {
   // Add performance monitoring
   usePerformanceMonitoring();
@@ -56,47 +54,45 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <SidebarProvider defaultOpen={true}>
-            <ErrorBoundary>
-              <div className="relative min-h-screen flex flex-col bg-background text-foreground">
-                <Navigation />
-                <main className="flex-grow">
-                  <Switch>
-                    {/* Public Routes */}
-                    <Route path="/" component={HomePage} />
-                    <Route path="/reader" component={ReaderPage} />
-                    <Route path="/stories" component={StoriesPage} />
-                    <Route path="/index" component={IndexPage} />
-                    <Route path="/about" component={AboutPage} />
-                    <Route path="/privacy" component={PrivacyPage} />
-                    <Route path="/contact" component={ContactPage} />
-                    <Route path="/community" component={CommunityPage} />
-                    <Route path="/report-bug" component={ReportBugPage} />
-                    <Route path="/auth" component={AuthPage} />
+            <div className="relative min-h-screen flex flex-col bg-background text-foreground">
+              <Navigation />
+              <main className="flex-grow">
+                <Switch>
+                  {/* Public Routes */}
+                  <Route path="/" component={HomePage} />
+                  <Route path="/reader" component={ReaderPage} />
+                  <Route path="/stories" component={StoriesPage} />
+                  <Route path="/index" component={IndexPage} />
+                  <Route path="/about" component={AboutPage} />
+                  <Route path="/privacy" component={PrivacyPage} />
+                  <Route path="/contact" component={ContactPage} />
+                  <Route path="/community" component={CommunityPage} />
+                  <Route path="/report-bug" component={ReportBugPage} />
+                  <Route path="/auth" component={AuthPage} />
 
-                    {/* Settings Routes */}
-                    <ProtectedRoute path="/settings" component={SettingsPage} />
-                    <ProtectedRoute path="/settings/:section" component={SettingsPage} />
+                  {/* Settings Routes */}
+                  <ProtectedRoute path="/settings" component={SettingsPage} />
+                  <ProtectedRoute path="/settings/:section" component={SettingsPage} />
 
-                    {/* Admin Routes */}
-                    <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
-                    <ProtectedRoute path="/admin/posts" component={AdminPosts} requireAdmin />
-                    <ProtectedRoute path="/admin/analytics" component={AdminAnalytics} requireAdmin />
-                    <ProtectedRoute path="/admin/users" component={AdminUsers} requireAdmin />
-                    <ProtectedRoute path="/admin/settings" component={AdminSettings} requireAdmin />
+                  {/* Admin Routes */}
+                  <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                  <ProtectedRoute path="/admin/posts" component={AdminPosts} requireAdmin />
+                  <ProtectedRoute path="/admin/analytics" component={AdminAnalytics} requireAdmin />
+                  <ProtectedRoute path="/admin/users" component={AdminUsers} requireAdmin />
+                  <ProtectedRoute path="/admin/settings" component={AdminSettings} requireAdmin />
 
-                    {/* 404 Route */}
-                    <Route path="/:rest*">
-                      <div className="flex items-center justify-center min-h-[60vh]">
-                        <h1 className="text-2xl">404 - Page Not Found</h1>
-                      </div>
-                    </Route>
-                  </Switch>
-                </main>
-                <Footer />
-                <Toaster />
-                <CookieConsent />
-              </div>
-            </ErrorBoundary>
+                  {/* 404 Route */}
+                  <Route path="/:rest*">
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                      <h1 className="text-2xl">404 - Page Not Found</h1>
+                    </div>
+                  </Route>
+                </Switch>
+              </main>
+              <Footer />
+              <Toaster />
+              <CookieConsent />
+            </div>
           </SidebarProvider>
         </ThemeProvider>
       </AuthProvider>

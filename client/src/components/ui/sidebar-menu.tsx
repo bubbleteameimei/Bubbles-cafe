@@ -10,7 +10,7 @@ import {
   FileText,
   ChevronDown,
   Bug,
-  Library,
+  LayoutList,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -84,8 +84,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => handleNavigation('/index')}
                 tooltip="Index"
               >
-                <Library className="h-[18px] w-[18px]" />
-                <span>Index</span>
+                <LayoutList className="h-[18px] w-[18px]" />
+                <span>Story Index</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 

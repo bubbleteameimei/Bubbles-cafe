@@ -49,67 +49,78 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background bg-[url('/assets/IMG_4848.jpeg')] bg-cover bg-center bg-no-repeat">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
-        >
-          <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider">
-            BUBBLE'S CAFE
-          </h1>
-          <div className="space-y-6 mb-12">
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-              Each story here is a portal to the unexpected,
-              the unsettling, and the unexplained.
-            </p>
+    <div 
+      className="min-h-screen bg-background"
+      style={{
+        backgroundImage: `url('/attached_assets/IMG_4848.jpeg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <div className="min-h-screen bg-black/40 backdrop-blur-[2px]">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
+          >
+            <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-white">
+              BUBBLE'S CAFE
+            </h1>
+            <div className="space-y-6 mb-12">
+              <p className="text-lg sm:text-xl text-gray-200 max-w-2xl leading-relaxed">
+                Each story here is a portal to the unexpected,
+                the unsettling, and the unexplained.
+              </p>
 
-            <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
-              <Button
-                size="lg"
-                onClick={() => setLocation('/index')}
-                className="text-lg h-14"
-              >
-                Browse Stories
-                <Book className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                onClick={() => setLocation('/reader')}
-                className="text-lg h-14"
-              >
-                Start Reading
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-
-            {posts && posts.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                className="mt-24 text-center"
-              >
-                <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide">Latest Story</p>
-                <h2 
-                  className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                  onClick={() => navigateToStory(posts[0].id)}
+              <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
+                <Button
+                  size="lg"
+                  onClick={() => setLocation('/index')}
+                  className="text-lg h-14"
                 >
-                  {posts[0].title}
-                </h2>
-                <p className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4">
-                  {posts[0].excerpt}
-                </p>
-                <div className="text-sm text-muted-foreground">
-                  {posts[0].createdAt && formatDate(posts[0].createdAt)}
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+                  Browse Stories
+                  <Book className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  onClick={() => setLocation('/reader')}
+                  className="text-lg h-14"
+                >
+                  Start Reading
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+
+              {posts && posts.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="mt-24 text-center text-white"
+                >
+                  <p className="text-sm text-gray-300 mb-3 uppercase tracking-wide">Latest Story</p>
+                  <h2 
+                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                    onClick={() => navigateToStory(posts[0].id)}
+                  >
+                    {posts[0].title}
+                  </h2>
+                  <p className="text-gray-300 line-clamp-2 max-w-xl mx-auto mb-4">
+                    {posts[0].excerpt}
+                  </p>
+                  <div className="text-sm text-gray-400">
+                    {posts[0].createdAt && formatDate(posts[0].createdAt)}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
