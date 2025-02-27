@@ -27,18 +27,41 @@ interface WordPressPost {
 
 async function cleanContent(content: string): Promise<string> {
   return content
+    // Remove WordPress blocks and widgets
     .replace(/<!-- wp:paragraph -->/g, "")
     .replace(/<!-- \/wp:paragraph -->/g, "")
     .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
     .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
+    .replace(/<!-- wp:widget[\s\S]*?\/-->/g, "")
+    .replace(/<ul class="wp-block-social-links[\s\S]*?<\/ul>/g, "")
+    .replace(/<ul class="wp-block-latest-posts[\s\S]*?<\/ul>/g, "")
+    .replace(/\[.*?\]/g, "") // Remove shortcodes
+
+    // Convert HTML formatting to Markdown-style text
     .replace(/<em>(.*?)<\/em>/g, "_$1_")
+    .replace(/<strong>(.*?)<\/strong>/g, "**$1**")
+    .replace(/<h[1-6]>(.*?)<\/h[1-6]>/g, (_, content) => `\n\n${content}\n\n`)
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<p>/g, "\n")
+    .replace(/<p>/g, "\n\n")
     .replace(/<\/p>/g, "\n")
+    .replace(/<blockquote>(.*?)<\/blockquote>/g, "\n> $1\n")
+    .replace(/<[^>]+>/g, "") // Remove any remaining HTML tags
+
+    // Fix special characters and entities
     .replace(/&nbsp;/g, " ")
     .replace(/&#8217;/g, "'")
     .replace(/&#8220;|&#8221;/g, '"')
     .replace(/&#8230;/g, "...")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+
+    // Clean up whitespace and formatting
+    .replace(/\n{3,}/g, "\n\n") // Reduce multiple newlines to maximum two
+    .replace(/^\s+|\s+$/g, "") // Trim start and end whitespace
+    .replace(/[ \t]+/g, " ") // Normalize spaces and tabs
     .trim();
 }
 
