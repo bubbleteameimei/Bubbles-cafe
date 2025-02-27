@@ -75,7 +75,7 @@ author = 40059171
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx tsx scripts/wordpress-api-sync.ts"
+args = "npx ts-node scripts/sync-scheduler.ts"
 
 [[workflows.workflow]]
 name = "WordPress Scheduler"
