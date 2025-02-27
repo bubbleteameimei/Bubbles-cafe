@@ -32,29 +32,63 @@ pool.on('error', (err) => {
     message: err.message,
     stack: err.stack
   });
-  // Don't try to release the client here, just log the error
 });
 
-// Connection monitoring
-pool.on('connect', () => {
+// Connection monitoring with schema verification
+pool.on('connect', async (client) => {
   console.log('New client connected to database');
+  try {
+    // Verify schema tables exist
+    const result = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'posts'
+      );
+    `);
+    if (!result.rows[0].exists) {
+      console.error('Posts table not found - schema may not be initialized');
+    } else {
+      console.log('Schema verification successful - posts table exists');
+    }
+  } catch (error) {
+    console.error('Error verifying schema:', error);
+  }
 });
 
 pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
-// Test connection on startup
+// Test connection and schema on startup
 async function testConnection() {
   let client;
   try {
     console.log('Testing database connection...');
     client = await pool.connect();
-    await client.query('SELECT 1'); // Verify we can execute queries
+
+    // Verify basic connectivity
+    await client.query('SELECT 1');
     console.log('Database connection test successful');
+
+    // Verify schema exists
+    const schemaTest = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'posts'
+      );
+    `);
+
+    if (!schemaTest.rows[0].exists) {
+      console.error('WARNING: Posts table not found - attempting schema initialization');
+      throw new Error('Schema initialization required');
+    }
+
+    console.log('Schema verification successful');
     return true;
   } catch (err) {
-    console.error('Database connection test failed:', err);
+    console.error('Database connection or schema test failed:', err);
     throw err;
   } finally {
     if (client) {
@@ -67,11 +101,28 @@ async function testConnection() {
   }
 }
 
-// Run initial connection test
-testConnection()
-  .then(() => {
-    console.log('Database initialization complete');
-  })
+// Run initial connection test with retries
+let retries = 3;
+async function initializeWithRetry() {
+  while (retries > 0) {
+    try {
+      await testConnection();
+      console.log('Database initialization complete');
+      return;
+    } catch (err) {
+      retries--;
+      if (retries > 0) {
+        console.log(`Retrying database initialization. ${retries} attempts remaining`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+      } else {
+        console.error('Failed to initialize database after all retries:', err);
+        process.exit(1);
+      }
+    }
+  }
+}
+
+initializeWithRetry()
   .catch(err => {
     console.error('Failed to initialize database:', err);
     // Log the DATABASE_URL format (without credentials)

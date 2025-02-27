@@ -943,7 +943,7 @@ export class DatabaseStorage implements IStorage {
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
-      .where.where(eq(authorStats.authorId, authorId))
+      .where(eq(authorStats.authorId, authorId))
       .returning();
 
     return updated;
