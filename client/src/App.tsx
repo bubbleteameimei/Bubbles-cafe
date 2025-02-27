@@ -45,6 +45,8 @@ const CommunityPage = loadComponent(() => import('@/pages/community'));
 const SettingsPage = loadComponent(() => import('@/pages/settings/SettingsPage'));
 const AuthPage = loadComponent(() => import('@/pages/auth'));
 
+console.log('[App] Initializing application with SidebarProvider...');
+
 function App() {
   // Add performance monitoring
   usePerformanceMonitoring();
@@ -53,7 +55,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <SidebarProvider>
+          <SidebarProvider defaultOpen={true}>
             <ErrorBoundary>
               <div className="relative min-h-screen flex flex-col bg-background text-foreground">
                 <Navigation />

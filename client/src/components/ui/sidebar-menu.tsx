@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { VariantProps, cva } from "class-variance-authority"
 import {
   Home,
   Book,
@@ -43,17 +41,31 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const { user, logoutMutation } = useAuth();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
-  const { isMobile, setOpenMobile } = useSidebar();
+  const sidebar = useSidebar();
+
+  // Debug log to verify SidebarProvider context
+  React.useEffect(() => {
+    console.log('[Sidebar] Provider context:', {
+      isMobile: sidebar?.isMobile,
+      isInitialized: !!sidebar
+    });
+  }, [sidebar]);
 
   const handleNavigation = React.useCallback((path: string) => {
+    console.log('[Sidebar] Navigating to:', path);
     if (onNavigate) {
       onNavigate();
     }
-    if (isMobile) {
-      setOpenMobile(false);
+    if (sidebar?.isMobile) {
+      sidebar.setOpenMobile(false);
     }
     setLocation(path);
-  }, [onNavigate, isMobile, setOpenMobile, setLocation]);
+  }, [onNavigate, sidebar, setLocation]);
+
+  if (!sidebar) {
+    console.warn('[Sidebar] Missing SidebarProvider context');
+    return null;
+  }
 
   return (
     <SidebarContent>
