@@ -7,6 +7,7 @@ interface LikeDislikeProps {
   userLikeStatus?: 'like' | 'dislike' | null;
   onLike?: (liked: boolean) => void;
   onDislike?: (disliked: boolean) => void;
+  onUpdate?: (likes: number, dislikes: number) => void;
 }
 
 interface Stats {
@@ -84,7 +85,8 @@ export function LikeDislike({
   postId,
   userLikeStatus = null,
   onLike,
-  onDislike
+  onDislike,
+  onUpdate
 }: LikeDislikeProps) {
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
@@ -100,6 +102,7 @@ export function LikeDislike({
     try {
       localStorage.setItem(`post-stats-${postId}`, JSON.stringify(newStats));
       setStats(newStats);
+      onUpdate?.(newStats.likes, newStats.dislikes);
       console.log(`[LikeDislike] Updated stats for post ${postId}:`, newStats);
     } catch (error) {
       console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);

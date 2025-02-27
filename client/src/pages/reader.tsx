@@ -25,6 +25,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+interface PostsResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 const MIN_FONT_SIZE = 14;
 const MAX_FONT_SIZE = 24;
 const FONT_SIZE_STEP = 2;
@@ -299,7 +304,10 @@ export default function Reader() {
               </div>
 
               <div className="border-t border-border pt-4">
-                <LikeDislike postId={currentPost.id} initialLikes={postStats[currentPost.id]?.likes || 0} initialDislikes={postStats[currentPost.id]?.dislikes || 0} onUpdate={handleStatsUpdate} />
+                <LikeDislike 
+                  postId={currentPost.id} 
+                  onUpdate={(likes, dislikes) => handleStatsUpdate(currentPost.id, likes, dislikes)}
+                />
               </div>
 
               <div className="mt-6"> {/* Added pagination here */}
@@ -406,9 +414,4 @@ function getOrCreateStats(postId: number) {
 
   localStorage.setItem(storageKey, JSON.stringify(newStats));
   return newStats;
-}
-
-interface PostsResponse {
-  posts: Post[];
-  hasMore: boolean;
 }
