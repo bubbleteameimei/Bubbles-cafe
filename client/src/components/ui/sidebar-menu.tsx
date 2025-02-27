@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -16,7 +15,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useLocation } from "@/hooks/use-location"
+import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,7 +23,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger
 } from "@/components/ui/collapsible"
-import { NavLink } from "@/components/ui/nav-link"
 
 import {
   SidebarContent,
@@ -217,15 +215,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </Button>
           )}
 
-          <NavLink
-            href="/report-bug"
-            isActive={location === '/report-bug'}
-            onNavigate={() => handleNavigation('/report-bug')}
-            className="text-base flex items-center justify-center gap-2"
+          <button
+            onClick={() => handleNavigation('/report-bug')}
+            className={cn(
+              "text-base flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-sm",
+              location === '/report-bug' 
+                ? "text-primary font-semibold"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+            )}
           >
             <Bug className="h-4 w-4" />
             Report a Bug
-          </NavLink>
+          </button>
         </div>
       </div>
     </SidebarContent>
