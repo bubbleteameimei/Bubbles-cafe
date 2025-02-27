@@ -1,23 +1,25 @@
-// Define our theme colors and styles based on the new color scheme
+
+// Define our theme colors and styles based on the refined color scheme
 export const theme = {
   colors: {
-    background: '#1e1e24',        // Dark slate
+    // Dark mode (default)
+    background: '#1a1a1f',        // Darker slate (darker than #1e1e24)
     foreground: '#d8c3a5',        // Cream
-    card: '#4f3d36',              // Deep brown
+    card: '#2c2c32',              // Darker card background
     cardForeground: '#d8c3a5',    // Cream
     primary: '#7d6759',           // Medium brown
     primaryForeground: '#d8c3a5', // Cream
     secondary: '#b0a698',         // Light taupe
-    secondaryForeground: '#1e1e24', // Dark slate
-    muted: '#3a2e29',             // Darker brown
+    secondaryForeground: '#1a1a1f', // Darker slate
+    muted: '#32302c',             // Darker muted
     mutedForeground: '#b0a698',   // Light taupe
     accent: '#b0a698',            // Light taupe
-    accentForeground: '#1e1e24',  // Dark slate
+    accentForeground: '#1a1a1f',  // Darker slate
     destructive: '#e63946',       // Reddish
     destructiveForeground: '#d8c3a5', // Cream
-    border: '#5d4a40',            // Medium-dark brown
-    input: '#4f3d36',             // Deep brown
-    ring: '#b0a698',              // Light taupe
+    border: '#3d3630',            // Darker border
+    input: '#2c2c32',             // Darker input
+    ring: '#7d6759',              // Medium brown
   },
   typography: {
     fonts: {
@@ -50,7 +52,7 @@ export const theme = {
       heading: {
         letterSpacing: '-0.02em',
         lineHeight: 1.2,
-        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3), 4px 4px 8px rgba(0, 0, 0, 0.1), 0 0 12px rgba(107, 53, 54, 0.2)'
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5), 4px 4px 8px rgba(0, 0, 0, 0.2)'
       },
       body: {
         letterSpacing: '0.01em',
@@ -58,7 +60,7 @@ export const theme = {
       },
       decorative: {
         letterSpacing: '0.03em',
-        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3), 3px 3px 6px rgba(107, 53, 54, 0.2)'
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5), 3px 3px 6px rgba(79, 61, 54, 0.3)'
       }
     },
     responsive: {
@@ -80,12 +82,12 @@ export const theme = {
     colors: {
       background: '#f2e9de',        // Lighter cream
       foreground: '#1e1e24',        // Dark slate
-      card: '#d8c3a5',              // Cream
+      card: '#e8e0d2',              // Lighter card
       cardForeground: '#1e1e24',    // Dark slate
-      primary: '#b0a698',           // Light taupe
-      primaryForeground: '#1e1e24', // Dark slate
-      secondary: '#7d6759',         // Medium brown
-      secondaryForeground: '#f2e9de', // Lighter cream
+      primary: '#7d6759',           // Medium brown
+      primaryForeground: '#f2e9de', // Lighter cream
+      secondary: '#b0a698',         // Light taupe
+      secondaryForeground: '#1e1e24', // Dark slate
       muted: '#e8dfd2',             // Lightest cream
       mutedForeground: '#4f3d36',   // Deep brown
       accent: '#7d6759',            // Medium brown
@@ -93,16 +95,16 @@ export const theme = {
       destructive: '#e63946',       // Reddish
       destructiveForeground: '#f2e9de', // Lighter cream
       border: '#c3b5a6',            // Medium-light cream
-      input: '#d8c3a5',             // Cream
+      input: '#e8e0d2',             // Lighter card
       ring: '#7d6759',              // Medium brown
     }
   },
   effects: {
     textShadow: {
-      sm: '1px 1px 2px rgba(0, 0, 0, 0.2)',
-      md: '2px 2px 4px rgba(0, 0, 0, 0.3)',
-      lg: '2px 2px 4px rgba(0, 0, 0, 0.3), 4px 4px 8px rgba(0, 0, 0, 0.1)',
-      horror: '2px 2px 4px rgba(0, 0, 0, 0.4), 3px 3px 6px rgba(107, 53, 54, 0.3), 0 0 15px rgba(139, 0, 0, 0.2)'
+      sm: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+      md: '2px 2px 4px rgba(0, 0, 0, 0.4)',
+      lg: '2px 2px 4px rgba(0, 0, 0, 0.4), 4px 4px 8px rgba(0, 0, 0, 0.2)',
+      horror: '2px 2px 4px rgba(0, 0, 0, 0.5), 3px 3px 6px rgba(79, 61, 54, 0.3), 0 0 12px rgba(125, 103, 89, 0.2)'
     },
     transition: {
       standard: 'all 0.2s ease-in-out',
@@ -111,5 +113,3 @@ export const theme = {
     }
   }
 };
-
-export default theme;

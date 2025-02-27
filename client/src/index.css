@@ -33,49 +33,49 @@
 @layer base {
   /* Light mode variables */
   :root {
-    --background: 35 30% 75%;   /* Light variant of #d8c3a5 */
-    --foreground: 240 9% 13%;   /* #1e1e24 */
-    --card: 35 33% 72%;         /* #d8c3a5 */
-    --card-foreground: 240 9% 13%; /* #1e1e24 */
-    --popover: 35 33% 72%;      /* #d8c3a5 */
-    --popover-foreground: 240 9% 13%; /* #1e1e24 */
-    --primary: 27 20% 55%;      /* #b0a698 */
-    --primary-foreground: 240 9% 13%; /* #1e1e24 */
-    --secondary: 24 16% 42%;    /* #7d6759 */
-    --secondary-foreground: 35 30% 75%; /* Light variant of #d8c3a5 */
-    --muted: 27 20% 85%;        /* Lighter variant of #b0a698 */
-    --muted-foreground: 24 19% 26%; /* #4f3d36 */
-    --accent: 24 16% 42%;       /* #7d6759 */
-    --accent-foreground: 35 33% 72%; /* #d8c3a5 */
-    --destructive: 0 84% 60%;   /* Reddish color */
-    --destructive-foreground: 35 33% 72%; /* #d8c3a5 */
-    --border: 27 20% 65%;       /* Medium variant of #b0a698 */
-    --input: 35 33% 72%;        /* #d8c3a5 */
-    --ring: 24 16% 42%;         /* #7d6759 */
-    --radius: 0.5rem;
+    --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
+    --foreground: 240 9% 13%;   /* #1e1e24 - Dark slate */
+    --card: 35 30% 87%;         /* #e8e0d2 - Lighter card */
+    --card-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --popover: 35 30% 87%;      /* #e8e0d2 - Lighter card */
+    --popover-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --primary: 24 16% 42%;      /* #7d6759 - Medium brown */
+    --primary-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --secondary: 27 20% 55%;    /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --muted: 35 31% 90%;        /* #e8dfd2 - Lightest cream */
+    --muted-foreground: 24 19% 26%; /* #4f3d36 - Deep brown */
+    --accent: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --accent-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --destructive: 355 84% 56%; /* #e63946 - Reddish */
+    --destructive-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --border: 27 18% 71%;       /* #c3b5a6 - Medium-light cream */
+    --input: 35 30% 87%;        /* #e8e0d2 - Lighter card */
+    --ring: 24 16% 42%;         /* #7d6759 - Medium brown */
+    --radius: 0.375rem;
   }
 
   /* Dark mode variables */
   .dark {
-    --background: 240 9% 13%;    /* #1e1e24 */
-    --foreground: 35 33% 72%;    /* #d8c3a5 */
-    --card: 24 19% 26%;          /* #4f3d36 */
-    --card-foreground: 35 33% 72%; /* #d8c3a5 */
-    --popover: 24 19% 26%;       /* #4f3d36 */
-    --popover-foreground: 35 33% 72%; /* #d8c3a5 */
-    --primary: 24 16% 42%;       /* #7d6759 */
-    --primary-foreground: 35 33% 72%; /* #d8c3a5 */
-    --secondary: 27 20% 55%;     /* #b0a698 */
-    --secondary-foreground: 240 9% 13%; /* #1e1e24 */
-    --muted: 24 19% 20%;         /* Darker variant of #4f3d36 */
-    --muted-foreground: 27 20% 65%; /* Medium variant of #b0a698 */
-    --accent: 27 20% 55%;        /* #b0a698 */
-    --accent-foreground: 240 9% 13%; /* #1e1e24 */
-    --destructive: 0 84% 60%;    /* Reddish color */
-    --destructive-foreground: 35 33% 72%; /* #d8c3a5 */
-    --border: 24 19% 32%;        /* Slightly lighter variant of #4f3d36 */
-    --input: 24 19% 26%;         /* #4f3d36 */
-    --ring: 27 20% 55%;          /* #b0a698 */
+    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
+    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
+    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --primary-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --muted: 24 5% 19%;          /* #32302c - Darker muted */
+    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
+    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
+    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --border: 24 8% 22%;         /* #3d3630 - Darker border */
+    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
+    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
   }
 
   /* Enhanced Base Typography */
