@@ -113,6 +113,8 @@ export default function Reader() {
     if (newPage >= 0 && newPage < Math.ceil(postsData?.posts.length / itemsPerPage)) {
       setCurrentPage(newPage);
       setCurrentIndex(newPage * itemsPerPage); // Update currentIndex based on page
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
