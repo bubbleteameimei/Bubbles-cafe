@@ -97,12 +97,18 @@ export function registerRoutes(app: Express): Server {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // API routes need to be registered before Vite middleware
+  app.use('/api/*', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  });
+
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
   app.use("/api/register", authLimiter);
   app.use("/api", apiLimiter);
 
-  // Set up session configuration before route registration
+  // Set up session configuration
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
     resave: false,
@@ -115,7 +121,6 @@ export function registerRoutes(app: Express): Server {
     store: storage.sessionStore,
   };
   app.use(session.default(sessionSettings));
-  app.use(compression());
 
   // Set up auth BEFORE routes
   setupAuth(app);
@@ -879,8 +884,7 @@ Timestamp: ${new Date().toLocaleString()}
           headers: {
             // Add user-agent to avoid throttling
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0.0 Safari/37.36,',
-          }
-        }
+          }        }
       });
 
       console.log('[Video Info] Video details:', {
@@ -1198,7 +1202,7 @@ Timestamp: ${new Date().toLocaleString()}
       req.logout(() => {
         req.session.destroy(() => {
           res.clearCookie('connect.sid');
-          res.json({ message: "Account deleted successfully" });
+          res.status(200).json({ message: "Account deleted successfully" });
         });
       });
     } catch (error) {
@@ -1215,7 +1219,7 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       await storage.clearReadingHistory(userId);
-      res.json({ message: "Reading history cleared successfully" });
+      res.status(200).json({ message: "Reading history cleared successfully" });
     } catch (error) {
       console.error("Error clearing reading history:", error);
       res.status(500).json({ message: "Failed to clear reading history" });
@@ -1230,7 +1234,7 @@ Timestamp: ${new Date().toLocaleString()}
       }
 
       await storage.resetUserProgress(userId);
-      res.json({ message: "Progress reset successfully" });
+      res.status(200).json({ message: "Progress reset successfully" });
     } catch (error) {
       console.error("Error resetting progress:", error);
       res.status(500).json({ message: "Failed to reset progress" });

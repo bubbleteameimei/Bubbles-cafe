@@ -39,7 +39,17 @@ app.set('trust proxy', 1);
 // Enable Gzip compression
 app.use(compression());
 
-// Security headers with updated CSP for audio
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// API middleware - ensure JSON responses for API routes
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  res.set('Content-Type', 'application/json');
+  next();
+});
+
+// Security headers with updated CSP
 app.use(helmet({
   contentSecurityPolicy: isDev ? false : {
     directives: {
@@ -59,8 +69,7 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false }));
+
 
 // Session setup with enhanced error handling
 const PostgresSession = connectPgSimple(session);
@@ -116,8 +125,11 @@ async function startServer() {
 
     // Register routes and middleware
     if (isDev) {
-      console.log('Setting up API routes and Vite middleware...');
+      console.log('Setting up API routes...');
       registerRoutes(app);
+      console.log('API routes registered');
+
+      console.log('Setting up Vite middleware...');
       await setupVite(app, server);
       console.log('Server middleware setup complete');
     } else {
@@ -128,6 +140,11 @@ async function startServer() {
     // Enhanced server startup with explicit logging
     return new Promise<void>((resolve, reject) => {
       try {
+        // Clear any existing connections
+        if (server.listening) {
+          server.close();
+        }
+
         server.listen(PORT, "0.0.0.0", () => {
           console.log(`Server running at http://0.0.0.0:${PORT}`);
 
