@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Minus, Plus, Type } from "lucide-react";
@@ -15,19 +15,11 @@ import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
+  page?: number;
 }
 
 const MIN_FONT_SIZE = 14;
@@ -47,9 +39,6 @@ export default function Reader() {
     const saved = localStorage.getItem('reader-font-size');
     return saved ? parseInt(saved, 10) : 16;
   });
-  const [currentPage, setCurrentPage] = useState(0); //Pagination state
-  const itemsPerPage = 5; //Number of items per page
-
 
   const increaseFontSize = () => {
     setFontSize(prev => {
@@ -67,10 +56,17 @@ export default function Reader() {
     });
   };
 
-  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery<PostsResponse>({
     queryKey: ["pages", "reader", "current-posts"],
-    queryFn: async () => {
-      const response = await fetch('/api/posts?section=reader&limit=16&type=reader');
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/posts?section=reader&page=${pageParam}&limit=50&type=reader`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       const data = await response.json();
       if (!data.posts || !Array.isArray(data.posts)) {
@@ -78,62 +74,58 @@ export default function Reader() {
       }
       return data;
     },
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false
   });
 
   useEffect(() => {
-    if (postsData?.posts && Array.isArray(postsData.posts)) {
+    if (data?.pages) {
       const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
-      postsData.posts.forEach(post => {
-        persistedStats[post.id] = getOrCreateStats(post.id);
+      data.pages.forEach(page => {
+        page.posts.forEach(post => {
+          persistedStats[post.id] = getOrCreateStats(post.id);
+        });
       });
       setPostStats(persistedStats);
 
       sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
-  }, [postsData?.posts, currentIndex]);
+  }, [data?.pages, currentIndex]);
 
   const goToPrevious = useCallback(() => {
-    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
-    setCurrentIndex((prev) => (prev === 0 ? postsData.posts.length - 1 : prev - 1));
+    const posts = data?.pages.flatMap(page => page.posts);
+    if (!posts || posts.length === 0) return;
+    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [postsData?.posts]);
+  }, [data?.pages]);
 
   const goToNext = useCallback(() => {
-    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
-    setCurrentIndex((prev) => (prev === postsData.posts.length - 1 ? 0 : prev + 1));
+    const posts = data?.pages.flatMap(page => page.posts);
+    if (!posts || posts.length === 0) return;
+    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [postsData?.posts]);
+  }, [data?.pages]);
 
   const randomize = useCallback(() => {
-    if (!postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) return;
-    const newIndex = Math.floor(Math.random() * postsData.posts.length);
+    const posts = data?.pages.flatMap(page => page.posts);
+    if (!posts || posts.length === 0) return;
+    const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [postsData?.posts]);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage < Math.ceil(postsData?.posts.length / itemsPerPage)) {
-      setCurrentPage(newPage);
-      setCurrentIndex(newPage * itemsPerPage); // Update currentIndex based on page
-      // Scroll to top of the page
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
+  }, [data?.pages]);
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  if (error || !postsData?.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) {
+  if (error || !data?.pages[0].posts || data.pages[0].posts.length === 0) {
     console.error('Error loading stories:', error);
     return <div className="text-center p-8">No stories available.</div>;
   }
 
-  const posts = postsData.posts;
+  const posts = data.pages.flatMap(page => page.posts);
   const currentPost = posts[currentIndex];
 
   if (!currentPost) {
@@ -149,8 +141,6 @@ export default function Reader() {
   const handleStatsUpdate = (postId: number, likes: number, dislikes: number) => {
     setPostStats(prev => ({ ...prev, [postId]: { likes, dislikes } }));
   };
-
-  const paginatedPosts = postsData.posts.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
   return (
     <div className="relative min-h-screen pb-32">
@@ -310,25 +300,17 @@ export default function Reader() {
                 />
               </div>
 
-              <div className="mt-6"> {/* Added pagination here */}
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} className={currentPage === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                    </PaginationItem>
-                    {[...Array(Math.ceil(postsData?.posts.length / itemsPerPage))].map((_, idx) => (
-                      <PaginationItem key={idx}>
-                        <PaginationLink onClick={() => handlePageChange(idx)} isActive={currentPage === idx} className="cursor-pointer">
-                          {idx + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext onClick={() => handlePageChange(currentPage + 1)} className={currentPage >= Math.ceil(postsData?.posts.length / itemsPerPage) -1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+              {hasNextPage && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
+                  </Button>
+                </div>
+              )}
 
               <div className="mt-8 pt-8 border-t border-border">
                 <CommentSection

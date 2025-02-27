@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,12 +10,12 @@ import React from 'react';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
-import { SkeletonCard } from "@/components/ui/SkeletonCard"; //Import added here
-
+import { SkeletonCard } from "@/components/ui/SkeletonCard";
 
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
+  page?: number;
 }
 
 const getExcerpt = (content: string) => {
@@ -45,22 +44,30 @@ const getExcerpt = (content: string) => {
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
-  const { data: postsData, isLoading, error } = useQuery<PostsResponse>({
-    queryKey: ["pages", "index", "all-posts"],
-    queryFn: async () => {
-      const response = await fetch('/api/posts?section=index&page=1&limit=16&type=index');
 
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery<PostsResponse>({
+    queryKey: ["pages", "index", "all-posts"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/posts?section=index&page=${pageParam}&limit=50&type=index`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false
   });
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     try {
-      return format(date, 'MMMM d, yyyy');
+      return format(new Date(date), 'MMMM d, yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
       return '';
@@ -68,8 +75,8 @@ export default function IndexView() {
   };
 
   const navigateToStory = (postId: number) => {
-    if (!postsData?.posts) return;
-    const index = postsData.posts.findIndex(p => p.id === postId);
+    if (!data?.pages[0].posts) return;
+    const index = data.pages[0].posts.findIndex(p => p.id === postId);
     if (index !== -1) {
       sessionStorage.setItem('selectedStoryIndex', index.toString());
       setLocation('/reader');
@@ -77,10 +84,10 @@ export default function IndexView() {
   };
 
   if (isLoading) {
-    return <SkeletonCard/>; //SkeletonCard is used here for loading state.
+    return <SkeletonCard />;
   }
 
-  if (error || !postsData?.posts) {
+  if (error || !data?.pages[0].posts) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -97,7 +104,7 @@ export default function IndexView() {
     );
   }
 
-  const posts = postsData.posts;
+  const posts = data.pages.flatMap(page => page.posts);
 
   if (!posts.length) {
     return (
@@ -144,18 +151,19 @@ export default function IndexView() {
               const readingTime = getReadingTime(post.content);
               const excerpt = getExcerpt(post.content);
               return (
-                <motion.div
+                <motion.article
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className="group relative"
                 >
-                  <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10">
+                  <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10 rounded-lg p-6">
                     <CardHeader className="relative py-2 px-3">
                       <div className="flex justify-between items-start gap-2">
                         <CardTitle
-                          className="text-base group-hover:text-primary transition-colors"
+                          className="text-base group-hover:text-primary transition-colors cursor-pointer"
+                          onClick={() => navigateToStory(post.id)}
                         >
                           {post.title}
                         </CardTitle>
@@ -178,7 +186,6 @@ export default function IndexView() {
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                         {excerpt}
                       </p>
-
                       <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
@@ -197,10 +204,24 @@ export default function IndexView() {
                       </div>
                     </CardFooter>
                   </Card>
-                </motion.div>
+                </motion.article>
               );
             })}
           </motion.div>
+
+          {hasNextPage && (
+            <div className="flex justify-center mt-8">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="w-full max-w-xs"
+              >
+                {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

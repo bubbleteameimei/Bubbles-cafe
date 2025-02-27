@@ -3,10 +3,10 @@ import { Moon, Sun } from "lucide-react";
 import "./theme-toggle.css";
 
 interface ThemeToggleProps {
-  variant?: 'full' | 'icon' | 'animated';
+  variant?: 'icon' | 'animated';
 }
 
-export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
+export function ThemeToggle({ variant = 'icon' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
 
   if (variant === 'animated') {
@@ -23,38 +23,16 @@ export function ThemeToggle({ variant = 'full' }: ThemeToggleProps) {
     );
   }
 
-  if (variant === 'icon') {
-    return (
-      <button
-        onClick={toggleTheme}
-        className="theme-toggle-icon"
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? (
-          <Sun className="h-5 w-5" />
-        ) : (
-          <Moon className="h-5 w-5" />
-        )}
-      </button>
-    );
-  }
-
   return (
     <button
       onClick={toggleTheme}
-      className="theme-toggle-full"
+      className="theme-toggle-icon"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <>
-          <Sun className="h-5 w-5" />
-          <span>Light Mode</span>
-        </>
+        <Sun className="h-5 w-5" />
       ) : (
-        <>
-          <Moon className="h-5 w-5" />
-          <span>Dark Mode</span>
-        </>
+        <Moon className="h-5 w-5" />
       )}
     </button>
   );

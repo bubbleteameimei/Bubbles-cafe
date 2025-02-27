@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "wouter";
+import { Navigate } from "wouter";
 import { type Post } from "@shared/schema";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ interface PostWithMetadata extends Post {
 }
 
 export default function AdminContentPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deletePostId, setDeletePostId] = useState<number | null>(null);
@@ -40,7 +40,7 @@ export default function AdminContentPage() {
   const { data, isLoading } = useQuery<{ posts: PostWithMetadata[], hasMore: boolean }>({
     queryKey: ["/api/posts"],
     queryFn: async () => {
-      const response = await fetch('/api/posts');
+      const response = await fetch('/api/posts?limit=50');
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     }
@@ -60,7 +60,7 @@ export default function AdminContentPage() {
         title: "Post deleted",
         description: "The post has been successfully deleted.",
       });
-      setDeletePostId(null); // Reset deletePostId after successful deletion
+      setDeletePostId(null);
     },
     onError: (error: Error) => {
       toast({
@@ -71,9 +71,13 @@ export default function AdminContentPage() {
     }
   });
 
+  if (authLoading) {
+    return <LoadingScreen />;
+  }
+
   // Redirect if not admin
   if (!user?.isAdmin) {
-    return <Redirect to="/" />;
+    return <Navigate to="/" />;
   }
 
   const handleDelete = async (postId: number) => {
@@ -164,7 +168,7 @@ export default function AdminContentPage() {
                   variant="outline"
                   size="sm"
                   className="gap-2 text-red-500 hover:text-red-600"
-                  onClick={() => handleDelete(post.id)}
+                  onClick={() => setDeletePostId(post.id)}
                 >
                   <Trash2 className="h-4 w-4" /> Delete
                 </Button>
