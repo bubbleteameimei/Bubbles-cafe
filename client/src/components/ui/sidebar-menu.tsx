@@ -9,7 +9,8 @@ import {
   HelpCircle,
   FileText,
   ChevronDown,
-  Bug
+  Bug,
+  Library,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -43,16 +44,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [supportOpen, setSupportOpen] = React.useState(false);
   const sidebar = useSidebar();
 
-  // Debug log to verify SidebarProvider context
-  React.useEffect(() => {
-    console.log('[Sidebar] Provider context:', {
-      isMobile: sidebar?.isMobile,
-      isInitialized: !!sidebar
-    });
-  }, [sidebar]);
-
   const handleNavigation = React.useCallback((path: string) => {
-    console.log('[Sidebar] Navigating to:', path);
     if (onNavigate) {
       onNavigate();
     }
@@ -80,8 +72,20 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => handleNavigation('/')}
                 tooltip="Home"
               >
-                <Home />
+                <Home className="h-[18px] w-[18px]" />
                 <span>Home</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* Index */}
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                isActive={location === '/index'} 
+                onClick={() => handleNavigation('/index')}
+                tooltip="Index"
+              >
+                <Library className="h-[18px] w-[18px]" />
+                <span>Index</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
@@ -92,7 +96,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => handleNavigation('/reader')}
                 tooltip="Reader"
               >
-                <Book />
+                <Book className="h-[18px] w-[18px]" />
                 <span>Reader</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -104,7 +108,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => handleNavigation('/community')}
                 tooltip="Community"
               >
-                <Users />
+                <Users className="h-[18px] w-[18px]" />
                 <span>Community</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -121,7 +125,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Settings & Accessibility">
-                    <Settings />
+                    <Settings className="h-[18px] w-[18px]" />
                     <span>Settings & Accessibility</span>
                     <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                   </SidebarMenuButton>
@@ -162,7 +166,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Support & Legal">
-                    <HelpCircle />
+                    <HelpCircle className="h-[18px] w-[18px]" />
                     <span>Support & Legal</span>
                     <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                   </SidebarMenuButton>
@@ -236,7 +240,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 : "text-muted-foreground hover:text-primary hover:bg-primary/5"
             )}
           >
-            <Bug className="h-4 w-4" />
+            <Bug className="h-[18px] w-[18px]" />
             Report a Bug
           </button>
         </div>
