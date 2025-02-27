@@ -1,8 +1,8 @@
 
 import { scheduleWordPressSync } from './wordpress-api-sync';
 
-// Start the scheduled sync with custom schedule (every 12 hours)
-const scheduler = scheduleWordPressSync('0 */12 * * *');
+// Start the scheduled sync with custom schedule (every 5 minutes)
+const scheduler = scheduleWordPressSync('*/5 * * * *');
 
 console.log('WordPress content sync scheduler is running...');
 console.log('Press Ctrl+C to stop');

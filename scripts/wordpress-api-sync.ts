@@ -78,6 +78,9 @@ async function fetchWordPressPosts() {
   }
 }
 
+// Keep track of the most recent post ID to avoid unnecessary updates
+let lastKnownPostId: number | null = null;
+
 // Function to sync WordPress posts to local database
 async function syncWordPressPosts() {
   try {
@@ -88,6 +91,18 @@ async function syncWordPressPosts() {
     
     // Fetch posts from WordPress API
     const wpPosts = await fetchWordPressPosts();
+    
+    // Check if we have new content
+    const latestPostId = wpPosts.length > 0 ? wpPosts[0].id : null;
+    if (latestPostId === lastKnownPostId && lastKnownPostId !== null) {
+      console.log("No new posts found. Skipping update.");
+      return { created: 0, updated: 0, skipped: 0, newContent: false };
+    }
+    
+    // Update the last known post ID
+    if (latestPostId) {
+      lastKnownPostId = latestPostId;
+    }
     
     // Track existing slugs to prevent duplicates
     const existingSlugs = new Set<string>();
@@ -187,7 +202,12 @@ async function syncWordPressPosts() {
     console.log(`- Posts updated: ${updatedCount}`);
     console.log(`- Posts skipped: ${skippedCount}`);
     
-    return { created: createdCount, updated: updatedCount, skipped: skippedCount };
+    return { 
+      created: createdCount, 
+      updated: updatedCount, 
+      skipped: skippedCount,
+      newContent: createdCount > 0 || updatedCount > 0
+    };
   } catch (error) {
     console.error("Error during WordPress API sync:", error);
     throw error;
