@@ -117,6 +117,14 @@ const SidebarContent = memo(({ onNavigate, location, isMobile }: {
   const { user, logoutMutation } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+
+              <DropdownMenuItem asChild>
+                <Link to="/settings">
+                  <Cog className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+
   const [adminOpen, setAdminOpen] = useState(false);
   const [, setLocation] = useLocation();
 

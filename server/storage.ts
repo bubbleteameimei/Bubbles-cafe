@@ -347,6 +347,42 @@ export class DatabaseStorage implements IStorage {
         if (error.message.includes('connection')) {
           throw new Error("Database connection error: Unable to connect to the database");
         }
+
+  async updateUser(userId: number, userData: { username?: string; email?: string }) {
+    try {
+      console.log('[Storage] Updating user:', { userId, ...userData });
+      
+      const updateFields: Record<string, any> = {};
+      if (userData.username) updateFields.username = userData.username;
+      if (userData.email) updateFields.email = userData.email;
+      
+      const [updatedUser] = await this.db.update(users)
+        .set(updateFields)
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('[Storage] Error updating user:', error);
+      throw error;
+    }
+  },
+
+  async updateUserPassword(userId: number, passwordHash: string) {
+    try {
+      console.log('[Storage] Updating user password:', { userId });
+      
+      await this.db.update(users)
+        .set({ password_hash: passwordHash })
+        .where(eq(users.id, userId));
+        
+      return true;
+    } catch (error) {
+      console.error('[Storage] Error updating user password:', error);
+      throw error;
+    }
+  },
+
       }
       throw new Error("Failed to fetch posts");
     }
