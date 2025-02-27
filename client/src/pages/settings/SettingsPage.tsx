@@ -5,20 +5,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
-import { Moon, Sun, Trash2 } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme-provider";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
   const [location] = useLocation();
@@ -26,7 +14,6 @@ export default function SettingsPage() {
   const [readingMode, setReadingMode] = useState<'scroll' | 'page'>('scroll');
   const [offlineMode, setOfflineMode] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { user, logoutMutation } = useAuth();
 
   // Font size handler
   const handleFontSizeChange = (value: number[]) => {
@@ -49,27 +36,6 @@ export default function SettingsPage() {
       navigator.serviceWorker?.getRegistrations().then(registrations => {
         registrations.forEach(registration => registration.unregister());
       });
-    }
-  };
-
-  // Account deletion handler
-  const handleAccountDeletion = async () => {
-    try {
-      const response = await fetch('/api/users/me', {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
-      }
-
-      // Log out after successful deletion
-      if (logoutMutation) {
-        await logoutMutation.mutateAsync();
-      }
-    } catch (error) {
-      console.error('Error deleting account:', error);
     }
   };
 
@@ -156,50 +122,6 @@ export default function SettingsPage() {
             </label>
           </div>
         </div>
-
-        {user && (
-          <div className="space-y-4 pt-6 border-t">
-            <h2 className="text-xl font-semibold text-destructive">Danger Zone</h2>
-            <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-              <h3 className="font-medium mb-2">Delete Account</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Your Account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete your account and remove all your data, including:
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>All your stories and drafts</li>
-                        <li>Your reading history and preferences</li>
-                        <li>Your profile information</li>
-                        <li>Your achievements and statistics</li>
-                      </ul>
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleAccountDeletion}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      Yes, Delete My Account
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        )}
       </Card>
     </div>
   );

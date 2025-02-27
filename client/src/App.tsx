@@ -57,9 +57,6 @@ function App() {
             <div className="relative min-h-screen flex flex-col bg-background text-foreground">
               <Navigation />
               <main className="flex-grow">
-
-            <Route path="/settings" element={<React.Suspense fallback={<LoadingScreen />}><SettingsPage /></React.Suspense>} />
-
                 <Switch>
                   {/* Public Routes */}
                   <Route path="/" component={HomePage} />

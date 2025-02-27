@@ -32,43 +32,6 @@ import {
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
-  href: string;
-  isActive: boolean;
-  children: React.ReactNode;
-  onNavigate?: () => void;
-  className?: string;
-}) => {
-  const [, setLocation] = useLocation();
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onNavigate?.();
-    setLocation(href);
-  }, [href, onNavigate, setLocation]);
-
-  return (
-    <button
-      onClick={handleClick}
-      className={`
-        text-base transition-all duration-300
-        ${isActive
-          ? "text-primary font-semibold"
-          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-        }
-        w-full text-left px-2 py-1.5 rounded-sm
-        ${className}
-      `}
-      aria-current={isActive ? "page" : undefined}
-      role="menuitem"
-    >
-      {children}
-    </button>
-  );
-});
-
-NavLink.displayName = "NavLink";
-
 const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
   items: { href: string; label: string; icon?: React.ReactNode }[];
@@ -109,24 +72,50 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 
 DropdownSection.displayName = "DropdownSection";
 
-const SidebarContent = memo(({ onNavigate, location, isMobile }: {
+const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
+  href: string;
+  isActive: boolean;
+  children: React.ReactNode;
   onNavigate?: () => void;
-  location: string;
-  isMobile?: boolean;
+  className?: string;
 }) => {
-  const { user, logoutMutation } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-
-              <DropdownMenuItem asChild>
-                <Link to="/settings">
-                  <Cog className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-
-  const [adminOpen, setAdminOpen] = useState(false);
   const [, setLocation] = useLocation();
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onNavigate?.();
+    setLocation(href);
+  }, [href, onNavigate, setLocation]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`
+        text-base transition-all duration-300
+        ${isActive
+          ? "text-primary font-semibold"
+          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+        }
+        w-full text-left px-2 py-1.5 rounded-sm
+        ${className}
+      `}
+      aria-current={isActive ? "page" : undefined}
+      role="menuitem"
+    >
+      {children}
+    </button>
+  );
+});
+
+NavLink.displayName = "NavLink";
+
+import { SidebarNavigation } from "@/components/ui/sidebar-menu";
+
+const SidebarContent = memo(({ onNavigate }: {
+  onNavigate?: () => void;
+}) => {
+  return <SidebarNavigation onNavigate={onNavigate} />;
+});
 
   const sections = {
     settings: [
@@ -276,8 +265,6 @@ const SidebarContent = memo(({ onNavigate, location, isMobile }: {
 
 SidebarContent.displayName = "SidebarContent";
 
-import { NotificationsDropdown } from "@/components/ui/notifications";
-
 const MenuIcon = () => (
   <div className="relative w-6 h-6">
     <PanelLeftClose className="w-6 h-6 transition-all hover:scale-110 text-primary" />
@@ -285,7 +272,7 @@ const MenuIcon = () => (
 );
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation();
+  const [location, setLocation] = useLocation(); 
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 
@@ -310,11 +297,6 @@ export default function Navigation() {
         </Sheet>
 
         <div className="flex-1" />
-
-        {/* Notifications Dropdown */}
-        <div className="mr-2">
-          <NotificationsDropdown />
-        </div>
 
         <div className="flex items-center justify-end space-x-4">
           <ThemeToggle />

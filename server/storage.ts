@@ -160,13 +160,13 @@ export interface IStorage {
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
-
+  
   // Analytics methods
-  getAnalyticsSummary(): Promise<{
-    totalViews: number;
-    uniqueVisitors: number;
-    avgReadTime: number;
-    bounceRate: number;
+  getAnalyticsSummary(): Promise<{ 
+    totalViews: number; 
+    uniqueVisitors: number; 
+    avgReadTime: number; 
+    bounceRate: number; 
   }>;
   getDeviceDistribution(): Promise<{
     desktop: number;
@@ -187,11 +187,6 @@ export interface IStorage {
 
   // Add performance metrics method
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
-  updateUser(userId: number, userData: { username?: string; email?: string }): Promise<User>;
-  updateUserPassword(userId: number, passwordHash: string): Promise<boolean>;
-  deleteUser(userId: number): Promise<void>;
-  clearReadingHistory(userId: number): Promise<void>;
-  resetUserProgress(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -820,9 +815,9 @@ export class DatabaseStorage implements IStorage {
     try {
       const counts = await this.getPostLikeCounts(postId);
       await db.update(postsTable)
-        .set({
-          likesCount: counts.likesCount,
-          dislikesCount: counts.dislikesCount
+        .set({ 
+          likesCount: counts.likesCount, 
+          dislikesCount: counts.dislikesCount 
         })
         .where(eq(postsTable.id, postId));
 
@@ -931,12 +926,13 @@ export class DatabaseStorage implements IStorage {
     const [[totalPosts], [totalLikes], [totalTips]] = await Promise.all([
       db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
       db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
-      db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId))
+      db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
     ]);
 
     const [updated] = await db.update(authorStats)
       .set({
-        totalPosts: Number(totalPosts.count),        totalLikes: Number(totalLikes.count),
+        totalPosts: Number(totalPosts.count),
+        totalLikes: Number(totalLikes.count),
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
@@ -946,7 +942,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getTopAuthors(limit: number = 10): Promise<AuthorStats[]> {
+  async getTopAuthors(limit: number =10): Promise<AuthorStats[]> {
     return await db.select()
       .from(authorStats)
       .orderBy(desc(authorStats.totalLikes))
@@ -1202,7 +1198,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateSiteSetting(key: string, value: string): Promise<SiteSetting> {
     const [updated] = await db.update(siteSettings)
-      .set({
+      .set({ 
         value,
         updatedAt: new Date()
       })
@@ -1449,141 +1445,6 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to store performance metric');
     }
   }
-  async updateUser(userId: number, userData: { username?: string; email?: string }): Promise<User> {
-    try {
-      console.log('[Storage] Updating user:', { userId, ...userData });
-
-      const updateFields: Record<string, any> = {};
-      if (userData.username) updateFields.username = userData.username;
-      if (userData.email) updateFields.email = userData.email;
-
-      const [updatedUser] = await db.update(users)
-        .set(updateFields)
-        .where(eq(users.id, userId))
-        .returning();
-
-      return updatedUser;
-    } catch (error) {
-      console.error('[Storage] Error updating user:', error);
-      throw error;
-    }
-  }
-
-  async updateUserPassword(userId: number, passwordHash: string): Promise<boolean> {
-    try {
-      console.log('[Storage] Updating user password:', { userId });
-
-      await db.update(users)
-        .set({ password_hash: passwordHash })
-        .where(eq(users.id, userId));
-
-      return true;
-    } catch (error) {
-      console.error('[Storage] Error updating user password:', error);
-      throw error;
-    }
-  }
-
-  async deleteUser(userId: number): Promise<void> {
-    try {
-      console.log(`[Storage] Deleting user with ID: ${userId}`);
-
-      // Delete all user-related data
-      await db.transaction(async (tx) => {
-        // Delete reading progress
-        await tx.delete(readingProgress)
-          .where(eq(readingProgress.userId, userId));
-
-        // Delete user achievements
-        await tx.delete(userAchievements)
-          .where(eq(userAchievements.userId, userId));
-
-        // Delete reading streaks
-        await tx.delete(readingStreaks)
-          .where(eq(readingStreaks.userId, userId));
-
-        // Delete writer streaks
-        await tx.delete(writerStreaks)
-          .where(eq(writerStreaks.userId, userId));
-
-        // Delete user's posts
-        await tx.delete(postsTable)
-          .where(eq(postsTable.authorId, userId));
-
-        // Finally delete the user
-        await tx.delete(users)
-          .where(eq(users.id, userId));
-      });
-
-      console.log(`[Storage] Successfully deleted user ${userId} and all associated data`);
-    } catch (error) {
-      console.error(`[Storage] Error deleting user ${userId}:`, error);
-      throw error;
-    }
-  }
-
-  async clearReadingHistory(userId: number): Promise<void> {
-    try {
-      console.log(`[Storage] Clearing reading history for user ${userId}`);
-
-      await db.transaction(async (tx) => {
-        // Clear reading progress
-        await tx.delete(readingProgress)
-          .where(eq(readingProgress.userId, userId));
-
-        // Reset reading streak
-        await tx.update(readingStreaks)
-          .set({
-            currentStreak: 0,
-            lastReadAt: new Date()
-          })
-          .where(eq(readingStreaks.userId, userId));
-      });
-
-      console.log(`[Storage] Successfully cleared reading history for user ${userId}`);
-    } catch (error) {
-      console.error(`[Storage] Error clearing reading history for user ${userId}:`, error);
-      throw error;
-    }
-  }
-
-  async resetUserProgress(userId: number): Promise<void> {
-    try {
-      console.log(`[Storage] Resetting progress for user ${userId}`);
-
-      await db.transaction(async (tx) => {
-        // Reset achievements
-        await tx.delete(userAchievements)
-          .where(eq(userAchievements.userId, userId));
-
-        // Reset reading streak
-        await tx.update(readingStreaks)
-          .set({
-            currentStreak: 0,
-            longestStreak: 0,
-            totalReads: 0,
-            lastReadAt: new Date()
-          })
-          .where(eq(readingStreaks.userId, userId));
-
-        // Reset writer streak
-        await tx.update(writerStreaks)
-          .set({
-            currentStreak: 0,
-            longestStreak: 0,
-            totalPosts: 0,
-            lastWriteAt: new Date()
-          })
-          .where(eq(writerStreaks.userId, userId));
-      });
-
-      console.log(`[Storage] Successfully reset progress for user ${userId}`);
-    } catch (error) {
-      console.error(`[Storage] Error resetting progress for user ${userId}:`, error);
-      throw error;
-    }
-  }
-
 }
 
 export const storage = new DatabaseStorage();

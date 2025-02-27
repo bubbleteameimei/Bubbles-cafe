@@ -3,23 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Trophy, BookOpen, PenTool, Star, Calendar, Heart, Trash2, RefreshCw } from "lucide-react";
+import { Loader2, Trophy, BookOpen, PenTool, Star, Calendar, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Achievement, ReadingStreak, WriterStreak } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-
 
 interface UserStats {
   achievements: (Achievement & {
@@ -81,88 +68,6 @@ export default function ProfilePage() {
               Featured Author {stats.featured.monthYear}
             </Badge>
           )}
-
-          {/* Add Data Management Actions */}
-          <div className="flex gap-2">
-            {/* Clear Reading History Dialog */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear History
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear Reading History?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will remove all your reading history and progress tracking.
-                    Your streaks and achievements will remain intact, but your reading log will be cleared.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      try {
-                        await fetch('/api/users/me/reading-history', {
-                          method: 'DELETE',
-                          credentials: 'include'
-                        });
-                        // Refresh the page or update the UI
-                        window.location.reload();
-                      } catch (error) {
-                        console.error('Error clearing reading history:', error);
-                      }
-                    }}
-                  >
-                    Yes, Clear History
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            {/* Reset Achievements Dialog */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset Progress
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset All Progress?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will reset all your achievements, streaks, and statistics to zero.
-                    Your account and stories will remain intact, but all progress tracking will be reset.
-                    Consider downloading your data before proceeding.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      try {
-                        await fetch('/api/users/me/progress', {
-                          method: 'DELETE',
-                          credentials: 'include'
-                        });
-                        // Refresh the page or update the UI
-                        window.location.reload();
-                      } catch (error) {
-                        console.error('Error resetting progress:', error);
-                      }
-                    }}
-                  >
-                    Yes, Reset All Progress
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
         </div>
 
         {/* Quick Stats Grid */}
@@ -280,7 +185,7 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <motion.div
+            <motion.div 
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
               variants={{
                 hidden: { opacity: 0 },
@@ -328,8 +233,8 @@ export default function ProfilePage() {
                           </p>
                           {achievement.progress && (
                             <div className="space-y-1">
-                              <Progress
-                                value={(achievement.progress.current / achievement.progress.required) * 100}
+                              <Progress 
+                                value={(achievement.progress.current / achievement.progress.required) * 100} 
                                 className="h-2"
                               />
                               <p className="text-xs text-muted-foreground">
