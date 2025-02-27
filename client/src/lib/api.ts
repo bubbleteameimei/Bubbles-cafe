@@ -1,5 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
 
+declare global {
+  interface ImportMeta {
+    env: {
+      DEV: boolean;
+      PROD: boolean;
+      MODE: string;
+      BASE_URL: string;
+      [key: string]: any;
+    }
+  }
+}
+
 // Create a new QueryClient instance with retry configuration
 export const queryClient = new QueryClient({
   defaultOptions: {
