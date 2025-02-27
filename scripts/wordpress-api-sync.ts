@@ -1,4 +1,3 @@
-
 import { db } from '../server/db';
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
@@ -6,9 +5,25 @@ import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 import cron from 'node-cron';
 
-// WordPress site URL - change this to your WordPress site
+// WordPress site URL and API endpoint
 const WP_SITE_URL = 'https://bubbleteameimei.wordpress.com';
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+
+// Interface for WordPress API response
+interface WordPressPost {
+  id: number;
+  date: string;
+  title: {
+    rendered: string;
+  };
+  content: {
+    rendered: string;
+  };
+  excerpt: {
+    rendered: string;
+  };
+  slug: string;
+}
 
 async function cleanContent(content: string): Promise<string> {
   return content
@@ -27,7 +42,6 @@ async function cleanContent(content: string): Promise<string> {
     .trim();
 }
 
-// Function to get or create admin user
 async function getOrCreateAdminUser() {
   try {
     const hashedPassword = await bcrypt.hash("admin123", 12);
@@ -59,17 +73,16 @@ async function getOrCreateAdminUser() {
   }
 }
 
-// Function to fetch WordPress posts
-async function fetchWordPressPosts() {
+async function fetchWordPressPosts(): Promise<WordPressPost[]> {
   try {
     console.log("Fetching posts from WordPress API...");
     const response = await fetch(`${WP_API_URL}/posts?per_page=100`);
-    
+
     if (!response.ok) {
       throw new Error(`WordPress API responded with status: ${response.status}`);
     }
-    
-    const posts = await response.json();
+
+    const posts = await response.json() as WordPressPost[];
     console.log(`Retrieved ${posts.length} posts from WordPress API`);
     return posts;
   } catch (error) {
@@ -78,38 +91,23 @@ async function fetchWordPressPosts() {
   }
 }
 
-// Keep track of the most recent post ID to avoid unnecessary updates
-let lastKnownPostId: number | null = null;
-
-// Function to sync WordPress posts to local database
 async function syncWordPressPosts() {
   try {
     console.log("Starting WordPress API sync process...");
-    
+
     // Get admin user for post authorship
     const admin = await getOrCreateAdminUser();
-    
+
     // Fetch posts from WordPress API
     const wpPosts = await fetchWordPressPosts();
-    
-    // Check if we have new content
-    const latestPostId = wpPosts.length > 0 ? wpPosts[0].id : null;
-    if (latestPostId === lastKnownPostId && lastKnownPostId !== null) {
-      console.log("No new posts found. Skipping update.");
-      return { created: 0, updated: 0, skipped: 0, newContent: false };
-    }
-    
-    // Update the last known post ID
-    if (latestPostId) {
-      lastKnownPostId = latestPostId;
-    }
-    
+    console.log(`Retrieved ${wpPosts.length} posts from WordPress API`);
+
     // Track existing slugs to prevent duplicates
     const existingSlugs = new Set<string>();
     let createdCount = 0;
     let skippedCount = 0;
     let updatedCount = 0;
-    
+
     for (const wpPost of wpPosts) {
       try {
         // Extract post data
@@ -117,16 +115,16 @@ async function syncWordPressPosts() {
         const rawContent = wpPost.content.rendered;
         const content = await cleanContent(rawContent);
         const pubDate = new Date(wpPost.date);
-        const excerpt = wpPost.excerpt?.rendered 
+        const excerpt = wpPost.excerpt?.rendered
           ? (await cleanContent(wpPost.excerpt.rendered)).substring(0, 200) + '...'
           : content.substring(0, 200) + '...';
-        
+
         // Generate slug from post data
         let baseSlug = wpPost.slug || title
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '');
-        
+
         let finalSlug = baseSlug;
         let counter = 1;
         while (existingSlugs.has(finalSlug)) {
@@ -134,7 +132,7 @@ async function syncWordPressPosts() {
           counter++;
         }
         existingSlugs.add(finalSlug);
-        
+
         // Check if post already exists by WordPress ID
         const [existingPost] = await db.select()
           .from(posts)
@@ -143,7 +141,7 @@ async function syncWordPressPosts() {
         // Calculate word count and reading time
         const wordCount = content.split(/\s+/).length;
         const readingTimeMinutes = Math.ceil(wordCount / 200);
-        
+
         if (!existingPost) {
           // Create new post
           const [newPost] = await db.insert(posts).values({
@@ -163,48 +161,43 @@ async function syncWordPressPosts() {
               wordpressId: wpPost.id
             }
           }).returning();
-          
+
           createdCount++;
           console.log(`Created post: "${title}" (ID: ${newPost.id})`);
         } else {
-          // Check if content is different and update if needed
-          if (existingPost.content !== content || existingPost.title !== title) {
-            await db.update(posts)
-              .set({
-                title: title,
-                content: content,
-                excerpt: excerpt,
-                updatedAt: new Date(),
-                readingTimeMinutes,
-                metadata: {
-                  ...existingPost.metadata,
-                  lastSyncDate: new Date().toISOString(),
-                  wordpressId: wpPost.id
-                }
-              })
-              .where(eq(posts.id, existingPost.id));
-            
-            updatedCount++;
-            console.log(`Updated post: "${title}" (ID: ${existingPost.id})`);
-          } else {
-            skippedCount++;
-            console.log(`Skipped unchanged post: "${title}"`);
-          }
+          // Always update existing posts to ensure we have the latest content
+          await db.update(posts)
+            .set({
+              title: title,
+              content: content,
+              excerpt: excerpt,
+              readingTimeMinutes,
+              metadata: {
+                originalWordCount: wordCount,
+                importSource: 'wordpress-api',
+                lastSyncDate: new Date().toISOString(),
+                wordpressId: wpPost.id
+              }
+            })
+            .where(eq(posts.id, existingPost.id));
+
+          updatedCount++;
+          console.log(`Updated post: "${title}" (ID: ${existingPost.id})`);
         }
       } catch (error) {
         console.error(`Error processing WordPress post "${wpPost.title?.rendered}":`, error);
       }
     }
-    
+
     console.log("\nSync Summary:");
     console.log(`- Total items processed: ${wpPosts.length}`);
     console.log(`- Posts created: ${createdCount}`);
     console.log(`- Posts updated: ${updatedCount}`);
     console.log(`- Posts skipped: ${skippedCount}`);
-    
-    return { 
-      created: createdCount, 
-      updated: updatedCount, 
+
+    return {
+      created: createdCount,
+      updated: updatedCount,
       skipped: skippedCount,
       newContent: createdCount > 0 || updatedCount > 0
     };
@@ -231,7 +224,7 @@ if (process.argv[1].includes('wordpress-api-sync.ts')) {
 // Schedule regular syncing (every 6 hours by default)
 export function scheduleWordPressSync(cronSchedule = '0 */6 * * *') {
   console.log(`Scheduling WordPress sync with cron schedule: ${cronSchedule}`);
-  
+
   return cron.schedule(cronSchedule, async () => {
     console.log(`Running scheduled WordPress sync at ${new Date().toISOString()}`);
     try {
