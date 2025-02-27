@@ -16,5 +16,10 @@
       "drizzle.config.ts",
       ".env"
     ]
+  },
+  "WordPress Sync": {
+    "command": "tsx scripts/wordpress-api-sync.ts",
+    "environment": {},
+    "persistent": false
   }
 }
