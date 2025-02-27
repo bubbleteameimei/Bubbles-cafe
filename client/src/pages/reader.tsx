@@ -15,6 +15,15 @@ import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "../shared/types";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const MIN_FONT_SIZE = 14;
 const MAX_FONT_SIZE = 24;
@@ -33,6 +42,9 @@ export default function Reader() {
     const saved = localStorage.getItem('reader-font-size');
     return saved ? parseInt(saved, 10) : 16;
   });
+  const [currentPage, setCurrentPage] = useState(0); //Pagination state
+  const itemsPerPage = 5; //Number of items per page
+
 
   const increaseFontSize = () => {
     setFontSize(prev => {
@@ -97,6 +109,14 @@ export default function Reader() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [postsData?.posts]);
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < Math.ceil(postsData?.posts.length / itemsPerPage)) {
+      setCurrentPage(newPage);
+      setCurrentIndex(newPage * itemsPerPage); // Update currentIndex based on page
+    }
+  };
+
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -118,6 +138,12 @@ export default function Reader() {
   const themes = detectThemes(currentPost.content);
   const primaryTheme = themes[0];
   const themeInfo = primaryTheme ? THEME_CATEGORIES[primaryTheme] : null;
+
+  const handleStatsUpdate = (postId: number, likes: number, dislikes: number) => {
+    setPostStats(prev => ({ ...prev, [postId]: { likes, dislikes } }));
+  };
+
+  const paginatedPosts = postsData.posts.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
   return (
     <div className="relative min-h-screen pb-32">
@@ -271,7 +297,27 @@ export default function Reader() {
               </div>
 
               <div className="border-t border-border pt-4">
-                <LikeDislike postId={currentPost.id} />
+                <LikeDislike postId={currentPost.id} initialLikes={postStats[currentPost.id]?.likes || 0} initialDislikes={postStats[currentPost.id]?.dislikes || 0} onUpdate={handleStatsUpdate} />
+              </div>
+
+              <div className="mt-6"> {/* Added pagination here */}
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} className={currentPage === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                    {[...Array(Math.ceil(postsData?.posts.length / itemsPerPage))].map((_, idx) => (
+                      <PaginationItem key={idx}>
+                        <PaginationLink onClick={() => handlePageChange(idx)} isActive={currentPage === idx} className="cursor-pointer">
+                          {idx + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext onClick={() => handlePageChange(currentPage + 1)} className={currentPage >= Math.ceil(postsData?.posts.length / itemsPerPage) -1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
 
               <div className="mt-8 pt-8 border-t border-border">
