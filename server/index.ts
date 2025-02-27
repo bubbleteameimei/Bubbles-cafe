@@ -27,24 +27,12 @@ const isDev = process.env.NODE_ENV !== 'production';
 // Declare server variable in module scope
 let server: Server;
 
-// Create public directories if they don't exist
+// Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, 'public');
-const audioDir = path.join(publicDir, 'audio');
 
-// Ensure directories exist
+// Ensure directory exists
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
-}
-if (!fs.existsSync(audioDir)) {
-  fs.mkdirSync(audioDir, { recursive: true });
-}
-
-// Copy audio file if it doesn't exist in the target location
-const sourceAudio = path.join(__dirname, '..', 'attached_assets', 'Audio.mp3');
-const targetAudio = path.join(audioDir, 'ambient.mp3');
-if (fs.existsSync(sourceAudio) && !fs.existsSync(targetAudio)) {
-  fs.copyFileSync(sourceAudio, targetAudio);
-  console.log('Audio file copied to public directory');
 }
 
 // Set trust proxy first
@@ -64,19 +52,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// Serve static files with proper cache control
-app.use('/audio', express.static(audioDir, {
-  maxAge: '1h',
-  setHeaders: (res, path) => {
-    res.set('Cache-Control', 'public, max-age=3600');
-    if (path.endsWith('.mp3')) {
-      res.setHeader('Content-Type', 'audio/mpeg');
-      // Enable CORS for audio files
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
-    }
-  }
-}));
+// Audio routes removed
 
 // Rate limiter with adjusted settings for development
 const limiter = rateLimit({
