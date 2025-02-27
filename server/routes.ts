@@ -33,7 +33,7 @@ function generateSlug(title: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
-// Protected middleware
+// Update protected middleware to handle JSON responses
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (req.isAuthenticated()) {
     return next();
@@ -878,7 +878,7 @@ Timestamp: ${new Date().toLocaleString()}
         requestOptions: {
           headers: {
             // Add user-agent to avoid throttling
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/37.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0.0 Safari/37.36,',
           }
         }
       });
@@ -1180,6 +1180,60 @@ Timestamp: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("Error fetching activity logs:", error);
       res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  // Add these routes after existing user routes
+  app.delete("/api/users/me", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Delete user data
+      await storage.deleteUser(userId);
+
+      // Clear session
+      req.logout(() => {
+        req.session.destroy(() => {
+          res.clearCookie('connect.sid');
+          res.json({ message: "Account deleted successfully" });
+        });
+      });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
+  app.delete("/api/users/me/reading-history", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      await storage.clearReadingHistory(userId);
+      res.json({ message: "Reading history cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing reading history:", error);
+      res.status(500).json({ message: "Failed to clear reading history" });
+    }
+  });
+
+  app.delete("/api/users/me/progress", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      await storage.resetUserProgress(userId);
+      res.json({ message: "Progress reset successfully" });
+    } catch (error) {
+      console.error("Error resetting progress:", error);
+      res.status(500).json({ message: "Failed to reset progress" });
     }
   });
 

@@ -187,6 +187,9 @@ export interface IStorage {
 
   // Add performance metrics method
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
+  deleteUser(userId: number): Promise<void>;
+  clearReadingHistory(userId: number): Promise<void>;
+  resetUserProgress(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -931,8 +934,7 @@ export class DatabaseStorage implements IStorage {
 
     const [updated] = await db.update(authorStats)
       .set({
-        totalPosts: Number(totalPosts.count),
-        totalLikes: Number(totalLikes.count),
+        totalPosts: Number(totalPosts.count),        totalLikes: Number(totalLikes.count),
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
@@ -1445,6 +1447,106 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to store performance metric');
     }
   }
+  async deleteUser(userId: number): Promise<void> {
+    try {
+      console.log(`[Storage] Deleting user with ID: ${userId}`);
+
+      // Delete all user-related data
+      await db.transaction(async (tx) => {
+        // Delete reading progress
+        await tx.delete(readingProgress)
+          .where(eq(readingProgress.userId, userId));
+
+        // Delete user achievements
+        await tx.delete(userAchievements)
+          .where(eq(userAchievements.userId, userId));
+
+        // Delete reading streaks
+        await tx.delete(readingStreaks)
+          .where(eq(readingStreaks.userId, userId));
+
+        // Delete writer streaks
+        await tx.delete(writerStreaks)
+          .where(eq(writerStreaks.userId, userId));
+
+        // Delete user's posts
+        await tx.delete(postsTable)
+          .where(eq(postsTable.authorId, userId));
+
+        // Finally delete the user
+        await tx.delete(users)
+          .where(eq(users.id, userId));
+      });
+
+      console.log(`[Storage] Successfully deleted user ${userId} and all associated data`);
+    } catch (error) {
+      console.error(`[Storage] Error deleting user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async clearReadingHistory(userId: number): Promise<void> {
+    try {
+      console.log(`[Storage] Clearing reading history for user ${userId}`);
+
+      await db.transaction(async (tx) => {
+        // Clear reading progress
+        await tx.delete(readingProgress)
+          .where(eq(readingProgress.userId, userId));
+
+        // Reset reading streak but keep the record
+        await tx.update(readingStreaks)
+          .set({
+            currentStreak: 0,
+            lastReadAt: null
+          })
+          .where(eq(readingStreaks.userId, userId));
+      });
+
+      console.log(`[Storage] Successfully cleared reading history for user ${userId}`);
+    } catch (error) {
+      console.error(`[Storage] Error clearing reading history for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async resetUserProgress(userId: number): Promise<void> {
+    try {
+      console.log(`[Storage] Resetting progress for user ${userId}`);
+
+      await db.transaction(async (tx) => {
+        // Reset achievements
+        await tx.delete(userAchievements)
+          .where(eq(userAchievements.userId, userId));
+
+        // Reset reading streak
+        await tx.update(readingStreaks)
+          .set({
+            currentStreak: 0,
+            longestStreak: 0,
+            totalReads: 0,
+            lastReadAt: null
+          })
+          .where(eq(readingStreaks.userId, userId));
+
+        // Reset writer streak
+        await tx.update(writerStreaks)
+          .set({
+            currentStreak: 0,
+            longestStreak: 0,
+            totalPosts: 0,
+            lastWriteAt: null
+          })
+          .where(eq(writerStreaks.userId, userId));
+      });
+
+      console.log(`[Storage] Successfully reset progress for user ${userId}`);
+    } catch (error) {
+      console.error(`[Storage] Error resetting progress for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
 }
 
 export const storage = new DatabaseStorage();
