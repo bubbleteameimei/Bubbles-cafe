@@ -187,6 +187,13 @@ export interface IStorage {
 
   // Add performance metrics method
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
+  getAdminInfo(): Promise<{
+    totalPosts: number;
+    totalUsers: number;
+    totalComments: number;
+    totalLikes: number;
+    recentActivity: ActivityLog[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -936,7 +943,7 @@ export class DatabaseStorage implements IStorage {
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
-      .where(eq(authorStats.authorId, authorId))
+      .where.where(eq(authorStats.authorId, authorId))
       .returning();
 
     return updated;
@@ -1445,6 +1452,35 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to store performance metric');
     }
   }
+  async getAdminInfo(): Promise<{
+    totalPosts: number;
+    totalUsers: number;
+    totalComments: number;
+    totalLikes: number;
+    recentActivity: ActivityLog[];
+  }> {
+    try {
+      const [[postCount], [userCount], [commentCount], [likeCount], recentActivity] = await Promise.all([
+        db.select({ count: count() }).from(postsTable),
+        db.select({ count: count() }).from(users),
+        db.select({ count: count() }).from(comments),
+        db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
+        db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(10)
+      ]);
+
+      return {
+        totalPosts: Number(postCount.count || 0),
+        totalUsers: Number(userCount.count || 0),
+        totalComments: Number(commentCount.count || 0),
+        totalLikes: Number(likeCount.count || 0),
+        recentActivity
+      };
+    } catch (error) {
+      console.error("Error getting admin info:", error);
+      throw new Error("Failed to fetch admin information");
+    }
+  }
+
 }
 
 export const storage = new DatabaseStorage();

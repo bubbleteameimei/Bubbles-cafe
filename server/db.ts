@@ -44,7 +44,7 @@ pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
-// Improved connection testing with detailed error logging
+// Test connection on startup
 async function testConnection() {
   let client;
   try {
@@ -62,7 +62,6 @@ async function testConnection() {
         await client.release();
       } catch (releaseErr) {
         console.error('Error releasing client:', releaseErr);
-        // Don't throw here, we've already handled the main operation
       }
     }
   }
