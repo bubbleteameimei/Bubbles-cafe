@@ -160,13 +160,13 @@ export interface IStorage {
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
-  
+
   // Analytics methods
-  getAnalyticsSummary(): Promise<{ 
-    totalViews: number; 
-    uniqueVisitors: number; 
-    avgReadTime: number; 
-    bounceRate: number; 
+  getAnalyticsSummary(): Promise<{
+    totalViews: number;
+    uniqueVisitors: number;
+    avgReadTime: number;
+    bounceRate: number;
   }>;
   getDeviceDistribution(): Promise<{
     desktop: number;
@@ -187,6 +187,8 @@ export interface IStorage {
 
   // Add performance metrics method
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
+  updateUser(userId: number, userData: { username?: string; email?: string }): Promise<User>;
+  updateUserPassword(userId: number, passwordHash: string): Promise<boolean>;
   deleteUser(userId: number): Promise<void>;
   clearReadingHistory(userId: number): Promise<void>;
   resetUserProgress(userId: number): Promise<void>;
@@ -347,42 +349,6 @@ export class DatabaseStorage implements IStorage {
         if (error.message.includes('connection')) {
           throw new Error("Database connection error: Unable to connect to the database");
         }
-
-  async updateUser(userId: number, userData: { username?: string; email?: string }) {
-    try {
-      console.log('[Storage] Updating user:', { userId, ...userData });
-      
-      const updateFields: Record<string, any> = {};
-      if (userData.username) updateFields.username = userData.username;
-      if (userData.email) updateFields.email = userData.email;
-      
-      const [updatedUser] = await this.db.update(users)
-        .set(updateFields)
-        .where(eq(users.id, userId))
-        .returning();
-      
-      return updatedUser;
-    } catch (error) {
-      console.error('[Storage] Error updating user:', error);
-      throw error;
-    }
-  },
-
-  async updateUserPassword(userId: number, passwordHash: string) {
-    try {
-      console.log('[Storage] Updating user password:', { userId });
-      
-      await this.db.update(users)
-        .set({ password_hash: passwordHash })
-        .where(eq(users.id, userId));
-        
-      return true;
-    } catch (error) {
-      console.error('[Storage] Error updating user password:', error);
-      throw error;
-    }
-  },
-
       }
       throw new Error("Failed to fetch posts");
     }
@@ -854,9 +820,9 @@ export class DatabaseStorage implements IStorage {
     try {
       const counts = await this.getPostLikeCounts(postId);
       await db.update(postsTable)
-        .set({ 
-          likesCount: counts.likesCount, 
-          dislikesCount: counts.dislikesCount 
+        .set({
+          likesCount: counts.likesCount,
+          dislikesCount: counts.dislikesCount
         })
         .where(eq(postsTable.id, postId));
 
@@ -965,7 +931,7 @@ export class DatabaseStorage implements IStorage {
     const [[totalPosts], [totalLikes], [totalTips]] = await Promise.all([
       db.select({ count: count() }).from(postsTable).where(eq(postsTable.authorId, authorId)),
       db.select({ count: count() }).from(postLikes).where(eq(postLikes.isLike, true)),
-      db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId, authorId))
+      db.select({ sum: sql<string>`sum(amount)` }).from(authorTips).where(eq(authorTips.authorId))
     ]);
 
     const [updated] = await db.update(authorStats)
@@ -980,7 +946,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getTopAuthors(limit: number =10): Promise<AuthorStats[]> {
+  async getTopAuthors(limit: number = 10): Promise<AuthorStats[]> {
     return await db.select()
       .from(authorStats)
       .orderBy(desc(authorStats.totalLikes))
@@ -1236,7 +1202,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateSiteSetting(key: string, value: string): Promise<SiteSetting> {
     const [updated] = await db.update(siteSettings)
-      .set({ 
+      .set({
         value,
         updatedAt: new Date()
       })
@@ -1483,6 +1449,41 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to store performance metric');
     }
   }
+  async updateUser(userId: number, userData: { username?: string; email?: string }): Promise<User> {
+    try {
+      console.log('[Storage] Updating user:', { userId, ...userData });
+
+      const updateFields: Record<string, any> = {};
+      if (userData.username) updateFields.username = userData.username;
+      if (userData.email) updateFields.email = userData.email;
+
+      const [updatedUser] = await db.update(users)
+        .set(updateFields)
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error('[Storage] Error updating user:', error);
+      throw error;
+    }
+  }
+
+  async updateUserPassword(userId: number, passwordHash: string): Promise<boolean> {
+    try {
+      console.log('[Storage] Updating user password:', { userId });
+
+      await db.update(users)
+        .set({ password_hash: passwordHash })
+        .where(eq(users.id, userId));
+
+      return true;
+    } catch (error) {
+      console.error('[Storage] Error updating user password:', error);
+      throw error;
+    }
+  }
+
   async deleteUser(userId: number): Promise<void> {
     try {
       console.log(`[Storage] Deleting user with ID: ${userId}`);
@@ -1530,11 +1531,11 @@ export class DatabaseStorage implements IStorage {
         await tx.delete(readingProgress)
           .where(eq(readingProgress.userId, userId));
 
-        // Reset reading streak but keep the record
+        // Reset reading streak
         await tx.update(readingStreaks)
           .set({
             currentStreak: 0,
-            lastReadAt: null
+            lastReadAt: new Date()
           })
           .where(eq(readingStreaks.userId, userId));
       });
@@ -1561,7 +1562,7 @@ export class DatabaseStorage implements IStorage {
             currentStreak: 0,
             longestStreak: 0,
             totalReads: 0,
-            lastReadAt: null
+            lastReadAt: new Date()
           })
           .where(eq(readingStreaks.userId, userId));
 
@@ -1571,7 +1572,7 @@ export class DatabaseStorage implements IStorage {
             currentStreak: 0,
             longestStreak: 0,
             totalPosts: 0,
-            lastWriteAt: null
+            lastWriteAt: new Date()
           })
           .where(eq(writerStreaks.userId, userId));
       });

@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
 import { db } from "./db";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -9,15 +9,11 @@ import { setupAuth } from "./auth";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import path from "path";
-import { fileURLToPath } from "url";
-import { seedDatabase } from "./seed";
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
+import path from 'path';
+import { fileURLToPath } from "url";
 import fs from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Create express app
 const app = express();
@@ -28,6 +24,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 let server: Server;
 
 // Create public directory if it doesn't exist
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, 'public');
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
@@ -36,119 +34,108 @@ if (!fs.existsSync(publicDir)) {
 // Set trust proxy first
 app.set('trust proxy', 1);
 
-// Enable Gzip compression
-app.use(compression());
-
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// API middleware - ensure JSON responses for API routes
-app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-  res.set('Content-Type', 'application/json');
-  next();
-});
-
-// Security headers with updated CSP
-app.use(helmet({
-  contentSecurityPolicy: isDev ? false : {
-    directives: {
-      defaultSrc: ["'self'"],
-      mediaSrc: ["'self'"],
-    }
-  },
-  crossOriginEmbedderPolicy: false
-}));
-
-// Rate limiter with adjusted settings for development
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDev ? 1000 : 100,
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-app.use(limiter);
-
-
-// Session setup with enhanced error handling
-const PostgresSession = connectPgSimple(session);
-
-try {
-  const sessionConfig: session.SessionOptions = {
-    store: new PostgresSession({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-      },
-      createTableIfMissing: true,
-      pruneSessionInterval: 60
-    }),
-    secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
-    },
-    name: 'horror.session'
-  };
-
-  app.use(session(sessionConfig));
-  console.log('Session middleware configured successfully');
-} catch (error) {
-  console.error(`Session setup failed: ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);
-}
-
-// Set up auth
-setupAuth(app);
 
 async function startServer() {
   try {
     console.log('Starting server initialization...');
 
-    // Check if database needs seeding
-    const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-    if (postsCount === 0) {
-      console.log('Database is empty, starting seeding process...');
-      await seedDatabase();
-      console.log('Database seeding completed successfully');
-    } else {
-      console.log(`Database already contains ${postsCount} posts, skipping seeding`);
-    }
+    // Basic middleware setup
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    app.use(compression());
+
+    // Security headers
+    app.use(helmet({
+      contentSecurityPolicy: isDev ? false : {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "https:", "ws:", "wss:"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        }
+      },
+      crossOriginEmbedderPolicy: false
+    }));
+
+    // Rate limiter
+    const apiLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: isDev ? 1000 : 100,
+      standardHeaders: true,
+      legacyHeaders: false
+    });
+
+    // Session setup
+    const PostgresSession = connectPgSimple(session);
+    console.log('Setting up PostgreSQL session store...');
+
+    const sessionConfig = {
+      store: new PostgresSession({
+        conObject: {
+          connectionString: process.env.DATABASE_URL,
+          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        },
+        createTableIfMissing: true,
+        pruneSessionInterval: 60
+      }),
+      secret: process.env.SESSION_SECRET || process.env.REPL_ID || 'development-secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+      },
+      name: 'horror.session'
+    };
+
+    app.use(session(sessionConfig));
+    console.log('Session middleware configured');
+
+    // Set up auth
+    console.log('Setting up authentication...');
+    setupAuth(app);
 
     // Create server instance
+    console.log('Creating HTTP server...');
     server = createServer(app);
 
-    // Register routes and middleware
     if (isDev) {
-      console.log('Setting up API routes...');
-      registerRoutes(app);
-      console.log('API routes registered');
-
+      // Setup development middleware
       console.log('Setting up Vite middleware...');
       await setupVite(app, server);
-      console.log('Server middleware setup complete');
+      console.log('Vite middleware setup complete');
+
+      // API routes
+      app.use('/api', apiLimiter);
+      app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+        res.setHeader('Content-Type', 'application/json');
+        next();
+      });
+
+      console.log('Registering API routes...');
+      registerRoutes(app);
+      console.log('API routes registered');
     } else {
+      // Production setup
       console.log('Setting up static file serving...');
       serveStatic(app);
+      app.use('/api', apiLimiter);
+      registerRoutes(app);
     }
 
-    // Enhanced server startup with explicit logging
+    // Start listening
     return new Promise<void>((resolve, reject) => {
       try {
-        // Clear any existing connections
-        if (server.listening) {
-          server.close();
-        }
-
+        console.log('Attempting to start server...');
         server.listen(PORT, "0.0.0.0", () => {
-          console.log(`Server running at http://0.0.0.0:${PORT}`);
-
-          // Send port readiness signal
+          console.log(`Server is now running at http://0.0.0.0:${PORT}`);
           if (process.send) {
             process.send({
               port: PORT,
@@ -156,32 +143,32 @@ async function startServer() {
               ready: true
             });
           }
-
           resolve();
         });
 
-        server.once('error', (err: Error) => {
+        server.on('error', (err) => {
           console.error('Server startup error:', err);
           reject(err);
         });
       } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error('Critical error during server startup:', error);
         reject(error);
       }
     });
   } catch (error) {
-    console.error(`Server initialization failed: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    console.error('Server initialization failed:', error);
+    throw error;
   }
 }
 
-// Start the server with enhanced error handling
+// Start the server
+console.log('Beginning server startup process...');
 startServer().catch((error) => {
-  console.error(`Critical error during server start: ${error.message}`);
+  console.error('Fatal error during server start:', error);
   process.exit(1);
 });
 
-// Graceful shutdown handler
+// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Starting graceful shutdown...');
   if (server) {
