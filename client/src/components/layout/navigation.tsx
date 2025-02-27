@@ -32,6 +32,43 @@ import {
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
+const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
+  href: string;
+  isActive: boolean;
+  children: React.ReactNode;
+  onNavigate?: () => void;
+  className?: string;
+}) => {
+  const [, setLocation] = useLocation();
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onNavigate?.();
+    setLocation(href);
+  }, [href, onNavigate, setLocation]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`
+        text-base transition-all duration-300
+        ${isActive
+          ? "text-primary font-semibold"
+          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+        }
+        w-full text-left px-2 py-1.5 rounded-sm
+        ${className}
+      `}
+      aria-current={isActive ? "page" : undefined}
+      role="menuitem"
+    >
+      {children}
+    </button>
+  );
+});
+
+NavLink.displayName = "NavLink";
+
 const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavigate }: {
   title: string;
   items: { href: string; label: string; icon?: React.ReactNode }[];
@@ -72,50 +109,16 @@ const DropdownSection = memo(({ title, items, isOpen, onToggle, location, onNavi
 
 DropdownSection.displayName = "DropdownSection";
 
-const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
-  href: string;
-  isActive: boolean;
-  children: React.ReactNode;
+const SidebarContent = memo(({ onNavigate, location, isMobile }: {
   onNavigate?: () => void;
-  className?: string;
+  location: string;
+  isMobile?: boolean;
 }) => {
+  const { user, logoutMutation } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [, setLocation] = useLocation();
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onNavigate?.();
-    setLocation(href);
-  }, [href, onNavigate, setLocation]);
-
-  return (
-    <button
-      onClick={handleClick}
-      className={`
-        text-base transition-all duration-300
-        ${isActive
-          ? "text-primary font-semibold"
-          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-        }
-        w-full text-left px-2 py-1.5 rounded-sm
-        ${className}
-      `}
-      aria-current={isActive ? "page" : undefined}
-      role="menuitem"
-    >
-      {children}
-    </button>
-  );
-});
-
-NavLink.displayName = "NavLink";
-
-import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-
-const SidebarContent = memo(({ onNavigate }: {
-  onNavigate?: () => void;
-}) => {
-  return <SidebarNavigation onNavigate={onNavigate} />;
-});
 
   const sections = {
     settings: [
@@ -272,7 +275,7 @@ const MenuIcon = () => (
 );
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation(); 
+  const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 
