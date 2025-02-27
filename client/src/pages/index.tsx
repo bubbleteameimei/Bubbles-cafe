@@ -11,6 +11,8 @@ import React from 'react';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
+import { SkeletonCard } from "@/components/ui/SkeletonCard"; //Import added here
+
 
 interface PostsResponse {
   posts: Post[];
@@ -75,7 +77,7 @@ export default function IndexView() {
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return <SkeletonCard/>; //SkeletonCard is used here for loading state.
   }
 
   if (error || !postsData?.posts) {
