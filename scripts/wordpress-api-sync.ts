@@ -26,43 +26,76 @@ interface WordPressPost {
 }
 
 async function cleanContent(content: string): Promise<string> {
-  return content
-    // Remove WordPress blocks and widgets
-    .replace(/<!-- wp:paragraph -->/g, "")
-    .replace(/<!-- \/wp:paragraph -->/g, "")
-    .replace(/<!-- wp:social-links -->[\s\S]*?<!-- \/wp:social-links -->/g, "")
-    .replace(/<!-- wp:latest-posts[\s\S]*?\/-->/g, "")
-    .replace(/<!-- wp:widget[\s\S]*?\/-->/g, "")
-    .replace(/<ul class="wp-block-social-links[\s\S]*?<\/ul>/g, "")
-    .replace(/<ul class="wp-block-latest-posts[\s\S]*?<\/ul>/g, "")
-    .replace(/\[.*?\]/g, "") // Remove shortcodes
+  console.log('Original content length:', content.length);
 
-    // Convert HTML formatting to Markdown-style text
-    .replace(/<em>(.*?)<\/em>/g, "_$1_")
-    .replace(/<strong>(.*?)<\/strong>/g, "**$1**")
-    .replace(/<h[1-6]>(.*?)<\/h[1-6]>/g, (_, content) => `\n\n${content}\n\n`)
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<p>/g, "\n\n")
-    .replace(/<\/p>/g, "\n")
-    .replace(/<blockquote>(.*?)<\/blockquote>/g, "\n> $1\n")
-    .replace(/<[^>]+>/g, "") // Remove any remaining HTML tags
+  // First pass: Remove WordPress-specific elements
+  let cleaned = content
+    // Remove all WordPress block comments and metadata
+    .replace(/<!--\s*wp:([^>])*?-->/g, '')
+    .replace(/<!--\s*\/wp:([^>])*?-->/g, '')
+    .replace(/<ul class="wp-block[^>]*>[\s\S]*?<\/ul>/g, '')
+    .replace(/<div class="wp-block[^>]*>[\s\S]*?<\/div>/g, '')
+    .replace(/\[caption[^\]]*\][\s\S]*?\[\/caption\]/g, '')
+    .replace(/\[gallery[^\]]*\][\s\S]*?\[\/gallery\]/g, '')
+    .replace(/\[[^\]]+\]/g, ''); // Remove any remaining shortcodes
 
-    // Fix special characters and entities
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#8217;/g, "'")
-    .replace(/&#8220;|&#8221;/g, '"')
-    .replace(/&#8230;/g, "...")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+  // Second pass: Convert HTML to Markdown while preserving structure
+  cleaned = cleaned
+    // Headers
+    .replace(/<h([1-6])>(.*?)<\/h\1>/g, (_, level, content) => {
+      const hashes = '#'.repeat(parseInt(level));
+      return `\n\n${hashes} ${content.trim()}\n\n`;
+    })
+    // Emphasis and strong
+    .replace(/<em>([^<]+)<\/em>/g, '_$1_')
+    .replace(/<i>([^<]+)<\/i>/g, '_$1_')
+    .replace(/<strong>([^<]+)<\/strong>/g, '**$1**')
+    .replace(/<b>([^<]+)<\/b>/g, '**$1**')
+    // Lists and blockquotes
+    .replace(/<li>(.*?)<\/li>/g, '- $1\n')
+    .replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (_, content) => {
+      return content.split('\n')
+        .map(line => `> ${line.trim()}`)
+        .join('\n');
+    })
+    // Paragraphs and line breaks
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<p[^>]*>/g, '\n\n')
+    .replace(/<\/p>/g, '\n\n')
+    // Remove any remaining HTML tags
+    .replace(/<[^>]+>/g, '');
+
+  // Third pass: Fix special characters and entities
+  cleaned = cleaned
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
+    .replace(/&#8211;/g, '–') // en dash
+    .replace(/&#8212;/g, '—') // em dash
+    .replace(/&#8216;/g, '‘') // left single quote
+    .replace(/&#8217;/g, '’') // right single quote
+    .replace(/&#8220;/g, '“') // left double quote
+    .replace(/&#8221;/g, '”') // right double quote
+    .replace(/&#8230;/g, '…') // ellipsis
+    // Convert any remaining numeric HTML entities
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec));
 
-    // Clean up whitespace and formatting
-    .replace(/\n{3,}/g, "\n\n") // Reduce multiple newlines to maximum two
-    .replace(/^\s+|\s+$/g, "") // Trim start and end whitespace
-    .replace(/[ \t]+/g, " ") // Normalize spaces and tabs
+  // Final pass: Clean up whitespace and formatting
+  cleaned = cleaned
+    .replace(/\n\s*\n\s*\n/g, '\n\n') // Reduce multiple newlines
+    .replace(/[ \t]+/g, ' ') // Normalize spaces and tabs
+    .split('\n')
+    .map(line => line.trim()) // Trim each line
+    .join('\n')
     .trim();
+
+  console.log('Cleaned content length:', cleaned.length);
+  console.log('Sample of cleaned content:', cleaned.substring(0, 200));
+
+  return cleaned;
 }
 
 async function getOrCreateAdminUser() {
