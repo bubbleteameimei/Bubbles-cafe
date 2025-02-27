@@ -107,7 +107,6 @@
     "workbox-strategies": "^7.3.0",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "ytdl-core": "^4.11.5",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.4.0"
   },
