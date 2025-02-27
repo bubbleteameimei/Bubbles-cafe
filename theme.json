@@ -1,7 +1,6 @@
-
 {
-  "primary": "#650606",
-  "variant": "horror",
-  "radius": 0.5,
+  "primary": "#2c231c",
+  "variant": "professional",
+  "radius": 0.25,
   "appearance": "dark"
 }
