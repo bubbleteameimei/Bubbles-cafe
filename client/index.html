@@ -6,13 +6,55 @@
       name="viewport" 
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
     />
-    <title>Bubble's Cafe - Horror Stories</title>
+    <title>Bubble's Cafe - Immersive Horror Stories</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="A horror-themed blog platform with advanced customization capabilities" />
+    <meta name="theme-color" content="#180a0a" />
+    <meta name="description" content="Dive into a world of terrifying tales, haunting narratives, and spine-chilling experiences at Bubble's Cafe - where horror comes to life." />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Bubble's Cafe - Immersive Horror Stories" />
+    <meta property="og:description" content="Enter a realm of darkness where words transform into nightmares." />
+    <meta property="og:image" content="/assets/social-preview.jpg" />
+    
+    <!-- Preload fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Special+Elite&display=swap" />
+    
+    <!-- Custom styles -->
+    <style>
+      /* Initial page load effect */
+      body {
+        animation: fadeIn 1.2s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      /* Prevent FOUC (Flash of Unstyled Content) */
+      .hidden-preload {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+      
+      .root-loaded {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" class="hidden-preload"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Add class once content is loaded
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          document.getElementById('root').classList.add('root-loaded');
+        }, 100);
+      });
+    </script>
   </body>
 </html>
