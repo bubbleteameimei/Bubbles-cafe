@@ -8,7 +8,7 @@ import cron from 'node-cron';
 
 // WordPress site URL - change this to your WordPress site
 const WP_SITE_URL = 'https://bubbleteameimei.wordpress.com';
-const WP_API_URL = `${WP_SITE_URL}/wp-json/wp/v2`;
+const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
 async function cleanContent(content: string): Promise<string> {
   return content
