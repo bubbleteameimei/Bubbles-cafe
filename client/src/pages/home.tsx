@@ -59,7 +59,7 @@ export default function Home() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="min-h-screen bg-black/40 backdrop-blur-[2px]">
+      <div className="min-h-screen bg-black/40 backdrop-blur-[10%]"> {/* Changed blur here */}
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
