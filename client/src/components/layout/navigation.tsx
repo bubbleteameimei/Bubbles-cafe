@@ -268,6 +268,8 @@ const SidebarContent = memo(({ onNavigate, location, isMobile }: {
 
 SidebarContent.displayName = "SidebarContent";
 
+import { NotificationsDropdown } from "@/components/ui/notifications";
+
 const MenuIcon = () => (
   <div className="relative w-6 h-6">
     <PanelLeftClose className="w-6 h-6 transition-all hover:scale-110 text-primary" />
@@ -300,6 +302,11 @@ export default function Navigation() {
         </Sheet>
 
         <div className="flex-1" />
+        
+        {/* Notifications Dropdown */}
+        <div className="mr-2">
+          <NotificationsDropdown />
+        </div>
 
         <div className="flex items-center justify-end space-x-4">
           <ThemeToggle />
