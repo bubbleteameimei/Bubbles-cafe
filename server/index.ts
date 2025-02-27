@@ -29,8 +29,6 @@ let server: Server;
 
 // Create public directory if it doesn't exist
 const publicDir = path.join(__dirname, 'public');
-
-// Ensure directory exists
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
 }
@@ -51,8 +49,6 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false
 }));
-
-// Audio routes removed
 
 // Rate limiter with adjusted settings for development
 const limiter = rateLimit({
@@ -120,43 +116,44 @@ async function startServer() {
 
     // Register routes and middleware
     if (isDev) {
-      console.log('Registering API routes');
+      console.log('Setting up API routes and Vite middleware...');
       registerRoutes(app);
-      console.log("API routes registered successfully");
-
-      console.log('Setting up Vite middleware');
       await setupVite(app, server);
-      console.log("Vite middleware setup complete");
+      console.log('Server middleware setup complete');
     } else {
-      console.log('Setting up static file serving');
+      console.log('Setting up static file serving...');
       serveStatic(app);
-      console.log("Static file serving setup complete");
     }
 
-    // Start listening with enhanced error handling and port notification
+    // Enhanced server startup with explicit logging
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", () => {
-        console.log(`Server running at http://0.0.0.0:${PORT}`);
+      try {
+        server.listen(PORT, "0.0.0.0", () => {
+          console.log(`Server running at http://0.0.0.0:${PORT}`);
 
-        // Send port readiness signal with explicit wait_for_port flag
-        if (process.send) {
-          process.send({
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          });
-        }
+          // Send port readiness signal
+          if (process.send) {
+            process.send({
+              port: PORT,
+              wait_for_port: true,
+              ready: true
+            });
+          }
 
-        resolve();
-      });
+          resolve();
+        });
 
-      server.once('error', (err: Error) => {
-        console.error(`Server error: ${err.message}`);
-        reject(err);
-      });
+        server.once('error', (err: Error) => {
+          console.error('Server startup error:', err);
+          reject(err);
+        });
+      } catch (error) {
+        console.error('Failed to start server:', error);
+        reject(error);
+      }
     });
   } catch (error) {
-    console.error(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`Server initialization failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }
@@ -167,7 +164,7 @@ startServer().catch((error) => {
   process.exit(1);
 });
 
-// Enhanced graceful shutdown
+// Graceful shutdown handler
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Starting graceful shutdown...');
   if (server) {
