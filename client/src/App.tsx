@@ -105,3 +105,30 @@ function App() {
 }
 
 export default App;
+import { ThemeProvider } from "./lib/theme-provider";
+import { Layout } from "./components/layout";
+import { Route, Switch } from "wouter";
+import SettingsPage from "./pages/settings/SettingsPage";
+
+// Import your other page components here
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Layout>
+        <Switch>
+          <Route path="/settings" component={SettingsPage} />
+          {/* Add your other routes here */}
+          <Route>
+            <div className="container px-4 py-8 mx-auto">
+              <h1 className="text-3xl font-bold mb-4">Welcome to Bubble's Cafe</h1>
+              <p className="mb-4">Explore our horror stories and dark tales...</p>
+            </div>
+          </Route>
+        </Switch>
+      </Layout>
+    </ThemeProvider>
+  );
+}
+
+export default App;

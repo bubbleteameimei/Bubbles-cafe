@@ -35,3 +35,76 @@ body {
 .switch:checked {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='50' viewBox='0 0 130 50'%3E%3Crect width='130' height='50' fill='%23666'/%3E%3C/svg%3E");
 }
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.switch {
+  appearance: none;
+  width: 60px;
+  height: 30px;
+  background: #1e293b;
+  border-radius: 30px;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.4), 0px 0px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.switch::after {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f1c40f;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+}
+
+.switch:checked {
+  background: #0f172a;
+}
+
+.switch:checked::after {
+  left: calc(100% - 25px);
+  background: #e2e8f0;
+}
+
+.theme-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  color: currentColor;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle-icon:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle-full {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid currentColor;
+  padding: 8px 16px;
+  color: currentColor;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle-full:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
