@@ -109,16 +109,13 @@ const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: 
 
 NavLink.displayName = "NavLink";
 
-const SidebarContent = memo(({ location, onNavigate, isMobile = false }: {
-  location: string;
+import { SidebarNavigation } from "@/components/ui/sidebar-menu";
+
+const SidebarContent = memo(({ onNavigate }: {
   onNavigate?: () => void;
-  isMobile?: boolean;
 }) => {
-  const { user, logoutMutation } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [, setLocation] = useLocation();
+  return <SidebarNavigation onNavigate={onNavigate} />;
+});
 
   const sections = {
     settings: [
