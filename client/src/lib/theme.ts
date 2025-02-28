@@ -1,25 +1,24 @@
-
 // Define our theme colors and styles based on the refined color scheme
 export const theme = {
   colors: {
     // Dark mode (default)
-    background: '#1a1a1f',        // Darker slate (darker than #1e1e24)
-    foreground: '#d8c3a5',        // Cream
-    card: '#2c2c32',              // Darker card background
-    cardForeground: '#d8c3a5',    // Cream
-    primary: '#7d6759',           // Medium brown
-    primaryForeground: '#d8c3a5', // Cream
-    secondary: '#b0a698',         // Light taupe
-    secondaryForeground: '#1a1a1f', // Darker slate
-    muted: '#32302c',             // Darker muted
-    mutedForeground: '#b0a698',   // Light taupe
-    accent: '#b0a698',            // Light taupe
-    accentForeground: '#1a1a1f',  // Darker slate
+    background: '#120D09',        // Smoky Black
+    foreground: '#e1d3ba',        // Light Lion
+    card: '#251E16',              // Eerie Black
+    cardForeground: '#e1d3ba',    // Light Lion
+    primary: '#8B6C50',           // Raw Umber
+    primaryForeground: '#e9dfc9', // Very light Lion
+    secondary: '#C09B6F',         // Lion
+    secondaryForeground: '#120D09', // Smoky Black
+    muted: '#352a1f',             // Darker Umber
+    mutedForeground: '#C09B6F',   // Lion
+    accent: '#C09B6F',            // Lion
+    accentForeground: '#120D09',  // Smoky Black
     destructive: '#e63946',       // Reddish
-    destructiveForeground: '#d8c3a5', // Cream
+    destructiveForeground: '#e1d3ba', // Light Lion
     border: '#3d3630',            // Darker border
-    input: '#2c2c32',             // Darker input
-    ring: '#7d6759',              // Medium brown
+    input: '#251E16',             // Eerie Black
+    ring: '#8B6C50',              // Raw Umber
   },
   typography: {
     fonts: {
