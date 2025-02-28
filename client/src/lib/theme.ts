@@ -3,47 +3,47 @@ export const theme = {
   colors: {
     // Dark mode (default)
     dark: {
-      background: 'hsl(240 10% 3.9%)',
-      foreground: 'hsl(0 0% 98%)',
-      card: 'hsl(240 10% 3.9%)',
-      cardForeground: 'hsl(0 0% 98%)',
-      popover: 'hsl(240 10% 3.9%)',
-      popoverForeground: 'hsl(0 0% 98%)',
-      primary: 'hsl(346 89% 50%)',
-      primaryForeground: 'hsl(0 0% 98%)',
-      secondary: 'hsl(240 4% 16%)',
-      secondaryForeground: 'hsl(0 0% 98%)',
-      muted: 'hsl(240 4% 16%)',
-      mutedForeground: 'hsl(240 5% 64.9%)',
-      accent: 'hsl(240 4% 16%)',
-      accentForeground: 'hsl(0 0% 98%)',
-      destructive: 'hsl(0 84% 60%)',
-      destructiveForeground: 'hsl(0 0% 98%)',
-      border: 'hsl(240 4% 16%)',
-      input: 'hsl(240 4% 16%)',
-      ring: 'hsl(346 89% 50%)',
+      background: '#121212',        // Charcoal Black - Deep and soft
+      foreground: '#EAEAEA',        // Off-White - Easy on eyes
+      card: '#1A1A1A',             // Slightly lighter than background
+      cardForeground: '#EAEAEA',    // Off-White
+      popover: '#121212',          // Match background
+      popoverForeground: '#EAEAEA', // Off-White
+      primary: '#D4AF37',          // Pale Gold - Headers
+      primaryForeground: '#EAEAEA', // Off-White
+      secondary: '#7A1F1F',        // Deep Burgundy - Buttons
+      secondaryForeground: '#EAEAEA', // Off-White
+      muted: '#555555',            // Soft Gray - Accents
+      mutedForeground: '#EAEAEA',  // Off-White
+      accent: '#555555',           // Soft Gray - Accents
+      accentForeground: '#EAEAEA', // Off-White
+      destructive: '#7A1F1F',      // Deep Burgundy
+      destructiveForeground: '#EAEAEA', // Off-White
+      border: '#555555',           // Soft Gray
+      input: '#1A1A1A',            // Slightly lighter than background
+      ring: '#D4AF37',            // Pale Gold
     },
     // Light mode
     light: {
-      background: 'hsl(0 0% 100%)',
-      foreground: 'hsl(240 10% 3.9%)',
-      card: 'hsl(0 0% 100%)',
-      cardForeground: 'hsl(240 10% 3.9%)',
-      popover: 'hsl(0 0% 100%)',
-      popoverForeground: 'hsl(240 10% 3.9%)',
-      primary: 'hsl(346 89% 50%)',
-      primaryForeground: 'hsl(0 0% 98%)',
-      secondary: 'hsl(240 5% 96%)',
-      secondaryForeground: 'hsl(240 10% 3.9%)',
-      muted: 'hsl(240 5% 96%)',
-      mutedForeground: 'hsl(240 4% 46.1%)',
-      accent: 'hsl(240 5% 96%)',
-      accentForeground: 'hsl(240 10% 3.9%)',
-      destructive: 'hsl(0 84% 60%)',
-      destructiveForeground: 'hsl(0 0% 98%)',
-      border: 'hsl(240 6% 90%)',
-      input: 'hsl(240 6% 90%)',
-      ring: 'hsl(346 89% 50%)',
+      background: '#F3ECE2',        // Linen Beige - Parchment feel
+      foreground: '#1E1E1E',        // Charcoal - Text
+      card: '#FFFFFF',             // Pure White
+      cardForeground: '#1E1E1E',    // Charcoal
+      popover: '#F3ECE2',          // Match background
+      popoverForeground: '#1E1E1E', // Charcoal
+      primary: '#7A1F1F',          // Deep Burgundy - Headers
+      primaryForeground: '#F3ECE2', // Linen Beige
+      secondary: '#C9A661',        // Muted Gold - Buttons
+      secondaryForeground: '#1E1E1E', // Charcoal
+      muted: '#888888',            // Dark Gray - Accents
+      mutedForeground: '#1E1E1E',  // Charcoal
+      accent: '#888888',           // Dark Gray - Accents
+      accentForeground: '#1E1E1E', // Charcoal
+      destructive: '#7A1F1F',      // Deep Burgundy
+      destructiveForeground: '#F3ECE2', // Linen Beige
+      border: '#888888',           // Dark Gray
+      input: '#FFFFFF',            // Pure White
+      ring: '#C9A661',            // Muted Gold
     }
   },
   typography: {
@@ -68,6 +68,17 @@ export const theme = {
       semibold: 600,
       bold: 700,
     }
+  },
+  layout: {
+    container: {
+      default: '100%',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+    },
+    minWidth: '320px',  // Prevent squeeze below this width
+    maxWidth: '2560px', // Maximum width for ultra-wide screens
   },
   effects: {
     transition: {
