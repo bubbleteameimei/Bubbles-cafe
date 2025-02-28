@@ -12,25 +12,6 @@ import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
 
-// Added WordPress service and converter (placeholder implementation)
-const wordpress = {
-  getPosts: async (pageParam = 1, limit = 50) => {
-    const response = await fetch(`/wp-json/wp/v2/posts?page=${pageParam}&per_page=${limit}`); //Example WP API endpoint.  Adjust as needed.
-    if (!response.ok) throw new Error('Failed to fetch WordPress posts');
-    const data = await response.json();
-    return { posts: data, hasMore: data.length === limit }; //Simulate hasMore.  Actual implementation should check WP API response for pagination info.
-  },
-};
-
-const convertWordPressPostToAppFormat = (wpPost) => ({
-  id: wpPost.id,
-  title: wpPost.title.rendered,
-  content: wpPost.content.rendered,
-  createdAt: wpPost.date, //Adjust date format as needed
-  // ...other fields to map
-});
-
-
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
@@ -72,11 +53,11 @@ export default function IndexView() {
     isLoading,
     error
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ["pages", "index", "wordpress-posts"], // Changed queryKey
+    queryKey: ["pages", "index", "all-posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      const wpResponse = await wordpress.getPosts(pageParam, 50);
-      const formattedPosts = wpResponse.posts.map(convertWordPressPostToAppFormat);
-      return { posts: formattedPosts, hasMore: wpResponse.hasMore };
+      const response = await fetch(`/api/posts?section=index&page=${pageParam}&limit=50&type=index`);
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
