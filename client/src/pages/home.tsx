@@ -10,10 +10,10 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 export default function Home() {
   const [, setLocation] = useLocation();
   const { data: postsResponse, isLoading, error } = useQuery<{ posts: Post[], hasMore: boolean }>({
-    queryKey: ["pages", "home", "featured-posts"],
+    queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      const response = await fetch('/api/posts?page=home&featured=true&limit=1');
-      if (!response.ok) throw new Error('Failed to fetch featured post');
+      const response = await fetch('/api/posts?sort=latest&limit=1');
+      if (!response.ok) throw new Error('Failed to fetch latest post');
       return response.json();
     },
     staleTime: 5 * 60 * 1000,
@@ -30,13 +30,9 @@ export default function Home() {
 
   const posts = postsResponse.posts;
 
-  const navigateToStory = (postId: number) => {
+  const navigateToStory = (slug: string) => {
     if (!posts) return;
-    const index = posts.findIndex(p => p.id === postId);
-    if (index !== -1) {
-      sessionStorage.setItem('selectedStoryIndex', index.toString());
-      setLocation('/reader');
-    }
+    setLocation(`/story/${slug}`);
   };
 
   const formatDate = (date: Date | string) => {
@@ -49,18 +45,13 @@ export default function Home() {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-background"
-      style={{
-        backgroundImage: `url('/assets/IMG_4848.jpeg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-      }}
-    >
-      <div className="min-h-screen bg-black/40 backdrop-blur-[10%]"> {/* Changed blur here */}
-        <div className="container mx-auto px-4">
+    <div className="relative min-h-screen bg-background">
+      <div 
+        className="absolute inset-0 bg-fixed bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('/assets/homepage-bg.jpeg')` }}
+      />
+      <div className="relative min-h-screen bg-black/40 backdrop-blur-[2px]">
+        <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,7 +70,7 @@ export default function Home() {
               <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
                 <Button
                   size="lg"
-                  onClick={() => setLocation('/index')}
+                  onClick={() => setLocation('/stories')}
                   className="text-lg h-14"
                 >
                   Browse Stories
@@ -101,20 +92,22 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="mt-24 text-center text-white"
+                  className="mt-24 text-center text-white relative"
                 >
-                  <p className="text-sm text-gray-300 mb-3 uppercase tracking-wide">Latest Story</p>
-                  <h2 
-                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                    onClick={() => navigateToStory(posts[0].id)}
-                  >
-                    {posts[0].title}
-                  </h2>
-                  <p className="text-gray-300 line-clamp-2 max-w-xl mx-auto mb-4">
-                    {posts[0].excerpt}
-                  </p>
-                  <div className="text-sm text-gray-400">
-                    {posts[0].createdAt && formatDate(posts[0].createdAt)}
+                  <div className="rounded-lg p-6 backdrop-blur-sm bg-black/20 border border-white/10">
+                    <p className="text-sm text-gray-300 mb-3 uppercase tracking-wide">Latest Story</p>
+                    <h2 
+                      className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                      onClick={() => navigateToStory(posts[0].slug)}
+                    >
+                      {posts[0].title}
+                    </h2>
+                    <p className="text-gray-300 line-clamp-2 max-w-xl mx-auto mb-4">
+                      {posts[0].excerpt}
+                    </p>
+                    <div className="text-sm text-gray-400">
+                      {posts[0].createdAt && formatDate(posts[0].createdAt)}
+                    </div>
                   </div>
                 </motion.div>
               )}

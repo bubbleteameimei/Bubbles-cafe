@@ -43,9 +43,9 @@ const getOrCreateStats = (postId: number): Stats => {
       }
     }
 
-    // Calculate deterministic likes and dislikes based on post ID
-    const likesBase = Math.max(5, postId % 20 + 10); // Between 5 and 30
-    const dislikesBase = Math.max(1, postId % 5 + 2); // Between 1 and 7
+    // Generate deterministic but varying initial stats based on postId
+    const likesBase = Math.max(5, postId % 20 + 10);
+    const dislikesBase = Math.max(1, postId % 5 + 2);
 
     const newStats: Stats = {
       likes: likesBase,
@@ -80,10 +80,11 @@ export function LikeDislike({
   onDislike,
   onUpdate
 }: LikeDislikeProps) {
+  // Move all hooks to the top
+  const { toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
-  const { toast } = useToast();
 
   useEffect(() => {
     const savedStats = getOrCreateStats(postId);
@@ -115,7 +116,6 @@ export function LikeDislike({
 
     try {
       if (newLiked) {
-        // When liking
         setLiked(true);
         setDisliked(false);
         updateStats({
@@ -126,7 +126,6 @@ export function LikeDislike({
           userInteracted: true
         });
       } else {
-        // When unliking
         setLiked(false);
         updateStats({
           ...stats,
@@ -155,7 +154,6 @@ export function LikeDislike({
 
     try {
       if (newDisliked) {
-        // When disliking
         setDisliked(true);
         setLiked(false);
         updateStats({
@@ -166,7 +164,6 @@ export function LikeDislike({
           userInteracted: true
         });
       } else {
-        // When undisliking
         setDisliked(false);
         updateStats({
           ...stats,
@@ -186,7 +183,7 @@ export function LikeDislike({
   };
 
   return (
-    <div className="flex items-center gap-4 z-10 relative bg-transparent pointer-events-auto">
+    <div className="flex items-center gap-4">
       <Button
         variant={liked ? "default" : "ghost"}
         size="sm"

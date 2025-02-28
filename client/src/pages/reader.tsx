@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Twitter, Facebook, FileShare, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -13,25 +13,19 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
-import { Share2 } from "lucide-react";
-import { 
-  Twitter, 
-  Facebook, 
-  Reddit, 
-  Mail 
-} from "lucide-react";
+import { useFontSize } from "@/hooks/use-font-size";
 
+// Types
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
   page: number;
 }
 
-// Social share URLs
+// Utilities
 const getShareUrls = (post: Post) => {
   const url = encodeURIComponent(window.location.href);
   const title = encodeURIComponent(post.title);
-
   return {
     twitter: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
@@ -41,38 +35,25 @@ const getShareUrls = (post: Post) => {
 };
 
 export default function Reader() {
+  // Hooks (all grouped at the top)
+  const [, setLocation] = useLocation();
+  const { fontSize } = useFontSize();
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
 
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('reader-font-size');
-    return saved ? parseInt(saved, 10) : 16;
-  });
-
-  const [, setLocation] = useLocation();
-
-  const {
-    data,
-    isLoading,
-    error
-  } = useInfiniteQuery<PostsResponse>({
+  // Query
+  const { data, isLoading, error } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts", "reader"],
     queryFn: async ({ pageParam = 1 }) => {
-      try {
-        const wpPosts = await fetchWordPressPosts(pageParam, 100);
-        const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
-
-        return {
-          posts,
-          hasMore: posts.length === 100,
-          page: pageParam
-        };
-      } catch (error) {
-        console.error('Error fetching WordPress posts:', error);
-        throw error;
-      }
+      const wpPosts = await fetchWordPressPosts(pageParam, 100);
+      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: posts.length === 100,
+        page: pageParam
+      };
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
@@ -81,39 +62,48 @@ export default function Reader() {
     initialPageParam: 1
   });
 
-  const goToPrevious = useCallback(() => {
-    if (!data?.pages) return;
-    const posts = data.pages.flatMap(page => page.posts);
-    setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Memoized values
+  const posts = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap(page => page.posts);
   }, [data?.pages]);
+
+  const currentPost = useMemo(() => {
+    return posts[currentIndex];
+  }, [posts, currentIndex]);
+
+  // Callbacks
+  const goToPrevious = useCallback(() => {
+    if (posts.length === 0) return;
+    setCurrentIndex(prev => (prev === 0 ? posts.length - 1 : prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [posts.length]);
 
   const goToNext = useCallback(() => {
-    if (!data?.pages) return;
-    const posts = data.pages.flatMap(page => page.posts);
-    setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
+    if (posts.length === 0) return;
+    setCurrentIndex(prev => (prev === posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [data?.pages]);
+  }, [posts.length]);
 
   const randomize = useCallback(() => {
-    if (!data?.pages) return;
-    const posts = data.pages.flatMap(page => page.posts);
+    if (posts.length === 0) return;
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [data?.pages]);
+  }, [posts.length]);
 
+  // Effects
   useEffect(() => {
-    if (data?.pages) {
+    if (posts.length > 0) {
       sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
-  }, [data?.pages, currentIndex]);
+  }, [currentIndex, posts.length]);
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  // Loading state
+  if (isLoading) return <LoadingScreen />;
 
-  if (error || !data?.pages[0]?.posts || data.pages[0].posts.length === 0) {
+  // Error state
+  if (error || posts.length === 0) {
     return (
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold mb-4">Unable to load stories</h2>
@@ -127,9 +117,6 @@ export default function Reader() {
     );
   }
 
-  const posts = data.pages.flatMap(page => page.posts);
-  const currentPost = posts[currentIndex];
-
   if (!currentPost) {
     return <div className="text-center p-8">No story selected.</div>;
   }
@@ -139,23 +126,25 @@ export default function Reader() {
   const shareUrls = getShareUrls(currentPost);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-background">
       <Mist />
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentPost.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8"
-          >
-            <article className="prose dark:prose-invert max-w-none">
-              <div className="flex flex-col items-center space-y-4 mb-8">
-                <h1 className="text-4xl font-bold text-center mb-0">{currentPost.title}</h1>
+      <div className="container mx-auto px-4 py-8 md:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.article
+              key={currentPost.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="prose dark:prose-invert mx-auto"
+            >
+              <div className="flex flex-col items-center mb-8">
+                <h1 className="text-4xl font-bold text-center mb-4 tracking-tight">
+                  {currentPost.title}
+                </h1>
 
-                <div className="flex items-center gap-4 mt-4">
+                <div className="flex items-center gap-4">
                   <Button
                     variant="outline"
                     onClick={goToPrevious}
@@ -190,8 +179,8 @@ export default function Reader() {
                 dangerouslySetInnerHTML={{ __html: currentPost.content }}
               />
 
-              <div className="border-t border-border pt-4">
-                <div className="flex items-center justify-between">
+              <div className="mt-8 pt-8 border-t border-border">
+                <div className="flex items-center justify-between mb-8">
                   <LikeDislike postId={currentPost.id} />
                   <div className="flex items-center gap-3">
                     <TooltipProvider>
@@ -235,7 +224,7 @@ export default function Reader() {
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
                           >
-                            <Reddit className="h-5 w-5" />
+                            <FileShare className="h-5 w-5" />
                           </a>
                         </TooltipTrigger>
                         <TooltipContent>Share on Reddit</TooltipContent>
@@ -259,26 +248,29 @@ export default function Reader() {
                     </TooltipProvider>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-8 pt-8 border-t border-border">
                 <CommentSection postId={currentPost.id} />
               </div>
-            </article>
-          </motion.div>
-        </AnimatePresence>
+            </motion.article>
+          </AnimatePresence>
+        </div>
 
         <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="controls-wrapper backdrop-blur-sm bg-background/50 px-6 py-4 rounded-full shadow-xl border border-border/50 hover:bg-background/70 transition-all mx-4"
+            className="backdrop-blur-sm bg-background/50 px-6 py-4 rounded-full shadow-xl border border-border/50 hover:bg-background/70 transition-all mx-4"
           >
-            <div className="nav-controls flex items-center gap-6">
+            <div className="flex items-center gap-6">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={goToPrevious} className="hover:bg-primary/10 transition-all duration-300">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={goToPrevious}
+                      className="hover:bg-primary/10 transition-all duration-300"
+                    >
                       <ChevronLeft className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
@@ -293,7 +285,12 @@ export default function Reader() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={randomize} className="hover:bg-primary/10 transition-all duration-300">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={randomize}
+                      className="hover:bg-primary/10 transition-all duration-300"
+                    >
                       <Shuffle className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
@@ -304,7 +301,12 @@ export default function Reader() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={goToNext} className="hover:bg-primary/10 transition-all duration-300">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={goToNext}
+                      className="hover:bg-primary/10 transition-all duration-300"
+                    >
                       <ChevronRight className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
