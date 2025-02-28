@@ -12,7 +12,6 @@ import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
-import { ProtectedRoute } from './lib/protected-route';
 
 // Enhanced lazy loading with better error handling
 const loadComponent = (importFn: () => Promise<any>) => {
@@ -30,23 +29,16 @@ const loadComponent = (importFn: () => Promise<any>) => {
 // Lazy load pages
 const HomePage = loadComponent(() => import('./pages/home'));
 const ReaderPage = loadComponent(() => import('./pages/reader'));
-const StoriesPage = loadComponent(() => import('./pages/secret-stories'));
-const IndexPage = loadComponent(() => import('./pages/index'));
+const StoriesPage = loadComponent(() => import('./pages/index'));
 const AboutPage = loadComponent(() => import('./pages/about'));
 const ContactPage = loadComponent(() => import('./pages/contact'));
-const AdminPage = loadComponent(() => import('./pages/admin'));
-const AdminAnalytics = loadComponent(() => import('./pages/admin/analytics'));
-const AdminUsers = loadComponent(() => import('./pages/admin/users'));
-const AdminSettings = loadComponent(() => import('./pages/admin/settings'));
-const AdminPosts = loadComponent(() => import('./pages/admin/posts'));
 const PrivacyPage = loadComponent(() => import('./pages/privacy'));
 const ReportBugPage = loadComponent(() => import('./pages/report-bug'));
-const CommunityPage = loadComponent(() => import('./pages/community'));
-const SettingsPage = loadComponent(() => import('./pages/settings/SettingsPage'));
-const AuthPage = loadComponent(() => import('./pages/auth'));
-
-// Import the new layout fix CSS
-import "./styles/layout-fix.css";
+const FeedbackPage = loadComponent(() => import('./pages/support/feedback'));
+const GuidelinesPage = loadComponent(() => import('./pages/support/guidelines'));
+const CopyrightPage = loadComponent(() => import('./pages/legal/copyright'));
+const TermsPage = loadComponent(() => import('./pages/legal/terms'));
+const CookiePolicyPage = loadComponent(() => import('./pages/legal/cookie-policy'));
 
 function App() {
   // Add performance monitoring
@@ -65,24 +57,19 @@ function App() {
                   <Route path="/" component={HomePage} />
                   <Route path="/reader" component={ReaderPage} />
                   <Route path="/stories" component={StoriesPage} />
-                  <Route path="/index" component={IndexPage} />
+
+                  {/* Support Pages */}
                   <Route path="/about" component={AboutPage} />
-                  <Route path="/privacy" component={PrivacyPage} />
                   <Route path="/contact" component={ContactPage} />
-                  <Route path="/community" component={CommunityPage} />
                   <Route path="/report-bug" component={ReportBugPage} />
-                  <Route path="/auth" component={AuthPage} />
+                  <Route path="/support/feedback" component={FeedbackPage} />
+                  <Route path="/support/guidelines" component={GuidelinesPage} />
 
-                  {/* Settings Routes */}
-                  <ProtectedRoute path="/settings" component={SettingsPage} />
-                  <ProtectedRoute path="/settings/:section" component={SettingsPage} />
-
-                  {/* Admin Routes */}
-                  <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
-                  <ProtectedRoute path="/admin/posts" component={AdminPosts} requireAdmin />
-                  <ProtectedRoute path="/admin/analytics" component={AdminAnalytics} requireAdmin />
-                  <ProtectedRoute path="/admin/users" component={AdminUsers} requireAdmin />
-                  <ProtectedRoute path="/admin/settings" component={AdminSettings} requireAdmin />
+                  {/* Legal Pages */}
+                  <Route path="/privacy" component={PrivacyPage} />
+                  <Route path="/legal/copyright" component={CopyrightPage} />
+                  <Route path="/legal/terms" component={TermsPage} />
+                  <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
 
                   {/* 404 Route */}
                   <Route path="/:rest*">

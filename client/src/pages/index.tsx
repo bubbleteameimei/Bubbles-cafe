@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
-import React from 'react';
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
@@ -16,7 +15,7 @@ import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress"
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
-  page?: number;
+  page: number;
 }
 
 const getExcerpt = (content: string) => {
@@ -36,11 +35,11 @@ const getExcerpt = (content: string) => {
   );
 
   const selectedParagraph = engagingParagraph || paragraphs[0];
-  const maxLength = 100;
-  const trimmed = selectedParagraph.trim();
-  return trimmed.length > maxLength
-    ? trimmed.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
-    : trimmed;
+  const maxLength = 200;
+  const plainText = selectedParagraph.replace(/<[^>]+>/g, '').trim();
+  return plainText.length > maxLength
+    ? plainText.slice(0, maxLength).split(' ').slice(0, -1).join(' ') + '...'
+    : plainText;
 };
 
 export default function IndexView() {
@@ -62,7 +61,7 @@ export default function IndexView() {
 
         return {
           posts,
-          hasMore: posts.length === 50, // If we got a full page, there might be more
+          hasMore: posts.length === 50,
           page: pageParam
         };
       } catch (error) {
@@ -70,7 +69,7 @@ export default function IndexView() {
         throw error;
       }
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? (lastPage.page || 0) + 1 : undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -86,12 +85,9 @@ export default function IndexView() {
     }
   };
 
-  const navigateToStory = (postId: number) => {
-    if (!data?.pages[0].posts) return;
-    const index = data.pages[0].posts.findIndex(p => p.id === postId);
-    if (index !== -1) {
-      sessionStorage.setItem('selectedStoryIndex', index.toString());
-      setLocation('/reader');
+  const navigateToStory = (slug: string) => {
+    if (slug) {
+      setLocation(`/story/${slug}`);
     }
   };
 
@@ -99,7 +95,7 @@ export default function IndexView() {
     return <SkeletonCard />;
   }
 
-  if (error || !data?.pages[0].posts) {
+  if (error || !data?.pages[0]?.posts) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -135,7 +131,7 @@ export default function IndexView() {
       <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-card/30 backdrop-blur-sm p-6 rounded-lg border border-border/50"
+            className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -168,18 +164,18 @@ export default function IndexView() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="group relative"
+                  className="group"
                 >
-                  <Card className="relative flex flex-col h-full hover:shadow-xl transition-all duration-300 bg-card border-border hover:border-primary/20 z-10 rounded-lg p-6">
-                    <CardHeader className="relative py-2 px-3">
-                      <div className="flex justify-between items-start gap-2">
+                  <Card className="flex flex-col h-full hover:shadow-md transition-all duration-300 bg-card/95 backdrop-blur-sm border-border/50">
+                    <CardHeader className="p-6">
+                      <div className="flex justify-between items-start gap-4">
                         <CardTitle
-                          className="text-base group-hover:text-primary transition-colors cursor-pointer"
-                          onClick={() => navigateToStory(post.id)}
+                          className="text-xl group-hover:text-primary transition-colors cursor-pointer"
+                          onClick={() => navigateToStory(post.slug)}
                         >
                           {post.title}
                         </CardTitle>
-                        <div className="text-[10px] text-muted-foreground space-y-0.5">
+                        <div className="text-xs text-muted-foreground space-y-1">
                           <div className="flex items-center gap-1 justify-end">
                             <Calendar className="h-3 w-3" />
                             <time>{formatDate(post.createdAt)}</time>
@@ -191,9 +187,10 @@ export default function IndexView() {
                         </div>
                       </div>
                     </CardHeader>
+
                     <CardContent
-                      onClick={() => navigateToStory(post.id)}
-                      className="cursor-pointer py-1 px-3 flex-grow"
+                      className="px-6 flex-grow cursor-pointer"
+                      onClick={() => navigateToStory(post.slug)}
                     >
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                         {excerpt}
@@ -202,13 +199,14 @@ export default function IndexView() {
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
-                    <CardFooter className="relative mt-auto py-2 px-3 border-t border-border bg-card">
+
+                    <CardFooter className="p-6 mt-auto border-t border-border bg-card/50">
                       <div className="w-full flex items-center justify-between">
                         <LikeDislike postId={post.id} />
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigateToStory(post.id)}
+                          onClick={() => navigateToStory(post.slug)}
                           className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                         >
                           Read More <ArrowRight className="h-3 w-3" />
