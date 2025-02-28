@@ -97,24 +97,24 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!error.message) return "An unexpected error occurred.";
 
     if (error.message.includes('Suspense') || error.message.includes('loading')) {
-      return "Loading the page content... Please wait.";
+      return "There was an error loading this page component. Please refresh and try again.";
     }
     if (error.message.includes('chunk') || error.message.includes('failed to load')) {
-      return "A required page component failed to load. This might be due to a network issue.";
+      return "A required page component failed to load. This might be due to a network issue or recent update.";
     }
     if (error.message.includes('404')) {
       return "We couldn't find what you're looking for. The page might have been moved or deleted.";
     }
     if (error.message.includes('500')) {
-      return "Something went wrong on our end. We're working on fixing it.";
+      return "Something went wrong on our end. We're working on fixing it. Please try again later.";
     }
     if (error.message.includes('network')) {
-      return "Unable to connect to the server. Please check your internet connection.";
+      return "Unable to connect to the server. Please check your internet connection and try again.";
     }
     if (error.message.includes('route') || error.message.includes('navigation')) {
-      return "There was an error with page navigation. Please try refreshing.";
+      return "There was an error with page navigation. Please try going back or refreshing the page.";
     }
-    return error.message || "An unexpected error occurred.";
+    return error.message || "An unexpected error occurred. We're looking into it.";
   }
 
   private formatTime(timestamp: number): string {
@@ -130,6 +130,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return this.props.children;
     }
 
+    // Use custom fallback if provided
     if (this.props.fallback) {
       return this.props.fallback;
     }
