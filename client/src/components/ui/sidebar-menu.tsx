@@ -66,7 +66,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <SidebarContent>
       <SidebarGroup>
-        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-xl font-semibold pt-2 pb-4">Navigation</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {/* Home */}
@@ -109,15 +109,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Support & Legal</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Support & Legal">
+                  <SidebarMenuButton tooltip="Support & Resources">
                     <HelpCircle className="h-[18px] w-[18px]" />
-                    <span>Support & Legal</span>
+                    <span>Support & Resources</span>
                     <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>

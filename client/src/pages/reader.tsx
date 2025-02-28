@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, Twitter, Facebook, FileShare, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Twitter, Facebook, Share2, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -224,7 +224,7 @@ export default function Reader() {
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
                           >
-                            <FileShare className="h-5 w-5" />
+                            <Share2 className="h-5 w-5" />
                           </a>
                         </TooltipTrigger>
                         <TooltipContent>Share on Reddit</TooltipContent>

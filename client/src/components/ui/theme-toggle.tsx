@@ -15,7 +15,7 @@ export function ThemeToggle({ variant = 'icon' }: ThemeToggleProps) {
         <input
           type="checkbox"
           className="switch"
-          checked={theme === 'dark'}
+          checked={theme === 'light'}
           onChange={toggleTheme}
           aria-label="Toggle theme"
         />
@@ -29,7 +29,7 @@ export function ThemeToggle({ variant = 'icon' }: ThemeToggleProps) {
       className="theme-toggle-icon"
       aria-label="Toggle theme"
     >
-      {theme === 'dark' ? (
+      {theme === 'light' ? (
         <Sun className="h-5 w-5" />
       ) : (
         <Moon className="h-5 w-5" />

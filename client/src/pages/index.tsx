@@ -76,23 +76,12 @@ export default function IndexView() {
     initialPageParam: 1
   });
 
-  const formatDate = (date: Date | string) => {
-    try {
-      return format(new Date(date), 'MMMM d, yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  };
-
-  const navigateToStory = (slug: string) => {
-    if (slug) {
-      setLocation(`/story/${slug}`);
-    }
-  };
-
   if (isLoading) {
-    return <SkeletonCard />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading stories...</div>
+      </div>
+    );
   }
 
   if (error || !data?.pages[0]?.posts) {
@@ -137,7 +126,7 @@ export default function IndexView() {
             transition={{ duration: 0.5 }}
           >
             <div>
-              <h1 className="stories-page-title text-4xl font-decorative mb-2">STORIES</h1>
+              <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
               <p className="text-muted-foreground">Explore our collection of haunting tales</p>
             </div>
             <Button
@@ -166,19 +155,19 @@ export default function IndexView() {
                   transition={{ delay: index * 0.1 }}
                   className="group"
                 >
-                  <Card className="flex flex-col h-full hover:shadow-md transition-all duration-300 bg-card/95 backdrop-blur-sm border-border/50">
+                  <Card className="flex flex-col h-full bg-card/95 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300">
                     <CardHeader className="p-6">
                       <div className="flex justify-between items-start gap-4">
                         <CardTitle
                           className="text-xl group-hover:text-primary transition-colors cursor-pointer"
-                          onClick={() => navigateToStory(post.slug)}
+                          onClick={() => setLocation(`/story/${post.slug}`)}
                         >
                           {post.title}
                         </CardTitle>
                         <div className="text-xs text-muted-foreground space-y-1">
                           <div className="flex items-center gap-1 justify-end">
                             <Calendar className="h-3 w-3" />
-                            <time>{formatDate(post.createdAt)}</time>
+                            <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
                           </div>
                           <div className="flex items-center gap-1 justify-end">
                             <Clock className="h-3 w-3" />
@@ -188,10 +177,7 @@ export default function IndexView() {
                       </div>
                     </CardHeader>
 
-                    <CardContent
-                      className="px-6 flex-grow cursor-pointer"
-                      onClick={() => navigateToStory(post.slug)}
-                    >
+                    <CardContent className="px-6 flex-grow">
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                         {excerpt}
                       </p>
@@ -200,13 +186,13 @@ export default function IndexView() {
                       </div>
                     </CardContent>
 
-                    <CardFooter className="p-6 mt-auto border-t border-border bg-card/50">
+                    <CardFooter className="p-6 mt-auto border-t border-border">
                       <div className="w-full flex items-center justify-between">
                         <LikeDislike postId={post.id} />
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigateToStory(post.slug)}
+                          onClick={() => setLocation(`/story/${post.slug}`)}
                           className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                         >
                           Read More <ArrowRight className="h-3 w-3" />

@@ -24,10 +24,14 @@ interface Stats {
 function isValidStats(obj: any): obj is Stats {
   return obj 
     && typeof obj.likes === 'number'
+    && !isNaN(obj.likes)
     && typeof obj.dislikes === 'number'
+    && !isNaN(obj.dislikes)
     && obj.baseStats
     && typeof obj.baseStats.likes === 'number'
+    && !isNaN(obj.baseStats.likes)
     && typeof obj.baseStats.dislikes === 'number'
+    && !isNaN(obj.baseStats.dislikes)
     && typeof obj.userInteracted === 'boolean';
 }
 
@@ -44,8 +48,8 @@ const getOrCreateStats = (postId: number): Stats => {
     }
 
     // Generate deterministic but varying initial stats based on postId
-    const likesBase = Math.max(5, postId % 20 + 10);
-    const dislikesBase = Math.max(1, postId % 5 + 2);
+    const likesBase = Math.max(5, Math.abs(postId % 20 + 10));
+    const dislikesBase = Math.max(1, Math.abs(postId % 5 + 2));
 
     const newStats: Stats = {
       likes: likesBase,
@@ -80,7 +84,6 @@ export function LikeDislike({
   onDislike,
   onUpdate
 }: LikeDislikeProps) {
-  // Move all hooks to the top
   const { toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
@@ -120,8 +123,8 @@ export function LikeDislike({
         setDisliked(false);
         updateStats({
           ...stats,
-          likes: stats.likes + 1,
-          dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
+          likes: Math.max(0, stats.likes + 1),
+          dislikes: disliked ? Math.max(0, stats.dislikes - 1) : stats.dislikes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -129,7 +132,7 @@ export function LikeDislike({
         setLiked(false);
         updateStats({
           ...stats,
-          likes: stats.likes - 1,
+          likes: Math.max(0, stats.likes - 1),
           baseStats: stats.baseStats,
           userInteracted: false
         });
@@ -158,8 +161,8 @@ export function LikeDislike({
         setLiked(false);
         updateStats({
           ...stats,
-          dislikes: stats.dislikes + 1,
-          likes: liked ? stats.likes - 1 : stats.likes,
+          dislikes: Math.max(0, stats.dislikes + 1),
+          likes: liked ? Math.max(0, stats.likes - 1) : stats.likes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -167,7 +170,7 @@ export function LikeDislike({
         setDisliked(false);
         updateStats({
           ...stats,
-          dislikes: stats.dislikes - 1,
+          dislikes: Math.max(0, stats.dislikes - 1),
           baseStats: stats.baseStats,
           userInteracted: false
         });
@@ -197,7 +200,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           liked ? 'text-primary' : 'text-muted-foreground'
-        }`}>{stats.likes}</span>
+        }`}>{stats.likes || 0}</span>
       </Button>
 
       <Button
@@ -213,7 +216,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
-        }`}>{stats.dislikes}</span>
+        }`}>{stats.dislikes || 0}</span>
       </Button>
     </div>
   );

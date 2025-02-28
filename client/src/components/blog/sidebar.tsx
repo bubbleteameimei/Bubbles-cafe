@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { HamburgerMenu } from "@/components/ui/hamburger-menu";
 
 interface PostsResponse {
   posts: Post[];
@@ -16,6 +18,7 @@ interface PostsResponse {
 export default function Sidebar() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
 
   const socialLinks = {
     wordpress: "https://bubbleteameimei.wordpress.com",
@@ -96,6 +99,17 @@ export default function Sidebar() {
       initial="hidden"
       animate="visible"
     >
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold tracking-tight">Navigation</h2>
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="lg:hidden"
+          aria-label="Toggle menu"
+        >
+          <HamburgerMenu isOpen={isOpen} />
+        </button>
+      </div>
+
       <Card className="transition-colors hover:bg-accent/5">
         <CardHeader>
           <CardTitle>Recent Stories</CardTitle>
