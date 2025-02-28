@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 export default function LatestStories() {
   const [, setLocation] = useLocation();
@@ -27,34 +28,36 @@ export default function LatestStories() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Latest Stories</h2>
-        <Button
-          variant="ghost"
-          onClick={() => setLocation('/stories')}
-          className="text-primary hover:text-primary/80"
-        >
-          View All <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid gap-4">
-        {posts.map((post) => (
-          <div
-            key={post.id}
-            className="group p-4 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
-            onClick={() => setLocation(`/story/${post.slug}`)}
+    <ErrorBoundary>
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Latest Stories</h2>
+          <Button
+            variant="ghost"
+            onClick={() => setLocation('/stories')}
+            className="text-primary hover:text-primary/80"
           >
-            <h3 className="font-medium group-hover:text-primary transition-colors">
-              {post.title}
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-              {post.excerpt}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
+            View All <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="grid gap-4">
+          {posts.map((post) => (
+            <div
+              key={post.id}
+              className="group p-4 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
+              onClick={() => setLocation(`/story/${post.slug}`)}
+            >
+              <h3 className="font-medium group-hover:text-primary transition-colors">
+                {post.title}
+              </h3>
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                {post.excerpt}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </ErrorBoundary>
   );
 }

@@ -54,6 +54,12 @@ export async function fetchWordPressPosts(page = 1, perPage = POSTS_PER_PAGE): P
     const posts = await response.json();
     console.log(`[WordPress] Fetched ${posts.length} posts from page ${page}`);
 
+    // Validate response data
+    if (!Array.isArray(posts)) {
+      console.error('[WordPress] Invalid response format:', posts);
+      throw new Error('Invalid response format from WordPress API');
+    }
+
     // Log the first post's title and date for debugging
     if (posts.length > 0) {
       console.log(`[WordPress] Latest post: "${posts[0].title.rendered}" (${posts[0].date})`);
@@ -77,6 +83,11 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
   try {
     console.log(`[WordPress] Converting post: "${wpPost.title.rendered}" (${wpPost.date})`);
 
+    // Validate required fields
+    if (!wpPost.title?.rendered || !wpPost.content?.rendered || !wpPost.slug) {
+      throw new Error(`Invalid post data: Missing required fields for post ${wpPost.id}`);
+    }
+
     // Enhanced sanitization of content
     const sanitizedContent = wpPost.content.rendered
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -93,7 +104,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
     console.log(`[WordPress] Converted post ID ${wpPost.id} successfully`);
 
     return {
-      title: wpPost.title.rendered,
+      title: wpPost.title.rendered.trim(),
       content: sanitizedContent,
       excerpt,
       slug: wpPost.slug,

@@ -11,11 +11,8 @@ import {
   Scale,
   Bug,
   PanelLeftClose,
-  LayoutDashboard,
-  LineChart,
-  Users,
-  Settings2,
-  FileEdit
+  FileText,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback, memo } from "react";
@@ -77,7 +74,7 @@ const MenuIcon = () => (
 );
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation(); 
+  const [location] = useLocation(); 
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 

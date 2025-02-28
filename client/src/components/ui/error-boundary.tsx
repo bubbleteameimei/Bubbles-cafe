@@ -96,6 +96,20 @@ export class ErrorBoundary extends Component<Props, State> {
   private getErrorMessage(error: Error): string {
     if (!error.message) return "An unexpected error occurred.";
 
+    // WordPress API specific errors
+    if (error.message.includes('WordPress') || error.message.includes('post')) {
+      if (error.message.includes('429')) {
+        return "We've hit the WordPress API rate limit. Please wait a moment and try again.";
+      }
+      if (error.message.includes('Invalid response')) {
+        return "There was an issue retrieving stories from WordPress. Please try again later.";
+      }
+      if (error.message.includes('Missing required fields')) {
+        return "Some story data is missing or corrupted. Our team has been notified.";
+      }
+      return "There was an error loading stories. Please refresh and try again.";
+    }
+
     if (error.message.includes('Suspense') || error.message.includes('loading')) {
       return "There was an error loading this page component. Please refresh and try again.";
     }

@@ -11,6 +11,11 @@ import {
   ChevronDown,
   Bug,
   LayoutList,
+  Lock,
+  Mail,
+  Building,
+  ScrollText,
+  Shield
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -40,7 +45,6 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
   const sidebar = useSidebar();
 
@@ -77,12 +81,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {/* Index */}
+            {/* Story Index */}
             <SidebarMenuItem>
               <SidebarMenuButton 
-                isActive={location === '/index'} 
-                onClick={() => handleNavigation('/index')}
-                tooltip="Index"
+                isActive={location === '/stories'} 
+                onClick={() => handleNavigation('/stories')}
+                tooltip="Stories"
               >
                 <LayoutList className="h-[18px] w-[18px]" />
                 <span>Story Index</span>
@@ -100,68 +104,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Reader</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-
-            {/* Community */}
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                isActive={location === '/community'} 
-                onClick={() => handleNavigation('/community')}
-                tooltip="Community"
-              >
-                <Users className="h-[18px] w-[18px]" />
-                <span>Community</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Preferences</SidebarGroupLabel>
+        <SidebarGroupLabel>Support & Legal</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {/* Settings & Accessibility Dropdown */}
-            <SidebarMenuItem>
-              <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Settings & Accessibility">
-                    <Settings className="h-[18px] w-[18px]" />
-                    <span>Settings & Accessibility</span>
-                    <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/profile'}
-                        onClick={() => handleNavigation('/settings/profile')}
-                      >
-                        <span>Profile Settings</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/appearance'}
-                        onClick={() => handleNavigation('/settings/appearance')}
-                      >
-                        <span>Appearance</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/accessibility'}
-                        onClick={() => handleNavigation('/settings/accessibility')}
-                      >
-                        <span>Accessibility</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-
-            {/* Support & Legal Dropdown */}
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
@@ -173,20 +123,61 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
+                    {/* Support Section */}
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/support'}
-                        onClick={() => handleNavigation('/support')}
+                        isActive={location === '/about'}
+                        onClick={() => handleNavigation('/about')}
                       >
-                        <span>Help Center</span>
+                        <Building className="h-4 w-4 mr-2" />
+                        <span>About Us</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/terms'}
-                        onClick={() => handleNavigation('/terms')}
+                        isActive={location === '/contact'}
+                        onClick={() => handleNavigation('/contact')}
                       >
+                        <Mail className="h-4 w-4 mr-2" />
+                        <span>Contact Support</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/support/feedback'}
+                        onClick={() => handleNavigation('/support/feedback')}
+                      >
+                        <ScrollText className="h-4 w-4 mr-2" />
+                        <span>Feedback & Suggestions</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/support/guidelines'}
+                        onClick={() => handleNavigation('/support/guidelines')}
+                      >
+                        <Book className="h-4 w-4 mr-2" />
+                        <span>User Guidelines</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    {/* Legal Section */}
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/legal/terms'}
+                        onClick={() => handleNavigation('/legal/terms')}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
                         <span>Terms of Service</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/legal/copyright'}
+                        onClick={() => handleNavigation('/legal/copyright')}
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
@@ -194,7 +185,17 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
                       >
+                        <Lock className="h-4 w-4 mr-2" />
                         <span>Privacy Policy</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/legal/cookie-policy'}
+                        onClick={() => handleNavigation('/legal/cookie-policy')}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        <span>Cookie Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>

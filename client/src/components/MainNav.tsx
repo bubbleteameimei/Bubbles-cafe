@@ -9,7 +9,11 @@ import {
   Building, 
   Mail, 
   Lock,
-  User 
+  User,
+  FileText,
+  Book,
+  ScrollText,
+  Shield 
 } from "lucide-react";
 import { AdminNav } from "./AdminNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -17,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -47,7 +52,8 @@ export default function MainNav() {
                   <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuContent align="end" className="w-[220px]">
+                {/* Support Section */}
                 <DropdownMenuItem asChild>
                   <Link href="/about">
                     <a className="w-full flex items-center space-x-2 text-base py-2">
@@ -65,10 +71,54 @@ export default function MainNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/support/feedback">
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <ScrollText className="h-4 w-4" />
+                      <span>Feedback & Suggestions</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/support/guidelines">
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <Book className="h-4 w-4" />
+                      <span>User Guidelines</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* Legal Section */}
+                <DropdownMenuItem asChild>
+                  <Link href="/legal/terms">
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <FileText className="h-4 w-4" />
+                      <span>Terms of Service</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/legal/copyright">
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <Shield className="h-4 w-4" />
+                      <span>Copyright Policy</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/privacy">
                     <a className="w-full flex items-center space-x-2 text-base py-2">
                       <Lock className="h-4 w-4" />
                       <span>Privacy Policy</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/legal/cookie-policy">
+                    <a className="w-full flex items-center space-x-2 text-base py-2">
+                      <FileText className="h-4 w-4" />
+                      <span>Cookie Policy</span>
                     </a>
                   </Link>
                 </DropdownMenuItem>
