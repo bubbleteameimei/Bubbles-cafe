@@ -16,35 +16,100 @@ export interface WordPressPost {
 }
 
 const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+const MAX_POSTS = 1000; // Maximum number of posts to fetch
+const POSTS_PER_PAGE = 100; // Maximum allowed by WordPress API
 
-export async function fetchWordPressPosts(page = 1, perPage = 10): Promise<WordPressPost[]> {
+export async function fetchWordPressPosts(page = 1, perPage = POSTS_PER_PAGE): Promise<WordPressPost[]> {
   try {
-    const response = await fetch(`${WORDPRESS_API_URL}?page=${page}&per_page=${perPage}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch WordPress posts');
+    console.log(`[WordPress] Fetching posts - page: ${page}, per_page: ${perPage}`);
+
+    // Add parameters for sorting and status
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+      orderby: 'date',
+      order: 'desc', // Newest first
+      status: 'publish'
+    });
+
+    const response = await fetch(`${WORDPRESS_API_URL}?${params}`);
+
+    // Handle rate limits and errors
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      console.warn(`[WordPress] Rate limited. Retry after ${retryAfter} seconds`);
+      throw new Error('Rate limit exceeded. Please try again later.');
     }
-    return await response.json();
+
+    if (!response.ok) {
+      console.error(`[WordPress] API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch WordPress posts: ${response.statusText}`);
+    }
+
+    // Get total pages and posts from headers
+    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
+    const totalPosts = parseInt(response.headers.get('X-WP-Total') || '0');
+    console.log(`[WordPress] Total pages: ${totalPages}, Total posts: ${totalPosts}`);
+
+    const posts = await response.json();
+    console.log(`[WordPress] Fetched ${posts.length} posts from page ${page}`);
+
+    // Log the first post's title and date for debugging
+    if (posts.length > 0) {
+      console.log(`[WordPress] Latest post: "${posts[0].title.rendered}" (${posts[0].date})`);
+    }
+
+    // If we have more pages and haven't reached the maximum, fetch them recursively
+    if (page < totalPages && page * perPage < MAX_POSTS) {
+      console.log(`[WordPress] Fetching next page ${page + 1}`);
+      const nextPosts = await fetchWordPressPosts(page + 1, perPage);
+      return [...posts, ...nextPosts].slice(0, MAX_POSTS);
+    }
+
+    return posts;
   } catch (error) {
-    console.error('Error fetching WordPress posts:', error);
+    console.error('[WordPress] Error fetching posts:', error);
     throw error;
   }
 }
 
 export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
-  return {
-    title: wpPost.title.rendered,
-    content: wpPost.content.rendered,
-    excerpt: wpPost.excerpt.rendered,
-    slug: wpPost.slug,
-    createdAt: new Date(wpPost.date),
-    metadata: {
-      wordpressId: wpPost.id,
-      modified: wpPost.modified,
-      status: wpPost.status,
-      type: wpPost.type,
-      originalAuthor: wpPost.author,
-      featuredMedia: wpPost.featured_media,
-      categories: wpPost.categories,
-    }
-  };
+  try {
+    console.log(`[WordPress] Converting post: "${wpPost.title.rendered}" (${wpPost.date})`);
+
+    // Enhanced sanitization of content
+    const sanitizedContent = wpPost.content.rendered
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/on\w+="[^"]*"/g, '') // Remove inline event handlers
+      .replace(/javascript:[^\s>]*/g, '') // Remove javascript: URLs
+      .trim();
+
+    // Use excerpt if available, otherwise create one from content
+    const excerpt = wpPost.excerpt.rendered 
+      ? wpPost.excerpt.rendered.replace(/<[^>]+>/g, '').trim()
+      : sanitizedContent.replace(/<[^>]+>/g, '').substring(0, 200) + '...';
+
+    console.log(`[WordPress] Converted post ID ${wpPost.id} successfully`);
+
+    return {
+      title: wpPost.title.rendered,
+      content: sanitizedContent,
+      excerpt,
+      slug: wpPost.slug,
+      createdAt: new Date(wpPost.date),
+      metadata: {
+        wordpressId: wpPost.id,
+        modified: wpPost.modified,
+        status: wpPost.status as 'publish',
+        type: wpPost.type,
+        originalAuthor: wpPost.author,
+        featuredMedia: wpPost.featured_media,
+        categories: wpPost.categories,
+      }
+    };
+  } catch (error) {
+    console.error(`[WordPress] Error converting post ${wpPost.id}:`, error);
+    throw error;
+  }
 }

@@ -5,36 +5,11 @@ import { db } from '../server/db.js';
 import { posts, users } from '../shared/schema.js';
 import { createHash } from 'crypto';
 import { eq } from 'drizzle-orm';
+import { fetchWordPressPosts, convertWordPressPost } from '../client/src/services/wordpress';
 
-interface WordPressPost {
-  title: string;
-  link: string;
-  pubDate: string;
-  creator: string;
-  description: string;
-  content: string;
-  post_id: number;
-  post_date: string;
-  status: string;
-}
-
-async function importWordPressContent(xmlFilePath: string) {
+async function importWordPressContent() {
   try {
     console.log('Starting WordPress import...');
-
-    // Read XML file
-    const xmlContent = await fs.readFile(xmlFilePath, 'utf-8');
-
-    // Parse XML
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "",
-      textNodeName: "content",
-      isArray: (name) => ['item'].includes(name)
-    });
-
-    const result = parser.parse(xmlContent);
-    const channel = result.rss.channel;
 
     // Create default author if not exists
     const [defaultAuthor] = await db
@@ -48,44 +23,34 @@ async function importWordPressContent(xmlFilePath: string) {
       .onConflictDoNothing()
       .returning();
 
-    console.log('Processing posts...');
+    console.log('Fetching posts from WordPress API...');
+
+    // Fetch all posts from WordPress API
+    const wpPosts = await fetchWordPressPosts();
+    console.log(`Found ${wpPosts.length} posts to import`);
 
     // Process each post
-    for (const item of channel.item || []) {
-      const postContent = item['content:encoded'] || item.description;
-      const postTitle = item.title;
-      const postDate = new Date(item.pubDate);
-
-      // Generate slug from title
-      const slug = postTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+    for (const wpPost of wpPosts) {
+      const postData = convertWordPressPost(wpPost);
 
       // Check if post already exists
       const existingPost = await db.select()
         .from(posts)
-        .where(eq(posts.slug, slug))
+        .where(eq(posts.slug, postData.slug!))
         .limit(1);
 
       if (existingPost.length === 0) {
         // Create new post
         await db.insert(posts)
           .values({
-            title: postTitle,
-            content: postContent,
-            slug,
+            ...postData,
             authorId: defaultAuthor.id,
-            createdAt: postDate,
-            excerpt: postContent.substring(0, 200) + '...',
-            isSecret: false,
-            matureContent: false
           })
           .onConflictDoNothing();
 
-        console.log(`Imported post: ${postTitle}`);
+        console.log(`Imported post: ${postData.title}`);
       } else {
-        console.log(`Skipped existing post: ${postTitle}`);
+        console.log(`Skipped existing post: ${postData.title}`);
       }
     }
 
@@ -98,8 +63,7 @@ async function importWordPressContent(xmlFilePath: string) {
 
 // Run if called directly
 if (import.meta.url === new URL(process.argv[1], 'file:').href) {
-  const xmlFile = path.join(process.cwd(), 'attached_assets', 'bubblescafe.wordpress.2025-02-04.000.xml');
-  importWordPressContent(xmlFile)
+  importWordPressContent()
     .then(() => console.log('Import completed'))
     .catch(console.error);
 }

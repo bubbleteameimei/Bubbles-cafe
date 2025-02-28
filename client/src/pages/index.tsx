@@ -11,6 +11,7 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
+import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface PostsResponse {
   posts: Post[];
@@ -53,16 +54,27 @@ export default function IndexView() {
     isLoading,
     error
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ["pages", "index", "all-posts"],
+    queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/posts?section=index&page=${pageParam}&limit=50&type=index`);
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
+      try {
+        const wpPosts = await fetchWordPressPosts(pageParam, 50);
+        const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+
+        return {
+          posts,
+          hasMore: posts.length === 50, // If we got a full page, there might be more
+          page: pageParam
+        };
+      } catch (error) {
+        console.error('Error fetching WordPress posts:', error);
+        throw error;
+      }
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? (lastPage.page || 0) + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    initialPageParam: 1
   });
 
   const formatDate = (date: Date | string) => {
@@ -92,7 +104,7 @@ export default function IndexView() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
-          <p className="text-muted-foreground">{error?.message || "Please try again later"}</p>
+          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
           <Button
             variant="outline"
             onClick={() => window.location.reload()}
@@ -129,7 +141,7 @@ export default function IndexView() {
             transition={{ duration: 0.5 }}
           >
             <div>
-              <h1 className="stories-page-title text-4xl font-decorative mb-2">INDEX</h1>
+              <h1 className="stories-page-title text-4xl font-decorative mb-2">STORIES</h1>
               <p className="text-muted-foreground">Explore our collection of haunting tales</p>
             </div>
             <Button

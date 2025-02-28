@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, Clock, Book, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Minus, Plus, Type } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle, Clock, Book } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -12,10 +12,8 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
-import { getReadingTime, detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
-import type { ThemeCategory } from "../shared/types";
-import { useAuth } from "@/hooks/use-auth";
-import "../components/ui/font-size-controls.css"; // Import font size controls CSS
+import { getReadingTime } from "@/lib/content-analysis";
+import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface PostsResponse {
   posts: Post[];
@@ -23,39 +21,13 @@ interface PostsResponse {
   page?: number;
 }
 
-const MIN_FONT_SIZE = 14;
-const MAX_FONT_SIZE = 24;
-const FONT_SIZE_STEP = 2;
-
 export default function Reader() {
-  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(() => {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
 
-  const [postStats, setPostStats] = useState<Record<number, { likes: number, dislikes: number }>>({});
   const [, setLocation] = useLocation();
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('reader-font-size');
-    return saved ? parseInt(saved, 10) : 16;
-  });
-
-  const increaseFontSize = () => {
-    setFontSize(prev => {
-      const newSize = Math.min(prev + FONT_SIZE_STEP, MAX_FONT_SIZE);
-      localStorage.setItem('reader-font-size', newSize.toString());
-      return newSize;
-    });
-  };
-
-  const decreaseFontSize = () => {
-    setFontSize(prev => {
-      const newSize = Math.max(prev - FONT_SIZE_STEP, MIN_FONT_SIZE);
-      localStorage.setItem('reader-font-size', newSize.toString());
-      return newSize;
-    });
-  };
 
   const {
     data,
@@ -65,35 +37,28 @@ export default function Reader() {
     isLoading,
     error
   } = useInfiniteQuery<PostsResponse>({
-    queryKey: ["pages", "reader", "current-posts"],
+    queryKey: ["wordpress", "posts", "reader"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/posts?section=reader&page=${pageParam}&limit=50&type=reader`);
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      const data = await response.json();
-      if (!data.posts || !Array.isArray(data.posts)) {
-        throw new Error('Invalid posts data format');
+      try {
+        const wpPosts = await fetchWordPressPosts(pageParam, 100); // Fetch more posts per page
+        const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+
+        return {
+          posts,
+          hasMore: posts.length === 100, // If we got a full page, there might be more
+          page: pageParam
+        };
+      } catch (error) {
+        console.error('Error fetching WordPress posts:', error);
+        throw error;
       }
-      return data;
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? (lastPage.page || 0) + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    initialPageParam: 1
   });
-
-  useEffect(() => {
-    if (data?.pages) {
-      const persistedStats: Record<number, { likes: number, dislikes: number }> = {};
-      data.pages.forEach(page => {
-        page.posts.forEach(post => {
-          persistedStats[post.id] = getOrCreateStats(post.id);
-        });
-      });
-      setPostStats(persistedStats);
-
-      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
-    }
-  }, [data?.pages, currentIndex]);
 
   const goToPrevious = useCallback(() => {
     const posts = data?.pages.flatMap(page => page.posts);
@@ -117,13 +82,29 @@ export default function Reader() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [data?.pages]);
 
+  useEffect(() => {
+    if (data?.pages) {
+      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+    }
+  }, [data?.pages, currentIndex]);
+
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error || !data?.pages[0].posts || data.pages[0].posts.length === 0) {
     console.error('Error loading stories:', error);
-    return <div className="text-center p-8">No stories available.</div>;
+    return (
+      <div className="text-center p-8">
+        <h2 className="text-xl font-semibold mb-4">Unable to load stories</h2>
+        <p className="text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : "Please try again later"}
+        </p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   const posts = data.pages.flatMap(page => page.posts);
@@ -135,13 +116,32 @@ export default function Reader() {
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
-  const themes = detectThemes(currentPost.content);
-  const primaryTheme = themes[0];
-  const themeInfo = primaryTheme ? THEME_CATEGORIES[primaryTheme] : null;
 
-  const handleStatsUpdate = (postId: number, likes: number, dislikes: number) => {
-    setPostStats(prev => ({ ...prev, [postId]: { likes, dislikes } }));
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('reader-font-size');
+    return saved ? parseInt(saved, 10) : 16;
+  });
+
+  const MIN_FONT_SIZE = 14;
+  const MAX_FONT_SIZE = 24;
+  const FONT_SIZE_STEP = 2;
+
+  const increaseFontSize = () => {
+    setFontSize(prev => {
+      const newSize = Math.min(prev + FONT_SIZE_STEP, MAX_FONT_SIZE);
+      localStorage.setItem('reader-font-size', newSize.toString());
+      return newSize;
+    });
   };
+
+  const decreaseFontSize = () => {
+    setFontSize(prev => {
+      const newSize = Math.max(prev - FONT_SIZE_STEP, MIN_FONT_SIZE);
+      localStorage.setItem('reader-font-size', newSize.toString());
+      return newSize;
+    });
+  };
+
 
   return (
     <div className="relative min-h-screen pb-32">
@@ -158,63 +158,6 @@ export default function Reader() {
           >
             <article>
               <div className="flex flex-col items-center space-y-4 mb-8">
-                <div className="self-end flex items-center gap-2 mb-4 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border border-border/50">
-                  <Type className="h-4 w-4 text-muted-foreground" />
-
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="font-size-controls">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={decreaseFontSize}
-                              className="font-size-btn decrease"
-                              disabled={fontSize <= MIN_FONT_SIZE}
-                            >
-                              <Minus className="h-4 w-4" />
-                              <span className="sr-only">Decrease font size</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <p>Make text smaller</p>
-                            <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <span 
-                        className={`font-size-display text-sm font-medium ${
-                          fontSize === parseInt(localStorage.getItem('reader-font-size') || '16') ? '' : 'font-size-changed'
-                        }`}
-                      >
-                        {fontSize}
-                      </span>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={increaseFontSize}
-                              className="font-size-btn increase"
-                              disabled={fontSize >= MAX_FONT_SIZE}
-                            >
-                              <Plus className="h-4 w-4" />
-                              <span className="sr-only">Increase font size</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            <p>Make text larger</p>
-                            <p className="text-xs text-muted-foreground">Current: {fontSize}px</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
-
                 <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
 
                 <div className="flex items-center gap-4 mt-4">
@@ -244,36 +187,6 @@ export default function Reader() {
                   <Clock className="h-4 w-4" />
                   <span>{readingTime}</span>
                 </div>
-                {themeInfo && (
-                  <>
-                    <span>·</span>
-                    <div className="flex items-center gap-1">
-                      {React.createElement(
-                        themeInfo.icon === 'Worm' ? Book :
-                          themeInfo.icon === 'Skull' ? Skull :
-                            themeInfo.icon === 'Brain' ? Brain :
-                              themeInfo.icon === 'Pill' ? Pill :
-                                themeInfo.icon === 'Cpu' ? Cpu :
-                                  themeInfo.icon === 'Dna' ? Dna :
-                                    themeInfo.icon === 'Axe' ? Axe :
-                                      themeInfo.icon === 'Ghost' ? Ghost :
-                                        themeInfo.icon === 'Footprints' ? Footprints :
-                                          themeInfo.icon === 'Castle' ? Castle :
-                                            themeInfo.icon === 'Radiation' ? Radiation :
-                                              themeInfo.icon === 'UserMinus2' ? UserMinus2 :
-                                                themeInfo.icon === 'Anchor' ? Anchor :
-                                                  themeInfo.icon === 'AlertTriangle' ? AlertTriangle :
-                                                    themeInfo.icon === 'Building' ? Building :
-                                                      themeInfo.icon === 'Clock' ? Clock :
-                                                        themeInfo.icon === 'Moon' ? Moon : Book,
-                        { className: "h-4 w-4" }
-                      )}
-                      <Badge variant={themeInfo.badgeVariant || "default"} className="capitalize">
-                        {primaryTheme.toLowerCase().replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </>
-                )}
               </div>
 
               <div
@@ -283,31 +196,11 @@ export default function Reader() {
                   fontSize: `${fontSize}px`,
                   lineHeight: '1.6'
                 }}
-              >
-                {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => {
-                  if (!paragraph.trim()) return null;
-
-                  const processed = paragraph.trim().split('_').map((text, i) => (
-                    i % 2 === 0 ? (
-                      <span key={i}>{text}</span>
-                    ) : (
-                      <i key={i} className="italic text-primary/80">{text}</i>
-                    )
-                  ));
-
-                  return (
-                    <p key={index} className="mb-6 leading-relaxed">
-                      {processed}
-                    </p>
-                  );
-                })}
-              </div>
+                dangerouslySetInnerHTML={{ __html: currentPost.content }}
+              />
 
               <div className="border-t border-border pt-4">
-                <LikeDislike 
-                  postId={currentPost.id} 
-                  onUpdate={(likes, dislikes) => handleStatsUpdate(currentPost.id, likes, dislikes)}
-                />
+                <LikeDislike postId={currentPost.id} />
               </div>
 
               {hasNextPage && (
@@ -381,29 +274,4 @@ export default function Reader() {
       </div>
     </div>
   );
-}
-
-function getOrCreateStats(postId: number) {
-  const storageKey = `post-stats-${postId}`;
-  const existingStats = localStorage.getItem(storageKey);
-
-  if (existingStats) {
-    return JSON.parse(existingStats);
-  }
-
-  const likesBase = 80;
-  const likesRange = 40;
-  const dislikesBase = 5;
-  const dislikesRange = 15;
-
-  const likes = likesBase + (postId * 7) % likesRange;
-  const dislikes = dislikesBase + (postId * 3) % dislikesRange;
-
-  const newStats = {
-    likes,
-    dislikes
-  };
-
-  localStorage.setItem(storageKey, JSON.stringify(newStats));
-  return newStats;
 }
