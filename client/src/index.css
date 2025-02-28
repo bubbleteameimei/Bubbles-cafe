@@ -34,48 +34,48 @@
   /* Light mode variables */
   :root {
     --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
-    --foreground: 32 25% 12%;   /* #251E16 - Eerie black for better readability */
+    --foreground: 240 9% 13%;   /* #1e1e24 - Dark slate */
     --card: 35 30% 87%;         /* #e8e0d2 - Lighter card */
-    --card-foreground: 32 25% 12%; /* #251E16 - Eerie black for better readability */
+    --card-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
     --popover: 35 30% 87%;      /* #e8e0d2 - Lighter card */
-    --popover-foreground: 32 25% 12%; /* #251E16 - Eerie black for better readability */
-    --primary: 28 27% 43%;      /* #8B6C50 - Raw umber */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF - White for contrast */
-    --secondary: 33 39% 59%;    /* #C09B6F - Lion */
-    --secondary-foreground: 32 25% 12%; /* #251E16 - Eerie black */
+    --popover-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --primary: 24 16% 42%;      /* #7d6759 - Medium brown */
+    --primary-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --secondary: 27 20% 55%;    /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
     --muted: 35 31% 90%;        /* #e8dfd2 - Lightest cream */
-    --muted-foreground: 27 27% 28%; /* #5A4534 - Umber */
-    --accent: 28 27% 43%;       /* #8B6C50 - Raw umber */
-    --accent-foreground: 0 0% 100%; /* #FFFFFF - White for contrast */
+    --muted-foreground: 24 19% 26%; /* #4f3d36 - Deep brown */
+    --accent: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --accent-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
     --destructive: 355 84% 56%; /* #e63946 - Reddish */
-    --destructive-foreground: 0 0% 100%; /* #FFFFFF - White */
+    --destructive-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
     --border: 27 18% 71%;       /* #c3b5a6 - Medium-light cream */
     --input: 35 30% 87%;        /* #e8e0d2 - Lighter card */
-    --ring: 28 27% 43%;         /* #8B6C50 - Raw umber */
+    --ring: 24 16% 42%;         /* #7d6759 - Medium brown */
     --radius: 0.375rem;
   }
 
   /* Dark mode variables */
   .dark {
     --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
-    --foreground: 33 39% 78%;    /* #d8c3a5 - Cream enhanced for readability */
+    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
     --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
-    --card-foreground: 33 39% 78%; /* #d8c3a5 - Cream enhanced for readability */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
     --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
-    --popover-foreground: 33 39% 78%; /* #d8c3a5 - Cream enhanced for readability */
-    --primary: 33 39% 59%;       /* #C09B6F - Lion */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF - White for better contrast */
-    --secondary: 28 27% 43%;     /* #8B6C50 - Raw umber */
-    --secondary-foreground: 0 0% 100%; /* #FFFFFF - White for better contrast */
-    --muted: 27 27% 18%;         /* Dark muted umber */
-    --muted-foreground: 33 39% 78%; /* #d8c3a5 - Cream enhanced for readability */
-    --accent: 33 39% 59%;        /* #C09B6F - Lion */
-    --accent-foreground: 0 0% 100%; /* #FFFFFF - White for better contrast */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --primary-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --muted: 24 5% 19%;          /* #32302c - Darker muted */
+    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
+    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
+    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
     --destructive: 355 84% 56%;  /* #e63946 - Reddish */
-    --destructive-foreground: 0 0% 100%; /* #FFFFFF - White for better contrast */
-    --border: 27 27% 28%;        /* #5A4534 - Umber */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --border: 24 8% 22%;         /* #3d3630 - Darker border */
     --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
-    --ring: 33 39% 59%;          /* #C09B6F - Lion */
+    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
   }
 
   /* Enhanced Base Typography */
@@ -147,64 +147,6 @@
     font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
     line-height: 1.8;
     letter-spacing: 0.01em;
-
-/* Enhanced Text Readability Styles */
-.dark {
-  /* Enhance text contrast in dark mode */
-  --link-color: hsl(33, 80%, 75%);
-  --link-hover-color: hsl(33, 90%, 85%);
-  --heading-text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 3px 3px 6px rgba(18, 13, 9, 0.3);
-}
-
-:root {
-  /* Enhance text contrast in light mode */
-  --link-color: hsl(28, 40%, 35%);
-  --link-hover-color: hsl(28, 50%, 25%);
-  --heading-text-shadow: 1px 1px 2px rgba(18, 13, 9, 0.2);
-}
-
-/* Better link contrast */
-a:not(.btn):not(button):not(.card) {
-  color: var(--link-color);
-  transition: color 0.3s ease;
-}
-
-a:not(.btn):not(button):not(.card):hover {
-  color: var(--link-hover-color);
-}
-
-/* Improved heading contrast */
-h1, h2, h3, h4, h5, h6 {
-  text-shadow: var(--heading-text-shadow);
-}
-
-/* Enhance blockquote readability */
-blockquote {
-  color: hsl(var(--foreground));
-  border-left-color: hsl(var(--primary));
-}
-
-.dark blockquote {
-  color: hsl(var(--foreground) / 0.95);
-}
-
-/* Improve Code and Pre readability */
-code, pre {
-  .dark & {
-    background-color: hsl(var(--muted) / 0.8);
-    color: hsl(var(--foreground) / 0.95);
-  }
-  
-  background-color: hsl(var(--muted) / 0.5);
-  color: hsl(var(--foreground) / 0.95);
-  border-radius: 4px;
-  padding: 0.2em 0.4em;
-}
-
-pre {
-  padding: 1em;
-}
-
   }
 
   /* Improved Quotes and Epigraphs */
