@@ -28,7 +28,6 @@ if ('serviceWorker' in navigator) {
             console.log('[ServiceWorker] New worker state:', newWorker.state);
             if (newWorker.state === 'activated') {
               console.log('[ServiceWorker] New content is available; please refresh.');
-              // You could show a refresh prompt to the user here
             }
           });
         }
@@ -45,6 +44,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Log CSS loading status
+console.log("[Client] Loading CSS styles...");
+const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+linkElements.forEach(link => {
+  console.log("[Client] Found stylesheet:", link.getAttribute('href'));
+});
+
+console.log("[Client] CSS styles loaded");
 console.log("[Client] Mounting React application...");
 createRoot(root).render(<App />);
 console.log("[Client] React application mounted successfully");

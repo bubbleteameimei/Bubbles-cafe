@@ -1,4 +1,4 @@
-/* Font loading optimizations */
+/* Import fonts with display swap for better performance */
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: normal;
@@ -31,14 +31,57 @@
 @tailwind utilities;
 
 @layer base {
-  /* General Reset */
+  :root {
+    --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
+    --foreground: 240 9% 13%;   /* #1e1e24 - Dark slate */
+    --card: 35 30% 87%;         /* #e8e0d2 - Lighter card */
+    --card-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --popover: 35 30% 87%;      /* #e8e0d2 - Lighter card */
+    --popover-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --primary: 24 16% 42%;      /* #7d6759 - Medium brown */
+    --primary-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --secondary: 27 20% 55%;    /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
+    --muted: 35 31% 90%;        /* #e8dfd2 - Lightest cream */
+    --muted-foreground: 24 19% 26%; /* #4f3d36 - Deep brown */
+    --accent: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --accent-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --destructive: 355 84% 56%; /* #e63946 - Reddish */
+    --destructive-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
+    --border: 27 18% 71%;       /* #c3b5a6 - Medium-light cream */
+    --input: 35 30% 87%;        /* #e8e0d2 - Lighter card */
+    --ring: 24 16% 42%;         /* #7d6759 - Medium brown */
+    --radius: 0.375rem;
+  }
+
+  .dark {
+    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
+    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
+    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 24 16% 42%;       /* #7d6759 - Medium brown */
+    --primary-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --muted: 24 5% 19%;          /* #32302c - Darker muted */
+    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
+    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
+    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --border: 24 8% 22%;         /* #3d3630 - Darker border */
+    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
+    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
+  }
+
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
 
-  /* Fluid Typography */
   html {
     font-size: calc(14px + 0.5vw);
     scroll-behavior: smooth;
@@ -46,7 +89,6 @@
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -60,34 +102,6 @@
     background: hsl(var(--background));
   }
 
-  /* Fluid Typography for Headings */
-  h1 { 
-    font-size: calc(2rem + 1vw);
-    @apply mb-8;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-  }
-
-  h2 { 
-    font-size: calc(1.8rem + 0.8vw);
-    @apply mb-6;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-  }
-
-  h3 { 
-    font-size: calc(1.6rem + 0.6vw);
-    @apply mb-4;
-    line-height: 1.2;
-  }
-
-  h4 { 
-    font-size: calc(1.4rem + 0.4vw);
-    @apply mb-4;
-    line-height: 1.3;
-  }
-
-  /* Enhanced Base Typography */
   body {
     @apply bg-background text-foreground min-h-screen;
     font-family: "Lancelot", "EB Garamond", serif;
@@ -100,7 +114,38 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Interactive Element Transitions */
+  h1 { 
+    font-size: calc(2rem + 1vw);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 2rem;
+  }
+
+  h2 { 
+    font-size: calc(1.8rem + 0.8vw);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+
+  h3 { 
+    font-size: calc(1.6rem + 0.6vw);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  h4 { 
+    font-size: calc(1.4rem + 0.4vw);
+    line-height: 1.3;
+    margin-bottom: 1rem;
+  }
+
+  img {
+    loading: "lazy";
+    max-width: 100%;
+    height: auto;
+  }
+
   button, a {
     transition: all 0.3s ease-in-out;
   }
@@ -109,15 +154,28 @@
     transform: scale(1.05);
     filter: brightness(1.2);
   }
+}
 
-  /* Image Optimization */
-  img {
-    loading: "lazy";
-    max-width: 100%;
-    height: auto;
+@layer components {
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
   }
 
-  /* Story content styles */
+  @media (min-width: 768px) {
+    .container {
+      width: 80%;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .container {
+      width: 70%;
+    }
+  }
+
   .story-content {
     font-family: "Cormorant Garamond", "EB Garamond", serif;
     font-size: calc(1.125rem + 0.3vw);
@@ -144,226 +202,15 @@
     color: hsl(var(--foreground));
   }
 
-  /* Container responsiveness */
-  .container {
-    width: 90%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
-  @media (min-width: 768px) {
-    .container {
-      width: 80%;
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .container {
-      width: 70%;
-    }
-  }
-
-  /* Ensure proper content width */
-  .content-container,
-  .main-content,
-  .story-container {
-    width: 100%;
-    box-sizing: border-box;
-    overflow-x: hidden;
-  }
-
-  /* Fix for half-screen display issues */
-  body,
-  #root,
-  .app {
-    width: 100%;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-  }
-
-  @media screen and (max-width: 767px) {
-    .container, 
-    .content-container,
-    .main-content {
-      padding-left: 1rem;
-      padding-right: 1rem;
-      width: 100%;
-    }
-  }
-  /* Light mode variables */
-  :root {
-    --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
-    --foreground: 240 9% 13%;   /* #1e1e24 - Dark slate */
-    --card: 35 30% 87%;         /* #e8e0d2 - Lighter card */
-    --card-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --popover: 35 30% 87%;      /* #e8e0d2 - Lighter card */
-    --popover-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --primary: 24 16% 42%;      /* #7d6759 - Medium brown */
-    --primary-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --secondary: 27 20% 55%;    /* #b0a698 - Light taupe */
-    --secondary-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --muted: 35 31% 90%;        /* #e8dfd2 - Lightest cream */
-    --muted-foreground: 24 19% 26%; /* #4f3d36 - Deep brown */
-    --accent: 24 16% 42%;       /* #7d6759 - Medium brown */
-    --accent-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --destructive: 355 84% 56%; /* #e63946 - Reddish */
-    --destructive-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --border: 27 18% 71%;       /* #c3b5a6 - Medium-light cream */
-    --input: 35 30% 87%;        /* #e8e0d2 - Lighter card */
-    --ring: 24 16% 42%;         /* #7d6759 - Medium brown */
-    --radius: 0.375rem;
-  }
-
-  /* Dark mode variables */
-  .dark {
-    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
-    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
-    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
-    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
-    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --primary: 24 16% 42%;       /* #7d6759 - Medium brown */
-    --primary-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
-    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --muted: 24 5% 19%;          /* #32302c - Darker muted */
-    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
-    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
-    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
-    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --border: 24 8% 22%;         /* #3d3630 - Darker border */
-    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
-    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
-  }
-
-  /* Improved Responsive Header Sizes */
-  h1, h2, h3, h4, h5, h6 {
+  .story-content blockquote {
     font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
-    @apply font-bold tracking-tight text-foreground;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3),
-                 4px 4px 8px rgba(0, 0, 0, 0.1),
-                 0 0 12px rgba(107, 53, 54, 0.2);
+    border-left: 4px solid hsl(var(--primary));
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
   }
 
-  /* Enhanced Story Title */
-  .story-title {
-    font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
-    @apply font-bold;
-    font-size: clamp(1.5rem, 2.5vw + 1rem, 2.5rem);
-    line-height: 1.2;
-    letter-spacing: 0.02em;
-    margin-bottom: 0.75em;
-    text-shadow: 2px 2px 4px rgba(30, 30, 36, 0.4),
-                 3px 3px 6px rgba(125, 103, 89, 0.3),
-                 0 0 15px rgba(79, 61, 54, 0.2);
-  }
-
-  /* Enhanced Body Text */
-  .prose {
-    font-family: "Cormorant Garamond", "EB Garamond", serif;
-    @apply text-foreground/90;
-    font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
-    line-height: 1.8;
-    letter-spacing: 0.01em;
-  }
-
-
-  /* Improved Quotes and Epigraphs */
-  blockquote {
-    font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
-    @apply pl-6 border-l-4 border-primary/70 italic my-8;
-    font-size: clamp(1.2rem, 1.3vw + 1rem, 1.4rem);
-    line-height: 1.6;
-    letter-spacing: 0.02em;
-    text-shadow: 1px 1px 2px rgba(30, 30, 36, 0.2);
-    background: linear-gradient(to right, rgba(125, 103, 89, 0.1), transparent);
-  }
-
-  /* Themed Selection */
-  ::selection {
-    background-color: rgba(176, 166, 152, 0.4);
-    color: hsl(var(--foreground));
-    text-shadow: 1px 1px 2px rgba(30, 30, 36, 0.2);
-  }
-
-  /* Card and Button Enhancements */
-  .card {
-    @apply transition-all duration-300;
-    box-shadow: 0 4px 12px rgba(79, 61, 54, 0.1);
-  }
-  
-  .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(79, 61, 54, 0.15);
-  }
-  
-  .btn, button {
-    @apply transition-all duration-200;
-  }
-  
-  .btn:hover, button:hover {
-    transform: translateY(-1px);
-  }
-  
-  /* Link Animations */
-  a:not(.btn):not(button):not(.card) {
-    position: relative;
-    text-decoration: none;
-    @apply text-primary font-medium;
-  }
-  
-  a:not(.btn):not(button):not(.card)::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 1px;
-    bottom: 0;
-    left: 0;
-    @apply bg-primary;
-    transform: scaleX(0);
-    transform-origin: bottom right;
-    transition: transform 0.3s ease-out;
-  }
-  
-  a:not(.btn):not(button):not(.card):hover::after {
-    transform: scaleX(1);
-    transform-origin: bottom left;
-  }
-  
-  /* Dark Mode Transitions */
-  .dark .card {
-    box-shadow: 0 4px 12px rgba(30, 30, 36, 0.2);
-  }
-  
-  .dark .card:hover {
-    box-shadow: 0 10px 25px rgba(30, 30, 36, 0.3);
-  }
-  
-  /* Transition between light and dark modes */
-  html.dark, html.light {
-    transition: background-color 0.5s ease, color 0.5s ease;
-  }
-  
-  * {
-    transition: background-color 0.3s ease, 
-                border-color 0.3s ease, 
-                box-shadow 0.3s ease;
-  }
-
-  /* Global styles */
-  .story-content {
-    transition: font-size 0.3s ease-out;
-  }
-
-  .story-content.transitioning {
-    transition: font-size 0.3s ease-out;
-  }
-
-  /* Loading screen fixes */
   .loading-screen {
     width: 100vw;
     height: 100vh;
@@ -377,208 +224,10 @@
     z-index: 9999;
   }
 
-  /* Ensure content width during animations */
   .animate-in,
   .animate-out {
     width: 100%;
     max-width: var(--container-max-width, 1200px);
     margin: 0 auto;
-  }
-}
-
-@layer components {
-  /* Blood Dripping Animation Styles */
-  @keyframes drip {
-    0% {
-      transform: scaleY(0);
-      opacity: 1;
-    }
-    100% {
-      transform: scaleY(20);
-      opacity: 0;
-    }
-  }
-
-  @keyframes droplet {
-    0% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translateY(15px) scale(1.1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translateY(30px) scale(1);
-      opacity: 0;
-    }
-  }
-
-  @keyframes ripple {
-    0% {
-      transform: scale(1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(2);
-      opacity: 0;
-    }
-  }
-
-  /* Loading screen fixes */
-  .loading-screen {
-    width: 100vw;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--background);
-    z-index: 9999;
-  }
-
-  /* Ensure content width during animations */
-  .animate-in,
-  .animate-out {
-    width: 100%;
-    max-width: var(--container-max-width, 1200px);
-    margin: 0 auto;
-  }
-  .menu-button-container {
-    position: relative;
-    z-index: 50;
-    display: inline-block;
-  }
-
-  .blood-container {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -30px;
-    height: 30px;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 49;
-    overflow: visible;
-  }
-
-  .blood-drip {
-    position: absolute;
-    top: 0;
-    width: 2px;
-    height: 1px;
-    background: rgb(139, 0, 0);
-    transform-origin: top;
-    opacity: 0;
-  }
-
-  .blood-drip.animate {
-    animation: drip 1.5s ease-in forwards;
-  }
-
-  .blood-droplet {
-    position: absolute;
-    top: -2px;
-    width: 4px;
-    height: 4px;
-    background: rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-  }
-
-  .blood-droplet.animate {
-    animation: droplet 1.2s ease-in forwards;
-  }
-
-  .blood-ripple {
-    position: absolute;
-    top: -3px;
-    width: 8px;
-    height: 8px;
-    border: 1px solid rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-  }
-
-  .blood-ripple.animate {
-    animation: ripple 0.8s ease-out forwards;
-  }
-
-  /* Keep existing animations but enhance them */
-  .liquid-menu-button {
-    position: relative;
-    overflow: visible !important;
-  }
-
-  .liquid-menu-button::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .liquid-menu-button:hover::after {
-    opacity: 1;
-  }
-
-  /* Modal base styles */
-  .modal {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--background);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
-    text-align: center;
-    width: 300px;
-    z-index: 50;
-  }
-
-  .modal-content {
-    position: relative;
-  }
-
-  .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 20px;
-    cursor: pointer;
-  }
-
-  .modal input {
-    width: 100%;
-    padding: 5px;
-    margin-bottom: 10px;
-    text-align: center;
-    background: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-  }
-
-  .social-buttons a {
-    display: block;
-    margin: 5px 0;
-    padding: 8px;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: opacity 0.2s;
-  }
-
-  .social-buttons a:hover {
-    opacity: 0.9;
   }
 }

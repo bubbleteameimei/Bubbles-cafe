@@ -10,7 +10,9 @@
     "restart_on": [
       "package.json",
       "package-lock.json",
-      "client/src/**/*",
+      "client/src/**/*.{ts,tsx}",
+      "client/src/**/*.css",
+      "client/src/index.css",
       "server/**/*",
       "shared/**/*",
       "drizzle.config.ts",
