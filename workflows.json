@@ -1,6 +1,7 @@
+
 {
   "Start application": {
-    "command": "npm run dev",
+    "command": "npx tsx scripts/init-db.ts && npm run dev",
     "environment": {
       "NODE_ENV": "development",
       "PORT": "5000"
