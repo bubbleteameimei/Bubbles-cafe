@@ -86,19 +86,33 @@ button,
 }
 
 /* Prevent content squeeze on small screens */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  form,
+  .form-container {
+    width: 100%;
+    min-width: 100%;
+    padding: 1rem;
+  }
+}
+
 @media (max-width: 320px) {
   html {
-    font-size: 14px; /* Slightly reduce font size */
+    font-size: 14px;
   }
 
   .container {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-  }
-
-  form,
-  .form-container {
-    min-width: 100%; /* Full width on very small screens */
-    padding: 0.5rem;
   }
 }

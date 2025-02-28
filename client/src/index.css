@@ -147,6 +147,38 @@
     font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
     line-height: 1.8;
     letter-spacing: 0.01em;
+
+/* Fix for content being squeezed on some screens */
+@media (min-width: 768px) {
+  .content-container,
+  .main-content,
+  .story-container {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Ensure proper content width across all device sizes */
+.content-container,
+.main-content,
+.story-container {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Fix for half-screen display issues */
+body,
+#root,
+.app {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
   }
 
   /* Improved Quotes and Epigraphs */
