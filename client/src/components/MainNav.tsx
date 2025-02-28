@@ -13,8 +13,7 @@ import {
   FileText,
   Book,
   ScrollText,
-  Shield,
-  Menu
+  Shield
 } from "lucide-react";
 import { AdminNav } from "./AdminNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -49,22 +48,42 @@ export default function MainNav() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center space-x-6">
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
+          {/* Enhanced Hamburger Menu */}
+          <button
+            type="button"
             onClick={toggleSidebar}
-            className="lg:hidden"
-            aria-label="Toggle menu"
+            className={`lg:hidden relative w-10 h-10 text-foreground focus:outline-none bg-transparent group ${
+              isOpen ? 'is-active' : ''
+            }`}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
           >
-            <Menu className={`h-6 w-6 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
-          </Button>
+            <div className="absolute top-1/2 left-1/2 w-5 h-4 -mt-2 -ml-2.5">
+              <span
+                className={`absolute block h-0.5 w-5 bg-current transform transition duration-500 ease-in-out ${
+                  isOpen ? 'rotate-45' : '-translate-y-1.5'
+                }`}
+              ></span>
+              <span
+                className={`absolute block h-0.5 w-5 bg-current transform transition duration-500 ease-in-out ${
+                  isOpen ? 'opacity-0' : ''
+                }`}
+              ></span>
+              <span
+                className={`absolute block h-0.5 w-5 bg-current transform transition duration-500 ease-in-out ${
+                  isOpen ? '-rotate-45' : 'translate-y-1.5'
+                }`}
+              ></span>
+            </div>
+          </button>
 
           <Link href="/">
             <a className="flex items-center space-x-2">
               <span className="font-bold text-xl">Horror Blog</span>
             </a>
           </Link>
+
           <nav className="hidden md:flex items-center space-x-6 text-sm md:text-base">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -75,7 +94,6 @@ export default function MainNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[220px]">
-                {/* Support Section */}
                 <DropdownMenuItem asChild>
                   <Link href="/about">
                     <a className="w-full flex items-center space-x-2 text-base py-2">
@@ -111,7 +129,6 @@ export default function MainNav() {
 
                 <DropdownMenuSeparator />
 
-                {/* Legal Section */}
                 <DropdownMenuItem asChild>
                   <Link href="/legal/terms">
                     <a className="w-full flex items-center space-x-2 text-base py-2">
@@ -180,7 +197,6 @@ export default function MainNav() {
         </div>
       </div>
 
-      {/* Report Bug Link - Fixed position at bottom */}
       <div className="fixed bottom-4 left-4 z-50">
         <Link href="/report-bug">
           <a className="flex items-center space-x-2 text-xl font-medium text-muted-foreground hover:text-foreground transition-colors">
