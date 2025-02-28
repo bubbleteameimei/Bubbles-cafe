@@ -45,6 +45,21 @@ body {
   isolation: isolate; /* Create stacking context */
 }
 
+/* Form elements and buttons */
+form, 
+.form-container {
+  width: 100%;
+  min-width: 280px; /* Prevent form squeeze */
+  max-width: 480px; /* Max width for readability */
+  margin: 0 auto;
+}
+
+button,
+.button {
+  min-width: fit-content; /* Prevent button squeeze */
+  width: auto;
+}
+
 /* Responsive breakpoints */
 @media (min-width: 640px) {
   .container {
@@ -75,9 +90,15 @@ body {
   html {
     font-size: 14px; /* Slightly reduce font size */
   }
-  
+
   .container {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
+  }
+
+  form,
+  .form-container {
+    min-width: 100%; /* Full width on very small screens */
+    padding: 0.5rem;
   }
 }
