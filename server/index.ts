@@ -98,6 +98,13 @@ try {
 // Set up auth
 setupAuth(app);
 
+// Placeholder function - needs actual implementation
+async function initializeWordPressSync() {
+  // Implement WordPress API fetching and data insertion logic here.
+  console.log("Placeholder: WordPress sync initialized.");
+}
+
+
 async function startServer() {
   try {
     console.log('Starting server initialization...');
@@ -110,6 +117,16 @@ async function startServer() {
       console.log('Database seeding completed successfully');
     } else {
       console.log(`Database already contains ${postsCount} posts, skipping seeding`);
+
+      // Initialize WordPress sync
+      try {
+        console.log('Initializing WordPress API sync...');
+        await initializeWordPressSync();
+        console.log('WordPress API sync initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize WordPress sync:', error);
+        // Continue server startup even if WordPress sync fails
+      }
     }
 
     // Create server instance
