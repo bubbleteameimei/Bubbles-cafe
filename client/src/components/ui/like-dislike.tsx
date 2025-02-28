@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
+import { useToast } from "@/hooks/use-toast";
 
 interface LikeDislikeProps {
   postId: number;
@@ -40,41 +41,32 @@ const getOrCreateStats = (postId: number): Stats => {
       if (isValidStats(parsed)) {
         return parsed;
       }
-      console.log(`[LikeDislike] Invalid stats found for post ${postId}, recreating...`);
     }
 
     // Calculate deterministic likes and dislikes based on post ID
-    const likesBase = 80;
-    const likesRange = 40; // To get max of 120
-    const dislikesBase = 5;
-    const dislikesRange = 15; // To get max of 20
-
-    // Use post ID to generate deterministic but varying values
-    const likes = likesBase + (postId * 7) % likesRange;
-    const dislikes = dislikesBase + (postId * 3) % dislikesRange;
+    const likesBase = Math.max(5, postId % 20 + 10); // Between 5 and 30
+    const dislikesBase = Math.max(1, postId % 5 + 2); // Between 1 and 7
 
     const newStats: Stats = {
-      likes,
-      dislikes,
+      likes: likesBase,
+      dislikes: dislikesBase,
       baseStats: {
-        likes,
-        dislikes
+        likes: likesBase,
+        dislikes: dislikesBase
       },
       userInteracted: false
     };
 
     localStorage.setItem(storageKey, JSON.stringify(newStats));
-    console.log(`[LikeDislike] Created new stats for post ${postId}:`, newStats);
     return newStats;
   } catch (error) {
     console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
-    // Fallback to ensure we always return valid stats
     return {
-      likes: 80,
-      dislikes: 5,
+      likes: 10,
+      dislikes: 2,
       baseStats: {
-        likes: 80,
-        dislikes: 5
+        likes: 10,
+        dislikes: 2
       },
       userInteracted: false
     };
@@ -91,10 +83,10 @@ export function LikeDislike({
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
+  const { toast } = useToast();
 
   useEffect(() => {
     const savedStats = getOrCreateStats(postId);
-    console.log(`[LikeDislike] Loaded stats for post ${postId}:`, savedStats);
     setStats(savedStats);
   }, [postId]);
 
@@ -103,9 +95,13 @@ export function LikeDislike({
       localStorage.setItem(`post-stats-${postId}`, JSON.stringify(newStats));
       setStats(newStats);
       onUpdate?.(newStats.likes, newStats.dislikes);
-      console.log(`[LikeDislike] Updated stats for post ${postId}:`, newStats);
     } catch (error) {
       console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
+      toast({
+        title: "Error updating reaction",
+        description: "Please try again later",
+        variant: "destructive"
+      });
     }
   };
 
@@ -124,8 +120,8 @@ export function LikeDislike({
         setDisliked(false);
         updateStats({
           ...stats,
-          likes: !stats.userInteracted ? stats.likes + 1 : stats.likes + 1,
-          dislikes: disliked ? stats.baseStats.dislikes : stats.dislikes,
+          likes: stats.likes + 1,
+          dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -164,8 +160,8 @@ export function LikeDislike({
         setLiked(false);
         updateStats({
           ...stats,
-          dislikes: !stats.userInteracted ? stats.dislikes + 1 : stats.dislikes + 1,
-          likes: liked ? stats.baseStats.likes : stats.likes,
+          dislikes: stats.dislikes + 1,
+          likes: liked ? stats.likes - 1 : stats.likes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -190,16 +186,16 @@ export function LikeDislike({
   };
 
   return (
-    <div className="w-full flex items-center gap-6 z-10 relative bg-transparent pointer-events-auto">
+    <div className="flex items-center gap-4 z-10 relative bg-transparent pointer-events-auto">
       <Button
         variant={liked ? "default" : "ghost"}
         size="sm"
         onClick={handleLike}
-        className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
+        className={`flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
-        } pointer-events-auto`}
+        }`}
       >
-        <ThumbsUp className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+        <ThumbsUp className={`h-4 w-4 transition-transform ${
           liked ? 'text-primary' : 'text-muted-foreground'
         }`} />
         <span className={`text-sm ${
@@ -211,11 +207,11 @@ export function LikeDislike({
         variant={disliked ? "default" : "ghost"}
         size="sm"
         onClick={handleDislike}
-        className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
+        className={`flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
           disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
-        } pointer-events-auto`}
+        }`}
       >
-        <ThumbsDown className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+        <ThumbsDown className={`h-4 w-4 transition-transform ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
         }`} />
         <span className={`text-sm ${

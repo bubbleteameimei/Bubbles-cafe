@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Shuffle, Clock, Book } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -10,16 +10,35 @@ import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
+import { Share2 } from "lucide-react";
+import { 
+  Twitter, 
+  Facebook, 
+  Reddit, 
+  Mail 
+} from "lucide-react";
 
 interface PostsResponse {
   posts: Post[];
   hasMore: boolean;
-  page?: number;
+  page: number;
 }
+
+// Social share URLs
+const getShareUrls = (post: Post) => {
+  const url = encodeURIComponent(window.location.href);
+  const title = encodeURIComponent(post.title);
+
+  return {
+    twitter: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+    reddit: `https://reddit.com/submit?url=${url}&title=${title}`,
+    email: `mailto:?subject=${title}&body=${url}`
+  };
+};
 
 export default function Reader() {
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -27,25 +46,27 @@ export default function Reader() {
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
 
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('reader-font-size');
+    return saved ? parseInt(saved, 10) : 16;
+  });
+
   const [, setLocation] = useLocation();
 
   const {
     data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     isLoading,
     error
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts", "reader"],
     queryFn: async ({ pageParam = 1 }) => {
       try {
-        const wpPosts = await fetchWordPressPosts(pageParam, 100); // Fetch more posts per page
+        const wpPosts = await fetchWordPressPosts(pageParam, 100);
         const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
 
         return {
           posts,
-          hasMore: posts.length === 100, // If we got a full page, there might be more
+          hasMore: posts.length === 100,
           page: pageParam
         };
       } catch (error) {
@@ -53,7 +74,7 @@ export default function Reader() {
         throw error;
       }
     },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? (lastPage.page || 0) + 1 : undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -61,22 +82,22 @@ export default function Reader() {
   });
 
   const goToPrevious = useCallback(() => {
-    const posts = data?.pages.flatMap(page => page.posts);
-    if (!posts || posts.length === 0) return;
+    if (!data?.pages) return;
+    const posts = data.pages.flatMap(page => page.posts);
     setCurrentIndex((prev) => (prev === 0 ? posts.length - 1 : prev - 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [data?.pages]);
 
   const goToNext = useCallback(() => {
-    const posts = data?.pages.flatMap(page => page.posts);
-    if (!posts || posts.length === 0) return;
+    if (!data?.pages) return;
+    const posts = data.pages.flatMap(page => page.posts);
     setCurrentIndex((prev) => (prev === posts.length - 1 ? 0 : prev + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [data?.pages]);
 
   const randomize = useCallback(() => {
-    const posts = data?.pages.flatMap(page => page.posts);
-    if (!posts || posts.length === 0) return;
+    if (!data?.pages) return;
+    const posts = data.pages.flatMap(page => page.posts);
     const newIndex = Math.floor(Math.random() * posts.length);
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -92,8 +113,7 @@ export default function Reader() {
     return <LoadingScreen />;
   }
 
-  if (error || !data?.pages[0].posts || data.pages[0].posts.length === 0) {
-    console.error('Error loading stories:', error);
+  if (error || !data?.pages[0]?.posts || data.pages[0].posts.length === 0) {
     return (
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold mb-4">Unable to load stories</h2>
@@ -116,37 +136,12 @@ export default function Reader() {
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
-
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('reader-font-size');
-    return saved ? parseInt(saved, 10) : 16;
-  });
-
-  const MIN_FONT_SIZE = 14;
-  const MAX_FONT_SIZE = 24;
-  const FONT_SIZE_STEP = 2;
-
-  const increaseFontSize = () => {
-    setFontSize(prev => {
-      const newSize = Math.min(prev + FONT_SIZE_STEP, MAX_FONT_SIZE);
-      localStorage.setItem('reader-font-size', newSize.toString());
-      return newSize;
-    });
-  };
-
-  const decreaseFontSize = () => {
-    setFontSize(prev => {
-      const newSize = Math.max(prev - FONT_SIZE_STEP, MIN_FONT_SIZE);
-      localStorage.setItem('reader-font-size', newSize.toString());
-      return newSize;
-    });
-  };
-
+  const shareUrls = getShareUrls(currentPost);
 
   return (
-    <div className="relative min-h-screen pb-32">
+    <div className="relative min-h-screen">
       <Mist />
-      <div className="story-container max-w-3xl mx-auto px-4 py-8">
+      <div className="container max-w-4xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPost.id}
@@ -156,9 +151,9 @@ export default function Reader() {
             transition={{ duration: 0.3 }}
             className="mb-8"
           >
-            <article>
+            <article className="prose dark:prose-invert max-w-none">
               <div className="flex flex-col items-center space-y-4 mb-8">
-                <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
+                <h1 className="text-4xl font-bold text-center mb-0">{currentPost.title}</h1>
 
                 <div className="flex items-center gap-4 mt-4">
                   <Button
@@ -180,17 +175,13 @@ export default function Reader() {
                 </div>
               </div>
 
-              <div className="story-meta flex items-center gap-4 mb-4 text-sm text-muted-foreground justify-center">
+              <div className="flex items-center justify-between mb-8 text-sm text-muted-foreground">
                 <time>{formattedDate}</time>
-                <span>·</span>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{readingTime}</span>
-                </div>
+                <span>{readingTime}</span>
               </div>
 
               <div
-                className="story-content mb-8 prose dark:prose-invert max-w-none"
+                className="story-content mb-8"
                 style={{
                   whiteSpace: 'pre-wrap',
                   fontSize: `${fontSize}px`,
@@ -200,26 +191,78 @@ export default function Reader() {
               />
 
               <div className="border-t border-border pt-4">
-                <LikeDislike postId={currentPost.id} />
+                <div className="flex items-center justify-between">
+                  <LikeDislike postId={currentPost.id} />
+                  <div className="flex items-center gap-3">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={shareUrls.twitter}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Twitter className="h-5 w-5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Share on Twitter</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={shareUrls.facebook}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Facebook className="h-5 w-5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Share on Facebook</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={shareUrls.reddit}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Reddit className="h-5 w-5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Share on Reddit</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={shareUrls.email}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Mail className="h-5 w-5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>Share via Email</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
               </div>
 
-              {hasNextPage && (
-                <div className="flex justify-center mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                  >
-                    {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
-                  </Button>
-                </div>
-              )}
-
               <div className="mt-8 pt-8 border-t border-border">
-                <CommentSection
-                  postId={currentPost.id}
-                  title={currentPost.title || ''}
-                />
+                <CommentSection postId={currentPost.id} />
               </div>
             </article>
           </motion.div>
