@@ -178,6 +178,53 @@
     letter-spacing: 0.01em;
   }
 
+
+  /* Add WordPress content specific styles */
+  .story-content {
+    font-family: "Cormorant Garamond", "EB Garamond", serif;
+    font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+    white-space: pre-wrap;
+  }
+
+  .story-content p {
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+  }
+
+  .story-content em,
+  .story-content i {
+    font-style: italic;
+    font-family: "Cormorant Garamond", "EB Garamond", serif;
+    color: hsl(var(--foreground));
+  }
+
+  .story-content strong,
+  .story-content b {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .story-content a {
+    color: hsl(var(--primary));
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .story-content a:hover {
+    color: hsl(var(--primary) / 0.8);
+  }
+
+  .story-content blockquote {
+    font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
+    border-left: 4px solid hsl(var(--primary));
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
+  }
+
   /* Fix for content being squeezed on some screens */
   @media (min-width: 768px) {
     .content-container,
@@ -325,182 +372,6 @@
   .story-content.transitioning {
     transition: font-size 0.3s ease-out;
   }
-}
-
-@layer components {
-  /* Blood Dripping Animation Styles */
-  @keyframes drip {
-    0% {
-      transform: scaleY(0);
-      opacity: 1;
-    }
-    100% {
-      transform: scaleY(20);
-      opacity: 0;
-    }
-  }
-
-  @keyframes droplet {
-    0% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translateY(15px) scale(1.1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translateY(30px) scale(1);
-      opacity: 0;
-    }
-  }
-
-  @keyframes ripple {
-    0% {
-      transform: scale(1);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(2);
-      opacity: 0;
-    }
-  }
-
-  .menu-button-container {
-    position: relative;
-    z-index: 50;
-    display: inline-block;
-  }
-
-  .blood-container {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -30px;
-    height: 30px;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 49;
-    overflow: visible;
-  }
-
-  .blood-drip {
-    position: absolute;
-    top: 0;
-    width: 2px;
-    height: 1px;
-    background: rgb(139, 0, 0);
-    transform-origin: top;
-    opacity: 0;
-  }
-
-  .blood-drip.animate {
-    animation: drip 1.5s ease-in forwards;
-  }
-
-  .blood-droplet {
-    position: absolute;
-    top: -2px;
-    width: 4px;
-    height: 4px;
-    background: rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-  }
-
-  .blood-droplet.animate {
-    animation: droplet 1.2s ease-in forwards;
-  }
-
-  .blood-ripple {
-    position: absolute;
-    top: -3px;
-    width: 8px;
-    height: 8px;
-    border: 1px solid rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-  }
-
-  .blood-ripple.animate {
-    animation: ripple 0.8s ease-out forwards;
-  }
-
-  /* Keep existing animations but enhance them */
-  .liquid-menu-button {
-    position: relative;
-    overflow: visible !important;
-  }
-
-  .liquid-menu-button::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: rgb(139, 0, 0);
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .liquid-menu-button:hover::after {
-    opacity: 1;
-  }
-
-  /* Modal base styles */
-  .modal {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--background);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
-    text-align: center;
-    width: 300px;
-    z-index: 50;
-  }
-
-  .modal-content {
-    position: relative;
-  }
-
-  .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 20px;
-    cursor: pointer;
-  }
-
-  .modal input {
-    width: 100%;
-    padding: 5px;
-    margin-bottom: 10px;
-    text-align: center;
-    background: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-  }
-
-  .social-buttons a {
-    display: block;
-    margin: 5px 0;
-    padding: 8px;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: opacity 0.2s;
-  }
-
-  .social-buttons a:hover {
-    opacity: 0.9;
-  }
 
   /* Loading screen fixes */
   .loading-screen {
@@ -523,4 +394,247 @@
     max-width: var(--container-max-width, 1200px);
     margin: 0 auto;
   }
+}
+
+@layer components {
+  /* Story content styles */
+  .story-content {
+    font-family: "Cormorant Garamond", "EB Garamond", serif;
+    font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+    white-space: pre-wrap;
+  }
+
+  .story-content p {
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+  }
+
+  .story-content em,
+  .story-content i {
+    font-style: italic;
+    font-family: "Cormorant Garamond", "EB Garamond", serif;
+    color: hsl(var(--foreground));
+  }
+
+  .story-content strong,
+  .story-content b {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .story-content blockquote {
+    font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
+    border-left: 4px solid hsl(var(--primary));
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Ensure proper content width */
+  .content-container,
+  .main-content,
+  .story-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  /* Container responsiveness */
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .container {
+      width: 80%;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .container {
+      width: 70%;
+    }
+  }
+}
+
+/* Blood Dripping Animation Styles */
+@keyframes drip {
+  0% {
+    transform: scaleY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(20);
+    opacity: 0;
+  }
+}
+
+@keyframes droplet {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(15px) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(30px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.menu-button-container {
+  position: relative;
+  z-index: 50;
+  display: inline-block;
+}
+
+.blood-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 49;
+  overflow: visible;
+}
+
+.blood-drip {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 1px;
+  background: rgb(139, 0, 0);
+  transform-origin: top;
+  opacity: 0;
+}
+
+.blood-drip.animate {
+  animation: drip 1.5s ease-in forwards;
+}
+
+.blood-droplet {
+  position: absolute;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  background: rgb(139, 0, 0);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.blood-droplet.animate {
+  animation: droplet 1.2s ease-in forwards;
+}
+
+.blood-ripple {
+  position: absolute;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgb(139, 0, 0);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.blood-ripple.animate {
+  animation: ripple 0.8s ease-out forwards;
+}
+
+/* Keep existing animations but enhance them */
+.liquid-menu-button {
+  position: relative;
+  overflow: visible !important;
+}
+
+.liquid-menu-button::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: rgb(139, 0, 0);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.liquid-menu-button:hover::after {
+  opacity: 1;
+}
+
+/* Modal base styles */
+.modal {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--background);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+  text-align: center;
+  width: 300px;
+  z-index: 50;
+}
+
+.modal-content {
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.modal input {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.social-buttons a {
+  display: block;
+  margin: 5px 0;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.social-buttons a:hover {
+  opacity: 0.9;
 }

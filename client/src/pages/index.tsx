@@ -9,6 +9,7 @@ import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
+import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface PostsResponse {
   posts: Post[];
@@ -52,9 +53,13 @@ export default function IndexView() {
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/posts?page=${pageParam}&limit=100`);
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
+      const wpPosts = await fetchWordPressPosts(pageParam);
+      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: wpPosts.length === 100,
+        page: pageParam
+      };
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,

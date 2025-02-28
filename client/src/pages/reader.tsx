@@ -11,6 +11,7 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { getReadingTime } from "@/lib/content-analysis";
+import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 import { useFontSize } from "@/hooks/use-font-size";
 
 interface PostsResponse {
@@ -31,9 +32,14 @@ export default function Reader() {
   const { data, isLoading, error } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts", "reader"],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/posts?page=${pageParam}&limit=100`);
-      if (!response.ok) throw new Error('Failed to fetch posts');
-      return response.json();
+      console.log('[Reader] Fetching posts for page:', pageParam);
+      const wpPosts = await fetchWordPressPosts(pageParam);
+      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: wpPosts.length === 100,
+        page: pageParam
+      };
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
@@ -45,32 +51,17 @@ export default function Reader() {
   const posts = data?.pages.flatMap(page => page.posts) ?? [];
   const currentPost = posts[currentIndex];
 
-  const goToPrevious = useCallback(() => {
-    if (posts.length === 0) return;
-    setCurrentIndex(prev => (prev === 0 ? posts.length - 1 : prev - 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [posts.length]);
-
-  const goToNext = useCallback(() => {
-    if (posts.length === 0) return;
-    setCurrentIndex(prev => (prev === posts.length - 1 ? 0 : prev + 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [posts.length]);
-
   useEffect(() => {
     if (posts.length > 0) {
+      console.log('[Reader] Setting current post index:', currentIndex);
       sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
   }, [currentIndex, posts.length]);
 
-  const copyLink = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href);
-    alert("Link copied to clipboard!");
-  }, []);
-
   if (isLoading) return <LoadingScreen />;
 
   if (error || !currentPost) {
+    console.error('[Reader] Error loading post:', error);
     return (
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold mb-4">Unable to load stories</h2>
@@ -90,7 +81,7 @@ export default function Reader() {
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
-      <div className="container max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="container">
         <AnimatePresence mode="wait">
           <motion.article
             key={currentPost.id}
@@ -108,7 +99,11 @@ export default function Reader() {
               <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
-                  onClick={goToPrevious}
+                  onClick={() => {
+                    if (posts.length === 0) return;
+                    setCurrentIndex(prev => (prev === 0 ? posts.length - 1 : prev - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="group hover:bg-primary/10 transition-all duration-300"
                 >
                   <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -116,7 +111,11 @@ export default function Reader() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={goToNext}
+                  onClick={() => {
+                    if (posts.length === 0) return;
+                    setCurrentIndex(prev => (prev === posts.length - 1 ? 0 : prev + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="group hover:bg-primary/10 transition-all duration-300"
                 >
                   Next Story
@@ -131,20 +130,15 @@ export default function Reader() {
             </div>
 
             <div
-              className="story-content space-y-2"
+              className="story-content"
               style={{
-                whiteSpace: 'pre-wrap',
                 fontSize: `${fontSize}px`,
                 lineHeight: '1.6'
               }}
-            >
-              {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => (
-                <p key={index} className="mb-2">
-                  {paragraph.trim() ? paragraph.trim() : null}
-                </p>
-              ))}
-            </div>
+              dangerouslySetInnerHTML={{ __html: currentPost.content }}
+            />
 
+            {/* Share section */}
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex items-center justify-between mb-8">
                 <LikeDislike postId={currentPost.id} />
@@ -158,10 +152,7 @@ export default function Reader() {
                         title: currentPost.title,
                         text: "Check out this story on Bubble's Café!",
                         url: window.location.href
-                      }).catch(error => {
-                        console.error("Sharing failed:", error);
-                        setShowShareModal(true);
-                      });
+                      }).catch(() => setShowShareModal(true));
                     } else {
                       setShowShareModal(true);
                     }
@@ -171,7 +162,6 @@ export default function Reader() {
                 </Button>
               </div>
 
-              {/* Share Modal */}
               {showShareModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                   <div className="bg-background p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
@@ -193,7 +183,10 @@ export default function Reader() {
                     />
 
                     <button
-                      onClick={copyLink}
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert("Link copied to clipboard!");
+                      }}
                       className="w-full mb-4 bg-primary text-primary-foreground p-2 rounded hover:bg-primary/90"
                     >
                       📋 Copy Link
