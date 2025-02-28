@@ -97,109 +97,107 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <Mist className="opacity-40" />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+      <Mist className="opacity-30" />
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div>
+            <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
+            <p className="text-muted-foreground">Explore our collection of haunting tales</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setLocation('/')}
+            className="hover:bg-primary/20 transition-colors"
           >
-            <div>
-              <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
-              <p className="text-muted-foreground">Explore our collection of haunting tales</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setLocation('/')}
-              className="hover:bg-primary/20 transition-colors"
-            >
-              Back to Home
-            </Button>
-          </motion.div>
+            Back to Home
+          </Button>
+        </motion.div>
 
-          <motion.div
-            className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            {posts.map((post, index) => {
-              const readingTime = getReadingTime(post.content);
-              const excerpt = getExcerpt(post.content);
-              return (
-                <motion.article
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group"
-                >
-                  <Card className="h-full hover:shadow-md transition-all duration-300">
-                    <CardHeader className="p-6">
-                      <div className="flex justify-between items-start gap-4">
-                        <CardTitle
-                          className="text-xl group-hover:text-primary transition-colors cursor-pointer"
-                          onClick={() => setLocation(`/story/${post.slug}`)}
-                        >
-                          {post.title}
-                        </CardTitle>
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <div className="flex items-center gap-1 justify-end">
-                            <Calendar className="h-3 w-3" />
-                            <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
-                          </div>
-                          <div className="flex items-center gap-1 justify-end">
-                            <Clock className="h-3 w-3" />
-                            <span>{readingTime}</span>
-                          </div>
+        <motion.div
+          className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {posts.map((post, index) => {
+            const readingTime = getReadingTime(post.content);
+            const excerpt = getExcerpt(post.content);
+            return (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group"
+              >
+                <Card className="h-full hover:shadow-md transition-all duration-300">
+                  <CardHeader className="p-6">
+                    <div className="flex justify-between items-start gap-4">
+                      <CardTitle
+                        className="text-xl group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => setLocation(`/story/${post.slug}`)}
+                      >
+                        {post.title}
+                      </CardTitle>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Calendar className="h-3 w-3" />
+                          <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
+                        </div>
+                        <div className="flex items-center gap-1 justify-end">
+                          <Clock className="h-3 w-3" />
+                          <span>{readingTime}</span>
                         </div>
                       </div>
-                    </CardHeader>
+                    </div>
+                  </CardHeader>
 
-                    <CardContent className="px-6 flex-grow">
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                        {excerpt}
-                      </p>
-                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
-                        Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </CardContent>
+                  <CardContent className="px-6 flex-grow">
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                      {excerpt}
+                    </p>
+                    <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                      Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </CardContent>
 
-                    <CardFooter className="p-6 mt-auto border-t">
-                      <div className="w-full flex items-center justify-between">
-                        <LikeDislike postId={post.id} />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(`/story/${post.slug}`)}
-                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
-                        >
-                          Read More <ArrowRight className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </motion.article>
-              );
-            })}
-          </motion.div>
+                  <CardFooter className="p-6 mt-auto border-t">
+                    <div className="w-full flex items-center justify-between">
+                      <LikeDislike postId={post.id} />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setLocation(`/story/${post.slug}`)}
+                        className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                      >
+                        Read More <ArrowRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </motion.article>
+            );
+          })}
+        </motion.div>
 
-          {hasNextPage && (
-            <div className="flex justify-center mt-8">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-                className="w-full max-w-xs"
-              >
-                {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
-              </Button>
-            </div>
-          )}
-        </div>
+        {hasNextPage && (
+          <div className="flex justify-center mt-8">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="w-full max-w-xs"
+            >
+              {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

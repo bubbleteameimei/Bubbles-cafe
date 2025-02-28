@@ -1,6 +1,5 @@
-
 import { ReactNode } from "react";
-import { Navbar } from "./ui/navbar";
+import { MainNav } from "./MainNav";
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,9 +8,11 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-1">
-        {children}
+      <MainNav />
+      <main className="flex-1 w-full">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </main>
     </div>
   );

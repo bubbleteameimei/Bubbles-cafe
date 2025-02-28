@@ -35,9 +35,11 @@ function isValidStats(obj: any): obj is Stats {
     && typeof obj.userInteracted === 'boolean';
 }
 
+const getStorageKey = (postId: number) => `post-stats-${postId}`;
+
 const getOrCreateStats = (postId: number): Stats => {
   try {
-    const storageKey = `post-stats-${postId}`;
+    const storageKey = getStorageKey(postId);
     const existingStats = localStorage.getItem(storageKey);
 
     if (existingStats) {
@@ -47,9 +49,9 @@ const getOrCreateStats = (postId: number): Stats => {
       }
     }
 
-    // Generate deterministic but varying initial stats based on postId
-    const likesBase = Math.max(5, Math.abs(postId % 20 + 10));
-    const dislikesBase = Math.max(1, Math.abs(postId % 5 + 2));
+    // Generate initial likes between 80-150 and dislikes between 8-20
+    const likesBase = Math.floor(Math.random() * (150 - 80 + 1)) + 80;
+    const dislikesBase = Math.floor(Math.random() * (20 - 8 + 1)) + 8;
 
     const newStats: Stats = {
       likes: likesBase,
@@ -66,11 +68,11 @@ const getOrCreateStats = (postId: number): Stats => {
   } catch (error) {
     console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
     return {
-      likes: 10,
-      dislikes: 2,
+      likes: 100,
+      dislikes: 10,
       baseStats: {
-        likes: 10,
-        dislikes: 2
+        likes: 100,
+        dislikes: 10
       },
       userInteracted: false
     };
@@ -96,7 +98,7 @@ export function LikeDislike({
 
   const updateStats = (newStats: Stats) => {
     try {
-      localStorage.setItem(`post-stats-${postId}`, JSON.stringify(newStats));
+      localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
       setStats(newStats);
       onUpdate?.(newStats.likes, newStats.dislikes);
     } catch (error) {
@@ -111,11 +113,6 @@ export function LikeDislike({
 
   const handleLike = () => {
     const newLiked = !liked;
-    const previousState = {
-      liked,
-      disliked,
-      stats: { ...stats }
-    };
 
     try {
       if (newLiked) {
@@ -123,8 +120,8 @@ export function LikeDislike({
         setDisliked(false);
         updateStats({
           ...stats,
-          likes: Math.max(0, stats.likes + 1),
-          dislikes: disliked ? Math.max(0, stats.dislikes - 1) : stats.dislikes,
+          likes: stats.likes + 1,
+          dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -132,7 +129,7 @@ export function LikeDislike({
         setLiked(false);
         updateStats({
           ...stats,
-          likes: Math.max(0, stats.likes - 1),
+          likes: stats.likes - 1,
           baseStats: stats.baseStats,
           userInteracted: false
         });
@@ -141,19 +138,16 @@ export function LikeDislike({
       onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      setLiked(previousState.liked);
-      setDisliked(previousState.disliked);
-      updateStats(previousState.stats);
+      toast({
+        title: "Error updating like",
+        description: "Please try again",
+        variant: "destructive"
+      });
     }
   };
 
   const handleDislike = () => {
     const newDisliked = !disliked;
-    const previousState = {
-      liked,
-      disliked,
-      stats: { ...stats }
-    };
 
     try {
       if (newDisliked) {
@@ -161,8 +155,8 @@ export function LikeDislike({
         setLiked(false);
         updateStats({
           ...stats,
-          dislikes: Math.max(0, stats.dislikes + 1),
-          likes: liked ? Math.max(0, stats.likes - 1) : stats.likes,
+          dislikes: stats.dislikes + 1,
+          likes: liked ? stats.likes - 1 : stats.likes,
           baseStats: stats.baseStats,
           userInteracted: true
         });
@@ -170,7 +164,7 @@ export function LikeDislike({
         setDisliked(false);
         updateStats({
           ...stats,
-          dislikes: Math.max(0, stats.dislikes - 1),
+          dislikes: stats.dislikes - 1,
           baseStats: stats.baseStats,
           userInteracted: false
         });
@@ -179,9 +173,11 @@ export function LikeDislike({
       onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      setLiked(previousState.liked);
-      setDisliked(previousState.disliked);
-      updateStats(previousState.stats);
+      toast({
+        title: "Error updating dislike",
+        description: "Please try again",
+        variant: "destructive"
+      });
     }
   };
 
@@ -200,7 +196,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           liked ? 'text-primary' : 'text-muted-foreground'
-        }`}>{stats.likes || 0}</span>
+        }`}>{stats.likes}</span>
       </Button>
 
       <Button
@@ -216,7 +212,7 @@ export function LikeDislike({
         }`} />
         <span className={`text-sm ${
           disliked ? 'text-destructive' : 'text-muted-foreground'
-        }`}>{stats.dislikes || 0}</span>
+        }`}>{stats.dislikes}</span>
       </Button>
     </div>
   );

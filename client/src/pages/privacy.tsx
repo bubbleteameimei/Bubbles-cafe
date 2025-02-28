@@ -6,9 +6,6 @@ export default function Privacy() {
       <Card className="backdrop-blur-sm bg-card/90">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Privacy Policy</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Last updated: {new Date().toLocaleDateString()}
-          </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-6 prose prose-invert max-w-none">

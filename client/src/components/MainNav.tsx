@@ -13,7 +13,8 @@ import {
   FileText,
   Book,
   ScrollText,
-  Shield 
+  Shield,
+  Menu
 } from "lucide-react";
 import { AdminNav } from "./AdminNav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -24,26 +25,47 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useState } from "react";
 
 export default function MainNav() {
   const { user, isLoading, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const sidebar = useSidebar();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleAuthClick = () => {
-    console.log('Navigating to auth page'); // Debug log
     setLocation("/auth");
+  };
+
+  const toggleSidebar = () => {
+    if (sidebar) {
+      sidebar.setOpenMobile(!sidebar.openMobile);
+      setIsOpen(!isOpen);
+    }
   };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center space-x-6">
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="lg:hidden"
+            aria-label="Toggle menu"
+          >
+            <Menu className={`h-6 w-6 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+          </Button>
+
           <Link href="/">
             <a className="flex items-center space-x-2">
               <span className="font-bold text-xl">Horror Blog</span>
             </a>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm md:text-base">
+          <nav className="hidden md:flex items-center space-x-6 text-sm md:text-base">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-1 font-medium">
