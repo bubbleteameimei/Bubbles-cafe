@@ -45,6 +45,9 @@ const CommunityPage = loadComponent(() => import('./pages/community'));
 const SettingsPage = loadComponent(() => import('./pages/settings/SettingsPage'));
 const AuthPage = loadComponent(() => import('./pages/auth'));
 
+// Import the new layout fix CSS
+import "./styles/layout-fix.css";
+
 function App() {
   // Add performance monitoring
   usePerformanceMonitoring();
