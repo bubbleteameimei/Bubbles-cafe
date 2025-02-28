@@ -325,6 +325,23 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Update PostMetadata type to include WordPress fields
+export type PostMetadata = {
+  isCommunityPost?: boolean;
+  isApproved?: boolean;
+  status?: 'pending' | 'approved' | 'publish';
+  triggerWarnings?: string[];
+  themeCategory?: string;
+  // WordPress specific fields
+  wordpressId?: number;
+  modified?: string;
+  type?: string;
+  originalAuthor?: number;
+  featuredMedia?: number;
+  categories?: number[];
+};
+
+// Update insertPostSchema to accept WordPress fields
 export const insertPostSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
@@ -338,19 +355,18 @@ export const insertPostSchema = z.object({
   metadata: z.object({
     isCommunityPost: z.boolean().optional(),
     isApproved: z.boolean().optional(),
-    status: z.enum(['pending', 'approved']).optional(),
+    status: z.enum(['pending', 'approved', 'publish']).optional(),
     triggerWarnings: z.array(z.string()).optional(),
     themeCategory: z.string().optional(),
+    // WordPress specific fields
+    wordpressId: z.number().optional(),
+    modified: z.string().optional(),
+    type: z.string().optional(),
+    originalAuthor: z.number().optional(),
+    featuredMedia: z.number().optional(),
+    categories: z.array(z.number()).optional(),
   }).optional(),
 });
-
-export type PostMetadata = {
-  isCommunityPost?: boolean;
-  isApproved?: boolean;
-  status?: 'pending' | 'approved';
-  triggerWarnings?: string[];
-  themeCategory?: string;
-};
 
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
