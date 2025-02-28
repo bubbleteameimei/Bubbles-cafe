@@ -9,7 +9,6 @@ import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
-import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface PostsResponse {
@@ -20,7 +19,6 @@ interface PostsResponse {
 
 const getExcerpt = (content: string) => {
   if (!content) return '';
-
   const paragraphs = content.split('\n\n');
   const engagingParagraph = paragraphs.find(p =>
     p.includes('!') ||
@@ -55,19 +53,13 @@ export default function IndexView() {
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      try {
-        const wpPosts = await fetchWordPressPosts(pageParam, 50);
-        const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
-
-        return {
-          posts,
-          hasMore: posts.length === 50,
-          page: pageParam
-        };
-      } catch (error) {
-        console.error('Error fetching WordPress posts:', error);
-        throw error;
-      }
+      const wpPosts = await fetchWordPressPosts(pageParam, 50);
+      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: posts.length === 50,
+        page: pageParam
+      };
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
@@ -103,22 +95,11 @@ export default function IndexView() {
 
   const posts = data.pages.flatMap(page => page.posts);
 
-  if (!posts.length) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-foreground">No stories found</h2>
-          <p className="text-muted-foreground mt-2">Check back later for new content</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="min-h-screen w-full bg-background">
       <Mist className="opacity-40" />
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
             initial={{ opacity: 0, y: -20 }}
@@ -139,7 +120,7 @@ export default function IndexView() {
           </motion.div>
 
           <motion.div
-            className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 relative"
+            className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -155,7 +136,7 @@ export default function IndexView() {
                   transition={{ delay: index * 0.1 }}
                   className="group"
                 >
-                  <Card className="flex flex-col h-full bg-card/95 backdrop-blur-sm border-border/50 hover:shadow-lg transition-all duration-300">
+                  <Card className="h-full hover:shadow-md transition-all duration-300">
                     <CardHeader className="p-6">
                       <div className="flex justify-between items-start gap-4">
                         <CardTitle
@@ -186,7 +167,7 @@ export default function IndexView() {
                       </div>
                     </CardContent>
 
-                    <CardFooter className="p-6 mt-auto border-t border-border">
+                    <CardFooter className="p-6 mt-auto border-t">
                       <div className="w-full flex items-center justify-between">
                         <LikeDislike postId={post.id} />
                         <Button

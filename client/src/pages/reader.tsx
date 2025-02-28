@@ -22,18 +22,6 @@ interface PostsResponse {
   page: number;
 }
 
-// Utilities
-const getShareUrls = (post: Post) => {
-  const url = encodeURIComponent(window.location.href);
-  const title = encodeURIComponent(post.title);
-  return {
-    twitter: `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-    reddit: `https://reddit.com/submit?url=${url}&title=${title}`,
-    email: `mailto:?subject=${title}&body=${url}`
-  };
-};
-
 export default function Reader() {
   // Hooks (all grouped at the top)
   const [, setLocation] = useLocation();
@@ -123,7 +111,8 @@ export default function Reader() {
 
   const formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
   const readingTime = getReadingTime(currentPost.content);
-  const shareUrls = getShareUrls(currentPost);
+  //const shareUrls = getShareUrls(currentPost); // Removed dynamic URL generation
+
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -176,8 +165,13 @@ export default function Reader() {
                   fontSize: `${fontSize}px`,
                   lineHeight: '1.6'
                 }}
-                dangerouslySetInnerHTML={{ __html: currentPost.content }}
-              />
+              >
+                {currentPost.content && currentPost.content.split('\n\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4 leading-relaxed">
+                    {paragraph.trim() ? paragraph.trim() : null}
+                  </p>
+                ))}
+              </div>
 
               <div className="mt-8 pt-8 border-t border-border">
                 <div className="flex items-center justify-between mb-8">
@@ -187,7 +181,7 @@ export default function Reader() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <a
-                            href={shareUrls.twitter}
+                            href="https://twitter.com/intent/tweet"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
@@ -203,7 +197,7 @@ export default function Reader() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <a
-                            href={shareUrls.facebook}
+                            href="https://www.facebook.com/sharer/sharer.php"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
@@ -219,7 +213,7 @@ export default function Reader() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <a
-                            href={shareUrls.reddit}
+                            href="https://reddit.com/submit"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
@@ -235,7 +229,7 @@ export default function Reader() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <a
-                            href={shareUrls.email}
+                            href="mailto:"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary transition-colors"
@@ -253,68 +247,6 @@ export default function Reader() {
               </div>
             </motion.article>
           </AnimatePresence>
-        </div>
-
-        <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="backdrop-blur-sm bg-background/50 px-6 py-4 rounded-full shadow-xl border border-border/50 hover:bg-background/70 transition-all mx-4"
-          >
-            <div className="flex items-center gap-6">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={goToPrevious}
-                      className="hover:bg-primary/10 transition-all duration-300"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Previous Story</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <span className="text-sm font-medium">
-                {currentIndex + 1} / {posts.length}
-              </span>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={randomize}
-                      className="hover:bg-primary/10 transition-all duration-300"
-                    >
-                      <Shuffle className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Random Story</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={goToNext}
-                      className="hover:bg-primary/10 transition-all duration-300"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Next Story</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </motion.div>
         </div>
       </div>
     </div>
