@@ -31,7 +31,7 @@ localPort = 5002
 externalPort = 3001
 
 [workflows]
-runButton = "Start application"
+runButton = "Run Application"
 
 [[workflows.workflow]]
 name = "Project"
@@ -84,3 +84,11 @@ author = 40059171
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx tsx scripts/sync-scheduler.ts"
+
+[[workflows.workflow]]
+name = "Run Application"
+author = 40099974
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/init-db.ts && npm run dev"

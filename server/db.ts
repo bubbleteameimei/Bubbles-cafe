@@ -6,12 +6,18 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000, maxUses: 7500, allowExitOnIdle: true });
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  maxUses: 7500,
+  allowExitOnIdle: true
+});
+
 export const db = drizzle(pool, { schema });
 
 pool.on('error', (err) => {
@@ -32,7 +38,7 @@ pool.on('connect', async (client) => {
       );
     `);
     if (!result.rows[0].exists) {
-      console.error('Posts table not found - schema may not be initialized');
+      console.log('Posts table not found - schema may need initialization');
     } else {
       console.log('Schema verification successful - posts table exists');
     }
@@ -63,14 +69,13 @@ async function testConnection() {
     `);
 
     if (!schemaTest.rows[0].exists) {
-      console.error('WARNING: Posts table not found - attempting schema initialization');
-      throw new Error('Schema initialization required');
+      console.log('Schema initialization may be needed - continuing startup');
     }
 
-    console.log('Schema verification successful');
+    console.log('Schema verification completed');
     return true;
   } catch (err) {
-    console.error('Database connection or schema test failed:', err);
+    console.error('Database connection test failed:', err);
     throw err;
   } finally {
     if (client) {
@@ -94,7 +99,7 @@ async function initializeWithRetry() {
       retries--;
       if (retries > 0) {
         console.log(`Retrying database initialization. ${retries} attempts remaining`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); 
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
         console.error('Failed to initialize database after all retries:', err);
         process.exit(1);
