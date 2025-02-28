@@ -50,33 +50,18 @@ body {
 }
 
 .theme-toggle-icon {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 9999px;
-  transition: 0.3s ease-in-out;
-  color: var(--foreground);
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  border: none;
+  padding: 8px;
+  color: currentColor;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
 }
 
 .theme-toggle-icon:hover {
-  background-color: var(--accent);
-  color: var(--accent-foreground);
-  transform: translateY(-2px);
-}
-
-.dark .theme-toggle-icon {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-}
-
-.theme-toggle-icon svg {
-  transition: transform 0.5s ease;
-}
-
-.theme-toggle-icon:hover svg {
-  transform: rotate(30deg);
+  background-color: hsl(var(--foreground) / 0.1);
 }
