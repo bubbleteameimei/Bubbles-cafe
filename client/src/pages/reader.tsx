@@ -161,7 +161,7 @@ export default function Reader() {
                 <div className="self-end flex items-center gap-2 mb-4 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border border-border/50">
                   <Type className="h-4 w-4 text-muted-foreground" />
 
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center justify-center mb-4">
                     <div className="font-size-controls">
                       <TooltipProvider>
                         <Tooltip>
@@ -214,7 +214,6 @@ export default function Reader() {
                       </TooltipProvider>
                     </div>
                   </div>
-                </div>
 
                 <h1 className="story-title text-4xl font-bold text-center">{currentPost.title}</h1>
 
