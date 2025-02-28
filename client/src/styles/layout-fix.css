@@ -40,28 +40,3 @@ html, body {
   width: 100%;
   box-sizing: border-box;
 }
-
-/* Authentication page fixes */
-section.min-h-screen {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.login-wrap,
-.login-html,
-.login-form {
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-/* Fix form elements */
-form,
-.form-element,
-.form-group,
-.input-group {
-  width: 100%;
-  box-sizing: border-box;
-}
