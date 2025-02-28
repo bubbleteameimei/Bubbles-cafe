@@ -1,115 +1,88 @@
-
-// Define our theme colors and styles based on the refined color scheme
+// Define our theme colors and styles
 export const theme = {
   colors: {
     // Dark mode (default)
-    background: '#1a1a1f',        // Darker slate (darker than #1e1e24)
-    foreground: '#d8c3a5',        // Cream
-    card: '#2c2c32',              // Darker card background
-    cardForeground: '#d8c3a5',    // Cream
-    primary: '#7d6759',           // Medium brown
-    primaryForeground: '#d8c3a5', // Cream
-    secondary: '#b0a698',         // Light taupe
-    secondaryForeground: '#1a1a1f', // Darker slate
-    muted: '#32302c',             // Darker muted
-    mutedForeground: '#b0a698',   // Light taupe
-    accent: '#b0a698',            // Light taupe
-    accentForeground: '#1a1a1f',  // Darker slate
-    destructive: '#e63946',       // Reddish
-    destructiveForeground: '#d8c3a5', // Cream
-    border: '#3d3630',            // Darker border
-    input: '#2c2c32',             // Darker input
-    ring: '#7d6759',              // Medium brown
+    dark: {
+      background: 'hsl(240 10% 3.9%)',
+      foreground: 'hsl(0 0% 98%)',
+      card: 'hsl(240 10% 3.9%)',
+      cardForeground: 'hsl(0 0% 98%)',
+      popover: 'hsl(240 10% 3.9%)',
+      popoverForeground: 'hsl(0 0% 98%)',
+      primary: 'hsl(346 89% 50%)',
+      primaryForeground: 'hsl(0 0% 98%)',
+      secondary: 'hsl(240 4% 16%)',
+      secondaryForeground: 'hsl(0 0% 98%)',
+      muted: 'hsl(240 4% 16%)',
+      mutedForeground: 'hsl(240 5% 64.9%)',
+      accent: 'hsl(240 4% 16%)',
+      accentForeground: 'hsl(0 0% 98%)',
+      destructive: 'hsl(0 84% 60%)',
+      destructiveForeground: 'hsl(0 0% 98%)',
+      border: 'hsl(240 4% 16%)',
+      input: 'hsl(240 4% 16%)',
+      ring: 'hsl(346 89% 50%)',
+    },
+    // Light mode
+    light: {
+      background: 'hsl(0 0% 100%)',
+      foreground: 'hsl(240 10% 3.9%)',
+      card: 'hsl(0 0% 100%)',
+      cardForeground: 'hsl(240 10% 3.9%)',
+      popover: 'hsl(0 0% 100%)',
+      popoverForeground: 'hsl(240 10% 3.9%)',
+      primary: 'hsl(346 89% 50%)',
+      primaryForeground: 'hsl(0 0% 98%)',
+      secondary: 'hsl(240 5% 96%)',
+      secondaryForeground: 'hsl(240 10% 3.9%)',
+      muted: 'hsl(240 5% 96%)',
+      mutedForeground: 'hsl(240 4% 46.1%)',
+      accent: 'hsl(240 5% 96%)',
+      accentForeground: 'hsl(240 10% 3.9%)',
+      destructive: 'hsl(0 84% 60%)',
+      destructiveForeground: 'hsl(0 0% 98%)',
+      border: 'hsl(240 6% 90%)',
+      input: 'hsl(240 6% 90%)',
+      ring: 'hsl(346 89% 50%)',
+    }
   },
   typography: {
     fonts: {
-      serif: '"Cormorant Garamond", "EB Garamond", Georgia, serif',
-      decorative: '"Cinzel Decorative", "Cormorant Garamond", serif',
-      body: '"Lancelot", "EB Garamond", serif',
-      heading: '"Cinzel Decorative", "Cormorant Garamond", serif'
+      sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
     },
     scale: {
-      xs: '0.75rem',     // 12px
-      sm: '0.875rem',    // 14px
-      base: '1rem',      // 16px
-      lg: '1.125rem',    // 18px
-      xl: '1.25rem',     // 20px
-      '2xl': '1.5rem',   // 24px
-      '3xl': '1.875rem', // 30px
-      '4xl': '2.25rem',  // 36px
-      '5xl': '3rem',     // 48px
-      '6xl': '3.75rem',  // 60px
-      '7xl': '4.5rem',   // 72px
+      xs: '0.75rem',
+      sm: '0.875rem',
+      base: '1rem',
+      lg: '1.125rem',
+      xl: '1.25rem',
+      '2xl': '1.5rem',
+      '3xl': '1.875rem',
+      '4xl': '2.25rem',
+      '5xl': '3rem',
     },
     weights: {
       normal: 400,
       medium: 500,
       semibold: 600,
       bold: 700,
-      black: 900
-    },
-    styles: {
-      heading: {
-        letterSpacing: '-0.02em',
-        lineHeight: 1.2,
-        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5), 4px 4px 8px rgba(0, 0, 0, 0.2)'
-      },
-      body: {
-        letterSpacing: '0.01em',
-        lineHeight: 1.8
-      },
-      decorative: {
-        letterSpacing: '0.03em',
-        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5), 3px 3px 6px rgba(79, 61, 54, 0.3)'
-      }
-    },
-    responsive: {
-      sm: {
-        base: '14px',
-        scale: 1.2
-      },
-      md: {
-        base: '16px',
-        scale: 1.25
-      },
-      lg: {
-        base: '18px',
-        scale: 1.333
-      }
-    }
-  },
-  lightMode: {
-    colors: {
-      background: '#f2e9de',        // Lighter cream
-      foreground: '#1e1e24',        // Dark slate
-      card: '#e8e0d2',              // Lighter card
-      cardForeground: '#1e1e24',    // Dark slate
-      primary: '#7d6759',           // Medium brown
-      primaryForeground: '#f2e9de', // Lighter cream
-      secondary: '#b0a698',         // Light taupe
-      secondaryForeground: '#1e1e24', // Dark slate
-      muted: '#e8dfd2',             // Lightest cream
-      mutedForeground: '#4f3d36',   // Deep brown
-      accent: '#7d6759',            // Medium brown
-      accentForeground: '#f2e9de',  // Lighter cream
-      destructive: '#e63946',       // Reddish
-      destructiveForeground: '#f2e9de', // Lighter cream
-      border: '#c3b5a6',            // Medium-light cream
-      input: '#e8e0d2',             // Lighter card
-      ring: '#7d6759',              // Medium brown
     }
   },
   effects: {
-    textShadow: {
-      sm: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-      md: '2px 2px 4px rgba(0, 0, 0, 0.4)',
-      lg: '2px 2px 4px rgba(0, 0, 0, 0.4), 4px 4px 8px rgba(0, 0, 0, 0.2)',
-      horror: '2px 2px 4px rgba(0, 0, 0, 0.5), 3px 3px 6px rgba(79, 61, 54, 0.3), 0 0 12px rgba(125, 103, 89, 0.2)'
-    },
     transition: {
+      theme: 'background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out',
       standard: 'all 0.2s ease-in-out',
       smooth: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      elaborate: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+    },
+    radius: {
+      sm: '0.3rem',
+      md: '0.5rem',
+      lg: '0.75rem',
+      full: '9999px',
     }
   }
 };
+
+export type Theme = typeof theme;
+export default theme;

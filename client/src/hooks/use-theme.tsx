@@ -1,38 +1,57 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { theme } from "@/lib/theme";
 
+type ColorMode = 'light' | 'dark';
+
 export function useTheme() {
-  // Apply theme colors as CSS variables
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const root = window.document.documentElement;
+  const [colorMode, setColorMode] = useState<ColorMode>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (window.localStorage.getItem('color-mode') as ColorMode) || 'dark';
+  });
 
-      // Set CSS variables for the theme
-      Object.entries(theme.colors).forEach(([key, value]) => {
-        root.style.setProperty(`--${key}`, value);
-      });
-
-      // Apply base styles to body
-      const body = document.body;
-      body.style.margin = "0px";
-      body.style.width = "100%";
-      body.style.height = "100vh";
-      body.style.transition = theme.effects.transition.smooth;
-
-      // Debug log
-      console.log('Theme applied:', {
-        fonts: {
-          body: window.getComputedStyle(body).fontFamily,
-          size: window.getComputedStyle(body).fontSize,
-          lineHeight: window.getComputedStyle(body).lineHeight
-        },
-        colors: theme.colors
-      });
-    }
+  const toggleColorMode = useCallback(() => {
+    setColorMode((prev) => {
+      const newMode = prev === 'light' ? 'dark' : 'light';
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('color-mode', newMode);
+      }
+      return newMode;
+    });
   }, []);
 
-  // Return theme object for component usage
-  return { theme };
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const root = window.document.documentElement;
+    const colors = theme.colors[colorMode];
+
+    // Apply theme colors as CSS custom properties
+    Object.entries(colors).forEach(([key, value]) => {
+      // Convert the color to CSS custom property format
+      const cssVarName = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      root.style.setProperty(cssVarName, value);
+    });
+
+    // Apply base styles
+    const body = document.body;
+    body.style.backgroundColor = colors.background;
+    body.style.color = colors.foreground;
+    body.style.transition = theme.effects.transition.theme;
+
+    // Add debug information
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Theme applied:', {
+        mode: colorMode,
+        colors: colors
+      });
+    }
+  }, [colorMode]);
+
+  return {
+    theme,
+    colorMode,
+    toggleColorMode,
+  };
 }
 
 export default useTheme;
