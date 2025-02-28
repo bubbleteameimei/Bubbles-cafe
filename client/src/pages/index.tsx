@@ -9,7 +9,6 @@ import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
 import { getReadingTime } from "@/lib/content-analysis";
-import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface PostsResponse {
   posts: Post[];
@@ -53,13 +52,9 @@ export default function IndexView() {
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
-      const wpPosts = await fetchWordPressPosts(pageParam, 50);
-      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
-      return {
-        posts,
-        hasMore: posts.length === 50,
-        page: pageParam
-      };
+      const response = await fetch(`/api/posts?page=${pageParam}&limit=100`);
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
@@ -95,10 +90,15 @@ export default function IndexView() {
 
   const posts = data.pages.flatMap(page => page.posts);
 
+  const navigateToReader = (index: number) => {
+    sessionStorage.setItem('selectedStoryIndex', index.toString());
+    setLocation('/reader');
+  };
+
   return (
     <div className="min-h-screen w-full bg-background">
       <Mist className="opacity-30" />
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container">
         <motion.div
           className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
           initial={{ opacity: 0, y: -20 }}
@@ -140,7 +140,7 @@ export default function IndexView() {
                     <div className="flex justify-between items-start gap-4">
                       <CardTitle
                         className="text-xl group-hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => setLocation(`/story/${post.slug}`)}
+                        onClick={() => navigateToReader(index)}
                       >
                         {post.title}
                       </CardTitle>
@@ -172,7 +172,7 @@ export default function IndexView() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setLocation(`/story/${post.slug}`)}
+                        onClick={() => navigateToReader(index)}
                         className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                       >
                         Read More <ArrowRight className="h-3 w-3" />

@@ -1,0 +1,103 @@
+<button id="shareBtn">🔗 Share</button>
+
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Share This Story</h3>
+        <input type="text" id="shareURL" value="" readonly>
+        <button onclick="copyLink()">📋 Copy Link</button>
+        <div class="social-buttons">
+            <a id="whatsappShare" target="_blank">WhatsApp</a>
+            <a id="twitterShare" target="_blank">Twitter</a>
+            <a id="facebookShare" target="_blank">Facebook</a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Basic modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 300px;
+}
+.modal-content {
+    position: relative;
+}
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+}
+input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.social-buttons a {
+    display: block;
+    margin: 5px 0;
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+</style>
+
+<script>
+document.getElementById('shareBtn').addEventListener('click', async () => {
+    const shareData = {
+        title: document.title,
+        text: "Check out this story on Bubble's Café!",
+        url: window.location.href
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (error) {
+            console.error("Sharing failed:", error);
+        }
+    } else {
+        openShareModal();
+    }
+});
+
+function openShareModal() {
+    const modal = document.getElementById('shareModal');
+    const shareURL = window.location.href;
+    document.getElementById('shareURL').value = shareURL;
+
+    // Update social media links
+    document.getElementById('whatsappShare').href = `https://wa.me/?text=${encodeURIComponent(shareURL)}`;
+    document.getElementById('twitterShare').href = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareURL)}`;
+    document.getElementById('facebookShare').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareURL)}`;
+
+    modal.style.display = "block";
+}
+
+// Close modal
+document.querySelector('.close').addEventListener('click', () => {
+    document.getElementById('shareModal').style.display = "none";
+});
+
+// Copy link function
+function copyLink() {
+    const copyText = document.getElementById('shareURL');
+    copyText.select();
+    document.execCommand("copy");
+    alert("Link copied to clipboard!");
+}
+</script>

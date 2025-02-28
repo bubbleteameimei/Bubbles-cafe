@@ -2,9 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Twitter, Facebook, Mail, Instagram, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
@@ -27,6 +26,7 @@ export default function Reader() {
     const savedIndex = sessionStorage.getItem('selectedStoryIndex');
     return savedIndex ? parseInt(savedIndex, 10) : 0;
   });
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const { data, isLoading, error } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts", "reader"],
@@ -62,6 +62,11 @@ export default function Reader() {
       sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
     }
   }, [currentIndex, posts.length]);
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link copied to clipboard!");
+  }, []);
 
   if (isLoading) return <LoadingScreen />;
 
@@ -141,109 +146,88 @@ export default function Reader() {
             </div>
 
             <div className="mt-8 pt-8 border-t border-border">
-              {/* Social Icons */}
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href="https://bubbleteameimei.wordpress.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Globe className="h-5 w-5" />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>Visit WordPress Blog</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(currentPost.title)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Twitter className="h-5 w-5" />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>Share on Twitter</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href="https://instagram.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Instagram className="h-5 w-5" />
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent>Follow on Instagram</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
               <div className="flex items-center justify-between mb-8">
                 <LikeDislike postId={currentPost.id} />
-                <div className="flex items-center gap-3">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(currentPost.title)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Twitter className="h-5 w-5" />
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Share on Twitter</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Facebook className="h-5 w-5" />
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Share on Facebook</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={`mailto:?subject=${encodeURIComponent(currentPost.title)}&body=${encodeURIComponent(window.location.href)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Mail className="h-5 w-5" />
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>Share via Email</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <Button
+                  id="shareBtn"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: currentPost.title,
+                        text: "Check out this story on Bubble's Café!",
+                        url: window.location.href
+                      }).catch(error => {
+                        console.error("Sharing failed:", error);
+                        setShowShareModal(true);
+                      });
+                    } else {
+                      setShowShareModal(true);
+                    }
+                  }}
+                >
+                  🔗 Share
+                </Button>
               </div>
+
+              {/* Share Modal */}
+              {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-background p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">Share This Story</h3>
+                      <button
+                        onClick={() => setShowShareModal(false)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={window.location.href}
+                      readOnly
+                      className="w-full p-2 mb-4 bg-muted rounded"
+                    />
+
+                    <button
+                      onClick={copyLink}
+                      className="w-full mb-4 bg-primary text-primary-foreground p-2 rounded hover:bg-primary/90"
+                    >
+                      📋 Copy Link
+                    </button>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(window.location.href)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center p-2 bg-[#25D366] text-white rounded hover:opacity-90"
+                      >
+                        WhatsApp
+                      </a>
+                      <a
+                        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center p-2 bg-[#1DA1F2] text-white rounded hover:opacity-90"
+                      >
+                        Twitter
+                      </a>
+                      <a
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center p-2 bg-[#4267B2] text-white rounded hover:opacity-90"
+                      >
+                        Facebook
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <CommentSection postId={currentPost.id} />
             </div>

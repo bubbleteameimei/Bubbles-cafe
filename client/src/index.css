@@ -31,6 +31,35 @@
 @tailwind utilities;
 
 @layer base {
+  /* General Reset */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Responsive Content Wrapper */
+  .container {
+    width: 90%; /* Default width for small screens */
+    max-width: 1200px; /* Prevents content from being too wide on large screens */
+    margin: auto;
+    padding: 20px;
+  }
+
+  /* Adjust for tablets */
+  @media (min-width: 768px) {
+    .container {
+      width: 80%;
+    }
+  }
+
+  /* Adjust for desktops */
+  @media (min-width: 1200px) {
+    .container {
+      width: 70%;
+    }
+  }
+
   /* Light mode variables */
   :root {
     --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
@@ -147,57 +176,56 @@
     font-size: clamp(1.125rem, 1.2vw + 1rem, 1.25rem);
     line-height: 1.8;
     letter-spacing: 0.01em;
+  }
 
-/* Fix for content being squeezed on some screens */
-@media (min-width: 768px) {
+  /* Fix for content being squeezed on some screens */
+  @media (min-width: 768px) {
+    .content-container,
+    .main-content,
+    .story-container {
+      width: 100%;
+      min-width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  /* Ensure proper content width across all device sizes */
   .content-container,
   .main-content,
   .story-container {
     width: 100%;
-    min-width: 100%;
-    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
-}
 
-/* Ensure proper content width across all device sizes */
-.content-container,
-.main-content,
-.story-container {
-  width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
-
-/* Fix for half-screen display issues */
-body,
-#root,
-.app {
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
-
-/* Additional fixes for container layout */
-.container {
-  width: 100%;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  box-sizing: border-box;
-}
-
-@media screen and (max-width: 767px) {
-  .container, 
-  .content-container,
-  .main-content {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  /* Fix for half-screen display issues */
+  body,
+  #root,
+  .app {
     width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
-}
 
+  /* Additional fixes for container layout */
+  .container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
+
+  @media screen and (max-width: 767px) {
+    .container, 
+    .content-container,
+    .main-content {
+      padding-left: 1rem;
+      padding-right: 1rem;
+      width: 100%;
+    }
   }
 
   /* Improved Quotes and Epigraphs */
@@ -421,5 +449,78 @@ body,
 
   .liquid-menu-button:hover::after {
     opacity: 1;
+  }
+
+  /* Modal base styles */
+  .modal {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--background);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 300px;
+    z-index: 50;
+  }
+
+  .modal-content {
+    position: relative;
+  }
+
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .modal input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    text-align: center;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .social-buttons a {
+    display: block;
+    margin: 5px 0;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+  }
+
+  .social-buttons a:hover {
+    opacity: 0.9;
+  }
+
+  /* Loading screen fixes */
+  .loading-screen {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background);
+    z-index: 9999;
+  }
+
+  /* Ensure content width during animations */
+  .animate-in,
+  .animate-out {
+    width: 100%;
+    max-width: var(--container-max-width, 1200px);
+    margin: 0 auto;
   }
 }
