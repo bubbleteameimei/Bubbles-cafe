@@ -260,3 +260,111 @@ export default function MainNav() {
     </header>
   );
 }
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { 
+  Loader2, 
+  HelpCircle, 
+  AlertTriangle, 
+  Building, 
+  Mail, 
+  Lock,
+  User 
+} from "lucide-react";
+import { AdminNav } from "./AdminNav";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { HamburgerMenu } from "@/components/ui/hamburger-menu";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+export default function MainNav() {
+  const { user, isLoading, logoutMutation } = useAuth();
+  const [, setLocation] = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleAuthClick = () => {
+    console.log('Navigating to auth page'); // Debug log
+    setLocation("/auth");
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        <div className="mr-4 flex">
+          <HamburgerMenu isOpen={isMenuOpen} onClick={toggleMenu} className="md:hidden" />
+          <Link href="/" className="mr-6 flex items-center space-x-2">
+            <span className="hidden font-bold sm:inline-block">
+              My Website
+            </span>
+          </Link>
+        </div>
+        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+          <nav className="flex items-center">
+            {isLoading ? (
+              <Button disabled variant="ghost" size="sm">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </Button>
+            ) : user ? (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => logoutMutation.mutate()}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {user.role === 'ADMIN' && <AdminNav />}
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAuthClick}
+              >
+                Sign In
+              </Button>
+            )}
+            <ThemeToggle />
+          </nav>
+        </div>
+      </div>
+      {isMenuOpen && (
+        <div className="md:hidden bg-background border-b p-4">
+          <nav className="flex flex-col space-y-2">
+            <Link href="/" className="px-3 py-2 rounded-md hover:bg-accent">
+              Home
+            </Link>
+            <Link href="/stories" className="px-3 py-2 rounded-md hover:bg-accent">
+              Stories
+            </Link>
+            <Link href="/about" className="px-3 py-2 rounded-md hover:bg-accent">
+              About
+            </Link>
+            <Link href="/contact" className="px-3 py-2 rounded-md hover:bg-accent">
+              Contact
+            </Link>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+}

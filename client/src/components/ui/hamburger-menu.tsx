@@ -4,9 +4,10 @@ import { cn } from "@/lib/utils";
 interface HamburgerMenuProps {
   isOpen: boolean;
   className?: string;
+  onClick?: () => void;
 }
 
-export function HamburgerMenu({ isOpen, className }: HamburgerMenuProps) {
+export function HamburgerMenu({ isOpen, className, onClick }: HamburgerMenuProps) {
   const variant = isOpen ? "opened" : "closed";
   
   const top = {
@@ -41,7 +42,10 @@ export function HamburgerMenu({ isOpen, className }: HamburgerMenuProps) {
   };
 
   return (
-    <div className={cn("flex flex-col justify-center items-center w-6 h-6 cursor-pointer", className)}>
+    <div 
+      className={cn("flex flex-col justify-center items-center w-6 h-6 cursor-pointer", className)}
+      onClick={onClick}
+    >
       <motion.span
         initial="closed"
         animate={variant}
