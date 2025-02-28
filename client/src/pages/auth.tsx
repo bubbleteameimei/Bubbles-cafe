@@ -86,7 +86,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="page-container min-h-screen flex items-center justify-center p-4 bg-background"> {/* Added page-container class */}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="max-w-6xl w-full grid gap-8 md:grid-cols-2">
         {/* Form Section */}
         <Card className="p-6 space-y-6">
