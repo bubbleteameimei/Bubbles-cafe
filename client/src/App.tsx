@@ -73,6 +73,7 @@ function App() {
                         <Route path="/settings/profile" component={ProfileSettingsPage} />
                         <Route path="/settings/theme" component={ThemeSettingsPage} />
                         <Route path="/settings/fonts" component={FontSettingsPage} />
+                        <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
                         <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
                         <Route path="/settings/display" component={DisplaySettingsPage} />
                         <Route path="/settings/notifications" component={NotificationSettingsPage} />
