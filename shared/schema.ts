@@ -15,67 +15,6 @@ export const users = pgTable("users", {
   usernameIdx: index("username_idx").on(table.username)
 }));
 
-// Add userSettings table after the users table definition
-export const userSettings = pgTable("user_settings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  theme: text("theme").default("system").notNull(),
-  fontSize: integer("font_size").default(16).notNull(),
-  fontFamily: text("font_family").default("inter").notNull(),
-  textToSpeech: json("text_to_speech").$type<{
-    enabled: boolean;
-    volume: number;
-    rate: number;
-    pitch: number;
-    voice: string;
-  }>().default({
-    enabled: false,
-    volume: 75,
-    rate: 1,
-    pitch: 1,
-    voice: ""
-  }).notNull(),
-  accessibility: json("accessibility").$type<{
-    highContrast: boolean;
-    reducedMotion: boolean;
-    screenReader: boolean;
-  }>().default({
-    highContrast: false,
-    reducedMotion: false,
-    screenReader: false
-  }).notNull(),
-  notifications: json("notifications").$type<{
-    email: boolean;
-    push: boolean;
-    inSite: boolean;
-  }>().default({
-    email: true,
-    push: true,
-    inSite: true
-  }).notNull(),
-  privacy: json("privacy").$type<{
-    profileVisibility: "public" | "private" | "friends";
-    activityVisibility: "public" | "private" | "friends";
-    twoFactorEnabled: boolean;
-  }>().default({
-    profileVisibility: "public",
-    activityVisibility: "public",
-    twoFactorEnabled: false
-  }).notNull(),
-  offlineAccess: json("offline_access").$type<{
-    enabled: boolean;
-    autoSync: boolean;
-    storageLimit: number;
-  }>().default({
-    enabled: false,
-    autoSync: true,
-    storageLimit: 100
-  }).notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
-}, (table) => ({
-  userIdx: index("user_settings_user_idx").on(table.userId),
-}));
-
 // Posts table - removed fear rating system
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
@@ -586,12 +525,3 @@ export const insertPerformanceMetricSchema = createInsertSchema(performanceMetri
 
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
-
-// Add types for user settings
-export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({ 
-  id: true,
-  updatedAt: true
-});
-
-export type UserSettings = typeof userSettings.$inferSelect;
-export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;

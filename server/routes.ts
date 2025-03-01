@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import userSettingsRouter from './routes/user-settings';
-import { setupAuth } from './auth';
+import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
@@ -120,10 +119,6 @@ export function registerRoutes(app: Express): Server {
 
   // Set up auth BEFORE routes
   setupAuth(app);
-
-  //Register the user settings routes
-  app.use(userSettingsRouter);
-
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
@@ -893,7 +888,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Fix the admin profile route
-  app.get("/api/admin/profile", isAuthenticated, async (req: Request, resResponse) => {
+  app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });

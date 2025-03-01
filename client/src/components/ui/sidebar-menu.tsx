@@ -19,12 +19,12 @@ import {
   Palette,
   Type,
   Bell,
+  Link,
   Eye,
   Volume2,
   SunMoon,
   Database,
-  UserCircle,
-  Accessibility
+  UserCircle
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -54,10 +54,10 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [supportOpen, setSupportOpen] = React.useState(false);
   const [personalizationOpen, setPersonalizationOpen] = React.useState(false);
   const [accessibilityOpen, setAccessibilityOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
-  const [supportOpen, setSupportOpen] = React.useState(false);
   const sidebar = useSidebar();
 
   const handleNavigation = React.useCallback((path: string) => {
@@ -179,7 +179,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <Collapsible open={accessibilityOpen} onOpenChange={setAccessibilityOpen}>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton>
-                            <Accessibility className="h-[18px] w-[18px]" />
+                            <Eye className="h-[18px] w-[18px]" />
                             <span>Accessibility</span>
                             <ChevronDown className={cn(
                               "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
@@ -191,20 +191,20 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           <SidebarMenuSub>
                             <SidebarMenuSubItem>
                               <SidebarMenuSubButton
-                                isActive={location === '/settings/accessibility'}
-                                onClick={() => handleNavigation('/settings/accessibility')}
-                              >
-                                <Eye className="h-4 w-4 mr-2 opacity-70" />
-                                <span>Accessibility Options</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton
                                 isActive={location === '/settings/text-to-speech'}
                                 onClick={() => handleNavigation('/settings/text-to-speech')}
                               >
                                 <Volume2 className="h-4 w-4 mr-2 opacity-70" />
                                 <span>Text-to-Speech</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton
+                                isActive={location === '/settings/display'}
+                                onClick={() => handleNavigation('/settings/display')}
+                              >
+                                <Eye className="h-4 w-4 mr-2 opacity-70" />
+                                <span>Display Settings</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           </SidebarMenuSub>
@@ -259,6 +259,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                               >
                                 <Lock className="h-4 w-4 mr-2 opacity-70" />
                                 <span>Privacy & Security</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton
+                                isActive={location === '/settings/connected-accounts'}
+                                onClick={() => handleNavigation('/settings/connected-accounts')}
+                              >
+                                <Link className="h-4 w-4 mr-2 opacity-70" />
+                                <span>Connected Accounts</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                             <SidebarMenuSubItem>
@@ -319,10 +328,47 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
                           <SidebarMenuSubButton
+                            isActive={location === '/support/feedback'}
+                            onClick={() => handleNavigation('/support/feedback')}
+                          >
+                            <ScrollText className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Feedback & Suggestions</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/support/guidelines'}
+                            onClick={() => handleNavigation('/support/guidelines')}
+                          >
+                            <Book className="h-4 w-4 mr-2 opacity-70" />
+                            <span>User Guidelines</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+
+                        <SidebarMenuSubItem className="mt-2 pt-2 border-t border-border/50">
+                          <SidebarMenuSubButton
+                            isActive={location === '/legal/terms'}
+                            onClick={() => handleNavigation('/legal/terms')}
+                          >
+                            <FileText className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Terms of Service</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/legal/copyright'}
+                            onClick={() => handleNavigation('/legal/copyright')}
+                          >
+                            <Shield className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Copyright Policy</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
                             isActive={location === '/privacy'}
                             onClick={() => handleNavigation('/privacy')}
                           >
-                            <Shield className="h-4 w-4 mr-2 opacity-70" />
+                            <Lock className="h-4 w-4 mr-2 opacity-70" />
                             <span>Privacy Policy</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

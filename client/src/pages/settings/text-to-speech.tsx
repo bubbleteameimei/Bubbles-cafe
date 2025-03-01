@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useUserSettings } from "@/hooks/use-user-settings";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -14,57 +13,16 @@ import {
 } from "@/components/ui/select";
 
 export default function TextToSpeechPage() {
-  const { settings, updateSettings } = useUserSettings();
+  const [enabled, setEnabled] = useState(false);
+  const [volume, setVolume] = useState([75]);
+  const [rate, setRate] = useState([1]);
+  const [pitch, setPitch] = useState([1]);
+  const [voice, setVoice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Initialize speech synthesis
   const synth = window.speechSynthesis;
   const voices = synth.getVoices();
-
-  const handleTextToSpeechToggle = async (enabled: boolean) => {
-    await updateSettings({
-      textToSpeech: {
-        ...settings.textToSpeech,
-        enabled
-      }
-    });
-  };
-
-  const handleVolumeChange = async (value: number[]) => {
-    await updateSettings({
-      textToSpeech: {
-        ...settings.textToSpeech,
-        volume: value[0]
-      }
-    });
-  };
-
-  const handleRateChange = async (value: number[]) => {
-    await updateSettings({
-      textToSpeech: {
-        ...settings.textToSpeech,
-        rate: value[0]
-      }
-    });
-  };
-
-  const handlePitchChange = async (value: number[]) => {
-    await updateSettings({
-      textToSpeech: {
-        ...settings.textToSpeech,
-        pitch: value[0]
-      }
-    });
-  };
-
-  const handleVoiceChange = async (value: string) => {
-    await updateSettings({
-      textToSpeech: {
-        ...settings.textToSpeech,
-        voice: value
-      }
-    });
-  };
 
   const handleTestSpeech = () => {
     if (isPlaying) {
@@ -76,17 +34,17 @@ export default function TextToSpeechPage() {
     const utterance = new SpeechSynthesisUtterance(
       "This is a test of the text-to-speech settings. You can adjust the volume, rate, and pitch to customize how the voice sounds."
     );
-
-    utterance.volume = settings.textToSpeech.volume / 100;
-    utterance.rate = settings.textToSpeech.rate;
-    utterance.pitch = settings.textToSpeech.pitch;
-
-    if (settings.textToSpeech.voice) {
-      utterance.voice = voices.find(v => v.name === settings.textToSpeech.voice) || null;
+    
+    utterance.volume = volume[0] / 100;
+    utterance.rate = rate[0];
+    utterance.pitch = pitch[0];
+    
+    if (voice) {
+      utterance.voice = voices.find(v => v.name === voice) || null;
     }
 
     utterance.onend = () => setIsPlaying(false);
-
+    
     setIsPlaying(true);
     synth.speak(utterance);
   };
@@ -104,67 +62,67 @@ export default function TextToSpeechPage() {
             </p>
           </div>
           <Switch
-            checked={settings.textToSpeech.enabled}
-            onCheckedChange={handleTextToSpeechToggle}
+            checked={enabled}
+            onCheckedChange={setEnabled}
             aria-label="Toggle text-to-speech"
           />
         </div>
 
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Voice Settings</h3>
-
+          
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Volume</span>
-                <span>{settings.textToSpeech.volume}%</span>
+                <span>{volume}%</span>
               </div>
               <Slider
-                value={[settings.textToSpeech.volume]}
-                onValueChange={handleVolumeChange}
+                value={volume}
+                onValueChange={setVolume}
                 min={0}
                 max={100}
                 step={1}
-                disabled={!settings.textToSpeech.enabled}
+                disabled={!enabled}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Speed</span>
-                <span>{settings.textToSpeech.rate}x</span>
+                <span>{rate}x</span>
               </div>
               <Slider
-                value={[settings.textToSpeech.rate]}
-                onValueChange={handleRateChange}
+                value={rate}
+                onValueChange={setRate}
                 min={0.5}
                 max={2}
                 step={0.1}
-                disabled={!settings.textToSpeech.enabled}
+                disabled={!enabled}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Pitch</span>
-                <span>{settings.textToSpeech.pitch}</span>
+                <span>{pitch}</span>
               </div>
               <Slider
-                value={[settings.textToSpeech.pitch]}
-                onValueChange={handlePitchChange}
+                value={pitch}
+                onValueChange={setPitch}
                 min={0.5}
                 max={2}
                 step={0.1}
-                disabled={!settings.textToSpeech.enabled}
+                disabled={!enabled}
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm">Voice</label>
               <Select
-                value={settings.textToSpeech.voice}
-                onValueChange={handleVoiceChange}
-                disabled={!settings.textToSpeech.enabled}
+                value={voice}
+                onValueChange={setVoice}
+                disabled={!enabled}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a voice" />
@@ -184,7 +142,7 @@ export default function TextToSpeechPage() {
         <div className="pt-4 border-t">
           <Button
             onClick={handleTestSpeech}
-            disabled={!settings.textToSpeech.enabled}
+            disabled={!enabled}
             className="w-full"
           >
             {isPlaying ? (

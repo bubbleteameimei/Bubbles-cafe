@@ -13,13 +13,9 @@ import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
-import { ProtectedRoute } from './lib/protected-route';
 
 // Lazy load pages
-const HomePage = React.lazy(() => {
-  console.log('[App] Loading HomePage');
-  return import('./pages/home');
-});
+const HomePage = React.lazy(() => import('./pages/home'));
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
 const AboutPage = React.lazy(() => import('./pages/about'));
@@ -33,20 +29,18 @@ const TermsPage = React.lazy(() => import('./pages/legal/terms'));
 const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
 // Settings Pages
-const ProfileSettingsPage = React.lazy(() => {
-  console.log('[App] Loading ProfileSettingsPage');
-  return import('./pages/settings/profile');
-});
+const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
 const ThemeSettingsPage = React.lazy(() => import('./pages/settings/theme'));
 const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
 const TextToSpeechPage = React.lazy(() => import('./pages/settings/text-to-speech'));
+const DisplaySettingsPage = React.lazy(() => import('./pages/settings/display'));
 const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
 const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
-const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
+const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
 const OfflineSettingsPage = React.lazy(() => import('./pages/settings/offline'));
 
 function App() {
-  console.log('[App] Initializing application');
   usePerformanceMonitoring();
 
   return (
@@ -75,15 +69,16 @@ function App() {
                         <Route path="/reader" component={ReaderPage} />
                         <Route path="/stories" component={StoriesPage} />
 
-                        {/* Protected Settings Routes */}
-                        <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-                        <ProtectedRoute path="/settings/theme" component={ThemeSettingsPage} />
-                        <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
-                        <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
-                        <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                        <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
-                        <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-                        <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+                        {/* Settings Routes */}
+                        <Route path="/settings/profile" component={ProfileSettingsPage} />
+                        <Route path="/settings/theme" component={ThemeSettingsPage} />
+                        <Route path="/settings/fonts" component={FontSettingsPage} />
+                        <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
+                        <Route path="/settings/display" component={DisplaySettingsPage} />
+                        <Route path="/settings/notifications" component={NotificationSettingsPage} />
+                        <Route path="/settings/privacy" component={PrivacySettingsPage} />
+                        <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                        <Route path="/settings/offline" component={OfflineSettingsPage} />
 
                         {/* Support Pages */}
                         <Route path="/about" component={AboutPage} />
