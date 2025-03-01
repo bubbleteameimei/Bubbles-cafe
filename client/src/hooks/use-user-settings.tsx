@@ -77,13 +77,32 @@ export function useUserSettings() {
   const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/user/settings'],
     queryFn: async () => {
+      console.log('[Settings] Fetching user settings from API...');
       try {
         const res = await apiRequest('GET', '/api/user/settings');
-        return (await res.json()) as UserSettings;
+        console.log('[Settings] API response status:', res.status);
+
+        if (!res.ok) {
+          console.log('[Settings] API request failed, falling back to localStorage');
+          throw new Error(`API request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log('[Settings] Successfully fetched settings from API');
+        return data as UserSettings;
       } catch (error) {
-        // Fall back to localStorage if API fails
+        // Detailed error logging
+        console.log('[Settings] Error fetching from API:', error);
+        console.log('[Settings] Attempting localStorage fallback...');
+
         const localSettings = localStorage.getItem('userSettings');
-        return localSettings ? JSON.parse(localSettings) : defaultSettings;
+        if (localSettings) {
+          console.log('[Settings] Found settings in localStorage');
+          return JSON.parse(localSettings);
+        }
+
+        console.log('[Settings] No settings found, using defaults');
+        return defaultSettings;
       }
     },
   });
@@ -91,10 +110,18 @@ export function useUserSettings() {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<UserSettings>) => {
+      console.log('[Settings] Updating settings:', newSettings);
       const res = await apiRequest('PATCH', '/api/user/settings', newSettings);
+      console.log('[Settings] Update response status:', res.status);
+
+      if (!res.ok) {
+        throw new Error(`Failed to update settings: ${res.status}`);
+      }
+
       return res.json();
     },
     onSuccess: (data) => {
+      console.log('[Settings] Successfully updated settings');
       queryClient.setQueryData(['/api/user/settings'], data);
       localStorage.setItem('userSettings', JSON.stringify(data));
       toast({
@@ -103,6 +130,7 @@ export function useUserSettings() {
       });
     },
     onError: (error: Error) => {
+      console.error('[Settings] Failed to update settings:', error);
       toast({
         title: 'Failed to save settings',
         description: error.message,
@@ -114,10 +142,14 @@ export function useUserSettings() {
   // Initialize settings from localStorage
   useEffect(() => {
     if (!isInitialized && !isLoading) {
+      console.log('[Settings] Initializing settings...');
       const localSettings = localStorage.getItem('userSettings');
       if (localSettings) {
+        console.log('[Settings] Found initial settings in localStorage');
         const parsed = JSON.parse(localSettings);
         queryClient.setQueryData(['/api/user/settings'], parsed);
+      } else {
+        console.log('[Settings] No initial settings found in localStorage');
       }
       setIsInitialized(true);
     }
@@ -125,10 +157,13 @@ export function useUserSettings() {
 
   // Update settings
   const updateSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
+    console.log('[Settings] Updating settings with:', newSettings);
+
     // Optimistically update local storage
     const currentSettings = settings || defaultSettings;
     const updatedSettings = { ...currentSettings, ...newSettings };
     localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
+    console.log('[Settings] Settings saved to localStorage');
 
     // Update API
     await updateSettingsMutation.mutateAsync(newSettings);
@@ -137,6 +172,8 @@ export function useUserSettings() {
   // Apply settings to document
   useEffect(() => {
     if (settings) {
+      console.log('[Settings] Applying settings to document...');
+
       // Apply font size
       document.documentElement.style.setProperty('--base-font-size', `${settings.fontSize}px`);
 
@@ -153,6 +190,8 @@ export function useUserSettings() {
       } else {
         document.documentElement.removeAttribute('role');
       }
+
+      console.log('[Settings] Settings applied to document');
     }
   }, [settings]);
 
