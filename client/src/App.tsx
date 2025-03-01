@@ -28,6 +28,18 @@ const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
 const TermsPage = React.lazy(() => import('./pages/legal/terms'));
 const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
+// Settings Pages
+const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
+const ThemeSettingsPage = React.lazy(() => import('./pages/settings/theme'));
+const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
+const TextToSpeechPage = React.lazy(() => import('./pages/settings/text-to-speech'));
+const DisplaySettingsPage = React.lazy(() => import('./pages/settings/display'));
+const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
+const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
+const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
+const OfflineSettingsPage = React.lazy(() => import('./pages/settings/offline'));
+
 function App() {
   usePerformanceMonitoring();
 
@@ -56,6 +68,17 @@ function App() {
                         <Route path="/" component={HomePage} />
                         <Route path="/reader" component={ReaderPage} />
                         <Route path="/stories" component={StoriesPage} />
+
+                        {/* Settings Routes */}
+                        <Route path="/settings/profile" component={ProfileSettingsPage} />
+                        <Route path="/settings/theme" component={ThemeSettingsPage} />
+                        <Route path="/settings/fonts" component={FontSettingsPage} />
+                        <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
+                        <Route path="/settings/display" component={DisplaySettingsPage} />
+                        <Route path="/settings/notifications" component={NotificationSettingsPage} />
+                        <Route path="/settings/privacy" component={PrivacySettingsPage} />
+                        <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                        <Route path="/settings/offline" component={OfflineSettingsPage} />
 
                         {/* Support Pages */}
                         <Route path="/about" component={AboutPage} />
