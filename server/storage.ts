@@ -54,7 +54,10 @@ import {
   writerStreaks,
   featuredAuthors,
   type PerformanceMetric, type InsertPerformanceMetric,
-  performanceMetrics
+  performanceMetrics,
+  type UserSettings,
+  userSettings as userSettingsTable,
+
 } from "@shared/schema";
 import type { CommentMetadata } from "@shared/schema";
 import { db, pool } from "./db";
@@ -160,8 +163,6 @@ export interface IStorage {
   updateAnalytics(postId: number, data: Partial<Analytics>): Promise<Analytics>;
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
-  
-  // Analytics methods
   getAnalyticsSummary(): Promise<{ 
     totalViews: number; 
     uniqueVisitors: number; 
@@ -175,7 +176,7 @@ export interface IStorage {
   }>;
   sessionStore: session.Store;
 
-  // Add achievement methods to IStorage interface
+  // Achievements
   getAllAchievements(): Promise<Achievement[]>;
   getUserAchievements(userId: number): Promise<UserAchievement[]>;
   getReadingStreak(userId: number): Promise<ReadingStreak | undefined>;
@@ -185,7 +186,7 @@ export interface IStorage {
   getUserTotalLikes(userId: number): Promise<number>;
   getPostById(id: number): Promise<Post | undefined>;
 
-  // Add performance metrics method
+  // Performance Metrics
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
   getAdminInfo(): Promise<{
     totalPosts: number;
@@ -194,6 +195,10 @@ export interface IStorage {
     totalLikes: number;
     recentActivity: ActivityLog[];
   }>;
+
+  // User Settings
+  getUserSettings(userId: number): Promise<UserSettings>;
+  updateUserSettings(userId: number, settings: Partial<UserSettings>): Promise<UserSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -938,8 +943,7 @@ export class DatabaseStorage implements IStorage {
 
     const [updated] = await db.update(authorStats)
       .set({
-        totalPosts: Number(totalPosts.count),
-        totalLikes: Number(totalLikes.count),
+        totalPosts: Number(totalPosts.count),        totalLikes: Number(totalLikes.count),
         totalTips: totalTips.sum || "0",
         updatedAt: new Date()
       })
@@ -949,7 +953,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getTopAuthors(limit: number =10): Promise<AuthorStats[]> {
+  async getTopAuthors(limit: number = 10): Promise<AuthorStats[]> {
     return await db.select()
       .from(authorStats)
       .orderBy(desc(authorStats.totalLikes))
@@ -1481,6 +1485,82 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserSettings(userId: number): Promise<UserSettings> {
+    try {
+      // Try to get existing settings
+      const [settings] = await db.select()
+        .from(userSettingsTable)
+        .where(eq(userSettingsTable.userId, userId))
+        .limit(1);
+
+      if (settings) {
+        return settings;
+      }
+
+      // If no settings exist, create default settings
+      const [newSettings] = await db.insert(userSettingsTable)
+        .values({
+          userId,
+          theme: "system",
+          fontSize: 16,
+          fontFamily: "inter",
+          textToSpeech: {
+            enabled: false,
+            volume: 75,
+            rate: 1,
+            pitch: 1,
+            voice: ""
+          },
+          accessibility: {
+            highContrast: false,
+            reducedMotion: false,
+            screenReader: false
+          },
+          notifications: {
+            email: true,
+            push: true,
+            inSite: true
+          },
+          privacy: {
+            profileVisibility: "public",
+            activityVisibility: "public",
+            twoFactorEnabled: false
+          },
+          offlineAccess: {
+            enabled: false,
+            autoSync: true,
+            storageLimit: 100
+          }
+        })
+        .returning();
+
+      return newSettings;
+    } catch (error) {
+      console.error("Error in getUserSettings:", error);
+      throw new Error("Failed to fetch user settings");
+    }
+  }
+
+  async updateUserSettings(userId: number, newSettings: Partial<UserSettings>): Promise<UserSettings> {
+    try {
+      const [updated] = await db.update(userSettingsTable)
+        .set({
+          ...newSettings,
+          updatedAt: new Date()
+        })
+        .where(eq(userSettingsTable.userId, userId))
+        .returning();
+
+      if (!updated) {
+        throw new Error("Settings not found");
+      }
+
+      return updated;
+    } catch (error) {
+      console.error("Error in updateUserSettings:", error);
+      throw new Error("Failed to update user settings");
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

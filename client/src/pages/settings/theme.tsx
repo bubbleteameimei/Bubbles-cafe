@@ -2,9 +2,16 @@ import { useTheme } from "@/lib/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sun, Moon } from "lucide-react";
+import { useUserSettings } from "@/hooks/use-user-settings";
 
 export default function ThemeSettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { settings, updateSettings } = useUserSettings();
+
+  const handleThemeChange = async (newTheme: 'light' | 'dark' | 'system') => {
+    await updateSettings({ theme: newTheme });
+    setTheme(newTheme);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -17,7 +24,7 @@ export default function ThemeSettingsPage() {
             <Button
               variant={theme === 'light' ? 'default' : 'outline'}
               className="w-full"
-              onClick={() => setTheme('light')}
+              onClick={() => handleThemeChange('light')}
             >
               <Sun className="h-4 w-4 mr-2" />
               Light Mode
@@ -25,7 +32,7 @@ export default function ThemeSettingsPage() {
             <Button
               variant={theme === 'dark' ? 'default' : 'outline'}
               className="w-full"
-              onClick={() => setTheme('dark')}
+              onClick={() => handleThemeChange('dark')}
             >
               <Moon className="h-4 w-4 mr-2" />
               Dark Mode
