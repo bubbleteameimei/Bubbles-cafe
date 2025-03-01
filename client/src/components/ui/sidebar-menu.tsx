@@ -1,25 +1,19 @@
-"use client"
-
 import * as React from "react"
 import {
   Home,
   Book,
-  Users,
-  Settings,
   HelpCircle,
   FileText,
   ChevronDown,
   Bug,
-  LayoutList,
-  Lock,
-  Mail,
-  Building,
-  ScrollText,
-  Shield,
-  Menu,
   Ghost,
   Scroll,
-  BookOpen
+  BookOpen,
+  Building,
+  Mail,
+  Lock,
+  Shield,
+  ScrollText
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -51,7 +45,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const { user, logoutMutation } = useAuth();
   const [supportOpen, setSupportOpen] = React.useState(false);
   const sidebar = useSidebar();
-  const [isOpen, setIsOpen] = React.useState(false);
 
   const handleNavigation = React.useCallback((path: string) => {
     if (onNavigate) {
@@ -63,30 +56,17 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     setLocation(path);
   }, [onNavigate, sidebar, setLocation]);
 
-  if (!sidebar) {
-    console.warn('[Sidebar] Missing SidebarProvider context');
-    return null;
-  }
-
   return (
-    <SidebarContent className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+    <SidebarContent className="flex h-full flex-col">
+      <div className="flex items-center px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Ghost className="h-6 w-6 text-primary" />
           <h2 className="text-xl font-bold">Horror Blog</h2>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
       </div>
 
-      <div className={cn("flex-1 overflow-auto", isOpen ? "block" : "hidden lg:block")}>
-        <div className="space-y-4 py-4">
+      <div className="flex-1 overflow-auto py-4">
+        <div className="space-y-4">
           <SidebarGroup>
             <SidebarGroupLabel>Stories</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -95,7 +75,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuButton 
                     isActive={location === '/'} 
                     onClick={() => handleNavigation('/')}
-                    tooltip="Home"
+                    tooltip="Featured Stories"
                   >
                     <Home className="h-[18px] w-[18px]" />
                     <span>Featured Stories</span>
@@ -134,7 +114,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <SidebarMenuItem>
                   <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip="Support & Legal">
+                      <SidebarMenuButton>
                         <HelpCircle className="h-[18px] w-[18px]" />
                         <span>Support & Legal</span>
                         <ChevronDown className={cn(

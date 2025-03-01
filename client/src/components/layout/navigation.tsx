@@ -1,106 +1,46 @@
-import { Link, useLocation } from "wouter";
-import { 
-  ChevronDown, 
-  Settings, 
-  Monitor, 
-  Type, 
-  ScrollText, 
-  Cloud,
-  Book, 
-  Mail, 
-  Scale,
-  Bug,
-  PanelLeftClose,
-  FileText,
-  Shield
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState, useCallback, memo } from "react";
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-
-const NavLink = memo(({ href, isActive, children, onNavigate, className = "" }: {
-  href: string;
-  isActive: boolean;
-  children: React.ReactNode;
-  onNavigate?: () => void;
-  className?: string;
-}) => {
-  const [, setLocation] = useLocation();
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onNavigate?.();
-    setLocation(href);
-  }, [href, onNavigate, setLocation]);
-
-  return (
-    <button
-      onClick={handleClick}
-      className={`
-        text-base transition-all duration-300
-        ${isActive
-          ? "text-primary font-semibold"
-          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-        }
-        w-full text-left px-2 py-1.5 rounded-sm
-        ${className}
-      `}
-      aria-current={isActive ? "page" : undefined}
-      role="menuitem"
-    >
-      {children}
-    </button>
-  );
-});
-
-NavLink.displayName = "NavLink";
-
-const MenuIcon = () => (
-  <div className="relative w-6 h-6">
-    <PanelLeftClose className="w-6 h-6 transition-all hover:scale-110 text-primary" />
-  </div>
-);
+import { Menu, Ghost } from "lucide-react";
 
 export default function Navigation() {
-  const [location] = useLocation(); 
+  const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-transparent"
-              title="Toggle navigation menu"
-            >
-              <MenuIcon />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0">
-            <SidebarNavigation onNavigate={() => setIsOpen(false)} />
-          </SheetContent>
-        </Sheet>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
+      <div className="container flex h-14 items-center justify-between">
+        {/* Mobile Menu Trigger */}
+        <div className="flex items-center gap-2">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                title="Toggle navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px]">
+              <SidebarNavigation onNavigate={() => setIsOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          <div className="flex items-center gap-2">
+            <Ghost className="h-6 w-6 text-primary" />
+            <span className="font-bold text-lg">Horror Blog</span>
+          </div>
+        </div>
 
-        <div className="flex-1" />
-
-        <div className="flex items-center justify-end space-x-4">
+        {/* Right-side Actions */}
+        <div className="flex items-center space-x-4">
           <ThemeToggle />
           {!user && (
             <Button
