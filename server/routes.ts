@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import userSettingsRouter from './routes/user-settings';
+import { setupAuth } from './auth';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
@@ -892,7 +893,7 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Fix the admin profile route
-  app.get("/api/admin/profile", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/profile", isAuthenticated, async (req: Request, resResponse) => {
     try {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
