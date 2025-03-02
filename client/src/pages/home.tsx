@@ -46,24 +46,19 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Dark background overlay for better text readability */}
+    <div className="relative min-h-screen w-screen overflow-x-hidden">
+      {/* Background image - single implementation with built-in darkening */}
       <div 
-        className="absolute inset-0 bg-black opacity-50 z-0"
-      />
-
-      {/* Background image */}
-      <div 
-        className="fixed inset-0 w-screen h-screen z-0"
+        className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen"
         style={{
           backgroundImage: "url('/attached_assets/IMG_4848.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
-          filter: 'brightness(0.6)',
-          margin: 0,
-          padding: 0
+          opacity: 0.8,
+          filter: 'brightness(0.5)',
+          zIndex: -1
         }}
       />
 
