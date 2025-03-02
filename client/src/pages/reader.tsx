@@ -14,7 +14,8 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
-// Updated story content styles to match WordPress example
+// Story content styles remain unchanged...
+
 const storyContentStyles = `
   .story-content {
     font-family: var(--font-sans);
@@ -63,27 +64,41 @@ const storyContentStyles = `
 export default function Reader() {
   const [, setLocation] = useLocation();
   const { fontSize } = useFontSize();
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-    return savedIndex ? parseInt(savedIndex, 10) : 0;
-  });
 
-  // Verify social icons are imported
-  useEffect(() => {
-    console.log('[Reader] Verifying social icons:', {
-      twitter: !!FaTwitter,
-      wordpress: !!FaWordpress,
-      instagram: !!FaInstagram
-    });
-  }, []);
+  // Initialize currentIndex with validation
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    try {
+      const savedIndex = sessionStorage.getItem('selectedStoryIndex');
+      console.log('[Reader] Retrieved saved index:', savedIndex);
+
+      if (!savedIndex) {
+        console.log('[Reader] No saved index found, defaulting to 0');
+        return 0;
+      }
+
+      const parsedIndex = parseInt(savedIndex, 10);
+      if (isNaN(parsedIndex) || parsedIndex < 0) {
+        console.log('[Reader] Invalid saved index, defaulting to 0');
+        return 0;
+      }
+
+      return parsedIndex;
+    } catch (error) {
+      console.error('[Reader] Error reading from sessionStorage:', error);
+      return 0;
+    }
+  });
 
   const { data: postsData, isLoading, error } = useQuery({
     queryKey: ["wordpress", "posts", "reader"],
     queryFn: async () => {
       console.log('[Reader] Fetching posts...');
       try {
-        const data = await fetchPosts(1, 10);
-        console.log('[Reader] Posts fetched successfully:', data.posts?.length);
+        const data = await fetchPosts(1, 100); // Increased limit to ensure we get all posts
+        console.log('[Reader] Posts fetched successfully:', {
+          totalPosts: data.posts?.length,
+          hasMore: data.hasMore
+        });
         return data;
       } catch (error) {
         console.error('[Reader] Error fetching posts:', error);
@@ -95,14 +110,43 @@ export default function Reader() {
     refetchOnWindowFocus: false
   });
 
+  // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
-      console.log('[Reader] Setting current post index:', currentIndex);
-      sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+      console.log('[Reader] Validating current index:', {
+        currentIndex,
+        totalPosts: postsData.posts.length,
+        savedIndex: sessionStorage.getItem('selectedStoryIndex')
+      });
+
+      // Ensure currentIndex is within bounds
+      if (currentIndex >= postsData.posts.length) {
+        console.log('[Reader] Current index out of bounds, resetting to 0');
+        setCurrentIndex(0);
+        sessionStorage.setItem('selectedStoryIndex', '0');
+      } else {
+        console.log('[Reader] Current index is valid:', currentIndex);
+        sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
+      }
+
+      // Log current post details
+      const currentPost = postsData.posts[currentIndex];
+      console.log('[Reader] Selected post:', currentPost ? {
+        id: currentPost.id,
+        title: currentPost.title.rendered,
+        date: currentPost.date
+      } : 'No post found');
     }
   }, [currentIndex, postsData?.posts]);
 
-  // Inject story content styles
+  useEffect(() => {
+    console.log('[Reader] Verifying social icons:', {
+      twitter: !!FaTwitter,
+      wordpress: !!FaWordpress,
+      instagram: !!FaInstagram
+    });
+  }, []);
+
   useEffect(() => {
     try {
       console.log('[Reader] Injecting content styles');
@@ -115,17 +159,27 @@ export default function Reader() {
     }
   }, []);
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading) {
+    console.log('[Reader] Loading state');
+    return <LoadingScreen />;
+  }
 
   if (error || !postsData?.posts || postsData.posts.length === 0) {
-    console.error('[Reader] Error state:', { error, postsData });
+    console.error('[Reader] Error or no posts available:', {
+      error,
+      postsCount: postsData?.posts?.length,
+      currentIndex
+    });
     return (
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold mb-4">Unable to load stories</h2>
         <p className="text-muted-foreground mb-4">
           {error instanceof Error ? error.message : "Please try again later"}
         </p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
+        <Button variant="outline" onClick={() => {
+          console.log('[Reader] Retrying page load');
+          window.location.reload();
+        }}>
           Retry
         </Button>
       </div>
@@ -133,11 +187,44 @@ export default function Reader() {
   }
 
   const posts = postsData.posts;
+
+  // Additional validation before rendering
+  if (currentIndex < 0 || currentIndex >= posts.length) {
+    console.error('[Reader] Invalid current index:', {
+      currentIndex,
+      totalPosts: posts.length,
+      savedIndex: sessionStorage.getItem('selectedStoryIndex')
+    });
+    setCurrentIndex(0);
+    return <LoadingScreen />;
+  }
+
   const currentPost = posts[currentIndex];
 
   if (!currentPost) {
-    console.error('[Reader] No post found at index:', currentIndex);
-    return <div className="text-center p-8">No story selected.</div>;
+    console.error('[Reader] No post found:', {
+      currentIndex,
+      totalPosts: posts.length,
+      savedIndex: sessionStorage.getItem('selectedStoryIndex')
+    });
+    return (
+      <div className="text-center p-8">
+        <h2 className="text-xl font-semibold mb-4">Story Not Found</h2>
+        <p className="text-muted-foreground mb-4">
+          Unable to load the requested story. Please try again from the home page.
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            console.log('[Reader] Returning to home');
+            sessionStorage.removeItem('selectedStoryIndex');
+            setLocation('/');
+          }}
+        >
+          Return to Home
+        </Button>
+      </div>
+    );
   }
 
   const formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');

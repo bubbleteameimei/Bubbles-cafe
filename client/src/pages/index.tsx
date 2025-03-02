@@ -53,11 +53,13 @@ export default function IndexView() {
   } = useInfiniteQuery<PostsResponse>({
     queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
+      console.log('[Index] Fetching posts page:', pageParam);
       const wpPosts = await fetchWordPressPosts(pageParam);
+      console.log('[Index] Received posts:', wpPosts.length);
       const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
       return {
         posts,
-        hasMore: wpPosts.length === 100,
+        hasMore: wpPosts.length > 0,
         page: pageParam
       };
     },
@@ -67,6 +69,32 @@ export default function IndexView() {
     refetchOnWindowFocus: false,
     initialPageParam: 1
   });
+
+  const navigateToReader = (index: number) => {
+    console.log('[Index] Navigating to reader:', {
+      index,
+      totalPosts: data?.pages.reduce((acc, page) => acc + page.posts.length, 0)
+    });
+
+    try {
+      // Clear any existing index first
+      sessionStorage.removeItem('selectedStoryIndex');
+      // Set the new index
+      sessionStorage.setItem('selectedStoryIndex', index.toString());
+      console.log('[Index] Story index set successfully');
+      setLocation('/reader');
+    } catch (error) {
+      console.error('[Index] Error setting story index:', error);
+      // Attempt recovery by clearing storage and using a default
+      try {
+        sessionStorage.clear();
+        sessionStorage.setItem('selectedStoryIndex', '0');
+        setLocation('/reader');
+      } catch (retryError) {
+        console.error('[Index] Recovery attempt failed:', retryError);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -94,11 +122,6 @@ export default function IndexView() {
   }
 
   const posts = data.pages.flatMap(page => page.posts);
-
-  const navigateToReader = (index: number) => {
-    sessionStorage.setItem('selectedStoryIndex', index.toString());
-    setLocation('/reader');
-  };
 
   return (
     <div className="min-h-screen w-full bg-background">

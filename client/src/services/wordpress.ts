@@ -3,35 +3,41 @@ import { Post } from '@shared/schema';
 export interface WordPressPost {
   id: number;
   date: string;
-  modified: string;
   slug: string;
-  status: string;
-  type: string;
   title: { rendered: string };
   content: { rendered: string };
   excerpt: { rendered: string };
-  author: number;
-  featured_media: number;
-  categories: number[];
 }
 
 const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
-const MAX_POSTS = 1000; // Maximum number of posts to fetch
-const POSTS_PER_PAGE = 100; // Maximum allowed by WordPress API
+const MAX_POSTS = 1000;
+const POSTS_PER_PAGE = 100;
 
-// Preserve HTML formatting while removing unsafe content
-const sanitizeHTML = (html: string): string => {
-  console.log('[WordPress] Raw HTML content:', html.substring(0, 100) + '...');
+const sanitizeHTML = (content: string): string => {
+  console.log('[WordPress] Starting content sanitization');
 
-  // Only remove unsafe elements and attributes, preserve formatting tags
-  const sanitized = html
+  let sanitized = content
+    // Remove unsafe elements
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/on\w+="[^"]*"/g, '')
     .replace(/javascript:[^\s>]*/g, '')
+
+    // Clean up any empty elements and whitespace
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  console.log('[WordPress] Sanitized HTML content:', sanitized.substring(0, 100) + '...');
+  // Final cleanup of whitespace and empty lines
+  sanitized = sanitized
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('\n\n');
+
+  console.log('[WordPress] Content sanitization complete');
   return sanitized;
 };
 
@@ -44,7 +50,7 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       per_page: POSTS_PER_PAGE.toString(),
       orderby: 'date',
       order: 'desc',
-      status: 'publish'
+      _fields: 'id,date,title,content,excerpt,slug' // Only fetch fields we need
     });
 
     const response = await fetch(`${WORDPRESS_API_URL}?${params}`);
@@ -73,7 +79,6 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
 
     if (posts.length > 0) {
       console.log(`[WordPress] Latest post: "${posts[0].title.rendered}" (${posts[0].date})`);
-      console.log('[WordPress] Sample content:', posts[0].content.rendered.substring(0, 100) + '...');
     }
 
     if (page < totalPages && page * POSTS_PER_PAGE < MAX_POSTS) {
@@ -91,19 +96,16 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
 
 export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
   try {
-    console.log(`[WordPress] Converting post: "${wpPost.title.rendered}" (${wpPost.date})`);
+    console.log(`[WordPress] Converting post: "${wpPost.title.rendered}"`);
 
     if (!wpPost.title?.rendered || !wpPost.content?.rendered || !wpPost.slug) {
       throw new Error(`Invalid post data: Missing required fields for post ${wpPost.id}`);
     }
 
     const sanitizedContent = sanitizeHTML(wpPost.content.rendered);
-    const excerpt = wpPost.excerpt.rendered 
+    const excerpt = wpPost.excerpt.rendered
       ? sanitizeHTML(wpPost.excerpt.rendered).replace(/<[^>]+>/g, '').trim()
       : sanitizedContent.replace(/<[^>]+>/g, '').substring(0, 200) + '...';
-
-    console.log(`[WordPress] Converted post ID ${wpPost.id} successfully`);
-    console.log('[WordPress] Content preview:', sanitizedContent.substring(0, 100) + '...');
 
     return {
       id: wpPost.id,
@@ -111,16 +113,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       content: sanitizedContent,
       excerpt,
       slug: wpPost.slug,
-      createdAt: new Date(wpPost.date),
-      metadata: {
-        wordpressId: wpPost.id,
-        modified: wpPost.modified,
-        status: wpPost.status as 'publish',
-        type: wpPost.type,
-        originalAuthor: wpPost.author,
-        featuredMedia: wpPost.featured_media,
-        categories: wpPost.categories,
-      }
+      createdAt: new Date(wpPost.date)
     };
   } catch (error) {
     console.error(`[WordPress] Error converting post ${wpPost.id}:`, error);
