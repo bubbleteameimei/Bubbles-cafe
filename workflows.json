@@ -20,7 +20,7 @@
     ]
   },
   "WordPress Sync": {
-    "command": "npx tsx scripts/wordpress-api-sync.ts",
+    "command": "node scripts/wordpress-api-sync.js",
     "environment": {
       "NODE_ENV": "development",
       "DEBUG": "wordpress-sync:*"
@@ -30,7 +30,7 @@
   "WordPress Scheduler": {
     "command": "npx tsx scripts/sync-scheduler.ts",
     "environment": {
-      "NODE_ENV": "development", 
+      "NODE_ENV": "development",
       "DEBUG": "wordpress-sync:*"
     },
     "persistent": true,

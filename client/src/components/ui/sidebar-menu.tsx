@@ -63,7 +63,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const sidebar = useSidebar();
 
+  // Debug log to verify auth state
+  React.useEffect(() => {
+    console.log('[Sidebar] Auth state:', { isLoggedIn: !!user });
+  }, [user]);
+
   const handleNavigation = React.useCallback((path: string) => {
+    console.log('[Sidebar] Navigating to:', path);
     if (onNavigate) {
       onNavigate();
     }
@@ -124,151 +130,150 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {user && (
-            <SidebarGroup>
-              <SidebarGroupLabel>Personalization & Account Controls</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <Collapsible open={personalizationOpen} onOpenChange={setPersonalizationOpen}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton>
-                          <Palette className="h-[18px] w-[18px]" />
-                          <span>Display Settings</span>
-                          <ChevronDown className={cn(
-                            "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
-                            personalizationOpen && "rotate-180"
-                          )} />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="animate-accordion-down">
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/theme'}
-                              onClick={() => handleNavigation('/settings/theme')}
-                            >
-                              <SunMoon className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Dark/Light Mode</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/fonts'}
-                              onClick={() => handleNavigation('/settings/fonts')}
-                            >
-                              <Type className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Font Size & Style</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/contrast'}
-                              onClick={() => handleNavigation('/settings/contrast')}
-                            >
-                              <Monitor className="h-4 w-4 mr-2 opacity-70" />
-                              <span>High Contrast Mode</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/text-to-speech'}
-                              onClick={() => handleNavigation('/settings/text-to-speech')}
-                            >
-                              <Volume2 className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Text-to-Speech</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/quick-settings'}
-                              onClick={() => handleNavigation('/settings/quick-settings')}
-                            >
-                              <Sliders className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Quick Adjustments</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/preview'}
-                              onClick={() => handleNavigation('/settings/preview')}
-                            >
-                              <PlayCircle className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Live Preview</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
+          {/* Remove user check to make the section always visible */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Personalization & Account Controls</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <Collapsible open={personalizationOpen} onOpenChange={setPersonalizationOpen}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <Palette className="h-[18px] w-[18px]" />
+                        <span>Display Settings</span>
+                        <ChevronDown className={cn(
+                          "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
+                          personalizationOpen && "rotate-180"
+                        )} />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="animate-accordion-down">
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/theme'}
+                            onClick={() => handleNavigation('/settings/theme')}
+                          >
+                            <SunMoon className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Dark/Light Mode</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/fonts'}
+                            onClick={() => handleNavigation('/settings/fonts')}
+                          >
+                            <Type className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Font Size & Style</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/contrast'}
+                            onClick={() => handleNavigation('/settings/contrast')}
+                          >
+                            <Monitor className="h-4 w-4 mr-2 opacity-70" />
+                            <span>High Contrast Mode</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/text-to-speech'}
+                            onClick={() => handleNavigation('/settings/text-to-speech')}
+                          >
+                            <Volume2 className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Text-to-Speech</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/quick-settings'}
+                            onClick={() => handleNavigation('/settings/quick-settings')}
+                          >
+                            <Sliders className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Quick Adjustments</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/preview'}
+                            onClick={() => handleNavigation('/settings/preview')}
+                          >
+                            <PlayCircle className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Live Preview</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
 
-                  <SidebarMenuItem>
-                    <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton>
-                          <UserCircle className="h-[18px] w-[18px]" />
-                          <span>Account Settings</span>
-                          <ChevronDown className={cn(
-                            "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
-                            accountOpen && "rotate-180"
-                          )} />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="animate-accordion-down">
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/profile'}
-                              onClick={() => handleNavigation('/settings/profile')}
-                            >
-                              <User className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Profile Settings</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/notifications'}
-                              onClick={() => handleNavigation('/settings/notifications')}
-                            >
-                              <Bell className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Notifications</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/privacy'}
-                              onClick={() => handleNavigation('/settings/privacy')}
-                            >
-                              <Lock className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Privacy & Security</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/connected-accounts'}
-                              onClick={() => handleNavigation('/settings/connected-accounts')}
-                            >
-                              <Link className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Connected Accounts</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton
-                              isActive={location === '/settings/offline'}
-                              onClick={() => handleNavigation('/settings/offline')}
-                            >
-                              <Database className="h-4 w-4 mr-2 opacity-70" />
-                              <span>Offline Access</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
+                <SidebarMenuItem>
+                  <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <UserCircle className="h-[18px] w-[18px]" />
+                        <span>Account Settings</span>
+                        <ChevronDown className={cn(
+                          "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
+                          accountOpen && "rotate-180"
+                        )} />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="animate-accordion-down">
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/profile'}
+                            onClick={() => handleNavigation('/settings/profile')}
+                          >
+                            <User className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Profile Settings</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/notifications'}
+                            onClick={() => handleNavigation('/settings/notifications')}
+                          >
+                            <Bell className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Notifications</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/privacy'}
+                            onClick={() => handleNavigation('/settings/privacy')}
+                          >
+                            <Lock className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Privacy & Security</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/connected-accounts'}
+                            onClick={() => handleNavigation('/settings/connected-accounts')}
+                          >
+                            <Link className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Connected Accounts</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={location === '/settings/offline'}
+                            onClick={() => handleNavigation('/settings/offline')}
+                          >
+                            <Database className="h-4 w-4 mr-2 opacity-70" />
+                            <span>Offline Access</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
           <SidebarGroup>
             <SidebarGroupLabel>Help & Resources</SidebarGroupLabel>
