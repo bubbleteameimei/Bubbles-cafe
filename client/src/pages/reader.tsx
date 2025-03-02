@@ -13,15 +13,6 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 
 // Story content styles remain unchanged...
 
@@ -397,107 +388,6 @@ export default function Reader() {
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Add pagination above like/dislike */}
-                <div className="w-full mb-4">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => {
-                            if (currentIndex > 0) {
-                              setCurrentIndex(currentIndex - 1);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                          }}
-                          className={currentIndex === 0 ? 'pointer-events-none opacity-50' : ''}
-                        />
-                      </PaginationItem>
-
-                      {currentIndex > 1 && (
-                        <PaginationItem>
-                          <PaginationLink 
-                            onClick={() => {
-                              setCurrentIndex(0);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            1
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      {currentIndex > 2 && (
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      )}
-
-                      {currentIndex > 0 && (
-                        <PaginationItem>
-                          <PaginationLink 
-                            onClick={() => {
-                              setCurrentIndex(currentIndex - 1);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            {currentIndex}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      <PaginationItem>
-                        <PaginationLink isActive>
-                          {currentIndex + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-
-                      {currentIndex < posts.length - 1 && (
-                        <PaginationItem>
-                          <PaginationLink 
-                            onClick={() => {
-                              setCurrentIndex(currentIndex + 1);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            {currentIndex + 2}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      {currentIndex < posts.length - 3 && (
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                      )}
-
-                      {currentIndex < posts.length - 2 && (
-                        <PaginationItem>
-                          <PaginationLink 
-                            onClick={() => {
-                              setCurrentIndex(posts.length - 1);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                          >
-                            {posts.length}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )}
-
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => {
-                            if (currentIndex < posts.length - 1) {
-                              setCurrentIndex(currentIndex + 1);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                          }}
-                          className={currentIndex === posts.length - 1 ? 'pointer-events-none opacity-50' : ''}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-
                 <LikeDislike postId={currentPost.id} />
 
                 <div className="flex flex-col items-center gap-2">
