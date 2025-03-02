@@ -45,5 +45,4 @@ pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
-
 export default db;

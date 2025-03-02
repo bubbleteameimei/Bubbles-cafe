@@ -2,12 +2,21 @@
   "primary": "#121212",
   "variant": "professional",
   "radius": 0.375,
-  "appearance": "dark",
+  "appearance": "system",
   "colors": {
-    "background": "#121212",
-    "text": "#EAEAEA",
-    "accent": "#A6A6A6",
-    "hover": "#D4D4D4",
-    "border": "#1F1F1F"
+    "dark": {
+      "background": "#121212",
+      "text": "#EAEAEA",
+      "accent": "#A6A6A6",
+      "hover": "#D4D4D4",
+      "border": "#1F1F1F"
+    },
+    "light": {
+      "background": "#F7F7F7",
+      "text": "#232323",
+      "accent": "#737373",
+      "hover": "#525252",
+      "border": "#D9D9D9"
+    }
   }
 }
