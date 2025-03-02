@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Route, Switch } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -13,7 +13,6 @@ import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
-import { initializeTheme, applyTheme } from './lib/theme-toggle'; // Added import
 
 // Lazy load pages with proper error boundaries and suspense
 const HomePage = React.lazy(() => import('./pages/home'));
@@ -57,15 +56,6 @@ const LazyRoute: React.FC<{
 
 function App() {
   usePerformanceMonitoring();
-
-  useEffect(() => {
-    // Initialize performance monitoring
-    //initPerformanceMonitoring(); // Assuming this function exists elsewhere
-
-    // Initialize theme
-    const theme = initializeTheme();
-    applyTheme(theme);
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
