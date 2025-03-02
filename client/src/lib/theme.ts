@@ -1,49 +1,49 @@
 // Define our theme colors and styles
 export const theme = {
   colors: {
-    // Dark mode (default)
+    // Dark mode (default) - Optimized for dark background image
     dark: {
-      background: '#121212',        // Rich Charcoal Black
-      foreground: '#E8E8E8',        // Soft White
-      card: '#1E1E1E',             // Darker Charcoal
-      cardForeground: '#E8E8E8',    // Soft White
-      popover: '#121212',          // Match background
-      popoverForeground: '#E8E8E8', // Soft White
-      primary: '#4A90E2',          // Bright Blue - Primary actions
+      background: '#0A0A0A',        // Nearly Black - For image overlay
+      foreground: '#F8F9FA',        // Crisp White - Maximum readability
+      card: '#161616',             // Rich Dark Gray
+      cardForeground: '#F8F9FA',    // Crisp White
+      popover: '#0A0A0A',          // Nearly Black
+      popoverForeground: '#F8F9FA', // Crisp White
+      primary: '#6B8AFE',          // Electric Blue - Standout actions
       primaryForeground: '#FFFFFF', // Pure White
-      secondary: '#2D3748',        // Slate Gray - Secondary elements
-      secondaryForeground: '#E8E8E8', // Soft White
-      muted: '#4A5568',            // Steel Gray - Muted elements
-      mutedForeground: '#A0AEC0',  // Light Steel Gray
-      accent: '#4A90E2',           // Bright Blue - Accents
+      secondary: '#2A2A2A',        // Deep Charcoal - Secondary elements
+      secondaryForeground: '#F8F9FA', // Crisp White
+      muted: '#404040',            // Muted Dark Gray
+      mutedForeground: '#9CA3AF',  // Cool Gray
+      accent: '#6B8AFE',           // Electric Blue - Accents
       accentForeground: '#FFFFFF', // Pure White
-      destructive: '#E53E3E',      // Red - Destructive actions
+      destructive: '#FF4545',      // Bright Red - Warning/Delete
       destructiveForeground: '#FFFFFF', // Pure White
-      border: '#2D3748',           // Slate Gray
-      input: '#1E1E1E',            // Darker Charcoal
-      ring: '#4A90E2',            // Bright Blue
+      border: '#2A2A2A',           // Deep Charcoal
+      input: '#161616',            // Rich Dark Gray
+      ring: '#6B8AFE',            // Electric Blue
     },
-    // Light mode
+    // Light mode - Professional and clean
     light: {
       background: '#FFFFFF',        // Pure White
-      foreground: '#1A202C',        // Dark Gray - Text
-      card: '#F7FAFC',             // Light Gray Blue
-      cardForeground: '#1A202C',    // Dark Gray
+      foreground: '#111827',        // Nearly Black - Clean text
+      card: '#F9FAFB',             // Off White
+      cardForeground: '#111827',    // Nearly Black
       popover: '#FFFFFF',          // Pure White
-      popoverForeground: '#1A202C', // Dark Gray
-      primary: '#3182CE',          // Professional Blue
+      popoverForeground: '#111827', // Nearly Black
+      primary: '#4F46E5',          // Deep Indigo - Professional
       primaryForeground: '#FFFFFF', // Pure White
-      secondary: '#4A5568',        // Slate Gray
-      secondaryForeground: '#FFFFFF', // Pure White
-      muted: '#718096',            // Cool Gray
-      mutedForeground: '#4A5568',  // Slate Gray
-      accent: '#3182CE',           // Professional Blue
+      secondary: '#F3F4F6',        // Light Gray
+      secondaryForeground: '#111827', // Nearly Black
+      muted: '#F3F4F6',            // Light Gray
+      mutedForeground: '#6B7280',  // Medium Gray
+      accent: '#4F46E5',           // Deep Indigo
       accentForeground: '#FFFFFF', // Pure White
-      destructive: '#E53E3E',      // Red
+      destructive: '#DC2626',      // Red
       destructiveForeground: '#FFFFFF', // Pure White
-      border: '#E2E8F0',           // Light Gray
-      input: '#F7FAFC',            // Light Gray Blue
-      ring: '#3182CE',            // Professional Blue
+      border: '#E5E7EB',           // Border Gray
+      input: '#F9FAFB',            // Off White
+      ring: '#4F46E5',            // Deep Indigo
     }
   },
   typography: {

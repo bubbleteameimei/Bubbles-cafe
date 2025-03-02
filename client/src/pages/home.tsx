@@ -44,67 +44,76 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen">
-      <div className="container mx-auto px-4 md:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
-        >
-          <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider">
-            BUBBLE'S CAFE
-          </h1>
-          <div className="space-y-6 mb-12">
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-              Each story here is a portal to the unexpected,
-              the unsettling, and the unexplained.
-            </p>
+    <div className="relative min-h-screen bg-background">
+      {/* Background image with overlay */}
+      <div 
+        className="absolute inset-0 bg-[url('/attached_assets/IMG_4848.jpeg')] bg-cover bg-center"
+        style={{ filter: 'brightness(0.6)' }}
+      />
 
-            <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
-              <Button
-                size="lg"
-                onClick={() => setLocation('/stories')}
-                className="text-lg h-14"
-              >
-                Browse Stories
-                <Book className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                onClick={() => setLocation('/reader')}
-                className="text-lg h-14"
-              >
-                Start Reading
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+      {/* Content with proper z-index and text protection */}
+      <div className="relative z-10">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
+          >
+            <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg">
+              BUBBLE'S CAFE
+            </h1>
+            <div className="space-y-6 mb-12">
+              <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
+                Each story here is a portal to the unexpected,
+                the unsettling, and the unexplained.
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
+                <Button
+                  size="lg"
+                  onClick={() => setLocation('/stories')}
+                  className="text-lg h-14 bg-primary/90 hover:bg-primary shadow-lg"
+                >
+                  Browse Stories
+                  <Book className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  onClick={() => setLocation('/reader')}
+                  className="text-lg h-14 bg-secondary/80 hover:bg-secondary/90 shadow-lg"
+                >
+                  Start Reading
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+
+              {posts && posts.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="mt-24 text-center backdrop-blur-sm bg-card/20 p-6 rounded-lg shadow-xl"
+                >
+                  <p className="text-sm text-foreground/80 mb-3 uppercase tracking-wide">Latest Story</p>
+                  <h2 
+                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                    onClick={() => navigateToStory(posts[0].slug)}
+                    dangerouslySetInnerHTML={{ __html: posts[0].title.rendered }}
+                  />
+                  <div 
+                    className="text-foreground/80 line-clamp-2 max-w-xl mx-auto mb-4"
+                    dangerouslySetInnerHTML={{ __html: posts[0].excerpt.rendered }}
+                  />
+                  <div className="text-sm text-foreground/70">
+                    {posts[0].date && formatDate(posts[0].date)}
+                  </div>
+                </motion.div>
+              )}
             </div>
-
-            {posts && posts.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                className="mt-24 text-center"
-              >
-                <p className="text-sm text-muted-foreground mb-3 uppercase tracking-wide">Latest Story</p>
-                <h2 
-                  className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
-                  onClick={() => navigateToStory(posts[0].slug)}
-                  dangerouslySetInnerHTML={{ __html: posts[0].title.rendered }}
-                />
-                <div 
-                  className="text-muted-foreground line-clamp-2 max-w-xl mx-auto mb-4"
-                  dangerouslySetInnerHTML={{ __html: posts[0].excerpt.rendered }}
-                />
-                <div className="text-sm text-muted-foreground">
-                  {posts[0].date && formatDate(posts[0].date)}
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
