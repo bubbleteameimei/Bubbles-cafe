@@ -13,6 +13,15 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Updated story content styles to match WordPress example
 const storyContentStyles = `
@@ -190,6 +199,13 @@ export default function Reader() {
     }
   ];
 
+  const generatePaginationItems = () => {
+    //  Implementation for generating pagination items based on the number of posts.  This is a placeholder and needs to be fleshed out based on your specific requirements.
+    return <></>; // Replace with actual pagination item generation logic.
+
+  };
+
+
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
@@ -298,6 +314,41 @@ export default function Reader() {
               }}
               dangerouslySetInnerHTML={{ __html: currentPost.content.rendered }}
             />
+
+            {/* Pagination */}
+            <div className="mb-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                          setCurrentIndex(currentIndex - 1);
+                        }
+                      }}
+                      className={currentIndex === 0 ? "opacity-50 pointer-events-none" : ""}
+                    />
+                  </PaginationItem>
+
+                  {generatePaginationItems()}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentIndex < posts.length - 1) {
+                          setCurrentIndex(currentIndex + 1);
+                        }
+                      }}
+                      className={currentIndex === posts.length - 1 ? "opacity-50 pointer-events-none" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
