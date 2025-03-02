@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useTheme } from '@/lib/theme-provider';
+import { Moon, Sun } from 'lucide-react';
 
 export default function QuickSettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -13,13 +14,31 @@ export default function QuickSettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Quick Adjustments</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Quick Settings</CardTitle>
           <CardDescription>Quickly adjust common display settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <Label>Theme Mode</Label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Sun className="h-5 w-5" />
+                <span>Light</span>
+              </div>
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              />
+              <div className="flex items-center space-x-2">
+                <Moon className="h-5 w-5" />
+                <span>Dark</span>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <Label>Font Size</Label>
             <Slider
@@ -50,20 +69,18 @@ export default function QuickSettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Dark Mode</Label>
-            <Switch
-              checked={theme === 'dark'}
-              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-            />
-          </div>
-
           <div
             style={{ fontSize: `${fontSize}px`, filter: `contrast(${contrast}%)` }}
-            className="p-4 border rounded-md mt-4"
+            className="p-4 border rounded-md mt-4 bg-card"
           >
             <h3 className="font-semibold mb-2">Live Preview</h3>
             <p>This text shows how your content will look with the current settings.</p>
+            <div className="mt-4 space-y-2">
+              <div className="p-2 bg-background text-text">Background Color</div>
+              <div className="p-2 bg-accent text-text">Accent Color</div>
+              <div className="p-2 border border-border">Border Color</div>
+              <div className="p-2 hover:bg-hover">Hover Effect</div>
+            </div>
           </div>
         </CardContent>
       </Card>
