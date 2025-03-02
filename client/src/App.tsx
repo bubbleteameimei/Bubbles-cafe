@@ -34,6 +34,9 @@ const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notif
 const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
 const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
 const OfflineSettingsPage = React.lazy(() => import('./pages/settings/offline'));
+const ContrastSettingsPage = React.lazy(() => import('./pages/settings/contrast'));
+const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
+const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
 function App() {
   usePerformanceMonitoring();
@@ -87,6 +90,9 @@ function App() {
                         <Route path="/settings/privacy" component={PrivacySettingsPage} />
                         <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
                         <Route path="/settings/offline" component={OfflineSettingsPage} />
+                        <Route path="/settings/contrast" component={ContrastSettingsPage} />
+                        <Route path="/settings/quick-settings" component={QuickSettingsPage} />
+                        <Route path="/settings/preview" component={PreviewSettingsPage} />
 
                         {/* 404 Route */}
                         <Route>

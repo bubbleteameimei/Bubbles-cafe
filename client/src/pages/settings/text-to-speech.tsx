@@ -32,19 +32,19 @@ export default function TextToSpeechPage() {
     }
 
     const utterance = new SpeechSynthesisUtterance(
-      "This is a test of the text-to-speech settings. You can adjust the volume, rate, and pitch to customize how the voice sounds."
+      "Welcome to our horror story platform. You can adjust these settings to customize how stories are read aloud."
     );
-    
+
     utterance.volume = volume[0] / 100;
     utterance.rate = rate[0];
     utterance.pitch = pitch[0];
-    
+
     if (voice) {
       utterance.voice = voices.find(v => v.name === voice) || null;
     }
 
     utterance.onend = () => setIsPlaying(false);
-    
+
     setIsPlaying(true);
     synth.speak(utterance);
   };
@@ -58,7 +58,7 @@ export default function TextToSpeechPage() {
           <div className="space-y-1">
             <h2 className="text-xl font-semibold">Enable Text-to-Speech</h2>
             <p className="text-sm text-muted-foreground">
-              Allow the application to read text content aloud
+              Let stories be read aloud to enhance your experience
             </p>
           </div>
           <Switch
@@ -70,7 +70,7 @@ export default function TextToSpeechPage() {
 
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Voice Settings</h3>
-          
+
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">

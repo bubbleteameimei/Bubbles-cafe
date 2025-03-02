@@ -6,6 +6,7 @@
       "PORT": "5000"
     },
     "wait_for_port": true,
+    "port": 5000,
     "persistent": true,
     "restart_on": [
       "package.json",

@@ -134,6 +134,7 @@ async function startServer() {
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running at http://0.0.0.0:${PORT}`);
+        console.log('Debug: Server started successfully and waiting for connections');
 
         // Send port readiness signal with explicit wait_for_port flag
         if (process.send) {
@@ -142,6 +143,7 @@ async function startServer() {
             wait_for_port: true,
             ready: true
           });
+          console.log('Debug: Sent port readiness signal to parent process');
         }
 
         resolve();
