@@ -14,7 +14,7 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
-// Updated story content styles with double line breaks
+// Updated story content styles to match WordPress example
 const storyContentStyles = `
   .story-content {
     font-family: var(--font-sans);
@@ -22,8 +22,8 @@ const storyContentStyles = `
     margin: 0 auto;
   }
   .story-content p {
-    line-height: 1.7;
-    margin-bottom: 1em;
+    line-height: 1.7;  /* Optimal readability */
+    margin-bottom: 1em;  /* Good spacing between paragraphs */
     text-align: justify;
   }
   .story-content p + p {
@@ -34,7 +34,7 @@ const storyContentStyles = `
       margin-bottom: 0.8em;
     }
     .story-content p + p {
-      margin-top: 1.6em;  /* Slightly reduced on mobile but still distinct */
+      margin-top: 2em;  /* Keep double line break on mobile */
     }
   }
   .story-content img {
@@ -242,7 +242,7 @@ export default function Reader() {
             className="prose dark:prose-invert max-w-none"
           >
             <div className="flex flex-col items-center mb-8">
-              <h1 
+              <h1
                 className="text-4xl font-bold text-center mb-4 tracking-tight"
                 dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
               />
@@ -300,7 +300,7 @@ export default function Reader() {
             />
 
             <div className="mt-8 pt-8 border-t border-border">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <LikeDislike postId={currentPost.id} />
 
                 <div className="flex flex-col items-center gap-2">
@@ -334,7 +334,10 @@ export default function Reader() {
                 </div>
               </div>
 
-              <CommentSection postId={currentPost.id} />
+              {/* Comment Section - Moved closer to like/dislike */}
+              <div className="mt-4">
+                <CommentSection postId={currentPost.id} />
+              </div>
             </div>
           </motion.article>
         </AnimatePresence>
