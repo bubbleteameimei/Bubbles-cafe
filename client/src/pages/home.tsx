@@ -56,8 +56,8 @@ export default function Home() {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
-          opacity: 0.9,
-          filter: 'brightness(0.7)',
+          opacity: 0.95,
+          filter: 'brightness(0.75) sepia(0.15)',
           zIndex: 0
         }}
       />

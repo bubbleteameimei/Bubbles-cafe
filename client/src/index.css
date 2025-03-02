@@ -1,4 +1,3 @@
-
 /* Global fixes for horizontal scroll issues */
 html, body, #root {
   width: 100%;
@@ -48,26 +47,27 @@ html, body, #root {
 @tailwind utilities;
 
 @layer base {
+  /* Root Variables - Updated to match background image */
   :root {
-    --background: 35 36% 91%;   /* #f2e9de - Lighter cream */
-    --foreground: 240 9% 13%;   /* #1e1e24 - Dark slate */
-    --card: 35 30% 87%;         /* #e8e0d2 - Lighter card */
-    --card-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --popover: 35 30% 87%;      /* #e8e0d2 - Lighter card */
-    --popover-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --primary: 24 16% 42%;      /* #7d6759 - Medium brown */
-    --primary-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --secondary: 27 20% 55%;    /* #b0a698 - Light taupe */
-    --secondary-foreground: 240 9% 13%; /* #1e1e24 - Dark slate */
-    --muted: 35 31% 90%;        /* #e8dfd2 - Lightest cream */
-    --muted-foreground: 24 19% 26%; /* #4f3d36 - Deep brown */
-    --accent: 24 16% 42%;       /* #7d6759 - Medium brown */
-    --accent-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --destructive: 355 84% 56%; /* #e63946 - Reddish */
-    --destructive-foreground: 35 36% 91%; /* #f2e9de - Lighter cream */
-    --border: 27 18% 71%;       /* #c3b5a6 - Medium-light cream */
-    --input: 35 30% 87%;        /* #e8e0d2 - Lighter card */
-    --ring: 24 16% 42%;         /* #7d6759 - Medium brown */
+    --background: 0 0% 7%;       /* #121212 - Deep Charcoal */
+    --foreground: 0 0% 92%;      /* #EAEAEA - Soft White */
+    --card: 0 0% 12%;            /* #1E1E1E - Rich Dark Gray */
+    --card-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
+    --popover: 0 0% 7%;          /* #121212 - Deep Charcoal */
+    --popover-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
+    --primary: 29 35% 49%;       /* #A67C52 - Warm Brown */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
+    --secondary: 26 14% 15%;     /* #2C2620 - Deep Brown */
+    --secondary-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
+    --muted: 0 0% 20%;           /* #343434 - Muted Dark Gray */
+    --muted-foreground: 0 0% 65%; /* #A6A6A6 - Warm Gray */
+    --accent: 28 29% 43%;        /* #8C6D4F - Earthy Accent */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
+    --destructive: 8 48% 54%;    /* #C75D4C - Muted Red */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
+    --border: 26 14% 15%;        /* #2C2620 - Deep Brown */
+    --input: 0 0% 12%;           /* #1E1E1E - Rich Dark Gray */
+    --ring: 29 35% 49%;          /* #A67C52 - Warm Brown */
     --radius: 0.375rem;
   }
 
