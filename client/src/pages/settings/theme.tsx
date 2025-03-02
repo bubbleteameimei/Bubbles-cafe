@@ -33,34 +33,20 @@ export default function ThemeSettingsPage() {
           </div>
         </div>
 
-        {/* Live Preview section */}
+        {/* Preview section showing how the theme looks */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Preview</h2>
           <div className="space-y-4 rounded-lg border p-4">
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Color Preview</h3>
-              <div className="grid gap-2">
-                <div className="p-4 bg-background text-text rounded-md">
-                  Background Color with Text
-                </div>
-                <div className="p-4 bg-accent text-text rounded-md">
-                  Accent Color with Text
-                </div>
-                <div className="p-4 border border-border rounded-md">
-                  Border Color Example
-                </div>
-                <div className="p-4 hover:bg-hover rounded-md transition-colors">
-                  Hover Effect (Hover over me)
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold">Sample Content</h3>
+              <p className="text-muted-foreground">
+                This is how your content will look with the selected theme.
+              </p>
             </div>
-            <div className="space-y-2 mt-4">
-              <h3 className="text-lg font-semibold">Interactive Elements</h3>
-              <div className="flex gap-2">
-                <Button variant="default">Primary Button</Button>
-                <Button variant="secondary">Secondary Button</Button>
-                <Button variant="outline">Outline Button</Button>
-              </div>
+            <div className="flex gap-2">
+              <Button variant="default">Primary Button</Button>
+              <Button variant="secondary">Secondary Button</Button>
+              <Button variant="outline">Outline Button</Button>
             </div>
           </div>
         </div>
