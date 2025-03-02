@@ -2,19 +2,20 @@ import * as React from "react"
 import {
   Home,
   Book,
+  Users,
+  Settings,
   HelpCircle,
   FileText,
   ChevronDown,
   Bug,
   Ghost,
   Scroll,
-  BookOpen,
+  X,
   Building,
   Mail,
   Lock,
   Shield,
   ScrollText,
-  Settings,
   User,
   Palette,
   Type,
@@ -54,6 +55,7 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
   const [personalizationOpen, setPersonalizationOpen] = React.useState(false);
   const [accessibilityOpen, setAccessibilityOpen] = React.useState(false);
@@ -71,7 +73,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   }, [onNavigate, sidebar, setLocation]);
 
   return (
-    <SidebarContent className="flex h-full flex-col">
+    <SidebarContent>
+      {/* Close Button */}
+      <button
+        onClick={() => sidebar?.setOpenMobile(false)}
+        className="absolute right-4 top-8 h-10 w-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary lg:hidden"
+      >
+        <X className="h-8 w-8" />
+        <span className="sr-only">Close</span>
+      </button>
+
       <div className="flex items-center px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Ghost className="h-6 w-6 text-primary" />
@@ -90,10 +101,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuButton 
                     isActive={location === '/'} 
                     onClick={() => handleNavigation('/')}
-                    tooltip="Featured Stories"
+                    tooltip="Home"
                   >
                     <Home className="h-[18px] w-[18px]" />
-                    <span>Featured Stories</span>
+                    <span>Home</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
@@ -101,10 +112,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuButton 
                     isActive={location === '/stories'} 
                     onClick={() => handleNavigation('/stories')}
-                    tooltip="Story Archive"
+                    tooltip="Index"
                   >
                     <Scroll className="h-[18px] w-[18px]" />
-                    <span>Story Archive</span>
+                    <span>Index</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
@@ -112,10 +123,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuButton 
                     isActive={location === '/reader'} 
                     onClick={() => handleNavigation('/reader')}
-                    tooltip="Reader Mode"
+                    tooltip="Reader"
                   >
-                    <BookOpen className="h-[18px] w-[18px]" />
-                    <span>Reader Mode</span>
+                    <Book className="h-[18px] w-[18px]" />
+                    <span>Reader</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
