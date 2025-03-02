@@ -13,9 +13,9 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <div className="flex min-h-[100dvh] bg-background">
+      <div className="flex min-h-[100dvh]">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
           <MainNav />
           <main className="flex-1 overflow-y-auto">
             <div className="container mx-auto p-4 sm:p-6 lg:p-8">

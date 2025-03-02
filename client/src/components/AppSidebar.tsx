@@ -3,6 +3,7 @@ import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import "../styles/sidebar.css";
 
 // Define sidebar widths
 const SIDEBAR_WIDTH = "16rem";
@@ -25,16 +26,16 @@ export function AppSidebar() {
         "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE
       } as React.CSSProperties}
     >
-      <SidebarContent className="flex flex-col h-screen bg-background">
+      <SidebarContent className="flex flex-col h-screen bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]">
         {/* Fixed header */}
-        <div className="sticky top-0 z-50 flex-none h-16 px-4 border-b border-border/10 flex items-center justify-between bg-background">
-          <h2 className="text-lg font-semibold">Horror Stories</h2>
+        <div className="sticky top-0 z-50 flex-none h-16 px-4 border-b border-[hsl(var(--sidebar-border))] flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[hsl(var(--sidebar-foreground))]">Horror Stories</h2>
           {isMobile && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleToggle}
-              className="ml-auto h-8 w-8"
+              className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               aria-label="Close sidebar"
             >
               <X className="h-4 w-4" />
@@ -45,7 +46,7 @@ export function AppSidebar() {
         {/* Main navigation with nested scrolling */}
         <div className="flex-1 h-[calc(100vh-4rem)] overflow-hidden">
           {/* Main scroll container */}
-          <div className="h-full overflow-y-auto overflow-x-hidden">
+          <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-[hsl(var(--sidebar-background))] scrollbar-thumb-[hsl(var(--sidebar-border))] hover:scrollbar-thumb-[hsl(var(--sidebar-accent))]">
             {/* Inner content container */}
             <div className="h-full py-2">
               <SidebarNavigation onNavigate={handleToggle} />

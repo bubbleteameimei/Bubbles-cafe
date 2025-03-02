@@ -52,16 +52,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex flex-col space-y-2 p-2">
       {/* Main Navigation */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-sidebar-foreground/70">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Navigation
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
+            {/* Add base text color and hover states for menu items */}
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                isActive={location === '/'} 
+              <SidebarMenuButton
+                isActive={location === '/'}
                 onClick={() => handleNavigation('/')}
                 tooltip="Home"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Home className="h-4 w-4" />
                 <span>Home</span>
@@ -69,10 +71,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                isActive={location === '/stories'} 
+              <SidebarMenuButton
+                isActive={location === '/stories'}
                 onClick={() => handleNavigation('/stories')}
                 tooltip="Index"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Scroll className="h-4 w-4" />
                 <span>Index</span>
@@ -80,10 +83,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                isActive={location === '/reader'} 
+              <SidebarMenuButton
+                isActive={location === '/reader'}
                 onClick={() => handleNavigation('/reader')}
                 tooltip="Reader"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Book className="h-4 w-4" />
                 <span>Reader</span>
@@ -91,10 +95,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                isActive={location === '/community'} 
+              <SidebarMenuButton
+                isActive={location === '/community'}
                 onClick={() => handleNavigation('/community')}
                 tooltip="Community"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Users className="h-4 w-4" />
                 <span>Community</span>
@@ -106,7 +111,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Display Settings */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-sidebar-foreground/70">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Display Settings
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -114,13 +119,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between">
+                  <SidebarMenuButton 
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                  >
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
                       <span>Display Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-sidebar-foreground/50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
                       displayOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
@@ -131,6 +138,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/theme'}
                         onClick={() => handleNavigation('/settings/theme')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <SunMoon className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Dark/Light Mode</span>
@@ -140,6 +148,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
                         onClick={() => handleNavigation('/settings/fonts')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Type className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Font Size & Style</span>
@@ -149,6 +158,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/tts'}
                         onClick={() => handleNavigation('/settings/tts')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Volume2 className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Text-to-Speech</span>
@@ -164,7 +174,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-sidebar-foreground/70">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Account Settings
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -172,13 +182,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
                     <div className="flex items-center">
                       <UserCircle className="h-4 w-4 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-sidebar-foreground/50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
                       accountOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
@@ -189,6 +199,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/profile'}
                         onClick={() => handleNavigation('/settings/profile')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <User className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Profile Settings</span>
@@ -198,6 +209,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/notifications'}
                         onClick={() => handleNavigation('/settings/notifications')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Bell className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Notifications</span>
@@ -207,6 +219,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/privacy'}
                         onClick={() => handleNavigation('/settings/privacy')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Privacy & Security</span>
@@ -216,6 +229,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/connected'}
                         onClick={() => handleNavigation('/settings/connected')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Link className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Connected Accounts</span>
@@ -225,6 +239,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/offline'}
                         onClick={() => handleNavigation('/settings/offline')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Database className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Offline Access</span>
@@ -240,7 +255,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Support & Legal */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-sidebar-foreground/70">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Support & Legal
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -248,13 +263,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-sidebar-foreground/50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
                       supportOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
@@ -265,6 +280,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
                         onClick={() => handleNavigation('/about')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>About Us</span>
@@ -274,6 +290,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Contact Support</span>
@@ -283,6 +300,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/feedback'}
                         onClick={() => handleNavigation('/feedback')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Feedback & Suggestions</span>
@@ -292,6 +310,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/terms'}
                         onClick={() => handleNavigation('/terms')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Terms of Service</span>
@@ -301,6 +320,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Privacy Policy</span>
@@ -310,6 +330,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/copyright'}
                         onClick={() => handleNavigation('/copyright')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Copyright Policy</span>
@@ -324,12 +345,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Footer Buttons */}
-      <div className="mt-auto pt-4 border-t border-border/10">
+      <div className="mt-auto pt-4 border-t border-[hsl(var(--sidebar-border))]">
         {!user ? (
           <Button
             variant="default"
             size="sm"
-            className="w-full text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:opacity-90"
             onClick={() => handleNavigation("/auth")}
           >
             Sign In
@@ -338,7 +359,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-sm hover:bg-accent/50"
+            className="w-full text-sm text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
             onClick={() => {
               if (logoutMutation) {
                 logoutMutation.mutate();
@@ -353,9 +374,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           onClick={() => handleNavigation('/report-bug')}
           className={cn(
             "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors",
-            location === '/report-bug' 
-              ? "text-primary font-medium bg-accent/50"
-              : "text-muted-foreground hover:text-primary hover:bg-accent/50"
+            location === '/report-bug'
+              ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
+              : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
           )}
         >
           <Bug className="h-4 w-4" />
