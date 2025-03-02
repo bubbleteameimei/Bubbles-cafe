@@ -7,13 +7,15 @@ import { Book, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { fetchPosts } from "@/lib/wordpress-api";
 
+// Debug log for theme verification
+console.log("[Home] Loading page with theme settings");
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      const data = await fetchPosts(1, 1);
-      return data;
+      return fetchPosts(1, 1);
     },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -45,10 +47,20 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Background image with overlay */}
+      {/* Dark background overlay for better text readability */}
       <div 
-        className="absolute inset-0 bg-[url('/attached_assets/IMG_4848.jpeg')] bg-cover bg-center"
-        style={{ filter: 'brightness(0.6)' }}
+        className="absolute inset-0 bg-black opacity-50 z-0"
+      />
+
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('/IMG_4848.jpeg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'brightness(0.6)'
+        }}
       />
 
       {/* Content with proper z-index and text protection */}
@@ -73,7 +85,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   onClick={() => setLocation('/stories')}
-                  className="text-lg h-14 bg-primary/90 hover:bg-primary shadow-lg"
+                  className="text-lg h-14 bg-primary/90 hover:bg-primary shadow-lg backdrop-blur-sm"
                 >
                   Browse Stories
                   <Book className="ml-2 h-5 w-5" />
@@ -82,7 +94,7 @@ export default function Home() {
                   size="lg"
                   variant="secondary"
                   onClick={() => setLocation('/reader')}
-                  className="text-lg h-14 bg-secondary/80 hover:bg-secondary/90 shadow-lg"
+                  className="text-lg h-14 bg-secondary/80 hover:bg-secondary/90 shadow-lg backdrop-blur-sm"
                 >
                   Start Reading
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -94,7 +106,7 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="mt-24 text-center backdrop-blur-sm bg-card/20 p-6 rounded-lg shadow-xl"
+                  className="mt-24 text-center backdrop-blur-sm bg-card/20 p-6 rounded-lg shadow-xl border border-border/10"
                 >
                   <p className="text-sm text-foreground/80 mb-3 uppercase tracking-wide">Latest Story</p>
                   <h2 

@@ -6,6 +6,7 @@ import { db } from "./db";
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
+import path from "path";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -17,6 +18,12 @@ let server: ReturnType<typeof createServer>;
 async function startServer() {
   try {
     console.log('Starting server initialization...');
+
+    // Serve static assets from attached_assets directory
+    app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
+      maxAge: '1d',
+      fallthrough: false
+    }));
 
     // Check if database needs seeding
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
