@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from 'wouter';
+import { Route, Switch, RouteComponentProps } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
@@ -14,21 +14,14 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 
-// Lazy load pages
+// Lazy load pages with proper error boundaries and suspense
 const HomePage = React.lazy(() => import('./pages/home'));
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
-const PostsPage = React.lazy(() => import('./components/Posts'));
-const PostDetailPage = React.lazy(() => import('./components/Post'));
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
-const FeedbackPage = React.lazy(() => import('./pages/support/feedback'));
-const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
-const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
-const TermsPage = React.lazy(() => import('./pages/legal/terms'));
-const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
 // Settings Pages
 const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
@@ -50,7 +43,6 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
           <SidebarProvider defaultOpen={true}>
-            {/* Main Layout Container */}
             <div className="relative min-h-screen bg-background">
               {/* Desktop Sidebar */}
               <aside className="fixed top-0 left-0 z-50 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
@@ -68,10 +60,21 @@ function App() {
                       <Switch>
                         {/* Public Routes */}
                         <Route path="/" component={HomePage} />
-                        <Route path="/reader" component={ReaderPage} />
                         <Route path="/stories" component={StoriesPage} />
-                        <Route path="/posts" component={PostsPage} />
-                        <Route path="/post/:slug" component={PostDetailPage} />
+                        <Route path="/reader" component={ReaderPage} />
+                        <Route path="/story/:slug">
+                          {(params: RouteComponentProps<{ slug: string }>) => (
+                            <ErrorBoundary>
+                              <React.Suspense fallback={<LoadingScreen />}>
+                                <ReaderPage slug={params.params.slug} />
+                              </React.Suspense>
+                            </ErrorBoundary>
+                          )}
+                        </Route>
+                        <Route path="/about" component={AboutPage} />
+                        <Route path="/contact" component={ContactPage} />
+                        <Route path="/report-bug" component={ReportBugPage} />
+                        <Route path="/privacy" component={PrivacyPage} />
 
                         {/* Settings Routes */}
                         <Route path="/settings/profile" component={ProfileSettingsPage} />
@@ -85,21 +88,8 @@ function App() {
                         <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
                         <Route path="/settings/offline" component={OfflineSettingsPage} />
 
-                        {/* Support Pages */}
-                        <Route path="/about" component={AboutPage} />
-                        <Route path="/contact" component={ContactPage} />
-                        <Route path="/report-bug" component={ReportBugPage} />
-                        <Route path="/support/feedback" component={FeedbackPage} />
-                        <Route path="/support/guidelines" component={GuidelinesPage} />
-
-                        {/* Legal Pages */}
-                        <Route path="/privacy" component={PrivacyPage} />
-                        <Route path="/legal/copyright" component={CopyrightPage} />
-                        <Route path="/legal/terms" component={TermsPage} />
-                        <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-
                         {/* 404 Route */}
-                        <Route path="/:rest*">
+                        <Route>
                           <div className="flex min-h-[60vh] items-center justify-center">
                             <h1 className="text-2xl">404 - Page Not Found</h1>
                           </div>

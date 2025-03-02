@@ -14,56 +14,15 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
-// Story content styles remain unchanged...
+interface ReaderPageProps {
+  slug?: string;
+}
 
-const storyContentStyles = `
-  .story-content {
-    font-family: var(--font-sans);
-    max-width: 70ch;
-    margin: 0 auto;
-  }
-  .story-content p {
-    line-height: 1.7;  /* Optimal readability */
-    margin-bottom: 1em;  /* Good spacing between paragraphs */
-    text-align: justify;
-  }
-  .story-content p + p {
-    margin-top: 2em;  /* Double line break effect */
-  }
-  @media (max-width: 768px) {
-    .story-content p {
-      margin-bottom: 0.8em;
-    }
-    .story-content p + p {
-      margin-top: 2em;  /* Keep double line break on mobile */
-    }
-  }
-  .story-content img {
-    max-width: 100%;
-    height: auto;
-    margin: 1.5em auto;
-    border-radius: 0.5rem;
-  }
-  .story-content h1, .story-content h2, .story-content h3 {
-    margin-top: 1.2em;
-    margin-bottom: 0.5em;
-    font-weight: 600;
-  }
-  .story-content ul, .story-content ol {
-    margin-bottom: 1em;
-    padding-left: 1.5em;
-  }
-  .story-content blockquote {
-    margin: 1.2em 0;
-    padding-left: 1em;
-    border-left: 3px solid var(--border);
-    font-style: italic;
-  }
-`;
-
-export default function Reader() {
+export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
   const { fontSize } = useFontSize();
+
+  console.log('[Reader] Component mounted with slug:', slug); // Debug log
 
   // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -90,16 +49,25 @@ export default function Reader() {
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "posts", "reader"],
+    queryKey: ["wordpress", "posts", "reader", slug],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...');
+      console.log('[Reader] Fetching posts...', { slug });
       try {
-        const data = await fetchPosts(1, 100); // Increased limit to ensure we get all posts
-        console.log('[Reader] Posts fetched successfully:', {
-          totalPosts: data.posts?.length,
-          hasMore: data.hasMore
-        });
-        return data;
+        if (slug) {
+          // If slug is provided, fetch specific post
+          const response = await fetch(`/api/posts/${slug}`);
+          if (!response.ok) throw new Error('Failed to fetch post');
+          const post = await response.json();
+          return { posts: [post], hasMore: false };
+        } else {
+          // Otherwise fetch all posts
+          const data = await fetchPosts(1, 100);
+          console.log('[Reader] Posts fetched successfully:', {
+            totalPosts: data.posts?.length,
+            hasMore: data.hasMore
+          });
+          return data;
+        }
       } catch (error) {
         console.error('[Reader] Error fetching posts:', error);
         throw error;
@@ -213,8 +181,8 @@ export default function Reader() {
         <p className="text-muted-foreground mb-4">
           Unable to load the requested story. Please try again from the home page.
         </p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => {
             console.log('[Reader] Returning to home');
             sessionStorage.removeItem('selectedStoryIndex');
@@ -276,6 +244,51 @@ export default function Reader() {
       url: 'https://instagram.com/Bubbleteameimei'
     }
   ];
+
+  const storyContentStyles = `
+  .story-content {
+    font-family: var(--font-sans);
+    max-width: 70ch;
+    margin: 0 auto;
+  }
+  .story-content p {
+    line-height: 1.7;  /* Optimal readability */
+    margin-bottom: 1em;  /* Good spacing between paragraphs */
+    text-align: justify;
+  }
+  .story-content p + p {
+    margin-top: 2em;  /* Double line break effect */
+  }
+  @media (max-width: 768px) {
+    .story-content p {
+      margin-bottom: 0.8em;
+    }
+    .story-content p + p {
+      margin-top: 2em;  /* Keep double line break on mobile */
+    }
+  }
+  .story-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 1.5em auto;
+    border-radius: 0.5rem;
+  }
+  .story-content h1, .story-content h2, .story-content h3 {
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+  }
+  .story-content ul, .story-content ol {
+    margin-bottom: 1em;
+    padding-left: 1.5em;
+  }
+  .story-content blockquote {
+    margin: 1.2em 0;
+    padding-left: 1em;
+    border-left: 3px solid var(--border);
+    font-style: italic;
+  }
+`;
 
   return (
     <div className="relative min-h-screen bg-background">
