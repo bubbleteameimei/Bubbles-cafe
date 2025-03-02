@@ -1,0 +1,68 @@
+
+/* Dark Mode Styling */
+.dark-mode .card {
+  background-color: #1a1a1a;
+  border-color: var(--border-color-dark);
+}
+
+.dark-mode .card-header,
+.dark-mode .card-footer {
+  background-color: #1f1f1f;
+}
+
+.dark-mode .btn-primary {
+  background-color: #3a3a3a;
+  color: var(--text-color-dark);
+}
+
+.dark-mode .btn-primary:hover {
+  background-color: #4a4a4a;
+}
+
+.dark-mode .input,
+.dark-mode .textarea,
+.dark-mode .select {
+  background-color: #2a2a2a;
+  border-color: var(--border-color-dark);
+  color: var(--text-color-dark);
+}
+
+.dark-mode .input:focus,
+.dark-mode .textarea:focus,
+.dark-mode .select:focus {
+  border-color: var(--accent-color-dark);
+}
+
+/* Light Mode Styling */
+.light-mode .card {
+  background-color: #ffffff;
+  border-color: var(--border-color-light);
+}
+
+.light-mode .card-header,
+.light-mode .card-footer {
+  background-color: #f0f0f0;
+}
+
+.light-mode .btn-primary {
+  background-color: #e0e0e0;
+  color: var(--text-color-light);
+}
+
+.light-mode .btn-primary:hover {
+  background-color: #d0d0d0;
+}
+
+.light-mode .input,
+.light-mode .textarea,
+.light-mode .select {
+  background-color: #ffffff;
+  border-color: var(--border-color-light);
+  color: var(--text-color-light);
+}
+
+.light-mode .input:focus,
+.light-mode .textarea:focus,
+.light-mode .select:focus {
+  border-color: var(--accent-color-light);
+}
