@@ -10,7 +10,6 @@ import {
   Bug,
   Ghost,
   Scroll,
-  X,
   Building,
   Mail,
   Lock,
@@ -74,15 +73,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <SidebarContent>
-      {/* Close Button */}
-      <button
-        onClick={() => sidebar?.setOpenMobile(false)}
-        className="absolute right-4 top-8 h-10 w-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary lg:hidden"
-      >
-        <X className="h-8 w-8" />
-        <span className="sr-only">Close</span>
-      </button>
-
       <div className="flex items-center px-4 py-3 border-b">
         <div className="flex items-center gap-2">
           <Ghost className="h-6 w-6 text-primary" />

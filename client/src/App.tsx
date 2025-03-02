@@ -16,6 +16,7 @@ import { SidebarProvider } from './components/ui/sidebar';
 
 // Lazy load pages
 const HomePage = React.lazy(() => import('./pages/home'));
+const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
 const PostsPage = React.lazy(() => import('./components/Posts'));
 const PostDetailPage = React.lazy(() => import('./components/Post'));
@@ -67,6 +68,7 @@ function App() {
                       <Switch>
                         {/* Public Routes */}
                         <Route path="/" component={HomePage} />
+                        <Route path="/reader" component={ReaderPage} />
                         <Route path="/stories" component={StoriesPage} />
                         <Route path="/posts" component={PostsPage} />
                         <Route path="/post/:slug" component={PostDetailPage} />
