@@ -320,7 +320,7 @@ export default function Reader() {
                       <span className="sr-only">Share</span>
                     </Button>
 
-                    {/* Social Icons */}
+                    {/* Social Icons - Only Wordpress, Twitter, and Instagram remain */}
                     {socialLinks.map(({ key, Icon, url }) => (
                       <Button
                         key={key}
