@@ -589,7 +589,7 @@ export class DatabaseStorage implements IStorage {
         moderated: false,
         originalContent: comment.content,
         isAnonymous: !comment.userId,
-        author: comment.metadata?.author || 'Anonymous',
+        author: typeof comment.metadata?.author === 'string' ? comment.metadata.author : 'Anonymous',
         upvotes: 0,
         downvotes: 0,
         replyCount: 0

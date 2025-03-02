@@ -1,7 +1,13 @@
-
 {
-  "primary": "#4f3d36",
+  "primary": "#121212",
   "variant": "professional",
   "radius": 0.375,
-  "appearance": "dark"
+  "appearance": "dark",
+  "colors": {
+    "background": "#121212",
+    "text": "#EAEAEA",
+    "accent": "#A6A6A6",
+    "hover": "#D4D4D4",
+    "border": "#1F1F1F"
+  }
 }
