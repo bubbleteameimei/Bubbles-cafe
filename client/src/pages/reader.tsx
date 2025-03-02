@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2 } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -12,7 +12,7 @@ import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
-import { FaTwitter, FaFacebook, FaWhatsapp } from 'react-icons/fa';
+import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
 // Styles for WordPress content
 const storyContentStyles = `
@@ -23,26 +23,31 @@ const storyContentStyles = `
   }
   .story-content p {
     line-height: 1.7;
-    margin-bottom: 1.2em;
+    margin-bottom: 0.8em;
     text-align: justify;
+  }
+  @media (max-width: 768px) {
+    .story-content p {
+      margin-bottom: 0.6em;
+    }
   }
   .story-content img {
     max-width: 100%;
     height: auto;
-    margin: 2em auto;
+    margin: 1.5em auto;
     border-radius: 0.5rem;
   }
   .story-content h1, .story-content h2, .story-content h3 {
-    margin-top: 1.5em;
+    margin-top: 1.2em;
     margin-bottom: 0.5em;
     font-weight: 600;
   }
   .story-content ul, .story-content ol {
-    margin-bottom: 1.2em;
+    margin-bottom: 1em;
     padding-left: 1.5em;
   }
   .story-content blockquote {
-    margin: 1.5em 0;
+    margin: 1.2em 0;
     padding-left: 1em;
     border-left: 3px solid var(--border);
     font-style: italic;
@@ -61,8 +66,8 @@ export default function Reader() {
   useEffect(() => {
     console.log('[Reader] Verifying social icons:', {
       twitter: !!FaTwitter,
-      facebook: !!FaFacebook,
-      whatsapp: !!FaWhatsapp
+      wordpress: !!FaWordpress,
+      instagram: !!FaInstagram
     });
   }, []);
 
@@ -134,10 +139,10 @@ export default function Reader() {
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
-      console.log(`[Reader] Sharing on ${platform}`);
+      console.log(`[Reader] Opening ${platform} profile`);
       window.open(url, '_blank');
     } catch (error) {
-      console.error(`[Reader] Error sharing on ${platform}:`, error);
+      console.error(`[Reader] Error opening ${platform}:`, error);
     }
   };
 
@@ -161,27 +166,65 @@ export default function Reader() {
     }
   };
 
-  const socialPlatforms = [
+  const socialLinks = [
+    {
+      key: 'wordpress',
+      Icon: FaWordpress,
+      url: 'http://bubbleteameimei.wordpress.com'
+    },
     {
       key: 'twitter',
       Icon: FaTwitter,
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(currentPost.title.rendered)}&url=${encodeURIComponent(window.location.href)}`
+      url: 'https://twitter.com/Bubbleteameimei'
     },
     {
-      key: 'facebook',
-      Icon: FaFacebook,
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`
-    },
-    {
-      key: 'whatsapp',
-      Icon: FaWhatsapp,
-      url: `https://wa.me/?text=${encodeURIComponent(currentPost.title.rendered)}%20${encodeURIComponent(window.location.href)}`
+      key: 'instagram',
+      Icon: FaInstagram,
+      url: 'https://instagram.com/Bubbleteameimei'
     }
   ];
 
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
+
+      {/* Floating Navigation */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            if (currentIndex > 0) {
+              setCurrentIndex(currentIndex - 1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          disabled={currentIndex === 0}
+          className="w-10 h-10 rounded-full bg-background/80 backdrop-blur hover:bg-primary/10 transition-all duration-300"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          <span className="sr-only">Previous Story</span>
+        </Button>
+      </div>
+
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            if (currentIndex < posts.length - 1) {
+              setCurrentIndex(currentIndex + 1);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          disabled={currentIndex === posts.length - 1}
+          className="w-10 h-10 rounded-full bg-background/80 backdrop-blur hover:bg-primary/10 transition-all duration-300"
+        >
+          <ChevronRight className="h-5 w-5" />
+          <span className="sr-only">Next Story</span>
+        </Button>
+      </div>
+
       <div className="container max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.article
@@ -217,34 +260,70 @@ export default function Reader() {
             />
 
             <div className="mt-8 pt-8 border-t border-border">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
                 <LikeDislike postId={currentPost.id} />
-                <div className="flex items-center gap-2">
-                  {/* Native Share */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={shareStory}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    <span className="sr-only">Share</span>
-                  </Button>
 
-                  {/* Social Icons */}
-                  {socialPlatforms.map(({ key, Icon, url }) => (
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
+                  <div className="flex items-center gap-3">
+                    {/* Native Share */}
                     <Button
-                      key={key}
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleSocialShare(key, url)}
+                      onClick={shareStory}
                       className="text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <Icon className="h-5 w-5" />
-                      <span className="sr-only">Share on {key}</span>
+                      <Share2 className="h-5 w-5" />
+                      <span className="sr-only">Share</span>
                     </Button>
-                  ))}
+
+                    {/* Social Icons */}
+                    {socialLinks.map(({ key, Icon, url }) => (
+                      <Button
+                        key={key}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSocialShare(key, url)}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="sr-only">Follow on {key}</span>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex items-center justify-between gap-4 mb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (currentIndex > 0) {
+                      setCurrentIndex(currentIndex - 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  disabled={currentIndex === 0}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                  Previous Story
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (currentIndex < posts.length - 1) {
+                      setCurrentIndex(currentIndex + 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  disabled={currentIndex === posts.length - 1}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  Next Story
+                  <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
               </div>
 
               <CommentSection postId={currentPost.id} />
