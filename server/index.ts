@@ -35,6 +35,16 @@ async function startServer() {
       console.log(`Database already contains ${postsCount} posts, skipping seeding`);
     }
 
+    // Clean up existing server if any
+    if (server) {
+      await new Promise<void>((resolve) => {
+        server.close(() => {
+          console.log('Closed existing server instance');
+          resolve();
+        });
+      });
+    }
+
     // Create server instance
     server = createServer(app);
 
@@ -73,8 +83,24 @@ async function startServer() {
       });
 
       server.once('error', (err: Error) => {
-        console.error(`Server error: ${err.message}`);
-        reject(err);
+        if ((err as any).code === 'EADDRINUSE') {
+          console.log(`Port ${PORT} is busy, attempting to close existing connections...`);
+          require('child_process').exec(`lsof -i :${PORT} | grep LISTEN | awk '{print $2}' | xargs kill -9`, async (error: Error) => {
+            if (error) {
+              console.error('Failed to kill process:', error);
+              reject(error);
+            } else {
+              console.log(`Successfully freed port ${PORT}, retrying server start...`);
+              // Wait a moment before retrying
+              setTimeout(() => {
+                startServer().then(resolve).catch(reject);
+              }, 1000);
+            }
+          });
+        } else {
+          console.error(`Server error: ${err.message}`);
+          reject(err);
+        }
       });
     });
   } catch (error) {
