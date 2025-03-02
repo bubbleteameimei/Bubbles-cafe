@@ -1,7 +1,7 @@
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
-  Bug, Ghost, Scroll, Building, Mail, Lock, Shield, ScrollText,
+  Bug, Scroll, Building, Mail, Lock, Shield, ScrollText,
   User, Palette, Type, Bell, Link, Eye, Volume2, SunMoon, Database,
   UserCircle, Monitor, PlayCircle, MessageSquare
 } from "lucide-react"
@@ -48,16 +48,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     setLocation(path);
   }, [onNavigate, sidebar, setLocation]);
 
+  // Handle escape key to close mobile sidebar
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebar?.isMobile && sidebar.openMobile) {
+        sidebar.setOpenMobile(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [sidebar]);
+
   return (
     <SidebarContent className="w-64 flex flex-col bg-sidebar bg-opacity-95 backdrop-blur-sm border-r border-sidebar-border">
       <div className="flex items-center px-4 py-3 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <Ghost className="h-5 w-5 text-sidebar-primary" />
-          <h2 className="text-lg font-semibold text-sidebar-foreground">Horror Blog</h2>
-        </div>
+        <h2 className="text-lg font-semibold text-sidebar-foreground">Bubble's Cafe</h2>
       </div>
 
-      <div className="flex-1 overflow-auto py-2 px-2">
+      <div className="flex-1 overflow-y-auto py-2 px-2 scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
         <div className="space-y-2">
           {/* Main Navigation */}
           <SidebarGroup>

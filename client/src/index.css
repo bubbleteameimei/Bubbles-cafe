@@ -113,6 +113,23 @@ html, body, #root {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* Scrollbar Styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thumb-sidebar-accent::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-accent));
+    border-radius: theme('borderRadius.md');
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
   * {
     margin: 0;
     padding: 0;
