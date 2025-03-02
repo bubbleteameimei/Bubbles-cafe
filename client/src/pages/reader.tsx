@@ -14,7 +14,6 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
-
 // Updated story content styles to match WordPress example
 const storyContentStyles = `
   .story-content {
@@ -191,7 +190,6 @@ export default function Reader() {
     }
   ];
 
-
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
@@ -300,7 +298,6 @@ export default function Reader() {
               }}
               dangerouslySetInnerHTML={{ __html: currentPost.content.rendered }}
             />
-
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">

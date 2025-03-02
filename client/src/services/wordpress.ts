@@ -19,28 +19,16 @@ const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubblete
 const MAX_POSTS = 1000; // Maximum number of posts to fetch
 const POSTS_PER_PAGE = 100; // Maximum allowed by WordPress API
 
-// Preserve HTML formatting while removing unsafe content and unwanted links
+// Preserve HTML formatting while removing unsafe content
 const sanitizeHTML = (html: string): string => {
   console.log('[WordPress] Raw HTML content:', html.substring(0, 100) + '...');
 
-  // Remove social links section and navigation links
+  // Only remove unsafe elements and attributes, preserve formatting tags
   const sanitized = html
-    // Remove WordPress blocks and social links
-    .replace(/<div[^>]*class="wp-block-social-links[^>]*>[\s\S]*?<\/div>/gi, '')
-    .replace(/<ul[^>]*class="wp-block-social-links[^>]*>[\s\S]*?<\/ul>/gi, '')
-    .replace(/<div[^>]*class="wp-block-navigation[^>]*>[\s\S]*?<\/div>/gi, '')
-    // Remove any remaining menu or navigation elements
-    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-    .replace(/<menu[^>]*>[\s\S]*?<\/menu>/gi, '')
-    // Remove script and iframe tags
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    // Remove event handlers
     .replace(/on\w+="[^"]*"/g, '')
     .replace(/javascript:[^\s>]*/g, '')
-    // Clean up any empty containers that might be left
-    .replace(/<div[^>]*>\s*<\/div>/g, '')
-    .replace(/<p[^>]*>\s*<\/p>/g, '')
     .trim();
 
   console.log('[WordPress] Sanitized HTML content:', sanitized.substring(0, 100) + '...');
@@ -56,9 +44,7 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       per_page: POSTS_PER_PAGE.toString(),
       orderby: 'date',
       order: 'desc',
-      status: 'publish',
-      // Only fetch required fields
-      _fields: 'id,date,modified,slug,status,type,title,content,excerpt,author'
+      status: 'publish'
     });
 
     const response = await fetch(`${WORDPRESS_API_URL}?${params}`);
@@ -132,6 +118,8 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
         status: wpPost.status as 'publish',
         type: wpPost.type,
         originalAuthor: wpPost.author,
+        featuredMedia: wpPost.featured_media,
+        categories: wpPost.categories,
       }
     };
   } catch (error) {
