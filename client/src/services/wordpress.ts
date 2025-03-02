@@ -14,66 +14,63 @@ const MAX_POSTS = 1000;
 const POSTS_PER_PAGE = 100;
 
 const sanitizeHTML = (content: string): string => {
-  // Step 1: Strip all WordPress-specific content and metadata
+  // Step 1: Remove all WordPress blocks and unwanted content
   let sanitized = content
-    // Remove WordPress blocks completely (not just markers)
-    .replace(/<!-- wp:[^>]*?-->([\s\S]*?)<!-- \/wp:[^>]*?-->/g, '')
-    // Remove any remaining WordPress comments
+    // Remove all variations of latest posts and query blocks
+    .replace(/<!-- wp:(?:latest-posts|query|post-template|post-content|post-excerpt|post-title|post-date|post-terms)[^>]*?-->([\s\S]*?)<!-- \/wp:(?:latest-posts|query|post-template|post-content|post-excerpt|post-title|post-date|post-terms) -->/g, '')
+    .replace(/<(?:div|ul|ol|section|nav)[^>]*?(?:latest|recent|blog)-(?:posts|entries|articles)[^>]*?>[\s\S]*?<\/(?:div|ul|ol|section|nav)>/g, '')
+    .replace(/<(?:div|ul|ol)[^>]*?post-(?:grid|list|carousel|template)[^>]*?>[\s\S]*?<\/(?:div|ul|ol)>/g, '')
+
+    // Remove all variations of social/sharing blocks
+    .replace(/<!-- wp:(?:social|share|follow)[^>]*?-->([\s\S]*?)<!-- \/wp:(?:social|share|follow) -->/g, '')
+    .replace(/<(?:div|ul|nav)[^>]*?(?:social|share|follow)-(?:links|icons|buttons|nav)[^>]*?>[\s\S]*?<\/(?:div|ul|nav)>/g, '')
+    .replace(/<div[^>]*?(?:sharedaddy|jetpack-sharing|jp-sharing|jp-relatedposts)[^>]*?>[\s\S]*?<\/div>/g, '')
+
+    // Remove any remaining WordPress blocks and shortcodes
+    .replace(/<!-- wp:[^>]*?-->([\s\S]*?)<!-- \/wp:[^>]*? -->/g, '')
     .replace(/<!--[\s\S]*?-->/g, '')
-    // Remove all shortcodes
-    .replace(/\[[^\]]+\]/g, '')
-    // Remove header/footer sections
-    .replace(/<header[^>]*>[\s\S]*?<\/header>/g, '')
-    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/g, '')
-    // Remove all links and buttons
-    .replace(/<a[^>]*>[\s\S]*?<\/a>/g, '')
-    .replace(/<button[^>]*>[\s\S]*?<\/button>/g, '')
-    // Remove meta information
-    .replace(/<meta[^>]*>/g, '')
-    // Remove images and media
-    .replace(/<(?:img|figure|video|audio|iframe|embed|object)[^>]*>[\s\S]*?<\/(?:img|figure|video|audio|iframe|embed|object)>/g, '')
-    // Remove SVG elements
-    .replace(/<svg[^>]*>[\s\S]*?<\/svg>/g, '')
-    // Remove all social/share/navigation elements
-    .replace(/<div[^>]*class="[^"]*(?:social|share|follow|navigation|related|comments|wp-block-|jp-|sharedaddy)[^"]*"[^>]*>[\s\S]*?<\/div>/g, '');
+    .replace(/\[[^\]]+\]/g, '');
 
-  // Step 2: Convert remaining structural elements to paragraphs
+  // Step 2: Remove all non-story HTML elements
   sanitized = sanitized
-    .replace(/<(div|section|article|aside)[^>]*>([\s\S]*?)<\/\1>/g, '$2')
-    .replace(/<(?:br|hr)[^>]*\/?>/g, '\n');
+    // Remove all container elements except paragraphs
+    .replace(/<(?:div|section|article|aside|nav|header|footer)[^>]*?>[\s\S]*?<\/(?:div|section|article|aside|nav|header|footer)>/g, '')
+    // Remove media elements
+    .replace(/<(?:img|figure|video|audio|iframe|embed|object)[^>]*?>[\s\S]*?<\/(?:img|figure|video|audio|iframe|embed|object)>/g, '')
+    // Remove links and interactive elements
+    .replace(/<(?:a|button|input|select|textarea)[^>]*?>[\s\S]*?<\/(?:a|button|input|select|textarea)>/g, '')
+    // Remove decorative elements
+    .replace(/<(?:svg|i|span)[^>]*?>[\s\S]*?<\/(?:svg|i|span)>/g, '');
 
-  // Step 3: Keep only basic text formatting
-  const allowedTags = 'p|strong|em|i|b|h[1-6]|blockquote';
+  // Step 3: Keep only essential story formatting
+  const allowedTags = ['p', 'strong', 'em', 'i', 'b', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote'];
   sanitized = sanitized
-    .replace(new RegExp(`<(?!\/?(?:${allowedTags})\\b)[^>]+>`, 'g'), '')
-    .replace(/<(h[1-6])[^>]*>(.*?)<\/\1>/g, (_, tag, content) => `\n\n${content}\n\n`)
+    .replace(new RegExp(`<(?!\/?(?:${allowedTags.join('|')})\\b)[^>]+>`, 'g'), '')
+    .replace(/<(h[1-6])[^>]*>(.*?)<\/\1>/g, '\n\n$2\n\n')
     .replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n\n')
     .replace(/<p>\s*<\/p>/g, '');
 
-  // Step 4: Clean up special characters and formatting
+  // Step 4: Clean up special characters and whitespace
   sanitized = sanitized
-    // Basic HTML entities
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
-    // Typography symbols
     .replace(/&#8211;|&ndash;/g, '–')
     .replace(/&#8212;|&mdash;/g, '—')
-    .replace(/&#8216;|&lsquo;/g, '‘')
-    .replace(/&#8217;|&rsquo;/g, '’')
-    .replace(/&#8220;|&ldquo;/g, '“')
-    .replace(/&#8221;|&rdquo;/g, '”')
+    .replace(/&#8216;|&lsquo;/g, ''')
+    .replace(/&#8217;|&rsquo;/g, ''')
+    .replace(/&#8220;|&ldquo;/g, '"')
+    .replace(/&#8221;|&rdquo;/g, '"')
     .replace(/&#8230;|&hellip;/g, '…')
-    // Remove excess whitespace
     .replace(/[\t\r\f\v]+/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Step 5: Final formatting
+  // Final formatting
   return sanitized
     .split('\n')
     .map(line => line.trim())
@@ -90,8 +87,18 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       order: 'desc',
       _fields: 'id,date,title,content,excerpt,slug',
       exclude_blocks: [
-        'core/paragraph', // Keep only raw paragraph content
+        'core/query',
+        'core/post-template',
+        'core/post-content',
+        'core/post-excerpt',
+        'core/post-title',
+        'core/post-date',
+        'core/post-terms',
+        'core/latest-posts',
         'core/social-links',
+        'core/social-icons',
+        'core/sharing',
+        'core/follow',
         'core/buttons',
         'core/media-text',
         'core/image',
@@ -101,43 +108,21 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
         'core/site-logo',
         'core/post-navigation',
         'core/comments',
-        'core/latest-posts',
-        'core/archives',
-        'core/categories',
-        'core/file',
-        'core/html',
-        'core/preformatted',
-        'core/pullquote',
-        'core/table',
-        'core/verse',
-        'core/video',
-        'core/audio',
-        'core/cover',
-        'core/columns',
-        'core/group',
-        'core/more',
-        'core/nextpage',
-        'core/separator',
-        'core/spacer',
-        'core/social',
-        'core/sharing',
         'core/related-posts'
       ].join(',')
     });
 
     const response = await fetch(`${WORDPRESS_API_URL}?${params}`);
-
     if (!response.ok) {
-      throw new Error(`Failed to fetch WordPress posts: ${response.statusText}`);
+      throw new Error(`Failed to fetch WordPress posts: ${response.status}`);
     }
 
-    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
     const posts = await response.json();
-
     if (!Array.isArray(posts)) {
       throw new Error('Invalid response format from WordPress API');
     }
 
+    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
     if (page < totalPages && page * POSTS_PER_PAGE < MAX_POSTS) {
       const nextPosts = await fetchWordPressPosts(page + 1);
       return [...posts, ...nextPosts].slice(0, MAX_POSTS);
