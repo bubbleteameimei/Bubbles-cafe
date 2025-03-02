@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch, RouteComponentProps } from 'wouter';
+import { Route, Switch } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
@@ -22,6 +22,7 @@ const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const AuthPage = React.lazy(() => import('./pages/auth')); // Add Auth page import
 
 // Settings Pages
 const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
@@ -61,17 +62,19 @@ function App() {
                   <ErrorBoundary>
                     <React.Suspense fallback={<LoadingScreen />}>
                       <Switch>
+                        {/* Auth Routes */}
+                        <Route path="/auth" component={AuthPage} />
+                        <Route path="/signin" component={AuthPage} />
+                        <Route path="/login" component={AuthPage} />
+                        <Route path="/signup" component={AuthPage} />
+
                         {/* Public Routes */}
                         <Route path="/" component={HomePage} />
                         <Route path="/stories" component={StoriesPage} />
                         <Route path="/reader" component={ReaderPage} />
                         <Route path="/story/:slug">
-                          {(params: RouteComponentProps<{ slug: string }>) => (
-                            <ErrorBoundary>
-                              <React.Suspense fallback={<LoadingScreen />}>
-                                <ReaderPage slug={params.params.slug} />
-                              </React.Suspense>
-                            </ErrorBoundary>
+                          {(params) => (
+                            <ReaderPage slug={params.slug} />
                           )}
                         </Route>
                         <Route path="/about" component={AboutPage} />

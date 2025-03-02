@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -19,12 +19,39 @@ export default function TextToSpeechPage() {
   const [pitch, setPitch] = useState([1]);
   const [voice, setVoice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // Initialize speech synthesis
-  const synth = window.speechSynthesis;
-  const voices = synth.getVoices();
+  // Initialize speech synthesis and handle voices loading
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+
+    // Function to load and set voices
+    const loadVoices = () => {
+      const availableVoices = synth.getVoices();
+      setVoices(availableVoices);
+    };
+
+    // Load voices - both immediately and when they become available
+    loadVoices();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
   const handleTestSpeech = () => {
+    if (!window.speechSynthesis) {
+      console.error('Speech synthesis not supported');
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+
     if (isPlaying) {
       synth.cancel();
       setIsPlaying(false);
@@ -40,10 +67,17 @@ export default function TextToSpeechPage() {
     utterance.pitch = pitch[0];
 
     if (voice) {
-      utterance.voice = voices.find(v => v.name === voice) || null;
+      const selectedVoice = voices.find(v => v.name === voice);
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
     }
 
     utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+    };
 
     setIsPlaying(true);
     synth.speak(utterance);
@@ -122,7 +156,7 @@ export default function TextToSpeechPage() {
               <Select
                 value={voice}
                 onValueChange={setVoice}
-                disabled={!enabled}
+                disabled={!enabled || voices.length === 0}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a voice" />
