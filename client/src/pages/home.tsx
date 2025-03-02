@@ -84,7 +84,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   onClick={() => setLocation('/stories')}
-                  className="text-lg h-14 bg-primary/90 hover:bg-primary shadow-lg backdrop-blur-sm"
+                  className="text-lg h-14 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm"
                 >
                   Browse Stories
                   <Book className="ml-2 h-5 w-5" />
@@ -93,7 +93,7 @@ export default function Home() {
                   size="lg"
                   variant="secondary"
                   onClick={() => setLocation('/reader')}
-                  className="text-lg h-14 bg-secondary/80 hover:bg-secondary/90 shadow-lg backdrop-blur-sm"
+                  className="text-lg h-14 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
                 >
                   Start Reading
                   <ArrowRight className="ml-2 h-5 w-5" />
