@@ -40,23 +40,16 @@ export default defineConfig({
     })
   ],
   server: {
-    port: 3001,
+    port: 5000,
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      port: 3001,
+      port: 5000,
       host: '0.0.0.0',
       protocol: 'ws',
     },
     watch: {
       usePolling: true,
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      }
     }
   },
   resolve: {

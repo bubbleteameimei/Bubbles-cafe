@@ -1,6 +1,19 @@
-// Previous imports remain unchanged
+import express from "express";
+import { createServer } from "http";
+import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes";
+import { db } from "./db";
+import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
+import { seedDatabase } from "./seed";
 
-// Update the server listening code in startServer function
+const app = express();
+const isDev = process.env.NODE_ENV !== "production";
+const PORT = process.env.PORT || 5000;
+
+// Create server instance outside startServer for proper cleanup
+let server: ReturnType<typeof createServer>;
+
 async function startServer() {
   try {
     console.log('Starting server initialization...');
@@ -35,11 +48,11 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, "0.0.0.0", () => {
+      server.listen(PORT, () => {
         console.log(`Server running at http://0.0.0.0:${PORT}`);
         console.log('Debug: Server started successfully and waiting for connections');
 
-        // Send port readiness signal with explicit wait_for_port flag
+        // Send port readiness signal
         if (process.send) {
           process.send({
             port: PORT,
@@ -62,3 +75,15 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Start the server
+startServer();
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server?.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});

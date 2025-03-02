@@ -3,47 +3,47 @@ export const theme = {
   colors: {
     // Dark mode (default)
     dark: {
-      background: '#121212',        // Charcoal Black - Deep and soft
-      foreground: '#EAEAEA',        // Off-White - Easy on eyes
-      card: '#1A1A1A',             // Slightly lighter than background
-      cardForeground: '#EAEAEA',    // Off-White
+      background: '#121212',        // Rich Charcoal Black
+      foreground: '#E8E8E8',        // Soft White
+      card: '#1E1E1E',             // Darker Charcoal
+      cardForeground: '#E8E8E8',    // Soft White
       popover: '#121212',          // Match background
-      popoverForeground: '#EAEAEA', // Off-White
-      primary: '#D4AF37',          // Pale Gold - Headers
-      primaryForeground: '#EAEAEA', // Off-White
-      secondary: '#7A1F1F',        // Deep Burgundy - Buttons
-      secondaryForeground: '#EAEAEA', // Off-White
-      muted: '#555555',            // Soft Gray - Accents
-      mutedForeground: '#EAEAEA',  // Off-White
-      accent: '#555555',           // Soft Gray - Accents
-      accentForeground: '#EAEAEA', // Off-White
-      destructive: '#7A1F1F',      // Deep Burgundy
-      destructiveForeground: '#EAEAEA', // Off-White
-      border: '#555555',           // Soft Gray
-      input: '#1A1A1A',            // Slightly lighter than background
-      ring: '#D4AF37',            // Pale Gold
+      popoverForeground: '#E8E8E8', // Soft White
+      primary: '#4A90E2',          // Bright Blue - Primary actions
+      primaryForeground: '#FFFFFF', // Pure White
+      secondary: '#2D3748',        // Slate Gray - Secondary elements
+      secondaryForeground: '#E8E8E8', // Soft White
+      muted: '#4A5568',            // Steel Gray - Muted elements
+      mutedForeground: '#A0AEC0',  // Light Steel Gray
+      accent: '#4A90E2',           // Bright Blue - Accents
+      accentForeground: '#FFFFFF', // Pure White
+      destructive: '#E53E3E',      // Red - Destructive actions
+      destructiveForeground: '#FFFFFF', // Pure White
+      border: '#2D3748',           // Slate Gray
+      input: '#1E1E1E',            // Darker Charcoal
+      ring: '#4A90E2',            // Bright Blue
     },
     // Light mode
     light: {
-      background: '#F3ECE2',        // Linen Beige - Parchment feel
-      foreground: '#1E1E1E',        // Charcoal - Text
-      card: '#FFFFFF',             // Pure White
-      cardForeground: '#1E1E1E',    // Charcoal
-      popover: '#F3ECE2',          // Match background
-      popoverForeground: '#1E1E1E', // Charcoal
-      primary: '#7A1F1F',          // Deep Burgundy - Headers
-      primaryForeground: '#F3ECE2', // Linen Beige
-      secondary: '#C9A661',        // Muted Gold - Buttons
-      secondaryForeground: '#1E1E1E', // Charcoal
-      muted: '#888888',            // Dark Gray - Accents
-      mutedForeground: '#1E1E1E',  // Charcoal
-      accent: '#888888',           // Dark Gray - Accents
-      accentForeground: '#1E1E1E', // Charcoal
-      destructive: '#7A1F1F',      // Deep Burgundy
-      destructiveForeground: '#F3ECE2', // Linen Beige
-      border: '#888888',           // Dark Gray
-      input: '#FFFFFF',            // Pure White
-      ring: '#C9A661',            // Muted Gold
+      background: '#FFFFFF',        // Pure White
+      foreground: '#1A202C',        // Dark Gray - Text
+      card: '#F7FAFC',             // Light Gray Blue
+      cardForeground: '#1A202C',    // Dark Gray
+      popover: '#FFFFFF',          // Pure White
+      popoverForeground: '#1A202C', // Dark Gray
+      primary: '#3182CE',          // Professional Blue
+      primaryForeground: '#FFFFFF', // Pure White
+      secondary: '#4A5568',        // Slate Gray
+      secondaryForeground: '#FFFFFF', // Pure White
+      muted: '#718096',            // Cool Gray
+      mutedForeground: '#4A5568',  // Slate Gray
+      accent: '#3182CE',           // Professional Blue
+      accentForeground: '#FFFFFF', // Pure White
+      destructive: '#E53E3E',      // Red
+      destructiveForeground: '#FFFFFF', // Pure White
+      border: '#E2E8F0',           // Light Gray
+      input: '#F7FAFC',            // Light Gray Blue
+      ring: '#3182CE',            // Professional Blue
     }
   },
   typography: {
@@ -77,8 +77,8 @@ export const theme = {
       lg: '1024px',
       xl: '1280px',
     },
-    minWidth: '320px',  // Prevent squeeze below this width
-    maxWidth: '2560px', // Maximum width for ultra-wide screens
+    minWidth: '320px',
+    maxWidth: '2560px',
   },
   effects: {
     transition: {
