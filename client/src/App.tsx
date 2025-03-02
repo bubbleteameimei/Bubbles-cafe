@@ -16,8 +16,9 @@ import { SidebarProvider } from './components/ui/sidebar';
 
 // Lazy load pages
 const HomePage = React.lazy(() => import('./pages/home'));
-const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
+const PostsPage = React.lazy(() => import('./components/Posts'));
+const PostDetailPage = React.lazy(() => import('./components/Post'));
 const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
@@ -61,13 +62,14 @@ function App() {
               {/* Main Content */}
               <main className="min-h-screen lg:pl-64">
                 <div className="container mx-auto px-4 py-6">
-                  <React.Suspense fallback={<LoadingScreen />}>
-                    <ErrorBoundary>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={<LoadingScreen />}>
                       <Switch>
                         {/* Public Routes */}
                         <Route path="/" component={HomePage} />
-                        <Route path="/reader" component={ReaderPage} />
                         <Route path="/stories" component={StoriesPage} />
+                        <Route path="/posts" component={PostsPage} />
+                        <Route path="/post/:slug" component={PostDetailPage} />
 
                         {/* Settings Routes */}
                         <Route path="/settings/profile" component={ProfileSettingsPage} />
@@ -101,8 +103,8 @@ function App() {
                           </div>
                         </Route>
                       </Switch>
-                    </ErrorBoundary>
-                  </React.Suspense>
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </div>
                 <Footer />
               </main>

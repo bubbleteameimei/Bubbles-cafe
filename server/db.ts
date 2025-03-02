@@ -6,26 +6,20 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+  throw new Error("DATABASE_URL must be set");
 }
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-  maxUses: 7500,
-  allowExitOnIdle: true
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
 });
 
 export const db = drizzle(pool, { schema });
-
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', {
-    message: err.message,
-    stack: err.stack
-  });
-});
 
 pool.on('connect', async (client) => {
   console.log('New client connected to database');
@@ -51,70 +45,5 @@ pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
-async function testConnection() {
-  let client;
-  try {
-    console.log('Testing database connection...');
-    client = await pool.connect();
-
-    await client.query('SELECT 1');
-    console.log('Database connection test successful');
-
-    const schemaTest = await client.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'posts'
-      );
-    `);
-
-    if (!schemaTest.rows[0].exists) {
-      console.log('Schema initialization may be needed - continuing startup');
-    }
-
-    console.log('Schema verification completed');
-    return true;
-  } catch (err) {
-    console.error('Database connection test failed:', err);
-    throw err;
-  } finally {
-    if (client) {
-      try {
-        await client.release();
-      } catch (releaseErr) {
-        console.error('Error releasing client:', releaseErr);
-      }
-    }
-  }
-}
-
-let retries = 3;
-async function initializeWithRetry() {
-  while (retries > 0) {
-    try {
-      await testConnection();
-      console.log('Database initialization complete');
-      return;
-    } catch (err) {
-      retries--;
-      if (retries > 0) {
-        console.log(`Retrying database initialization. ${retries} attempts remaining`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        console.error('Failed to initialize database after all retries:', err);
-        process.exit(1);
-      }
-    }
-  }
-}
-
-initializeWithRetry()
-  .catch(err => {
-    console.error('Failed to initialize database:', err);
-    const dbUrl = process.env.DATABASE_URL || '';
-    const sanitizedUrl = dbUrl.replace(/\/\/[^@]+@/, '//****:****@');
-    console.error('Database URL format:', sanitizedUrl);
-    process.exit(1);
-  });
 
 export default db;
