@@ -8,18 +8,17 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  // Get initial sidebar state from localStorage instead of cookies since we're not using Next.js
   const defaultOpen = typeof window !== 'undefined' ? 
     localStorage.getItem('sidebar_state') === 'true' : true;
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <div className="flex flex-col min-h-screen">
-        <MainNav />
-        <div className="flex flex-1">
-          <AppSidebar />
-          <main className="flex-1 w-full">
-            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <MainNav />
+          <main className="flex-1 overflow-y-auto">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
               {children}
             </div>
           </main>
