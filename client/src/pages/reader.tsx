@@ -14,7 +14,7 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 
-// Styles for WordPress content
+// Updated story content styles with double line breaks
 const storyContentStyles = `
   .story-content {
     font-family: var(--font-sans);
@@ -23,12 +23,18 @@ const storyContentStyles = `
   }
   .story-content p {
     line-height: 1.7;
-    margin-bottom: 0.8em;
+    margin-bottom: 1em;
     text-align: justify;
+  }
+  .story-content p + p {
+    margin-top: 2em;  /* Double line break effect */
   }
   @media (max-width: 768px) {
     .story-content p {
-      margin-bottom: 0.6em;
+      margin-bottom: 0.8em;
+    }
+    .story-content p + p {
+      margin-top: 1.6em;  /* Slightly reduced on mobile but still distinct */
     }
   }
   .story-content img {
@@ -241,12 +247,46 @@ export default function Reader() {
                 dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
               />
 
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <time>{formattedDate}</time>
-                <span className="text-muted-foreground/30">•</span>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{readingTime}</span>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <time>{formattedDate}</time>
+                  <span className="text-muted-foreground/30">•</span>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{readingTime}</span>
+                  </div>
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center gap-4 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentIndex > 0) {
+                        setCurrentIndex(currentIndex - 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentIndex === 0}
+                    className="group hover:bg-primary/10 transition-all duration-300"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                    Previous Story
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentIndex < posts.length - 1) {
+                        setCurrentIndex(currentIndex + 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentIndex === posts.length - 1}
+                    className="group hover:bg-primary/10 transition-all duration-300"
+                  >
+                    Next Story
+                    <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -292,38 +332,6 @@ export default function Reader() {
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between gap-4 mb-8">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (currentIndex > 0) {
-                      setCurrentIndex(currentIndex - 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                  disabled={currentIndex === 0}
-                  className="group hover:bg-primary/10 transition-all duration-300"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                  Previous Story
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (currentIndex < posts.length - 1) {
-                      setCurrentIndex(currentIndex + 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                  disabled={currentIndex === posts.length - 1}
-                  className="group hover:bg-primary/10 transition-all duration-300"
-                >
-                  Next Story
-                  <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
               </div>
 
               <CommentSection postId={currentPost.id} />
