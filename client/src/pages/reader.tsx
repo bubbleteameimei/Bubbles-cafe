@@ -321,18 +321,6 @@ export default function Reader() {
                     </Button>
 
                     {/* Social Icons */}
-                    {socialLinks.map(({ key, Icon, url }) => (
-                      <Button
-                        key={key}
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSocialShare(key, url)}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="sr-only">Follow on {key}</span>
-                      </Button>
-                    ))}
                   </div>
                 </div>
               </div>
