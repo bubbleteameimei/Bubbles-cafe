@@ -54,12 +54,16 @@ export default function Home() {
 
       {/* Background image */}
       <div 
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 w-full h-full"
         style={{
-          backgroundImage: "url('/IMG_4848.jpeg')",
+          backgroundImage: "url('/attached_assets/IMG_4848.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'brightness(0.6)'
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          filter: 'brightness(0.6)',
+          minHeight: '100vh',
+          minWidth: '100vw'
         }}
       />
 
