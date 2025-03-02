@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background image - without overlay */}
+      {/* Background image - single implementation with built-in darkening */}
       <div 
         className="fixed top-0 left-0 right-0 bottom-0 w-full h-full"
         style={{
@@ -56,6 +56,8 @@ export default function Home() {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
+          opacity: 0.8,
+          filter: 'brightness(0.5)',
           zIndex: 0
         }}
       />
