@@ -13,7 +13,15 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Updated story content styles to match WordPress example
 const storyContentStyles = `
@@ -301,6 +309,67 @@ export default function Reader() {
               dangerouslySetInnerHTML={{ __html: currentPost.content.rendered }}
             />
 
+            {/* Pagination */}
+            <div className="my-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                          setCurrentIndex(currentIndex - 1);
+                        }
+                      }}
+                      className={currentIndex === 0 ? "opacity-50 pointer-events-none" : ""}
+                    />
+                  </PaginationItem>
+                  {posts.map((post, index) => {
+                    // Only show a maximum of 3 pages around the current index
+                    if (index === 0 || 
+                        index === posts.length - 1 || 
+                        (index >= currentIndex - 1 && index <= currentIndex + 1)) {
+                      return (
+                        <PaginationItem key={post.id}>
+                          <PaginationLink 
+                            href="#" 
+                            isActive={index === currentIndex}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentIndex(index);
+                            }}
+                          >
+                            {index + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    // Add ellipsis if there's a gap
+                    if (index === currentIndex - 2 || index === currentIndex + 2) {
+                      return (
+                        <PaginationItem key={`ellipsis-${index}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentIndex < posts.length - 1) {
+                          setCurrentIndex(currentIndex + 1);
+                        }
+                      }}
+                      className={currentIndex === posts.length - 1 ? "opacity-50 pointer-events-none" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
