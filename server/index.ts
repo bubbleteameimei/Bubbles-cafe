@@ -55,7 +55,7 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, () => {
+      server.listen(Number(PORT), '0.0.0.0', () => {
         console.log(`Server running at http://0.0.0.0:${PORT}`);
         console.log('Debug: Server started successfully and waiting for connections');
 
@@ -84,7 +84,10 @@ async function startServer() {
 }
 
 // Start the server
-startServer();
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {

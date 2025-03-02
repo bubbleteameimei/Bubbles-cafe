@@ -69,6 +69,16 @@ html, body, #root {
     --input: 0 0% 12%;           /* #1E1E1E - Rich Dark Gray */
     --ring: 29 35% 49%;          /* #A67C52 - Warm Brown */
     --radius: 0.375rem;
+
+    /* Sidebar Variables - Light Mode */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
@@ -91,6 +101,16 @@ html, body, #root {
     --border: 24 8% 22%;         /* #3d3630 - Darker border */
     --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
     --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
+
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   * {
@@ -139,22 +159,22 @@ html, body, #root {
     transform: scale(1.05);
     filter: brightness(1.1);
   }
-  
+
   /* Custom button styles */
   .btn-charcoal {
     background-color: #121212;
     color: white;
   }
-  
+
   .btn-charcoal:hover {
     background-color: #1a1a1a;
   }
-  
+
   .btn-darkgrey {
     background-color: #444444;
     color: white;
   }
-  
+
   .btn-darkgrey:hover {
     background-color: #505050;
   }
