@@ -281,14 +281,19 @@ html, body, #root {
   .story-content {
     font-family: "Cormorant Garamond", "EB Garamond", serif;
     font-size: calc(1.125rem + 0.3vw);
-    line-height: 1.8;
+    line-height: 1.6;
     letter-spacing: 0.01em;
-    white-space: pre-wrap;
+    white-space: pre-line;
   }
 
   .story-content p {
-    margin-bottom: 1.5rem;
-    line-height: 1.8;
+    margin-bottom: 1rem;
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  .story-content p + p {
+    margin-top: 0.5rem; /* Reduced from 2em */
   }
 
   .story-content em,
@@ -308,11 +313,30 @@ html, body, #root {
     font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
     border-left: 4px solid hsl(var(--primary));
     padding-left: 1.5rem;
-    margin: 2rem 0;
+    margin: 1.5rem 0; /* Reduced from 2rem */
     font-style: italic;
     color: hsl(var(--muted-foreground));
   }
 
+  /* Adjust spacing for mobile devices */
+  @media (max-width: 768px) {
+    .story-content {
+      font-size: calc(1rem + 0.2vw);
+    }
+
+    .story-content p {
+      margin-bottom: 0.75rem;
+    }
+
+    .story-content p + p {
+      margin-top: 0.5rem;
+    }
+
+    .story-content blockquote {
+      margin: 1rem 0;
+      padding-left: 1rem;
+    }
+  }
   .loading-screen {
     width: 100vw;
     height: 100vh;
@@ -332,7 +356,7 @@ html, body, #root {
     max-width: var(--container-max-width, 1200px);
     margin: 0 auto;
   }
-  
+
   .fullscreen {
     width: 100vw;
     height: 100vh;
@@ -344,14 +368,14 @@ html, body, #root {
     background-color: hsl(var(--background));
     padding: 2rem;
   }
-  
+
   .fullscreen-content {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
   }
-  
+
   .fullscreen-textarea {
     width: 100%;
     height: 100%;

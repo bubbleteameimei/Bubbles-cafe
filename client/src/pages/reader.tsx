@@ -396,7 +396,12 @@ export default function Reader({ slug }: ReaderPageProps) {
               style={{
                 fontSize: `${fontSize}px`,
               }}
-              dangerouslySetInnerHTML={{ __html: currentPost.content.rendered }}
+              dangerouslySetInnerHTML={{
+                __html: currentPost.content.rendered
+                  .replace(/\n\n+/g, '\n\n') // Replace multiple newlines with double newline
+                  .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
+                  .replace(/<p>(.*?)<\/p>/g, (match, p1) => `<p>${p1.trim()}</p>`) // Trim paragraph content
+              }}
             />
 
             <div className="mt-8 pt-8 border-t border-border">
