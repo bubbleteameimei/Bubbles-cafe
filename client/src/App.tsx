@@ -14,78 +14,45 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 
-// Enhanced error boundary with better fallback UI
-const LazyLoadErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ErrorBoundary 
-    fallback={
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-        <h2 className="text-xl font-semibold mb-2">Unable to load page</h2>
-        <p className="text-muted-foreground mb-4">Please try refreshing the page</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
-          Refresh Page
-        </button>
-      </div>
-    }
-  >
-    {children}
-  </ErrorBoundary>
-);
-
-// Add logging to lazyLoad wrapper
-const lazyLoad = (importFn: () => Promise<any>) => {
-  const Component = React.lazy(() => {
-    console.log('[LazyLoad] Loading component...');
-    return importFn().then(module => {
-      console.log('[LazyLoad] Component loaded successfully');
-      return module;
-    }).catch(error => {
-      console.error('[LazyLoad] Failed to load component:', error);
-      throw error;
-    });
-  });
-
-  return (props: any) => (
-    <LazyLoadErrorBoundary>
-      <React.Suspense 
-        fallback={
-          <div className="flex justify-center items-center min-h-[60vh]">
-            <LoadingScreen />
-          </div>
-        }
-      >
-        <Component {...props} />
-      </React.Suspense>
-    </LazyLoadErrorBoundary>
-  );
-};
-
-// Lazy load pages with proper error boundaries
-const HomePage = lazyLoad(() => import('./pages/home'));
-const ReaderPage = lazyLoad(() => import('./pages/reader'));
-const StoriesPage = lazyLoad(() => import('./pages/index'));
-const AboutPage = lazyLoad(() => import('./pages/about'));
-const ContactPage = lazyLoad(() => import('./pages/contact'));
-const PrivacyPage = lazyLoad(() => import('./pages/privacy'));
-const ReportBugPage = lazyLoad(() => import('./pages/report-bug'));
-const AuthPage = lazyLoad(() => import('./pages/auth'));
+// Lazy load pages with proper error boundaries and suspense
+const HomePage = React.lazy(() => import('./pages/home'));
+const ReaderPage = React.lazy(() => import('./pages/reader'));
+const StoriesPage = React.lazy(() => import('./pages/index'));
+const AboutPage = React.lazy(() => import('./pages/about'));
+const ContactPage = React.lazy(() => import('./pages/contact'));
+const PrivacyPage = React.lazy(() => import('./pages/privacy'));
+const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const AuthPage = React.lazy(() => import('./pages/auth'));
 
 // Settings Pages
-const ProfileSettingsPage = lazyLoad(() => import('./pages/settings/profile'));
-const ThemeSettingsPage = lazyLoad(() => import('./pages/settings/theme'));
-const FontSettingsPage = lazyLoad(() => import('./pages/settings/fonts'));
-const AccessibilitySettingsPage = lazyLoad(() => import('./pages/settings/accessibility'));
-const TextToSpeechPage = lazyLoad(() => import('./pages/settings/text-to-speech'));
-const DisplaySettingsPage = lazyLoad(() => import('./pages/settings/display'));
-const NotificationSettingsPage = lazyLoad(() => import('./pages/settings/notifications'));
-const PrivacySettingsPage = lazyLoad(() => import('./pages/settings/privacy'));
-const ConnectedAccountsPage = lazyLoad(() => import('./pages/settings/connected-accounts'));
-const OfflineSettingsPage = lazyLoad(() => import('./pages/settings/offline'));
-const ContrastSettingsPage = lazyLoad(() => import('./pages/settings/contrast'));
-const QuickSettingsPage = lazyLoad(() => import('./pages/settings/quick-settings'));
-const PreviewSettingsPage = lazyLoad(() => import('./pages/settings/preview'));
+const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
+const ThemeSettingsPage = React.lazy(() => import('./pages/settings/theme'));
+const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
+const TextToSpeechPage = React.lazy(() => import('./pages/settings/text-to-speech'));
+const DisplaySettingsPage = React.lazy(() => import('./pages/settings/display'));
+const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
+const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
+const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
+const OfflineSettingsPage = React.lazy(() => import('./pages/settings/offline'));
+const ContrastSettingsPage = React.lazy(() => import('./pages/settings/contrast'));
+const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
+const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
+
+// Wrapper component for lazy-loaded routes with error handling
+const LazyRoute: React.FC<{ 
+  component: React.LazyExoticComponent<React.ComponentType<any>>;
+  params?: Record<string, any>;
+}> = ({ 
+  component: Component,
+  params 
+}) => {
+  return (
+    <React.Suspense fallback={<LoadingScreen />}>
+      <Component {...params} />
+    </React.Suspense>
+  );
+};
 
 function App() {
   usePerformanceMonitoring();
@@ -110,37 +77,37 @@ function App() {
                   <ErrorBoundary>
                     <Switch>
                       {/* Auth Routes */}
-                      <Route path="/auth" component={AuthPage} />
-                      <Route path="/signin" component={AuthPage} />
-                      <Route path="/login" component={AuthPage} />
-                      <Route path="/signup" component={AuthPage} />
+                      <Route path="/auth">{() => <LazyRoute component={AuthPage} />}</Route>
+                      <Route path="/signin">{() => <LazyRoute component={AuthPage} />}</Route>
+                      <Route path="/login">{() => <LazyRoute component={AuthPage} />}</Route>
+                      <Route path="/signup">{() => <LazyRoute component={AuthPage} />}</Route>
 
                       {/* Public Routes */}
-                      <Route path="/" component={HomePage} />
-                      <Route path="/stories" component={StoriesPage} />
-                      <Route path="/reader" component={ReaderPage} />
+                      <Route path="/">{() => <LazyRoute component={HomePage} />}</Route>
+                      <Route path="/stories">{() => <LazyRoute component={StoriesPage} />}</Route>
+                      <Route path="/reader">{() => <LazyRoute component={ReaderPage} />}</Route>
                       <Route path="/story/:slug">
-                        {(params) => <ReaderPage slug={params.slug} />}
+                        {(params) => <LazyRoute component={ReaderPage} params={{ slug: params.slug }} />}
                       </Route>
-                      <Route path="/about" component={AboutPage} />
-                      <Route path="/contact" component={ContactPage} />
-                      <Route path="/report-bug" component={ReportBugPage} />
-                      <Route path="/privacy" component={PrivacyPage} />
+                      <Route path="/about">{() => <LazyRoute component={AboutPage} />}</Route>
+                      <Route path="/contact">{() => <LazyRoute component={ContactPage} />}</Route>
+                      <Route path="/report-bug">{() => <LazyRoute component={ReportBugPage} />}</Route>
+                      <Route path="/privacy">{() => <LazyRoute component={PrivacyPage} />}</Route>
 
                       {/* Settings Routes */}
-                      <Route path="/settings/profile" component={ProfileSettingsPage} />
-                      <Route path="/settings/theme" component={ThemeSettingsPage} />
-                      <Route path="/settings/fonts" component={FontSettingsPage} />
-                      <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                      <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
-                      <Route path="/settings/display" component={DisplaySettingsPage} />
-                      <Route path="/settings/notifications" component={NotificationSettingsPage} />
-                      <Route path="/settings/privacy" component={PrivacySettingsPage} />
-                      <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                      <Route path="/settings/offline" component={OfflineSettingsPage} />
-                      <Route path="/settings/contrast" component={ContrastSettingsPage} />
-                      <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-                      <Route path="/settings/preview" component={PreviewSettingsPage} />
+                      <Route path="/settings/profile">{() => <LazyRoute component={ProfileSettingsPage} />}</Route>
+                      <Route path="/settings/theme">{() => <LazyRoute component={ThemeSettingsPage} />}</Route>
+                      <Route path="/settings/fonts">{() => <LazyRoute component={FontSettingsPage} />}</Route>
+                      <Route path="/settings/accessibility">{() => <LazyRoute component={AccessibilitySettingsPage} />}</Route>
+                      <Route path="/settings/text-to-speech">{() => <LazyRoute component={TextToSpeechPage} />}</Route>
+                      <Route path="/settings/display">{() => <LazyRoute component={DisplaySettingsPage} />}</Route>
+                      <Route path="/settings/notifications">{() => <LazyRoute component={NotificationSettingsPage} />}</Route>
+                      <Route path="/settings/privacy">{() => <LazyRoute component={PrivacySettingsPage} />}</Route>
+                      <Route path="/settings/connected-accounts">{() => <LazyRoute component={ConnectedAccountsPage} />}</Route>
+                      <Route path="/settings/offline">{() => <LazyRoute component={OfflineSettingsPage} />}</Route>
+                      <Route path="/settings/contrast">{() => <LazyRoute component={ContrastSettingsPage} />}</Route>
+                      <Route path="/settings/quick-settings">{() => <LazyRoute component={QuickSettingsPage} />}</Route>
+                      <Route path="/settings/preview">{() => <LazyRoute component={PreviewSettingsPage} />}</Route>
 
                       {/* 404 Route */}
                       <Route>
