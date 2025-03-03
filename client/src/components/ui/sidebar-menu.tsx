@@ -57,7 +57,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {/* Add base text color and hover states for menu items */}
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location === '/'}
@@ -119,7 +118,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                   >
                     <div className="flex items-center">
