@@ -47,7 +47,7 @@ html, body, #root {
 @tailwind utilities;
 
 @layer base {
-  /* Root Variables - Updated to match background image */
+  /* Root Variables - Updated to match sidebar colors */
   :root {
     --background: 0 0% 7%;       /* #121212 - Deep Charcoal */
     --foreground: 0 0% 92%;      /* #EAEAEA - Soft White */
@@ -55,7 +55,7 @@ html, body, #root {
     --card-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
     --popover: 0 0% 7%;          /* #121212 - Deep Charcoal */
     --popover-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
-    --primary: 29 35% 49%;       /* #A67C52 - Warm Brown */
+    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
     --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
     --secondary: 26 14% 15%;     /* #2C2620 - Deep Brown */
     --secondary-foreground: 0 0% 92%; /* #EAEAEA - Soft White */
@@ -88,8 +88,8 @@ html, body, #root {
     --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
     --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
     --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --primary: 24 16% 42%;       /* #7d6759 - Medium brown */
-    --primary-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
     --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
     --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
     --muted: 24 5% 19%;          /* #32302c - Darker muted */

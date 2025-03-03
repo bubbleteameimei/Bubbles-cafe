@@ -1,7 +1,7 @@
 // Define our theme colors and styles
 export const theme = {
   colors: {
-    // Dark mode (default) - Optimized for background image
+    // Dark mode (default) - Using sidebar colors
     dark: {
       background: '#121212',        // Deep Charcoal - For image overlay
       foreground: '#EAEAEA',        // Soft White - For readability on dark
@@ -9,7 +9,7 @@ export const theme = {
       cardForeground: '#EAEAEA',    // Soft White
       popover: '#121212',           // Deep Charcoal
       popoverForeground: '#EAEAEA', // Soft White
-      primary: '#A67C52',           // Warm Brown - Complements image
+      primary: '#3D63DD',           // Vibrant Blue - From sidebar
       primaryForeground: '#FFFFFF', // Pure White
       secondary: '#2C2620',         // Deep Brown - Subtle secondary elements
       secondaryForeground: '#EAEAEA', // Soft White
