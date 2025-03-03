@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({
   path,
   component: Component,
-  requireAdmin = false
+  requireAdmin = false,
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
