@@ -196,3 +196,73 @@ export default function TextToSpeechPage() {
     </div>
   );
 }
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+export default function TextToSpeechPage() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Text-to-Speech Settings</h1>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Voice Settings</CardTitle>
+          <CardDescription>Customize how stories are read aloud to you</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="tts-enable">Enable Text-to-Speech</Label>
+            <Switch id="tts-enable" defaultChecked />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Voice</Label>
+            <Select defaultValue="female-1">
+              <SelectTrigger>
+                <SelectValue placeholder="Select a voice" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="female-1">Female Voice 1</SelectItem>
+                <SelectItem value="female-2">Female Voice 2</SelectItem>
+                <SelectItem value="male-1">Male Voice 1</SelectItem>
+                <SelectItem value="male-2">Male Voice 2</SelectItem>
+                <SelectItem value="eerie-1">Eerie Voice</SelectItem>
+                <SelectItem value="creepy-1">Creepy Whisper</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="speech-rate">Speaking Rate</Label>
+              <span className="text-sm text-muted-foreground">Normal</span>
+            </div>
+            <Slider defaultValue={[50]} max={100} step={1} id="speech-rate" />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="speech-pitch">Pitch</Label>
+              <span className="text-sm text-muted-foreground">Medium</span>
+            </div>
+            <Slider defaultValue={[50]} max={100} step={1} id="speech-pitch" />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="auto-play">Auto-play for new stories</Label>
+            <Switch id="auto-play" />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="highlight-text">Highlight text while reading</Label>
+            <Switch id="highlight-text" defaultChecked />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -41,8 +41,14 @@ const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyri
 const TermsPage = withSuspense(React.lazy(() => import('./pages/legal/terms')));
 const CookiePolicyPage = withSuspense(React.lazy(() => import('./pages/legal/cookie-policy')));
 
+// Community Pages
+const CommunityPage = withSuspense(React.lazy(() => import('./pages/community')));
+const FeedbackPage = withSuspense(React.lazy(() => import('./pages/feedback')));
+
 // Settings Pages
 const ProfileSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/profile')));
+const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/settings/connected-accounts')));
+const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/text-to-speech')));
 const ThemeSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/theme')));
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
@@ -100,9 +106,15 @@ function App() {
                       <Route path="/legal/copyright" component={CopyrightPage} />
                       <Route path="/legal/terms" component={TermsPage} />
                       <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+                      
+                      {/* Community Routes */}
+                      <Route path="/community" component={CommunityPage} />
+                      <Route path="/feedback" component={FeedbackPage} />
 
                       {/* Settings Routes */}
                       <Route path="/settings/profile" component={ProfileSettingsPage} />
+                      <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                      <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
                       <Route path="/settings/theme" component={ThemeSettingsPage} />
                       <Route path="/settings/fonts" component={FontSettingsPage} />
                       <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
