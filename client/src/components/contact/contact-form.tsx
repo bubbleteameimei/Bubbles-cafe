@@ -126,7 +126,7 @@ export default function ContactForm() {
             control={form.control}
             name="showEmail"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-indigo-500/60 p-4 transition-colors hover:border-indigo-400 hover:bg-slate-800/30 bg-slate-800/20">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">Share Email</FormLabel>
                   <div className="text-sm text-muted-foreground">
