@@ -1,155 +1,97 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronsUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { useState } from "react";
 
 export default function Privacy() {
-  const [sections, setSections] = useState({
-    contentProtection: false,
-    infoCollect: false,
-    howWeUse: false,
-    dataSecurity: false,
-  });
-
-  const toggleSection = (section: keyof typeof sections) => {
-    setSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
   return (
     <div className="container max-w-4xl mx-auto py-8">
       <Card className="backdrop-blur-sm bg-card/90">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Privacy Policy</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Last updated: {new Date().toLocaleDateString()}
+          </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-6 prose prose-invert max-w-none">
-            {/* Content Protection Section */}
-            <Collapsible
-              open={sections.contentProtection}
-              onOpenChange={() => toggleSection('contentProtection')}
-              className="w-full space-y-2"
-            >
-              <div className="flex items-center justify-between border-b pb-2">
-                <h2 className="text-xl font-semibold">Content Protection Notice</h2>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 p-0">
-                    <ChevronsUpDown className="h-4 w-4" />
-                    <span className="sr-only">Toggle</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent>
-                <p className="text-muted-foreground whitespace-pre-line mt-2">
-                  ALL CONTENT ON THIS SITE IS ORIGINAL AND PROTECTED. UNAUTHORIZED REPRODUCTION, PLAGIARISM, OR COMMERCIAL TRANSLATION OF MY WORK IS STRICTLY PROHIBITED AND MAY RESULT IN LEGAL ACTION. IF YOU WISH TO SHARE OR USE ANY CONTENT, PLEASE OBTAIN PRIOR PERMISSION BY CONTACTING ME DIRECTLY.
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Content Protection Notice</h2>
+              <p className="text-muted-foreground whitespace-pre-line">
+                ALL CONTENT ON THIS SITE IS ORIGINAL AND PROTECTED. UNAUTHORIZED REPRODUCTION, PLAGIARISM, OR COMMERCIAL TRANSLATION OF MY WORK IS STRICTLY PROHIBITED AND MAY RESULT IN LEGAL ACTION. IF YOU WISH TO SHARE OR USE ANY CONTENT, PLEASE OBTAIN PRIOR PERMISSION BY CONTACTING ME DIRECTLY.
 
-                  THANK YOU FOR YOUR SUPPORT, AND ENJOY THE STORIES.
-                </p>
-              </CollapsibleContent>
-            </Collapsible>
+                THANK YOU FOR YOUR SUPPORT, AND ENJOY THE STORIES.
+              </p>
+            </section>
 
-            {/* Information We Collect Section */}
-            <Collapsible
-              open={sections.infoCollect}
-              onOpenChange={() => toggleSection('infoCollect')}
-              className="w-full space-y-2"
-            >
-              <div className="flex items-center justify-between border-b pb-2">
-                <h2 className="text-xl font-semibold">Information We Collect</h2>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 p-0">
-                    <ChevronsUpDown className="h-4 w-4" />
-                    <span className="sr-only">Toggle</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent className="space-y-4 mt-2">
-                <p className="text-muted-foreground">We may collect the following types of information:</p>
-                
-                <h3 className="text-lg font-semibold">Personal Information</h3>
-                <p className="text-muted-foreground">
-                  When you register, comment, or interact with our Website, we may collect:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                  <li>Name</li>
-                  <li>Email address</li>
-                  <li>Any other information you voluntarily provide</li>
-                </ul>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Information We Collect</h2>
+              <p className="text-muted-foreground">We may collect the following types of information:</p>
 
-                <h3 className="text-lg font-semibold">Non-Personal Information</h3>
-                <p className="text-muted-foreground">
-                  We may collect data that does not directly identify you, such as:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                  <li>Browser type and version</li>
-                  <li>IP address</li>
-                  <li>Device information</li>
-                  <li>Usage data (e.g., pages visited, time spent on the Website)</li>
-                </ul>
-              </CollapsibleContent>
-            </Collapsible>
+              <h3 className="text-lg font-semibold">Personal Information</h3>
+              <p className="text-muted-foreground">
+                When you create an account or interact with our Website, we may collect:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Name</li>
+                <li>Email address</li>
+                <li>Username</li>
+                <li>Password (encrypted)</li>
+              </ul>
 
-            {/* How We Use Your Information Section */}
-            <Collapsible
-              open={sections.howWeUse}
-              onOpenChange={() => toggleSection('howWeUse')}
-              className="w-full space-y-2"
-            >
-              <div className="flex items-center justify-between border-b pb-2">
-                <h2 className="text-xl font-semibold">How We Use Your Information</h2>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 p-0">
-                    <ChevronsUpDown className="h-4 w-4" />
-                    <span className="sr-only">Toggle</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent className="mt-2">
-                <p className="text-muted-foreground">We use the collected information to:</p>
-                <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-                  <li>Provide and improve our services</li>
-                  <li>Customize your experience on the Website</li>
-                  <li>Enable interactive features (e.g., commenting, story tracking)</li>
-                  <li>Respond to inquiries or requests</li>
-                  <li>Monitor Website security and prevent fraud</li>
-                  <li>Comply with legal obligations</li>
-                </ul>
-                <p className="text-muted-foreground mt-2">
-                  We do not sell or share your personal data with third parties for marketing purposes.
-                </p>
-              </CollapsibleContent>
-            </Collapsible>
+              <h3 className="text-lg font-semibold">Non-Personal Information</h3>
+              <p className="text-muted-foreground">
+                We may collect data that does not directly identify you, such as:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Browser type and version</li>
+                <li>IP address</li>
+                <li>Device information</li>
+                <li>Usage data (e.g., pages visited, time spent on the Website)</li>
+              </ul>
+            </section>
 
-            {/* Data Security Section */}
-            <Collapsible
-              open={sections.dataSecurity}
-              onOpenChange={() => toggleSection('dataSecurity')}
-              className="w-full space-y-2"
-            >
-              <div className="flex items-center justify-between border-b pb-2">
-                <h2 className="text-xl font-semibold">Data Security</h2>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 p-0">
-                    <ChevronsUpDown className="h-4 w-4" />
-                    <span className="sr-only">Toggle</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent className="mt-2">
-                <p className="text-muted-foreground">
-                  We implement appropriate security measures to protect your data. However, no online platform is completely secure. 
-                  We encourage you to use strong passwords and exercise caution when sharing personal information.
-                </p>
-              </CollapsibleContent>
-            </Collapsible>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">How We Use Your Information</h2>
+              <p className="text-muted-foreground">
+                We use the information we collect to:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Provide, maintain, and improve our services</li>
+                <li>Personalize your experience</li>
+                <li>Process transactions</li>
+                <li>Send notifications and updates</li>
+                <li>Analyze user behavior to enhance our Website</li>
+                <li>Detect and prevent fraud or abuse</li>
+              </ul>
+              <p className="text-muted-foreground mt-2">
+                We do not sell or share your personal data with third parties for marketing purposes.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Data Security</h2>
+              <p className="text-muted-foreground">
+                We implement reasonable security measures to protect your information from unauthorized access, disclosure, or destruction. However, no method of transmission over the internet or electronic storage is 100% secure, and we cannot guarantee absolute security.
+              </p>
+              <p className="text-muted-foreground">
+                Your password is encrypted, and we never store plain text passwords. You are responsible for maintaining the confidentiality of your account credentials.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Cookies and Similar Technologies</h2>
+              <p className="text-muted-foreground">
+                We use cookies and similar technologies to enhance your experience, analyze usage patterns, and deliver personalized content. You can control cookie settings through your browser preferences.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Contact Information</h2>
+              <p className="text-muted-foreground">
+                If you have any questions about this Privacy Policy, please contact us at:
+              </p>
+              <p className="text-muted-foreground">
+                Email: support@example.com
+              </p>
+            </section>
           </div>
         </CardContent>
       </Card>
