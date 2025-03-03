@@ -15,35 +15,38 @@ export default function AboutPage() {
           <h1 className="text-4xl font-bold">About Me</h1>
         </div>
 
-        <div className="bg-card rounded-lg shadow-lg p-6 space-y-6">
-          <div className="prose dark:prose-invert max-w-none">
-            <p>
-              Welcome to my little corner of the web, where nightmares come alive through words. I'm a writer with a passion for the macabre, the disturbing, and the things that go bump in the night.
-            </p>
+        <div className="prose dark:prose-invert max-w-none space-y-6">
+          <p>
+            Hi hi, My name is Vanessa. This website is my digital collection of short horror stories, designed to be consumed in one sitting. Fluent in English and Chinese.
+          </p>
 
-            <p>
-              Ever since I was young, I've been fascinated by horror stories. There's something about the thrill of fear, the racing heart, and the rush of adrenaline that comes from experiencing horror in a controlled environment that I find irresistible.
-            </p>
+          <p>
+            My writing explores the darkest corners of the human mind, delving into fears both common and uncommon. I believe that horror is a deeply personal experience, and what terrifies one person might not affect another at all. That's why I try to create a diverse range of horror stories, hoping that at least one of them will find that tender spot in your psyche that makes you leave the light on at night.
+          </p>
 
-            <p>
-              My writing explores the darkest corners of the human mind, delving into fears both common and uncommon. I believe that horror is a deeply personal experience, and what terrifies one person might not affect another at all. That's why I try to create a diverse range of horror stories, hoping that at least one of them will find that tender spot in your psyche that makes you leave the light on at night.
-            </p>
+          <p>
+            I hope you enjoy your time here. Feel free to leave comments, share your thoughts, or reach out to me directly.
+          </p>
 
-            <p>
-              When I'm not writing, I'm reading works by masters of horror like Stephen King, Shirley Jackson, and Junji Ito, watching horror movies that others find too disturbing, or exploring abandoned places that whisper stories of their own.
-            </p>
+          <p>
+            If you have anything you need to ask or comment about please leave a comment or drop me an email through the contact page. I will try to reply ASAP. If you do not hear back from me within a week, please feel free to send another message.
+          </p>
 
-            <p>
-              This website is my digital collection of short horror stories, designed to be consumed in one sitting. Perfect for those moments when you want a quick scare during your lunch break, before bed (if you dare), or while waiting for someone who's running late.
-            </p>
+          <p>
+            And remember, that creeping sensation on the back of your neck while reading my stories? It might not just be your imagination...
+          </p>
 
-            <p>
-              I hope you enjoy your time here. Feel free to leave comments, share your thoughts, or reach out to me directly. And remember, that creeping sensation on the back of your neck while reading my stories? It might not just be your imagination...
-            </p>
+          <p className="italic text-center mt-8">
+            "No great mind has ever existed without a touch of madness."<br/>
+            - Aristotle
+          </p>
 
-            <p className="italic text-center mt-8">
-              "No great mind has ever existed without a touch of madness."<br/>
-              - Aristotle
+          <div className="border-t border-t-primary/30 pt-6 mt-6">
+            <p className="font-bold text-center text-sm">
+              DISCLAIMER
+            </p>
+            <p className="text-sm">
+              ALL STORIES ON THIS SITE ARE ORIGINAL WORKS. ANY FORM OF PLAGIARISM OR UNAUTHORISED REPRODUCTION OF MY CONTENT WILL BE TAKEN SERIOUSLY AND MAY RESULT IN LEGAL ACTION. RETRANSLATING OF MY WORK INTO ANOTHER LANGUAGE FOR PROFIT IS NOT ALLOWED. IF YOU WOULD LIKE TO SHARE OR USE MY WORK, PLEASE CONTACT ME FIRST FOR PERMISSION.
             </p>
           </div>
 
