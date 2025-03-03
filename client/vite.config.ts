@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path, { dirname } from "path";
@@ -40,13 +41,13 @@ export default defineConfig({
     })
   ],
   server: {
-    port: 5000,
+    port: 3000,
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      port: 5000,
+      clientPort: 443,
+      port: 3000,
       host: '0.0.0.0',
-      protocol: 'ws',
     },
     watch: {
       usePolling: true,
