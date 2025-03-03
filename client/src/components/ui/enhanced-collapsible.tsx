@@ -52,7 +52,7 @@ export function EnhancedCollapsible({
   )
   
   const contentStyles = cn(
-    "overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down",
+    "w-full overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down",
     variant === "default" && "px-1 pt-2 pb-4",
     variant === "bordered" && "px-4 py-3",
     variant === "card" && "px-4 py-3",
@@ -66,10 +66,10 @@ export function EnhancedCollapsible({
       onOpenChange={setIsOpen}
       className={containerStyles}
     >
-      <div className="flex items-center justify-between space-x-4">
+      <div className="w-full">
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className={triggerStyles}>
-            <span className="text-left">{title}</span>
+            <span className="text-left flex-grow">{title}</span>
             {icon === "chevron" && (
               <ChevronsUpDown className={cn("h-4 w-4 shrink-0 transition-transform duration-300", isOpen && "rotate-180")} />
             )}
@@ -81,7 +81,9 @@ export function EnhancedCollapsible({
         </CollapsibleTrigger>
       </div>
       <CollapsibleContent className={contentStyles}>
-        {children}
+        <div className="w-full">
+          {children}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   )
