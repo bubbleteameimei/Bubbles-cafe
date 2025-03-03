@@ -14,7 +14,7 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 
-// Lazy load pages with proper error boundaries and suspense
+// Lazy load pages
 const HomePage = React.lazy(() => import('./pages/home'));
 const ReaderPage = React.lazy(() => import('./pages/reader'));
 const StoriesPage = React.lazy(() => import('./pages/index'));
@@ -39,20 +39,10 @@ const ContrastSettingsPage = React.lazy(() => import('./pages/settings/contrast'
 const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
 const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-// Wrapper component for lazy-loaded routes with error handling
-const LazyRoute: React.FC<{ 
-  component: React.LazyExoticComponent<React.ComponentType<any>>;
-  params?: Record<string, any>;
-}> = ({ 
-  component: Component,
-  params 
-}) => {
-  return (
-    <React.Suspense fallback={<LoadingScreen />}>
-      <Component {...params} />
-    </React.Suspense>
-  );
-};
+// Route Components
+const RouteComponent: React.FC<{ component: React.LazyExoticComponent<any> }> = ({ component: Component }) => (
+  <Component />
+);
 
 function App() {
   usePerformanceMonitoring();
@@ -75,49 +65,97 @@ function App() {
               <main className="min-h-screen lg:pl-64">
                 <div className="container mx-auto px-4 py-6">
                   <ErrorBoundary>
-                    <Switch>
-                      {/* Auth Routes */}
-                      <Route path="/auth">{() => <LazyRoute component={AuthPage} />}</Route>
-                      <Route path="/signin">{() => <LazyRoute component={AuthPage} />}</Route>
-                      <Route path="/login">{() => <LazyRoute component={AuthPage} />}</Route>
-                      <Route path="/signup">{() => <LazyRoute component={AuthPage} />}</Route>
+                    <React.Suspense fallback={<LoadingScreen />}>
+                      <Switch>
+                        {/* Auth Routes */}
+                        <Route path="/auth">
+                          <RouteComponent component={AuthPage} />
+                        </Route>
+                        <Route path="/signin">
+                          <RouteComponent component={AuthPage} />
+                        </Route>
+                        <Route path="/login">
+                          <RouteComponent component={AuthPage} />
+                        </Route>
+                        <Route path="/signup">
+                          <RouteComponent component={AuthPage} />
+                        </Route>
 
-                      {/* Public Routes */}
-                      <Route path="/">{() => <LazyRoute component={HomePage} />}</Route>
-                      <Route path="/stories">{() => <LazyRoute component={StoriesPage} />}</Route>
-                      <Route path="/reader">{() => <LazyRoute component={ReaderPage} />}</Route>
-                      <Route path="/story/:slug">
-                        {(params) => <LazyRoute component={ReaderPage} params={{ slug: params.slug }} />}
-                      </Route>
-                      <Route path="/about">{() => <LazyRoute component={AboutPage} />}</Route>
-                      <Route path="/contact">{() => <LazyRoute component={ContactPage} />}</Route>
-                      <Route path="/report-bug">{() => <LazyRoute component={ReportBugPage} />}</Route>
-                      <Route path="/privacy">{() => <LazyRoute component={PrivacyPage} />}</Route>
+                        {/* Public Routes */}
+                        <Route path="/">
+                          <RouteComponent component={HomePage} />
+                        </Route>
+                        <Route path="/stories">
+                          <RouteComponent component={StoriesPage} />
+                        </Route>
+                        <Route path="/reader">
+                          <RouteComponent component={ReaderPage} />
+                        </Route>
+                        <Route path="/story/:slug">
+                          <RouteComponent component={ReaderPage} />
+                        </Route>
+                        <Route path="/about">
+                          <RouteComponent component={AboutPage} />
+                        </Route>
+                        <Route path="/contact">
+                          <RouteComponent component={ContactPage} />
+                        </Route>
+                        <Route path="/report-bug">
+                          <RouteComponent component={ReportBugPage} />
+                        </Route>
+                        <Route path="/privacy">
+                          <RouteComponent component={PrivacyPage} />
+                        </Route>
 
-                      {/* Settings Routes */}
-                      <Route path="/settings/profile">{() => <LazyRoute component={ProfileSettingsPage} />}</Route>
-                      <Route path="/settings/theme">{() => <LazyRoute component={ThemeSettingsPage} />}</Route>
-                      <Route path="/settings/fonts">{() => <LazyRoute component={FontSettingsPage} />}</Route>
-                      <Route path="/settings/accessibility">{() => <LazyRoute component={AccessibilitySettingsPage} />}</Route>
-                      <Route path="/settings/text-to-speech">{() => <LazyRoute component={TextToSpeechPage} />}</Route>
-                      <Route path="/settings/display">{() => <LazyRoute component={DisplaySettingsPage} />}</Route>
-                      <Route path="/settings/notifications">{() => <LazyRoute component={NotificationSettingsPage} />}</Route>
-                      <Route path="/settings/privacy">{() => <LazyRoute component={PrivacySettingsPage} />}</Route>
-                      <Route path="/settings/connected-accounts">{() => <LazyRoute component={ConnectedAccountsPage} />}</Route>
-                      <Route path="/settings/offline">{() => <LazyRoute component={OfflineSettingsPage} />}</Route>
-                      <Route path="/settings/contrast">{() => <LazyRoute component={ContrastSettingsPage} />}</Route>
-                      <Route path="/settings/quick-settings">{() => <LazyRoute component={QuickSettingsPage} />}</Route>
-                      <Route path="/settings/preview">{() => <LazyRoute component={PreviewSettingsPage} />}</Route>
+                        {/* Settings Routes */}
+                        <Route path="/settings/profile">
+                          <RouteComponent component={ProfileSettingsPage} />
+                        </Route>
+                        <Route path="/settings/theme">
+                          <RouteComponent component={ThemeSettingsPage} />
+                        </Route>
+                        <Route path="/settings/fonts">
+                          <RouteComponent component={FontSettingsPage} />
+                        </Route>
+                        <Route path="/settings/accessibility">
+                          <RouteComponent component={AccessibilitySettingsPage} />
+                        </Route>
+                        <Route path="/settings/text-to-speech">
+                          <RouteComponent component={TextToSpeechPage} />
+                        </Route>
+                        <Route path="/settings/display">
+                          <RouteComponent component={DisplaySettingsPage} />
+                        </Route>
+                        <Route path="/settings/notifications">
+                          <RouteComponent component={NotificationSettingsPage} />
+                        </Route>
+                        <Route path="/settings/privacy">
+                          <RouteComponent component={PrivacySettingsPage} />
+                        </Route>
+                        <Route path="/settings/connected-accounts">
+                          <RouteComponent component={ConnectedAccountsPage} />
+                        </Route>
+                        <Route path="/settings/offline">
+                          <RouteComponent component={OfflineSettingsPage} />
+                        </Route>
+                        <Route path="/settings/contrast">
+                          <RouteComponent component={ContrastSettingsPage} />
+                        </Route>
+                        <Route path="/settings/quick-settings">
+                          <RouteComponent component={QuickSettingsPage} />
+                        </Route>
+                        <Route path="/settings/preview">
+                          <RouteComponent component={PreviewSettingsPage} />
+                        </Route>
 
-                      {/* 404 Route */}
-                      <Route>
-                        {() => (
+                        {/* 404 Route */}
+                        <Route>
                           <div className="flex min-h-[60vh] items-center justify-center">
                             <h1 className="text-2xl">404 - Page Not Found</h1>
                           </div>
-                        )}
-                      </Route>
-                    </Switch>
+                        </Route>
+                      </Switch>
+                    </React.Suspense>
                   </ErrorBoundary>
                 </div>
                 <Footer />

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import React from 'react';
 import App from "./App";
 import "./index.css";
 
@@ -9,6 +10,16 @@ if (!root) {
   console.error("[Client] Root element not found");
   throw new Error("Root element not found");
 }
+
+// Log CSS loading status
+console.log("[Client] Loading CSS styles...");
+const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+linkElements.forEach(link => {
+  console.log("[Client] Found stylesheet:", link.getAttribute('href'));
+});
+
+console.log("[Client] CSS styles loaded");
+console.log("[Client] Mounting React application...");
 
 // Register service worker
 if ('serviceWorker' in navigator) {
@@ -44,14 +55,20 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Log CSS loading status
-console.log("[Client] Loading CSS styles...");
-const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
-linkElements.forEach(link => {
-  console.log("[Client] Found stylesheet:", link.getAttribute('href'));
-});
 
-console.log("[Client] CSS styles loaded");
-console.log("[Client] Mounting React application...");
-createRoot(root).render(<App />);
-console.log("[Client] React application mounted successfully");
+// Add error boundary for the entire app
+const renderApp = () => {
+  try {
+    const rootElement = createRoot(root);
+    rootElement.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    console.log("[Client] React application mounted successfully");
+  } catch (error) {
+    console.error("[Client] Error mounting React application:", error);
+  }
+};
+
+renderApp();
