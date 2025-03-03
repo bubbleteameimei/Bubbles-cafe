@@ -35,6 +35,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
 
 // Settings Pages
 const ProfileSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/profile')));
@@ -90,6 +91,7 @@ function App() {
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/report-bug" component={ReportBugPage} />
                       <Route path="/privacy" component={PrivacyPage} />
+                      <Route path="/legal/copyright" component={CopyrightPage} />
 
                       {/* Settings Routes */}
                       <Route path="/settings/profile" component={ProfileSettingsPage} />
