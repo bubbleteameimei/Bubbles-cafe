@@ -6,6 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 export default function About() {
   const { toast } = useToast();
 
+  const socialLinks = {
+    instagram: "https://www.instagram.com/bubbleteameimei/",
+    twitter: "https://x.com/Bubbleteameimei",
+    wordpress: "https://bubbleteameimei.wordpress.com"
+  };
+
   const handleSocialClick = (url: string, platform: string) => {
     try {
       window.open(url, "_blank", "noopener,noreferrer");
@@ -21,51 +27,58 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-      <div className="max-w-4xl mx-auto px-6 py-12 space-y-12">
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
         {/* Header Section with Animation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center space-y-4"
+          className="text-center"
         >
-          <h1 className="font-decorative text-4xl md:text-5xl mb-4">About Me</h1>
-          <div className="w-24 h-1 bg-primary/60 mx-auto rounded-full"></div>
+          <h1 className="font-decorative text-5xl md:text-6xl">About Me</h1>
         </motion.div>
 
-        {/* About Content */}
+        {/* Bio Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="prose prose-lg dark:prose-invert max-w-none"
+          className="prose prose-lg dark:prose-invert max-w-4xl mx-auto"
         >
-          <div className="space-y-8">
-            <div className="space-y-4 bg-card/10 backdrop-blur-sm p-6 rounded-lg border border-border/30">
-              <p className="leading-relaxed">
-                Hi hi, My name is Vanessa Chiwetalu, I made this website for my writing.
-                Writing stories is one of my big passions. Fluent in English and Chinese.
-                I'm a big fan of horror themed stories and existential dread.
-              </p>
-            </div>
+          <p className="text-xl leading-relaxed">
+            Welcome to my digital haven of horror. I'm a storyteller fascinated by the darker corners of imagination, where fear meets creativity.
+            My journey began with a simple love for the macabre and has evolved into this collection of short, spine-chilling tales.
+          </p>
+          
+          <p className="text-xl leading-relaxed">
+            Each story I write is a glimpse into the shadows that linger at the edges of everyday life—the fleeting
+            thoughts we dismiss, the strange sensations we ignore, and the whispers we pretend not to hear.
+          </p>
 
-            <div className="space-y-4 bg-card/10 backdrop-blur-sm p-6 rounded-lg border border-border/30">
-              <p className="leading-relaxed">
-                I don't like making FAQs so if you have anything you need to ask or comment about
-                please leave a comment below or drop me an email through the contact page. I will try to reply ASAP.
-                If you do not hear back from me within a week, feel free to send another message.
-              </p>
-            </div>
+          <p className="text-xl leading-relaxed">
+            When I'm not crafting horror, I enjoy exploring abandoned places, collecting vintage books, and searching for
+            inspiration in the ordinary moments that most people overlook. There's something hauntingly beautiful about finding
+            terror in the mundane, don't you think?
+          </p>
+        </motion.div>
 
-            <div className="bg-card/10 backdrop-blur-sm p-6 rounded-lg border border-border/30">
-              <p className="font-bold text-primary-foreground leading-relaxed">
-                ALL STORIES ON THIS SITE ARE ORIGINAL WORKS. ANY FORM OF PLAGIARISM OR UNAUTHORISED
-                REPRODUCTION OF MY CONTENT WILL BE TAKEN SERIOUSLY AND MAY RESULT IN LEGAL ACTION.
-                RETRANSLATING OF MY WORK INTO ANOTHER LANGUAGE FOR PROFIT IS NOT ALLOWED. IF YOU
-                WOULD LIKE TO SHARE OR USE MY WORK, PLEASE CONTACT ME FIRST FOR PERMISSION.
-              </p>
-            </div>
-          </div>
+        {/* Philosophy Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-card/30 backdrop-blur-sm p-8 rounded-lg border border-border/30 max-w-4xl mx-auto"
+        >
+          <h2 className="text-2xl font-semibold mb-4">My Philosophy</h2>
+          <p className="text-lg mb-4">
+            I believe fear is our most primal emotion—the one that kept our ancestors alive in a world full of dangers.
+            By exploring it through fiction, we can safely confront our deepest anxieties and perhaps understand ourselves better.
+          </p>
+          <p className="text-lg">
+            My stories aren't just meant to frighten—they're invitations to question reality, to wonder about the 
+            fragile boundaries we create between the known and unknown, and to consider that sometimes, 
+            the most terrifying monsters are the ones that live within us.
+          </p>
         </motion.div>
 
         {/* Social Media Links */}
@@ -73,53 +86,51 @@ export default function About() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex justify-center gap-6 py-4"
+          className="flex justify-center gap-8 py-8"
         >
           <div 
-            onClick={() => handleSocialClick("https://bubbleteameimei.wordpress.com", "WordPress")}
+            onClick={() => handleSocialClick(socialLinks.wordpress, "WordPress")}
             className="group flex flex-col items-center cursor-pointer transition-all duration-300"
           >
-            <div className="p-3 rounded-full bg-card/20 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-              <SiWordpress className="h-6 w-6" />
+            <div className="p-4 rounded-full bg-card/30 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+              <SiWordpress className="h-8 w-8" />
             </div>
-            <span className="mt-2 text-sm">WordPress</span>
+            <span className="mt-3 text-base">WordPress</span>
           </div>
           
           <div 
-            onClick={() => handleSocialClick("https://twitter.com/vantalison", "Twitter")}
+            onClick={() => handleSocialClick(socialLinks.twitter, "Twitter")}
             className="group flex flex-col items-center cursor-pointer transition-all duration-300"
           >
-            <div className="p-3 rounded-full bg-card/20 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-              <SiX className="h-6 w-6" />
+            <div className="p-4 rounded-full bg-card/30 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+              <SiX className="h-8 w-8" />
             </div>
-            <span className="mt-2 text-sm">Twitter</span>
+            <span className="mt-3 text-base">Twitter</span>
           </div>
           
           <div 
-            onClick={() => handleSocialClick("https://instagram.com/vantalison", "Instagram")}
+            onClick={() => handleSocialClick(socialLinks.instagram, "Instagram")}
             className="group flex flex-col items-center cursor-pointer transition-all duration-300"
           >
-            <div className="p-3 rounded-full bg-card/20 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-              <SiInstagram className="h-6 w-6" />
+            <div className="p-4 rounded-full bg-card/30 backdrop-blur-sm border border-border/30 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+              <SiInstagram className="h-8 w-8" />
             </div>
-            <span className="mt-2 text-sm">Instagram</span>
+            <span className="mt-3 text-base">Instagram</span>
           </div>
         </motion.div>
-        
-        {/* Decorative Elements */}
+
+        {/* Invitation Section */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="absolute top-1/4 right-8 w-32 h-32 rounded-full bg-primary/20 blur-3xl -z-10"
-        />
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.2 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-          className="absolute bottom-1/4 left-8 w-40 h-40 rounded-full bg-primary/20 blur-3xl -z-10"
-        />
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-center max-w-4xl mx-auto"
+        >
+          <p className="text-xl italic">
+            "I invite you to turn off the lights, get comfortable, and let my words take you to places you might not venture alone.
+            After all, we're all just one strange encounter away from our own horror story..."
+          </p>
+        </motion.div>
       </div>
     </div>
   );
