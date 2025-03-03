@@ -10,8 +10,8 @@ import path from "path";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = parseInt(process.env.PORT || "5000", 10);
+const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
@@ -39,16 +39,6 @@ async function startServer() {
       console.log(`[Server] Database already contains ${postsCount} posts, skipping seeding`);
     }
 
-    // Clean up existing server if any
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => {
-          console.log('[Server] Closed existing server instance');
-          resolve();
-        });
-      });
-    }
-
     // Create server instance
     server = createServer(app);
 
@@ -70,30 +60,28 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      try {
-        server.listen(Number(PORT), HOST, () => {
-          const address = server.address();
-          console.log(`[Server] Server address:`, address);
-          console.log(`[Server] Server running at http://${HOST}:${PORT}`);
-          console.log('[Server] Server started successfully and waiting for connections');
-          console.log('SERVER_READY: Server is now accepting connections on port', PORT);
+      server.listen(PORT, HOST, () => {
+        console.log(`[Server] Server running at http://${HOST}:${PORT}`);
+        console.log('[Server] Server started successfully');
 
-          // Send port readiness signal
-          if (process.send) {
-            process.send({
-              port: PORT,
-              wait_for_port: true,
-              ready: true
-            });
-            console.log('[Server] Sent port readiness signal to parent process');
-          }
+        // Send port readiness signal with explicit wait_for_port flag
+        if (process.send) {
+          process.send({
+            port: PORT,
+            wait_for_port: true,
+            ready: true
+          });
+          console.log('[Server] Sent port readiness signal');
+        }
 
-          resolve();
-        });
-      } catch (err) {
-        console.error('[Server] Error in server.listen:', err);
-        reject(err);
-      }
+        resolve();
+      });
+
+      // Add error event handler
+      server.on('error', (error: Error) => {
+        console.error('[Server] Server error:', error);
+        reject(error);
+      });
     });
   } catch (error) {
     console.error(`[Server] Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
@@ -103,7 +91,7 @@ async function startServer() {
 
 // Start the server
 startServer().catch(err => {
-  console.error('[Server] Failed to start server:', err);
+  console.error('[Server] Critical startup error:', err);
   process.exit(1);
 });
 
