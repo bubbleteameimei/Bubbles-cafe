@@ -1,115 +1,82 @@
-
-import { useEffect } from "react";
-import { Layout } from "@/components/layout";
-import { Metadata } from "@/components/ui/metadata";
-import { PageTransition } from "@/components/animations/page-transition";
-import { useToast } from "@/hooks/use-toast";
-import { SiInstagram, SiWordpress } from "react-icons/si";
-import { SiX } from "react-icons/si";
-
-export const metadata: Metadata = {
-  title: "About | Horror Tales",
-  description: "Learn more about the author and the inspiration behind Horror Tales."
-};
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FaGithub, FaTwitter, FaInstagram } from 'react-icons/fa';
+import { Separator } from '@/components/ui/separator';
 
 export default function AboutPage() {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  const handleSocialClick = (url: string, platform: string) => {
-    try {
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (error) {
-      console.error(`Failed to open ${platform} link:`, error);
-      toast({
-        title: "Error",
-        description: `Unable to open ${platform}. Please try again.`,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <Layout>
-      <PageTransition>
-        <div className="container max-w-4xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold mb-8">About Me</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
-            <div className="space-y-6">
-              <p className="text-lg">
-                My name is Mei, I'm an aspiring horror writer with a passion for all things macabre. 
-                I've been writing short horror stories since childhood, drawing inspiration from the darkest 
-                corners of the human psyche.
-              </p>
-              
-              <p className="text-lg">
-                I started this website as a place to share my stories and connect with others who 
-                appreciate the horror genre. Each story is crafted to evoke a sense of unease and 
-                discomfort, exploring themes of fear, isolation, and the unknown.
-              </p>
-              
-              <p className="text-lg">
-                My influences include classic horror authors like Edgar Allan Poe and H.P. Lovecraft, 
-                as well as modern writers such as Junji Ito and Stephen King. I'm also inspired by 
-                psychological thrillers, urban legends, and the occasional true crime story.
-              </p>
-              
-              <p className="text-lg">
-                When I'm not writing, I can be found exploring abandoned places, researching obscure 
-                folklore, or curled up with a good horror novel. I also enjoy photography, particularly 
-                capturing eerie landscapes and forgotten spaces.
-              </p>
-              
-              <p className="text-lg">
-                I'm constantly working on new stories and experimenting with different styles of horror. 
-                Some tales are subtle and psychological, while others are more visceral and explicit. 
-                My goal is to create a diverse collection that can unsettle even the most seasoned 
-                horror enthusiasts.
-              </p>
-              
-              <p className="text-lg italic text-center mt-10 mb-8">
-                "No great mind has ever existed without a touch of madness."
-                <br />
-                - Aristotle
-              </p>
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-3xl font-bold text-center mb-6">About Me</h1>
 
-              <div className="mt-8 pt-4 border-t border-border">
-                <h3 className="text-lg font-semibold mb-4">Follow Me</h3>
-                <div className="flex gap-6">
-                  <button
-                    onClick={() => handleSocialClick("https://bubbleteameimei.wordpress.com", "WordPress")}
-                    className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 flex items-center gap-2"
-                    aria-label="Visit WordPress Blog"
-                  >
-                    <SiWordpress className="h-6 w-6" />
-                    <span>WordPress</span>
-                  </button>
-                  <button
-                    onClick={() => handleSocialClick("https://x.com/Bubbleteameimei", "Twitter")}
-                    className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 flex items-center gap-2"
-                    aria-label="Visit Twitter/X Profile"
-                  >
-                    <SiX className="h-6 w-6" />
-                    <span>Twitter</span>
-                  </button>
-                  <button
-                    onClick={() => handleSocialClick("https://www.instagram.com/bubbleteameimei/", "Instagram")}
-                    className="text-muted-foreground hover:text-primary transition-colors hover:scale-110 flex items-center gap-2"
-                    aria-label="Visit Instagram Profile"
-                  >
-                    <SiInstagram className="h-6 w-6" />
-                    <span>Instagram</span>
-                  </button>
-                </div>
-              </div>
+        <div className="space-y-8">
+          <div className="prose dark:prose-invert max-w-none">
+            <p className="text-lg">
+              Hi hi, My name is Vanessa Chiwetalu, I made this website for my writing.
+              Writing stories is one of my big passions. Fluent in English and Chinese.
+              I'm a big fan of horror themed stories and existential dread.
+            </p>
+
+            <blockquote className="border-l-4 border-primary pl-4 italic my-6">
+              "No great mind has ever existed without a touch of madness."
+              <footer className="text-sm mt-2">- Aristotle</footer>
+            </blockquote>
+
+            <p>
+              I don't like making FAQs so if you have anything you need to ask or comment about
+              please leave a comment below or drop me an email through the contact page. I will try to reply ASAP.
+              If you do not hear back from me within a week, feel free to send another message.
+            </p>
+
+            <p className="font-bold mt-6">
+              ALL STORIES ON THIS SITE ARE ORIGINAL WORKS. ANY FORM OF PLAGIARISM OR UNAUTHORISED
+              REPRODUCTION OF MY CONTENT WILL BE TAKEN SERIOUSLY AND MAY RESULT IN LEGAL ACTION.
+              RETRANSLATING OF MY WORK INTO ANOTHER LANGUAGE FOR PROFIT IS NOT ALLOWED. IF YOU
+              WOULD LIKE TO SHARE OR USE MY WORK, PLEASE CONTACT ME FIRST FOR PERMISSION.
+            </p>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Connect With Me</h2>
+            <div className="flex space-x-4">
+              <a 
+                href="https://twitter.com/vanessacodes" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                <FaTwitter size={24} />
+                <span className="sr-only">Twitter</span>
+              </a>
+              <a 
+                href="https://instagram.com/horror_writer_v" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                <FaInstagram size={24} />
+                <span className="sr-only">Instagram</span>
+              </a>
+              <a 
+                href="https://github.com/vantalison" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                <FaGithub size={24} />
+                <span className="sr-only">GitHub</span>
+              </a>
             </div>
           </div>
         </div>
-      </PageTransition>
-    </Layout>
+      </motion.div>
+    </div>
   );
 }
