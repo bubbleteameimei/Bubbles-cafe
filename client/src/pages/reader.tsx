@@ -288,7 +288,7 @@ export default function Reader({ slug }: ReaderPageProps) {
     border-left: 3px solid var(--border);
     font-style: italic;
   }
-`;
+  `;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -392,15 +392,20 @@ export default function Reader({ slug }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content"
+              className="story-content mb-16"
               style={{
                 fontSize: `${fontSize}px`,
+                whiteSpace: 'pre-wrap'
               }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
                   .replace(/\n\n+/g, '\n\n') // Replace multiple newlines with double newline
                   .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
                   .replace(/<p>(.*?)<\/p>/g, (match, p1) => `<p>${p1.trim()}</p>`) // Trim paragraph content
+                  .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>') // Replace multiple breaks with single break
+                  .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+                  .replace(/(\r\n|\r|\n){2,}/g, '\n\n') // Normalize line breaks
+                  .trim() // Trim the entire content
               }}
             />
 

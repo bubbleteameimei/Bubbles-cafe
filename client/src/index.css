@@ -287,19 +287,44 @@ html, body, #root {
   }
 
   .story-content p {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem; /* Reduced from 1rem */
     text-align: justify;
     hyphens: auto;
   }
 
   .story-content p + p {
-    margin-top: 0.5rem; /* Reduced from 2em */
+    margin-top: 0.35rem; /* Reduced from 0.5rem */
+  }
+
+  .story-content h1, 
+  .story-content h2, 
+  .story-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .story-content ul, 
+  .story-content ol {
+    margin: 0.75rem 0;
+    padding-left: 1.25rem;
+  }
+
+  .story-content li {
+    margin-bottom: 0.35rem;
+  }
+
+  /* Nested lists */
+  .story-content ul ul,
+  .story-content ol ol,
+  .story-content ul ol,
+  .story-content ol ul {
+    margin: 0.35rem 0 0.35rem 1rem;
   }
 
   .story-content em,
   .story-content i {
     font-style: italic;
-    font-family: "Cormorant Garamond", "EB Garamond", serif;
     color: hsl(var(--foreground));
   }
 
@@ -309,11 +334,36 @@ html, body, #root {
     color: hsl(var(--foreground));
   }
 
+  .story-content pre,
+  .story-content code {
+    font-family: monospace;
+    background: hsl(var(--muted));
+    padding: 0.2em 0.4em;
+    border-radius: 0.2em;
+    font-size: 0.9em;
+  }
+
+  .story-content pre {
+    margin: 1rem 0;
+    padding: 1rem;
+    overflow-x: auto;
+    white-space: pre;
+    background: hsl(var(--muted));
+    border-radius: 0.5rem;
+  }
+
+  .story-content pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.9em;
+    color: hsl(var(--foreground));
+  }
+
   .story-content blockquote {
     font-family: "Cinzel Decorative", "Cormorant Garamond", serif;
     border-left: 4px solid hsl(var(--primary));
-    padding-left: 1.5rem;
-    margin: 1.5rem 0; /* Reduced from 2rem */
+    padding-left: 1.25rem;
+    margin: 1.25rem 0;
     font-style: italic;
     color: hsl(var(--muted-foreground));
   }
@@ -325,18 +375,31 @@ html, body, #root {
     }
 
     .story-content p {
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
 
     .story-content p + p {
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
     }
 
     .story-content blockquote {
-      margin: 1rem 0;
-      padding-left: 1rem;
+      margin: 0.75rem 0;
+      padding-left: 0.75rem;
+    }
+
+    .story-content h1, 
+    .story-content h2, 
+    .story-content h3 {
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .story-content pre {
+      margin: 0.75rem 0;
+      padding: 0.75rem;
     }
   }
+
   .loading-screen {
     width: 100vw;
     height: 100vh;

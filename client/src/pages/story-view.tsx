@@ -6,6 +6,8 @@ import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
+import { MetaTags } from "@/components/ui/meta-tags";
+import { ShareButton } from "@/components/ui/share-button";
 
 interface StoryViewProps {
   slug: string;
@@ -33,6 +35,7 @@ export default function StoryView({ slug }: StoryViewProps) {
 
   return (
     <div className="relative min-h-screen">
+      <MetaTags post={post} />
       <Mist />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <motion.article
@@ -42,8 +45,13 @@ export default function StoryView({ slug }: StoryViewProps) {
           className="prose dark:prose-invert mx-auto"
         >
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 font-mono">
+          <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground mb-8 font-mono">
             <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
+            <ShareButton 
+              title={post.title} 
+              text={`Read "${post.title}" on Horror Stories`}
+              className="ml-auto"
+            />
           </div>
           <div className="story-content mb-16" style={{ whiteSpace: 'pre-wrap' }}>
             {post.content.split('\n\n').map((paragraph, index) => (
