@@ -55,17 +55,28 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Add performance markers for debugging
+performance.mark('react-init-start');
 
-// Add error boundary for the entire app
+// Initialize React with error handling and performance tracking
 const renderApp = () => {
   try {
+    performance.mark('react-render-start');
     const rootElement = createRoot(root);
     rootElement.render(
       <React.StrictMode>
         <App />
       </React.StrictMode>
     );
+    performance.mark('react-render-end');
+    performance.measure('React Render Time', 'react-render-start', 'react-render-end');
     console.log("[Client] React application mounted successfully");
+
+    // Log performance metrics
+    const measurements = performance.getEntriesByType('measure');
+    measurements.forEach(measurement => {
+      console.log(`[Performance] ${measurement.name}: ${measurement.duration.toFixed(2)}ms`);
+    });
   } catch (error) {
     console.error("[Client] Error mounting React application:", error);
   }
