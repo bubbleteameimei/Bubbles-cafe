@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,28 +8,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
-// Assuming EnhancedCollapsible is defined elsewhere, as per the thinking section.
-//This is crucial for the code to function correctly.  Without this component, the code will fail.
-const EnhancedCollapsible = ({ title, variant, children, className }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div className={`border rounded-md shadow-sm ${className}`}>
-            <div 
-                className="bg-gray-100 px-4 py-2 cursor-pointer flex items-center justify-between"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <h4 className="text-sm font-semibold text-gray-800">{title}</h4>
-                <ChevronsUpDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </div>
-            {isOpen && (
-                <div className="bg-white p-4 space-y-2">
-                    {children}
-                </div>
-            )}
-        </div>
-    )
-}
-
 
 export default function Privacy() {
   const [sections, setSections] = useState({
@@ -54,26 +33,47 @@ export default function Privacy() {
         <CardContent>
           <div className="space-y-6 prose prose-invert max-w-none">
             {/* Content Protection Section */}
-            <EnhancedCollapsible 
-              title="Content Protection Notice"
-              variant="elegant"
-              className="mb-4"
+            <Collapsible
+              open={sections.contentProtection}
+              onOpenChange={() => toggleSection('contentProtection')}
+              className="w-full space-y-2"
             >
-              <p className="text-muted-foreground whitespace-pre-line mt-2">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h2 className="text-xl font-semibold">Content Protection Notice</h2>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    <ChevronsUpDown className="h-4 w-4" />
+                    <span className="sr-only">Toggle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent>
+                <p className="text-muted-foreground whitespace-pre-line mt-2">
                   ALL CONTENT ON THIS SITE IS ORIGINAL AND PROTECTED. UNAUTHORIZED REPRODUCTION, PLAGIARISM, OR COMMERCIAL TRANSLATION OF MY WORK IS STRICTLY PROHIBITED AND MAY RESULT IN LEGAL ACTION. IF YOU WISH TO SHARE OR USE ANY CONTENT, PLEASE OBTAIN PRIOR PERMISSION BY CONTACTING ME DIRECTLY.
 
                   THANK YOU FOR YOUR SUPPORT, AND ENJOY THE STORIES.
                 </p>
-            </EnhancedCollapsible>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Information We Collect Section */}
-            <EnhancedCollapsible 
-              title="Information We Collect"
-              variant="elegant"
-              className="mb-4"
+            <Collapsible
+              open={sections.infoCollect}
+              onOpenChange={() => toggleSection('infoCollect')}
+              className="w-full space-y-2"
             >
-              <p className="text-muted-foreground">We may collect the following types of information:</p>
-
+              <div className="flex items-center justify-between border-b pb-2">
+                <h2 className="text-xl font-semibold">Information We Collect</h2>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    <ChevronsUpDown className="h-4 w-4" />
+                    <span className="sr-only">Toggle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="space-y-4 mt-2">
+                <p className="text-muted-foreground">We may collect the following types of information:</p>
+                
                 <h3 className="text-lg font-semibold">Personal Information</h3>
                 <p className="text-muted-foreground">
                   When you register, comment, or interact with our Website, we may collect:
@@ -94,15 +94,26 @@ export default function Privacy() {
                   <li>Device information</li>
                   <li>Usage data (e.g., pages visited, time spent on the Website)</li>
                 </ul>
-            </EnhancedCollapsible>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* How We Use Your Information Section */}
-            <EnhancedCollapsible 
-              title="How We Use Your Information"
-              variant="elegant"
-              className="mb-4"
+            <Collapsible
+              open={sections.howWeUse}
+              onOpenChange={() => toggleSection('howWeUse')}
+              className="w-full space-y-2"
             >
-              <p className="text-muted-foreground">We use the collected information to:</p>
+              <div className="flex items-center justify-between border-b pb-2">
+                <h2 className="text-xl font-semibold">How We Use Your Information</h2>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    <ChevronsUpDown className="h-4 w-4" />
+                    <span className="sr-only">Toggle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="mt-2">
+                <p className="text-muted-foreground">We use the collected information to:</p>
                 <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                   <li>Provide and improve our services</li>
                   <li>Customize your experience on the Website</li>
@@ -114,19 +125,31 @@ export default function Privacy() {
                 <p className="text-muted-foreground mt-2">
                   We do not sell or share your personal data with third parties for marketing purposes.
                 </p>
-            </EnhancedCollapsible>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Data Security Section */}
-            <EnhancedCollapsible 
-              title="Data Security"
-              variant="elegant"
-              className="mb-4"
+            <Collapsible
+              open={sections.dataSecurity}
+              onOpenChange={() => toggleSection('dataSecurity')}
+              className="w-full space-y-2"
             >
-              <p className="text-muted-foreground">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h2 className="text-xl font-semibold">Data Security</h2>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                    <ChevronsUpDown className="h-4 w-4" />
+                    <span className="sr-only">Toggle</span>
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="mt-2">
+                <p className="text-muted-foreground">
                   We implement appropriate security measures to protect your data. However, no online platform is completely secure. 
                   We encourage you to use strong passwords and exercise caution when sharing personal information.
                 </p>
-            </EnhancedCollapsible>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </CardContent>
       </Card>
