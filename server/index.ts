@@ -11,13 +11,17 @@ import path from "path";
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
 async function startServer() {
   try {
-    console.log('Starting server initialization...');
+    console.log('[Server] Starting server initialization...');
+    console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
+    console.log(`[Server] Host: ${HOST}`);
+    console.log(`[Server] Port: ${PORT}`);
 
     // Serve static assets from attached_assets directory
     app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
@@ -28,18 +32,18 @@ async function startServer() {
     // Check if database needs seeding
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
     if (postsCount === 0) {
-      console.log('Database is empty, starting seeding process...');
+      console.log('[Server] Database is empty, starting seeding process...');
       await seedDatabase();
-      console.log('Database seeding completed successfully');
+      console.log('[Server] Database seeding completed successfully');
     } else {
-      console.log(`Database already contains ${postsCount} posts, skipping seeding`);
+      console.log(`[Server] Database already contains ${postsCount} posts, skipping seeding`);
     }
 
     // Clean up existing server if any
     if (server) {
       await new Promise<void>((resolve) => {
         server.close(() => {
-          console.log('Closed existing server instance');
+          console.log('[Server] Closed existing server instance');
           resolve();
         });
       });
@@ -50,76 +54,66 @@ async function startServer() {
 
     // Register routes and middleware
     if (isDev) {
-      console.log('Registering API routes');
+      console.log('[Server] Setting up development environment');
+      console.log('[Server] Registering API routes');
       registerRoutes(app);
-      console.log("API routes registered successfully");
+      console.log("[Server] API routes registered successfully");
 
-      console.log('Setting up Vite middleware');
+      console.log('[Server] Setting up Vite middleware');
       await setupVite(app, server);
-      console.log("Vite middleware setup complete");
+      console.log("[Server] Vite middleware setup complete");
     } else {
-      console.log('Setting up static file serving');
+      console.log('[Server] Setting up production environment');
       serveStatic(app);
-      console.log("Static file serving setup complete");
+      console.log("[Server] Static file serving setup complete");
     }
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      server.listen(Number(PORT), '0.0.0.0', () => {
-        console.log(`Server running at http://0.0.0.0:${PORT}`);
-        console.log('Debug: Server started successfully and waiting for connections');
+      try {
+        server.listen(Number(PORT), HOST, () => {
+          const address = server.address();
+          console.log(`[Server] Server address:`, address);
+          console.log(`[Server] Server running at http://${HOST}:${PORT}`);
+          console.log('[Server] Server started successfully and waiting for connections');
+          console.log('SERVER_READY: Server is now accepting connections on port', PORT);
 
-        // Send port readiness signal
-        if (process.send) {
-          process.send({
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          });
-          console.log('Debug: Sent port readiness signal to parent process');
-        }
+          // Send port readiness signal
+          if (process.send) {
+            process.send({
+              port: PORT,
+              wait_for_port: true,
+              ready: true
+            });
+            console.log('[Server] Sent port readiness signal to parent process');
+          }
 
-        resolve();
-      });
-
-      server.once('error', (err: Error) => {
-        if ((err as any).code === 'EADDRINUSE') {
-          console.log(`Port ${PORT} is busy, attempting to close existing connections...`);
-          require('child_process').exec(`lsof -i :${PORT} | grep LISTEN | awk '{print $2}' | xargs kill -9`, async (error: Error) => {
-            if (error) {
-              console.error('Failed to kill process:', error);
-              reject(error);
-            } else {
-              console.log(`Successfully freed port ${PORT}, retrying server start...`);
-              // Wait a moment before retrying
-              setTimeout(() => {
-                startServer().then(resolve).catch(reject);
-              }, 1000);
-            }
-          });
-        } else {
-          console.error(`Server error: ${err.message}`);
-          reject(err);
-        }
-      });
+          resolve();
+        });
+      } catch (err) {
+        console.error('[Server] Error in server.listen:', err);
+        reject(err);
+      }
     });
   } catch (error) {
-    console.error(`Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    console.error(`[Server] Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 }
 
 // Start the server
 startServer().catch(err => {
-  console.error('Failed to start server:', err);
+  console.error('[Server] Failed to start server:', err);
   process.exit(1);
 });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+  console.log('[Server] SIGTERM signal received: closing HTTP server');
   server?.close(() => {
-    console.log('HTTP server closed');
+    console.log('[Server] HTTP server closed');
     process.exit(0);
   });
 });
+
+export default app;
