@@ -35,6 +35,11 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const CommunityPage = withSuspense(React.lazy(() => import('./pages/community')));
+const SupportPage = withSuspense(React.lazy(() => import('./pages/support')));
+const FeedbackPage = withSuspense(React.lazy(() => import('./pages/feedback')));
+const TermsPage = withSuspense(React.lazy(() => import('./pages/terms')));
+const CopyrightPage = withSuspense(React.lazy(() => import('./pages/copyright')));
 
 // Settings Pages
 const ProfileSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/profile')));
@@ -90,6 +95,11 @@ function App() {
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/report-bug" component={ReportBugPage} />
                       <Route path="/privacy" component={PrivacyPage} />
+                      <Route path="/community" component={CommunityPage} />
+                      <Route path="/support" component={SupportPage} />
+                      <Route path="/feedback" component={FeedbackPage} />
+                      <Route path="/terms" component={TermsPage} />
+                      <Route path="/copyright" component={CopyrightPage} />
 
                       {/* Settings Routes */}
                       <Route path="/settings/profile" component={ProfileSettingsPage} />

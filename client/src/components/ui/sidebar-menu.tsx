@@ -119,7 +119,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                   >
                     <div className="flex items-center">
@@ -278,22 +278,22 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/about'}
-                        onClick={() => handleNavigation('/about')}
+                        isActive={location === '/community'}
+                        onClick={() => handleNavigation('/community')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>About Us</span>
+                        <span>Community</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/contact'}
-                        onClick={() => handleNavigation('/contact')}
+                        isActive={location === '/support'}
+                        onClick={() => handleNavigation('/support')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Contact Support</span>
+                        <span>Support</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
@@ -303,7 +303,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Feedback & Suggestions</span>
+                        <span>Feedback</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
