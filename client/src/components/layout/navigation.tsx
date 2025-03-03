@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu } from "lucide-react";
+import { Menu, Ghost } from "lucide-react";
 
 export default function Navigation() {
   const [, setLocation] = useLocation();
@@ -16,22 +16,28 @@ export default function Navigation() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
       <div className="container flex h-14 items-center justify-between">
         {/* Mobile Menu Trigger */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              title="Toggle navigation menu"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-[280px]">
-            <SidebarNavigation onNavigate={() => setIsOpen(false)} />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-2">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                title="Toggle navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px]">
+              <SidebarNavigation onNavigate={() => setIsOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          <div className="flex items-center gap-2">
+            <Ghost className="h-6 w-6 text-primary" />
+            <span className="font-bold text-lg">Horror Blog</span>
+          </div>
+        </div>
 
         {/* Right-side Actions */}
         <div className="flex items-center space-x-4">
