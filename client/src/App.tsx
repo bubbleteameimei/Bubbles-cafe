@@ -12,6 +12,7 @@ import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
+import { ProtectedRoute } from './lib/protected-route';
 
 // Create a wrapper for lazy-loaded components
 const withSuspense = <P extends object>(
@@ -52,15 +53,20 @@ const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/
 const ThemeSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/theme')));
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
-const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/text-to-speech')));
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
-const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/settings/connected-accounts')));
 const OfflineSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/offline')));
 const ContrastSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/contrast')));
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
+
+// Admin Pages
+const AdminPage = withSuspense(React.lazy(() => import('./pages/admin')));
+const AdminAnalyticsPage = withSuspense(React.lazy(() => import('./pages/admin/analytics')));
+const AdminUsersPage = withSuspense(React.lazy(() => import('./pages/admin/users')));
+const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/settings')));
+const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
 
 function App() {
   usePerformanceMonitoring();
@@ -94,39 +100,41 @@ function App() {
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
                       <Route path="/reader" component={ReaderPage} />
-                      <Route path="/story/:slug">
-                        {params => <ReaderPage slug={params.slug} />}
-                      </Route>
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/report-bug" component={ReportBugPage} />
                       <Route path="/privacy" component={PrivacyPage} />
-                      
+
                       {/* Legal Routes */}
                       <Route path="/legal/copyright" component={CopyrightPage} />
                       <Route path="/legal/terms" component={TermsPage} />
                       <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-                      
+
                       {/* Community Routes */}
                       <Route path="/community" component={CommunityPage} />
                       <Route path="/feedback" component={FeedbackPage} />
 
                       {/* Settings Routes */}
-                      <Route path="/settings/profile" component={ProfileSettingsPage} />
-                      <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                      <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
-                      <Route path="/settings/theme" component={ThemeSettingsPage} />
-                      <Route path="/settings/fonts" component={FontSettingsPage} />
-                      <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                      <Route path="/settings/text-to-speech" component={TextToSpeechPage} />
-                      <Route path="/settings/display" component={DisplaySettingsPage} />
-                      <Route path="/settings/notifications" component={NotificationSettingsPage} />
-                      <Route path="/settings/privacy" component={PrivacySettingsPage} />
-                      <Route path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                      <Route path="/settings/offline" component={OfflineSettingsPage} />
-                      <Route path="/settings/contrast" component={ContrastSettingsPage} />
-                      <Route path="/settings/quick-settings" component={QuickSettingsPage} />
-                      <Route path="/settings/preview" component={PreviewSettingsPage} />
+                      <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
+                      <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                      <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
+                      <ProtectedRoute path="/settings/theme" component={ThemeSettingsPage} />
+                      <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
+                      <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                      <ProtectedRoute path="/settings/display" component={DisplaySettingsPage} />
+                      <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
+                      <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
+                      <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+                      <ProtectedRoute path="/settings/contrast" component={ContrastSettingsPage} />
+                      <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
+                      <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
+
+                      {/* Admin Routes */}
+                      <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                      <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
+                      <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
+                      <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
+                      <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
 
                       {/* 404 Route */}
                       <Route>

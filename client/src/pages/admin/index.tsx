@@ -1,3 +1,4 @@
+import React from 'react';
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect, useLocation } from "wouter";
@@ -64,15 +65,15 @@ export default function AdminPage() {
             <Card 
               key={card.title} 
               className="hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => {
-                navigate(card.link);
-              }}
+              onClick={() => navigate(card.link)}
             >
               <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                 <div className="rounded-lg bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
                   <Icon className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle className="group-hover:text-primary transition-colors">{card.title}</CardTitle>
+                <CardTitle className="group-hover:text-primary transition-colors">
+                  {card.title}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">{card.description}</p>
