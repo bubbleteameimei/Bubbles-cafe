@@ -45,17 +45,15 @@ import {
   adminNotifications,
   type Achievement,
   type UserAchievement,
-  type ReadingStreak,
-  type WriterStreak,
-  type FeaturedAuthor,
   achievements,
   userAchievements,
-  readingStreaks,
-  writerStreaks,
-  featuredAuthors,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
+
+// Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
+
+
 import type { CommentMetadata } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
@@ -161,6 +159,7 @@ export interface IStorage {
   getPostAnalytics(postId: number): Promise<Analytics | undefined>;
   getSiteAnalytics(): Promise<{ totalViews: number; uniqueVisitors: number; avgReadTime: number }>;
   
+
   // Analytics methods
   getAnalyticsSummary(): Promise<{ 
     totalViews: number; 
@@ -178,9 +177,6 @@ export interface IStorage {
   // Add achievement methods to IStorage interface
   getAllAchievements(): Promise<Achievement[]>;
   getUserAchievements(userId: number): Promise<UserAchievement[]>;
-  getReadingStreak(userId: number): Promise<ReadingStreak | undefined>;
-  getWriterStreak(userId: number): Promise<WriterStreak | undefined>;
-  getFeaturedAuthor(userId: number): Promise<FeaturedAuthor | undefined>;
   getUserPosts(userId: number): Promise<Post[]>;
   getUserTotalLikes(userId: number): Promise<number>;
   getPostById(id: number): Promise<Post | undefined>;
@@ -940,8 +936,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         totalPosts: Number(totalPosts.count),
         totalLikes: Number(totalLikes.count),
-        totalTips: totalTips.sum || "0",
-        updatedAt: new Date()
+        totalTips: totalTips.sum || "0",        updatedAt: new Date()
       })
       .where(eq(authorStats.authorId, authorId))
       .returning();
@@ -1315,55 +1310,6 @@ export class DatabaseStorage implements IStorage {
       return userAchievementList;
     } catch (error) {
       console.error('[Storage] Error fetching user achievements:', error);
-      throw error;
-    }
-  }
-
-  async getReadingStreak(userId: number): Promise<ReadingStreak | undefined> {
-    try {
-      console.log(`[Storage] Fetching reading streak for user: ${userId}`);
-      const [streak] = await db.select()
-        .from(readingStreaks)
-        .where(eq(readingStreaks.userId, userId))
-        .limit(1);
-      return streak;
-    } catch (error) {
-      console.error('[Storage] Error fetching reading streak:', error);
-      throw error;
-    }
-  }
-
-  async getWriterStreak(userId: number): Promise<WriterStreak | undefined> {
-    try {
-      console.log(`[Storage] Fetching writer streak for user: ${userId}`);
-      const [streak] = await db.select()
-        .from(writerStreaks)
-        .where(eq(writerStreaks.userId, userId))
-        .limit(1);
-      return streak;
-    } catch (error) {
-      console.error('[Storage] Error fetching writer streak:', error);
-      throw error;
-    }
-  }
-
-  async getFeaturedAuthor(userId: number): Promise<FeaturedAuthor | undefined> {
-    try {
-      console.log(`[Storage] Checking featured author status for user: ${userId}`);
-      const currentDate = new Date();
-      const monthYear = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-
-      const [featured] = await db.select()
-        .from(featuredAuthors)
-        .where(and(
-          eq(featuredAuthors.userId, userId),
-          eq(featuredAuthors.monthYear, monthYear)
-        ))
-        .limit(1);
-
-      return featured;
-    } catch (error) {
-      console.error('[Storage] Error fetching featured author:', error);
       throw error;
     }
   }

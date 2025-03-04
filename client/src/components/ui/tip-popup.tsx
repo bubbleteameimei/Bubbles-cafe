@@ -20,13 +20,20 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
 
   useEffect(() => {
     if (autoShow) {
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 120000); // 120 seconds
+      // Check if we've shown the popup recently
+      const lastShown = localStorage.getItem('lastTipPopupShown');
+      const showAgain = !lastShown || Date.now() - parseInt(lastShown) > 24 * 60 * 60 * 1000; // 24 hours
 
-      return () => clearTimeout(timer);
+      if (showAgain) {
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+          localStorage.setItem('lastTipPopupShown', Date.now().toString());
+        }, 30000); // 30 seconds
+
+        return () => clearTimeout(timer);
+      }
     }
-  }, [autoShow]);
+  }, [autoShow]); // Only re-run if autoShow changes
 
   const handleTip = () => {
     window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
