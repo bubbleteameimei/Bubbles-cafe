@@ -43,18 +43,22 @@ export const authorStats = pgTable("author_stats", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Update comments table with new fields
+// Unified comments table with self-referencing structure
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  postId: integer("post_id").references(() => posts.id).notNull(),
-  userId: integer("user_id").references(() => users.id), // Make userId optional
+  postId: integer("post_id").references(() => posts.id),
+  parentId: integer("parent_id").references(() => comments.id),
+  userId: integer("user_id").references(() => users.id), // Optional for anonymous users
   approved: boolean("approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
   metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
+
+// Keeping this for backwards compatibility, will be deprecated
+export const commentReplies = comments;
 
 // Add comment reactions table
 export const commentReactions = pgTable("comment_reactions", {
@@ -77,17 +81,6 @@ export const commentVotes = pgTable("comment_votes", {
 }, (table) => ({
   userVoteUnique: unique().on(table.commentId, table.userId)
 }));
-
-// Update comment replies table schema
-export const commentReplies = pgTable("comment_replies", {
-  id: serial("id").primaryKey(),
-  commentId: integer("comment_id").references(() => comments.id).notNull(),
-  userId: integer("user_id").references(() => users.id), // Nullable for anonymous users
-  content: text("content").notNull(),
-  approved: boolean("approved").default(false).notNull(),
-  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
 
 // Reading Progress
 export const readingProgress = pgTable("reading_progress", {
@@ -134,7 +127,6 @@ export const postLikes = pgTable("post_likes", {
   isLike: boolean("is_like").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
-
 
 // Writing Challenges
 export const writingChallenges = pgTable("writing_challenges", {
@@ -269,35 +261,36 @@ export const userAchievements = pgTable("user_achievements", {
   userAchievementUnique: unique().on(table.userId, table.achievementId)
 }));
 
-export const readingStreaks = pgTable("reading_streaks", {
+export const userStreaks = pgTable("user_streaks", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
+  streakType: text("streak_type").notNull(), // 'reading' or 'writing'
   currentStreak: integer("current_streak").default(0).notNull(),
   longestStreak: integer("longest_streak").default(0).notNull(),
-  lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
-  totalReads: integer("total_reads").default(0).notNull()
+  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+  totalActivities: integer("total_activities").default(0).notNull()
 });
 
-export const writerStreaks = pgTable("writer_streaks", {
+export const userProgress = pgTable("user_progress", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  currentStreak: integer("current_streak").default(0).notNull(),
-  longestStreak: integer("longest_streak").default(0).notNull(),
-  lastWriteAt: timestamp("last_write_at").defaultNow().notNull(),
-  totalPosts: integer("total_posts").default(0).notNull()
+  progressType: text("progress_type").notNull(), // 'reading' or 'writing'
+  postId: integer("post_id").references(() => posts.id),
+  progress: decimal("progress").notNull(),
+  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull()
 });
 
-export const featuredAuthors = pgTable("featured_authors", {
+export const siteAnalytics = pgTable("site_analytics", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  monthYear: text("month_year").notNull(), // Format: 'YYYY-MM'
-  description: text("description").notNull(),
-  achievements: json("achievements").default([]).notNull(),
-  stats: json("stats").default({}).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-}, (table) => ({
-  monthYearUnique: unique().on(table.monthYear)
-}));
+  identifier: text("identifier").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  pageViews: integer("page_views").default(0).notNull(),
+  uniqueVisitors: integer("unique_visitors").default(0).notNull(),
+  averageReadTime: doublePrecision("average_read_time").default(0).notNull(),
+  bounceRate: doublePrecision("bounce_rate").default(0).notNull(),
+  deviceStats: json("device_stats").default({}).notNull()
+});
+
 
 // Update login schema to use email instead of username
 export const loginSchema = z.object({
@@ -471,36 +464,47 @@ export const insertUserAchievementSchema = createInsertSchema(userAchievements).
   unlockedAt: true 
 });
 
-export const insertReadingStreakSchema = createInsertSchema(readingStreaks).omit({ 
+// Create insert schemas for new unified tables
+export const insertUserStreakSchema = createInsertSchema(userStreaks).omit({ 
   id: true,
-  lastReadAt: true 
+  lastActivityAt: true 
 });
 
-export const insertWriterStreakSchema = createInsertSchema(writerStreaks).omit({ 
+export const insertUserProgressSchema = createInsertSchema(userProgress).omit({ 
   id: true,
-  lastWriteAt: true 
+  lastActivityAt: true 
 });
 
-export const insertFeaturedAuthorSchema = createInsertSchema(featuredAuthors).omit({ 
+export const insertSiteAnalyticsSchema = createInsertSchema(siteAnalytics).omit({ 
   id: true,
-  createdAt: true 
+  timestamp: true 
 });
 
-// Export types
+// For backwards compatibility 
+export const insertReadingStreakSchema = insertUserStreakSchema;
+export const insertWriterStreakSchema = insertUserStreakSchema;
+
+// Export types for new unified tables
 export type Achievement = typeof achievements.$inferSelect;
 export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
 
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
-export type ReadingStreak = typeof readingStreaks.$inferSelect;
-export type InsertReadingStreak = z.infer<typeof insertReadingStreakSchema>;
+export type UserStreak = typeof userStreaks.$inferSelect;
+export type InsertUserStreak = z.infer<typeof insertUserStreakSchema>;
 
-export type WriterStreak = typeof writerStreaks.$inferSelect;
-export type InsertWriterStreak = z.infer<typeof insertWriterStreakSchema>;
+export type UserProgress = typeof userProgress.$inferSelect;
+export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
 
-export type FeaturedAuthor = typeof featuredAuthors.$inferSelect;
-export type InsertFeaturedAuthor = z.infer<typeof insertFeaturedAuthorSchema>;
+export type SiteAnalytics = typeof siteAnalytics.$inferSelect;
+export type InsertSiteAnalytics = z.infer<typeof insertSiteAnalyticsSchema>;
+
+// For backwards compatibility
+export type ReadingStreak = UserStreak;
+export type InsertReadingStreak = InsertUserStreak;
+export type WriterStreak = UserStreak;
+export type InsertWriterStreak = InsertUserStreak;
 
 // Update CommentMetadata interface
 export interface CommentMetadata {
