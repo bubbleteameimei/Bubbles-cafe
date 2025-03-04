@@ -26,24 +26,12 @@ let server: ReturnType<typeof createServer>;
 
 async function startServer() {
   try {
-    // Log environment configuration
     console.log('\n=== Starting Server ===');
     console.log(`Process ID: ${process.pid}`);
     console.log(`Current Directory: ${process.cwd()}`);
 
     // Log detailed environment configuration
     logEnvironmentConfig();
-
-    // Apply security headers based on environment
-    if (isProduction()) {
-      app.use(helmet(activeConfig.HELMET_OPTIONS));
-    }
-
-    // Serve static assets from attached_assets directory with environment-specific caching
-    app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
-      maxAge: isProduction() ? '1d' : 0,
-      fallthrough: false
-    }));
 
     // Check if database needs seeding
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
@@ -65,7 +53,7 @@ async function startServer() {
       registerRoutes(app);
       console.log("[Server] API routes registered successfully");
 
-      if (activeConfig.VITE_DEV_SERVER_ENABLED) {
+      if (features.enableHotReload) {
         console.log('[Server] Setting up Vite middleware');
         await setupVite(app, server);
         console.log("[Server] Vite middleware setup complete");

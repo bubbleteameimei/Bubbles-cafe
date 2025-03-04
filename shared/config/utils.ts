@@ -55,13 +55,13 @@ export const getSecurityConfig = () => {
         },
       },
       crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: "same-site" },
+      crossOriginResourcePolicy: "same-site" as const,
     },
   };
 };
 
 export const logEnvironmentConfig = () => {
-  const { isDevelopment, isProduction } = getEnvironment();
+  const { isDevelopment } = getEnvironment();
   const features = getFeatureFlags();
   const apiConfig = getApiConfig();
   const securityConfig = getSecurityConfig();

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Volume2, Play, Pause } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Play, Pause } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,8 @@ export default function TextToSpeechPage() {
   const [voice, setVoice] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const [highlightText, setHighlightText] = useState(true);
 
   // Initialize speech synthesis and handle voices loading
   useEffect(() => {
@@ -85,74 +88,32 @@ export default function TextToSpeechPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-bold mb-6">Text-to-Speech Settings</h1>
+      <h1 className="text-3xl font-bold">Text-to-Speech Settings</h1>
 
       <Card className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">Enable Text-to-Speech</h2>
-            <p className="text-sm text-muted-foreground">
-              Let stories be read aloud to enhance your experience
-            </p>
+        <CardHeader>
+          <CardTitle>Voice Settings</CardTitle>
+          <CardDescription>Customize how stories are read aloud to you</CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="tts-enable">Enable Text-to-Speech</Label>
+              <p className="text-sm text-muted-foreground">
+                Let stories be read aloud to enhance your experience
+              </p>
+            </div>
+            <Switch
+              id="tts-enable"
+              checked={enabled}
+              onCheckedChange={setEnabled}
+            />
           </div>
-          <Switch
-            checked={enabled}
-            onCheckedChange={setEnabled}
-            aria-label="Toggle text-to-speech"
-          />
-        </div>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Voice Settings</h3>
-
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Volume</span>
-                <span>{volume}%</span>
-              </div>
-              <Slider
-                value={volume}
-                onValueChange={setVolume}
-                min={0}
-                max={100}
-                step={1}
-                disabled={!enabled}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Speed</span>
-                <span>{rate}x</span>
-              </div>
-              <Slider
-                value={rate}
-                onValueChange={setRate}
-                min={0.5}
-                max={2}
-                step={0.1}
-                disabled={!enabled}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Pitch</span>
-                <span>{pitch}</span>
-              </div>
-              <Slider
-                value={pitch}
-                onValueChange={setPitch}
-                min={0.5}
-                max={2}
-                step={0.1}
-                disabled={!enabled}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm">Voice</label>
+              <Label>Voice</Label>
               <Select
                 value={voice}
                 onValueChange={setVoice}
@@ -170,96 +131,91 @@ export default function TextToSpeechPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </div>
 
-        <div className="pt-4 border-t">
-          <Button
-            onClick={handleTestSpeech}
-            disabled={!enabled}
-            className="w-full"
-          >
-            {isPlaying ? (
-              <>
-                <Pause className="w-4 h-4 mr-2" />
-                Stop Preview
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Test Settings
-              </>
-            )}
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label>Volume</Label>
+                <span className="text-sm text-muted-foreground">{volume}%</span>
+              </div>
+              <Slider
+                value={volume}
+                onValueChange={setVolume}
+                min={0}
+                max={100}
+                step={1}
+                disabled={!enabled}
+              />
+            </div>
 
-export default function TextToSpeechPage() {
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Text-to-Speech Settings</h1>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Voice Settings</CardTitle>
-          <CardDescription>Customize how stories are read aloud to you</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="tts-enable">Enable Text-to-Speech</Label>
-            <Switch id="tts-enable" defaultChecked />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Voice</Label>
-            <Select defaultValue="female-1">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a voice" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="female-1">Female Voice 1</SelectItem>
-                <SelectItem value="female-2">Female Voice 2</SelectItem>
-                <SelectItem value="male-1">Male Voice 1</SelectItem>
-                <SelectItem value="male-2">Male Voice 2</SelectItem>
-                <SelectItem value="eerie-1">Eerie Voice</SelectItem>
-                <SelectItem value="creepy-1">Creepy Whisper</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="speech-rate">Speaking Rate</Label>
-              <span className="text-sm text-muted-foreground">Normal</span>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label>Speed</Label>
+                <span className="text-sm text-muted-foreground">{rate}x</span>
+              </div>
+              <Slider
+                value={rate}
+                onValueChange={setRate}
+                min={0.5}
+                max={2}
+                step={0.1}
+                disabled={!enabled}
+              />
             </div>
-            <Slider defaultValue={[50]} max={100} step={1} id="speech-rate" />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="speech-pitch">Pitch</Label>
-              <span className="text-sm text-muted-foreground">Medium</span>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label>Pitch</Label>
+                <span className="text-sm text-muted-foreground">{pitch}</span>
+              </div>
+              <Slider
+                value={pitch}
+                onValueChange={setPitch}
+                min={0.5}
+                max={2}
+                step={0.1}
+                disabled={!enabled}
+              />
             </div>
-            <Slider defaultValue={[50]} max={100} step={1} id="speech-pitch" />
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="auto-play">Auto-play for new stories</Label>
+              <Switch
+                id="auto-play"
+                checked={autoPlay}
+                onCheckedChange={setAutoPlay}
+                disabled={!enabled}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="highlight-text">Highlight text while reading</Label>
+              <Switch
+                id="highlight-text"
+                checked={highlightText}
+                onCheckedChange={setHighlightText}
+                disabled={!enabled}
+              />
+            </div>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="auto-play">Auto-play for new stories</Label>
-            <Switch id="auto-play" />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="highlight-text">Highlight text while reading</Label>
-            <Switch id="highlight-text" defaultChecked />
+
+          <div className="pt-4 border-t">
+            <Button
+              onClick={handleTestSpeech}
+              disabled={!enabled}
+              className="w-full"
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="w-4 h-4 mr-2" />
+                  Stop Preview
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Test Settings
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
