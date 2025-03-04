@@ -11,9 +11,12 @@ import helmet from "helmet";
 import { config, isDevelopment, isProduction } from "@shared/config";
 import developmentConfig from "@shared/config/development";
 import productionConfig from "@shared/config/production";
+import { getFeatureFlags, getApiConfig } from "@shared/config/utils";
 
 const app = express();
 const activeConfig = isDevelopment() ? developmentConfig : productionConfig;
+const features = getFeatureFlags();
+const apiConfig = getApiConfig();
 
 // Set trust proxy to true for proper header handling behind proxies
 app.set('trust proxy', true);
@@ -23,13 +26,26 @@ let server: ReturnType<typeof createServer>;
 
 async function startServer() {
   try {
-    console.log(`[Server] Starting server in ${config.NODE_ENV} mode...`);
-    console.log(`[Server] Host: ${config.HOST}`);
-    console.log(`[Server] Port: ${config.PORT}`);
+    // Detailed environment logging
+    console.log('\n=== Server Configuration ===');
+    console.log(`Environment: ${config.NODE_ENV}`);
+    console.log(`Host: ${config.HOST}`);
+    console.log(`Port: ${config.PORT}`);
+    console.log('\n=== Feature Flags ===');
+    console.log('Debug Logging:', features.enableDebugLogging);
+    console.log('Detailed Errors:', features.enableDetailedErrors);
+    console.log('Hot Reload:', features.enableHotReload);
+    console.log('Cache Enabled:', features.enableCache);
+    console.log('\n=== API Configuration ===');
+    console.log('Timeout:', apiConfig.timeoutMs, 'ms');
+    console.log('Retry Attempts:', apiConfig.retryAttempts);
+    console.log('Base URL:', apiConfig.baseUrl);
+    console.log('Rate Limit Max:', apiConfig.rateLimitMax);
+    console.log('\n=========================\n');
 
     // Apply security headers based on environment
     if (isProduction()) {
-      app.use(helmet(activeConfig.SECURITY_HEADERS));
+      app.use(helmet(activeConfig.HELMET_OPTIONS));
     }
 
     // Serve static assets from attached_assets directory with environment-specific caching

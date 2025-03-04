@@ -5,7 +5,9 @@
       "NODE_ENV": "development",
       "PORT": "5000",
       "HOST": "0.0.0.0",
-      "SESSION_SECRET": "dev_secret_key"
+      "SESSION_SECRET": "dev_secret_key",
+      "VITE_DEBUG_ENABLED": "true",
+      "VITE_HOT_RELOAD": "true"
     },
     "wait_for_port": 5000,
     "port": 5000,
@@ -20,7 +22,8 @@
       "shared/**/*",
       "drizzle.config.ts",
       ".env",
-      "client/src/pages/admin/**/*"
+      ".env.development",
+      ".env.production"
     ]
   },
   "WordPress Sync": {

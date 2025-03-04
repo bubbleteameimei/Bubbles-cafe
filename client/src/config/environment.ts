@@ -37,6 +37,20 @@ export const config = loadEnvConfig();
 export const isDevelopment = () => config.MODE === 'development';
 export const isProduction = () => config.MODE === 'production';
 
+// Environment-specific features
+export const features = {
+  analytics: isProduction() && config.ENABLE_ANALYTICS,
+  debug: isDevelopment() && config.DEBUG_ENABLED,
+  cache: {
+    enabled: isProduction(),
+    duration: config.CACHE_DURATION,
+  },
+  api: {
+    baseUrl: config.BASE_URL,
+    timeout: config.API_TIMEOUT,
+  },
+};
+
 // Export individual config values
 export const {
   MODE,
