@@ -13,15 +13,31 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FileInput } from "@/components/ui/file-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const bugReportSchema = z.object({
   affectedPage: z.string().min(1, "Please specify which page or feature is affected"),
   description: z.string().min(10, "Please provide a detailed description of the issue"),
-  screenshot: z.string().optional(),
+  screenshot: z
+    .instanceof(FileList)
+    .refine((files) => files.length === 0 || files.length === 1, "Please upload only one file")
+    .refine(
+      (files) => files.length === 0 || files[0]?.size <= MAX_FILE_SIZE,
+      "Max file size is 5MB"
+    )
+    .refine(
+      (files) =>
+        files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files[0]?.type),
+      "Only .jpg, .jpeg, .png and .webp formats are supported"
+    )
+    .optional(),
   email: z.string().email("Please enter a valid email address").optional(),
 });
 
@@ -35,14 +51,22 @@ export default function ReportBugPage() {
     defaultValues: {
       affectedPage: "",
       description: "",
-      screenshot: "",
       email: "",
     },
   });
 
   const bugReportMutation = useMutation({
     mutationFn: async (data: BugReportForm) => {
-      return apiRequest("POST", "/api/bug-report", data);
+      const formData = new FormData();
+      formData.append("affectedPage", data.affectedPage);
+      formData.append("description", data.description);
+      if (data.email) {
+        formData.append("email", data.email);
+      }
+      if (data.screenshot && data.screenshot[0]) {
+        formData.append("screenshot", data.screenshot[0]);
+      }
+      return apiRequest("POST", "/api/bug-report", formData);
     },
     onSuccess: () => {
       toast({
@@ -133,20 +157,18 @@ export default function ReportBugPage() {
           <FormField
             control={form.control}
             name="screenshot"
-            render={({ field }) => (
+            render={({ field: { value, onChange, ...field }, fieldState }) => (
               <FormItem>
-                <FormLabel className="text-lg">Screenshot URL (Optional)</FormLabel>
+                <FormLabel className="text-lg">Screenshot (Optional)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="url"
-                    placeholder="Paste a link to your screenshot here"
-                    className="text-base p-3"
+                  <FileInput
+                    accept="image/png,image/jpeg,image/webp"
+                    helperText="Upload a screenshot to help us understand the issue better (max 5MB)"
+                    error={fieldState.error?.message}
+                    onChange={(e) => onChange(e.target.files)}
                     {...field}
                   />
                 </FormControl>
-                <FormDescription className="text-base">
-                  If you have a screenshot hosted somewhere, paste the URL here.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

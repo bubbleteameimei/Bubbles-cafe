@@ -7,11 +7,13 @@ import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
 import path from "path";
+import helmet from "helmet";
+import { config, isDevelopment, isProduction } from "@shared/config";
+import developmentConfig from "@shared/config/development";
+import productionConfig from "@shared/config/production";
 
 const app = express();
-const isDev = process.env.NODE_ENV !== "production";
-const PORT = parseInt(process.env.PORT || "5000", 10);
-const HOST = '0.0.0.0';
+const activeConfig = isDevelopment() ? developmentConfig : productionConfig;
 
 // Set trust proxy to true for proper header handling behind proxies
 app.set('trust proxy', true);
@@ -21,14 +23,18 @@ let server: ReturnType<typeof createServer>;
 
 async function startServer() {
   try {
-    console.log('[Server] Starting server initialization...');
-    console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
-    console.log(`[Server] Host: ${HOST}`);
-    console.log(`[Server] Port: ${PORT}`);
+    console.log(`[Server] Starting server in ${config.NODE_ENV} mode...`);
+    console.log(`[Server] Host: ${config.HOST}`);
+    console.log(`[Server] Port: ${config.PORT}`);
 
-    // Serve static assets from attached_assets directory
+    // Apply security headers based on environment
+    if (isProduction()) {
+      app.use(helmet(activeConfig.SECURITY_HEADERS));
+    }
+
+    // Serve static assets from attached_assets directory with environment-specific caching
     app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
-      maxAge: '1d',
+      maxAge: isProduction() ? '1d' : 0,
       fallthrough: false
     }));
 
@@ -45,16 +51,18 @@ async function startServer() {
     // Create server instance
     server = createServer(app);
 
-    // Register routes and middleware
-    if (isDev) {
+    // Register routes and middleware based on environment
+    if (isDevelopment()) {
       console.log('[Server] Setting up development environment');
       console.log('[Server] Registering API routes');
       registerRoutes(app);
       console.log("[Server] API routes registered successfully");
 
-      console.log('[Server] Setting up Vite middleware');
-      await setupVite(app, server);
-      console.log("[Server] Vite middleware setup complete");
+      if (activeConfig.VITE_DEV_SERVER_ENABLED) {
+        console.log('[Server] Setting up Vite middleware');
+        await setupVite(app, server);
+        console.log("[Server] Vite middleware setup complete");
+      }
     } else {
       console.log('[Server] Setting up production environment');
       serveStatic(app);
@@ -63,14 +71,14 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      server.listen(PORT, HOST, () => {
-        console.log(`[Server] Server running at http://${HOST}:${PORT}`);
+      server.listen(config.PORT, config.HOST, () => {
+        console.log(`[Server] Server running at http://${config.HOST}:${config.PORT}`);
         console.log('[Server] Server started successfully');
 
         // Send port readiness signal with explicit wait_for_port flag
         if (process.send) {
           process.send({
-            port: PORT,
+            port: config.PORT,
             wait_for_port: true,
             ready: true
           });
