@@ -1,0 +1,115 @@
+
+/* Theme Toggle Button Styles */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon Toggle Style */
+.theme-toggle-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-icon:hover {
+  background-color: hsl(var(--muted));
+}
+
+/* Animated Toggle Style */
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.switch {
+  position: relative;
+  width: 60px;
+  height: 28px;
+  appearance: none;
+  background-color: hsl(var(--muted));
+  border-radius: 25px;
+  box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: 0.3s;
+  outline: none;
+}
+
+.switch:checked {
+  background-color: hsl(var(--muted));
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  background-color: hsl(var(--background));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translateX(0);
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.switch:checked::after {
+  transform: translateX(32px);
+  background-color: hsl(var(--background));
+}
+
+/* Sun and Moon indicators */
+.switch::before {
+  content: "☀️";
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font-size: 14px;
+  z-index: 1;
+  opacity: 1;
+  transition: 0.3s;
+}
+
+.switch:checked::before {
+  opacity: 0;
+}
+
+.switch:checked::after {
+  content: "🌙";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  transform: translateX(32px);
+}
+
+/* Full toggle style with text */
+.theme-toggle-full {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-full:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}

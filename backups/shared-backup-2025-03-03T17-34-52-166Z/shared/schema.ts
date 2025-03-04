@@ -1,0 +1,527 @@
+import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, decimal, doublePrecision } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Users table and schema remain unchanged
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull(),
+  email: text("email").notNull().unique(),
+  password_hash: text("password_hash").notNull(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  emailIdx: index("email_idx").on(table.email),
+  usernameIdx: index("username_idx").on(table.username)
+}));
+
+// Posts table - removed fear rating system
+export const posts = pgTable("posts", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  slug: text("slug").notNull().unique(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  isSecret: boolean("is_secret").default(false).notNull(),
+  matureContent: boolean("mature_content").default(false).notNull(),
+  themeCategory: text("theme_category"),
+  readingTimeMinutes: integer("reading_time_minutes"),
+  likesCount: integer("likes_count").default(0),
+  dislikesCount: integer("dislikes_count").default(0),
+  metadata: json("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Author Stats - removed fear rating
+export const authorStats = pgTable("author_stats", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  totalPosts: integer("total_posts").default(0).notNull(),
+  totalLikes: integer("total_likes").default(0).notNull(),
+  totalTips: text("total_tips").default("0").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Update comments table with new fields
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id), // Make userId optional
+  approved: boolean("approved").default(false).notNull(),
+  edited: boolean("edited").default(false).notNull(),
+  editedAt: timestamp("edited_at"),
+  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Add comment reactions table
+export const commentReactions = pgTable("comment_reactions", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: text("user_id").notNull(),
+  emoji: text("emoji").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userReactionUnique: unique().on(table.commentId, table.userId, table.emoji)
+}));
+
+// Update comment votes table
+export const commentVotes = pgTable("comment_votes", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: text("user_id").notNull(),
+  isUpvote: boolean("is_upvote").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  userVoteUnique: unique().on(table.commentId, table.userId)
+}));
+
+// Update comment replies table schema
+export const commentReplies = pgTable("comment_replies", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").references(() => comments.id).notNull(),
+  userId: integer("user_id").references(() => users.id), // Nullable for anonymous users
+  content: text("content").notNull(),
+  approved: boolean("approved").default(false).notNull(),
+  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Reading Progress
+export const readingProgress = pgTable("reading_progress", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  progress: decimal("progress").notNull(),
+  lastReadAt: timestamp("last_read_at").defaultNow().notNull()
+});
+
+// Secret Progress
+export const secretProgress = pgTable("secret_progress", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  discoveryDate: timestamp("discovery_date").defaultNow().notNull()
+});
+
+// Contact Messages
+export const contactMessages = pgTable("contact_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Sessions
+export const sessions = pgTable("sessions", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  lastAccessedAt: timestamp("last_accessed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Keep post likes table intact
+export const postLikes = pgTable("post_likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  isLike: boolean("is_like").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+
+// Writing Challenges
+export const writingChallenges = pgTable("writing_challenges", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Challenge Entries
+export const challengeEntries = pgTable("challenge_entries", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").references(() => writingChallenges.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  submissionDate: timestamp("submission_date").defaultNow().notNull()
+});
+
+// Content Protection
+export const contentProtection = pgTable("content_protection", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  hash: text("hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Reported Content
+export const reportedContent = pgTable("reported_content", {
+  id: serial("id").primaryKey(),
+  contentType: text("content_type").notNull(),
+  contentId: integer("content_id").notNull(),
+  reporterId: integer("reporter_id").references(() => users.id).notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Author Tips
+export const authorTips = pgTable("author_tips", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  amount: text("amount").notNull(),
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Webhooks
+export const webhooks = pgTable("webhooks", {
+  id: serial("id").primaryKey(),
+  url: text("url").notNull(),
+  events: text("events").array().notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Analytics
+export const analytics = pgTable("analytics", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  pageViews: integer("page_views").default(0).notNull(),
+  uniqueVisitors: integer("unique_visitors").default(0).notNull(),
+  averageReadTime: doublePrecision("average_read_time").default(0).notNull(),
+  bounceRate: doublePrecision("bounce_rate").default(0).notNull(),
+  deviceStats: json("device_stats").default({}).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Add performance metrics table definition after the analytics table
+export const performanceMetrics = pgTable("performance_metrics", {
+  id: serial("id").primaryKey(),
+  metricName: text("metric_name").notNull(),
+  value: doublePrecision("value").notNull(),
+  identifier: text("identifier").notNull(),
+  navigationType: text("navigation_type"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  url: text("url").notNull(),
+  userAgent: text("user_agent"),
+});
+
+// Activity Logs
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  details: json("details").default({}).notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Site Settings
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Admin Notifications
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // 'info', 'warning', 'error'
+  isRead: boolean("is_read").default(false).notNull(),
+  priority: integer("priority").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// New tables for achievement system
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'reader' or 'writer'
+  condition: json("condition").notNull(), // {type: 'streak', days: 7} or {type: 'posts', count: 10}
+  badgeIcon: text("badge_icon"), // SVG or icon identifier
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  achievementId: integer("achievement_id").references(() => achievements.id).notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+  progress: json("progress").default({}).notNull(), // {current: 5, required: 7}
+}, (table) => ({
+  userAchievementUnique: unique().on(table.userId, table.achievementId)
+}));
+
+export const readingStreaks = pgTable("reading_streaks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
+  totalReads: integer("total_reads").default(0).notNull()
+});
+
+export const writerStreaks = pgTable("writer_streaks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastWriteAt: timestamp("last_write_at").defaultNow().notNull(),
+  totalPosts: integer("total_posts").default(0).notNull()
+});
+
+export const featuredAuthors = pgTable("featured_authors", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  monthYear: text("month_year").notNull(), // Format: 'YYYY-MM'
+  description: text("description").notNull(),
+  achievements: json("achievements").default([]).notNull(),
+  stats: json("stats").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  monthYearUnique: unique().on(table.monthYear)
+}));
+
+// Update login schema to use email instead of username
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type LoginCredentials = z.infer<typeof loginSchema>;
+
+// Registration schema remains unchanged as it already uses email
+export const registrationSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  createdAt: true,
+  password_hash: true 
+}).extend({
+  password: z.string()
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
+// Update PostMetadata type to include WordPress fields
+export type PostMetadata = {
+  isCommunityPost?: boolean;
+  isApproved?: boolean;
+  status?: 'pending' | 'approved' | 'publish';
+  triggerWarnings?: string[];
+  themeCategory?: string;
+  // WordPress specific fields
+  wordpressId?: number;
+  modified?: string;
+  type?: string;
+  originalAuthor?: number;
+  featuredMedia?: number;
+  categories?: number[];
+};
+
+// Update insertPostSchema to accept WordPress fields
+export const insertPostSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  slug: z.string().min(1, "Slug is required"),
+  authorId: z.number(),
+  excerpt: z.string().optional(),
+  isSecret: z.boolean().optional(),
+  matureContent: z.boolean().optional(),
+  themeCategory: z.string().optional(),
+  readingTimeMinutes: z.number().optional(),
+  metadata: z.object({
+    isCommunityPost: z.boolean().optional(),
+    isApproved: z.boolean().optional(),
+    status: z.enum(['pending', 'approved', 'publish']).optional(),
+    triggerWarnings: z.array(z.string()).optional(),
+    themeCategory: z.string().optional(),
+    // WordPress specific fields
+    wordpressId: z.number().optional(),
+    modified: z.string().optional(),
+    type: z.string().optional(),
+    originalAuthor: z.number().optional(),
+    featuredMedia: z.number().optional(),
+    categories: z.array(z.number()).optional(),
+  }).optional(),
+});
+
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type Post = typeof posts.$inferSelect;
+
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, edited: true, editedAt: true });
+export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({ id: true, createdAt: true });
+export const insertCommentVoteSchema = createInsertSchema(commentVotes).omit({ id: true, createdAt: true });
+
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
+export type CommentReaction = typeof commentReactions.$inferSelect;
+export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
+export type CommentVote = typeof commentVotes.$inferSelect;
+export type InsertCommentVote = z.infer<typeof insertCommentVoteSchema>;
+
+
+export const insertProgressSchema = createInsertSchema(readingProgress).omit({ id: true });
+export type InsertProgress = z.infer<typeof insertProgressSchema>;
+export type ReadingProgress = typeof readingProgress.$inferSelect;
+
+export const insertSecretProgressSchema = createInsertSchema(secretProgress).omit({ id: true, discoveryDate: true });
+export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
+export type SecretProgress = typeof secretProgress.$inferSelect;
+
+export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
+export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+
+export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true });
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type Session = typeof sessions.$inferSelect;
+
+export type PostLike = typeof postLikes.$inferSelect;
+
+// Update the insert schema for comment replies
+export const insertCommentReplySchema = createInsertSchema(commentReplies)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    content: z.string().min(3, "Reply must be at least 3 characters"),
+    userId: z.number().nullable(),
+    metadata: z.object({
+      author: z.string(),
+      isAnonymous: z.boolean().default(true),
+      moderated: z.boolean().default(false),
+      originalContent: z.string(),
+      upvotes: z.number().default(0),
+      downvotes: z.number().default(0)
+    })
+  });
+
+export type InsertCommentReply = z.infer<typeof insertCommentReplySchema>;
+export type CommentReply = typeof commentReplies.$inferSelect;
+
+export type AuthorStats = typeof authorStats.$inferSelect;
+
+export const insertWritingChallengeSchema = createInsertSchema(writingChallenges).omit({ id: true, createdAt: true });
+export type InsertWritingChallenge = z.infer<typeof insertWritingChallengeSchema>;
+export type WritingChallenge = typeof writingChallenges.$inferSelect;
+
+export const insertChallengeEntrySchema = createInsertSchema(challengeEntries).omit({ id: true, submissionDate: true });
+export type InsertChallengeEntry = z.infer<typeof insertChallengeEntrySchema>;
+export type ChallengeEntry = typeof challengeEntries.$inferSelect;
+
+export const insertContentProtectionSchema = createInsertSchema(contentProtection).omit({ id: true, createdAt: true });
+export type InsertContentProtection = z.infer<typeof insertContentProtectionSchema>;
+export type ContentProtection = typeof contentProtection.$inferSelect;
+
+export const insertReportedContentSchema = createInsertSchema(reportedContent).omit({ id: true, createdAt: true });
+export type InsertReportedContent = z.infer<typeof insertReportedContentSchema>;
+export type ReportedContent = typeof reportedContent.$inferSelect;
+
+export const insertAuthorTipSchema = createInsertSchema(authorTips).omit({ id: true, createdAt: true });
+export type InsertAuthorTip = z.infer<typeof insertAuthorTipSchema>;
+export type AuthorTip = typeof authorTips.$inferSelect;
+
+export const insertWebhookSchema = createInsertSchema(webhooks).omit({ id: true, createdAt: true });
+export type InsertWebhook = z.infer<typeof insertWebhookSchema>;
+export type Webhook = typeof webhooks.$inferSelect;
+
+export type Analytics = typeof analytics.$inferSelect;
+
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type ActivityLog = typeof activityLogs.$inferSelect;
+
+export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({ id: true, updatedAt: true });
+export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({ id: true, createdAt: true });
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+// Add new insert schemas and types
+export const insertAchievementSchema = createInsertSchema(achievements).omit({ 
+  id: true,
+  createdAt: true 
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({ 
+  id: true,
+  unlockedAt: true 
+});
+
+export const insertReadingStreakSchema = createInsertSchema(readingStreaks).omit({ 
+  id: true,
+  lastReadAt: true 
+});
+
+export const insertWriterStreakSchema = createInsertSchema(writerStreaks).omit({ 
+  id: true,
+  lastWriteAt: true 
+});
+
+export const insertFeaturedAuthorSchema = createInsertSchema(featuredAuthors).omit({ 
+  id: true,
+  createdAt: true 
+});
+
+// Export types
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
+
+export type ReadingStreak = typeof readingStreaks.$inferSelect;
+export type InsertReadingStreak = z.infer<typeof insertReadingStreakSchema>;
+
+export type WriterStreak = typeof writerStreaks.$inferSelect;
+export type InsertWriterStreak = z.infer<typeof insertWriterStreakSchema>;
+
+export type FeaturedAuthor = typeof featuredAuthors.$inferSelect;
+export type InsertFeaturedAuthor = z.infer<typeof insertFeaturedAuthorSchema>;
+
+// Update CommentMetadata interface
+export interface CommentMetadata {
+  moderated?: boolean;
+  originalContent?: string;
+  editHistory?: Array<{
+    content: string;
+    editedAt: string;
+  }>;
+  isAnonymous?: boolean;
+  author?: string;
+  upvotes?: number;
+  downvotes?: number;
+  replyCount?: number;
+}
+
+// Add insert schema and types for performance metrics
+export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({ 
+  id: true,
+  timestamp: true 
+});
+
+export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
+export type PerformanceMetric = typeof performanceMetrics.$inferSelect;

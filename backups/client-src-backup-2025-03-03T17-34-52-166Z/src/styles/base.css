@@ -1,0 +1,118 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Prevent content shift on color mode change */
+  color-scheme: light dark;
+}
+
+html,
+body {
+  min-width: 320px; /* Prevent squeeze below this width */
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: var(--theme-transition);
+}
+
+/* Container styles */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: var(--container-xl);
+}
+
+/* Prevent layout shift during theme transition */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  isolation: isolate; /* Create stacking context */
+}
+
+/* Form elements and buttons */
+form, 
+.form-container {
+  width: 100%;
+  min-width: 280px; /* Prevent form squeeze */
+  max-width: 480px; /* Max width for readability */
+  margin: 0 auto;
+}
+
+button,
+.button {
+  min-width: fit-content; /* Prevent button squeeze */
+  width: auto;
+}
+
+/* Responsive breakpoints */
+@media (min-width: 640px) {
+  .container {
+    max-width: var(--container-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: var(--container-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: var(--container-lg);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: var(--container-xl);
+  }
+}
+
+/* Prevent content squeeze on small screens */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  form,
+  .form-container {
+    width: 100%;
+    min-width: 100%;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 320px) {
+  html {
+    font-size: 14px;
+  }
+
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
