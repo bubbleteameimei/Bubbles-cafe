@@ -13,6 +13,9 @@ const isDev = process.env.NODE_ENV !== "production";
 const PORT = parseInt(process.env.PORT || "5000", 10);
 const HOST = '0.0.0.0';
 
+// Set trust proxy to true for proper header handling behind proxies
+app.set('trust proxy', true);
+
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
