@@ -11,7 +11,7 @@ import helmet from "helmet";
 import { config, isDevelopment, isProduction } from "@shared/config";
 import developmentConfig from "@shared/config/development";
 import productionConfig from "@shared/config/production";
-import { getFeatureFlags, getApiConfig } from "@shared/config/utils";
+import { getFeatureFlags, getApiConfig, logEnvironmentConfig } from "@shared/config/utils";
 
 const app = express();
 const activeConfig = isDevelopment() ? developmentConfig : productionConfig;
@@ -26,22 +26,8 @@ let server: ReturnType<typeof createServer>;
 
 async function startServer() {
   try {
-    // Detailed environment logging
-    console.log('\n=== Server Configuration ===');
-    console.log(`Environment: ${config.NODE_ENV}`);
-    console.log(`Host: ${config.HOST}`);
-    console.log(`Port: ${config.PORT}`);
-    console.log('\n=== Feature Flags ===');
-    console.log('Debug Logging:', features.enableDebugLogging);
-    console.log('Detailed Errors:', features.enableDetailedErrors);
-    console.log('Hot Reload:', features.enableHotReload);
-    console.log('Cache Enabled:', features.enableCache);
-    console.log('\n=== API Configuration ===');
-    console.log('Timeout:', apiConfig.timeoutMs, 'ms');
-    console.log('Retry Attempts:', apiConfig.retryAttempts);
-    console.log('Base URL:', apiConfig.baseUrl);
-    console.log('Rate Limit Max:', apiConfig.rateLimitMax);
-    console.log('\n=========================\n');
+    // Log environment configuration
+    logEnvironmentConfig();
 
     // Apply security headers based on environment
     if (isProduction()) {

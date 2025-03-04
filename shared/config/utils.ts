@@ -59,3 +59,25 @@ export const getSecurityConfig = () => {
     },
   };
 };
+
+export const logEnvironmentConfig = () => {
+  const { isDevelopment, isProduction } = getEnvironment();
+  const features = getFeatureFlags();
+  const apiConfig = getApiConfig();
+  const securityConfig = getSecurityConfig();
+
+  console.log('\n=== Environment Configuration ===');
+  console.log(`Mode: ${isDevelopment ? 'Development' : 'Production'}`);
+  console.log('\n=== Feature Flags ===');
+  Object.entries(features).forEach(([key, value]) => {
+    console.log(`${key}: ${value}`);
+  });
+  console.log('\n=== API Configuration ===');
+  Object.entries(apiConfig).forEach(([key, value]) => {
+    console.log(`${key}: ${value}`);
+  });
+  console.log('\n=== Security Configuration ===');
+  console.log('CORS Origin:', securityConfig.corsOrigin);
+  console.log('Content Security Policy:', !isDevelopment);
+  console.log('\n=============================\n');
+};

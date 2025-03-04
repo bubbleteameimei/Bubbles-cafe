@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { MainNav } from "./MainNav";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { EnvironmentIndicator } from "@/components/ui/environment-indicator";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
               {children}
             </div>
           </main>
+          <EnvironmentIndicator />
         </div>
       </div>
     </SidebarProvider>
