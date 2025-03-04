@@ -102,18 +102,19 @@ html, body, #root {
     font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
     text-rendering: optimizeLegibility;
 
-    /* Background Image Setup */
+    /* Optimized Background Image Setup */
     background-image: url('/IMG_4918.jpeg');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center center;
     background-attachment: fixed;
+    will-change: transform; /* Optimize for parallax performance */
     transform: translateZ(0);
     position: relative;
     z-index: 1;
   }
 
-  /* Dark Overlay */
+  /* Optimized Dark Overlay */
   body::before {
     content: "";
     position: fixed;
@@ -124,6 +125,7 @@ html, body, #root {
     background: rgba(0, 0, 0, 0.4);
     pointer-events: none;
     z-index: -1;
+    will-change: opacity; /* Optimize overlay transitions */
   }
 
   /* Scrollbar Styles */
@@ -485,4 +487,31 @@ html, body, #root {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+}
+
+/* Social Interaction Container */
+.social-interaction {
+  @apply fixed bottom-6 right-6 flex flex-col gap-3 z-50;
+}
+
+/* Share Button */
+.share-btn {
+  @apply bg-primary/90 hover:bg-primary text-white rounded-full p-3 shadow-lg 
+         transition-all duration-300 ease-in-out transform hover:scale-110;
+}
+
+/* Buy Coffee Button */
+.buy-coffee-btn {
+  @apply flex items-center gap-2 bg-[#FFDD00] text-gray-900 font-medium px-4 py-2 
+         rounded-full shadow-lg transition-all duration-300 ease-in-out 
+         hover:bg-[#FFE333] hover:shadow-xl transform hover:scale-105;
+}
+
+.buy-coffee-btn svg {
+  @apply w-5 h-5;
+}
+
+/* Like/Dislike Container */
+.reaction-buttons {
+  @apply fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50;
 }
