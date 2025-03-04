@@ -47,7 +47,7 @@ html, body, #root {
 @tailwind utilities;
 
 @layer base {
-  /* Root Variables - Updated to match sidebar colors */
+  /* Existing root variables remain unchanged */
   :root {
     --background: 0 0% 7%;       /* #121212 - Deep Charcoal */
     --foreground: 0 0% 92%;      /* #EAEAEA - Soft White */
@@ -81,36 +81,49 @@ html, body, #root {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
-    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
-    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
-    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
-    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
-    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
-    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --muted: 24 5% 19%;          /* #32302c - Darker muted */
-    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
-    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
-    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
-    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --border: 24 8% 22%;         /* #3d3630 - Darker border */
-    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
-    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
+  /* Smooth Scrolling for Parallax */
+  html {
+    scroll-behavior: smooth;
+    perspective: 1px;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
 
-    /* Sidebar Variables - Dark Mode */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Background Image Styling */
+  body {
+    @apply bg-background text-foreground min-h-screen;
+    font-family: "Lancelot", "EB Garamond", serif;
+    font-size: calc(1rem + 0.3vw);
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+
+    /* Background Image Setup */
+    background-image: url('/attached_assets/IMG_4918.jpeg');
+    background-size: cover; /* Changed to cover for better fit */
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    transform: translateZ(0);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Dark Overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: -1;
   }
 
   /* Scrollbar Styles */
@@ -138,7 +151,6 @@ html, body, #root {
 
   html {
     font-size: calc(14px + 0.5vw);
-    scroll-behavior: smooth;
     scroll-padding-top: 2rem;
     -webkit-text-size-adjust: 100%;
   }
@@ -154,18 +166,6 @@ html, body, #root {
 
   ::-webkit-scrollbar-track {
     background: hsl(var(--background));
-  }
-
-  body {
-    @apply bg-background text-foreground min-h-screen;
-    font-family: "Lancelot", "EB Garamond", serif;
-    font-size: calc(1rem + 0.3vw);
-    line-height: 1.8;
-    letter-spacing: 0.01em;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
-    text-rendering: optimizeLegibility;
   }
 
   button, a {
@@ -453,5 +453,36 @@ html, body, #root {
     font-size: 1.125rem;
     line-height: 1.8;
     outline: none;
+  }
+  .dark {
+    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
+    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
+    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
+    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --muted: 24 5% 19%;          /* #32302c - Darker muted */
+    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
+    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
+    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --border: 24 8% 22%;         /* #3d3630 - Darker border */
+    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
+    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
+
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
