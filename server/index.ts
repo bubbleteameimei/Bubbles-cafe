@@ -27,6 +27,11 @@ let server: ReturnType<typeof createServer>;
 async function startServer() {
   try {
     // Log environment configuration
+    console.log('\n=== Starting Server ===');
+    console.log(`Process ID: ${process.pid}`);
+    console.log(`Current Directory: ${process.cwd()}`);
+
+    // Log detailed environment configuration
     logEnvironmentConfig();
 
     // Apply security headers based on environment
@@ -102,7 +107,7 @@ async function startServer() {
   }
 }
 
-// Start the server
+// Start the server with enhanced error handling
 startServer().catch(err => {
   console.error('[Server] Critical startup error:', err);
   process.exit(1);

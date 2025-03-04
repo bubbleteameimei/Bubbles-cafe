@@ -27,7 +27,7 @@
     ]
   },
   "WordPress Sync": {
-    "command": "node scripts/wordpress-api-sync.js",
+    "command": "node scripts/run-wp-sync.js",
     "environment": {
       "NODE_ENV": "development",
       "DEBUG": "wordpress-sync:*"
