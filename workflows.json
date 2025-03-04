@@ -7,8 +7,8 @@
       "HOST": "0.0.0.0",
       "SESSION_SECRET": "dev_secret_key"
     },
-    "wait_for_port": "5000",
-    "port": "5000",
+    "wait_for_port": 5000,
+    "port": 5000,
     "persistent": true,
     "restart_on": [
       "package.json",

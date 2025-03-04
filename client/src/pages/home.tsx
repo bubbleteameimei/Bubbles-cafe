@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { fetchPosts } from "@/lib/wordpress-api";
+import { TipPopup } from "@/components/ui/tip-popup";
 
 // Debug log for theme verification
 console.log("[Home] Loading page with theme settings");
@@ -98,6 +99,10 @@ export default function Home() {
                   Start Reading
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
+              </div>
+
+              <div className="flex justify-center mt-4">
+                <TipPopup />
               </div>
 
               {posts && posts.length > 0 && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
+import { TipPopup } from "@/components/ui/tip-popup";
 
 interface ReaderPageProps {
   slug?: string;
@@ -294,6 +295,9 @@ export default function Reader({ slug }: ReaderPageProps) {
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
 
+      {/* Add TipPopup with auto-show */}
+      <TipPopup autoShow={true} />
+
       {/* Floating Navigation */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
         <Button
@@ -416,6 +420,20 @@ export default function Reader({ slug }: ReaderPageProps) {
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
                   <div className="flex items-center gap-3">
+                    {/* Add TipPopup with custom trigger */}
+                    <TipPopup
+                      triggerContent={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Coffee className="h-5 w-5" />
+                          <span className="sr-only">Support with a tip</span>
+                        </Button>
+                      }
+                    />
+
                     {/* Native Share */}
                     <Button
                       variant="ghost"
