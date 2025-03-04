@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from 'wouter';
+import { Route, Switch, RouteComponentProps } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
@@ -14,11 +14,11 @@ import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
 
-// Create a wrapper for lazy-loaded components
+// Create a wrapper for lazy-loaded components that properly handles props
 const withSuspense = <P extends object>(
   Component: React.LazyExoticComponent<React.ComponentType<P>>
 ) => {
-  return function WithSuspenseWrapper(props: P) {
+  return function WithSuspenseWrapper(props: P & RouteComponentProps) {
     return (
       <React.Suspense fallback={<LoadingScreen />}>
         <Component {...props} />
@@ -99,7 +99,7 @@ function App() {
                       {/* Public Routes */}
                       <Route path="/" component={HomePage} />
                       <Route path="/stories" component={StoriesPage} />
-                      <Route path="/reader" component={ReaderPage} />
+                      <Route path="/reader/:slug?" component={ReaderPage} />
                       <Route path="/about" component={AboutPage} />
                       <Route path="/contact" component={ContactPage} />
                       <Route path="/report-bug" component={ReportBugPage} />
