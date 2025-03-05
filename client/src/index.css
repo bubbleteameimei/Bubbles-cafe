@@ -503,7 +503,25 @@ html, body, #root {
 
 /* Like/Dislike Container */
 .reaction-buttons {
-  @apply fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50;
+  @apply fixed left-6 top-6 z-50 
+         bg-background/50 backdrop-blur-sm p-3 rounded-xl shadow-lg
+         transition-all duration-300 hover:bg-background/60 hover:shadow-xl;
+  min-width: 280px;
+}
+
+/* Ensure proper z-index and spacing */
+.reaction-buttons .group {
+  @apply relative z-10;
+}
+
+/* Animate the icons on hover */
+.reaction-buttons .group:hover svg {
+  @apply scale-110 transition-transform duration-300;
+}
+
+/* Make the indicator dots more prominent */
+.reaction-buttons .animate-ping {
+  @apply opacity-60;
 }
 
 /* Buy Coffee Button */

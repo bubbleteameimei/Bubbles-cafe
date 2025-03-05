@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ interface LikeDislikeProps {
   onLike?: (liked: boolean) => void;
   onDislike?: (disliked: boolean) => void;
   onUpdate?: (likes: number, dislikes: number) => void;
+  className?: string;
 }
 
 interface Stats {
@@ -22,7 +23,7 @@ interface Stats {
 }
 
 function isValidStats(obj: any): obj is Stats {
-  return obj 
+  return obj
     && typeof obj.likes === 'number'
     && !isNaN(obj.likes)
     && typeof obj.dislikes === 'number'
@@ -49,7 +50,6 @@ const getOrCreateStats = (postId: number): Stats => {
       }
     }
 
-    // Generate initial likes between 80-150 and dislikes between 8-20
     const likesBase = Math.floor(Math.random() * (150 - 80 + 1)) + 80;
     const dislikesBase = Math.floor(Math.random() * (20 - 8 + 1)) + 8;
 
@@ -84,17 +84,13 @@ export function LikeDislike({
   userLikeStatus = null,
   onLike,
   onDislike,
-  onUpdate
+  onUpdate,
+  className
 }: LikeDislikeProps) {
   const { toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
-
-  useEffect(() => {
-    const savedStats = getOrCreateStats(postId);
-    setStats(savedStats);
-  }, [postId]);
 
   const updateStats = (newStats: Stats) => {
     try {
@@ -124,6 +120,9 @@ export function LikeDislike({
           dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
           baseStats: stats.baseStats,
           userInteracted: true
+        });
+        toast({
+          description: "Thanks for liking! 🥰",
         });
       } else {
         setLiked(false);
@@ -160,6 +159,9 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
+        toast({
+          description: "Thanks for the feedback! 😔",
+        });
       } else {
         setDisliked(false);
         updateStats({
@@ -182,38 +184,61 @@ export function LikeDislike({
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <Button
-        variant={liked ? "default" : "ghost"}
-        size="sm"
-        onClick={handleLike}
-        className={`flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
-          liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
-        }`}
-      >
-        <ThumbsUp className={`h-4 w-4 transition-transform ${
-          liked ? 'text-primary' : 'text-muted-foreground'
-        }`} />
-        <span className={`text-sm ${
-          liked ? 'text-primary' : 'text-muted-foreground'
-        }`}>{stats.likes}</span>
-      </Button>
+    <div className={className}>
+      <div className="bg-background/50 backdrop-blur-sm p-4 rounded-xl shadow-lg">
+        <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
+          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
+        </p>
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant={liked ? "default" : "ghost"}
+            size="sm"
+            onClick={handleLike}
+            className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ${
+              liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
+            }`}
+          >
+            <ThumbsUp className={`h-5 w-5 transition-all duration-300 group-hover:rotate-12 ${
+              liked ? 'text-primary' : 'text-muted-foreground'
+            }`} />
+            <span className={`text-sm font-medium ${
+              liked ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+              {stats.likes}
+            </span>
+            {liked && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+            )}
+          </Button>
 
-      <Button
-        variant={disliked ? "default" : "ghost"}
-        size="sm"
-        onClick={handleDislike}
-        className={`flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 ${
-          disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
-        }`}
-      >
-        <ThumbsDown className={`h-4 w-4 transition-transform ${
-          disliked ? 'text-destructive' : 'text-muted-foreground'
-        }`} />
-        <span className={`text-sm ${
-          disliked ? 'text-destructive' : 'text-muted-foreground'
-        }`}>{stats.dislikes}</span>
-      </Button>
+          <Button
+            variant={disliked ? "default" : "ghost"}
+            size="sm"
+            onClick={handleDislike}
+            className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ${
+              disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
+            }`}
+          >
+            <ThumbsDown className={`h-5 w-5 transition-all duration-300 group-hover:rotate-12 ${
+              disliked ? 'text-destructive' : 'text-muted-foreground'
+            }`} />
+            <span className={`text-sm font-medium ${
+              disliked ? 'text-destructive' : 'text-muted-foreground'
+            }`}>
+              {stats.dislikes}
+            </span>
+            {disliked && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/50 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
