@@ -43,33 +43,33 @@ export function StoryView({ slug }: StoryViewProps) {
   const readingTime = getReadingTime(story.content);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-8">
-      <Card className="p-6">
-        <h1 className="story-title mb-4">{story.title}</h1>
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-sm text-muted-foreground">
-            {new Date(story.createdAt).toLocaleDateString()}
+    <>
+      {/* Main content */}
+      <div className="max-w-4xl mx-auto p-4 space-y-8">
+        <Card className="p-6">
+          <h1 className="story-title mb-4">{story.title}</h1>
+          <div className="flex items-center justify-between mb-6">
+            <div className="text-sm text-muted-foreground">
+              {new Date(story.createdAt).toLocaleDateString()}
+            </div>
+            <div className="read-time">
+              {readingTime}
+            </div>
           </div>
-          <div className="read-time">
-            {readingTime}
+          <div className="prose dark:prose-invert max-w-none italic-text">
+            {story.content}
           </div>
-        </div>
-        <div className="prose dark:prose-invert max-w-none italic-text">
-          {story.content}
-        </div>
-      </Card>
-
-      {/* Position like/dislike buttons on the left */}
-      <div className="reaction-buttons">
-        <LikeDislike postId={story.id} />
+        </Card>
       </div>
 
-      {/* Position share button on the right */}
+      {/* Fixed position interaction buttons */}
+      <LikeDislike postId={story.id} className="reaction-buttons" />
       <ShareButton 
         title={story.title}
         text={story.excerpt || "Check out this story!"}
+        className="social-interaction"
       />
-    </div>
+    </>
   );
 }
 

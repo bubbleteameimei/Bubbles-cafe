@@ -63,7 +63,7 @@ export function ShareButton({ title, text, url = window.location.href, className
   };
 
   return (
-    <div className="social-interaction">
+    <div className={className}>
       <Button
         variant="ghost"
         size="sm"
