@@ -10,7 +10,8 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
-import { useFontSize, useFontSizeControls } from "@/hooks/use-font-size"; //Updated import
+import { useFontSize } from "@/hooks/use-font-size";
+import { useFontSizeControls } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { TipPopup } from "@/components/ui/tip-popup";
@@ -19,10 +20,22 @@ interface ReaderPageProps {
   slug?: string;
 }
 
+// Added FontSizeControls component - Basic implementation
+const FontSizeControls = ({ increaseFontSize, decreaseFontSize }: { increaseFontSize: () => void; decreaseFontSize: () => void }) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <Button onClick={decreaseFontSize} size="icon">A-</Button>
+      <Button onClick={increaseFontSize} size="icon">A+</Button>
+    </div>
+  );
+};
+
+
 export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
-  const { showControls, setShowControls } = useFontSizeControls(); // Added state for controls
+  const [showControls, setShowControls] = useState(false); // Added state for controls
+  const toggleControls = () => setShowControls(!showControls);
 
   console.log('[Reader] Component mounted with slug:', slug); // Debug log
 
@@ -293,7 +306,7 @@ export default function Reader({ slug }: ReaderPageProps) {
   `;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background" onClick={toggleControls}>
       <Mist className="opacity-30" />
 
       {/* Add TipPopup with auto-show */}
@@ -338,7 +351,7 @@ export default function Reader({ slug }: ReaderPageProps) {
 
       <div className="container max-w-3xl mx-auto px-4 py-8 relative">
         <div 
-          className={`fixed right-6 top-24 transition-opacity duration-300 ${
+          className={`fixed bottom-8 right-8 z-50 transition-all duration-300 ${
             showControls ? 'opacity-100' : 'opacity-0'
           }`}
         >
