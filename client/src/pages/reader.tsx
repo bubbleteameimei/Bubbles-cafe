@@ -10,7 +10,7 @@ import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
-import { useFontSize } from "@/hooks/use-font-size";
+import { useFontSize, useFontSizeControls } from "@/hooks/use-font-size"; //Updated import
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { TipPopup } from "@/components/ui/tip-popup";
@@ -21,7 +21,8 @@ interface ReaderPageProps {
 
 export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
-  const { fontSize } = useFontSize();
+  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
+  const { showControls, setShowControls } = useFontSizeControls(); // Added state for controls
 
   console.log('[Reader] Component mounted with slug:', slug); // Debug log
 
@@ -335,7 +336,14 @@ export default function Reader({ slug }: ReaderPageProps) {
         </Button>
       </div>
 
-      <div className="container max-w-3xl mx-auto px-4 py-8">
+      <div className="container max-w-3xl mx-auto px-4 py-8 relative">
+        <div 
+          className={`fixed right-6 top-24 transition-opacity duration-300 ${
+            showControls ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} /> {/* Added props for interaction */}
+        </div>
         <AnimatePresence mode="wait">
           <motion.article
             key={currentPost.id}
@@ -397,10 +405,7 @@ export default function Reader({ slug }: ReaderPageProps) {
 
             <div
               className="story-content mb-16"
-              style={{
-                fontSize: `${fontSize}px`,
-                whiteSpace: 'pre-wrap'
-              }}
+              style={{ fontSize: `${fontSize}px`, whiteSpace: 'pre-wrap' }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
                   .replace(/\n\n+/g, '\n\n') // Replace multiple newlines with double newline
