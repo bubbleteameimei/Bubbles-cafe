@@ -1,4 +1,3 @@
-
 .font-size-controls {
   display: flex;
   align-items: center;
@@ -6,7 +5,7 @@
   border-radius: 999px;
   padding: 0.35rem;
   gap: 0.35rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 50;
@@ -15,7 +14,7 @@
 }
 
 .font-size-controls:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px) scale(1.03);
   background-color: hsl(var(--muted)/90%);
   border-color: hsl(var(--accent)/50%);
@@ -69,24 +68,13 @@
 }
 
 .font-size-display {
-  min-width: 3rem;
-  height: 32px;
+  min-width: 2rem;
   text-align: center;
-  font-weight: 600;
+  font-weight: 500;
   user-select: none;
   font-variant-numeric: tabular-nums;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  cursor: default;
-  border-radius: 8px;
-  padding: 0 0.35rem;
-}
-
-.font-size-display:hover {
-  background-color: hsl(var(--accent)/10%);
+  padding: 0 0.5rem;
 }
 
 .font-size-btn.increase:not(:disabled):hover {
@@ -108,28 +96,13 @@
   animation: pulse 0.3s ease-in-out;
 }
 
-/* Bounce animation when limits are reached */
+/* Bounce animation to draw attention */
 @keyframes bounce {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-2px); }
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+  60% { transform: translateY(-3px); }
 }
 
 .bounce-animation {
-  animation: bounce 0.5s ease-in-out;
-}
-
-/* Fade in/out animation */
-.fade-in {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.fade-out {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  pointer-events: none;
+  animation: bounce 1s ease infinite;
 }

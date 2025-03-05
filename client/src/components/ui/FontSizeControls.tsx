@@ -1,44 +1,37 @@
 
 import React, { useState, useEffect } from 'react';
-import { Minus, Plus, Type, BookOpen } from 'lucide-react';
-import { Button } from './button';
-import { useFontSize } from '@/hooks/use-font-size';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-import './font-size-controls.css';
+import { Button } from "./button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
+import { Plus, Minus, BookOpen } from "lucide-react";
+import { useFontSize } from "../../hooks/use-font-size-controls";
+import { cn } from "../../lib/utils";
+import "./font-size-controls.css";
+
+const MIN_FONT_SIZE = 12;
+const MAX_FONT_SIZE = 24;
 
 export function FontSizeControls() {
-  const { fontSize, updateFontSize, MIN_FONT_SIZE, MAX_FONT_SIZE } = useFontSize();
+  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const [animated, setAnimated] = useState(false);
   const [bounce, setBounce] = useState(false);
 
-  const increaseFontSize = () => {
-    updateFontSize(fontSize + 1);
-    triggerAnimation();
-    if (fontSize >= MAX_FONT_SIZE - 1) {
-      setBounce(true);
-    }
-  };
-
-  const decreaseFontSize = () => {
-    updateFontSize(fontSize - 1);
-    triggerAnimation();
-    if (fontSize <= MIN_FONT_SIZE + 1) {
-      setBounce(true);
-    }
-  };
-
-  const triggerAnimation = () => {
-    setAnimated(true);
-    setTimeout(() => setAnimated(false), 300);
-  };
-
+  // Animation effect when font size changes
   useEffect(() => {
-    if (bounce) {
-      const timer = setTimeout(() => setBounce(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [bounce]);
+    setAnimated(true);
+    const timer = setTimeout(() => setAnimated(false), 300);
+    return () => clearTimeout(timer);
+  }, [fontSize]);
+
+  // Initial attention-grabbing bounce animation
+  useEffect(() => {
+    const timer = setTimeout(() => setBounce(true), 1000);
+    const endTimer = setTimeout(() => setBounce(false), 2000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(endTimer);
+    };
+  }, []);
 
   return (
     <TooltipProvider>

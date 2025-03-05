@@ -350,12 +350,12 @@ export default function Reader({ slug }: ReaderPageProps) {
       </div>
 
       <div className="container max-w-3xl mx-auto px-4 py-8 relative">
-        <div 
-          className={`fixed bottom-8 right-8 z-50 transition-all duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} /> {/* Added props for interaction */}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold mb-4 tracking-tight" dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }} />
+          <div className="flex items-center space-x-4">
+            <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} />
+            <TipPopup triggerContent={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-colors"><Coffee className="h-5 w-5" /><span className="sr-only">Support with a tip</span></Button>} />
+          </div>
         </div>
         <AnimatePresence mode="wait">
           <motion.article
@@ -366,53 +366,47 @@ export default function Reader({ slug }: ReaderPageProps) {
             transition={{ duration: 0.3 }}
             className="prose dark:prose-invert max-w-none"
           >
-            <div className="flex flex-col items-center mb-8">
-              <h1
-                className="text-4xl font-bold text-center mb-4 tracking-tight"
-                dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
-              />
 
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <time>{formattedDate}</time>
-                  <span className="text-muted-foreground/30">•</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{readingTime}</span>
-                  </div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <time>{formattedDate}</time>
+                <span className="text-muted-foreground/30">•</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{readingTime}</span>
                 </div>
+              </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center gap-4 mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (currentIndex > 0) {
-                        setCurrentIndex(currentIndex - 1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
-                    disabled={currentIndex === 0}
-                    className="group hover:bg-primary/10 transition-all duration-300"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                    Previous Story
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (currentIndex < posts.length - 1) {
-                        setCurrentIndex(currentIndex + 1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
-                    disabled={currentIndex === posts.length - 1}
-                    className="group hover:bg-primary/10 transition-all duration-300"
-                  >
-                    Next Story
-                    <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
+              {/* Navigation Buttons */}
+              <div className="flex items-center gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (currentIndex > 0) {
+                      setCurrentIndex(currentIndex - 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  disabled={currentIndex === 0}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                  Previous Story
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (currentIndex < posts.length - 1) {
+                      setCurrentIndex(currentIndex + 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  disabled={currentIndex === posts.length - 1}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  Next Story
+                  <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
               </div>
             </div>
 
@@ -438,19 +432,6 @@ export default function Reader({ slug }: ReaderPageProps) {
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
                   <div className="flex items-center gap-3">
-                    {/* Add TipPopup with custom trigger */}
-                    <TipPopup
-                      triggerContent={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Coffee className="h-5 w-5" />
-                          <span className="sr-only">Support with a tip</span>
-                        </Button>
-                      }
-                    />
 
                     {/* Native Share */}
                     <Button
