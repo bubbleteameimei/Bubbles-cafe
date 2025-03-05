@@ -544,3 +544,61 @@ html, body, #root {
 .buy-coffee-btn:hover span {
   @apply text-gray-800;
 }
+:root {
+  /* Dark mode variables */
+  --bg-color-dark: #121212;
+  --text-color-dark: #EAEAEA;
+  --header-color-dark: #FFFFFF;
+  --accent-color-dark: #3D63DD;
+  --link-color-dark: #A6A6A6;
+  --hover-color-dark: #D4D4D4;
+  --border-color-dark: #1F1F1F;
+  
+  /* Light mode variables kept for reference */
+  --bg-color-light: #F7F7F7;
+  --text-color-light: #232323;
+  --header-color-light: #111111;
+  --accent-color-light: #3D63DD;
+  --link-color-light: #737373;
+  --hover-color-light: #525252;
+  --border-color-light: #D9D9D9;
+}
+
+/* Apply dark mode styles */
+.dark {
+  background-color: var(--bg-color-dark);
+  color: var(--text-color-dark);
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--header-color-dark);
+}
+
+.dark a {
+  color: var(--link-color-dark);
+  transition: color 0.3s ease;
+}
+
+.dark a:hover {
+  color: var(--hover-color-dark);
+}
+
+.dark button {
+  background: var(--accent-color-dark);
+  color: var(--bg-color-dark);
+  border: 1px solid var(--border-color-dark);
+}
+
+.dark button:hover {
+  filter: brightness(1.1);
+}
+
+/* Scrollbar customization for dark mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--accent-color-dark);
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-color-dark);
+}
