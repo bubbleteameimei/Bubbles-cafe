@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Coffee, Heart } from "lucide-react";
 
 interface TipPopupProps {
@@ -20,7 +19,6 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
 
   useEffect(() => {
     if (autoShow) {
-      // Check if we've shown the popup recently
       const lastShown = localStorage.getItem('lastTipPopupShown');
       const showAgain = !lastShown || Date.now() - parseInt(lastShown) > 24 * 60 * 60 * 1000; // 24 hours
 
@@ -33,7 +31,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
         return () => clearTimeout(timer);
       }
     }
-  }, [autoShow]); // Only re-run if autoShow changes
+  }, [autoShow]);
 
   const handleTip = () => {
     window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
@@ -48,10 +46,10 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
         </DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Coffee className="h-4 w-4" />
-            Buy me a coffee
-          </Button>
+          <button className="buy-coffee-btn">
+            <Coffee className="h-5 w-5" />
+            <span>Buy me a coffee</span>
+          </button>
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-md">
@@ -64,13 +62,13 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 py-4">
-          <Button 
+          <button 
             onClick={handleTip}
-            className="w-full max-w-sm gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+            className="buy-coffee-btn w-full max-w-sm"
           >
             <Coffee className="h-5 w-5" />
-            Buy me a coffee
-          </Button>
+            <span>Buy me a coffee</span>
+          </button>
           <p className="text-sm text-muted-foreground text-center">
             Powered by Paystack • Secure Payment
           </p>
