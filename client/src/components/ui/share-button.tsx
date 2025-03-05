@@ -63,33 +63,39 @@ export function ShareButton({ title, text, url = window.location.href, className
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={className}
-          onClick={(e) => {
-            if (navigator.share) {
-              e.preventDefault();
-              handleShare();
-            }
-          }}
-        >
-          <Share2 className="h-4 w-4 mr-2" />
-          Share
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleCopyLink}>
-          {copied ? (
-            <Check className="h-4 w-4 mr-2" />
-          ) : (
-            <Copy className="h-4 w-4 mr-2" />
-          )}
-          Copy Link
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="social-interaction">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="share-btn"
+        onClick={handleShare}
+      >
+        <Share2 className="h-4 w-4" />
+      </Button>
+
+      {!navigator.share && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="share-btn"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleCopyLink}>
+              {copied ? (
+                <Check className="h-4 w-4 mr-2" />
+              ) : (
+                <Copy className="h-4 w-4 mr-2" />
+              )}
+              Copy Link
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
   );
 }

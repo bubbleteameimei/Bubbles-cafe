@@ -501,6 +501,11 @@ html, body, #root {
          transition-all duration-300 ease-in-out transform hover:scale-110;
 }
 
+/* Like/Dislike Container */
+.reaction-buttons {
+  @apply fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50;
+}
+
 /* Buy Coffee Button */
 .buy-coffee-btn {
   @apply inline-flex items-center gap-2 bg-[#FFDD00] text-gray-900 
@@ -538,9 +543,4 @@ html, body, #root {
 
 .buy-coffee-btn:hover span {
   @apply text-gray-800;
-}
-
-/* Like/Dislike Container */
-.reaction-buttons {
-  @apply fixed left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50;
 }

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LikeDislike } from "@/components/ui/like-dislike";
+import { ShareButton } from "@/components/ui/share-button";
 import { getReadingTime } from "@/lib/content-analysis";
 
 interface StoryViewProps {
@@ -58,7 +59,16 @@ export function StoryView({ slug }: StoryViewProps) {
         </div>
       </Card>
 
-      <LikeDislike postId={story.id} />
+      {/* Position like/dislike buttons on the left */}
+      <div className="reaction-buttons">
+        <LikeDislike postId={story.id} />
+      </div>
+
+      {/* Position share button on the right */}
+      <ShareButton 
+        title={story.title}
+        text={story.excerpt || "Check out this story!"}
+      />
     </div>
   );
 }
@@ -78,8 +88,6 @@ function StoryViewSkeleton() {
           <Skeleton className="h-4 w-3/4" />
         </div>
       </Card>
-
-      <Skeleton className="h-48 w-full" />
     </div>
   );
 }
