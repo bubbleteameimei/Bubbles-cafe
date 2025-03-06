@@ -13,7 +13,28 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
+import { useTheme } from "@/lib/theme-provider";
+import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
+
+// Theme button component
+const ThemeButton = () => {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="theme-button bg-background/80 backdrop-blur-sm rounded-full border border-border/50 px-3 py-2 flex items-center gap-2 transition-all hover:scale-105"
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? (
+        <Sun className="h-5 w-5 text-amber-400" />
+      ) : (
+        <Moon className="h-5 w-5 text-indigo-500" />
+      )}
+    </button>
+  );
+};
 
 // Font size controls component
 const FontSizeControls = ({ updateFontSize, fontSize }: { updateFontSize: (size: number) => void; fontSize: number }) => {
@@ -383,8 +404,9 @@ export default function Reader({ slug }: ReaderPageProps) {
       <Mist className="opacity-30" />
 
       <div className="container max-w-3xl mx-auto px-4 pt-8">
-        {/* Font size controls - Moved above title with margin */}
-        <div className="mb-12 flex justify-end">
+        {/* Reading controls - Font size and theme toggle */}
+        <div className="mb-12 flex justify-end items-center gap-3">
+          <ThemeButton />
           <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
         </div>
 
