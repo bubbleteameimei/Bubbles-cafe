@@ -16,11 +16,13 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
+import Book from 'lucide-react/Book';
+
 
 // Theme button component
 const ThemeButton = () => {
   const { theme, toggleTheme } = useTheme();
-  
+
   return (
     <button
       onClick={toggleTheme}
@@ -39,26 +41,202 @@ const ThemeButton = () => {
 // Bookmark button component
 const BookmarkButton = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
-  
+
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
   };
-  
+
   return (
     <button
       onClick={toggleBookmark}
-      className="h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105"
-      aria-label="Bookmark post"
+      className="w-8 h-8 flex items-center justify-center text-foreground bg-background/80 backdrop-blur-sm rounded-md border border-border/50 hover:bg-muted/80 transition-colors"
     >
       {isBookmarked ? (
-        <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
         </svg>
       ) : (
-        <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
         </svg>
       )}
+    </button>
+  );
+};
+
+// Page Flip toggle button component
+const PageFlipButton = () => {
+  const [isPageFlipMode, setIsPageFlipMode] = useState(false);
+
+  const togglePageFlipMode = () => {
+    setIsPageFlipMode(!isPageFlipMode);
+
+    if (!isPageFlipMode) {
+      // Enable page flip mode
+      initializePageFlip();
+    } else {
+      // Disable page flip mode
+      removePageFlip();
+    }
+  };
+
+  const initializePageFlip = () => {
+    // Get content element
+    const contentElement = document.querySelector('.post-content');
+    if (!contentElement) return;
+
+    // Create book container
+    const bookContainer = document.createElement('div');
+    bookContainer.className = 'book';
+    bookContainer.id = 'bookContainer';
+    bookContainer.style.position = 'relative';
+    bookContainer.style.width = '100%';
+    bookContainer.style.height = '100%';
+    bookContainer.style.perspective = '1000px';
+
+    // Get content and split into pages
+    const content = contentElement.innerHTML;
+    const words = content.split(' ');
+    const wordsPerPage = 150; // Adjust as needed
+    const totalPages = Math.ceil(words.length / wordsPerPage);
+
+    // Create pages
+    for (let i = 0; i < totalPages; i++) {
+      const page = document.createElement('div');
+      page.className = 'page';
+      page.id = `page${i + 1}`;
+      page.style.position = 'absolute';
+      page.style.width = '100%';
+      page.style.height = '100%';
+      page.style.background = '#1A1A1A';
+      page.style.color = 'white';
+      page.style.padding = '20px';
+      page.style.borderRadius = '10px';
+      page.style.textAlign = 'justify';
+      page.style.backfaceVisibility = 'hidden';
+      page.style.transition = 'transform 0.6s ease';
+
+      // Set origin based on odd/even
+      if (i % 2 === 0) {
+        page.style.transformOrigin = 'right center';
+      } else {
+        page.style.transformOrigin = 'left center';
+        page.style.transform = 'rotateY(-180deg)';
+      }
+
+      // Add content to page
+      const startWord = i * wordsPerPage;
+      const endWord = Math.min((i + 1) * wordsPerPage, words.length);
+      page.innerHTML = words.slice(startWord, endWord).join(' ');
+
+      // Add page to book
+      bookContainer.appendChild(page);
+    }
+
+    // Create pagination container
+    const pagination = document.createElement('div');
+    pagination.className = 'pagination';
+    pagination.id = 'paginationContainer';
+    pagination.style.display = 'flex';
+    pagination.style.justifyContent = 'space-between';
+    pagination.style.marginTop = '20px';
+
+    // Create navigation buttons
+    const prevButton = document.createElement('button');
+    prevButton.id = 'prevPage';
+    prevButton.textContent = 'Previous';
+    prevButton.className = 'px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors';
+
+    const nextButton = document.createElement('button');
+    nextButton.id = 'nextPage';
+    nextButton.textContent = 'Next';
+    nextButton.className = 'px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors';
+
+    // Add buttons to pagination
+    pagination.appendChild(prevButton);
+    pagination.appendChild(nextButton);
+
+    // Replace content with book
+    contentElement.innerHTML = '';
+    contentElement.appendChild(bookContainer);
+    contentElement.appendChild(pagination);
+
+    // Initialize page flip logic
+    let currentPage = 1;
+    const pages = document.querySelectorAll('.page');
+
+    prevButton.addEventListener('click', function() {
+      if (currentPage > 1) {
+        currentPage--;
+        (pages[currentPage - 1] as HTMLElement).style.transform = 'rotateY(0deg)';
+      }
+    });
+
+    nextButton.addEventListener('click', function() {
+      if (currentPage < totalPages) {
+        (pages[currentPage - 1] as HTMLElement).style.transform = 'rotateY(-180deg)';
+        currentPage++;
+      }
+    });
+  };
+
+  const removePageFlip = () => {
+    // Get content element
+    const contentElement = document.querySelector('.post-content');
+    const bookContainer = document.getElementById('bookContainer');
+    const paginationContainer = document.getElementById('paginationContainer');
+
+    if (contentElement && bookContainer && paginationContainer) {
+      // Restore original content from sessionStorage
+      const originalContent = sessionStorage.getItem('originalContent');
+      if (originalContent) {
+        contentElement.innerHTML = originalContent;
+      }
+    }
+  };
+
+  // Store original content when component mounts
+  useEffect(() => {
+    const contentElement = document.querySelector('.post-content');
+    if (contentElement) {
+      sessionStorage.setItem('originalContent', contentElement.innerHTML);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (isPageFlipMode) {
+        removePageFlip();
+      }
+    };
+  }, []);
+
+  return (
+    <button
+      onClick={togglePageFlipMode}
+      className="w-8 h-8 flex items-center justify-center text-foreground bg-background/80 backdrop-blur-sm rounded-md border border-border/50 hover:bg-muted/80 transition-colors"
+      title={isPageFlipMode ? "Disable Page Flip Mode" : "Enable Page Flip Mode"}
+    >
+      <Book size={18} />
     </button>
   );
 };
@@ -436,6 +614,7 @@ export default function Reader({ slug }: ReaderPageProps) {
           <div className="flex space-x-4">
             <ThemeButton />
             <BookmarkButton />
+            <PageFlipButton />
           </div>
           <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
         </div>
@@ -447,7 +626,7 @@ export default function Reader({ slug }: ReaderPageProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="prose dark:prose-invert max-w-none"
+            className="prose dark:prose-invert max-w-none post-content"
           >
             <div className="flex flex-col items-center mb-8">
               <h1
