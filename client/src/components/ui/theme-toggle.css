@@ -4,6 +4,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-container:hover {
+  transform: translateY(-2px) scale(1.03);
 }
 
 /* Icon Toggle Style */
@@ -32,7 +37,7 @@
 
 .switch {
   position: relative;
-  width: 60px;
+  width: 56px;
   height: 28px;
   appearance: none;
   background-color: hsl(var(--muted));
@@ -41,10 +46,14 @@
   cursor: pointer;
   transition: 0.3s;
   outline: none;
+  border: 1px solid hsl(var(--border)/50%);
+  backdrop-filter: blur(8px);
 }
 
 .switch:checked {
   background-color: hsl(var(--muted));
+  border-color: hsl(var(--accent)/50%);
+  box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.3), 0 0 5px hsl(var(--accent)/30%);
 }
 
 .switch::after {
