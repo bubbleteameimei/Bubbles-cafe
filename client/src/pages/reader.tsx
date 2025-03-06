@@ -413,7 +413,36 @@ export default function Reader({ slug }: ReaderPageProps) {
                   </div>
                 </div>
 
-                {/* Pagination moved to FloatingPagination component */}
+                {/* Navigation Buttons */}
+                <div className="flex items-center gap-4 mb-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentIndex > 0) {
+                        setCurrentIndex(currentIndex - 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Previous Story
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentIndex < postsData.posts.length - 1) {
+                        setCurrentIndex(currentIndex + 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={currentIndex === postsData.posts.length - 1}
+                  >
+                    Next Story
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+
               </div>
             </div>
 
