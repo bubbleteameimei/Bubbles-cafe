@@ -24,13 +24,13 @@ const ThemeButton = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="theme-button bg-background/80 backdrop-blur-sm rounded-full border border-border/50 px-3 py-2 flex items-center gap-2 transition-all hover:scale-105"
+      className="theme-button bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 p-3 flex items-center justify-center transition-all hover:scale-105"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <Sun className="h-5 w-5 text-amber-400" />
+        <Sun className="h-6 w-6 text-amber-400" />
       ) : (
-        <Moon className="h-5 w-5 text-indigo-500" />
+        <Moon className="h-6 w-6 text-indigo-500" />
       )}
     </button>
   );
@@ -405,7 +405,7 @@ export default function Reader({ slug }: ReaderPageProps) {
 
       <div className="container max-w-3xl mx-auto px-4 pt-8">
         {/* Reading controls - Font size and theme toggle */}
-        <div className="mb-12 flex justify-end items-center gap-3">
+        <div className="mb-12 flex justify-between items-center">
           <ThemeButton />
           <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
         </div>
