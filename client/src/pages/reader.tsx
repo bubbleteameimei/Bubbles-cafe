@@ -24,13 +24,13 @@ const ThemeButton = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="font-size-btn bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center"
+      className="h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full border border-border/50 flex items-center justify-center transition-all hover:scale-105"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <Sun className="h-4 w-4 text-amber-400" />
+        <Sun className="h-6 w-6 text-amber-400" />
       ) : (
-        <Moon className="h-4 w-4 text-indigo-500" />
+        <Moon className="h-6 w-6 text-indigo-500" />
       )}
     </button>
   );
@@ -47,15 +47,15 @@ const BookmarkButton = () => {
   return (
     <button
       onClick={toggleBookmark}
-      className="font-size-btn bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center"
+      className="h-10 w-10 bg-background/80 backdrop-blur-sm rounded-full border border-border/50 flex items-center justify-center transition-all hover:scale-105"
       aria-label="Bookmark post"
     >
       {isBookmarked ? (
-        <svg className="h-4 w-4 fill-current text-amber-400" viewBox="0 0 24 24">
+        <svg className="h-6 w-6 fill-current text-amber-400" viewBox="0 0 24 24">
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
         </svg>
       ) : (
-        <svg className="h-4 w-4 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+        <svg className="h-6 w-6 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
         </svg>
       )}
@@ -433,7 +433,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       <div className="container max-w-3xl mx-auto px-4 pt-8">
         {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
-          <div className="font-size-controls">
+          <div className="flex space-x-4">
             <ThemeButton />
             <BookmarkButton />
           </div>
