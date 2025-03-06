@@ -312,11 +312,16 @@ export default function Reader({ slug }: ReaderPageProps) {
   };
 
   return (
-    <div className="relative min-h-screen bg-background" onClick={toggleControls}>
+    <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
 
-      {/* Original position for TipPopup */}
-      <TipPopup autoShow={true}/>
+      {/* Font size controls moved to top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} />
+      </div>
+
+      {/* Support writing popup */}
+      <TipPopup autoShow={true} />
 
       {/* Floating Navigation */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
@@ -356,13 +361,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       </div>
 
       <div className="container max-w-3xl mx-auto px-4 py-8 relative">
-        <div
-          className={`fixed bottom-8 right-8 z-50 transition-all duration-300 ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} /> {/* Added props for interaction */}
-        </div>
+
         <AnimatePresence mode="wait">
           <motion.article
             key={currentPost.id}
@@ -446,25 +445,37 @@ export default function Reader({ slug }: ReaderPageProps) {
 
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
-                  <div className="flex items-center gap-3">
-                    {/* Social icons */}
+                  <div className="flex items-center gap-4">
+                    {/* Social icons with increased size */}
                     {socialLinks.map(({ key, Icon, url }) => (
                       <Button
                         key={key}
                         variant="ghost"
-                        size="icon"
+                        size="lg"
                         onClick={() => handleSocialShare(key, url)}
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-6 w-6" />
                         <span className="sr-only">Follow on {key}</span>
                       </Button>
                     ))}
                   </div>
 
-                  {/* Buy me a coffee button moved under social icons */}
-                  <div className="mt-2">
-                    <BuyMeCoffeeButton />
+                  {/* Support writing section */}
+                  <div className="mt-4 bg-accent/10 p-4 rounded-lg text-center">
+                    <h3 className="font-semibold mb-2">Support My Writing</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      If you're enjoying my stories, consider buying me a coffee! Your support helps me create more engaging content.
+                    </p>
+                    <Button 
+                      onClick={() => window.open('https://paystack.com/pay/z7fmj9rge1', '_blank')}
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Buy me a coffee
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Powered by Paystack • Secure Payment
+                    </p>
                   </div>
                 </div>
               </div>
