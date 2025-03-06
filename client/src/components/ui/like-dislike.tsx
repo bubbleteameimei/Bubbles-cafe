@@ -182,7 +182,7 @@ export function LikeDislike({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} data-toast-group>
       {variant === 'reader' && (
         <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
           Loved this story? Let me know with a like🥹—or a dislike if you must 😔
