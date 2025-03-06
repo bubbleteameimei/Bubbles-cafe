@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, decimal, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, decimal, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,13 +48,21 @@ export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   postId: integer("post_id").references(() => posts.id),
-  parentId: integer("parent_id").references(() => comments.id),
+  parentId: integer("parent_id"), // Remove circular reference temporarily
   userId: integer("user_id").references(() => users.id), // Optional for anonymous users
   approved: boolean("approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
   metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => {
+  return {
+    // Add the foreign key constraint after table creation
+    parentIdFk: foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.id]
+    })
+  };
 });
 
 // Keeping this for backwards compatibility, will be deprecated
