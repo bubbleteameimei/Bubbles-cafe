@@ -102,7 +102,8 @@ export function LikeDislike({
       toast({
         title: "Error updating reaction",
         description: "Please try again later",
-        variant: "destructive"
+        variant: "destructive",
+        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
@@ -123,6 +124,7 @@ export function LikeDislike({
         });
         toast({
           description: "Thanks for liking! 🥰",
+          className: "translate-y-[-4rem]" // Move toast up by about an inch
         });
       } else {
         setLiked(false);
@@ -140,7 +142,8 @@ export function LikeDislike({
       toast({
         title: "Error updating like",
         description: "Please try again",
-        variant: "destructive"
+        variant: "destructive",
+        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
@@ -161,6 +164,7 @@ export function LikeDislike({
         });
         toast({
           description: "Thanks for the feedback! 😔",
+          className: "translate-y-[-4rem]" // Move toast up by about an inch
         });
       } else {
         setDisliked(false);
@@ -178,66 +182,45 @@ export function LikeDislike({
       toast({
         title: "Error updating dislike",
         description: "Please try again",
-        variant: "destructive"
+        variant: "destructive",
+        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
 
   return (
     <div className={className}>
-      <div className="bg-background/50 backdrop-blur-sm p-4 rounded-xl shadow-lg">
-        <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
-          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant={liked ? "default" : "ghost"}
-            size="sm"
-            onClick={handleLike}
-            className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ${
-              liked ? 'bg-primary/10 hover:bg-primary/20' : 'hover:bg-primary/5'
-            }`}
-          >
-            <ThumbsUp className={`h-5 w-5 transition-all duration-300 group-hover:rotate-12 ${
-              liked ? 'text-primary' : 'text-muted-foreground'
-            }`} />
-            <span className={`text-sm font-medium ${
-              liked ? 'text-primary' : 'text-muted-foreground'
-            }`}>
-              {stats.likes}
-            </span>
-            {liked && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-              </span>
-            )}
-          </Button>
+      <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
+        Loved this story? Let me know with a like🥹—or a dislike if you must 😔
+      </p>
+      <div className="flex items-center justify-center gap-4">
+        <Button
+          variant={liked ? "default" : "ghost"}
+          size="sm"
+          onClick={handleLike}
+          className={`flex items-center gap-2 transition-colors ${
+            liked ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+          }`}
+        >
+          <ThumbsUp className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {stats.likes}
+          </span>
+        </Button>
 
-          <Button
-            variant={disliked ? "default" : "ghost"}
-            size="sm"
-            onClick={handleDislike}
-            className={`relative group flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ${
-              disliked ? 'bg-destructive/10 hover:bg-destructive/20' : 'hover:bg-destructive/5'
-            }`}
-          >
-            <ThumbsDown className={`h-5 w-5 transition-all duration-300 group-hover:rotate-12 ${
-              disliked ? 'text-destructive' : 'text-muted-foreground'
-            }`} />
-            <span className={`text-sm font-medium ${
-              disliked ? 'text-destructive' : 'text-muted-foreground'
-            }`}>
-              {stats.dislikes}
-            </span>
-            {disliked && (
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/50 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
-              </span>
-            )}
-          </Button>
-        </div>
+        <Button
+          variant={disliked ? "default" : "ghost"}
+          size="sm"
+          onClick={handleDislike}
+          className={`flex items-center gap-2 transition-colors ${
+            disliked ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
+          }`}
+        >
+          <ThumbsDown className="h-5 w-5" />
+          <span className="text-sm font-medium">
+            {stats.dislikes}
+          </span>
+        </Button>
       </div>
     </div>
   );

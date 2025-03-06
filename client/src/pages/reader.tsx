@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Coffee } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -11,10 +11,10 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
-import { useFontSizeControls } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { TipPopup } from "@/components/ui/tip-popup";
+import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 
 interface ReaderPageProps {
   slug?: string;
@@ -316,8 +316,10 @@ export default function Reader({ slug }: ReaderPageProps) {
     <div className="relative min-h-screen bg-background" onClick={toggleControls}>
       <Mist className="opacity-30" />
 
-      {/* Add TipPopup with auto-show */}
-      <TipPopup autoShow={true} handleTip={handleTip}/>
+      {/* Replace TipPopup with BuyMeCoffeeButton for consistent functionality */}
+      <div className="fixed top-24 right-8 z-50">
+        <BuyMeCoffeeButton />
+      </div>
 
       {/* Floating Navigation */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
@@ -440,25 +442,16 @@ export default function Reader({ slug }: ReaderPageProps) {
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <LikeDislike postId={currentPost.id} />
+                {/* Move like/dislike up and remove card styling */}
+                <div className="mb-8">
+                  <LikeDislike postId={currentPost.id} />
+                </div>
 
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
                   <div className="flex items-center gap-3">
-                    {/* Add TipPopup with custom trigger */}
-                    <TipPopup
-                      triggerContent={
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-primary transition-colors"
-                          onClick={handleTip}
-                        >
-                          <Coffee className="h-5 w-5" />
-                          <span className="sr-only">Support with a tip</span>
-                        </Button>
-                      }
-                    />
+                    {/* Replace Coffee icon button with BuyMeCoffeeButton */}
+                    <BuyMeCoffeeButton />
 
                     {/* Native Share */}
                     <Button
@@ -488,7 +481,7 @@ export default function Reader({ slug }: ReaderPageProps) {
                 </div>
               </div>
 
-              {/* Comment Section - Moved closer to like/dislike */}
+              {/* Comment Section */}
               <div className="mt-4">
                 <CommentSection postId={currentPost.id} />
               </div>
