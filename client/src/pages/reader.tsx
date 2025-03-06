@@ -24,13 +24,40 @@ const ThemeButton = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="theme-button bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 p-3 flex items-center justify-center transition-all hover:scale-105"
+      className="font-size-btn bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <Sun className="h-6 w-6 text-amber-400" />
+        <Sun className="h-4 w-4 text-amber-400" />
       ) : (
-        <Moon className="h-6 w-6 text-indigo-500" />
+        <Moon className="h-4 w-4 text-indigo-500" />
+      )}
+    </button>
+  );
+};
+
+// Bookmark button component
+const BookmarkButton = () => {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+  };
+  
+  return (
+    <button
+      onClick={toggleBookmark}
+      className="font-size-btn bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center"
+      aria-label="Bookmark post"
+    >
+      {isBookmarked ? (
+        <svg className="h-4 w-4 fill-current text-amber-400" viewBox="0 0 24 24">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+        </svg>
+      ) : (
+        <svg className="h-4 w-4 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+        </svg>
       )}
     </button>
   );
@@ -404,9 +431,12 @@ export default function Reader({ slug }: ReaderPageProps) {
       <Mist className="opacity-30" />
 
       <div className="container max-w-3xl mx-auto px-4 pt-8">
-        {/* Reading controls - Font size and theme toggle */}
+        {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
-          <ThemeButton />
+          <div className="font-size-controls">
+            <ThemeButton />
+            <BookmarkButton />
+          </div>
           <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
         </div>
 
