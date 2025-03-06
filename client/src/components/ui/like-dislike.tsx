@@ -103,14 +103,12 @@ export function LikeDislike({
         title: "Error updating reaction",
         description: "Please try again later",
         variant: "destructive",
-        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
 
   const handleLike = () => {
     const newLiked = !liked;
-
     try {
       if (newLiked) {
         setLiked(true);
@@ -124,7 +122,6 @@ export function LikeDislike({
         });
         toast({
           description: "Thanks for liking! 🥰",
-          className: "translate-y-[-4rem]" // Move toast up by about an inch
         });
       } else {
         setLiked(false);
@@ -135,7 +132,6 @@ export function LikeDislike({
           userInteracted: false
         });
       }
-
       onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
@@ -143,14 +139,12 @@ export function LikeDislike({
         title: "Error updating like",
         description: "Please try again",
         variant: "destructive",
-        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
 
   const handleDislike = () => {
     const newDisliked = !disliked;
-
     try {
       if (newDisliked) {
         setDisliked(true);
@@ -164,7 +158,6 @@ export function LikeDislike({
         });
         toast({
           description: "Thanks for the feedback! 😔",
-          className: "translate-y-[-4rem]" // Move toast up by about an inch
         });
       } else {
         setDisliked(false);
@@ -175,7 +168,6 @@ export function LikeDislike({
           userInteracted: false
         });
       }
-
       onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
@@ -183,7 +175,6 @@ export function LikeDislike({
         title: "Error updating dislike",
         description: "Please try again",
         variant: "destructive",
-        className: "translate-y-[-4rem]" // Move toast up by about an inch
       });
     }
   };
@@ -195,31 +186,27 @@ export function LikeDislike({
       </p>
       <div className="flex items-center justify-center gap-4">
         <Button
-          variant={liked ? "default" : "ghost"}
+          variant="ghost"
           size="sm"
           onClick={handleLike}
-          className={`flex items-center gap-2 transition-colors ${
+          className={`flex items-center gap-2 ${
             liked ? 'text-primary' : 'text-muted-foreground hover:text-primary'
           }`}
         >
           <ThumbsUp className="h-5 w-5" />
-          <span className="text-sm font-medium">
-            {stats.likes}
-          </span>
+          <span>{stats.likes}</span>
         </Button>
 
         <Button
-          variant={disliked ? "default" : "ghost"}
+          variant="ghost"
           size="sm"
           onClick={handleDislike}
-          className={`flex items-center gap-2 transition-colors ${
+          className={`flex items-center gap-2 ${
             disliked ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
           }`}
         >
           <ThumbsDown className="h-5 w-5" />
-          <span className="text-sm font-medium">
-            {stats.dislikes}
-          </span>
+          <span>{stats.dislikes}</span>
         </Button>
       </div>
     </div>

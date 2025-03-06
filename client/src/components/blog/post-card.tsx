@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
+import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
 import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
 
 interface PostCardProps {
@@ -27,55 +27,72 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     }
   };
 
-const getEngagingExcerpt = (content: string): string => {
-  if (!content) return '';
+  const getEngagingExcerpt = (content: string): string => {
+    if (!content) return '';
 
-  // Split content into paragraphs
-  const paragraphs = content.split('\n\n');
+    // Split content into paragraphs
+    const paragraphs = content.split('\n\n');
 
-  // Find paragraphs that contain engaging elements
-  const engagingParagraphs = paragraphs.filter(p => {
-    const hasDialogue = p.includes('"') || p.includes('"');
-    const hasAction = /(?:ed|ing)\b/.test(p) || /!\s*$/.test(p) || 
-      /(ran|jumped|moved|turned|gasped|screamed|trembled|shuddered|stumbled|crashed)\b/i.test(p);
-    const hasVividDescription = /(felt|heard|saw|smelled|tasted|sensed|noticed|realized|discovered|observed|watched|stared|glanced)\b/i.test(p);
-    const hasEmotionalContent = /(fear|terror|horror|dread|panic|anxiety|shocked|terrified|frightened|horrified|petrified|paranoid)\b/i.test(p);
-    const hasSuspense = /(suddenly|unexpectedly|without warning|to my horror|to my surprise)\b/i.test(p);
-    const hasAtmosphere = /(darkness|shadow|silence|cold|dark|quiet|eerie|mysterious|strange|odd)\b/i.test(p);
+    // Enhanced scoring system for horror and engagement
+    const scoredParagraphs = paragraphs.map(p => {
+      let score = 0;
+      const text = p.toLowerCase();
 
-    return hasDialogue || hasAction || hasVividDescription || hasEmotionalContent || hasSuspense || hasAtmosphere;
-  });
+      // Horror elements (higher weight)
+      if (/(blood|scream|death|corpse|kill|dead|demon|ghost|monster|evil|darkness|shadow|terror|horror)\b/i.test(p)) score += 5;
+      if (/(spine|chill|dread|fear|panic|terror|horrif|nightmare)\b/i.test(p)) score += 4;
 
-  // Score paragraphs based on engagement factors
-  const scoredParagraphs = engagingParagraphs.map(p => {
-    let score = 0;
-    if (p.includes('"')) score += 2; // Dialogue is highly engaging
-    if (/!\s*$/.test(p)) score += 2; // Exclamations indicate intensity
-    if (/(suddenly|unexpectedly|without warning)\b/i.test(p)) score += 2; // Surprise elements
-    if (/(fear|terror|horror|dread)\b/i.test(p)) score += 1; // Horror elements
-    if (/(darkness|shadow|silence)\b/i.test(p)) score += 1; // Atmosphere
-    return { paragraph: p, score };
-  });
+      // Intense action or dramatic moments
+      if (/(!{1,3}|\?{2,}|\.{3})/g.test(p)) score += 3;
+      if (/(sudden|abrupt|without warning|to my horror|realized|discovered)\b/i.test(p)) score += 3;
 
-  // Sort by score and length (prefer longer paragraphs if scores are equal)
-  scoredParagraphs.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return b.paragraph.length - a.paragraph.length;
-  });
+      // Atmospheric elements
+      if (/(silence|quiet|dark|eerie|mysterious|strange|cold|frozen|still)\b/i.test(p)) score += 2;
 
-  // Use the highest-scoring paragraph, or fall back to the first one
-  const significantParagraph = (scoredParagraphs[0]?.paragraph || paragraphs[0] || '').trim();
+      // Visceral descriptions
+      if (/(trembl|shudder|shiver|quiver|shake|twitch)\b/i.test(p)) score += 2;
+      if (/(felt|heard|saw|smelled|tasted|sensed)\b/i.test(p)) score += 2;
 
-  // Extract a compelling snippet
-  let excerpt = significantParagraph;
-  if (excerpt.length > 200) {
-    // Try to end at a natural break point
-    const breakPoint = excerpt.substring(0, 200).lastIndexOf('.');
-    excerpt = excerpt.substring(0, breakPoint > 150 ? breakPoint + 1 : 200) + '...';
-  }
+      // Dialog (if it contains horror elements)
+      if (/"[^"]*?(fear|death|help|scream|blood|run|hide)[^"]*?"/i.test(p)) score += 4;
+      else if (p.includes('"')) score += 1;
 
-  return excerpt;
-};
+      // Length bonus (prefer slightly longer paragraphs, but not too long)
+      const wordCount = p.split(/\s+/).length;
+      if (wordCount >= 20 && wordCount <= 60) score += 1;
+
+      return { paragraph: p.trim(), score, length: p.length };
+    });
+
+    // Sort by score and then by optimal length
+    scoredParagraphs.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // Prefer paragraphs between 100-250 characters
+      const aLengthScore = Math.abs(175 - a.length);
+      const bLengthScore = Math.abs(175 - b.length);
+      return aLengthScore - bLengthScore;
+    });
+
+    // Get the best paragraph
+    const bestParagraph = scoredParagraphs[0]?.paragraph || paragraphs[0] || '';
+
+    // If it's too long, find a good breakpoint
+    if (bestParagraph.length > 200) {
+      const sentences = bestParagraph.match(/[^.!?]+[.!?]+/g) || [];
+      let excerpt = '';
+      let totalLength = 0;
+
+      for (const sentence of sentences) {
+        if (totalLength + sentence.length > 200) break;
+        excerpt += sentence;
+        totalLength += sentence.length;
+      }
+
+      return excerpt.trim() + (excerpt.length < bestParagraph.length ? '...' : '');
+    }
+
+    return bestParagraph;
+  };
 
   const themes = post.content ? detectThemes(post.content) : [];
   const theme = themes.length > 0 ? themes[0] : null;

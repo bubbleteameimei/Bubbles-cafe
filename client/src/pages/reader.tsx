@@ -16,10 +16,6 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { TipPopup } from "@/components/ui/tip-popup";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 
-interface ReaderPageProps {
-  slug?: string;
-}
-
 // Added FontSizeControls component - Basic implementation
 const FontSizeControls = ({ increaseFontSize, decreaseFontSize }: { increaseFontSize: () => void; decreaseFontSize: () => void }) => {
   return (
@@ -30,6 +26,10 @@ const FontSizeControls = ({ increaseFontSize, decreaseFontSize }: { increaseFont
   );
 };
 
+
+interface ReaderPageProps {
+  slug?: string;
+}
 
 export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
@@ -311,15 +311,12 @@ export default function Reader({ slug }: ReaderPageProps) {
     //  This part requires modification to the TipPopup component itself.
   };
 
-
   return (
     <div className="relative min-h-screen bg-background" onClick={toggleControls}>
       <Mist className="opacity-30" />
 
-      {/* Replace TipPopup with BuyMeCoffeeButton for consistent functionality */}
-      <div className="fixed top-24 right-8 z-50">
-        <BuyMeCoffeeButton />
-      </div>
+      {/* Original position for TipPopup */}
+      <TipPopup autoShow={true}/>
 
       {/* Floating Navigation */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
@@ -442,7 +439,7 @@ export default function Reader({ slug }: ReaderPageProps) {
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Move like/dislike up and remove card styling */}
+                {/* Like/dislike section */}
                 <div className="mb-8">
                   <LikeDislike postId={currentPost.id} />
                 </div>
@@ -450,21 +447,7 @@ export default function Reader({ slug }: ReaderPageProps) {
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
                   <div className="flex items-center gap-3">
-                    {/* Replace Coffee icon button with BuyMeCoffeeButton */}
-                    <BuyMeCoffeeButton />
-
-                    {/* Native Share */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={shareStory}
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Share2 className="h-5 w-5" />
-                      <span className="sr-only">Share</span>
-                    </Button>
-
-                    {/* Social Icons */}
+                    {/* Social icons */}
                     {socialLinks.map(({ key, Icon, url }) => (
                       <Button
                         key={key}
@@ -477,6 +460,11 @@ export default function Reader({ slug }: ReaderPageProps) {
                         <span className="sr-only">Follow on {key}</span>
                       </Button>
                     ))}
+                  </div>
+
+                  {/* Buy me a coffee button moved under social icons */}
+                  <div className="mt-2">
+                    <BuyMeCoffeeButton />
                   </div>
                 </div>
               </div>
