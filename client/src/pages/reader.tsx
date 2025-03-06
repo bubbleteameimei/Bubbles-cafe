@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -13,19 +13,88 @@ import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-import { TipPopup } from "@/components/ui/tip-popup";
-import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
+import "../styles/floating-pagination.css";
 
-// Added FontSizeControls component - Basic implementation
-const FontSizeControls = ({ increaseFontSize, decreaseFontSize }: { increaseFontSize: () => void; decreaseFontSize: () => void }) => {
+// Font size controls component
+const FontSizeControls = ({ updateFontSize, fontSize }: { updateFontSize: (size: number) => void; fontSize: number }) => {
   return (
-    <div className="flex items-center space-x-2">
-      <Button onClick={decreaseFontSize} size="icon">A-</Button>
-      <Button onClick={increaseFontSize} size="icon">A+</Button>
+    <div className="font-size-controls bg-background/80 backdrop-blur-sm rounded-full border border-border/50 px-3 py-2 flex items-center gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => updateFontSize(fontSize - 2)}
+        disabled={fontSize <= 12}
+        className="h-8 w-8"
+      >
+        <Minus className="h-4 w-4" />
+        <span className="sr-only">Decrease font size</span>
+      </Button>
+      <span className="text-sm font-medium min-w-[2rem] text-center">{fontSize}px</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => updateFontSize(fontSize + 2)}
+        disabled={fontSize >= 24}
+        className="h-8 w-8"
+      >
+        <Plus className="h-4 w-4" />
+        <span className="sr-only">Increase font size</span>
+      </Button>
     </div>
   );
 };
 
+// Updated FloatingPagination component
+const FloatingPagination = ({
+  currentIndex,
+  totalPosts,
+  onPrevious,
+  onNext,
+  onRandom
+}: {
+  currentIndex: number;
+  totalPosts: number;
+  onPrevious: () => void;
+  onNext: () => void;
+  onRandom: () => void;
+}) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  return (
+    <>
+      <button
+        id="toggle-pagination"
+        onClick={() => setIsVisible(!isVisible)}
+        className="fixed bottom-20 right-4"
+      >
+        {isVisible ? "Hide" : "Show"} Navigation
+      </button>
+
+      <div className={`floating-pagination ${!isVisible ? 'hidden' : ''}`}>
+        <button
+          className="squircle-button"
+          onClick={onPrevious}
+          disabled={currentIndex === 0}
+        >
+          Previous
+        </button>
+        <button
+          className="squircle-button"
+          onClick={onRandom}
+        >
+          Random
+        </button>
+        <button
+          className="squircle-button"
+          onClick={onNext}
+          disabled={currentIndex === totalPosts - 1}
+        >
+          Next
+        </button>
+      </div>
+    </>
+  );
+};
 
 interface ReaderPageProps {
   slug?: string;
@@ -33,13 +102,12 @@ interface ReaderPageProps {
 
 export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
-  const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
-  const [showControls, setShowControls] = useState(false); // Added state for controls
+  const { fontSize, updateFontSize } = useFontSize();
+  const [showControls, setShowControls] = useState(false);
   const toggleControls = () => setShowControls(!showControls);
 
-  console.log('[Reader] Component mounted with slug:', slug); // Debug log
+  console.log('[Reader] Component mounted with slug:', slug);
 
-  // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
@@ -69,13 +137,11 @@ export default function Reader({ slug }: ReaderPageProps) {
       console.log('[Reader] Fetching posts...', { slug });
       try {
         if (slug) {
-          // If slug is provided, fetch specific post
           const response = await fetch(`/api/posts/${slug}`);
           if (!response.ok) throw new Error('Failed to fetch post');
           const post = await response.json();
           return { posts: [post], hasMore: false };
         } else {
-          // Otherwise fetch all posts
           const data = await fetchPosts(1, 100);
           console.log('[Reader] Posts fetched successfully:', {
             totalPosts: data.posts?.length,
@@ -93,7 +159,6 @@ export default function Reader({ slug }: ReaderPageProps) {
     refetchOnWindowFocus: false
   });
 
-  // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
       console.log('[Reader] Validating current index:', {
@@ -102,7 +167,6 @@ export default function Reader({ slug }: ReaderPageProps) {
         savedIndex: sessionStorage.getItem('selectedStoryIndex')
       });
 
-      // Ensure currentIndex is within bounds
       if (currentIndex >= postsData.posts.length) {
         console.log('[Reader] Current index out of bounds, resetting to 0');
         setCurrentIndex(0);
@@ -112,7 +176,6 @@ export default function Reader({ slug }: ReaderPageProps) {
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
-      // Log current post details
       const currentPost = postsData.posts[currentIndex];
       console.log('[Reader] Selected post:', currentPost ? {
         id: currentPost.id,
@@ -171,7 +234,6 @@ export default function Reader({ slug }: ReaderPageProps) {
 
   const posts = postsData.posts;
 
-  // Additional validation before rendering
   if (currentIndex < 0 || currentIndex >= posts.length) {
     console.error('[Reader] Invalid current index:', {
       currentIndex,
@@ -267,19 +329,19 @@ export default function Reader({ slug }: ReaderPageProps) {
     margin: 0 auto;
   }
   .story-content p {
-    line-height: 1.7;  /* Optimal readability */
-    margin-bottom: 1em;  /* Good spacing between paragraphs */
+    line-height: 1.7;  
+    margin-bottom: 1em;  
     text-align: justify;
   }
   .story-content p + p {
-    margin-top: 2em;  /* Double line break effect */
+    margin-top: 2em;  
   }
   @media (max-width: 768px) {
     .story-content p {
       margin-bottom: 0.8em;
     }
     .story-content p + p {
-      margin-top: 2em;  /* Keep double line break on mobile */
+      margin-top: 2em;  
     }
   }
   .story-content img {
@@ -307,60 +369,24 @@ export default function Reader({ slug }: ReaderPageProps) {
 
   const handleTip = () => {
     window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
-    // Assuming setIsOpen is a state variable in TipPopup to close the popup after clicking
-    //  This part requires modification to the TipPopup component itself.
+  };
+
+  const handleRandomStory = () => {
+    if (!postsData?.posts) return;
+    const randomIndex = Math.floor(Math.random() * postsData.posts.length);
+    setCurrentIndex(randomIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
 
-      {/* Font size controls moved to top right */}
-      <div className="fixed top-4 right-4 z-50">
-        <FontSizeControls increaseFontSize={increaseFontSize} decreaseFontSize={decreaseFontSize} />
-      </div>
-
-      {/* Support writing popup */}
-      <TipPopup autoShow={true} />
-
-      {/* Floating Navigation */}
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            if (currentIndex > 0) {
-              setCurrentIndex(currentIndex - 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          disabled={currentIndex === 0}
-          className="w-10 h-10 rounded-full bg-background/80 backdrop-blur hover:bg-primary/10 transition-all duration-300"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span className="sr-only">Previous Story</span>
-        </Button>
-      </div>
-
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            if (currentIndex < posts.length - 1) {
-              setCurrentIndex(currentIndex + 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          disabled={currentIndex === posts.length - 1}
-          className="w-10 h-10 rounded-full bg-background/80 backdrop-blur hover:bg-primary/10 transition-all duration-300"
-        >
-          <ChevronRight className="h-5 w-5" />
-          <span className="sr-only">Next Story</span>
-        </Button>
-      </div>
-
-      <div className="container max-w-3xl mx-auto px-4 py-8 relative">
+      <div className="container max-w-3xl mx-auto px-4 pt-8">
+        {/* Font size controls - Moved above title with margin */}
+        <div className="mb-12 flex justify-end">
+          <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
+        </div>
 
         <AnimatePresence mode="wait">
           <motion.article
@@ -387,37 +413,7 @@ export default function Reader({ slug }: ReaderPageProps) {
                   </div>
                 </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center gap-4 mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (currentIndex > 0) {
-                        setCurrentIndex(currentIndex - 1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
-                    disabled={currentIndex === 0}
-                    className="group hover:bg-primary/10 transition-all duration-300"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                    Previous Story
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (currentIndex < posts.length - 1) {
-                        setCurrentIndex(currentIndex + 1);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }
-                    }}
-                    disabled={currentIndex === posts.length - 1}
-                    className="group hover:bg-primary/10 transition-all duration-300"
-                  >
-                    Next Story
-                    <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
+                {/* Pagination moved to FloatingPagination component */}
               </div>
             </div>
 
@@ -426,19 +422,18 @@ export default function Reader({ slug }: ReaderPageProps) {
               style={{ fontSize: `${fontSize}px`, whiteSpace: 'pre-wrap' }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
-                  .replace(/\n\n+/g, '\n\n') // Replace multiple newlines with double newline
-                  .replace(/<p>\s*<\/p>/g, '') // Remove empty paragraphs
-                  .replace(/<p>(.*?)<\/p>/g, (match, p1) => `<p>${p1.trim()}</p>`) // Trim paragraph content
-                  .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>') // Replace multiple breaks with single break
-                  .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-                  .replace(/(\r\n|\r|\n){2,}/g, '\n\n') // Normalize line breaks
-                  .trim() // Trim the entire content
+                  .replace(/\n\n+/g, '\n\n')
+                  .replace(/<p>\s*<\/p>/g, '')
+                  .replace(/<p>(.*?)<\/p>/g, (match, p1) => `<p>${p1.trim()}</p>`)
+                  .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
+                  .replace(/\s+/g, ' ')
+                  .replace(/(\r\n|\r|\n){2,}/g, '\n\n')
+                  .trim()
               }}
             />
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Like/dislike section with explicit variant */}
                 <div className="mb-8">
                   <LikeDislike postId={currentPost.id} variant="reader" />
                 </div>
@@ -446,7 +441,6 @@ export default function Reader({ slug }: ReaderPageProps) {
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-sm text-muted-foreground">Stay connected—follow me for more! ✨</p>
                   <div className="flex items-center gap-4">
-                    {/* Social icons with increased size */}
                     {socialLinks.map(({ key, Icon, url }) => (
                       <Button
                         key={key}
@@ -455,23 +449,23 @@ export default function Reader({ slug }: ReaderPageProps) {
                         onClick={() => handleSocialShare(key, url)}
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
-                        <Icon className="h-6 w-6" />
+                        <Icon className="h-8 w-8" />
                         <span className="sr-only">Follow on {key}</span>
                       </Button>
                     ))}
                   </div>
 
-                  {/* Support writing section */}
-                  <div className="mt-4 bg-accent/10 p-4 rounded-lg text-center">
-                    <h3 className="font-semibold mb-2">Support My Writing</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
+                  {/* Support writing section - Updated with homepage style */}
+                  <div className="mt-6 w-full max-w-md bg-card/50 backdrop-blur rounded-lg border border-border/50 p-6 text-center">
+                    <h3 className="text-lg font-semibold mb-2">Support My Writing</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
                       If you're enjoying my stories, consider buying me a coffee! Your support helps me create more engaging content.
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => window.open('https://paystack.com/pay/z7fmj9rge1', '_blank')}
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-2 rounded-md transition-colors"
                     >
-                      Buy me a coffee
+                      Buy me a coffee ☕️
                     </Button>
                     <p className="text-xs text-muted-foreground mt-2">
                       Powered by Paystack • Secure Payment
@@ -480,13 +474,32 @@ export default function Reader({ slug }: ReaderPageProps) {
                 </div>
               </div>
 
-              {/* Comment Section */}
-              <div className="mt-4">
+              <div className="mt-8">
                 <CommentSection postId={currentPost.id} />
               </div>
             </div>
           </motion.article>
         </AnimatePresence>
+        {/* Add floating pagination */}
+        {postsData?.posts && (
+          <FloatingPagination
+            currentIndex={currentIndex}
+            totalPosts={postsData.posts.length}
+            onPrevious={() => {
+              if (currentIndex > 0) {
+                setCurrentIndex(currentIndex - 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            onNext={() => {
+              if (currentIndex < postsData.posts.length - 1) {
+                setCurrentIndex(currentIndex + 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            onRandom={handleRandomStory}
+          />
+        )}
       </div>
     </div>
   );

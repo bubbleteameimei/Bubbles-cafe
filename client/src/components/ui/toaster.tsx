@@ -7,48 +7,9 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
-import { useEffect, useRef } from "react"
 
 export function Toaster() {
   const { toasts } = useToast()
-  const viewportRef = useRef<HTMLOListElement>(null)
-
-  useEffect(() => {
-    const updatePosition = () => {
-      const container = document.querySelector('[data-toast-container]')
-      if (container && viewportRef.current) {
-        const rect = container.getBoundingClientRect()
-        viewportRef.current.style.position = 'fixed'
-        viewportRef.current.style.bottom = `${window.innerHeight - rect.top + 160}px` // Position further above the like/dislike container
-        viewportRef.current.style.left = '50%'
-        viewportRef.current.style.transform = 'translateX(-50%)'
-      }
-    }
-
-    // Initial position update
-    updatePosition()
-
-    // Update position on scroll and resize
-    window.addEventListener('scroll', updatePosition)
-    window.addEventListener('resize', updatePosition)
-
-    // Update position when toasts change
-    const observer = new MutationObserver(updatePosition)
-    const toastContainer = document.querySelector('[data-toast-container]')
-    if (toastContainer) {
-      observer.observe(toastContainer, { 
-        attributes: true,
-        childList: true,
-        subtree: true 
-      })
-    }
-
-    return () => {
-      window.removeEventListener('scroll', updatePosition)
-      window.removeEventListener('resize', updatePosition)
-      observer.disconnect()
-    }
-  }, [toasts])
 
   return (
     <ToastProvider>
@@ -66,7 +27,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport ref={viewportRef} />
+      <ToastViewport className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100]" /> {/* Fixed positioning above like/dislike buttons */}
     </ToastProvider>
   )
 }

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 
-const DEFAULT_FONT_SIZE = 16;
-const MIN_FONT_SIZE = 12;
-const MAX_FONT_SIZE = 24;
+export const DEFAULT_FONT_SIZE = 16;
+export const MIN_FONT_SIZE = 12;
+export const MAX_FONT_SIZE = 24;
 
 export function useFontSize() {
   const [fontSize, setFontSize] = useState(() => {
