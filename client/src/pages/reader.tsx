@@ -8,7 +8,6 @@ import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
@@ -20,7 +19,7 @@ import "../styles/floating-pagination.css";
 // Theme button component
 const ThemeButton = () => {
   const { theme, toggleTheme } = useTheme();
-  
+
   return (
     <button
       onClick={toggleTheme}
@@ -39,11 +38,11 @@ const ThemeButton = () => {
 // Bookmark button component
 const BookmarkButton = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
-  
+
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
   };
-  
+
   return (
     <button
       onClick={toggleBookmark}
@@ -556,7 +555,54 @@ export default function Reader({ slug }: ReaderPageProps) {
               </div>
 
               <div className="mt-8">
-                <CommentSection postId={currentPost.id} />
+                {/* Comment section */}
+                {currentPost && (
+                  <div className="mt-10 bg-background border border-border/50 rounded-lg p-6">
+                    <div id="commentSection" className="w-full max-w-full bg-card/80 text-foreground p-4 rounded-lg">
+                      <h3 className="text-xl font-semibold mb-4">Comments</h3>
+                      <div className="flex gap-2 mb-4">
+                        <input
+                          type="text"
+                          id="commentInput"
+                          placeholder="Leave a comment..."
+                          className="w-4/5 p-2 rounded-md border border-border/50 bg-background text-foreground"
+                        />
+                        <button
+                          onClick={() => postComment()}
+                          className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+                        >
+                          Post
+                        </button>
+                      </div>
+                      <ul id="commentsList" className="space-y-3"></ul>
+                    </div>
+                  </div>
+                )}
+
+                <script dangerouslySetInnerHTML={{ __html: `
+                  function postComment() {
+                    const input = document.getElementById("commentInput");
+                    const text = input.value;
+                    if (!text.trim()) return;
+
+                    const commentList = document.getElementById("commentsList");
+                    const comment = document.createElement("li");
+                    comment.innerHTML = \`
+                      <div class="flex items-center justify-between p-3 bg-background/80 rounded-md">
+                        <span>\${text}</span>
+                        <button class="text-primary border-none cursor-pointer bg-transparent" onclick="likeComment(this)">❤️ 0</button>
+                      </div>
+                    \`;
+                    comment.classList.add("comment");
+                    commentList.appendChild(comment);
+                    input.value = "";
+                  }
+
+                  function likeComment(button) {
+                    let count = parseInt(button.textContent.split(" ")[1]);
+                    button.textContent = \`❤️ \${count + 1}\`;
+                  }
+                `}} />
               </div>
             </div>
           </motion.article>
