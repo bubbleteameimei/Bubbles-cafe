@@ -14,6 +14,7 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import "../styles/floating-pagination.css";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // Font size controls component
 const FontSizeControls = ({ updateFontSize, fontSize }: { updateFontSize: (size: number) => void; fontSize: number }) => {
@@ -383,8 +384,9 @@ export default function Reader({ slug }: ReaderPageProps) {
       <Mist className="opacity-30" />
 
       <div className="container max-w-3xl mx-auto px-4 pt-8">
-        {/* Font size controls - Moved above title with margin */}
-        <div className="mb-12 flex justify-end">
+        {/* Reading controls - Theme toggle and font size */}
+        <div className="mb-12 flex justify-end items-center gap-3">
+          <ThemeToggle variant="animated" />
           <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
         </div>
 
