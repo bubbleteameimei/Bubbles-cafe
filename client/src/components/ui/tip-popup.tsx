@@ -20,7 +20,7 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
   useEffect(() => {
     if (autoShow) {
       const lastShown = localStorage.getItem('lastTipPopupShown');
-      const showAgain = !lastShown || Date.now() - parseInt(lastShown) > 24 * 60 * 60 * 1000; // 24 hours
+      const showAgain = !lastShown || Date.now() - parseInt(lastShown) > 60 * 60 * 1000; // 1 hour (changed from 24 hours)
 
       if (showAgain) {
         const timer = setTimeout(() => {
