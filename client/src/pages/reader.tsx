@@ -305,12 +305,19 @@ export default function Reader({ slug }: ReaderPageProps) {
   }
   `;
 
+  const handleTip = () => {
+    window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
+    // Assuming setIsOpen is a state variable in TipPopup to close the popup after clicking
+    //  This part requires modification to the TipPopup component itself.
+  };
+
+
   return (
     <div className="relative min-h-screen bg-background" onClick={toggleControls}>
       <Mist className="opacity-30" />
 
       {/* Add TipPopup with auto-show */}
-      <TipPopup autoShow={true} />
+      <TipPopup autoShow={true} handleTip={handleTip}/>
 
       {/* Floating Navigation */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-10">
@@ -350,7 +357,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       </div>
 
       <div className="container max-w-3xl mx-auto px-4 py-8 relative">
-        <div 
+        <div
           className={`fixed bottom-8 right-8 z-50 transition-all duration-300 ${
             showControls ? 'opacity-100' : 'opacity-0'
           }`}
@@ -445,6 +452,7 @@ export default function Reader({ slug }: ReaderPageProps) {
                           variant="ghost"
                           size="icon"
                           className="text-muted-foreground hover:text-primary transition-colors"
+                          onClick={handleTip}
                         >
                           <Coffee className="h-5 w-5" />
                           <span className="sr-only">Support with a tip</span>
