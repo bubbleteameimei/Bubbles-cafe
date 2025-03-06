@@ -27,73 +27,100 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     }
   };
 
-  const getEngagingExcerpt = (content: string): string => {
-    if (!content) return '';
+const getEngagingExcerpt = (content: string): string => {
+  if (!content) return '';
 
-    // Split content into paragraphs
-    const paragraphs = content.split('\n\n');
+  // Split content into paragraphs, handling various newline patterns
+  const paragraphs = content
+    .split(/\n\n+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
 
-    // Enhanced scoring system for horror and engagement
-    const scoredParagraphs = paragraphs.map(p => {
-      let score = 0;
-      const text = p.toLowerCase();
+  // Enhanced scoring system for horror and engagement
+  const scoredParagraphs = paragraphs.map((p, index) => {
+    let score = 0;
+    const text = p.toLowerCase();
 
-      // Horror elements (higher weight)
-      if (/(blood|scream|death|corpse|kill|dead|demon|ghost|monster|evil|darkness|shadow|terror|horror)\b/i.test(p)) score += 5;
-      if (/(spine|chill|dread|fear|panic|terror|horrif|nightmare)\b/i.test(p)) score += 4;
+    // Horror elements (higher weight)
+    if (/(blood|scream|death|corpse|kill|dead|demon|ghost|monster|evil|darkness|shadow|terror|horror)\b/i.test(p)) score += 6;
+    if (/(spine|chill|dread|fear|panic|terror|horrif|nightmare)\b/i.test(p)) score += 5;
+    if (/(heart|pulse|breath|sweat|trembl|shiver)\b/i.test(p)) score += 4;
 
-      // Intense action or dramatic moments
-      if (/(!{1,3}|\?{2,}|\.{3})/g.test(p)) score += 3;
-      if (/(sudden|abrupt|without warning|to my horror|realized|discovered)\b/i.test(p)) score += 3;
+    // Intense action or dramatic moments
+    if (/(!{1,3}|\?{2,}|\.{3})/g.test(p)) score += 4;
+    if (/(sudden|abrupt|without warning|to my horror|realized|discovered)\b/i.test(p)) score += 4;
 
-      // Atmospheric elements
-      if (/(silence|quiet|dark|eerie|mysterious|strange|cold|frozen|still)\b/i.test(p)) score += 2;
+    // Atmospheric elements
+    if (/(silence|quiet|dark|eerie|mysterious|strange|cold|frozen|still)\b/i.test(p)) score += 3;
 
-      // Visceral descriptions
-      if (/(trembl|shudder|shiver|quiver|shake|twitch)\b/i.test(p)) score += 2;
-      if (/(felt|heard|saw|smelled|tasted|sensed)\b/i.test(p)) score += 2;
+    // Visceral descriptions
+    if (/(trembl|shudder|shiver|quiver|shake|twitch)\b/i.test(p)) score += 3;
+    if (/(felt|heard|saw|smelled|tasted|sensed)\b/i.test(p)) score += 3;
 
-      // Dialog (if it contains horror elements)
-      if (/"[^"]*?(fear|death|help|scream|blood|run|hide)[^"]*?"/i.test(p)) score += 4;
-      else if (p.includes('"')) score += 1;
+    // Dialog containing horror elements (higher weight)
+    if (/"[^"]*?(fear|death|help|scream|blood|run|hide)[^"]*?"/i.test(p)) score += 5;
+    else if (/"[^"]*?(please|god|no|stop)[^"]*?"/i.test(p)) score += 4;
+    else if (p.includes('"')) score += 2;
 
-      // Length bonus (prefer slightly longer paragraphs, but not too long)
-      const wordCount = p.split(/\s+/).length;
-      if (wordCount >= 20 && wordCount <= 60) score += 1;
+    // Engagement bonus (prefer paragraphs with optimal length)
+    const wordCount = p.split(/\s+/).length;
+    if (wordCount >= 20 && wordCount <= 60) score += 3;
 
-      return { paragraph: p.trim(), score, length: p.length };
+    // Penalize very short or very long paragraphs
+    if (wordCount < 15) score -= 2;
+    if (wordCount > 80) score -= 3;
+
+    // Debug logging
+    console.log(`[PostCard] Paragraph ${index} scored:`, {
+      score,
+      wordCount,
+      preview: p.substring(0, 50),
+      horrorTerms: p.match(/(blood|scream|death|corpse|kill|dead|demon|ghost|monster|evil|darkness|shadow|terror|horror)\b/gi)
     });
 
-    // Sort by score and then by optimal length
-    scoredParagraphs.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      // Prefer paragraphs between 100-250 characters
-      const aLengthScore = Math.abs(175 - a.length);
-      const bLengthScore = Math.abs(175 - b.length);
-      return aLengthScore - bLengthScore;
-    });
+    return { paragraph: p, score, length: p.length };
+  });
 
-    // Get the best paragraph
-    const bestParagraph = scoredParagraphs[0]?.paragraph || paragraphs[0] || '';
+  // Sort by score and then by optimal length
+  scoredParagraphs.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    // Prefer paragraphs between 100-200 characters for readability
+    const aLengthScore = Math.abs(150 - a.length);
+    const bLengthScore = Math.abs(150 - b.length);
+    return aLengthScore - bLengthScore;
+  });
 
-    // If it's too long, find a good breakpoint
-    if (bestParagraph.length > 200) {
-      const sentences = bestParagraph.match(/[^.!?]+[.!?]+/g) || [];
-      let excerpt = '';
-      let totalLength = 0;
+  // Debug logging for top paragraphs
+  console.log('[PostCard] Top scoring paragraphs:', 
+    scoredParagraphs.slice(0, 3).map(p => ({
+      score: p.score,
+      length: p.length,
+      preview: p.paragraph.substring(0, 50)
+    }))
+  );
 
-      for (const sentence of sentences) {
-        if (totalLength + sentence.length > 200) break;
-        excerpt += sentence;
-        totalLength += sentence.length;
-      }
+  // Get the best paragraph
+  const bestParagraph = scoredParagraphs[0]?.paragraph || paragraphs[0] || '';
 
-      return excerpt.trim() + (excerpt.length < bestParagraph.length ? '...' : '');
+  // If it's too long, find a good breakpoint
+  if (bestParagraph.length > 200) {
+    const sentences = bestParagraph.match(/[^.!?]+[.!?]+/g) || [];
+    let excerpt = '';
+    let totalLength = 0;
+
+    for (const sentence of sentences) {
+      if (totalLength + sentence.length > 200) break;
+      excerpt += sentence;
+      totalLength += sentence.length;
     }
 
-    return bestParagraph;
-  };
+    return excerpt.trim() + (excerpt.length < bestParagraph.length ? '...' : '');
+  }
 
+  return bestParagraph;
+};
+
+  // Use type detection and theme categorization
   const themes = post.content ? detectThemes(post.content) : [];
   const theme = themes.length > 0 ? themes[0] : null;
   const intensity = post.content ? calculateIntensity(post.content) : 1;
@@ -106,8 +133,8 @@ export default function PostCard({ post, onClick }: PostCardProps) {
                     themeInfo?.icon === 'Pill' ? Pill :
                     themeInfo?.icon === 'Cpu' ? Cpu :
                     themeInfo?.icon === 'Dna' ? Dna :
-                    themeInfo?.icon === 'Footprints' ? Footprints :
                     themeInfo?.icon === 'Ghost' ? Ghost :
+                    themeInfo?.icon === 'Footprints' ? Footprints :
                     themeInfo?.icon === 'Castle' ? Castle :
                     themeInfo?.icon === 'Radiation' ? Radiation :
                     themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
@@ -127,7 +154,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     >
       <Card className="h-full hover:bg-accent/5 transition-colors border-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="story-title text-xl">{post.title}</CardTitle>
+          <CardTitle className="text-xl">{post.title}</CardTitle>
           <div className="flex items-center flex-wrap gap-2 mt-2">
             <span className="text-sm text-muted-foreground">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}

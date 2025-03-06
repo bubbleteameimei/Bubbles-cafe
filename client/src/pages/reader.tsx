@@ -439,9 +439,9 @@ export default function Reader({ slug }: ReaderPageProps) {
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Like/dislike section */}
+                {/* Like/dislike section with explicit variant */}
                 <div className="mb-8">
-                  <LikeDislike postId={currentPost.id} />
+                  <LikeDislike postId={currentPost.id} variant="reader" />
                 </div>
 
                 <div className="flex flex-col items-center gap-2">

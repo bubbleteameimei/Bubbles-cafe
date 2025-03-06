@@ -10,6 +10,7 @@ interface LikeDislikeProps {
   onDislike?: (disliked: boolean) => void;
   onUpdate?: (likes: number, dislikes: number) => void;
   className?: string;
+  variant?: 'index' | 'reader';
 }
 
 interface Stats {
@@ -85,7 +86,8 @@ export function LikeDislike({
   onLike,
   onDislike,
   onUpdate,
-  className
+  className,
+  variant = 'index'
 }: LikeDislikeProps) {
   const { toast } = useToast();
   const [liked, setLiked] = useState(userLikeStatus === 'like');
@@ -102,7 +104,7 @@ export function LikeDislike({
       toast({
         title: "Error updating reaction",
         description: "Please try again later",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -121,7 +123,7 @@ export function LikeDislike({
           userInteracted: true
         });
         toast({
-          description: "Thanks for liking! 🥰",
+          description: "Thanks for liking! 🥰"
         });
       } else {
         setLiked(false);
@@ -138,7 +140,7 @@ export function LikeDislike({
       toast({
         title: "Error updating like",
         description: "Please try again",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -157,7 +159,7 @@ export function LikeDislike({
           userInteracted: true
         });
         toast({
-          description: "Thanks for the feedback! 😔",
+          description: "Thanks for the feedback! 😔"
         });
       } else {
         setDisliked(false);
@@ -174,16 +176,18 @@ export function LikeDislike({
       toast({
         title: "Error updating dislike",
         description: "Please try again",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
   return (
-    <div className={className}>
-      <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
-        Loved this story? Let me know with a like🥹—or a dislike if you must 😔
-      </p>
+    <div className={`relative ${className}`}>
+      {variant === 'reader' && (
+        <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
+          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
+        </p>
+      )}
       <div className="flex items-center justify-center gap-4">
         <Button
           variant="ghost"
