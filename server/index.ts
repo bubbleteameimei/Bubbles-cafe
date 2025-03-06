@@ -29,6 +29,9 @@ async function startServer() {
     console.log('\n=== Starting Server ===');
     console.log(`Process ID: ${process.pid}`);
     console.log(`Current Directory: ${process.cwd()}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`PORT: ${config.PORT}`);
+    console.log(`HOST: ${config.HOST}`);
 
     // Log detailed environment configuration
     logEnvironmentConfig();
@@ -66,6 +69,8 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
+      console.log(`[Server] Attempting to bind to ${config.HOST}:${config.PORT}...`);
+
       server.listen(config.PORT, config.HOST, () => {
         console.log(`[Server] Server running at http://${config.HOST}:${config.PORT}`);
         console.log('[Server] Server started successfully');
@@ -84,8 +89,12 @@ async function startServer() {
       });
 
       // Add error event handler
-      server.on('error', (error: Error) => {
-        console.error('[Server] Server error:', error);
+      server.on('error', (error: Error & { code?: string }) => {
+        if (error.code === 'EADDRINUSE') {
+          console.error(`[Server] Port ${config.PORT} is already in use`);
+        } else {
+          console.error('[Server] Server error:', error);
+        }
         reject(error);
       });
     });

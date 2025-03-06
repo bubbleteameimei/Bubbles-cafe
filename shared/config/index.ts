@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Define environment variables schema
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production']).default('development'),
-  PORT: z.string().transform(Number).default('5000'),
+  PORT: z.coerce.number().default(5000),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
   SESSION_SECRET: z.string().default('development_secret'),
@@ -21,8 +21,8 @@ const loadEnvConfig = (): EnvConfig => {
   try {
     return envSchema.parse({
       NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT,
-      HOST: process.env.HOST,
+      PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 5000,
+      HOST: process.env.HOST || '0.0.0.0',
       DATABASE_URL: process.env.DATABASE_URL,
       SESSION_SECRET: process.env.SESSION_SECRET || process.env.REPL_ID,
       CACHE_ENABLED: process.env.NODE_ENV === 'production',
@@ -32,6 +32,11 @@ const loadEnvConfig = (): EnvConfig => {
     });
   } catch (error) {
     console.error('Environment validation failed:', error);
+    console.error('Current environment variables:', {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      HOST: process.env.HOST,
+    });
     throw new Error('Invalid environment configuration');
   }
 };
