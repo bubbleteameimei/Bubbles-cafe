@@ -62,7 +62,6 @@ const FloatingPagination = ({
 
   return (
     <>
-      {/*This button is added to control the visibility of the pagination.  It's not strictly necessary but follows the original code's pattern.*/}
       <button
         id="toggle-pagination"
         onClick={() => setIsVisible(!isVisible)}
@@ -379,13 +378,6 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const navigateToPost = (index: number) => {
-    if (index >= 0 && index < postsData?.posts.length) {
-      setCurrentIndex(index);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
@@ -493,8 +485,18 @@ export default function Reader({ slug }: ReaderPageProps) {
           <FloatingPagination
             currentIndex={currentIndex}
             totalPosts={postsData.posts.length}
-            onPrevious={() => navigateToPost(currentIndex - 1)}
-            onNext={() => navigateToPost(currentIndex + 1)}
+            onPrevious={() => {
+              if (currentIndex > 0) {
+                setCurrentIndex(currentIndex - 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            onNext={() => {
+              if (currentIndex < postsData.posts.length - 1) {
+                setCurrentIndex(currentIndex + 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
             onRandom={handleRandomStory}
           />
         )}
