@@ -378,6 +378,20 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToNext = () => {
+    if (currentIndex < posts.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-background">
       <Mist className="opacity-30" />
@@ -476,6 +490,27 @@ export default function Reader({ slug }: ReaderPageProps) {
 
               <div className="mt-8">
                 <CommentSection postId={currentPost.id} />
+              </div>
+              {/* Navigation Buttons */}
+              <div className="flex items-center gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={goToPrevious}
+                  disabled={currentIndex === 0}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+                  Previous Story
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={goToNext}
+                  disabled={currentIndex === posts.length - 1}
+                  className="group hover:bg-primary/10 transition-all duration-300"
+                >
+                  Next Story
+                  <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
               </div>
             </div>
           </motion.article>
