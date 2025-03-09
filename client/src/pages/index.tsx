@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import Mist from "@/components/effects/mist";
@@ -97,11 +98,8 @@ export default function IndexView() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading stories...</div>
-      </div>
-    );
+    // Use the primary loading screen component
+    return <LoadingScreen />;
   }
 
   if (error || !data?.pages[0]?.posts) {
