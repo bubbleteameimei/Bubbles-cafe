@@ -1,0 +1,54 @@
+
+/* Font Display Swap */
+@font-face {
+  font-family: 'System';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('.SFNSText-Regular'), local('.HelveticaNeueDeskInterface-Regular'), local('.LucidaGrandeUI'), local('Segoe UI'), local('Ubuntu'), local('Cantarell'), local('Roboto'), local('Oxygen'), local('OpenSans'), local('sans-serif');
+}
+
+/* Preload key typefaces */
+@font-face {
+  font-family: 'Horror';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap; /* Show font immediately with fallback, swap when loaded */
+  src: local('Times New Roman'), local('Georgia'), local('serif');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Speed up font loading by specifying which characters to download first */
+@font-face {
+  font-family: 'Content';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: local('Georgia'), local('Times New Roman'), local('serif');
+  /* Only latin characters for initial render speed */
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Size adjustments for small screens */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px; /* Base font size for mobile */
+  }
+  
+  h1 {
+    font-size: 1.75rem; /* ~28px on mobile */
+  }
+  
+  h2 {
+    font-size: 1.5rem;  /* ~24px on mobile */
+  }
+  
+  h3 {
+    font-size: 1.25rem; /* ~20px on mobile */
+  }
+  
+  p, li, blockquote {
+    font-size: 1rem; /* ~16px on mobile */
+    line-height: 1.5;
+  }
+}

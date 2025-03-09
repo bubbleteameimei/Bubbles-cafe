@@ -14,6 +14,9 @@ const app = express();
 const PORT = 5000; // Explicitly set port to 5000
 const HOST = '0.0.0.0';
 
+// Enable trust proxy to resolve X-Forwarded-For rate limiting issues
+app.set('trust proxy', true);
+
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 

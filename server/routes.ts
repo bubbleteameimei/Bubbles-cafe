@@ -6,7 +6,9 @@ import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
-import express from 'express';
+import express from "express";
+import { imageOptimizationMiddleware } from "./middleware/image-optimization";
+import { criticalCssMiddleware } from "./middleware/critical-css";
 import * as session from 'express-session';
 import { z } from "zod";
 import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post } from "@shared/schema";
@@ -119,6 +121,32 @@ export function registerRoutes(app: Express): Server {
 
   // Set up auth BEFORE routes
   setupAuth(app);
+
+  // Add image optimization middleware
+  app.use(imageOptimizationMiddleware());
+
+  // Add critical CSS middleware
+  app.use(criticalCssMiddleware());
+
+  // Add mobile-specific cache headers
+  app.use((req, res, next) => {
+    const userAgent = req.headers['user-agent'] || '';
+    const isMobile = /mobile|android|iphone|ipod|tablet/i.test(userAgent);
+
+    // Apply device-specific cache settings
+    if (isMobile) {
+      // Set cache headers for mobile static assets
+      if (req.path.match(/\.(jpe?g|png|gif|svg|webp|css|js)$/i)) {
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day for mobile
+      }
+    } else {
+      // Desktop can have longer cache times
+      if (req.path.match(/\.(jpe?g|png|gif|svg|webp|css|js)$/i)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800'); // 1 week for desktop
+      }
+    }
+    next();
+  });
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
