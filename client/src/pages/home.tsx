@@ -48,18 +48,19 @@ export default function Home() {
       <div 
         className="absolute inset-0 w-full h-full"
         style={{
-          backgroundImage: "url('/attached_assets/IMG_4918.jpeg')",
+          backgroundImage: "url('/img/IMG_4918.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundAttachment: 'fixed',
+          opacity: 1,
           zIndex: 0
         }}
       />
 
-      {/* Dark overlay - lighter opacity */}
+      {/* Dark overlay - very light opacity */}
       <div 
-        className="absolute inset-0 w-full h-full bg-black/30"
+        className="absolute inset-0 w-full h-full bg-black/15"
         style={{ zIndex: 1 }}
       />
 

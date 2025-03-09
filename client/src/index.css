@@ -96,7 +96,7 @@ html, body, #root {
     min-height: 100vh;
     width: 100%;
     position: relative;
-    background-color: hsl(var(--background)); /* Use theme background color instead of image */
+    background-color: transparent; /* Allow page background to show through */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
@@ -118,7 +118,7 @@ html, body, #root {
     position: relative;
     z-index: 1;
     min-height: 100vh;
-    background-color: hsl(var(--background));
+    background-color: transparent; /* Make root transparent to show background image */
   }
 
   /* Scrollbar Styles */
