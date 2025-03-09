@@ -14,11 +14,8 @@
   height: 100%;
   position: absolute;
   padding: 90px 70px 50px 70px;
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--card)) 0%,
-    hsl(var(--card) / 0.95) 100%
-  );
+  background: hsl(var(--card));
+  z-index: 5;
 }
 
 .login-form {
@@ -179,6 +176,7 @@
 .login-form .group .button {
   width: 100%;
   display: block;
+  background-color: hsl(var(--background));
 }
 
 
@@ -251,6 +249,7 @@
   box-shadow: 0 12px 15px 0 rgba(0,0,0,.24),0 17px 50px 0 rgba(0,0,0,.19);
   border-radius: 10px;
   overflow: hidden;
+  backdrop-filter: blur(0); /* Remove any blur effect */
 }
 
 .foot-lnk:hover {
