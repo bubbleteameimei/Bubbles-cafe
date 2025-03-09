@@ -177,62 +177,63 @@ export default function AuthPage() {
               </Button>
             </form>
           ) : (
-            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reg-username">Username</Label>
-                <div className="space-y-1">
-                  <Input
-                    id="reg-username"
-                    type="text"
-                    {...registerForm.register("username")}
-                  />
-                  {registerForm.formState.errors.username?.message && (
-                    <p className="text-sm text-destructive">
-                      {registerForm.formState.errors.username?.message}
-                    </p>
-                  )}
-                </div>
+            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="auth-form">
+              <div className="form-group">
+                <Label htmlFor="email" className="form-label">Email</Label>
+                <Input
+                  id="registerEmail"
+                  type="email"
+                  className="input"
+                  placeholder="Enter your email"
+                  {...registerForm.register("email")}
+                />
+                {registerForm.formState.errors.email?.message && (
+                  <p className="form-error">
+                    {registerForm.formState.errors.email?.message}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reg-email">Email</Label>
-                <div className="space-y-1">
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    {...registerForm.register("email")}
-                  />
-                  {registerForm.formState.errors.email?.message && (
-                    <p className="text-sm text-destructive">
-                      {registerForm.formState.errors.email?.message}
-                    </p>
-                  )}
-                </div>
+              <div className="form-group">
+                <Label htmlFor="username" className="form-label">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  className="input"
+                  placeholder="Choose a username"
+                  {...registerForm.register("username")}
+                />
+                {registerForm.formState.errors.username?.message && (
+                  <p className="form-error">
+                    {registerForm.formState.errors.username?.message}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reg-password">Password</Label>
-                <div className="relative">
+              <div className="form-group">
+                <Label htmlFor="registerPassword" className="form-label">Password</Label>
+                <div className="password-input-wrapper">
                   <Input
-                    id="reg-password"
-                    type={showRegPassword ? "text" : "password"}
+                    id="registerPassword"
+                    type={showPassword ? "text" : "password"}
+                    className="input pr-10"
+                    placeholder="Create a password"
                     {...registerForm.register("password")}
-                    className="pr-10"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowRegPassword(!showRegPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle-btn"
                   >
-                    {showRegPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
                 {registerForm.formState.errors.password?.message && (
-                  <p className="text-sm text-destructive">
+                  <p className="form-error">
                     {registerForm.formState.errors.password?.message}
                   </p>
                 )}
@@ -240,11 +241,11 @@ export default function AuthPage() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="button"
                 disabled={registerMutation.isPending}
               >
                 {registerMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 ) : (
                   "Create Account"
                 )}
