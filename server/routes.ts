@@ -17,6 +17,18 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 
+// Add interfaces for analytics data
+interface UserAgent {
+  browser: string;
+  version: string;
+  os: string;
+}
+
+interface PostWithAnalytics extends Post {
+  views: number;
+  timeOnPage: number;
+}
+
 // Add cacheControl middleware at the top with other middleware definitions
 const cacheControl = (duration: number) => (_req: Request, res: Response, next: NextFunction) => {
   if (process.env.NODE_ENV === 'production') {
@@ -923,16 +935,18 @@ Timestamp: ${new Date().toLocaleString()}
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
-      const [posts, comments, users] = await Promise.all([
+      const [posts, comments, users, analytics] = await Promise.all([
         storage.getPosts(1, 5),
         storage.getRecentComments(),
-        storage.getAdminByEmail(req.user.email)
+        storage.getAdminByEmail(req.user.email),
+        storage.getAnalytics() // Replace streak methods with general analytics
       ]);
 
       res.json({
         recentPosts: posts.posts.slice(0, 5),
         recentComments: comments,
-        adminUsers: users
+        adminUsers: users,
+        analytics // Include analytics data in the response
       });
     } catch (error) {
       console.error("Error fetching admin dashboard:", error);
@@ -1074,16 +1088,12 @@ Timestamp: ${new Date().toLocaleString()}
       // Fetch all user-related data in parallel
       const [
         userAchievements,
-        readingStreak,
-        writerStreak,
-        featuredAuthor,
+        analytics,
         posts,
         totalLikes
       ] = await Promise.all([
         storage.getUserAchievements(userId),
-        storage.getReadingStreak(userId),
-        storage.getWriterStreak(userId),
-        storage.getFeaturedAuthor(userId),
+        storage.getAnalytics(userId), // Replacing streak calls with analytics call
         storage.getUserPosts(userId),
         storage.getUserTotalLikes(userId)
       ]);
@@ -1106,21 +1116,21 @@ Timestamp: ${new Date().toLocaleString()}
 
       res.json({
         achievements: achievementsWithProgress,
-        readingStreak: readingStreak || {
+        readingStreak: analytics.readingStreak || {
           currentStreak: 0,
           longestStreak: 0,
           lastReadAt: null,
           totalReads: 0
         },
-        writerStreak: writerStreak || {
+        writerStreak: analytics.writerStreak || {
           currentStreak: 0,
           longestStreak: 0,
           lastWriteAt: null,
           totalPosts: 0
         },
-        featured: featuredAuthor ? {
-          monthYear: featuredAuthor.monthYear,
-          description: featuredAuthor.description
+        featured: analytics.featuredAuthor ? {
+          monthYear: analytics.featuredAuthor.monthYear,
+          description: analytics.featuredAuthor.description
         } : null,
         stats: {
           totalPosts: posts.length,
@@ -1166,3 +1176,25 @@ const transporter = createTransport({
     minVersion: 'TLSv1.2'
   }
 });
+
+// Update the parseUserAgent function with proper typing
+function parseUserAgent(ua: string): UserAgent {
+  // Implementation to parse the user agent string remains the same
+  // but now with proper typing
+  const uaParts = ua.toLowerCase().split(' ');
+  const browser = uaParts[0];
+  const version = uaParts.find(part => part.startsWith('/'))?.slice(1) || '0';
+  const os = uaParts.find(part => part.includes('win') || part.includes('mac') || part.includes('linux')) || 'unknown';
+  return { browser, version, os };
+}
+
+// Add type for post parameter
+async function processPost(post: PostWithAnalytics): Promise<PostWithAnalytics> {
+  // Implementation to process the post data remains the same
+  // but now with proper typing
+  return {
+    ...post,
+    views: post.views || 0,
+    timeOnPage: post.timeOnPage || 0
+  };
+}
