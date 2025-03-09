@@ -53,7 +53,6 @@ import {
 
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
-
 import type { CommentMetadata } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
@@ -895,12 +894,26 @@ export class DatabaseStorage implements IStorage {
   async createCommentReply(reply: InsertCommentReply): Promise<CommentReply> {
     try {
       console.log('[Storage] Creating new comment reply');
-      const [newReply] = await db.insert(commentReplies)
+
+      // Create metadata object according to CommentMetadata interface
+      const metadata: CommentMetadata = {
+        moderated: false,
+        originalContent: reply.content,
+        isAnonymous: !reply.userId,
+        author: reply.metadata?.author || 'Anonymous',
+        upvotes: 0,
+        downvotes: 0,
+        replyCount: 0
+      };
+
+      const [newReply] = await db.insert(comments)
         .values({
           content: reply.content,
           userId: reply.userId,
-          commentId: reply.commentId,
-          approved: reply.approved,
+          parentId: reply.parentId,
+          postId: reply.postId,
+          approved: reply.approved ?? false,
+          metadata,
           createdAt: new Date()
         })
         .returning();
