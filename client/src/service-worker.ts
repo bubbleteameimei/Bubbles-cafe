@@ -81,7 +81,7 @@ registerRoute(
         purgeOnQuotaError: true,
       }),
     ],
-    networkTimeoutSeconds: 3, // Timeout for network requests
+    networkTimeoutSeconds: 5, // Extended timeout for mobile networks
   }),
 );
 
