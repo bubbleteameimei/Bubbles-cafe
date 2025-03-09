@@ -1,130 +1,130 @@
 
 /* Mobile Optimization Styles */
 
-/* Base mobile adjustments */
+/* Base mobile styles */
 @media (max-width: 768px) {
-  /* Text size adjustments */
+  html {
+    font-size: 14px;
+  }
+  
+  /* Increase touch targets for better mobile interaction */
+  button, 
+  a, 
+  input, 
+  select, 
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem;
+  }
+  
+  /* Adjust container padding */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Improve readability on smaller screens */
+  p, li {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  /* Adjust headings */
   h1 {
-    font-size: 1.75rem !important;
-    line-height: 1.2 !important;
+    font-size: 1.75rem;
   }
   
   h2 {
-    font-size: 1.5rem !important;
-    line-height: 1.2 !important;
+    font-size: 1.5rem;
   }
   
-  p, li, blockquote {
-    font-size: 0.95rem !important;
-    line-height: 1.5 !important;
+  h3 {
+    font-size: 1.25rem;
   }
   
-  /* Spacing adjustments */
-  .container {
-    padding: 0.75rem !important;
+  /* Single column layout for tables */
+  table, thead, tbody, th, td, tr {
+    display: block;
   }
   
-  /* Button/interactive element sizing */
-  button, 
-  .btn, 
-  .interactive-element {
-    min-height: 44px !important; /* Minimum touch target size */
-    min-width: 44px !important;
+  /* Hide table headers */
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
   }
   
-  /* Reduce unnecessary margins/paddings */
-  .mobile-compact {
-    margin: 0.5rem 0 !important;
-    padding: 0.5rem !important;
+  tr { 
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
   }
   
-  /* Fix fixed position elements to avoid viewport issues */
+  td {
+    border: none;
+    position: relative;
+    padding-left: 50%;
+    text-align: left;
+  }
+  
+  td:before {
+    position: absolute;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: bold;
+  }
+  
+  /* Responsive navigation */
+  nav {
+    flex-direction: column;
+  }
+  
+  /* Adjust card layouts */
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Better form controls on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    width: 100%;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+  
+  /* Improved scrolling experience */
+  .scrollable-content {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix for fixed position elements */
   .fixed-element {
-    position: fixed !important;
-    bottom: env(safe-area-inset-bottom, 20px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0) !important;
-  }
-  
-  /* Adjust sidebar for mobile */
-  .sidebar {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-  
-  /* Full-width containers on mobile */
-  .mobile-full-width {
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-  }
-  
-  /* Better image handling */
-  img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-  
-  /* Improved readability */
-  .article-content {
-    font-size: 1rem !important;
-    line-height: 1.6 !important;
-  }
-  
-  /* Improved form controls */
-  input, select, textarea {
-    font-size: 16px !important; /* Prevents iOS zoom on focus */
-  }
-  
-  /* Adjust navigation for mobile */
-  .mobile-nav {
-    display: flex !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    background-color: hsl(var(--background)) !important;
-    border-top: 1px solid hsl(var(--border)) !important;
-    padding: 0.5rem !important;
-    z-index: 50 !important;
-    justify-content: space-around !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    width: 100%;
   }
 }
 
-/* Small phone specific adjustments */
-@media (max-width: 374px) {
+/* Small phones (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  html {
+    font-size: 13px;
+  }
+  
   h1 {
-    font-size: 1.5rem !important;
+    font-size: 1.5rem;
   }
   
-  p, li {
-    font-size: 0.9rem !important;
+  h2 {
+    font-size: 1.25rem;
   }
-}
-
-/* Device-specific adjustments */
-@supports (-webkit-touch-callout: none) {
-  /* iOS-specific styles */
-  .ios-padding-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0) !important;
-  }
-}
-
-/* High-contrast mode for accessibility */
-@media (prefers-contrast: more) {
-  body {
-    --foreground: 0 0% 0% !important;
-    --background: 0 0% 100% !important;
-  }
-}
-
-/* Reduce motion for users with relevant preferences */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  
+  h3 {
+    font-size: 1.1rem;
   }
 }
