@@ -5,9 +5,6 @@ export default function Privacy() {
     <div className="container max-w-6xl mx-auto py-8 px-4">
       <div className="space-y-1 mb-6">
         <h1 className="text-3xl font-bold">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">
-          Last updated: {new Date().toLocaleDateString()}
-        </p>
       </div>
 
       <div className="space-y-8 prose prose-invert max-w-none">
@@ -60,7 +57,7 @@ export default function Privacy() {
             If you have any questions about this Privacy Policy, please contact us at:
           </p>
           <p className="text-muted-foreground">
-            Email: support@example.com
+            Email: vanessachiwetalu@gmail.com
           </p>
         </section>
       </div>
