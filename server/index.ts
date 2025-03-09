@@ -8,18 +8,11 @@ import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
 import path from "path";
 import helmet from "helmet";
-import { config, isDevelopment, isProduction } from "@shared/config";
-import developmentConfig from "@shared/config/development";
-import productionConfig from "@shared/config/production";
-import { getFeatureFlags, getApiConfig, logEnvironmentConfig } from "@shared/config/utils";
+import { config } from "@shared/config";
 
 const app = express();
-const activeConfig = isDevelopment() ? developmentConfig : productionConfig;
-const features = getFeatureFlags();
-const apiConfig = getApiConfig();
-
-// Set trust proxy to true for proper header handling behind proxies
-app.set('trust proxy', true);
+const PORT = 5000; // Explicitly set port to 5000
+const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
@@ -30,11 +23,8 @@ async function startServer() {
     console.log(`Process ID: ${process.pid}`);
     console.log(`Current Directory: ${process.cwd()}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`PORT: ${config.PORT}`);
-    console.log(`HOST: ${config.HOST}`);
-
-    // Log detailed environment configuration
-    logEnvironmentConfig();
+    console.log(`PORT: ${PORT}`);
+    console.log(`HOST: ${HOST}`);
 
     // Check if database needs seeding
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
@@ -49,18 +39,16 @@ async function startServer() {
     // Create server instance
     server = createServer(app);
 
-    // Register routes and middleware based on environment
-    if (isDevelopment()) {
+    // Register routes and middleware
+    if (process.env.NODE_ENV !== "production") {
       console.log('[Server] Setting up development environment');
       console.log('[Server] Registering API routes');
       registerRoutes(app);
       console.log("[Server] API routes registered successfully");
 
-      if (features.enableHotReload) {
-        console.log('[Server] Setting up Vite middleware');
-        await setupVite(app, server);
-        console.log("[Server] Vite middleware setup complete");
-      }
+      console.log('[Server] Setting up Vite middleware');
+      await setupVite(app, server);
+      console.log("[Server] Vite middleware setup complete");
     } else {
       console.log('[Server] Setting up production environment');
       serveStatic(app);
@@ -69,16 +57,16 @@ async function startServer() {
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
-      console.log(`[Server] Attempting to bind to ${config.HOST}:${config.PORT}...`);
+      console.log(`[Server] Attempting to bind to ${HOST}:${PORT}...`);
 
-      server.listen(config.PORT, config.HOST, () => {
-        console.log(`[Server] Server running at http://${config.HOST}:${config.PORT}`);
+      server.listen(PORT, HOST, () => {
+        console.log(`[Server] Server is now running at http://${HOST}:${PORT}`);
         console.log('[Server] Server started successfully');
 
-        // Send port readiness signal with explicit wait_for_port flag
+        // Send port readiness signal
         if (process.send) {
           process.send({
-            port: config.PORT,
+            port: PORT,
             wait_for_port: true,
             ready: true
           });
@@ -91,7 +79,7 @@ async function startServer() {
       // Add error event handler
       server.on('error', (error: Error & { code?: string }) => {
         if (error.code === 'EADDRINUSE') {
-          console.error(`[Server] Port ${config.PORT} is already in use`);
+          console.error(`[Server] Port ${PORT} is already in use`);
         } else {
           console.error('[Server] Server error:', error);
         }
