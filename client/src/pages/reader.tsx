@@ -20,7 +20,7 @@ import "../styles/floating-pagination.css";
 // Theme button component
 const ThemeButton = () => {
   const { theme, toggleTheme } = useTheme();
-  
+
   return (
     <button
       onClick={toggleTheme}
@@ -39,11 +39,11 @@ const ThemeButton = () => {
 // Bookmark button component
 const BookmarkButton = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
-  
+
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
   };
-  
+
   return (
     <button
       onClick={toggleBookmark}
@@ -253,12 +253,13 @@ export default function Reader({ slug }: ReaderPageProps) {
     }
   }, []);
 
-  if (isLoading) {
+  if (isLoading || !postsData?.posts || postsData.posts.length === 0) {
     console.log('[Reader] Loading state');
     return <LoadingScreen />;
   }
 
-  if (error || !postsData?.posts || postsData.posts.length === 0) {
+
+  if (error) {
     console.error('[Reader] Error or no posts available:', {
       error,
       postsCount: postsData?.posts?.length,
