@@ -46,7 +46,7 @@ html, body, #root {
 @tailwind utilities;
 
 @layer base {
-  /* Existing root variables remain unchanged */
+  /* Root Variables - remain unchanged */
   :root {
     --background: 0 0% 7%;       /* #121212 - Deep Charcoal */
     --foreground: 0 0% 92%;      /* #EAEAEA - Soft White */
@@ -80,45 +80,124 @@ html, body, #root {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Smooth Scrolling for Parallax */
+  /* Smooth Scrolling and Parallax Setup */
   html {
-    scroll-behavior: smooth;
-    perspective: 1px;
     height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* For smooth iOS scrolling */
   }
 
-  /* Body background setup */
+  /* Body and background setup */
   body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
     width: 100%;
     position: relative;
-    background-color: transparent; /* Allow page background to show through */
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Lancelot", "EB Garamond", serif;
+    font-size: calc(1rem + 0.3vw);
+    line-height: 1.8;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
-    text-rendering: optimizeLegibility;
+  }
 
-    /* Performance optimizations */
+  /* Parallax background container */
+  .parallax-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .parallax-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 120%; /* Extra height for parallax effect */
+    background-image: var(--bg-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    will-change: transform;
     transform: translateZ(0);
     backface-visibility: hidden;
-    perspective: 1000;
+    perspective: 1000px;
   }
 
-  /* Dark overlay - removed since we're not using background image */
-  body::before {
-    display: none; /* Remove the overlay */
-  }
-
-  /* Ensure content appears above background */
+  /* Content container */
   #root {
     position: relative;
     z-index: 1;
     min-height: 100vh;
-    background-color: transparent; /* Make root transparent to show background image */
+    background: transparent;
+  }
+
+  /* Dark mode styles */
+  .dark {
+    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
+    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
+    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
+    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
+    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
+    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
+    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --muted: 24 5% 19%;          /* #32302c - Darker muted */
+    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
+    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
+    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
+    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
+    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
+    --border: 24 8% 22%;         /* #3d3630 - Darker border */
+    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
+    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
+
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .parallax-bg {
+      height: 100%; /* Remove parallax on mobile for better performance */
+      background-attachment: scroll;
+    }
+
+    body {
+      font-size: calc(0.9rem + 0.2vw);
+    }
+  }
+
+  /* High-DPI screen optimizations */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .parallax-bg {
+      background-size: cover;
+      transform: translateZ(0);
+    }
+  }
+
+  /* Prevent content shift on parallax scroll */
+  .content-wrapper {
+    position: relative;
+    z-index: 2;
+    background: transparent;
   }
 
   /* Scrollbar Styles */
@@ -449,108 +528,68 @@ html, body, #root {
     line-height: 1.8;
     outline: none;
   }
-  .dark {
-    --background: 240 10% 11%;   /* #1a1a1f - Darker slate */
-    --foreground: 35 33% 72%;    /* #d8c3a5 - Cream */
-    --card: 240 8% 18%;          /* #2c2c32 - Darker card background */
-    --card-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --popover: 240 8% 18%;       /* #2c2c32 - Darker card background */
-    --popover-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --primary: 224 76% 55%;      /* #3D63DD - Vibrant Blue */
-    --primary-foreground: 0 0% 100%; /* #FFFFFF - Pure White */
-    --secondary: 27 20% 55%;     /* #b0a698 - Light taupe */
-    --secondary-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --muted: 24 5% 19%;          /* #32302c - Darker muted */
-    --muted-foreground: 27 20% 55%; /* #b0a698 - Light taupe */
-    --accent: 27 20% 55%;        /* #b0a698 - Light taupe */
-    --accent-foreground: 240 10% 11%; /* #1a1a1f - Darker slate */
-    --destructive: 355 84% 56%;  /* #e63946 - Reddish */
-    --destructive-foreground: 35 33% 72%; /* #d8c3a5 - Cream */
-    --border: 24 8% 22%;         /* #3d3630 - Darker border */
-    --input: 240 8% 18%;         /* #2c2c32 - Darker card background */
-    --ring: 24 16% 42%;          /* #7d6759 - Medium brown */
-
-    /* Sidebar Variables - Dark Mode */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  .social-interaction {
+    @apply fixed bottom-6 right-6 flex flex-col gap-3 z-50;
   }
-}
 
-/* Social Interaction Container */
-.social-interaction {
-  @apply fixed bottom-6 right-6 flex flex-col gap-3 z-50;
-}
+  .share-btn {
+    @apply bg-primary/90 hover:bg-primary text-white rounded-full p-3 shadow-lg 
+           transition-all duration-300 ease-in-out transform hover:scale-110;
+  }
 
-/* Share Button */
-.share-btn {
-  @apply bg-primary/90 hover:bg-primary text-white rounded-full p-3 shadow-lg 
-         transition-all duration-300 ease-in-out transform hover:scale-110;
-}
+  .reaction-buttons {
+    @apply fixed left-6 top-6 z-50 
+           bg-background/50 backdrop-blur-sm p-3 rounded-xl shadow-lg
+           transition-all duration-300 hover:bg-background/60 hover:shadow-xl;
+    min-width: 280px;
+  }
 
-/* Like/Dislike Container */
-.reaction-buttons {
-  @apply fixed left-6 top-6 z-50 
-         bg-background/50 backdrop-blur-sm p-3 rounded-xl shadow-lg
-         transition-all duration-300 hover:bg-background/60 hover:shadow-xl;
-  min-width: 280px;
-}
+  .reaction-buttons .group {
+    @apply relative z-10;
+  }
 
-/* Ensure proper z-index and spacing */
-.reaction-buttons .group {
-  @apply relative z-10;
-}
+  .reaction-buttons .group:hover svg {
+    @apply scale-110 transition-transform duration-300;
+  }
 
-/* Animate the icons on hover */
-.reaction-buttons .group:hover svg {
-  @apply scale-110 transition-transform duration-300;
-}
+  .reaction-buttons .animate-ping {
+    @apply opacity-60;
+  }
 
-/* Make the indicator dots more prominent */
-.reaction-buttons .animate-ping {
-  @apply opacity-60;
-}
+  .buy-coffee-btn {
+    @apply inline-flex items-center gap-2 bg-[#FFDD00] text-gray-900 
+           px-4 py-2.5 rounded-full shadow-lg transition-all duration-300 
+           hover:bg-[#FFE333] hover:shadow-xl hover:scale-105
+           font-medium text-sm md:text-base;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+  }
 
-/* Buy Coffee Button */
-.buy-coffee-btn {
-  @apply inline-flex items-center gap-2 bg-[#FFDD00] text-gray-900 
-         px-4 py-2.5 rounded-full shadow-lg transition-all duration-300 
-         hover:bg-[#FFE333] hover:shadow-xl hover:scale-105
-         font-medium text-sm md:text-base;
-  text-decoration: none;
-  position: relative;
-  overflow: hidden;
-}
+  .buy-coffee-btn::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-yellow-200 to-transparent opacity-50;
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
 
-.buy-coffee-btn::before {
-  content: '';
-  @apply absolute inset-0 bg-gradient-to-r from-yellow-200 to-transparent opacity-50;
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
-}
+  .buy-coffee-btn:hover::before {
+    transform: translateX(100%);
+  }
 
-.buy-coffee-btn:hover::before {
-  transform: translateX(100%);
-}
+  .buy-coffee-btn svg {
+    @apply w-5 h-5 transition-transform duration-300;
+  }
 
-.buy-coffee-btn svg {
-  @apply w-5 h-5 transition-transform duration-300;
-}
+  .buy-coffee-btn:hover svg {
+    @apply rotate-12;
+  }
 
-.buy-coffee-btn:hover svg {
-  @apply rotate-12;
-}
+  .buy-coffee-btn span {
+    @apply relative z-10 transition-all duration-300;
+  }
 
-/* Additional hover effect for text */
-.buy-coffee-btn span {
-  @apply relative z-10 transition-all duration-300;
-}
-
-.buy-coffee-btn:hover span {
-  @apply text-gray-800;
+  .buy-coffee-btn:hover span {
+    @apply text-gray-800;
+  }
 }

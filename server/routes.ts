@@ -71,13 +71,16 @@ interface PostMetadata {
 
 // Update the registerRoutes function to add compression and proper caching
 export function registerRoutes(app: Express): Server {
+  // Set trust proxy before any middleware
+  app.set('trust proxy', 1);
+
   // Add security headers and middleware first
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https:"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
