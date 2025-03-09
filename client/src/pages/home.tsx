@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Book, ArrowRight } from "lucide-react";
+import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { fetchPosts } from "@/lib/wordpress-api";
 
@@ -43,16 +43,23 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background image - optimized for mobile and desktop */}
+    <div className="relative min-h-[100vh] w-full overflow-hidden">
+      {/* Background image */}
       <div 
-        className="fixed inset-0 w-full h-full bg-black before:content-[''] before:fixed before:inset-0 before:bg-[url('/attached_assets/IMG_4918.jpeg')] before:bg-center before:bg-contain before:bg-no-repeat md:before:bg-fixed"
-        style={{ zIndex: 0 }}
+        className="absolute inset-0 w-full h-full"
+        style={{
+          backgroundImage: "url('/attached_assets/IMG_4918.jpeg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          zIndex: 0
+        }}
       />
 
-      {/* Dark overlay for better text readability */}
+      {/* Dark overlay - lighter opacity */}
       <div 
-        className="fixed inset-0 w-full h-full bg-black/60"
+        className="absolute inset-0 w-full h-full bg-black/30"
         style={{ zIndex: 1 }}
       />
 
@@ -99,16 +106,28 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="mt-24 text-center"
+                  className="mt-24 text-center space-y-4"
                 >
-                  <p className="text-sm font-medium text-foreground/90 mb-3 uppercase tracking-wider">Latest Story</p>
-                  <h2 
-                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors text-foreground/95"
+                  <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
+                  <div 
                     onClick={() => navigateToStory(posts[0].slug)}
-                    dangerouslySetInnerHTML={{ __html: posts[0].title.rendered }}
-                  />
-                  <div className="text-sm font-medium text-foreground/80">
-                    {posts[0].date && formatDate(posts[0].date)}
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200"
+                  >
+                    <h2 
+                      className="text-2xl font-bold mb-3 text-foreground/95 group-hover:text-primary transition-colors"
+                      dangerouslySetInnerHTML={{ __html: posts[0].title.rendered }}
+                    />
+                    <div 
+                      className="text-foreground/80 max-w-xl mx-auto mb-4 line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: posts[0].excerpt.rendered }}
+                    />
+                    <div className="flex items-center justify-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                      Read full story 
+                      <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div className="text-sm font-medium text-foreground/70 mt-3">
+                      {posts[0].date && formatDate(posts[0].date)}
+                    </div>
                   </div>
                 </motion.div>
               )}
