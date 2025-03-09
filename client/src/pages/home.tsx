@@ -6,10 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Book, ArrowRight } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { fetchPosts } from "@/lib/wordpress-api";
-import { TipPopup } from "@/components/ui/tip-popup";
-
-// Debug log for theme verification
-console.log("[Home] Loading page with theme settings");
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -48,22 +44,19 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background image - single implementation with built-in darkening */}
+      {/* Background image - optimized for mobile and desktop */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 w-full h-full"
-        style={{
-          backgroundImage: "url('/attached_assets/IMG_4848.jpeg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
-          opacity: 0.95,
-          filter: 'brightness(0.75) sepia(0.15)',
-          zIndex: 0
-        }}
+        className="fixed inset-0 w-full h-full bg-black before:content-[''] before:fixed before:inset-0 before:bg-[url('/attached_assets/IMG_4918.jpeg')] before:bg-center before:bg-contain before:bg-no-repeat md:before:bg-fixed"
+        style={{ zIndex: 0 }}
       />
 
-      {/* Content with proper z-index and text protection */}
+      {/* Dark overlay for better text readability */}
+      <div 
+        className="fixed inset-0 w-full h-full bg-black/60"
+        style={{ zIndex: 1 }}
+      />
+
+      {/* Content */}
       <div className="relative z-10">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
@@ -101,28 +94,20 @@ export default function Home() {
                 </Button>
               </div>
 
-              <div className="flex justify-center mt-4">
-                <TipPopup />
-              </div>
-
               {posts && posts.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="mt-24 text-center backdrop-blur-sm bg-card/20 p-6 rounded-lg shadow-xl border border-border/10"
+                  className="mt-24 text-center"
                 >
-                  <p className="text-sm text-foreground/80 mb-3 uppercase tracking-wide">Latest Story</p>
+                  <p className="text-sm font-medium text-foreground/90 mb-3 uppercase tracking-wider">Latest Story</p>
                   <h2 
-                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors"
+                    className="text-2xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors text-foreground/95"
                     onClick={() => navigateToStory(posts[0].slug)}
                     dangerouslySetInnerHTML={{ __html: posts[0].title.rendered }}
                   />
-                  <div 
-                    className="text-foreground/80 line-clamp-2 max-w-xl mx-auto mb-4"
-                    dangerouslySetInnerHTML={{ __html: posts[0].excerpt.rendered }}
-                  />
-                  <div className="text-sm text-foreground/70">
+                  <div className="text-sm font-medium text-foreground/80">
                     {posts[0].date && formatDate(posts[0].date)}
                   </div>
                 </motion.div>
