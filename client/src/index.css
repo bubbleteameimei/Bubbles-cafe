@@ -96,9 +96,7 @@ html, body, #root {
     min-height: 100vh;
     width: 100%;
     position: relative;
-
-    /* Optimized background image setup */
-    background: url('/img/IMG_4918.jpeg') center center/cover no-repeat fixed;
+    background-color: hsl(var(--background)); /* Use theme background color instead of image */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
@@ -110,23 +108,17 @@ html, body, #root {
     perspective: 1000;
   }
 
-  /* Dark overlay */
+  /* Dark overlay - removed since we're not using background image */
   body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-    z-index: 0;
+    display: none; /* Remove the overlay */
   }
 
-  /* Ensure content appears above overlay */
+  /* Ensure content appears above background */
   #root {
     position: relative;
     z-index: 1;
+    min-height: 100vh;
+    background-color: hsl(var(--background));
   }
 
   /* Scrollbar Styles */
