@@ -52,7 +52,7 @@ export default function AuthPage() {
     <div className="auth-container">
       <div className="login-wrap">
         <div className="login-html">
-          <h2 className="form-title">{isSignIn ? "Sign In" : "Create Account"}</h2>
+          {/* Title removed as it was redundant with the tab buttons */}
 
           <div className="tab-selector">
             <button 

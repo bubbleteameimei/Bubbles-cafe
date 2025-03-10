@@ -11,7 +11,7 @@
 .login-wrap {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 650px; /* Increased width to match site style */
   margin: 0 auto;
   background: hsl(var(--card));
   box-shadow: 0 8px 30px rgba(0,0,0,0.35);
@@ -23,7 +23,7 @@
 .login-html {
   width: 100%;
   position: relative;
-  padding: 50px 40px 40px;
+  padding: 60px 40px 40px; /* Reduced top padding */
   background: hsl(var(--card));
   z-index: 5;
 }
@@ -49,10 +49,10 @@
 
 .login-form .group .input {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 2px solid hsl(var(--border));
-  background: hsl(var(--background));
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background) / 0.15);
   color: hsl(var(--foreground));
   font-size: 16px;
   transition: all 0.3s ease;
