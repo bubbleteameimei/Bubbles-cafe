@@ -99,7 +99,7 @@ export const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2",
+        "flex min-h-0 flex-1 flex-col overflow-hidden",
         className
       )}
       {...props}
@@ -115,8 +115,9 @@ export const Sidebar = React.forwardRef<
     className?: string
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
+    collapsible?: "icon" | "offcanvas"
   }
->(({ children, className, side = "left", variant = "sidebar" }, ref) => {
+>(({ children, className, side = "left", variant = "sidebar", collapsible }, ref) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   if (isMobile) {
@@ -136,13 +137,13 @@ export const Sidebar = React.forwardRef<
           {/* Close Button */}
           <button
             onClick={() => setOpenMobile(false)}
-            className="absolute right-4 top-8 h-10 w-10 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+            className="absolute right-4 top-4 h-8 w-8 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
           >
-            <X className="h-8 w-8" />
+            <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </button>
 
-          <div className="flex h-full w-full flex-col pt-16">{children}</div>
+          <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
         </SheetContent>
       </Sheet>
     )
@@ -155,6 +156,7 @@ export const Sidebar = React.forwardRef<
       data-state={state}
       data-variant={variant}
       data-side={side}
+      data-collapsible={collapsible}
     >
       <div
         className={cn(
@@ -180,7 +182,7 @@ export const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow"
+          className="flex h-full w-full flex-col overflow-hidden bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow"
         >
           {children}
         </div>

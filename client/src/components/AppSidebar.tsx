@@ -1,6 +1,7 @@
 import { useSidebar } from "@/components/ui/sidebar";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import "../styles/sidebar.css";
@@ -43,16 +44,12 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Main navigation with nested scrolling */}
-        <div className="flex-1 h-[calc(100vh-4rem)] overflow-hidden">
-          {/* Main scroll container */}
-          <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-[hsl(var(--sidebar-background))] scrollbar-thumb-[hsl(var(--sidebar-border))] hover:scrollbar-thumb-[hsl(var(--sidebar-accent))]">
-            {/* Inner content container */}
-            <div className="h-full py-2">
-              <SidebarNavigation onNavigate={handleToggle} />
-            </div>
+        {/* Scrollable content area */}
+        <ScrollArea className="flex-1 h-[calc(100vh-4rem)]">
+          <div className="px-2 py-2">
+            <SidebarNavigation onNavigate={handleToggle} />
           </div>
-        </div>
+        </ScrollArea>
       </SidebarContent>
     </Sidebar>
   );
