@@ -21,22 +21,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar
+      variant="sidebar"
       collapsible={isMobile ? "offcanvas" : "icon"}
-      style={{
-        "--sidebar-width": SIDEBAR_WIDTH,
-        "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE
-      } as React.CSSProperties}
+      className="border-r bg-background"
     >
-      <SidebarContent className="flex flex-col h-screen bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]">
+      <SidebarContent className="flex flex-col h-full">
         {/* Fixed header */}
-        <div className="sticky top-0 z-50 flex-none h-16 px-4 border-b border-[hsl(var(--sidebar-border))] flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[hsl(var(--sidebar-foreground))]">Horror Stories</h2>
+        <div className="sticky top-0 z-50 flex-none h-16 px-4 border-b bg-background flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Horror Stories</h2>
           {isMobile && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleToggle}
-              className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+              className="ml-auto h-8 w-8"
               aria-label="Close sidebar"
             >
               <X className="h-4 w-4" />
@@ -44,9 +42,9 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Scrollable content area */}
-        <ScrollArea className="flex-1 h-[calc(100vh-4rem)]">
-          <div className="px-2 py-2">
+        {/* Scrollable content area with flex-1 to take remaining height */}
+        <ScrollArea className="flex-1 w-full">
+          <div className="p-4">
             <SidebarNavigation onNavigate={handleToggle} />
           </div>
         </ScrollArea>

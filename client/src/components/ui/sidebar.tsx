@@ -17,6 +17,80 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+// Update sidebar content component with proper overflow handling
+export const SidebarContent = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      data-sidebar="content"
+      className={cn(
+        "flex flex-col min-h-0 flex-1",
+        className
+      )}
+      {...props}
+    />
+  )
+})
+SidebarContent.displayName = "SidebarContent"
+
+// Update sidebar component with improved mobile handling
+export const Sidebar = React.forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode
+    className?: string
+    side?: "left" | "right"
+    variant?: "sidebar" | "floating" | "inset"
+    collapsible?: "icon" | "offcanvas"
+  }
+>(({ children, className, side = "left", variant = "sidebar", collapsible }, ref) => {
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+        <SheetContent
+          data-sidebar="sidebar"
+          data-mobile="true"
+          className="w-[var(--sidebar-width)] p-0 flex flex-col bg-background"
+          side={side}
+        >
+          {children}
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={cn("hidden md:block group/sidebar relative", className)}
+      data-state={state}
+      data-variant={variant}
+      data-side={side}
+      data-collapsible={collapsible}
+    >
+      <div
+        data-sidebar="sidebar"
+        className={cn(
+          "fixed top-0 bottom-0 z-30 flex h-full w-[var(--sidebar-width)] flex-col bg-background transition-all",
+          side === "left" && "left-0 border-r",
+          side === "right" && "right-0 border-l",
+          variant === "floating" && "m-2 rounded-xl border shadow-lg",
+          state === "collapsed" && collapsible === "icon" && "w-[var(--sidebar-width-icon)]",
+          state === "collapsed" && collapsible === "offcanvas" && "translate-x-[-100%]"
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  )
+})
+Sidebar.displayName = "Sidebar"
+
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
@@ -90,107 +164,6 @@ export function SidebarProvider({
   )
 }
 
-export const SidebarContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div">
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      data-sidebar="content"
-      className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden",
-        className
-      )}
-      {...props}
-    />
-  )
-})
-SidebarContent.displayName = "SidebarContent"
-
-export const Sidebar = React.forwardRef<
-  HTMLDivElement,
-  {
-    children: React.ReactNode
-    className?: string
-    side?: "left" | "right"
-    variant?: "sidebar" | "floating" | "inset"
-    collapsible?: "icon" | "offcanvas"
-  }
->(({ children, className, side = "left", variant = "sidebar", collapsible }, ref) => {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-
-  if (isMobile) {
-    return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent
-          data-sidebar="sidebar"
-          data-mobile="true"
-          className="relative w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground"
-          style={
-            {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
-          side={side}
-        >
-          {/* Close Button */}
-          <button
-            onClick={() => setOpenMobile(false)}
-            className="absolute right-4 top-4 h-8 w-8 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </button>
-
-          <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
-        </SheetContent>
-      </Sheet>
-    )
-  }
-
-  return (
-    <div
-      ref={ref}
-      className="group peer hidden md:block"
-      data-state={state}
-      data-variant={variant}
-      data-side={side}
-      data-collapsible={collapsible}
-    >
-      <div
-        className={cn(
-          "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-          "group-data-[collapsible=offcanvas]:w-0",
-          "group-data-[side=right]:rotate-180",
-          variant === "floating" || variant === "inset"
-            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
-        )}
-      />
-      <div
-        className={cn(
-          "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
-          side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-          className
-        )}
-      >
-        <div
-          data-sidebar="sidebar"
-          className="flex h-full w-full flex-col overflow-hidden bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow"
-        >
-          {children}
-        </div>
-      </div>
-    </div>
-  )
-})
-Sidebar.displayName = "Sidebar"
 
 export const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,

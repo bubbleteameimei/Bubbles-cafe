@@ -50,10 +50,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   }, [onNavigate, sidebar, setLocation]);
 
   return (
-    <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
+    <div className="flex flex-col space-y-4">
       {/* Main Navigation */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel>
           Navigation
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -63,7 +63,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/'}
                 onClick={() => handleNavigation('/')}
                 tooltip="Home"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Home className="h-4 w-4" />
                 <span>Home</span>
@@ -74,11 +73,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuButton
                 isActive={location === '/stories'}
                 onClick={() => handleNavigation('/stories')}
-                tooltip="Index"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                tooltip="Stories"
               >
                 <Scroll className="h-4 w-4" />
-                <span>Index</span>
+                <span>Stories</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
@@ -87,7 +85,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/reader'}
                 onClick={() => handleNavigation('/reader')}
                 tooltip="Reader"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Book className="h-4 w-4" />
                 <span>Reader</span>
@@ -99,7 +96,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/community'}
                 onClick={() => handleNavigation('/community')}
                 tooltip="Community"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
                 <Users className="h-4 w-4" />
                 <span>Community</span>
@@ -109,10 +105,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Admin Navigation - Only show if user is admin */}
+      {/* Admin Navigation */}
       {user?.isAdmin && (
         <SidebarGroup>
-          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+          <SidebarGroupLabel>
             Administration
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -120,26 +116,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                    <SidebarMenuButton className="w-full justify-between">
                       <div className="flex items-center">
                         <Shield className="h-4 w-4 mr-2" />
                         <span>Admin Controls</span>
                       </div>
                       <ChevronDown className={cn(
-                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                        "h-4 w-4 shrink-0 transition-transform duration-200",
                         adminOpen && "rotate-180"
                       )} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 px-2 py-1">
+                  <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
                           isActive={location === '/admin/dashboard'}
                           onClick={() => handleNavigation('/admin/dashboard')}
-                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                         >
-                          <Monitor className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <Monitor className="h-3.5 w-3.5 mr-2" />
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -147,9 +142,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <SidebarMenuSubButton
                           isActive={location === '/admin/users'}
                           onClick={() => handleNavigation('/admin/users')}
-                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                         >
-                          <Users className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <Users className="h-3.5 w-3.5 mr-2" />
                           <span>Manage Users</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -157,9 +151,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <SidebarMenuSubButton
                           isActive={location === '/admin/stories'}
                           onClick={() => handleNavigation('/admin/stories')}
-                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                         >
-                          <ScrollText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <ScrollText className="h-3.5 w-3.5 mr-2" />
                           <span>Manage Stories</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -174,7 +167,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Display Settings */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel>
           Display Settings
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -182,49 +175,44 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                  >
+                  <SidebarMenuButton className="w-full justify-between">
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
                       <span>Display Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 transition-transform duration-200",
                       displayOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent>
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/theme'}
                         onClick={() => handleNavigation('/settings/theme')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <SunMoon className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Dark/Light Mode</span>
+                        <SunMoon className="h-3.5 w-3.5 mr-2" />
+                        <span>Theme</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
                         onClick={() => handleNavigation('/settings/fonts')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Type className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Font Size & Style</span>
+                        <Type className="h-3.5 w-3.5 mr-2" />
+                        <span>Typography</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/settings/tts'}
-                        onClick={() => handleNavigation('/settings/tts')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        isActive={location === '/settings/accessibility'}
+                        onClick={() => handleNavigation('/settings/accessibility')}
                       >
-                        <Volume2 className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Text-to-Speech</span>
+                        <Volume2 className="h-3.5 w-3.5 mr-2" />
+                        <span>Accessibility</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -237,44 +225,42 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
-          Account Settings
+        <SidebarGroupLabel>
+          Account
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                  <SidebarMenuButton className="w-full justify-between">
                     <div className="flex items-center">
                       <UserCircle className="h-4 w-4 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 transition-transform duration-200",
                       accountOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent>
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/profile'}
                         onClick={() => handleNavigation('/settings/profile')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <User className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Profile Settings</span>
+                        <User className="h-3.5 w-3.5 mr-2" />
+                        <span>Profile</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/notifications'}
                         onClick={() => handleNavigation('/settings/notifications')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Bell className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Bell className="h-3.5 w-3.5 mr-2" />
                         <span>Notifications</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -282,30 +268,27 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/settings/privacy'}
                         onClick={() => handleNavigation('/settings/privacy')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Privacy & Security</span>
+                        <Lock className="h-3.5 w-3.5 mr-2" />
+                        <span>Privacy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/connected'}
                         onClick={() => handleNavigation('/settings/connected')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Link className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Link className="h-3.5 w-3.5 mr-2" />
                         <span>Connected Accounts</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/settings/offline'}
-                        onClick={() => handleNavigation('/settings/offline')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        isActive={location === '/settings/data'}
+                        onClick={() => handleNavigation('/settings/data')}
                       >
-                        <Database className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Offline Access</span>
+                        <Database className="h-3.5 w-3.5 mr-2" />
+                        <span>Data & Storage</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -318,7 +301,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Support & Legal */}
       <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel>
           Support & Legal
         </SidebarGroupLabel>
         <SidebarGroupContent>
@@ -326,56 +309,52 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                  <SidebarMenuButton className="w-full justify-between">
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
-                      <span>Support & Legal</span>
+                      <span>Help & Support</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 transition-transform duration-200",
                       supportOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent>
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
                         onClick={() => handleNavigation('/about')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>About Us</span>
+                        <Building className="h-3.5 w-3.5 mr-2" />
+                        <span>About</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Contact Support</span>
+                        <Mail className="h-3.5 w-3.5 mr-2" />
+                        <span>Contact</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/feedback'}
                         onClick={() => handleNavigation('/feedback')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Feedback & Suggestions</span>
+                        <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                        <span>Feedback</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/legal/terms'}
-                        onClick={() => handleNavigation('/legal/terms')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        isActive={location === '/terms'}
+                        onClick={() => handleNavigation('/terms')}
                       >
-                        <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <FileText className="h-3.5 w-3.5 mr-2" />
                         <span>Terms of Service</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -383,20 +362,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Lock className="h-3.5 w-3.5 mr-2" />
                         <span>Privacy Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/legal/copyright'}
-                        onClick={() => handleNavigation('/legal/copyright')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                      >
-                        <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -407,13 +375,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Footer Buttons */}
-      <div className="mt-auto pt-4 border-t border-[hsl(var(--sidebar-border))]">
+      {/* Action Buttons */}
+      <div className="mt-auto pt-4 border-t">
         {!user ? (
           <Button
             variant="default"
             size="sm"
-            className="w-full text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:opacity-90"
+            className="w-full"
             onClick={() => handleNavigation("/auth")}
           >
             Sign In
@@ -422,7 +390,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-sm text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+            className="w-full"
             onClick={() => {
               if (logoutMutation) {
                 logoutMutation.mutate();
@@ -436,10 +404,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         <button
           onClick={() => handleNavigation('/report-bug')}
           className={cn(
-            "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors",
-            location === '/report-bug'
-              ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
-              : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
+            "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md",
+            location === '/report-bug' 
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
         >
           <Bug className="h-4 w-4" />
