@@ -46,9 +46,9 @@ export default function Home() {
     <div className="relative min-h-[100vh] w-full overflow-hidden">
       {/* Background image */}
       <div 
-        className="absolute inset-0 w-full h-full"
+        className="fixed inset-0 w-full h-full"
         style={{
-          backgroundImage: "url('/img/IMG_4918.jpeg')",
+          backgroundImage: "url('/attached_assets/IMG_4918.jpeg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
