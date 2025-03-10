@@ -1,7 +1,9 @@
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
-  Bug, Scroll, Shield, Monitor, ScrollText
+  Bug, Scroll, Shield, Monitor, ScrollText, Bell, Lock, Building,
+  Mail, MessageSquare, Database, Palette, SunMoon, Type, Volume2,
+  User, Link2 as Link, CircleUserRound as UserCircle
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"

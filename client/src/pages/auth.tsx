@@ -1,39 +1,38 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Link } from "wouter"; 
-import "./auth.css";
 import { useAuth } from "@/hooks/use-auth";
-import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import "./auth.css";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login, register } = useAuth();
+  const { loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
       if (isSignIn) {
-        await login(email, password);
+        if (!email || !password) {
+          throw new Error("Please enter both email and password");
+        }
+        await loginMutation.mutateAsync({ email, password });
         setLocation("/");
       } else {
-        if (!username) {
-          throw new Error("Username is required");
+        if (!username || !email || !password) {
+          throw new Error("All fields are required");
         }
-        await register(email, password, username);
+        await registerMutation.mutateAsync({ username, email, password });
         setLocation("/");
       }
     } catch (err: any) {
@@ -43,7 +42,6 @@ export default function AuthPage() {
         description: err?.message || "Authentication failed",
         variant: "destructive"
       });
-      setError(err?.message || "Authentication failed");
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +51,6 @@ export default function AuthPage() {
     <div className="auth-container">
       <div className="login-wrap">
         <div className="login-html">
-
           <div className="tab-selector">
             <button 
               type="button"
@@ -73,14 +70,6 @@ export default function AuthPage() {
 
           <div className="login-form">
             <form onSubmit={handleSubmit}>
-              {error && (
-                <div className="group">
-                  <div className="error-message">
-                    {error}
-                  </div>
-                </div>
-              )}
-
               <div style={{ display: isSignIn ? "block" : "none" }}>
                 <div className="group">
                   <Label htmlFor="email">Email</Label>
@@ -110,9 +99,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={isLoading}
+                    disabled={loginMutation.isPending || isLoading}
                   >
-                    {isLoading ? "SIGNING IN..." : "SIGN IN"}
+                    {loginMutation.isPending || isLoading ? "SIGNING IN..." : "SIGN IN"}
                   </Button>
                 </div>
 
@@ -124,11 +113,8 @@ export default function AuthPage() {
                     variant="link"
                     onClick={() => setIsSignIn(false)}
                   >
-                    Don't have an account? SIGN UP
+                    Don't have an account? Sign up
                   </Button>
-                  <div className="tiny-disclaimer">
-                    By logging in you agree to our <Link href="/legal/terms" className="policy-link">terms of service</Link>, <Link href="/legal/privacy" className="policy-link">privacy policy</Link> and <Link href="/legal/copyright" className="policy-link">copyright policy</Link>
-                  </div>
                 </div>
               </div>
 
@@ -146,7 +132,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <Label htmlFor="email-signup">Email Address</Label>
+                  <Label htmlFor="email-signup">Email</Label>
                   <Input 
                     id="email-signup" 
                     type="email" 
@@ -173,9 +159,9 @@ export default function AuthPage() {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={isLoading}
+                    disabled={registerMutation.isPending || isLoading}
                   >
-                    {isLoading ? "Creating Account..." : "Sign Up"}
+                    {registerMutation.isPending || isLoading ? "Creating Account..." : "Sign Up"}
                   </Button>
                 </div>
 
@@ -189,9 +175,6 @@ export default function AuthPage() {
                   >
                     Already have an account? Sign in
                   </Button>
-                  <div className="tiny-disclaimer">
-                    By logging in you agree to our <Link href="/legal/terms" className="policy-link">terms of service</Link>, <Link href="/legal/privacy" className="policy-link">privacy policy</Link> and <Link href="/legal/copyright" className="policy-link">copyright policy</Link>
-                  </div>
                 </div>
               </div>
             </form>
