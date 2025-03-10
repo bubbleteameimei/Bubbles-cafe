@@ -1,37 +1,48 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './auth.css';
-import { useAuth } from '@/lib/auth';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import "./auth.css";
+import { useAuth } from "@/hooks/use-auth";
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { login, register } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       if (isSignIn) {
         await login(email, password);
-        navigate('/');
+        setLocation("/");
       } else {
         if (!username) {
-          throw new Error('Username is required');
+          throw new Error("Username is required");
         }
         await register(email, password, username);
-        navigate('/');
+        setLocation("/");
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
-      setError(err?.message || 'Authentication failed');
+      console.error("Auth error:", err);
+      toast({
+        title: "Authentication Error",
+        description: err?.message || "Authentication failed",
+        variant: "destructive"
+      });
+      setError(err?.message || "Authentication failed");
     } finally {
       setIsLoading(false);
     }
@@ -41,19 +52,19 @@ export default function AuthPage() {
     <div className="auth-container">
       <div className="login-wrap">
         <div className="login-html">
-          <h2 className="form-title">{isSignIn ? 'Sign In' : 'Create Account'}</h2>
+          <h2 className="form-title">{isSignIn ? "Sign In" : "Create Account"}</h2>
 
           <div className="tab-selector">
             <button 
               type="button"
-              className={`tab-btn ${isSignIn ? 'active' : ''}`}
+              className={`tab-btn ${isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(true)}
             >
               Sign In
             </button>
             <button 
               type="button"
-              className={`tab-btn ${!isSignIn ? 'active' : ''}`}
+              className={`tab-btn ${!isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(false)}
             >
               Sign Up
@@ -64,19 +75,18 @@ export default function AuthPage() {
             <form onSubmit={handleSubmit}>
               {error && (
                 <div className="group">
-                  <div className="error-message" style={{color: "hsl(var(--destructive))", fontSize: "14px", textAlign: "center", marginBottom: "15px"}}>
+                  <div className="error-message">
                     {error}
                   </div>
                 </div>
               )}
 
-              <div style={{ display: isSignIn ? 'block' : 'none' }}>
+              <div style={{ display: isSignIn ? "block" : "none" }}>
                 <div className="group">
-                  <label htmlFor="email" className="label">Email</label>
-                  <input 
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
                     id="email" 
                     type="email" 
-                    className="input" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -85,12 +95,10 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <label htmlFor="pass" className="label">Password</label>
-                  <input 
+                  <Label htmlFor="pass">Password</Label>
+                  <Input 
                     id="pass" 
                     type="password" 
-                    className="input" 
-                    data-type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -99,29 +107,34 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <button 
+                  <Button 
                     type="submit" 
-                    className="button"
+                    className="w-full"
                     disabled={isLoading}
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="hr"></div>
 
                 <div className="foot-lnk">
-                  <span onClick={() => setIsSignIn(false)}>Don't have an account? Sign up</span>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setIsSignIn(false)}
+                  >
+                    Don't have an account? Sign up
+                  </Button>
                 </div>
               </div>
 
-              <div style={{ display: isSignIn ? 'none' : 'block' }}>
+              <div style={{ display: isSignIn ? "none" : "block" }}>
                 <div className="group">
-                  <label htmlFor="user" className="label">Username</label>
-                  <input 
+                  <Label htmlFor="user">Username</Label>
+                  <Input 
                     id="user" 
                     type="text" 
-                    className="input"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Choose a username"
@@ -130,11 +143,10 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <label htmlFor="email-signup" className="label">Email Address</label>
-                  <input 
+                  <Label htmlFor="email-signup">Email Address</Label>
+                  <Input 
                     id="email-signup" 
                     type="email" 
-                    className="input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -143,12 +155,10 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <label htmlFor="pass-signup" className="label">Password</label>
-                  <input 
+                  <Label htmlFor="pass-signup">Password</Label>
+                  <Input 
                     id="pass-signup" 
                     type="password" 
-                    className="input" 
-                    data-type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a password"
@@ -157,19 +167,25 @@ export default function AuthPage() {
                 </div>
 
                 <div className="group">
-                  <button 
+                  <Button 
                     type="submit" 
-                    className="button"
+                    className="w-full"
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating Account..." : "Sign Up"}
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="hr"></div>
 
                 <div className="foot-lnk">
-                  <span onClick={() => setIsSignIn(true)}>Already have an account? Sign in</span>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setIsSignIn(true)}
+                  >
+                    Already have an account? Sign in
+                  </Button>
                 </div>
               </div>
             </form>

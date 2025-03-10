@@ -9,7 +9,7 @@
       "VITE_DEBUG_ENABLED": "true",
       "VITE_HOT_RELOAD": "true"
     },
-    "wait_for_port": 5000,
+    "wait_for_port": true,
     "port": 5000,
     "wait_for_output": "Server is now running at http://0.0.0.0:5000",
     "persistent": true,
