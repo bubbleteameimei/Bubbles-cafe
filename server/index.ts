@@ -11,98 +11,92 @@ import helmet from "helmet";
 import { config } from "@shared/config";
 
 const app = express();
-const PORT = 5000; // Explicitly set port to 5000
+const PORT = 5000;
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
+// Configure basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Basic security headers
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+
 async function startServer() {
   try {
     console.log('\n=== Starting Server ===');
-    console.log(`Process ID: ${process.pid}`);
-    console.log(`Current Directory: ${process.cwd()}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`PORT: ${PORT}`);
-    console.log(`HOST: ${HOST}`);
+    console.log('Initializing server...');
 
-    // Check if database needs seeding
+    // Check database connection first
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+    console.log(`Database connected, found ${postsCount} posts`);
+
     if (postsCount === 0) {
-      console.log('[Server] Database is empty, starting seeding process...');
+      console.log('Seeding database...');
       await seedDatabase();
-      console.log('[Server] Database seeding completed successfully');
-    } else {
-      console.log(`[Server] Database already contains ${postsCount} posts, skipping seeding`);
+      console.log('Database seeding completed');
     }
 
     // Create server instance
     server = createServer(app);
 
-    // Register routes and middleware
+    // Setup routes based on environment
     if (process.env.NODE_ENV !== "production") {
-      console.log('[Server] Setting up development environment');
-      console.log('[Server] Registering API routes');
+      console.log('Setting up development environment');
       registerRoutes(app);
-      console.log("[Server] API routes registered successfully");
-
-      console.log('[Server] Setting up Vite middleware');
       await setupVite(app, server);
-      console.log("[Server] Vite middleware setup complete");
     } else {
-      console.log('[Server] Setting up production environment');
+      console.log('Setting up production environment');
       serveStatic(app);
-      console.log("[Server] Static file serving setup complete");
     }
 
-    // Start listening with enhanced error handling and port notification
+    // Start listening with enhanced error handling
     return new Promise<void>((resolve, reject) => {
-      console.log(`[Server] Attempting to bind to ${HOST}:${PORT}...`);
-
       server.listen(PORT, HOST, () => {
-        console.log(`[Server] Server is now running at http://${HOST}:${PORT}`);
-        console.log('[Server] Server started successfully');
+        console.log(`\nServer is running at http://${HOST}:${PORT}`);
 
-        // Send port readiness signal
+        // Send explicit port readiness signal
         if (process.send) {
-          process.send({
+          const readySignal = {
             port: PORT,
             wait_for_port: true,
             ready: true
-          });
-          console.log('[Server] Sent port readiness signal');
+          };
+          process.send(readySignal);
+          console.log('Sent port readiness signal:', readySignal);
         }
 
         resolve();
       });
 
-      // Add error event handler
       server.on('error', (error: Error & { code?: string }) => {
         if (error.code === 'EADDRINUSE') {
-          console.error(`[Server] Port ${PORT} is already in use`);
-        } else {
-          console.error('[Server] Server error:', error);
+          console.error(`Port ${PORT} is already in use`);
         }
         reject(error);
       });
     });
   } catch (error) {
-    console.error(`[Server] Failed to start server: ${error instanceof Error ? error.message : String(error)}`);
-    throw error;
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
 }
 
-// Start the server with enhanced error handling
-startServer().catch(err => {
-  console.error('[Server] Critical startup error:', err);
+// Start the server
+startServer().catch(error => {
+  console.error('Critical startup error:', error);
   process.exit(1);
 });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('[Server] SIGTERM signal received: closing HTTP server');
+  console.log('SIGTERM received, closing server...');
   server?.close(() => {
-    console.log('[Server] HTTP server closed');
+    console.log('Server closed');
     process.exit(0);
   });
 });
