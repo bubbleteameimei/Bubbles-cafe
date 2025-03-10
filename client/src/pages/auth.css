@@ -5,14 +5,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 3rem;
   background: hsl(var(--background));
 }
 
 .login-wrap {
   position: relative;
-  width: 80%;
-  max-width: 1600px; /* Increased max-width to accommodate 80% width */
+  width: 100%;
+  max-width: 1000px; /* Increased width for a bigger form */
   margin: 0 auto;
   background: hsl(var(--card));
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
