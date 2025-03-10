@@ -25,7 +25,8 @@
       ".env",
       ".env.development",
       ".env.production"
-    ]
+    ],
+    "kill_others": true
   },
   "WordPress Sync": {
     "command": "node scripts/run-wp-sync.js",
