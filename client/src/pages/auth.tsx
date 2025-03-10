@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Link } from "wouter"; // Added import for Link component
+import { Link } from "wouter"; 
 import "./auth.css";
 import { useAuth } from "@/hooks/use-auth";
 import { Form } from "@/components/ui/form";
@@ -53,7 +53,6 @@ export default function AuthPage() {
     <div className="auth-container">
       <div className="login-wrap">
         <div className="login-html">
-          {/* Title removed as it was redundant with the tab buttons */}
 
           <div className="tab-selector">
             <button 
@@ -128,7 +127,7 @@ export default function AuthPage() {
                     Don't have an account? SIGN UP
                   </Button>
                   <div className="tiny-disclaimer">
-                    By logging in you agree to the ridiculously long <Link href="/legal/terms" className="terms-link">terms</Link> that you didn't bother to read
+                    By logging in you agree to our <Link href="/legal/terms" className="policy-link">terms of service</Link>, <Link href="/legal/privacy" className="policy-link">privacy policy</Link> and <Link href="/legal/copyright" className="policy-link">copyright policy</Link>
                   </div>
                 </div>
               </div>
@@ -191,7 +190,7 @@ export default function AuthPage() {
                     Already have an account? Sign in
                   </Button>
                   <div className="tiny-disclaimer">
-                    By logging in you agree to the ridiculously long <Link href="/legal/terms" className="terms-link">terms</Link> that you didn't bother to read
+                    By logging in you agree to our <Link href="/legal/terms" className="policy-link">terms of service</Link>, <Link href="/legal/privacy" className="policy-link">privacy policy</Link> and <Link href="/legal/copyright" className="policy-link">copyright policy</Link>
                   </div>
                 </div>
               </div>

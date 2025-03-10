@@ -72,18 +72,27 @@
 .login-form .group .button {
   width: 100%;
   display: block;
-  padding: 22px 24px;
+  padding: 18px 20px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 30px;
+  margin-top: 24px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+.login-form .sign-in-container .group .button {
+  padding: 24px 30px;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 34px;
+  letter-spacing: 0.6px;
 }
 
 .login-form .group .button:hover {
@@ -115,20 +124,23 @@
 
 .tiny-disclaimer {
   text-align: center;
-  margin-top: 10px;
-  color: hsl(var(--muted-foreground) / 0.6);
-  font-size: 8px;
+  margin-top: 8px;
+  color: hsl(var(--muted-foreground) / 0.5);
+  font-size: 7px;
   line-height: 1.2;
+  letter-spacing: -0.1px;
 }
 
-.tiny-disclaimer a {
-  color: hsl(var(--muted-foreground) / 0.7);
-  text-decoration: none;
-}
-
-.tiny-disclaimer a:hover {
+.tiny-disclaimer a.policy-link {
+  color: hsl(var(--muted-foreground) / 0.65);
   text-decoration: underline;
-  color: hsl(var(--primary) / 0.8);
+  text-underline-offset: 1.5px;
+  text-decoration-thickness: 0.5px;
+  transition: color 0.2s ease;
+}
+
+.tiny-disclaimer a.policy-link:hover {
+  color: hsl(var(--primary) / 0.7);
 }
 
 /* Title styling */
