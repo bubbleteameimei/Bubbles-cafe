@@ -12,11 +12,11 @@
 .login-wrap {
   position: relative;
   width: 100%;
-  max-width: 1000px; /* Increased width for a bigger form */
+  max-width: 1400px; /* Much larger width */
   margin: 0 auto;
   background: hsl(var(--card));
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  border-radius: 18px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.5);
+  border-radius: 24px;
   overflow: hidden;
   backdrop-filter: blur(0);
 }
@@ -24,7 +24,7 @@
 .login-html {
   width: 100%;
   position: relative;
-  padding: 90px 80px 70px; /* Increased padding for more space */
+  padding: 120px 100px 90px; /* Much larger padding */
   background: hsl(var(--card));
   z-index: 5;
 }
@@ -38,28 +38,28 @@
 }
 
 .login-form .group {
-  margin-bottom: 24px;
+  margin-bottom: 36px;
   width: 100%;
 }
 
 .login-form .group .label {
   display: block;
-  margin-bottom: 10px;
-  font-size: 15px;
+  margin-bottom: 16px;
+  font-size: 20px;
   color: hsl(var(--foreground));
   font-weight: 600;
 }
 
 .login-form .group .input {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 6px;
-  border: 1px solid hsl(var(--border));
+  padding: 20px 24px;
+  border-radius: 10px;
+  border: 2px solid hsl(var(--border));
   background: hsl(var(--background) / 0.1);
   color: hsl(var(--foreground));
-  font-size: 15px;
+  font-size: 20px;
   transition: all 0.3s ease;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 .login-form .group .input:focus {
@@ -72,17 +72,17 @@
 .login-form .group .button {
   width: 100%;
   display: block;
-  padding: 12px 16px;
+  padding: 22px 24px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 20px;
-  letter-spacing: 0.3px;
+  margin-top: 30px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
@@ -113,6 +113,24 @@
   text-decoration: underline;
 }
 
+.tiny-disclaimer {
+  text-align: center;
+  margin-top: 10px;
+  color: hsl(var(--muted-foreground) / 0.6);
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.tiny-disclaimer a {
+  color: hsl(var(--muted-foreground) / 0.7);
+  text-decoration: none;
+}
+
+.tiny-disclaimer a:hover {
+  text-decoration: underline;
+  color: hsl(var(--primary) / 0.8);
+}
+
 /* Title styling */
 .form-title {
   text-align: center;
@@ -140,14 +158,14 @@
 .tab-btn {
   background: transparent;
   border: none;
-  padding: 10px 18px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 16px 26px;
+  font-size: 22px;
+  font-weight: 700;
   color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.3s ease;
-  border-radius: 8px;
-  letter-spacing: 0.3px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
 }
 
 .tab-btn.active {

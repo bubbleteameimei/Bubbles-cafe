@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { Link } from "wouter"; // Added import for Link component
 import "./auth.css";
 import { useAuth } from "@/hooks/use-auth";
 import { Form } from "@/components/ui/form";
@@ -126,6 +127,9 @@ export default function AuthPage() {
                   >
                     Don't have an account? SIGN UP
                   </Button>
+                  <div className="tiny-disclaimer">
+                    By logging in you agree to the ridiculously long <Link href="/legal/terms" className="terms-link">terms</Link> that you didn't bother to read
+                  </div>
                 </div>
               </div>
 
@@ -186,6 +190,9 @@ export default function AuthPage() {
                   >
                     Already have an account? Sign in
                   </Button>
+                  <div className="tiny-disclaimer">
+                    By logging in you agree to the ridiculously long <Link href="/legal/terms" className="terms-link">terms</Link> that you didn't bother to read
+                  </div>
                 </div>
               </div>
             </form>
