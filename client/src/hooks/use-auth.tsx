@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect } from "react";
+import { createContext, ReactNode, useContext } from "react";
 import {
   useQuery,
   useMutation,
@@ -6,13 +6,14 @@ import {
 } from "@tanstack/react-query";
 import { insertUserSchema, User as SelectUser } from "@shared/schema";
 import { z } from "zod";
-import { apiRequest, queryClient } from "../lib/queryClient";
+import { queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
+  login: (email: string, password: string) => Promise<void>;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
@@ -143,12 +144,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Add login function that uses loginMutation
+  const login = async (email: string, password: string) => {
+    await loginMutation.mutateAsync({ email, password });
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user: user ?? null,
         isLoading,
         error,
+        login,
         loginMutation,
         logoutMutation,
         registerMutation,

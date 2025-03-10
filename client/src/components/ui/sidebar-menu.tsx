@@ -1,9 +1,7 @@
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
-  Bug, Scroll, Building, Mail, Lock, Shield, ScrollText,
-  User, Palette, Type, Bell, Link, Eye, Volume2, SunMoon, Database,
-  UserCircle, Monitor, PlayCircle, MessageSquare
+  Bug, Scroll, Shield, Monitor, ScrollText
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -36,6 +34,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
+  const [adminOpen, setAdminOpen] = React.useState(false);
   const sidebar = useSidebar();
 
   const handleNavigation = React.useCallback((path: string) => {
@@ -49,7 +48,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   }, [onNavigate, sidebar, setLocation]);
 
   return (
-    <div className="flex flex-col space-y-2 p-2">
+    <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
       {/* Main Navigation */}
       <SidebarGroup>
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
@@ -107,6 +106,69 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      {/* Admin Navigation - Only show if user is admin */}
+      {user?.isAdmin && (
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+            Administration
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                      <div className="flex items-center">
+                        <Shield className="h-4 w-4 mr-2" />
+                        <span>Admin Controls</span>
+                      </div>
+                      <ChevronDown className={cn(
+                        "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                        adminOpen && "rotate-180"
+                      )} />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 px-2 py-1">
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/dashboard'}
+                          onClick={() => handleNavigation('/admin/dashboard')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <Monitor className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Dashboard</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/users'}
+                          onClick={() => handleNavigation('/admin/users')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <Users className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Manage Users</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/stories'}
+                          onClick={() => handleNavigation('/admin/stories')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <ScrollText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Manage Stories</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
 
       {/* Display Settings */}
       <SidebarGroup>
