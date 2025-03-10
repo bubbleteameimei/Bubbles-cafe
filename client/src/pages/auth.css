@@ -12,7 +12,7 @@
 .login-wrap {
   position: relative;
   width: 100%;
-  max-width: 800px; /* Increased width for a bigger form */
+  max-width: 1000px; /* Increased width for a bigger form */
   margin: 0 auto;
   background: hsl(var(--card));
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
@@ -24,7 +24,7 @@
 .login-html {
   width: 100%;
   position: relative;
-  padding: 70px 60px 60px; /* Increased padding for more space */
+  padding: 90px 80px 70px; /* Increased padding for more space */
   background: hsl(var(--card));
   z-index: 5;
 }

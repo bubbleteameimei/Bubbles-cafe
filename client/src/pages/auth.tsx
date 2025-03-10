@@ -60,14 +60,14 @@ export default function AuthPage() {
               className={`tab-btn ${isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(true)}
             >
-              Sign In
+              SIGN IN
             </button>
             <button 
               type="button"
               className={`tab-btn ${!isSignIn ? "active" : ""}`}
               onClick={() => setIsSignIn(false)}
             >
-              Sign Up
+              SIGN UP
             </button>
           </div>
 
@@ -112,7 +112,7 @@ export default function AuthPage() {
                     className="w-full"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "SIGNING IN..." : "SIGN IN"}
                   </Button>
                 </div>
 
@@ -124,7 +124,7 @@ export default function AuthPage() {
                     variant="link"
                     onClick={() => setIsSignIn(false)}
                   >
-                    Don't have an account? Sign up
+                    Don't have an account? SIGN UP
                   </Button>
                 </div>
               </div>
