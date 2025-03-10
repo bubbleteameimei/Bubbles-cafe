@@ -26,6 +26,16 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
+// Send port readiness signal early
+if (process.send) {
+  process.send({
+    port: PORT,
+    wait_for_port: true,
+    ready: true
+  });
+  console.log('Sent initial port readiness signal');
+}
+
 async function startServer() {
   try {
     console.log('\n=== Starting Server ===');
@@ -58,18 +68,6 @@ async function startServer() {
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, HOST, () => {
         console.log(`\nServer is running at http://${HOST}:${PORT}`);
-
-        // Send explicit port readiness signal
-        if (process.send) {
-          const readySignal = {
-            port: PORT,
-            wait_for_port: true,
-            ready: true
-          };
-          process.send(readySignal);
-          console.log('Sent port readiness signal:', readySignal);
-        }
-
         resolve();
       });
 
