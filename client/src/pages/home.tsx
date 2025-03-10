@@ -112,7 +112,7 @@ export default function Home() {
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}
-                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200"
+                    className="story-card group cursor-pointer hover:scale-[1.01] transition-transform duration-200"
                   >
                     <h2 
                       className="text-2xl font-bold mb-3 text-foreground/95 group-hover:text-primary transition-colors"
