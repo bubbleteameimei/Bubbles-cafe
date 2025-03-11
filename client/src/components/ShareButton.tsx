@@ -1,62 +1,40 @@
 import { useState } from 'react';
-import { Share, Link } from 'lucide-react';
-import { Button } from './ui/button';
-import { useToast } from './ui/use-toast';
+import { Share } from 'lucide-react';
 
-interface ShareButtonProps {
-  className?: string;
-}
-
-export const ShareButton = ({ className }: ShareButtonProps) => {
+export const ShareButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { toast } = useToast();
 
   const handleShare = async () => {
     const shareData = {
       title: document.title,
-      text: "Check out this story on Bubble's Café!",
+      text: "Check out this story on our Horror Story Platform!",
       url: window.location.href
     };
 
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        console.log("Content shared successfully");
       } catch (error) {
         console.error("Sharing failed:", error);
-        if ((error as Error).name !== "AbortError") {
-          toast({
-            description: "Failed to share. Please try again.",
-            variant: "destructive"
-          });
-        }
+        setIsModalOpen(true);
       }
     } else {
-      copyLink();
+      setIsModalOpen(true);
     }
   };
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast({
-      description: "Link copied to clipboard!",
-    });
+    alert("Link copied to clipboard!");
   };
 
   const closeModal = () => setIsModalOpen(false);
 
   return (
     <>
-      <Button 
-        onClick={handleShare} 
-        variant="ghost" 
-        size="lg" 
-        className={`share-btn ${className || ''}`} 
-        aria-label="Share"
-      >
-        <Link className="h-8 w-8" />
-        <span className="sr-only">Share</span>
-      </Button>
+      <button onClick={handleShare} className="share-btn" aria-label="Share">
+        <Share className="w-6 h-6" />
+      </button>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

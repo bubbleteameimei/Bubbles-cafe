@@ -16,7 +16,6 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
-import {ShareButton} from "@/components/ShareButton"; // Added import for ShareButton
 
 // Theme button component
 const ThemeButton = () => {
@@ -334,6 +333,26 @@ export default function Reader({ slug }: ReaderPageProps) {
     }
   };
 
+  const shareStory = async () => {
+    console.log('[Reader] Attempting native share:', currentPost.title.rendered);
+    const shareData = {
+      title: currentPost.title.rendered,
+      text: "Check out this story on Bubble's Café!",
+      url: window.location.href
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        console.log('[Reader] Story shared successfully');
+      } else {
+        console.log('[Reader] Native share not supported');
+      }
+    } catch (error) {
+      console.error('[Reader] Error sharing story:', error);
+    }
+  };
+
   const socialLinks = [
     {
       key: 'wordpress',
@@ -516,7 +535,6 @@ export default function Reader({ slug }: ReaderPageProps) {
                         <span className="sr-only">Follow on {key}</span>
                       </Button>
                     ))}
-                    <ShareButton/> {/*Added Share button here*/}
                   </div>
 
                   {/* Support writing section - Updated with homepage style */}
