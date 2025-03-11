@@ -8,7 +8,7 @@ import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
 import path from "path";
 import helmet from "helmet";
-import { config } from "@shared/config";
+import compression from "compression";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -21,10 +21,24 @@ let server: ReturnType<typeof createServer>;
 // Configure basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+
+// Add health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Basic security headers
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: isDev ? false : {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    }
+  }
 }));
 
 async function startServer() {
@@ -62,7 +76,7 @@ async function startServer() {
       server.listen(PORT, HOST, () => {
         console.log(`\nServer is running at http://${HOST}:${PORT}`);
 
-        // Send port readiness signal with explicit wait_for_port flag
+        // Send port readiness signal
         if (process.send) {
           process.send({
             port: PORT,

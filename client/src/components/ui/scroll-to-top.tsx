@@ -30,6 +30,8 @@ export function ScrollToTop() {
 
   return (
     <Button
+      variant="default"
+      size="icon"
       className="scroll-to-top"
       onClick={scrollToTop}
       aria-label="Scroll to top"

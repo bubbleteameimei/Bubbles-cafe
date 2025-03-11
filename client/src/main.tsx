@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";
 import "./index.css";
+import { optimizeImagesForConnection } from "./utils/image-optimization";
+import { ScrollToTop } from "./components/ui/scroll-to-top";
 
 console.log("[Client] Starting application...");
 
@@ -18,42 +20,11 @@ linkElements.forEach(link => {
   console.log("[Client] Found stylesheet:", link.getAttribute('href'));
 });
 
+// Optimize images based on connection speed
+optimizeImagesForConnection();
+
 console.log("[Client] CSS styles loaded");
 console.log("[Client] Mounting React application...");
-
-// Register service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try {
-      console.log('[ServiceWorker] Attempting registration...');
-      const registration = await navigator.serviceWorker.register('/service-worker.js');
-      console.log('[ServiceWorker] Registration successful. Scope:', registration.scope);
-
-      // Handle updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        console.log('[ServiceWorker] Update found, installing new version...');
-
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            console.log('[ServiceWorker] New worker state:', newWorker.state);
-            if (newWorker.state === 'activated') {
-              console.log('[ServiceWorker] New content is available; please refresh.');
-            }
-          });
-        }
-      });
-
-      // Check for controller change
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('[ServiceWorker] New service worker is controlling the page');
-      });
-
-    } catch (error) {
-      console.error('[ServiceWorker] Registration failed:', error);
-    }
-  });
-}
 
 // Add performance markers for debugging
 performance.mark('react-init-start');
@@ -65,7 +36,10 @@ const renderApp = () => {
     const rootElement = createRoot(root);
     rootElement.render(
       <React.StrictMode>
-        <App />
+        <>
+          <App />
+          <ScrollToTop />
+        </>
       </React.StrictMode>
     );
     performance.mark('react-render-end');
