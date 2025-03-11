@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Button } from "./button";
-import { Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface ShareButtonProps {
   title: string;
@@ -17,6 +19,7 @@ interface ShareButtonProps {
 }
 
 export function ShareButton({ title, text, url = window.location.href, className }: ShareButtonProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -41,7 +44,7 @@ export function ShareButton({ title, text, url = window.location.href, className
         }
       }
     } else {
-      handleCopyLink();
+      setIsOpen(true);
     }
   };
 
@@ -63,39 +66,66 @@ export function ShareButton({ title, text, url = window.location.href, className
   };
 
   return (
-    <div className={className}>
+    <>
       <Button
         variant="ghost"
         size="sm"
-        className="share-btn"
+        className={cn("share-btn", className)}
         onClick={handleShare}
       >
-        <Share2 className="h-4 w-4" />
+        <Share2 className="h-4 w-4 mr-2" />
+        Share
       </Button>
 
-      {!navigator.share && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="share-btn"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleCopyLink}>
-              {copied ? (
-                <Check className="h-4 w-4 mr-2" />
-              ) : (
-                <Copy className="h-4 w-4 mr-2" />
-              )}
-              Copy Link
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Share This Story</DialogTitle>
+          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
+
+          <div className="grid gap-4 py-4">
+            <Input
+              id="shareURL"
+              value={url}
+              readOnly
+              className="w-full flex-1 text-center"
+            />
+            <div className="flex justify-center gap-4">
+              <Button onClick={handleCopyLink} className="flex items-center gap-2">
+                {copied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                Copy Link
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank')}
+              >
+                WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank')}
+              >
+                Twitter
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank')}
+              >
+                Facebook
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
