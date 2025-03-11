@@ -10,6 +10,12 @@ import "../styles/sidebar.css";
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 
+const scrollableStyles = {
+  overflowY: "auto",
+  height: "100%",
+};
+
+
 export function AppSidebar() {
   const { toggleSidebar, isMobile } = useSidebar();
 
@@ -45,7 +51,7 @@ export function AppSidebar() {
         </div>
 
         {/* Scrollable content area */}
-        <ScrollArea className="flex-1 h-[calc(100vh-4rem)]">
+        <ScrollArea className="flex-1" style={scrollableStyles}>
           <div className="px-2 py-2">
             <SidebarNavigation onNavigate={handleToggle} />
           </div>
