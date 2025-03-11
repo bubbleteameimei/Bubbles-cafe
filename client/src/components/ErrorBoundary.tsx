@@ -1,6 +1,5 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +12,10 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  public static defaultProps = {
+    fallback: null
+  };
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -24,8 +27,6 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error("ErrorBoundary caught error:", error, errorInfo);
-    
-    // You could also log to an error reporting service here
   }
 
   handleRetry = (): void => {
@@ -34,10 +35,11 @@ class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
+      // If a custom fallback is provided, use it
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
           <div className="w-full max-w-md p-6 bg-card rounded-lg shadow-lg">
@@ -49,7 +51,10 @@ class ErrorBoundary extends Component<Props, State> {
               <Button onClick={this.handleRetry}>
                 Try again
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/'}
+              >
                 Go to homepage
               </Button>
             </div>

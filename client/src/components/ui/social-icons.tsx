@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { SiInstagram, SiTwitter, SiWordpress } from 'react-icons/si';
+import { SiInstagram, SiX, SiWordpress } from 'react-icons/si';
 
 export const SocialIcons = memo(() => {
   const { toast } = useToast();
@@ -39,7 +39,7 @@ export const SocialIcons = memo(() => {
         className="p-2 rounded-full hover:bg-accent transition-colors"
         aria-label="Visit Twitter/X Profile"
       >
-        <SiTwitter className="w-6 h-6 text-muted-foreground hover:text-primary" />
+        <SiX className="w-6 h-6 text-muted-foreground hover:text-primary" />
       </button>
 
       <button 

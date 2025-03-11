@@ -5,19 +5,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useMutation } from "@tanstack/react-query";
 
-type StoryRating = {
+interface StoryRating {
   postId: number;
   isLike: boolean;
-};
+}
 
-export function StoryRating({ postId }: { postId: number }) {
+interface StoryRatingProps {
+  postId: number;
+}
+
+export function StoryRating({ postId }: StoryRatingProps) {
   const { toast } = useToast();
   const [userRating, setUserRating] = useState<boolean | null>(null);
 
   const form = useForm<StoryRating>({
     defaultValues: {
       postId,
-      isLike: true
+      isLike: false // Provide explicit default value
     }
   });
 

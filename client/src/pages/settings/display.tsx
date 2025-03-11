@@ -13,15 +13,17 @@ interface HorrorEffects {
   textEffects: boolean;
 }
 
+const defaultEffects: HorrorEffects = {
+  ambient: false,
+  jumpscares: false,
+  weatherEffects: false,
+  textEffects: false
+};
+
 export default function DisplaySettingsPage() {
   const { toast } = useToast();
-  const [ambienceLevel, setAmbienceLevel] = useState(50);
-  const [effects, setEffects] = useState<HorrorEffects>({
-    ambient: false,
-    jumpscares: false,
-    weatherEffects: false,
-    textEffects: false
-  });
+  const [ambienceLevel, setAmbienceLevel] = useState<number>(50);
+  const [effects, setEffects] = useState<HorrorEffects>(defaultEffects);
 
   // Load saved preferences on component mount
   useEffect(() => {
@@ -51,10 +53,9 @@ export default function DisplaySettingsPage() {
         variant: "destructive"
       });
     }
-  }, []);
+  }, [toast]);
 
   const handleThemeChange = (value: string, notify: boolean = true) => {
-    console.log('Theme changed to:', value);
     if (notify) {
       toast({
         title: "Theme Updated",
@@ -66,14 +67,13 @@ export default function DisplaySettingsPage() {
   };
 
   const handleAmbienceChange = (value: number[]) => {
-    console.log('Ambience level changed to:', value[0]);
-    setAmbienceLevel(value[0]);
+    const newValue = value[0];
+    setAmbienceLevel(newValue);
     // Save ambience level to localStorage
-    localStorage.setItem('ambience-level', value[0].toString());
+    localStorage.setItem('ambience-level', newValue.toString());
   };
 
   const toggleEffect = (effect: keyof HorrorEffects) => {
-    console.log(`Toggling ${effect}:`, !effects[effect]);
     setEffects(prev => {
       const newEffects = {
         ...prev,
@@ -120,7 +120,7 @@ export default function DisplaySettingsPage() {
           <div className="space-y-4">
             <Label className="text-lg">Ambience Intensity</Label>
             <Slider 
-              defaultValue={[ambienceLevel]} 
+              value={[ambienceLevel]}
               max={100} 
               step={1}
               onValueChange={handleAmbienceChange}
