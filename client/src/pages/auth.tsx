@@ -183,4 +183,94 @@ export default function AuthPage() {
       </div>
     </div>
   );
+
+import { useState } from 'react';
+import './auth.css';
+import { Link } from 'wouter';
+
+export default function AuthPage() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  
+  const toggleForm = () => {
+    setIsSignUp(!isSignUp);
+  };
+  
+  return (
+    <div className="login-form">
+      <div className={isSignUp ? "cont s-signup" : "cont"}>
+        <div className="form sign-in">
+          <h2>Sign In</h2>
+          <div className="group">
+            <label htmlFor="email">Email</label>
+            <input id="email" type="email" />
+          </div>
+          <div className="group">
+            <label htmlFor="password">Password</label>
+            <input id="password" type="password" />
+          </div>
+          <div className="group">
+            <button className="button">Sign In</button>
+          </div>
+          <div className="hr"></div>
+          <div className="foot-lnk" onClick={toggleForm}>
+            Don't have an account? <span>Create one</span>
+          </div>
+          <div className="tiny-disclaimer">
+            By signing in, you agree to our <Link href="/legal/terms"><a className="policy-link">Terms of Service</a></Link> and <Link href="/privacy"><a className="policy-link">Privacy Policy</a></Link>. 
+            This site uses cookies to enhance your experience.
+          </div>
+        </div>
+        
+        <div className="sub-cont">
+          <div className="img">
+            <div className="img-text m-up">
+              <h2>New here?</h2>
+              <p>Join our community and discover terrifying tales that will haunt your dreams...</p>
+            </div>
+            <div className="img-text m-in">
+              <h2>One of us?</h2>
+              <p>If you already have an account, just sign in. We've missed you!</p>
+            </div>
+            <div className="img-btn" onClick={toggleForm}>
+              <span className="m-up">Sign Up</span>
+              <span className="m-in">Sign In</span>
+            </div>
+          </div>
+          
+          <div className="form sign-up">
+            <h2>Sign Up</h2>
+            <div className="group">
+              <label htmlFor="name">Name</label>
+              <input id="name" type="text" />
+            </div>
+            <div className="group">
+              <label htmlFor="email">Email</label>
+              <input id="email" type="email" />
+            </div>
+            <div className="group">
+              <label htmlFor="password">Password</label>
+              <input id="password" type="password" />
+            </div>
+            <div className="group">
+              <label htmlFor="confirm-password">Confirm Password</label>
+              <input id="confirm-password" type="password" />
+            </div>
+            <div className="group">
+              <button className="button">Sign Up</button>
+            </div>
+            <div className="hr"></div>
+            <div className="foot-lnk" onClick={toggleForm}>
+              Already a member? <span>Sign in</span>
+            </div>
+            <div className="tiny-disclaimer">
+              By signing up, you agree to our <Link href="/legal/terms"><a className="policy-link">Terms of Service</a></Link> and <Link href="/privacy"><a className="policy-link">Privacy Policy</a></Link>. 
+              This site uses cookies to enhance your experience.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 }
