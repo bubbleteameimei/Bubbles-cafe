@@ -1,84 +1,99 @@
 // Define our theme colors and styles
 export const theme = {
   colors: {
-    // Dark mode (default) - Using sidebar colors
+    // Dark mode (default) - Using horror theme
     dark: {
-      background: '#121212',        // Deep Charcoal - For image overlay
-      foreground: '#EAEAEA',        // Soft White - For readability on dark
-      card: '#1E1E1E',              // Rich Dark Gray with slight warm tone
-      cardForeground: '#EAEAEA',    // Soft White
+      background: '#121212',        // Deep Charcoal
+      foreground: '#F8F8F8',        // Soft White - For readability
+      card: '#1A1A1A',              // Slightly lighter than background
+      cardForeground: '#F8F8F8',    // Soft White
       popover: '#121212',           // Deep Charcoal
-      popoverForeground: '#EAEAEA', // Soft White
-      primary: '#3D63DD',           // Vibrant Blue - From sidebar
-      primaryForeground: '#FFFFFF', // Pure White
-      secondary: '#2C2620',         // Deep Brown - Subtle secondary elements
-      secondaryForeground: '#EAEAEA', // Soft White
-      muted: '#343434',             // Muted Dark Gray
-      mutedForeground: '#A6A6A6',   // Warm Gray
-      accent: '#8C6D4F',            // Earthy Accent - Complements image
+      popoverForeground: '#F8F8F8', // Soft White
+      primary: '#800020',           // Deep Burgundy - Horror theme
+      primaryForeground: '#FFFFFF',  // Pure White
+      secondary: '#2A2A2A',         // Deep Gray
+      secondaryForeground: '#F8F8F8', // Soft White
+      muted: '#2E2E2E',             // Muted Dark Gray
+      mutedForeground: '#9A9A9A',   // Soft Gray
+      accent: '#800020',            // Deep Burgundy
       accentForeground: '#FFFFFF',  // Pure White
-      destructive: '#C75D4C',       // Muted Red - Warning/Delete
+      destructive: '#991B1B',       // Dark Red
       destructiveForeground: '#FFFFFF', // Pure White
-      border: '#2C2620',            // Deep Brown
-      input: '#1E1E1E',             // Rich Dark Gray
-      ring: '#A67C52',              // Warm Brown
+      border: '#2E2E2E',            // Dark Border
+      input: '#1A1A1A',             // Input Background
+      ring: '#800020',              // Focus Ring
     },
-    // Light mode - Warm and complementary to image
+    // Light mode - Sophisticated with reduced glare
     light: {
-      background: '#F5F2EE',        // Warm Off-White
-      foreground: '#232323',        // Deep Charcoal - Clean text
+      background: '#FAFAFA',        // Soft White
+      foreground: '#121212',        // Deep Charcoal
       card: '#FFFFFF',              // Pure White
-      cardForeground: '#232323',    // Deep Charcoal
-      popover: '#FFFFFF',          // Pure White
-      popoverForeground: '#111827', // Nearly Black
-      primary: '#4F46E5',          // Deep Indigo - Professional
+      cardForeground: '#121212',    // Deep Charcoal
+      popover: '#FFFFFF',           // Pure White
+      popoverForeground: '#121212', // Deep Charcoal
+      primary: '#800020',           // Deep Burgundy
       primaryForeground: '#FFFFFF', // Pure White
-      secondary: '#F3F4F6',        // Light Gray
-      secondaryForeground: '#111827', // Nearly Black
-      muted: '#F3F4F6',            // Light Gray
-      mutedForeground: '#6B7280',  // Medium Gray
-      accent: '#4F46E5',           // Deep Indigo
+      secondary: '#F0F0F0',         // Light Gray
+      secondaryForeground: '#121212', // Deep Charcoal
+      muted: '#F0F0F0',            // Light Gray
+      mutedForeground: '#6E6E6E',  // Medium Gray
+      accent: '#800020',           // Deep Burgundy
       accentForeground: '#FFFFFF', // Pure White
-      destructive: '#DC2626',      // Red
+      destructive: '#991B1B',      // Dark Red
       destructiveForeground: '#FFFFFF', // Pure White
-      border: '#E5E7EB',           // Border Gray
-      input: '#F9FAFB',            // Off White
-      ring: '#4F46E5',            // Deep Indigo
+      border: '#E2E2E2',           // Light Border
+      input: '#F5F5F5',            // Input Background
+      ring: '#800020',            // Focus Ring
     }
   },
   typography: {
     fonts: {
-      sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      // Using EB Garamond for headers and Lora for body text
+      serif: '"EB Garamond", "Times New Roman", serif',
+      sans: 'Lora, system-ui, -apple-system, sans-serif',
+      mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
     },
     scale: {
-      xs: '0.75rem',
-      sm: '0.875rem',
-      base: '1rem',
-      lg: '1.125rem',
-      xl: '1.25rem',
-      '2xl': '1.5rem',
-      '3xl': '1.875rem',
-      '4xl': '2.25rem',
-      '5xl': '3rem',
+      xs: '0.75rem',    // 12px
+      sm: '0.875rem',   // 14px
+      base: '1rem',     // 16px
+      lg: '1.125rem',   // 18px
+      xl: '1.25rem',    // 20px
+      '2xl': '1.5rem',  // 24px
+      '3xl': '1.875rem',// 30px
+      '4xl': '2.25rem', // 36px
+      '5xl': '3rem',    // 48px
     },
     weights: {
       normal: 400,
       medium: 500,
       semibold: 600,
       bold: 700,
+    },
+    lineHeights: {
+      tight: 1.2,
+      normal: 1.5,
+      relaxed: 1.75,
+      loose: 2,
     }
   },
   layout: {
     container: {
+      // Optimized content width for readability
       default: '100%',
-      sm: '640px',
-      md: '768px',
-      lg: '1024px',
-      xl: '1280px',
+      sm: '640px',     // Mobile
+      md: '768px',     // Tablet
+      lg: '1024px',    // Desktop
+      xl: '1280px',    // Large Desktop
     },
-    minWidth: '320px',
-    maxWidth: '2560px',
+    maxWidth: {
+      prose: '65ch',   // Optimal line length for readability
+      wide: '80ch',    // For wider content
+    },
+    spacing: {
+      content: '2rem', // Base content padding
+      section: '4rem', // Section spacing
+    }
   },
   effects: {
     transition: {

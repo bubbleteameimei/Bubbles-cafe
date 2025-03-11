@@ -1,118 +1,140 @@
-/* Reset and base styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Base typography and spacing */
+  html {
+    font-size: 16px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Lora', serif;
+    line-height: 1.75;
+    letter-spacing: 0.01em;
+  }
+
+  /* Heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'EB Garamond', serif;
+    line-height: 1.2;
+    margin-bottom: 0.5em;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl font-bold mt-8 mb-6;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold mt-6 mb-4;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl font-semibold mt-5 mb-3;
+  }
+
+  /* Paragraph spacing */
+  p {
+    margin-bottom: 1.5rem;
+    max-width: 65ch; /* Optimal line length */
+  }
+
+  /* Link styles */
+  a {
+    @apply text-primary hover:text-primary/80 transition-colors duration-200;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  /* List styles */
+  ul, ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Image handling */
+  img {
+    @apply max-w-full h-auto;
+    display: block;
+    margin: 2rem auto;
+  }
+
+  /* Container styles */
+  .container {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: min(90%, 1280px);
+  }
+
+  /* Content width optimization */
+  .prose {
+    @apply max-w-prose mx-auto;
+    font-size: 1.125rem;
+  }
+
+  .prose-wide {
+    @apply max-w-[80ch] mx-auto;
+  }
+
+  /* Dark mode adjustments */
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+
+    .container {
+      padding: 1rem;
+    }
+
+    h1 {
+      @apply text-3xl;
+    }
+
+    h2 {
+      @apply text-2xl;
+    }
+
+    h3 {
+      @apply text-xl;
+    }
+  }
+
+  /* Improved readability on larger screens */
+  @media (min-width: 1024px) {
+    .prose {
+      font-size: 1.1875rem;
+    }
+  }
 }
 
-:root {
-  /* Prevent content shift on color mode change */
-  color-scheme: light dark;
+/* Utility classes */
+.text-balance {
+  text-wrap: balance;
 }
 
-html,
-body {
-  min-width: 320px; /* Prevent squeeze below this width */
-  width: 100%;
-  min-height: 100vh;
+.text-pretty {
+  text-wrap: pretty;
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: var(--background);
-  color: var(--foreground);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: var(--theme-transition);
-}
-
-/* Container styles */
-.container {
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  max-width: var(--container-xl);
-}
-
-/* Prevent layout shift during theme transition */
+/* Prevent layout shift during theme switch */
 #root {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   isolation: isolate; /* Create stacking context */
-}
-
-/* Form elements and buttons */
-form, 
-.form-container {
-  width: 100%;
-  min-width: 280px; /* Prevent form squeeze */
-  max-width: 480px; /* Max width for readability */
-  margin: 0 auto;
-}
-
-button,
-.button {
-  min-width: fit-content; /* Prevent button squeeze */
-  width: auto;
-}
-
-/* Responsive breakpoints */
-@media (min-width: 640px) {
-  .container {
-    max-width: var(--container-sm);
-  }
-}
-
-@media (min-width: 768px) {
-  .container {
-    max-width: var(--container-md);
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    max-width: var(--container-lg);
-  }
-}
-
-@media (min-width: 1280px) {
-  .container {
-    max-width: var(--container-xl);
-  }
-}
-
-/* Prevent content squeeze on small screens */
-@media (max-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 100%;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  form,
-  .form-container {
-    width: 100%;
-    min-width: 100%;
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 320px) {
-  html {
-    font-size: 14px;
-  }
-
-  .container {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
 }

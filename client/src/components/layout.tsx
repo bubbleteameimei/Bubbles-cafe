@@ -1,8 +1,9 @@
+import React from "react";
 import { ReactNode } from "react";
-import { MainNav } from "./MainNav";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import MainNav from "./MainNav";
+import { SidebarProvider } from "../components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { EnvironmentIndicator } from "@/components/ui/environment-indicator";
+import { EnvironmentIndicator } from "../components/ui/environment-indicator";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,8 +20,12 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex-1 flex flex-col min-w-0 bg-background">
           <MainNav />
           <main className="flex-1 overflow-y-auto">
-            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-              {children}
+            {/* Optimized content width container */}
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+              {/* Content wrapper with max-width for optimal readability */}
+              <div className="prose prose-lg dark:prose-invert mx-auto">
+                {children}
+              </div>
             </div>
           </main>
           <EnvironmentIndicator />
