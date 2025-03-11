@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Share, Link } from 'lucide-react';
-import { Button } from './ui/button';
-import { useToast } from './ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface ShareButtonProps {
   className?: string;
@@ -67,7 +67,7 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
                 ✕
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex gap-2">
                 <input
@@ -80,7 +80,7 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
                   📋
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-3">
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(window.location.href)}`}
