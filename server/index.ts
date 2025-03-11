@@ -11,7 +11,8 @@ import helmet from "helmet";
 import { config } from "@shared/config";
 
 const app = express();
-const PORT = 5000;
+const isDev = process.env.NODE_ENV !== "production";
+const PORT = parseInt(process.env.PORT || "5000", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
@@ -26,20 +27,12 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Send port readiness signal early
-if (process.send) {
-  process.send({
-    port: PORT,
-    wait_for_port: true,
-    ready: true
-  });
-  console.log('Sent initial port readiness signal');
-}
-
 async function startServer() {
   try {
     console.log('\n=== Starting Server ===');
-    console.log('Initializing server...');
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Host: ${HOST}`);
+    console.log(`Port: ${PORT}`);
 
     // Check database connection first
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
@@ -55,7 +48,7 @@ async function startServer() {
     server = createServer(app);
 
     // Setup routes based on environment
-    if (process.env.NODE_ENV !== "production") {
+    if (isDev) {
       console.log('Setting up development environment');
       registerRoutes(app);
       await setupVite(app, server);
@@ -64,10 +57,21 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Start listening with enhanced error handling
+    // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
       server.listen(PORT, HOST, () => {
         console.log(`\nServer is running at http://${HOST}:${PORT}`);
+
+        // Send port readiness signal with explicit wait_for_port flag
+        if (process.send) {
+          process.send({
+            port: PORT,
+            wait_for_port: true,
+            ready: true
+          });
+          console.log('Sent port readiness signal');
+        }
+
         resolve();
       });
 

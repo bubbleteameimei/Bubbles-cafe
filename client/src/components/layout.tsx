@@ -1,9 +1,9 @@
 import React from "react";
 import { ReactNode } from "react";
 import MainNav from "./MainNav";
-import { SidebarProvider } from "../components/ui/sidebar";
+import { SidebarProvider } from "./ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { EnvironmentIndicator } from "../components/ui/environment-indicator";
+import { EnvironmentIndicator } from "./ui/environment-indicator";
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,16 +16,17 @@ export function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-[100dvh]">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0 bg-background">
+        {/* Desktop Sidebar - Fixed position with scrolling */}
+        <aside className="fixed top-0 left-0 z-50 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block overflow-y-auto">
+          <AppSidebar />
+        </aside>
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-background lg:pl-64">
           <MainNav />
           <main className="flex-1 overflow-y-auto">
-            {/* Optimized content width container */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-              {/* Content wrapper with max-width for optimal readability */}
-              <div className="prose prose-lg dark:prose-invert mx-auto">
-                {children}
-              </div>
+            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+              {children}
             </div>
           </main>
           <EnvironmentIndicator />
