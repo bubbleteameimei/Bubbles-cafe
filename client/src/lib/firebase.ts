@@ -1,8 +1,14 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, OAuthProvider } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  OAuthProvider,
+  Auth
+} from "firebase/auth";
+import { getAnalytics, Analytics } from "firebase/analytics";
 
-// Check for environment variables with fallback to development values
+// Firebase configuration with environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB0bg1IpDdq2IDv8M8MGLyvB4XghVSE0WA",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "bubblescafe-33f80.firebaseapp.com",
@@ -13,17 +19,17 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-4W89K4X8VV"
 };
 
-// Initialize Firebase with error handling
-let app;
-let auth;
-let analytics = null;
+// Initialize Firebase with type safety
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let analytics: Analytics | null = null;
 
 try {
   // Log environment check for debugging
   if (import.meta.env.DEV) {
     console.log("Firebase config initialized with:", 
-      Object.keys(firebaseConfig).reduce((acc, key) => {
-        acc[key] = firebaseConfig[key] ? "✓ Set" : "✗ Missing";
+      Object.keys(firebaseConfig).reduce((acc: Record<string, string>, key: string) => {
+        acc[key] = firebaseConfig[key as keyof typeof firebaseConfig] ? "✓ Set" : "✗ Missing";
         return acc;
       }, {})
     );
@@ -50,3 +56,4 @@ try {
 }
 
 export { auth, GoogleAuthProvider, signInWithPopup, OAuthProvider, analytics };
+export default app;
