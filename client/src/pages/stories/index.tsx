@@ -1,0 +1,300 @@
+
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { type Post } from "@shared/schema";
+import { motion } from "framer-motion";
+import { useLocation } from "wouter";
+import { format } from 'date-fns';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
+import { LikeDislike } from "@/components/ui/like-dislike";
+import Mist from "@/components/effects/mist";
+import { getReadingTime } from "@/lib/content-analysis";
+import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
+
+interface WordPressResponse {
+  posts: Post[];
+  hasMore: boolean;
+  page: number;
+}
+
+const getExcerpt = (content: string) => {
+  if (!content) return '';
+  
+  // Create a clean version of content with HTML removed
+  const cleanContent = content.replace(/<[^>]+>/g, '');
+  
+  // Define keywords that indicate scary or engaging content
+  const scaryKeywords = [
+    'suddenly', 'blood', 'scream', 'fear', 'terror', 'dark', 'death', 
+    'horror', 'dread', 'cold', 'eyes', 'flesh', 'pain', 'afraid', 
+    'terrified', 'panic', 'trembling', 'heart', 'bones', 'empty',
+    'parasite', 'slime', 'gnaw', 'writhe', 'worm', 'brain', 'sanity',
+    'suffer', 'kill', 'murder', 'throat', 'knife', 'butcher', 'cut',
+    'choke', 'dying', 'grave', 'hell', 'nightmare', 'whisper', 'scream'
+  ];
+  
+  // Find a paragraph with scary content - try different approaches
+  
+  // First approach: look for paragraphs (separated by double newlines)
+  const paragraphs = cleanContent.split('\n\n')
+    .filter(p => p.trim().length > 40); // Filter out very short paragraphs
+  
+  // If no significant paragraphs found, try single newlines
+  const textSegments = paragraphs.length > 1 ? paragraphs : 
+    cleanContent.split('\n').filter(p => p.trim().length > 40);
+  
+  // If still no good segments, try sentence splitting
+  const sections = textSegments.length > 1 ? textSegments :
+    cleanContent.split(/(?<=\.)\s+/).filter(s => s.trim().length > 40);
+  
+  // Score each text segment
+  const scoredSegments = sections.map((segment, index) => {
+    let score = 0;
+    const text = segment.trim();
+    
+    // Skip very short segments
+    if (text.length < 50 && sections.length > 1) {
+      return { text, score: -1, index };
+    }
+    
+    // Score based on scary keywords
+    scaryKeywords.forEach(keyword => {
+      if (text.toLowerCase().includes(keyword)) {
+        score += 2;
+      }
+    });
+    
+    // Extra points for dramatic punctuation
+    if (text.includes('!')) score += 3;
+    if (text.includes('?')) score += 2;
+    if (text.includes('...')) score += 2;
+    
+    // Additional scoring for direct speech which is often more engaging
+    if (text.includes('"') || text.includes('"') || text.includes('"')) {
+      score += 3;
+    }
+    
+    // Bonus points for second-person narrative which is more engaging
+    if (text.toLowerCase().includes(' you ') || text.toLowerCase().includes(' your ')) {
+      score += 2;
+    }
+    
+    return { text, score, index };
+  });
+  
+  // Sort by score (highest first)
+  scoredSegments.sort((a, b) => b.score - a.score);
+  
+  // Use the highest scoring segment or fallback strategies
+  let selectedText;
+  
+  if (scoredSegments.length > 0 && scoredSegments[0].score > 1) {
+    // Use the highest scoring segment
+    selectedText = scoredSegments[0].text;
+  } else if (sections.length > 2) {
+    // If no high scores, pick a paragraph from the middle of the story (often more interesting)
+    const middleIndex = Math.floor(sections.length / 3); // Start at 1/3 through the story
+    selectedText = sections[middleIndex] || sections[0];
+  } else {
+    // Fallback to beginning of content
+    selectedText = cleanContent.substring(0, 300);
+  }
+  
+  // Ensure proper length and formatting
+  const maxLength = 200;
+  if (selectedText.length > maxLength) {
+    return selectedText.substring(0, maxLength).split(' ').slice(0, -1).join(' ') + '...';
+  }
+  
+  return selectedText;
+};
+
+export default function IndexView() {
+  const [, setLocation] = useLocation();
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery<WordPressResponse>({
+    queryKey: ["wordpress", "posts"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const page = typeof pageParam === 'number' ? pageParam : 1;
+      console.log('Fetching WordPress posts - page:', page);
+      const wpPosts = await fetchWordPressPosts(page);
+      console.log(`Successfully fetched ${wpPosts.length} posts from WordPress`);
+      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      return {
+        posts,
+        hasMore: wpPosts.length > 0,
+        page
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    initialPageParam: 1
+  });
+
+  const navigateToReader = (index: number) => {
+    console.log('[Index] Navigating to reader:', {
+      index,
+      totalPosts: data?.pages.reduce((acc, page) => acc + page.posts.length, 0)
+    });
+
+    try {
+      // Clear any existing index first
+      sessionStorage.removeItem('selectedStoryIndex');
+      // Set the new index
+      sessionStorage.setItem('selectedStoryIndex', index.toString());
+      console.log('[Index] Story index set successfully');
+      setLocation('/reader');
+    } catch (error) {
+      console.error('[Index] Error setting story index:', error);
+      // Attempt recovery by clearing storage and using a default
+      try {
+        sessionStorage.clear();
+        sessionStorage.setItem('selectedStoryIndex', '0');
+        setLocation('/reader');
+      } catch (retryError) {
+        console.error('[Index] Recovery attempt failed:', retryError);
+      }
+    }
+  };
+
+  if (isLoading) {
+    // Use the primary loading screen component
+    return <LoadingScreen />;
+  }
+
+  if (error || !data?.pages[0]?.posts) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
+          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const posts = data.pages.flatMap(page => page.posts);
+
+  return (
+    <div className="min-h-screen w-full bg-background">
+      <Mist className="opacity-30" />
+      <div className="container py-8">
+        <motion.div
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div>
+            <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
+            <p className="text-muted-foreground">Explore our collection of haunting tales</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setLocation('/')}
+            className="hover:bg-primary/20 transition-colors"
+          >
+            Back to Home
+          </Button>
+        </motion.div>
+
+        <motion.div
+          className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {posts.map((post, index) => {
+            const readingTime = getReadingTime(post.content);
+            const excerpt = post.excerpt || getExcerpt(post.content);
+            return (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group"
+              >
+                <Card className="h-full hover:shadow-md transition-all duration-300">
+                  <CardHeader className="p-6">
+                    <div className="flex justify-between items-start gap-4">
+                      <CardTitle
+                        className="text-xl group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => navigateToReader(index)}
+                      >
+                        {post.title}
+                      </CardTitle>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Calendar className="h-3 w-3" />
+                          <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
+                        </div>
+                        <div className="flex items-center gap-1 justify-end">
+                          <Clock className="h-3 w-3" />
+                          <span>{readingTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="px-6 flex-grow">
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                      {excerpt}
+                    </p>
+                    <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                      Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="p-6 mt-auto border-t">
+                    <div className="w-full flex items-center justify-between">
+                      <LikeDislike postId={post.id} />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigateToReader(index)}
+                        className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                      >
+                        Read More <ArrowRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </motion.article>
+            );
+          })}
+        </motion.div>
+
+        {hasNextPage && (
+          <div className="flex justify-center mt-8">
+            <Button 
+              variant="outline" 
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="border-primary/30 hover:bg-primary/10"
+            >
+              {isFetchingNextPage ? "Loading more..." : "Load More Stories"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
