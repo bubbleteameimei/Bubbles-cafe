@@ -59,8 +59,44 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
     },
   });
 
+  // Vote on a comment
+  const voteCommentMutation = useMutation({
+    mutationFn: async ({ commentId, isUpvote }: { commentId: string; isUpvote: boolean }) => {
+      const response = await fetch(`/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isUpvote }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to register vote');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Optionally refresh comments after voting
+      // We're handling optimistic updates in the component,
+      // so we don't necessarily need to refetch here
+    },
+    onError: (error) => {
+      console.error('Error voting on comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to register your vote. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleSubmitComment = async (text: string, postId: number) => {
     await submitCommentMutation.mutateAsync({ text, postId });
+  };
+
+  const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
+    await voteCommentMutation.mutateAsync({ commentId, isUpvote });
   };
 
   if (isLoading) {
@@ -72,6 +108,7 @@ const BlogPostComments: React.FC<BlogPostCommentsProps> = ({ postId }) => {
       postId={postId}
       initialComments={comments}
       onSubmitComment={handleSubmitComment}
+      onVoteComment={handleVoteComment}
     />
   );
 };
