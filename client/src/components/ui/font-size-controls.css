@@ -14,6 +14,15 @@
   border: 1px solid hsl(var(--border)/50%);
 }
 
+/* Enhanced styling for reader page */
+.reader-interface .font-size-controls {
+  background-color: hsl(var(--muted)/85%);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border: 1px solid hsl(var(--border)/40%);
+  padding: 0.4rem 0.5rem;
+}
+
 .font-size-controls:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px) scale(1.03);

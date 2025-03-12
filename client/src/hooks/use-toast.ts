@@ -9,7 +9,7 @@ export interface Toast {
   title?: React.ReactNode;
   description?: React.ReactNode;
   variant?: ToastVariant;
-  duration?: number;
+  duration?: number; // Duration in milliseconds
 }
 
 // Toast input without id

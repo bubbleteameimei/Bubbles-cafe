@@ -110,26 +110,6 @@ export default function Home() {
               <FadeInSection style="horror" direction="up" delay={0.4} duration={0.5} className="mt-10 mb-10">
                 <BuyMeCoffeeButton />
               </FadeInSection>
-              
-              {/* Featured horror categories */}
-              <FadeInSection style="glitch" direction="up" delay={0.5} duration={0.7} className="mt-16">
-                <h3 className="text-lg font-medium mb-8">Featured Categories</h3>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {['PSYCHOLOGICAL', 'LOVECRAFTIAN', 'GOTHIC'].map((category) => (
-                    <div 
-                      key={category}
-                      className="flex flex-col items-center p-4 bg-black/40 backdrop-blur-sm rounded-md 
-                      hover:bg-black/60 transition-all duration-300 cursor-pointer w-28 h-28"
-                      onClick={() => setLocation(`/stories?category=${category.toLowerCase()}`)}
-                    >
-                      {category === 'PSYCHOLOGICAL' && <Brain className="h-10 w-10 mb-2 text-red-400" />}
-                      {category === 'LOVECRAFTIAN' && <Skull className="h-10 w-10 mb-2 text-purple-400" />}
-                      {category === 'GOTHIC' && <Ghost className="h-10 w-10 mb-2 text-gray-400" />}
-                      <span className="text-sm text-center">{category}</span>
-                    </div>
-                  ))}
-                </div>
-              </FadeInSection>
 
               {posts && posts.length > 0 && (
                 <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-24 text-center space-y-4">

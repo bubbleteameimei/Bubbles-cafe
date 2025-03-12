@@ -5,17 +5,27 @@ export const LoadingScreen = memo(() => {
   useEffect(() => {
     // Disable scrolling
     document.body.style.overflow = 'hidden';
-
+    
+    // Hide header and footer
+    const header = document.querySelector('header');
+    const footer = document.querySelector('footer');
+    
+    if (header) header.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    
     return () => {
       document.body.style.overflow = '';
+      
+      // Restore header and footer visibility
+      if (header) header.style.display = '';
+      if (footer) footer.style.display = '';
     };
   }, []);
 
   return (
     <>
-      {/* Create a portal container at the root level for the loading screen */}
+      {/* Full screen loading overlay */}
       <div 
-        className="fixed inset-0 w-full h-full z-[9999]"
         style={{
           position: 'fixed',
           top: 0,
@@ -32,18 +42,20 @@ export const LoadingScreen = memo(() => {
           zIndex: 9999999,
         }}
       >
-        <div className="flex gap-2 relative z-10">
+        <div style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 10 }}>
           {['L','O','A','D','I','N','G'].map((letter, index) => (
             <span 
               key={index}
               style={{
-                fontSize: '32px',
+                fontSize: '22px',
                 fontFamily: '"Space Mono", monospace',
                 fontWeight: 600,
                 color: 'white',
-                textShadow: '0 0 5px rgba(255, 255, 255, 0.5)',
+                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.2)',
                 animation: 'loaderBlur 2s linear infinite',
-                animationDelay: `${index * 0.2}s`
+                animationDelay: `${index * 0.2}s`,
+                lineHeight: '20px',
+                letterSpacing: '0.2em'
               }}
             >
               {letter}
@@ -52,7 +64,7 @@ export const LoadingScreen = memo(() => {
         </div>
 
         {/* ARIA live region for accessibility */}
-        <div className="sr-only" role="status" aria-live="polite">
+        <div style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: '0' }} role="status" aria-live="polite">
           Loading content, please wait...
         </div>
 

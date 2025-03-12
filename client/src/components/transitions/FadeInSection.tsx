@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 interface FadeInSectionProps {
   children: React.ReactNode;
-  direction?: 'up' | 'down' | 'left' | 'right' | 'none';
+  direction?: 'up' | 'down' | 'left' | 'right' | 'none' | 'scale';
   delay?: number;
   duration?: number;
   threshold?: number;
@@ -11,6 +11,7 @@ interface FadeInSectionProps {
   distance?: number;
   once?: boolean;
   distortionEffect?: boolean;
+  style?: string; // Style class for animations
 }
 
 const FadeInSection: React.FC<FadeInSectionProps> = ({
@@ -22,7 +23,8 @@ const FadeInSection: React.FC<FadeInSectionProps> = ({
   className = '',
   distance = 30,
   once = true,
-  distortionEffect = false
+  distortionEffect = false,
+  style = ''
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -76,6 +78,8 @@ const FadeInSection: React.FC<FadeInSectionProps> = ({
         return { ...initial, x: distance };
       case 'right':
         return { ...initial, x: -distance };
+      case 'scale':
+        return { ...initial, scale: 0.9 };
       case 'none':
       default:
         return initial;
@@ -89,6 +93,7 @@ const FadeInSection: React.FC<FadeInSectionProps> = ({
       opacity: 1, 
       x: 0, 
       y: 0,
+      scale: 1,
       filter: 'blur(0px)'
     }
   };
@@ -111,6 +116,7 @@ const FadeInSection: React.FC<FadeInSectionProps> = ({
           ease: [0.22, 1, 0.36, 1]
         }}
         style={{ filter: getDistortionFilter() }}
+        className={style}
       >
         {children}
       </motion.div>

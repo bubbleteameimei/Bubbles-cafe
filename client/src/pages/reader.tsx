@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, ChevronLeft, ChevronRight, Minus, Plus, BookmarkIcon } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, BookmarkIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -10,6 +10,7 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
+import { FontSizeControls } from "@/components/ui/FontSizeControls";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
@@ -64,34 +65,7 @@ const BookmarkButton = () => {
   );
 };
 
-// Font size controls component
-const FontSizeControls = ({ updateFontSize, fontSize }: { updateFontSize: (size: number) => void; fontSize: number }) => {
-  return (
-    <div className="font-size-controls bg-background/80 backdrop-blur-sm rounded-full border border-border/50 px-3 py-2 flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => updateFontSize(fontSize - 2)}
-        disabled={fontSize <= 12}
-        className="h-8 w-8"
-      >
-        <Minus className="h-4 w-4" />
-        <span className="sr-only">Decrease font size</span>
-      </Button>
-      <span className="text-sm font-medium min-w-[2rem] text-center">{fontSize}px</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => updateFontSize(fontSize + 2)}
-        disabled={fontSize >= 24}
-        className="h-8 w-8"
-      >
-        <Plus className="h-4 w-4" />
-        <span className="sr-only">Increase font size</span>
-      </Button>
-    </div>
-  );
-};
+// Font size controls component has been replaced with the imported component
 
 // FloatingPagination component removed as requested
 
@@ -379,7 +353,7 @@ export default function Reader({ slug }: ReaderPageProps) {
 
   // Define additional functions below
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background reader-interface">
       {/* Fullscreen button removed as requested */}
       
       {/* We'll add Reading progress tracker later after fixing it */}
@@ -391,7 +365,7 @@ export default function Reader({ slug }: ReaderPageProps) {
             <ThemeButton />
             <BookmarkButton />
           </div>
-          <FontSizeControls updateFontSize={updateFontSize} fontSize={fontSize} />
+          <FontSizeControls />
         </div>
 
         <AnimatePresence mode="wait">

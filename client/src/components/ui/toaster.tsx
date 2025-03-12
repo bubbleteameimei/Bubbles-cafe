@@ -20,17 +20,18 @@ const Toast = React.forwardRef<
     title?: React.ReactNode;
     description?: React.ReactNode;
     variant?: ToastVariant;
+    duration?: number;
     onDismiss: (id: string) => void;
   }
->(({ id, title, description, variant = "default", onDismiss }, ref) => {
-  // Auto dismiss after 5 seconds
+>(({ id, title, description, variant = "default", duration = 5000, onDismiss }, ref) => {
+  // Auto dismiss after specified duration (default 5 seconds)
   React.useEffect(() => {
     const timer = setTimeout(() => {
       onDismiss(id);
-    }, 5000);
+    }, duration);
     
     return () => clearTimeout(timer);
-  }, [id, onDismiss]);
+  }, [id, onDismiss, duration]);
 
   // Determine the icon based on variant
   const Icon = React.useMemo(() => {
@@ -77,7 +78,7 @@ const Toast = React.forwardRef<
       exit="exit"
       variants={toastVariants}
       className={cn(
-        "relative flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-lg border p-4 shadow-lg",
+        "relative flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-lg border p-4 shadow-lg backdrop-blur-sm",
         colors
       )}
     >
@@ -115,7 +116,7 @@ export function Toaster() {
   const { toasts, dismiss } = useToast();
   
   return (
-    <div className="fixed bottom-20 right-0 z-50 flex w-full flex-col items-center gap-2 sm:bottom-4 sm:right-4 sm:items-end">
+    <div className="fixed bottom-20 right-0 z-50 flex w-full flex-col items-center gap-2 sm:bottom-8 sm:right-8 sm:items-end">
       <AnimatePresence>
         {toasts.map((toast) => (
           <Toast 
@@ -124,6 +125,7 @@ export function Toaster() {
             title={toast.title} 
             description={toast.description} 
             variant={toast.variant} 
+            duration={toast.duration}
             onDismiss={dismiss}
           />
         ))}
