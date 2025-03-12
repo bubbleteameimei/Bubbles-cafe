@@ -25,6 +25,7 @@ import SearchBar from './components/SearchBar';
 import { NotificationProvider } from './components/NotificationProvider';
 import { NotificationIcon } from './components/ui/notification-icon';
 import SidebarHeader from './components/SidebarHeader';
+import { PrimaryNav } from './components/primary-nav';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // Since this is a TypeScript issue that doesn't affect functionality,
@@ -106,13 +107,16 @@ function App() {
                   <Navigation />
                 </aside>
 
+                {/* Top Navigation with Theme Toggle */}
+                <PrimaryNav />
+
                 {/* Mobile Navigation */}
                 <div className="block lg:hidden">
                   <Navigation />
                 </div>
 
                 {/* Main Content */}
-                <main className="min-h-screen lg:pl-64">
+                <main className="min-h-screen pt-14 lg:pl-64">
                   <div className="container mx-auto px-4 py-6">
                     <ErrorBoundary>
                       <PageTransition mode="fade" duration={0.4}>
