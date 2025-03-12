@@ -1,32 +1,42 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-toastify';
 import { useToast } from '@/hooks/use-toast';
 
 export const ToastDemo = () => {
-  const { toast: customToast } = useToast();
+  const { toast } = useToast();
   
-  const showToastify = () => {
-    toast.success('This is a react-toastify success message!');
-    toast.error('This is a react-toastify error message!');
-    toast.info('This is a react-toastify info message!');
+  const showSuccessToast = () => {
+    toast({
+      title: "Success!",
+      description: "This is a success notification",
+      variant: "success",
+    });
   };
   
-  const showCustomToast = () => {
-    customToast({
-      title: "Success!",
-      description: "This is using your custom toast system",
-      variant: "success",
+  const showErrorToast = () => {
+    toast({
+      title: "Error!",
+      description: "Something went wrong",
+      variant: "destructive",
+    });
+  };
+  
+  const showDefaultToast = () => {
+    toast({
+      title: "Info",
+      description: "Just some information for you",
+      variant: "default",
     });
   };
   
   return (
     <div className="flex flex-col space-y-4 items-center mt-4">
       <h2 className="text-xl font-bold">Toast Notifications Demo</h2>
-      <div className="flex space-x-4">
-        <Button onClick={showToastify}>Show Toastify Notifications</Button>
-        <Button onClick={showCustomToast}>Show Custom Toast</Button>
+      <div className="flex flex-wrap gap-2 justify-center">
+        <Button onClick={showSuccessToast} className="bg-green-600 hover:bg-green-700">Success Toast</Button>
+        <Button onClick={showErrorToast} className="bg-red-600 hover:bg-red-700">Error Toast</Button>
+        <Button onClick={showDefaultToast} className="bg-blue-600 hover:bg-blue-700">Info Toast</Button>
       </div>
     </div>
   );

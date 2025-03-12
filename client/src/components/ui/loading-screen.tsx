@@ -1,16 +1,84 @@
 
-import { memo } from "react";
+import { memo, useEffect } from "react";
 
-/**
- * Loading Screen Component
- * 
- * This component shows a fullscreen loading indicator with animation.
- * It hides header and footer by using z-index 9999 and fixed positioning.
- */
+// Styles for the loading animation
+const loaderStyles = `
+  .loader {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .loader span {
+    font-size: 32px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 600;
+    animation: blur 2s linear infinite;
+    line-height: 28px;
+    transition: all 0.5s;
+    letter-spacing: 0.2em;
+    color: var(--primary);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+
+  .loader span:nth-child(1) { animation-delay: 0.0s; }
+  .loader span:nth-child(2) { animation-delay: 0.2s; }
+  .loader span:nth-child(3) { animation-delay: 0.4s; }
+  .loader span:nth-child(4) { animation-delay: 0.6s; }
+  .loader span:nth-child(5) { animation-delay: 0.8s; }
+  .loader span:nth-child(6) { animation-delay: 1.0s; }
+  .loader span:nth-child(7) { animation-delay: 1.2s; }
+
+  @keyframes blur {
+    0%, 80% {
+      filter: blur(0);
+      opacity: 1;
+    }
+    40% {
+      filter: blur(5px);
+      opacity: 0.5;
+    }
+  }
+`;
+
+// Inject styles into the document head once
+const injectStyles = () => {
+  if (!document.getElementById('loading-screen-styles')) {
+    const styleElement = document.createElement('style');
+    styleElement.id = 'loading-screen-styles';
+    styleElement.textContent = loaderStyles;
+    document.head.appendChild(styleElement);
+  }
+};
+
 export const LoadingScreen = memo(() => {
+  // Prevent scrolling on the body while loading
+  useEffect(() => {
+    // Inject the styles
+    injectStyles();
+    
+    // Disable scrolling
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-[9999] w-full h-full">
-      <div className="loader">
+    <div 
+      className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-background z-[99999]" 
+      style={{ 
+        position: 'fixed',
+        width: '100vw',
+        height: '100vh',
+        top: 0, 
+        left: 0
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
+      
+      <div className="loader relative z-10">
         <span>L</span>
         <span>O</span>
         <span>A</span>
@@ -21,46 +89,9 @@ export const LoadingScreen = memo(() => {
       </div>
 
       {/* ARIA live region for accessibility */}
-      <div className="sr-only" role="status" aria-live="polite">
+      <div className="sr-only relative z-10" role="status" aria-live="polite">
         Loading content, please wait...
       </div>
-
-      <style>{`
-        .loader {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .loader span {
-          font-size: 22px;
-          font-family: 'Space Mono', monospace;
-          font-weight: 600;
-          animation: blur 2s linear infinite;
-          line-height: 20px;
-          transition: all 0.5s;
-          letter-spacing: 0.2em;
-          color: var(--primary);
-        }
-
-        .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.2s; }
-        .loader span:nth-child(3) { animation-delay: 0.4s; }
-        .loader span:nth-child(4) { animation-delay: 0.6s; }
-        .loader span:nth-child(5) { animation-delay: 0.8s; }
-        .loader span:nth-child(6) { animation-delay: 1.0s; }
-        .loader span:nth-child(7) { animation-delay: 1.2s; }
-
-        @keyframes blur {
-          0%, 80% {
-            filter: blur(0);
-            opacity: 1;
-          }
-          40% {
-            filter: blur(5px);
-            opacity: 0.5;
-          }
-        }
-      `}</style>
     </div>
   );
 });

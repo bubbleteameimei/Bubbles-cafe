@@ -1,61 +1,133 @@
 
 import * as React from "react";
-import { useToast } from "@/hooks/use-toast";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useToast, ToastVariant } from "@/hooks/use-toast";
+import { AnimatePresence, motion } from "framer-motion";
+import { CheckCircle, AlertTriangle, Info, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function Toaster() {
-  const { toasts } = useToast();
+// Variants for the toast animation
+const toastVariants = {
+  initial: { opacity: 0, y: 50 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 20 }
+};
 
-  // Map custom toasts to react-toastify
+// Toast component with modern design
+const Toast = React.forwardRef<
+  HTMLDivElement,
+  {
+    id: string;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    variant?: ToastVariant;
+    onDismiss: (id: string) => void;
+  }
+>(({ id, title, description, variant = "default", onDismiss }, ref) => {
+  // Auto dismiss after 5 seconds
   React.useEffect(() => {
-    toasts.forEach(({ id, title, description, variant }) => {
-      const toastContent = (
-        <div>
-          {title && <div className="font-semibold">{title}</div>}
-          {description && <div>{description}</div>}
-        </div>
-      );
-      
-      // Use the correct toast type based on variant
-      const toastOptions = {
-        toastId: id,
-        position: "bottom-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      };
+    const timer = setTimeout(() => {
+      onDismiss(id);
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [id, onDismiss]);
 
-      // Cast variant to string to safely handle comparison
-      const variantStr = String(variant || 'default');
-      
-      if (variantStr === 'destructive') {
-        toast.error(toastContent, toastOptions);
-      } else if (variantStr === 'success') {
-        toast.success(toastContent, toastOptions);
-      } else {
-        // Default case for any other variant
-        toast.info(toastContent, toastOptions);
-      }
-    });
-  }, [toasts]);
+  // Determine the icon based on variant
+  const Icon = React.useMemo(() => {
+    switch (variant) {
+      case "success":
+        return CheckCircle;
+      case "destructive":
+        return AlertTriangle;
+      default:
+        return Info;
+    }
+  }, [variant]);
+
+  // Determine colors based on variant
+  const colors = React.useMemo(() => {
+    switch (variant) {
+      case "success":
+        return "border-green-600 bg-green-50 dark:bg-green-900/20 dark:border-green-800";
+      case "destructive":
+        return "border-red-600 bg-red-50 dark:bg-red-900/20 dark:border-red-800";
+      default:
+        return "border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700";
+    }
+  }, [variant]);
+
+  // Determine icon colors
+  const iconColor = React.useMemo(() => {
+    switch (variant) {
+      case "success":
+        return "text-green-600 dark:text-green-400";
+      case "destructive":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-blue-600 dark:text-blue-400";
+    }
+  }, [variant]);
 
   return (
-    <ToastContainer
-      position="bottom-center"
-      autoClose={5000}
-      hideProgressBar={false}
-      newestOnTop={false}
-      closeOnClick
-      rtl={false}
-      pauseOnFocusLoss
-      draggable
-      pauseOnHover
-      theme="dark"
-      className="bottom-32"
-      style={{ bottom: '160px' }}
-    />
+    <motion.div
+      ref={ref}
+      layout
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={toastVariants}
+      className={cn(
+        "relative flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-lg border p-4 shadow-lg",
+        colors
+      )}
+    >
+      <div className={cn("flex-shrink-0", iconColor)}>
+        <Icon className="h-5 w-5" />
+      </div>
+      
+      <div className="flex-1 space-y-1">
+        {title && (
+          <h3 className="font-medium text-gray-900 dark:text-white">
+            {title}
+          </h3>
+        )}
+        {description && (
+          <div className="text-sm text-gray-700 dark:text-gray-300">
+            {description}
+          </div>
+        )}
+      </div>
+      
+      <button
+        onClick={() => onDismiss(id)}
+        className="absolute right-2 top-2 flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-400"
+        aria-label="Close"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </motion.div>
+  );
+});
+
+Toast.displayName = "Toast";
+
+export function Toaster() {
+  const { toasts, dismiss } = useToast();
+  
+  return (
+    <div className="fixed bottom-20 right-0 z-50 flex w-full flex-col items-center gap-2 sm:bottom-4 sm:right-4 sm:items-end">
+      <AnimatePresence>
+        {toasts.map((toast) => (
+          <Toast 
+            key={toast.id} 
+            id={toast.id}
+            title={toast.title} 
+            description={toast.description} 
+            variant={toast.variant} 
+            onDismiss={dismiss}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
   );
 }

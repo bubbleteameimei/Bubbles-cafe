@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { Button } from "./button";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface LikeDislikeProps {
@@ -182,36 +181,44 @@ export function LikeDislike({
   };
 
   return (
-    <div className={`relative ${className}`} data-toast-container>
+    <div className={cn("mt-4 flex flex-col items-center gap-y-2", className)} data-toast-container>
       {variant === 'reader' && (
-        <p className="text-center text-sm font-medium mb-3 text-muted-foreground">
-          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
-        </p>
+        <h3 className="text-gray-800 dark:text-white text-lg font-semibold">
+          Loved this story? Let me know with a like 🥹—or a dislike if you must 😔
+        </h3>
       )}
-      <div className="flex items-center justify-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="flex justify-center items-center gap-x-4">
+        {/* Like Button - Updated to match design */}
+        <button 
+          type="button" 
           onClick={handleLike}
-          className={`flex items-center gap-2 ${
-            liked ? 'text-primary' : 'text-muted-foreground hover:text-primary'
-          }`}
+          className={cn(
+            "py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
+            liked && "border-primary text-primary dark:border-primary-400 dark:text-primary-400"
+          )}
         >
-          <ThumbsUp className="h-5 w-5" />
-          <span>{stats.likes}</span>
-        </Button>
+          <svg className="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 10v12"></path>
+            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path>
+          </svg>
+          {stats.likes}
+        </button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        {/* Dislike Button - Updated to match design */}
+        <button 
+          type="button" 
           onClick={handleDislike}
-          className={`flex items-center gap-2 ${
-            disliked ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
-          }`}
+          className={cn(
+            "py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
+            disliked && "border-destructive text-destructive dark:border-destructive dark:text-destructive"
+          )}
         >
-          <ThumbsDown className="h-5 w-5" />
-          <span>{stats.dislikes}</span>
-        </Button>
+          <svg className="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 14V2"></path>
+            <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path>
+          </svg>
+          {stats.dislikes}
+        </button>
       </div>
     </div>
   );

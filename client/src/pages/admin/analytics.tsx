@@ -8,8 +8,9 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ActivityTimeline } from "@/components/ui/timeline";
 
 interface SiteAnalytics {
   totalViews: number;
@@ -219,22 +220,16 @@ export default function AdminAnalyticsPage() {
               {activityLogs.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No activity logs found</p>
               ) : (
-                <div className="space-y-4">
-                  {activityLogs.map((log) => (
-                    <div key={log.id} className="p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium">{log.action}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(log.timestamp), 'MMM dd, HH:mm')}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">By: {log.performedBy}</p>
-                      {log.details && (
-                        <p className="text-xs mt-1 text-muted-foreground">{log.details}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <ActivityTimeline 
+                  activities={activityLogs.map(log => ({
+                    id: log.id.toString(),
+                    timestamp: log.timestamp,
+                    action: log.action,
+                    user: log.performedBy,
+                    details: log.details
+                  }))}
+                  className="pb-4"
+                />
               )}
             </ScrollArea>
           </CardContent>
