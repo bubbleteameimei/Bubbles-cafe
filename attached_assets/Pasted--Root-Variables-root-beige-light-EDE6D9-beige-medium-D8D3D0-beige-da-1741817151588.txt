@@ -1,0 +1,134 @@
+/* Root Variables */
+:root {
+    --beige-light: #EDE6D9;
+    --beige-medium: #D8D3D0;
+    --beige-dark: #A69580;
+    --brown-light: #73604F;
+    --brown-dark: #3A2C21;
+    --red-dark: #590808;
+    --black-dark: #0D0D0D;
+    --black-burgundy: #150D0D;
+    --transition: 0.3s ease-in-out;
+}
+
+/* Dark Mode Variables */
+.dark-mode {
+    --black-dark: #EDE6D9;
+    --beige-light: #0D0D0D;
+    --beige-medium: #150D0D;
+    --beige-dark: #590808;
+    --brown-light: #3A2C21;
+    --brown-dark: #73604F;
+    --red-dark: #A69580;
+}
+
+/* Global Styles */
+body {
+    background-color: var(--black-dark);
+    color: var(--beige-light);
+    font-family: 'Garamond', serif;
+    transition: background var(--transition), color var(--transition);
+    position: relative;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: var(--brown-dark);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+header h1 {
+    font-size: 24px;
+    color: var(--beige-light);
+}
+#theme-toggle {
+    background: var(--red-dark);
+    color: var(--beige-light);
+    border: 2px solid var(--beige-dark);
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+#theme-toggle:hover {
+    background: var(--brown-dark);
+}
+
+/* Navigation */
+nav {
+    background: var(--brown-dark);
+    padding: 10px;
+}
+nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+nav a {
+    text-decoration: none;
+    color: var(--beige-light);
+    font-size: 18px;
+    transition: var(--transition);
+}
+nav a:hover {
+    color: var(--red-dark);
+}
+
+/* Story Cards */
+.story-card {
+    background: var(--brown-light);
+    border: 2px solid var(--beige-dark);
+    padding: 20px;
+    margin: 20px auto;
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    transition: var(--transition);
+}
+.story-card h2 {
+    color: var(--beige-medium);
+}
+.story-card p {
+    font-size: 16px;
+}
+.read-more {
+    background: var(--red-dark);
+    color: var(--beige-light);
+    border: 1px solid var(--beige-dark);
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.read-more:hover {
+    background: var(--brown-dark);
+}
+
+/* Footer */
+footer {
+    background: var(--black-burgundy);
+    color: var(--beige-medium);
+    text-align: center;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+/* Gothic Mist Effect */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(13, 13, 13, 0.3) 20%, rgba(13, 13, 13, 0.7) 100%);
+    z-index: -1;
+    pointer-events: none;
+    animation: mist 10s infinite alternate ease-in-out;
+}
+@keyframes mist {
+    0% { opacity: 0.4; }
+    100% { opacity: 0.6; }
+}

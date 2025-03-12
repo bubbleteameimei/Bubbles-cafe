@@ -13,7 +13,7 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { FontSizeControls } from "@/components/ui/FontSizeControls";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
@@ -21,11 +21,11 @@ import "../styles/reader.css";
 
 // Theme button component
 const ThemeButton = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       className="h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105"
       aria-label="Toggle theme"
     >

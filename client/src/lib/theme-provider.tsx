@@ -1,11 +1,16 @@
-import { type ReactNode, createContext, useContext, useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
+// This file exists for backward compatibility with components that still use the old ThemeProvider
+// It forwards to the new ThemeProvider implementation in components/theme-provider.tsx
+import { type ReactNode } from "react";
+import { 
+  ThemeProvider as NewThemeProvider, 
+  useTheme as useNewTheme
+} from "../components/theme-provider";
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -13,41 +18,29 @@ interface ThemeContextValue {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
-
+// Wrapper component that provides the old API with the new implementation
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      return (savedTheme as Theme) || 'dark';
-    }
-    return 'dark';
-  });
+  return (
+    <NewThemeProvider>
+      {children}
+    </NewThemeProvider>
+  );
+}
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
+// Wrapper hook that provides the old API with the new implementation
+export const useTheme = (): ThemeContextValue => {
+  const { theme, setTheme } = useNewTheme();
+  
+  // Add the toggleTheme function that old code expects
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     console.log(`Theme switched to: ${newTheme}`);
   };
-
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  
+  return {
+    theme,
+    setTheme,
+    toggleTheme
+  };
 };

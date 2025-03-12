@@ -8,7 +8,12 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ variant = 'animated' }: ThemeToggleProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  
+  // Toggle function for all variants
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   if (variant === 'animated') {
     return (
