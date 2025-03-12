@@ -70,7 +70,7 @@ export default function Home() {
       <div className="relative z-10">
         <div className="container mx-auto px-4 md:px-6">
           <div className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto">
-            <FadeInSection style="fade" direction="scale" duration={0.8}>
+            <FadeInSection style="horror" direction="scale" duration={0.8}>
               <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
                 <span>BUBBLE'S</span>
                 <span className="mt-2">CAFE</span>
@@ -78,14 +78,14 @@ export default function Home() {
             </FadeInSection>
             
             <div className="space-y-6 mb-12">
-              <FadeInSection style="fade" direction="up" delay={0.2} duration={0.6}>
+              <FadeInSection style="glitch" direction="up" delay={0.2} duration={0.6}>
                 <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
                   Each story here is a portal to the unexpected,
                   the unsettling, and the unexplained.
                 </p>
               </FadeInSection>
 
-              <FadeInSection style="slide" direction="up" delay={0.3} duration={0.5}>
+              <FadeInSection style="horror" direction="up" delay={0.3} duration={0.5}>
                 <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
                   <Button
                     size="lg"
@@ -107,12 +107,12 @@ export default function Home() {
                 </div>
               </FadeInSection>
               
-              <FadeInSection style="fade" direction="up" delay={0.4} duration={0.5} className="mt-10 mb-10">
+              <FadeInSection style="horror" direction="up" delay={0.4} duration={0.5} className="mt-10 mb-10">
                 <BuyMeCoffeeButton />
               </FadeInSection>
               
               {/* Featured horror categories */}
-              <FadeInSection style="fade" direction="up" delay={0.5} duration={0.7} className="mt-16">
+              <FadeInSection style="glitch" direction="up" delay={0.5} duration={0.7} className="mt-16">
                 <h3 className="text-lg font-medium mb-8">Featured Categories</h3>
                 <div className="flex flex-wrap justify-center gap-4">
                   {['PSYCHOLOGICAL', 'LOVECRAFTIAN', 'GOTHIC'].map((category) => (
@@ -132,7 +132,7 @@ export default function Home() {
               </FadeInSection>
 
               {posts && posts.length > 0 && (
-                <FadeInSection style="fade" delay={0.7} duration={0.6} className="mt-24 text-center space-y-4">
+                <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-24 text-center space-y-4">
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}
