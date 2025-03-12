@@ -23,6 +23,9 @@ import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import NewStoryNotification from './components/NewStoryNotification';
 import FullscreenButton from './components/FullscreenButton';
 import SearchBar from './components/SearchBar';
+import { NotificationProvider } from './components/NotificationProvider';
+import { NotificationIcon } from './components/ui/notification-icon';
+import SidebarHeader from './components/SidebarHeader';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // Since this is a TypeScript issue that doesn't affect functionality,
@@ -95,96 +98,96 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <SidebarProvider defaultOpen={true}>
-            <div className="relative min-h-screen bg-background">
-              {/* Desktop Sidebar */}
-              <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
-                <div className="p-4">
-                  <SearchBar compact={true} categories={["PSYCHOLOGICAL", "LOVECRAFTIAN", "GOTHIC", "DEATH", "PARASITE"]} />
-                </div>
-                <Navigation />
-              </aside>
+          <NotificationProvider>
+            <SidebarProvider defaultOpen={true}>
+              <div className="relative min-h-screen bg-background">
+                {/* Desktop Sidebar */}
+                <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
+                  <SidebarHeader />
+                  <Navigation />
+                </aside>
 
-              {/* Mobile Navigation */}
-              <div className="block lg:hidden">
-                <Navigation />
+                {/* Mobile Navigation */}
+                <div className="block lg:hidden">
+                  <Navigation />
+                </div>
+
+                {/* Main Content */}
+                <main className="min-h-screen lg:pl-64">
+                  <div className="container mx-auto px-4 py-6">
+                    <ErrorBoundary>
+                      <PageTransition mode="fade" duration={0.4}>
+                        <Switch>
+                          {/* Auth Routes */}
+                          <Route path="/auth" component={AuthPage} />
+                          <Route path="/signin" component={AuthPage} />
+                          <Route path="/login" component={AuthPage} />
+                          <Route path="/signup" component={AuthPage} />
+
+                          {/* Public Routes */}
+                          <Route path="/" component={HomePage} />
+                          <Route path="/stories" component={StoriesPage} />
+                          <Route path="/reader/:slug?" component={ReaderPage} />
+                          <Route path="/about" component={AboutPage} />
+                          <Route path="/contact" component={ContactPage} />
+                          <Route path="/report-bug" component={ReportBugPage} />
+                          <Route path="/privacy" component={PrivacyPage} />
+
+
+                          {/* Legal Routes */}
+                          <Route path="/legal/copyright" component={CopyrightPage} />
+                          <Route path="/legal/terms" component={TermsPage} />
+                          <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+
+                          {/* Community Routes */}
+                          <Route path="/community" component={CommunityPage} />
+                          <Route path="/feedback" component={FeedbackPage} />
+
+                          {/* Settings Routes */}
+                          <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
+                          <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                          <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
+                          <ProtectedRoute path="/settings/theme" component={ThemeSettingsPage} />
+                          <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
+                          <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                          <ProtectedRoute path="/settings/display" component={DisplaySettingsPage} />
+                          <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
+                          <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
+                          <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+                          <ProtectedRoute path="/settings/contrast" component={ContrastSettingsPage} />
+                          <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
+                          <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
+
+                          {/* Admin Routes */}
+                          <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                          <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
+                          <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
+                          <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
+                          <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
+
+                          {/* 404 Route */}
+                          <Route>
+                            {() => (
+                              <div className="flex min-h-[60vh] items-center justify-center">
+                                <h1 className="text-2xl">404 - Page Not Found</h1>
+                              </div>
+                            )}
+                          </Route>
+                        </Switch>
+                      </PageTransition>
+                    </ErrorBoundary>
+                  </div>
+                  <Footer />
+                </main>
+
+                {/* Global UI Elements */}
+                <Toaster />
+                <CookieConsent />
+                <ScrollToTopButton />
+                <NewStoryNotification newStories={2} />
               </div>
-
-              {/* Main Content */}
-              <main className="min-h-screen lg:pl-64">
-                <div className="container mx-auto px-4 py-6">
-                  <ErrorBoundary>
-                    <PageTransition mode="fade" duration={0.4}>
-                      <Switch>
-                        {/* Auth Routes */}
-                        <Route path="/auth" component={AuthPage} />
-                        <Route path="/signin" component={AuthPage} />
-                        <Route path="/login" component={AuthPage} />
-                        <Route path="/signup" component={AuthPage} />
-
-                        {/* Public Routes */}
-                        <Route path="/" component={HomePage} />
-                        <Route path="/stories" component={StoriesPage} />
-                        <Route path="/reader/:slug?" component={ReaderPage} />
-                        <Route path="/about" component={AboutPage} />
-                        <Route path="/contact" component={ContactPage} />
-                        <Route path="/report-bug" component={ReportBugPage} />
-                        <Route path="/privacy" component={PrivacyPage} />
-
-
-                        {/* Legal Routes */}
-                        <Route path="/legal/copyright" component={CopyrightPage} />
-                        <Route path="/legal/terms" component={TermsPage} />
-                        <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-
-                        {/* Community Routes */}
-                        <Route path="/community" component={CommunityPage} />
-                        <Route path="/feedback" component={FeedbackPage} />
-
-                        {/* Settings Routes */}
-                        <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-                        <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                        <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
-                        <ProtectedRoute path="/settings/theme" component={ThemeSettingsPage} />
-                        <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
-                        <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                        <ProtectedRoute path="/settings/display" component={DisplaySettingsPage} />
-                        <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
-                        <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-                        <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
-                        <ProtectedRoute path="/settings/contrast" component={ContrastSettingsPage} />
-                        <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
-                        <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
-
-                        {/* Admin Routes */}
-                        <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
-                        <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
-                        <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
-                        <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
-                        <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
-
-                        {/* 404 Route */}
-                        <Route>
-                          {() => (
-                            <div className="flex min-h-[60vh] items-center justify-center">
-                              <h1 className="text-2xl">404 - Page Not Found</h1>
-                            </div>
-                          )}
-                        </Route>
-                      </Switch>
-                    </PageTransition>
-                  </ErrorBoundary>
-                </div>
-                <Footer />
-              </main>
-
-              {/* Global UI Elements */}
-              <Toaster />
-              <CookieConsent />
-              <ScrollToTopButton />
-              <NewStoryNotification newStories={2} />
-            </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          </NotificationProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

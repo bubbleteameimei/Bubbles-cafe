@@ -959,6 +959,23 @@ Timestamp: ${new Date().toLocaleString()}
     try {
       const { metricName, value, identifier, navigationType, url, userAgent } = req.body;
 
+      // Check if the metric data exists before logging
+      if (!metricName || typeof value !== 'number' || isNaN(value)) {
+        console.warn('[Analytics] Received invalid performance metric:', {
+          name: metricName,
+          value,
+          id: identifier,
+          navigationType,
+          url
+        });
+        
+        return res.status(400).json({
+          message: "Invalid metric data",
+          details: "Metric name and numeric value are required"
+        });
+      }
+
+      // Only log valid metrics
       console.log('[Analytics] Received performance metric:', {
         name: metricName,
         value: Math.round(value * 100) / 100,
@@ -967,21 +984,13 @@ Timestamp: ${new Date().toLocaleString()}
         url
       });
 
-      // Validate required fields
-      if (!metricName || typeof value !== 'number' || isNaN(value)) {
-        return res.status(400).json({
-          message: "Invalid metric data",
-          details: "Metric name and numeric value are required"
-        });
-      }
-
       // Store the metric in database
       await storage.storePerformanceMetric({
         metricName,
         value: Math.round(value * 100) / 100,
-        identifier,
+        identifier: identifier || `metric-${Date.now()}`, // Ensure we have an identifier
         navigationType: navigationType || null,
-        url,
+        url: url || null,
         userAgent: userAgent || null
       });
 

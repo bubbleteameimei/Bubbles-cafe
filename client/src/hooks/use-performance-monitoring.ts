@@ -25,10 +25,21 @@ const reportMetric = async (metric: PerformanceMetric) => {
   }
 
   try {
+    // Ensure we have valid data before sending to server
+    const metricValue = typeof metric.value === 'number' && !isNaN(metric.value) 
+      ? Math.round(metric.value * 100) / 100
+      : null;
+    
+    // Only proceed if we have valid data
+    if (!metric.name || metricValue === null) {
+      console.warn('[Performance] Skipping invalid metric:', { name: metric.name, value: metric.value });
+      return;
+    }
+    
     const body = JSON.stringify({
       metricName: metric.name,
-      value: Math.round(metric.value * 100) / 100,
-      identifier: metric.id,
+      value: metricValue,
+      identifier: metric.id || `metric-${Date.now()}`,
       navigationType: metric.navigationType,
       url: window.location.href,
       userAgent: navigator.userAgent

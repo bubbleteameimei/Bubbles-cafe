@@ -6,11 +6,14 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu } from "lucide-react";
+import { NotificationIcon } from "@/components/ui/notification-icon";
+import { useNotifications } from "@/components/NotificationProvider";
 
 export default function Navigation() {
   const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const { notifications } = useNotifications();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
@@ -35,6 +38,7 @@ export default function Navigation() {
 
         {/* Right-side Actions */}
         <div className="flex items-center space-x-4">
+          <NotificationIcon notifications={notifications} />
           <ThemeToggle />
           {!user && (
             <Button

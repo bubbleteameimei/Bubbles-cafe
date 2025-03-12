@@ -1,8 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
 import { useLocation } from 'wouter';
+
+// Notification system context
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  read: boolean;
+  date: string;
+  type: 'story' | 'comment' | 'system';
+  link?: string;
+}
+
+interface NotificationContextType {
+  notifications: Notification[];
+  addNotification: (notification: Omit<Notification, 'id' | 'date' | 'read'>) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearNotifications: () => void;
+}
+
+const defaultContext: NotificationContextType = {
+  notifications: [],
+  addNotification: () => {},
+  markAsRead: () => {},
+  markAllAsRead: () => {},
+  clearNotifications: () => {},
+};
+
+export const NotificationContext = createContext<NotificationContextType>(defaultContext);
+
+export const useNotifications = () => useContext(NotificationContext);
 
 interface NewStoryNotificationProps {
   newStories?: number;
@@ -23,17 +54,26 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [, navigate] = useLocation();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     // Only show notification if there are new stories
     if (newStories > 0) {
+      // Add to notification system
+      addNotification({
+        title: 'New Stories Available',
+        description: `${newStories} new horror ${newStories === 1 ? 'story' : 'stories'} since your last visit.`,
+        type: 'story',
+        link: '/stories'
+      });
+
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 2000); // Delay appearance to avoid immediate popup
       
       return () => clearTimeout(timer);
     }
-  }, [newStories]);
+  }, [newStories, addNotification]);
 
   useEffect(() => {
     // Auto-hide the notification after specified duration

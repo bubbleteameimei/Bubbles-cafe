@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, BookmarkIcon } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Minus, Plus, BookmarkIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -14,10 +14,9 @@ import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
-import "../styles/floating-pagination.css";
 import { ShareButton } from "@/components/ShareButton";
-
-import FloatingControls from "@/components/ui/FloatingControls";
+import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
+import "../styles/reader.css";
 
 // Theme button component
 const ThemeButton = () => {
@@ -94,71 +93,21 @@ const FontSizeControls = ({ updateFontSize, fontSize }: { updateFontSize: (size:
   );
 };
 
-// Updated FloatingPagination component
-const FloatingPagination = ({
-  currentIndex,
-  totalPosts,
-  onPrevious,
-  onNext,
-  onRandom
-}: {
-  currentIndex: number;
-  totalPosts: number;
-  onPrevious: () => void;
-  onNext: () => void;
-  onRandom: () => void;
-}) => {
-  const [isVisible, setIsVisible] = useState(true);
-
-  return (
-    <>
-      <button
-        id="toggle-pagination"
-        onClick={() => setIsVisible(!isVisible)}
-        className="fixed bottom-20 right-4"
-      >
-        {isVisible ? "Hide" : "Show"} Navigation
-      </button>
-
-      <div className={`floating-pagination ${!isVisible ? 'hidden' : ''}`}>
-        <button
-          className="squircle-button"
-          onClick={onPrevious}
-          disabled={currentIndex === 0}
-        >
-          Previous
-        </button>
-        <button
-          className="squircle-button"
-          onClick={onRandom}
-        >
-          Random
-        </button>
-        <button
-          className="squircle-button"
-          onClick={onNext}
-          disabled={currentIndex === totalPosts - 1}
-        >
-          Next
-        </button>
-      </div>
-    </>
-  );
-};
+// FloatingPagination component removed as requested
 
 interface ReaderPageProps {
   slug?: string;
 }
 
 export default function Reader({ slug }: ReaderPageProps) {
+  // All hooks must be called in the same order on every render
+  // Keep all useState and useEffect hooks at the top in a consistent order
   const [, setLocation] = useLocation();
   const { fontSize, updateFontSize } = useFontSize();
   const [showControls, setShowControls] = useState(false);
-  const toggleControls = () => setShowControls(!showControls);
-
-  console.log('[Reader] Component mounted with slug:', slug);
-
-  const [currentIndex, setCurrentIndex] = useState(() => {
+  
+  // Define initial state for currentIndex using sessionStorage
+  const initialIndex = (() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
       console.log('[Reader] Retrieved saved index:', savedIndex);
@@ -179,9 +128,16 @@ export default function Reader({ slug }: ReaderPageProps) {
       console.error('[Reader] Error reading from sessionStorage:', error);
       return 0;
     }
-  });
+  })();
+  
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  
+  // Define handlers after all state hooks
+  const toggleControls = () => setShowControls(!showControls);
+  
+  console.log('[Reader] Component mounted with slug:', slug);
 
-  const { data: postsData, isLoading, error } = useQuery({
+  const { data: postsData, isLoading: queryLoading, error } = useQuery({
     queryKey: ["wordpress", "posts", "reader", slug],
     queryFn: async () => {
       console.log('[Reader] Fetching posts...', { slug });
@@ -255,13 +211,32 @@ export default function Reader({ slug }: ReaderPageProps) {
     }
   }, []);
 
-  if (isLoading || !postsData?.posts || postsData.posts.length === 0) {
+  // All variables must be defined before any conditional returns to maintain hook order
+  // Store values in variables first
+  const loading = queryLoading || !postsData?.posts || postsData.posts.length === 0;
+  const hasError = !!error;
+  const posts = postsData?.posts || [];
+  const isInvalidIndex = posts.length > 0 && (currentIndex < 0 || currentIndex >= posts.length);
+  const currentPost = posts.length > 0 && currentIndex >= 0 && currentIndex < posts.length ? posts[currentIndex] : null;
+  // Initialize the contentRef before any conditional returns
+  const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Define formatting variables that depend on currentPost
+  let formattedDate = '';
+  let readingTime = '';
+  
+  if (currentPost) {
+    formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
+    readingTime = getReadingTime(currentPost.content.rendered);
+  }
+  
+  // Now render based on conditions
+  if (loading) {
     console.log('[Reader] Loading state');
     return <LoadingScreen />;
   }
 
-
-  if (error) {
+  if (hasError) {
     console.error('[Reader] Error or no posts available:', {
       error,
       postsCount: postsData?.posts?.length,
@@ -283,9 +258,7 @@ export default function Reader({ slug }: ReaderPageProps) {
     );
   }
 
-  const posts = postsData.posts;
-
-  if (currentIndex < 0 || currentIndex >= posts.length) {
+  if (isInvalidIndex) {
     console.error('[Reader] Invalid current index:', {
       currentIndex,
       totalPosts: posts.length,
@@ -294,8 +267,6 @@ export default function Reader({ slug }: ReaderPageProps) {
     setCurrentIndex(0);
     return <LoadingScreen />;
   }
-
-  const currentPost = posts[currentIndex];
 
   if (!currentPost) {
     console.error('[Reader] No post found:', {
@@ -322,9 +293,6 @@ export default function Reader({ slug }: ReaderPageProps) {
       </div>
     );
   }
-
-  const formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
-  const readingTime = getReadingTime(currentPost.content.rendered);
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
@@ -409,16 +377,14 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Add this ref just once
-  const contentRef = useRef<HTMLDivElement>(null);
+  // Define additional functions below
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Global UI controls */}
-      <FloatingControls position="right" className="top-6" />
+      {/* Fullscreen button removed as requested */}
       
       {/* We'll add Reading progress tracker later after fixing it */}
 
-      <div className="container max-w-3xl mx-auto px-4 pt-8 relative z-10">
+      <div className="container max-w-2xl mx-auto px-4 pt-8 pb-16 relative z-10">
         {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
           <div className="flex space-x-4">
@@ -489,12 +455,13 @@ export default function Reader({ slug }: ReaderPageProps) {
             <div
               ref={contentRef}
               className="story-content mb-16 relative"
-              style={{ fontSize: `${fontSize}px`, whiteSpace: 'pre-wrap' }}
+              style={{ fontSize: `${fontSize}px`, lineHeight: "1.8", whiteSpace: 'pre-wrap' }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
                   .replace(/\n\n+/g, '\n\n')
                   .replace(/<p>\s*<\/p>/g, '')
-                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string) => `<p>${p1.trim()}</p>`)
+                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string) => 
+                    `<p style="font-size: ${fontSize}px; margin-bottom: 1.5em;">${p1.trim()}</p>`)
                   .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
                   .replace(/\s+/g, ' ')
                   .replace(/(\r\n|\r|\n){2,}/g, '\n\n')
@@ -528,20 +495,17 @@ export default function Reader({ slug }: ReaderPageProps) {
                     <ShareButton/> {/*Added Share button here*/}
                   </div>
 
-                  {/* Support writing section - Updated with homepage style */}
-                  <div className="mt-6 w-full max-w-md bg-card/50 backdrop-blur rounded-lg border border-border/50 p-6 text-center">
-                    <h3 className="text-lg font-semibold mb-2">Support My Writing</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      If you're enjoying my stories, consider buying me a coffee! Your support helps me create more engaging content.
+                  {/* Support writing section - Reduced size as requested */}
+                  <div className="mt-6 w-full max-w-xs bg-card/50 backdrop-blur rounded-lg border border-border/50 p-4 text-center">
+                    <h3 className="text-base font-semibold mb-1">Support My Writing</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      If you enjoy my stories, your support helps create more content.
                     </p>
-                    <Button
-                      onClick={() => window.open('https://paystack.com/pay/z7fmj9rge1', '_blank')}
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-2 rounded-md transition-colors"
-                    >
-                      Buy me a coffee ☕️
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Powered by Paystack • Secure Payment
+                    <div className="flex justify-center">
+                      <BuyMeCoffeeButton />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Secure Payment via Paystack
                     </p>
                   </div>
                 </div>
@@ -553,26 +517,7 @@ export default function Reader({ slug }: ReaderPageProps) {
             </div>
           </motion.article>
         </AnimatePresence>
-        {/* Add floating pagination */}
-        {postsData?.posts && (
-          <FloatingPagination
-            currentIndex={currentIndex}
-            totalPosts={postsData.posts.length}
-            onPrevious={() => {
-              if (currentIndex > 0) {
-                setCurrentIndex(currentIndex - 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            onNext={() => {
-              if (currentIndex < postsData.posts.length - 1) {
-                setCurrentIndex(currentIndex + 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            onRandom={handleRandomStory}
-          />
-        )}
+        {/* Floating pagination removed as requested */}
       </div>
     </div>
   );

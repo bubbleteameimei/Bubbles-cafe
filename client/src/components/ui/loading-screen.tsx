@@ -1,6 +1,12 @@
 
 import { memo } from "react";
 
+/**
+ * Loading Screen Component
+ * 
+ * This component shows a fullscreen loading indicator with animation.
+ * It hides header and footer by using z-index 9999 and fixed positioning.
+ */
 export const LoadingScreen = memo(() => {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-[9999] w-full h-full">

@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ export function ShareButton({ title, text, url = window.location.href, className
         size="sm"
         className={cn("share-btn", className)}
         onClick={handleShare}
+        aria-label="Share this story"
       >
         <Share2 className="h-4 w-4 mr-2" />
         Share
@@ -80,6 +82,9 @@ export function ShareButton({ title, text, url = window.location.href, className
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Share This Story</DialogTitle>
+          <DialogDescription>
+            Share this story with friends via copy/paste or social media
+          </DialogDescription>
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -93,13 +98,18 @@ export function ShareButton({ title, text, url = window.location.href, className
               className="w-full flex-1 text-center"
             />
             <div className="flex justify-center gap-4">
-              <Button onClick={handleCopyLink} className="flex items-center gap-2">
+              <Button 
+                onClick={handleCopyLink} 
+                className="flex items-center gap-2"
+                aria-label={copied ? "Link copied" : "Copy link to clipboard"}
+                aria-pressed={copied}
+              >
                 {copied ? (
                   <Check className="h-4 w-4" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
-                Copy Link
+                {copied ? "Copied!" : "Copy Link"}
               </Button>
             </div>
 
@@ -107,18 +117,21 @@ export function ShareButton({ title, text, url = window.location.href, className
               <Button
                 variant="outline"
                 onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank')}
+                aria-label="Share on WhatsApp"
               >
                 WhatsApp
               </Button>
               <Button
                 variant="outline"
                 onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank')}
+                aria-label="Share on Twitter"
               >
                 Twitter
               </Button>
               <Button
                 variant="outline"
                 onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank')}
+                aria-label="Share on Facebook"
               >
                 Facebook
               </Button>
