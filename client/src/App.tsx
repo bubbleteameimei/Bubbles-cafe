@@ -107,14 +107,6 @@ function App() {
                   <Navigation />
                 </aside>
 
-                {/* Top Navigation with Theme Toggle */}
-                <PrimaryNav />
-
-                {/* Mobile Navigation */}
-                <div className="block lg:hidden">
-                  <Navigation />
-                </div>
-
                 {/* Main Content */}
                 <main className="min-h-screen pt-14 lg:pl-64">
                   <div className="container mx-auto px-4 py-6">

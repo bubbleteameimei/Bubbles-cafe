@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    /* Light mode - Modern Clean Theme */
-    --background: 210 40% 98%;         /* Very light blue-gray background */
-    --foreground: 222 47% 11%;         /* Deep blue-gray text */
-    --card: 0 0% 100%;                 /* Pure white card */
-    --card-foreground: 222 47% 11%;    /* Same as foreground */
-    --popover: 0 0% 100%;              /* Pure white popover */
-    --popover-foreground: 222 47% 11%; /* Same as foreground */
-    --primary: 199 89% 48%;            /* Sky blue primary #0EA5E9 */
-    --primary-foreground: 210 40% 98%; /* Light foreground */
-    --secondary: 210 40% 96%;          /* Light secondary */
-    --secondary-foreground: 222 47% 11%; /* Dark text on secondary */
-    --muted: 210 40% 96%;              /* Light muted background */
-    --muted-foreground: 215 16% 47%;   /* Muted text */
-    --accent: 210 40% 96%;             /* Light accent */
-    --accent-foreground: 222 47% 11%;  /* Dark text on accent */
-    --destructive: 0 84% 60%;          /* Bright red for destructive actions */
-    --destructive-foreground: 210 40% 98%; /* Light text on destructive */
-    --border: 214 32% 91%;             /* Light border */
-    --input: 214 32% 91%;              /* Light input border */
-    --ring: 199 89% 48%;               /* Sky blue ring - same as primary */
+    /* Light mode - Softer, Less Glaring Theme */
+    --background: 0 0% 98%;            /* Off-white background (F9F9F9) */
+    --foreground: 215 25% 18%;         /* Soft dark blue-gray text (#21293B) */
+    --card: 0 0% 100%;                 /* White card background */
+    --card-foreground: 215 25% 18%;    /* Same as foreground */
+    --popover: 0 0% 100%;              /* White popover */
+    --popover-foreground: 215 25% 18%; /* Same as foreground */
+    --primary: 209 75% 48%;            /* Rich blue primary (#1E78E5) */
+    --primary-foreground: 0 0% 100%;   /* White text on primary */
+    --secondary: 210 15% 96%;          /* Very light gray-blue secondary (#F1F3F7) */
+    --secondary-foreground: 215 25% 18%; /* Same as foreground */
+    --muted: 215 15% 94%;              /* Light muted background (#EDF0F5) */
+    --muted-foreground: 215 25% 40%;   /* Medium gray-blue text (#5A6887) */
+    --accent: 211 80% 96%;             /* Very light blue accent (#ECF4FF) */
+    --accent-foreground: 215 25% 18%;  /* Same as foreground */
+    --destructive: 0 72% 51%;          /* Softer red for destructive actions (#D63B3B) */
+    --destructive-foreground: 0 0% 100%; /* White text on destructive */
+    --border: 215 20% 88%;             /* Light border (#DCE1EB) */
+    --input: 215 20% 88%;              /* Light input border */
+    --ring: 209 75% 48%;               /* Same as primary */
     --radius: 0.5rem;                  /* Rounded corners */
   }
 
@@ -64,27 +64,27 @@
     to { opacity: 1; }
   }
 
-  /* Dark mode class for theme toggle */
+  /* Dark mode class for theme toggle - Standard Dark Charcoal Theme */
   .dark {
-    --background: 222 47% 11%;         /* Deep blue-gray background */
-    --foreground: 210 40% 98%;         /* Very light text */
-    --card: 223 47% 15%;               /* Slightly lighter card background */
-    --card-foreground: 210 40% 98%;    /* Light text on card */
-    --popover: 223 47% 15%;            /* Same as card */
-    --popover-foreground: 210 40% 98%; /* Same as foreground */
-    --primary: 199 89% 48%;            /* Sky blue primary - same in dark mode */
+    --background: 0 0% 9%;             /* Deep charcoal background (#171717) */
+    --foreground: 0 0% 92%;            /* Light gray text (#EAEAEA) */
+    --card: 0 0% 13%;                  /* Slightly lighter card background (#212121) */
+    --card-foreground: 0 0% 92%;       /* Light gray text on card */
+    --popover: 0 0% 13%;               /* Same as card */
+    --popover-foreground: 0 0% 92%;    /* Same as foreground */
+    --primary: 209 75% 48%;            /* Keeping the same primary for brand consistency (#1E78E5) */
     --primary-foreground: 0 0% 100%;   /* White text on primary */
-    --secondary: 217 33% 17%;          /* Darker secondary in dark mode */
-    --secondary-foreground: 210 40% 98%; /* Light text on secondary */
-    --muted: 217 33% 17%;              /* Darker muted background */
-    --muted-foreground: 215 20% 65%;   /* Lighter muted text */
-    --accent: 217 33% 17%;             /* Darker accent background */
-    --accent-foreground: 210 40% 98%;  /* Light text on accent */
-    --destructive: 0 84% 60%;          /* Same destructive color */
+    --secondary: 0 0% 18%;             /* Dark gray secondary (#2E2E2E) */
+    --secondary-foreground: 0 0% 92%;  /* Light gray text on secondary */
+    --muted: 0 0% 16%;                 /* Muted dark background (#282828) */
+    --muted-foreground: 0 0% 70%;      /* Medium gray muted text (#B3B3B3) */
+    --accent: 0 0% 20%;                /* Slightly lighter accent (#333333) */
+    --accent-foreground: 0 0% 92%;     /* Light gray text on accent */
+    --destructive: 0 72% 51%;          /* Same destructive color for consistency */
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
-    --border: 217 33% 25%;             /* Darker border in dark mode */
-    --input: 217 33% 25%;              /* Darker input border */
-    --ring: 199 89% 48%;               /* Sky blue ring - same as primary */
+    --border: 0 0% 22%;                /* Dark border (#383838) */
+    --input: 0 0% 22%;                 /* Dark input border */
+    --ring: 209 75% 48%;               /* Same as primary */
   }
 
   /* System color preference - only applies when JS is disabled or theme toggle not used */

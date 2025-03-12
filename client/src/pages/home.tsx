@@ -11,6 +11,7 @@ import { getExcerpt } from "@/lib/content-analysis";
 import FadeInSection from "../components/transitions/FadeInSection";
 import { ThemeCategory, THEME_CATEGORIES } from "../lib/content-analysis";
 import SearchBar from "@/components/SearchBar";
+import { ThemeDemoSection } from "@/components/theme-demo-section";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -111,8 +112,13 @@ export default function Home() {
                 <BuyMeCoffeeButton />
               </FadeInSection>
 
+              {/* Theme Demo Section */}
+              <FadeInSection style="horror" direction="up" delay={0.6} duration={0.7} className="mt-16 w-full">
+                <ThemeDemoSection />
+              </FadeInSection>
+              
               {posts && posts.length > 0 && (
-                <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-24 text-center space-y-4">
+                <FadeInSection style="horror" delay={0.9} duration={0.8} className="mt-16 text-center space-y-4">
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}
