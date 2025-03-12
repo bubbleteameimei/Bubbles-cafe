@@ -18,11 +18,11 @@ import PageTransition from './components/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
-import MistEffect from './components/effects/MistEffect';
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import NewStoryNotification from './components/NewStoryNotification';
 import FullscreenButton from './components/FullscreenButton';
 import SearchBar from './components/SearchBar';
+import FloatingNav from './components/navigation/FloatingNav';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // Since this is a TypeScript issue that doesn't affect functionality,
@@ -97,7 +97,9 @@ function App() {
         <ThemeProvider>
           <SidebarProvider defaultOpen={true}>
             <div className="relative min-h-screen bg-background">
-              <MistEffect />
+              {/* FloatingNav for both mobile and desktop */}
+              <FloatingNav position="left" />
+              
               {/* Desktop Sidebar */}
               <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
                 <div className="p-4">
@@ -105,21 +107,6 @@ function App() {
                 </div>
                 <Navigation />
               </aside>
-
-              {/* Animated Mobile Sidebar */}
-              <AnimatedSidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
-
-              {/* Mobile Navigation Toggle */}
-              <div className="fixed top-4 left-4 z-30 block lg:hidden">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={toggleSidebar} 
-                  className="text-foreground"
-                >
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </div>
 
               {/* Mobile Navigation */}
               <div className="block lg:hidden">

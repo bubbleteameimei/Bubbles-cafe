@@ -10,8 +10,6 @@ import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import FadeInSection from "../components/transitions/FadeInSection";
 import { ThemeCategory, THEME_CATEGORIES } from "../lib/content-analysis";
-import MistEffect from "@/components/effects/MistEffect";
-import HorrorParticles from "@/components/effects/HorrorParticles";
 import SearchBar from "@/components/SearchBar";
 
 export default function Home() {
@@ -72,7 +70,7 @@ export default function Home() {
       <div className="relative z-10">
         <div className="container mx-auto px-4 md:px-6">
           <div className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto">
-            <FadeInSection style="horror" direction="scale" duration={0.8}>
+            <FadeInSection style="fade" direction="scale" duration={0.8}>
               <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
                 <span>BUBBLE'S</span>
                 <span className="mt-2">CAFE</span>
@@ -80,7 +78,7 @@ export default function Home() {
             </FadeInSection>
             
             <div className="space-y-6 mb-12">
-              <FadeInSection style="horror" direction="up" delay={0.2} duration={0.6}>
+              <FadeInSection style="fade" direction="up" delay={0.2} duration={0.6}>
                 <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
                   Each story here is a portal to the unexpected,
                   the unsettling, and the unexplained.
@@ -134,7 +132,7 @@ export default function Home() {
               </FadeInSection>
 
               {posts && posts.length > 0 && (
-                <FadeInSection style="glitch" delay={0.7} duration={0.6} className="mt-24 text-center space-y-4">
+                <FadeInSection style="fade" delay={0.7} duration={0.6} className="mt-24 text-center space-y-4">
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}

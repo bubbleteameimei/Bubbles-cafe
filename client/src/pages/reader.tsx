@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
-import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts } from "@/lib/wordpress-api";
@@ -17,10 +16,7 @@ import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
 import { ShareButton } from "@/components/ShareButton";
-import FullscreenButton from "@/components/FullscreenButton";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
-import ParticleToggle from "@/components/effects/ParticleToggle";
-import FloatingParticles from "@/components/effects/FloatingParticles";
+import FloatingControls from "@/components/ui/FloatingControls";
 
 // Theme button component
 const ThemeButton = () => {
@@ -415,23 +411,10 @@ export default function Reader({ slug }: ReaderPageProps) {
   // Add this ref just once
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Track if particles are enabled (add this as a new state)
-  const [particlesEnabled, setParticlesEnabled] = useState(true);
-  
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Background effects */}
-      <Mist className="opacity-30" />
-      {particlesEnabled && <FloatingParticles type="dust" density="medium" speed="medium" />}
-      
       {/* Global UI controls */}
-      <FullscreenButton position="top-right" className="z-50" showLabel={false} />
-      <ScrollToTopButton position="bottom-right" />
-      <ParticleToggle 
-        onToggleParticles={(enabled) => setParticlesEnabled(enabled)}
-        initialState={particlesEnabled}
-        className="bottom-left fixed z-40"
-      />
+      <FloatingControls position="right" className="top-6" />
       
       {/* We'll add Reading progress tracker later after fixing it */}
 
