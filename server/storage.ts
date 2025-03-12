@@ -288,8 +288,26 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Updating user:', id, userData);
       
-      // Don't allow direct updates to password_hash or sensitive fields
-      const { password_hash, id: userId, createdAt, ...safeUserData } = userData;
+      // Remove sensitive fields that shouldn't be directly updated
+      const { 
+        password_hash, 
+        id: userId, 
+        createdAt,
+        email, // Email changes should be handled separately with verification
+        ...safeUserData 
+      } = userData as any;
+      
+      // If the update includes metadata, we need to merge it with existing metadata
+      if (userData.metadata) {
+        const existingUser = await this.getUser(id);
+        if (existingUser) {
+          // Deep merge metadata to preserve existing values
+          safeUserData.metadata = {
+            ...(existingUser.metadata || {}),
+            ...(userData.metadata || {})
+          };
+        }
+      }
       
       // Update the user
       const [updatedUser] = await db.update(users)

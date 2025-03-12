@@ -1,59 +1,113 @@
-import { initializeApp, FirebaseApp } from "firebase/app";
+import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup, 
   OAuthProvider,
+  signInWithPopup, 
+  signOut,
+  User,
   Auth
-} from "firebase/auth";
-import { getAnalytics, Analytics } from "firebase/analytics";
+} from 'firebase/auth';
+import { getAnalytics } from 'firebase/analytics';
 
-// Firebase configuration with environment variables
+// Firebase configuration directly from the provided values
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB0bg1IpDdq2IDv8M8MGLyvB4XghVSE0WA",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "bubblescafe-33f80.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "bubblescafe-33f80",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "bubblescafe-33f80.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "329473416186",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:329473416186:web:8dd43a10f94d3e266c2243",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-4W89K4X8VV"
+  apiKey: "AIzaSyB0bg1IpDdq2IDv8M8MGLyvB4XghVSE0WA",
+  authDomain: "bubblescafe-33f80.firebaseapp.com",
+  projectId: "bubblescafe-33f80",
+  storageBucket: "bubblescafe-33f80.appspot.com",
+  messagingSenderId: "329473416186",
+  appId: "1:329473416186:web:8dd43a10f94d3e266c2243",
+  measurementId: "G-4W89K4X8VV"
 };
 
-// Initialize Firebase with type safety
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let analytics: Analytics | null = null;
+// Log Firebase configuration status for debugging
+console.log('Firebase config initialized with:', {
+  apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
+  authDomain: firebaseConfig.authDomain ? '✓ Set' : '✗ Missing',
+  projectId: firebaseConfig.projectId ? '✓ Set' : '✗ Missing',
+  storageBucket: firebaseConfig.storageBucket ? '✓ Set' : '✗ Missing',
+  messagingSenderId: firebaseConfig.messagingSenderId ? '✓ Set' : '✗ Missing',
+  appId: firebaseConfig.appId ? '✓ Set' : '✗ Missing',
+  measurementId: firebaseConfig.measurementId ? '✓ Set' : '✗ Missing',
+});
+
+// Initialize Firebase
+let app;
+let auth: Auth;
+let analytics;
 
 try {
-  // Log environment check for debugging
-  if (import.meta.env.DEV) {
-    console.log("Firebase config initialized with:", 
-      Object.keys(firebaseConfig).reduce((acc: Record<string, string>, key: string) => {
-        acc[key] = firebaseConfig[key as keyof typeof firebaseConfig] ? "✓ Set" : "✗ Missing";
-        return acc;
-      }, {})
-    );
-  }
-  
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  
-  // Initialize Analytics if in browser environment
-  if (typeof window !== 'undefined') {
-    try {
+  // Initialize only once
+  if (!app) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    
+    // Only initialize analytics in browser environment
+    if (typeof window !== 'undefined') {
       analytics = getAnalytics(app);
-    } catch (analyticsError) {
-      console.error("Analytics initialization error:", analyticsError);
     }
+    console.log('Firebase successfully initialized');
   }
 } catch (error) {
-  console.error("Firebase initialization error:", error);
-  
-  // Provide clear error message about missing configuration
-  if (error instanceof Error && error.message.includes("API key")) {
-    console.error("Firebase API key is missing or invalid. Social login features may not work correctly.");
-  }
+  console.error('Firebase initialization error:', error);
 }
 
-export { auth, GoogleAuthProvider, signInWithPopup, OAuthProvider, analytics };
-export default app;
+export { app, auth };
+
+// Configure Google provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+// Configure Apple provider
+const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('email');
+appleProvider.addScope('name');
+
+/**
+ * Sign in with Google using Firebase Authentication
+ * @returns User data from Google authentication
+ */
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
+};
+
+/**
+ * Sign in with Apple using Firebase Authentication
+ * @returns User data from Apple authentication
+ */
+export const signInWithApple = async () => {
+  try {
+    const result = await signInWithPopup(auth, appleProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Error signing in with Apple:', error);
+    throw error;
+  }
+};
+
+/**
+ * Sign out the currently authenticated user
+ */
+export const signOutUser = async (): Promise<void> => {
+  return signOut(auth);
+};
+
+/**
+ * Get the current authenticated user
+ * @returns Current authenticated user or null
+ */
+export const getCurrentUser = (): Promise<User | null> => {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      unsubscribe();
+      resolve(user);
+    }, reject);
+  });
+};

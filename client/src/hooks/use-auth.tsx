@@ -1,15 +1,21 @@
-import { createContext, ReactNode, useContext } from "react";
-import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser } from "@shared/schema";
-import { z } from "zod";
-import { queryClient } from "../lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient, UseMutationResult } from '@tanstack/react-query';
+import { z } from 'zod';
+import { apiRequest } from '@/lib/queryClient';
+import { insertUserSchema } from '@shared/schema';
 
-// Define social user type that comes from Firebase
+// Types
+type SelectUser = {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  avatar?: string | null;
+  fullName?: string | null;
+  bio?: string | null;
+};
+
 type SocialUser = {
   id: string;
   email: string | null;
@@ -30,11 +36,11 @@ type AuthContextType = {
   socialLoginMutation: UseMutationResult<SelectUser, Error, SocialUser>;
 };
 
-// Define the login schema using email and remember me
+// Schemas
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  rememberMe: z.boolean().optional()
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  remember: z.boolean().optional(),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -43,168 +49,138 @@ type RegisterData = z.infer<typeof insertUserSchema>;
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<SelectUser | null>({
-    queryKey: ["/api/user"],
+  const [user, setUser] = useState<SelectUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
+
+  // Fetch current user data
+  const { data: userData, isLoading: isLoadingAuth } = useQuery({
+    queryKey: ['auth', 'status'],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/user");
-        if (res.status === 401) return null;
-        if (!res.ok) throw new Error("Failed to fetch user");
-        return await res.json();
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        return null;
+        return await apiRequest<{ isAuthenticated: boolean; user?: SelectUser }>('/api/auth/status');
+      } catch (error) {
+        console.error('Error fetching auth status:', error);
+        return { isAuthenticated: false };
+      }
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (!isLoadingAuth) {
+      setIsLoading(false);
+      if (userData?.isAuthenticated && userData.user) {
+        setUser(userData.user);
+      } else {
+        setUser(null);
       }
     }
-  });
+  }, [isLoadingAuth, userData]);
 
+  // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await fetch("/api/login", {
-        method: "POST",
+      return await apiRequest<SelectUser>('/api/auth/login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in",
-      });
+      setUser(user);
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid credentials",
-        variant: "destructive",
-      });
+      setError(error);
     },
   });
 
+  // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      const res = await fetch("/api/register", {
-        method: "POST",
+      return await apiRequest<SelectUser>('/api/auth/register', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Registration failed");
-      }
-
-      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Welcome!",
-        description: "Successfully registered",
-      });
+      setUser(user);
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      setError(error);
     },
   });
 
+  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/logout", {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Logout failed");
-      }
+      await apiRequest('/api/auth/logout');
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-      toast({
-        title: "Goodbye!",
-        description: "Successfully logged out",
-      });
+      setUser(null);
+      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      setError(error);
     },
   });
-  
-  // Social login mutation for handling Google/Apple sign-in
+
+  // Social login mutation
   const socialLoginMutation = useMutation({
     mutationFn: async (socialUserData: SocialUser) => {
-      const res = await fetch("/api/social-login", {
-        method: "POST",
+      return await apiRequest<SelectUser>('/api/auth/social-login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          socialId: socialUserData.id,
+          providerId: socialUserData.id,
           email: socialUserData.email,
-          username: socialUserData.name || `user_${Date.now()}`,
-          provider: socialUserData.provider,
+          displayName: socialUserData.name,
           photoURL: socialUserData.photoURL,
+          provider: socialUserData.provider,
           token: socialUserData.token
         }),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Social login failed");
-      }
-
-      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Welcome!",
-        description: "Successfully signed in with social account",
-      });
+      setUser(user);
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Social login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error('Social login error:', error);
+      setError(error);
     },
   });
 
-  // Add login function that uses loginMutation
-  const login = async (email: string, password: string) => {
-    await loginMutation.mutateAsync({ email, password });
-  };
+  // Login convenience method
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      await loginMutation.mutateAsync({ email, password });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Login failed');
+    }
+  }, [loginMutation]);
 
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user,
         isLoading,
         error,
         login,
@@ -222,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import { auth } from "@/lib/firebase";
-import { User } from "firebase/auth";
+import { useState, useEffect } from 'react';
+import { auth, getCurrentUser } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
-// Interface for our app's user data
 export interface SocialUser {
   id: string;
   email: string | null;
@@ -15,44 +14,54 @@ export interface SocialUser {
  * Custom hook to monitor Firebase auth state
  */
 export const useSocialAuth = () => {
-  const [user, setUser] = useState<SocialUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Set up the Firebase auth state observer
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser: User | null) => {
-      setLoading(true);
-      
-      if (firebaseUser) {
-        try {
-          // Create a user object from the Firebase user
-          setUser({
-            id: firebaseUser.uid,
-            email: firebaseUser.email,
-            name: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            provider: firebaseUser.providerData[0]?.providerId || 'unknown'
-          });
-          setError(null);
-          
-          // In a real app, we would sync with our backend here
-          console.log("User signed in:", firebaseUser.displayName);
-        } catch (err) {
-          console.error("Error processing auth state:", err);
-          setError(err instanceof Error ? err : new Error('Unknown authentication error'));
-          setUser(null);
-        }
-      } else {
-        // User is signed out
-        setUser(null);
-        setError(null);
-      }
-      
+    // Set up auth state listener if auth is initialized
+    if (!auth) {
+      console.error('Firebase auth not initialized');
+      setError(new Error('Firebase auth not initialized'));
       setLoading(false);
-    });
+      return;
+    }
 
-    // Clean up the observer when the component unmounts
+    // Check for existing user on mount
+    const checkCurrentUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+      } catch (err) {
+        console.error('Error checking current user:', err);
+        if (err instanceof Error) {
+          setError(err);
+        } else {
+          setError(new Error('Failed to check current user'));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Set up auth state listener
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (authUser) => {
+        setUser(authUser);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Auth state change error:', err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    // Check for user first
+    checkCurrentUser();
+
+    // Cleanup subscription
     return () => unsubscribe();
   }, []);
 

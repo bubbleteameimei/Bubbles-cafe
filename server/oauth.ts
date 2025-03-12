@@ -1,12 +1,12 @@
+import { Express, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Express, Request, Response, NextFunction } from 'express';
+import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcrypt';
 import { storage } from './storage';
-import { User } from '../shared/schema';
-import { config } from '../shared/config';
-import './auth'; // Import Express namespace augmentation
+import { v4 as uuidv4 } from 'uuid';
 
-// Define the Google OAuth user profile
+// Define types for OAuth profiles
 interface GoogleProfile {
   id: string;
   displayName: string;
@@ -24,138 +24,303 @@ interface GoogleProfile {
   provider: string;
 }
 
-// Reuse the serialization from auth.ts since we already set it up there
-// Just add typings to make it clear for TypeScript
-// We don't need to re-implement serialization/deserialization as it was already done in auth.ts
+// Define metadata types
+interface OAuthProvider {
+  providerId: string;
+  lastLogin: string;
+}
 
-// Passport serialization is only performed once, even across multiple files
-// So we don't need to duplicate this code here
+interface OAuthData {
+  [provider: string]: OAuthProvider;
+}
+
+interface UserMetadata {
+  oauth?: OAuthData;
+  [key: string]: any;
+}
 
 export function setupOAuth(app: Express) {
-  // Configure Google Strategy
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: process.env.GOOGLE_CLIENT_ID || '329473416186-pg9bu1jmiko7h0r84ri9i15i83g3ocl5.apps.googleusercontent.com',
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
-        callbackURL: '/api/auth/google/callback',
-        // For development environments where callback URL might be different
-        proxy: true
-      },
+  // Local strategy for username/password authentication
+  passport.use(new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password'
+    },
+    async (email, password, done) => {
+      try {
+        const user = await storage.getUserByEmail(email);
+        if (!user) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        // Compare hashed password
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    }
+  ));
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: '/api/auth/google/callback'
+    },
       async (accessToken, refreshToken, profile: GoogleProfile, done) => {
         try {
           // Check if user exists by email
-          let user: User | undefined;
-          
+          let user = null;
           if (profile.emails && profile.emails.length > 0) {
-            const email = profile.emails[0].value;
-            user = await storage.getUserByEmail(email);
-            
-            if (!user) {
-              // User doesn't exist, create a new one
-              console.log(`[OAuth] Creating new user from Google profile: ${profile.displayName}`);
+            user = await storage.getUserByEmail(profile.emails[0].value);
+          }
+
+          if (user) {
+            // Update existing user with OAuth info if needed
+            const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+            if (photoUrl && !user.avatar) {
+              const currentMetadata = user.metadata || {};
+              const updatedMetadata = (currentMetadata || {}) as UserMetadata;
+              const oauthData = updatedMetadata.oauth || {} as OAuthData;
               
-              const newUser = await storage.createUser({
-                email,
-                username: profile.displayName.replace(/\s+/g, '_').toLowerCase() + '_' + Math.floor(Math.random() * 1000),
-                password: '', // Empty password for OAuth users
-                isAdmin: false,
-                fullName: profile.displayName,
-                avatar: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : undefined,
-                bio: '',
+              user = await storage.updateUser(user.id, {
+                avatar: photoUrl,
                 metadata: {
-                  googleId: profile.id,
-                  provider: 'google'
+                  ...updatedMetadata,
+                  oauth: {
+                    ...oauthData,
+                    [profile.provider]: {
+                      providerId: profile.id,
+                      lastLogin: new Date().toISOString()
+                    }
+                  }
                 }
               });
-              
-              // Return the newly created user
-              return done(null, newUser);
             }
-            
-            // Return existing user
             return done(null, user);
           } else {
-            // No email provided in the profile
-            return done(new Error('No email was provided by Google OAuth'), undefined);
+            // Create new user with OAuth info
+            if (!profile.emails || profile.emails.length === 0) {
+              return done(new Error('No email provided by Google'));
+            }
+
+            const email = profile.emails[0].value;
+            const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+            
+            // Generate a random secure password for OAuth users
+            const password = uuidv4();
+            const hashedPassword = await bcrypt.hash(password, 10);
+            
+            const newUser = await storage.createUser({
+              email,
+              username: email.split('@')[0] + '_' + Math.floor(Math.random() * 10000),
+              password,
+              fullName: profile.displayName || undefined,
+              avatar: photoUrl || undefined,
+              metadata: {
+                oauth: {
+                  [profile.provider]: {
+                    providerId: profile.id,
+                    lastLogin: new Date().toISOString()
+                  }
+                }
+              }
+            });
+            
+            return done(null, newUser);
           }
         } catch (error) {
-          console.error('[OAuth] Error in Google strategy:', error);
-          return done(error, undefined);
+          return done(error);
         }
       }
-    )
-  );
+    ));
+  }
 
-  // Initialize Passport middleware
-  app.use(passport.initialize());
-  app.use(passport.session());
+  // Serialize and deserialize user
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
 
-  // Google OAuth routes
-  app.get(
-    '/api/auth/google',
-    passport.authenticate('google', {
-      scope: ['profile', 'email']
-    })
-  );
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
 
-  app.get(
-    '/api/auth/google/callback',
-    passport.authenticate('google', {
-      failureRedirect: '/login?error=google_auth_failed',
-      session: true
-    }),
+  // Route for social login from Firebase
+  app.post('/api/auth/social-login', async (req: Request, res: Response) => {
+    try {
+      const { providerId, email, displayName, photoURL, provider } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      // Check if user exists
+      let user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        // Update user with social login info if needed
+        const updatedFields: any = {};
+        let needsUpdate = false;
+        
+        // Update avatar if not set
+        if (photoURL && !user.avatar) {
+          updatedFields.avatar = photoURL;
+          needsUpdate = true;
+        }
+        
+        // Update full name if not set
+        if (displayName && !user.fullName) {
+          updatedFields.fullName = displayName;
+          needsUpdate = true;
+        }
+        
+        // Update metadata to include social provider info
+        const userMetadata = (user.metadata || {}) as UserMetadata;
+        const oauthData = userMetadata.oauth || {} as OAuthData;
+        
+        if (!userMetadata.oauth || !oauthData[provider]) {
+          updatedFields.metadata = {
+            ...userMetadata,
+            oauth: {
+              ...oauthData,
+              [provider]: {
+                providerId,
+                lastLogin: new Date().toISOString()
+              }
+            }
+          };
+          needsUpdate = true;
+        }
+        
+        if (needsUpdate) {
+          user = await storage.updateUser(user.id, updatedFields);
+        }
+      } else {
+        // Create a new user
+        const username = email.split('@')[0] + '_' + Math.floor(Math.random() * 10000);
+        const password = uuidv4(); // Generate random password
+        
+        user = await storage.createUser({
+          email,
+          username,
+          password,
+          fullName: displayName || null,
+          avatar: photoURL || null,
+          metadata: {
+            oauth: {
+              [provider]: {
+                providerId,
+                lastLogin: new Date().toISOString()
+              }
+            }
+          }
+        });
+      }
+      
+      // Log in the user
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login error:', err);
+          return res.status(500).json({ error: 'Authentication error' });
+        }
+        
+        // Return user data without sensitive information
+        return res.status(200).json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          createdAt: user.createdAt,
+          avatar: user.avatar,
+          fullName: user.fullName,
+          bio: user.bio
+        });
+      });
+    } catch (error) {
+      console.error('Social login error:', error);
+      return res.status(500).json({ error: 'Social login failed' });
+    }
+  });
+  
+  // Setup Google routes
+  app.get('/api/auth/google', passport.authenticate('google', {
+    scope: ['profile', 'email']
+  }));
+
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
     (req: Request, res: Response) => {
-      // Successful authentication, redirect to home page or a success page
       res.redirect('/');
     }
   );
 
   // Logout route
   app.get('/api/auth/logout', (req: Request, res: Response) => {
-    req.logout(() => {
+    req.logout(function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Logout failed' });
+      }
       res.redirect('/');
     });
   });
 
-  // Check if user is authenticated
+  // Auth status route
   app.get('/api/auth/status', (req: Request, res: Response) => {
     if (req.isAuthenticated()) {
-      const user = req.user as User;
-      res.json({
+      const user = req.user as any;
+      console.log('[Auth] Authenticated user info request:', user.id);
+      
+      // Return user data without sensitive information
+      return res.json({
         isAuthenticated: true,
         user: {
           id: user.id,
           username: user.username,
-          email: user.email,
+          email: user.email, 
           isAdmin: user.isAdmin,
+          createdAt: user.createdAt,
+          avatar: user.avatar,
           fullName: user.fullName,
-          avatar: user.avatar
+          bio: user.bio
         }
       });
     } else {
-      res.json({ isAuthenticated: false });
+      console.log('[Auth] Unauthenticated user info request');
+      return res.json({ isAuthenticated: false });
     }
   });
 
-  // Middleware for checking authentication
+  // Authentication middleware for protected routes
   const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
       return next();
     }
-    res.status(401).json({ error: 'Not authenticated' });
+    res.status(401).json({ error: 'Unauthorized' });
   };
 
-  // Protected route example
+  // User profile route
   app.get('/api/auth/profile', isAuthenticated, (req: Request, res: Response) => {
-    const user = req.user as User;
+    const user = req.user as any;
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+      avatar: user.avatar,
       fullName: user.fullName,
-      avatar: user.avatar
+      bio: user.bio
     });
   });
 }
