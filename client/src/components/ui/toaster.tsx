@@ -1,33 +1,50 @@
+
 import { useToast } from "@/hooks/use-toast"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export function Toaster() {
   const { toasts } = useToast()
 
+  // Map custom toasts to react-toastify
+  React.useEffect(() => {
+    toasts.forEach(({ id, title, description, variant }) => {
+      const toastContent = (
+        <div>
+          {title && <div className="font-semibold">{title}</div>}
+          {description && <div>{description}</div>}
+        </div>
+      );
+      
+      const toastType = variant === 'destructive' ? toast.error : 
+                         variant === 'success' ? toast.success : toast.info;
+      
+      toastType(toastContent, {
+        toastId: id,
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    });
+  }, [toasts]);
+
   return (
-    <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
-      <ToastViewport className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100]" /> {/* Fixed positioning above like/dislike buttons */}
-    </ToastProvider>
-  )
+    <ToastContainer
+      position="bottom-center"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="dark"
+      className="bottom-32"
+      style={{ bottom: '160px' }}
+    />
+  );
 }
