@@ -3,11 +3,16 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Book, ArrowRight, ChevronRight } from "lucide-react";
+import { Book, ArrowRight, ChevronRight, Skull, Brain, Ghost } from "lucide-react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { fetchPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
+import FadeInSection from "../components/transitions/FadeInSection";
+import { ThemeCategory, THEME_CATEGORIES } from "../lib/content-analysis";
+import MistEffect from "@/components/effects/MistEffect";
+import HorrorParticles from "@/components/effects/HorrorParticles";
+import SearchBar from "@/components/SearchBar";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -31,7 +36,6 @@ export default function Home() {
   const posts = postsResponse.posts;
 
   const navigateToStory = (slug: string) => {
-    if (!posts) return;
     setLocation(`/reader/${slug}`);
   };
 
@@ -67,58 +71,70 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10">
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto"
-          >
-            <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
-              <span>BUBBLE'S</span>
-              <span className="mt-2">CAFE</span>
-            </h1>
+          <div className="min-h-[80vh] flex flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto">
+            <FadeInSection style="horror" direction="scale" duration={0.8}>
+              <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
+                <span>BUBBLE'S</span>
+                <span className="mt-2">CAFE</span>
+              </h1>
+            </FadeInSection>
+            
             <div className="space-y-6 mb-12">
-              <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
-                Each story here is a portal to the unexpected,
-                the unsettling, and the unexplained.
-              </p>
+              <FadeInSection style="horror" direction="up" delay={0.2} duration={0.6}>
+                <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
+                  Each story here is a portal to the unexpected,
+                  the unsettling, and the unexplained.
+                </p>
+              </FadeInSection>
 
-              <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
-                <Button
-                  size="lg"
-                  onClick={() => setLocation('/stories')}
-                  className="text-lg h-14 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm"
-                >
-                  Browse Stories
-                  <Book className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => setLocation('/reader')}
-                  className="text-lg h-14 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
-                >
-                  Start Reading
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
+              <FadeInSection style="slide" direction="up" delay={0.3} duration={0.5}>
+                <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
+                  <Button
+                    size="lg"
+                    onClick={() => setLocation('/stories')}
+                    className="text-lg h-14 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm"
+                  >
+                    Browse Stories
+                    <Book className="ml-2 h-5 w-5" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={() => setLocation('/reader')}
+                    className="text-lg h-14 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
+                  >
+                    Start Reading
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              </FadeInSection>
               
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="mt-10 mb-10"
-              >
+              <FadeInSection style="fade" direction="up" delay={0.4} duration={0.5} className="mt-10 mb-10">
                 <BuyMeCoffeeButton />
-              </motion.div>
+              </FadeInSection>
+              
+              {/* Featured horror categories */}
+              <FadeInSection style="fade" direction="up" delay={0.5} duration={0.7} className="mt-16">
+                <h3 className="text-lg font-medium mb-8">Featured Categories</h3>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {['PSYCHOLOGICAL', 'LOVECRAFTIAN', 'GOTHIC'].map((category) => (
+                    <div 
+                      key={category}
+                      className="flex flex-col items-center p-4 bg-black/40 backdrop-blur-sm rounded-md 
+                      hover:bg-black/60 transition-all duration-300 cursor-pointer w-28 h-28"
+                      onClick={() => setLocation(`/stories?category=${category.toLowerCase()}`)}
+                    >
+                      {category === 'PSYCHOLOGICAL' && <Brain className="h-10 w-10 mb-2 text-red-400" />}
+                      {category === 'LOVECRAFTIAN' && <Skull className="h-10 w-10 mb-2 text-purple-400" />}
+                      {category === 'GOTHIC' && <Ghost className="h-10 w-10 mb-2 text-gray-400" />}
+                      <span className="text-sm text-center">{category}</span>
+                    </div>
+                  ))}
+                </div>
+              </FadeInSection>
 
               {posts && posts.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                  className="mt-24 text-center space-y-4"
-                >
+                <FadeInSection style="glitch" delay={0.7} duration={0.6} className="mt-24 text-center space-y-4">
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}
@@ -131,7 +147,15 @@ export default function Home() {
                     <div 
                       className="text-foreground/80 max-w-xl mx-auto mb-4 line-clamp-2"
                     >
-                      {posts[0]?.content?.rendered && getExcerpt(posts[0].content.rendered)}
+                      {posts[0]?.content?.rendered && (
+                        <motion.span
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                        >
+                          {getExcerpt(posts[0].content.rendered)}
+                        </motion.span>
+                      )}
                     </div>
                     <div className="flex items-center justify-center text-sm text-primary gap-1 group-hover:gap-2 transition-all duration-300">
                       Read full story 
@@ -141,10 +165,10 @@ export default function Home() {
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </div>
-                </motion.div>
+                </FadeInSection>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

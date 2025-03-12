@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SidebarNavigation } from '@/components/ui/sidebar-menu';
+import SearchBar from '../SearchBar';
 
 interface AnimatedSidebarProps {
   isOpen: boolean;
@@ -41,6 +42,9 @@ const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({ isOpen, toggle }) => 
             transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
             className="fixed top-0 left-0 z-50 h-full w-[280px] border-r bg-background lg:hidden"
           >
+            <div className="p-4">
+              <SearchBar compact={true} categories={["PSYCHOLOGICAL", "LOVECRAFTIAN", "GOTHIC", "DEATH", "PARASITE"]} />
+            </div>
             <SidebarNavigation onNavigate={toggle} />
           </motion.div>
         </>

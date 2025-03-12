@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Route, Switch, RouteComponentProps, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
@@ -19,6 +19,10 @@ import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 import MistEffect from './components/effects/MistEffect';
+import AutoHideNavbar from './components/layout/AutoHideNavbar';
+import NewStoryNotification from './components/NewStoryNotification';
+import FullscreenButton from './components/FullscreenButton';
+import SearchBar from './components/SearchBar';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // Since this is a TypeScript issue that doesn't affect functionality,
@@ -95,6 +99,9 @@ function App() {
               <MistEffect />
               {/* Desktop Sidebar */}
               <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
+                <div className="p-4">
+                  <SearchBar compact={true} categories={["PSYCHOLOGICAL", "LOVECRAFTIAN", "GOTHIC", "DEATH", "PARASITE"]} />
+                </div>
                 <Navigation />
               </aside>
 
@@ -122,7 +129,7 @@ function App() {
               <main className="min-h-screen lg:pl-64">
                 <div className="container mx-auto px-4 py-6">
                   <ErrorBoundary>
-                    <PageTransition>
+                    <PageTransition effect="horror" duration={0.4}>
                       <Switch>
                         {/* Auth Routes */}
                         <Route path="/auth" component={AuthPage} />
@@ -189,6 +196,8 @@ function App() {
               <Toaster />
               <CookieConsent />
               <ScrollToTopButton />
+              <FullscreenButton position="bottom-right" />
+              <NewStoryNotification newStories={2} />
             </div>
           </SidebarProvider>
         </ThemeProvider>

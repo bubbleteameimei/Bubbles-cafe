@@ -1,96 +1,98 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X } from "lucide-react";
-import { Button } from "./ui/button";
+import React, { useState, useEffect } from 'react';
+import { Bell, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from './ui/button';
+import { useLocation } from 'wouter';
 
 interface NewStoryNotificationProps {
-  checkInterval?: number; // in milliseconds, default 60 seconds
-  apiEndpoint?: string;
+  newStories?: number;
+  lastChecked?: string;
+  onDismiss?: () => void;
+  className?: string;
+  autoHideDuration?: number; // in milliseconds
+  showCount?: boolean;
 }
 
 const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
-  checkInterval = 60000,
-  apiEndpoint = "/api/posts/latest"
+  newStories = 1,
+  lastChecked,
+  onDismiss,
+  className = '',
+  autoHideDuration = 10000, // 10 seconds
+  showCount = true
 }) => {
-  const [newStory, setNewStory] = useState<{ id: number; title: string; slug: string } | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
-    // Function to check for new stories
-    const checkNewStory = async () => {
-      try {
-        const lastCheckTime = localStorage.getItem("lastStoryCheckTime");
-        const currentTime = new Date().toISOString();
-        
-        // Only make the API call if it's been at least 5 minutes since the last check
-        // This helps reduce unnecessary API calls
-        if (!lastCheckTime || new Date(lastCheckTime).getTime() < Date.now() - 300000) {
-          const response = await fetch(apiEndpoint);
-          if (response.ok) {
-            const data = await response.json();
-            
-            // Check if this is a story we haven't seen before
-            const lastSeenStory = localStorage.getItem("lastSeenStoryId");
-            if (data.id && (!lastSeenStory || parseInt(lastSeenStory) < data.id)) {
-              setNewStory(data);
-              setDismissed(false);
-            }
-            
-            // Update the last seen story ID
-            if (data.id) {
-              localStorage.setItem("lastSeenStoryId", data.id.toString());
-            }
-          }
-          
-          // Update the last check time
-          localStorage.setItem("lastStoryCheckTime", currentTime);
-        }
-      } catch (error) {
-        console.error("Error checking for new stories:", error);
-      }
-    };
+    // Only show notification if there are new stories
+    if (newStories > 0) {
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 2000); // Delay appearance to avoid immediate popup
+      
+      return () => clearTimeout(timer);
+    }
+  }, [newStories]);
 
-    // Initial check
-    checkNewStory();
-
-    // Set up interval
-    const interval = setInterval(checkNewStory, checkInterval);
-    return () => clearInterval(interval);
-  }, [apiEndpoint, checkInterval]);
+  useEffect(() => {
+    // Auto-hide the notification after specified duration
+    if (isVisible && autoHideDuration) {
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, autoHideDuration);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, autoHideDuration]);
 
   const handleDismiss = () => {
-    setDismissed(true);
+    setIsVisible(false);
+    if (onDismiss) onDismiss();
+  };
+
+  const handleClick = () => {
+    navigate('/stories');
+    handleDismiss();
   };
 
   return (
     <AnimatePresence>
-      {newStory && !dismissed && (
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-4 right-4 z-50 max-w-sm bg-background border border-border rounded-lg shadow-lg p-4"
+      {isVisible && (
+        <motion.div 
+          className={`fixed bottom-6 right-6 z-50 max-w-sm ${className}`}
+          initial={{ opacity: 0, y: 50, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         >
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-accent" />
-              <h3 className="font-medium">New Story Available</h3>
+          <div className="flex items-center gap-3 rounded-lg bg-background/95 p-4 pr-8 shadow-lg backdrop-blur-sm border border-accent">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/20 text-accent">
+              <Bell className="h-5 w-5" />
             </div>
-            <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-6 w-6">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="mt-2">
-            <p className="text-sm text-muted-foreground mb-3">
-              A new horror story has just been published!
-            </p>
-            <Link href={`/reader/${newStory.slug}`}>
-              <a className="text-sm font-medium text-accent hover:underline">
-                Read "{newStory.title}" now
-              </a>
-            </Link>
+            <div className="flex-1">
+              <h3 className="font-medium text-foreground">New Stories Available</h3>
+              <p className="text-sm text-muted-foreground">
+                {showCount 
+                  ? `${newStories} new horror ${newStories === 1 ? 'story' : 'stories'} since your last visit.`
+                  : 'New horror stories have been added.'
+                }
+              </p>
+              <Button
+                onClick={handleClick}
+                variant="link"
+                className="mt-1 px-0 text-sm text-accent"
+              >
+                Read now
+              </Button>
+            </div>
+            <button 
+              onClick={handleDismiss}
+              className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-accent/10 hover:text-accent"
+              aria-label="Dismiss notification"
+            >
+              <X className="h-3 w-3" />
+            </button>
           </div>
         </motion.div>
       )}

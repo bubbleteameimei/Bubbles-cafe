@@ -78,19 +78,11 @@ export const BuyMeCoffeeButton = () => {
                   handleTip(); // Paystack only opens when this button is clicked
                   setIsOpen(false); // Close modal after clicking
                 }}
-                className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-md transition-all duration-300 text-lg font-medium"
+                className="px-6 py-3 bg-accent hover:bg-hover text-button-text rounded-full shadow-md transition-all duration-300 text-lg font-medium"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                animate={{
-                  y: [0, -6, 0],
-                  transition: {
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }
-                }}
               >
-                Yes, I'd love to!
+                Yes, I'd love to! ✨
               </motion.button>
             </motion.div>
           </motion.div>

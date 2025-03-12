@@ -1,106 +1,86 @@
-import React, { useEffect, useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { Link } from "wouter";
-import SearchBar from "../SearchBar";
-import { Button } from "../ui/button";
-import { Sun, Moon, Menu } from "lucide-react";
-import useUserPreferences from "../../hooks/useUserPreferences";
+import React, { useState, useEffect, ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AutoHideNavbarProps {
-  title?: string;
-  toggleSidebar?: () => void;
-  searchData?: { title: string; slug: string }[];
+  children: ReactNode;
+  threshold?: number;
+  hideOnPaths?: string[];
 }
 
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
-  title = "Horror Stories",
-  toggleSidebar,
-  searchData = []
+  children,
+  threshold = 100,
+  hideOnPaths = []
 }) => {
-  const [hidden, setHidden] = useState(false);
-  const [darkMode, setDarkMode] = useUserPreferences("darkMode", false);
-  const lastScrollY = useRef(0);
-  const scrollThreshold = 100; // Pixels to scroll before hiding
+  const [visible, setVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [currentPath, setCurrentPath] = useState('');
 
-  // Monitor scroll position
   useEffect(() => {
+    // Update current path when component mounts
+    setCurrentPath(window.location.pathname);
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      if (Math.abs(currentScrollY - lastScrollY.current) < 10) {
-        return;
+      // Always show navbar at the top of the page
+      if (currentScrollY < threshold) {
+        setVisible(true);
+      } else if (currentScrollY > lastScrollY + 10) {
+        // Hide navbar when scrolling down (with a small buffer)
+        setVisible(false);
+      } else if (currentScrollY < lastScrollY - 10) {
+        // Show navbar when scrolling up (with a small buffer)
+        setVisible(true);
       }
       
-      // Show navbar when scrolling up or at the top
-      if (currentScrollY <= 0 || currentScrollY < lastScrollY.current) {
-        setHidden(false);
-      } 
-      // Hide navbar when scrolling down past threshold
-      else if (currentScrollY > lastScrollY.current && currentScrollY > scrollThreshold) {
-        setHidden(true);
-      }
-      
-      lastScrollY.current = currentScrollY;
+      setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    // Listen for pathname changes
+    const handlePathnameChange = () => {
+      setCurrentPath(window.location.pathname);
+      // Show navbar on page change
+      setVisible(true);
+    };
 
-  // Toggle theme function
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark", !darkMode);
-  };
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('popstate', handlePathnameChange);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('popstate', handlePathnameChange);
+    };
+  }, [lastScrollY, threshold]);
+
+  // Check if current path is in the hideOnPaths array
+  const shouldHideOnCurrentPath = hideOnPaths.some(path => 
+    currentPath === path || 
+    (path.endsWith('*') && currentPath.startsWith(path.slice(0, -1)))
+  );
+
+  // Don't render anything if we should completely hide on this path
+  if (shouldHideOnCurrentPath) {
+    return null;
+  }
 
   return (
-    <motion.header
-      initial={{ y: 0 }}
-      animate={{ y: hidden ? -100 : 0 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur border-b border-border h-16"
-    >
-      <div className="container mx-auto px-4 h-full flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {toggleSidebar && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleSidebar}
-              className="lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
-          <Link href="/">
-            <a className="text-xl font-bold hover:text-accent transition-colors">
-              {title}
-            </a>
-          </Link>
-        </div>
-        
-        <div className="hidden md:block w-1/3 mx-4">
-          <SearchBar data={searchData} />
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          
-          <Link href="/auth">
-            <Button variant="secondary" size="sm" className="hidden sm:inline-flex">
-              Sign In
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </motion.header>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          transition={{ 
+            duration: 0.3,
+            ease: "easeInOut"
+          }}
+          className="fixed top-0 left-0 right-0 z-50"
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

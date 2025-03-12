@@ -106,6 +106,7 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.2",
     "tsparticles": "^3.8.1",
+    "tsparticles-slim": "^2.12.0",
     "vaul": "^1.1.0",
     "vite-plugin-pwa": "^0.21.1",
     "web-vitals": "^4.2.4",
