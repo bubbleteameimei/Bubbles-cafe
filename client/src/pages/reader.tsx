@@ -322,47 +322,47 @@ export default function Reader({ slug }: ReaderPageProps) {
   ];
 
   const storyContentStyles = `
-  .story-content {
-    font-family: var(--font-sans);
-    max-width: 70ch;
-    margin: 0 auto;
+  /* Additional dynamic styles that complement our reader.css file */
+  .story-content a {
+    color: var(--primary);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition: all 0.2s ease;
   }
-  .story-content p {
-    line-height: 1.7;  
-    margin-bottom: 1em;  
-    text-align: justify;
+  
+  .story-content a:hover {
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
   }
-  .story-content p + p {
-    margin-top: 2em;  
+  
+  /* First paragraph styling for literary effect */
+  .story-content > p:first-of-type:first-letter {
+    float: left;
+    font-size: 3.2em;
+    line-height: 0.7em;
+    margin-right: 0.1em;
+    margin-top: 0.12em;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    color: var(--primary);
   }
-  @media (max-width: 768px) {
-    .story-content p {
-      margin-bottom: 0.8em;
+  
+  /* Add subtle text shadow in dark mode */
+  @media (prefers-color-scheme: dark) {
+    .story-content h1, 
+    .story-content h2 {
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
     }
-    .story-content p + p {
-      margin-top: 2em;  
-    }
   }
+  
+  /* Enhance image displays */
   .story-content img {
-    max-width: 100%;
-    height: auto;
-    margin: 1.5em auto;
-    border-radius: 0.5rem;
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   }
-  .story-content h1, .story-content h2, .story-content h3 {
-    margin-top: 1.2em;
-    margin-bottom: 0.5em;
-    font-weight: 600;
-  }
-  .story-content ul, .story-content ol {
-    margin-bottom: 1em;
-    padding-left: 1.5em;
-  }
-  .story-content blockquote {
-    margin: 1.2em 0;
-    padding-left: 1em;
-    border-left: 3px solid var(--border);
-    font-style: italic;
+  
+  .story-content img:hover {
+    transform: scale(1.02);
   }
   `;
 
@@ -384,7 +384,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       
       {/* We'll add Reading progress tracker later after fixing it */}
 
-      <div className="container max-w-2xl mx-auto px-4 pt-8 pb-16 relative z-10">
+      <div className="container max-w-3xl mx-auto px-4 pt-8 pb-16 relative z-10">
         {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
           <div className="flex space-x-4">
@@ -401,7 +401,7 @@ export default function Reader({ slug }: ReaderPageProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="prose dark:prose-invert max-w-none"
+            className="prose dark:prose-invert max-w-none prose-lg"
           >
             <div className="flex flex-col items-center mb-8">
               <h1
@@ -455,13 +455,29 @@ export default function Reader({ slug }: ReaderPageProps) {
             <div
               ref={contentRef}
               className="story-content mb-16 relative"
-              style={{ fontSize: `${fontSize}px`, lineHeight: "1.8", whiteSpace: 'pre-wrap' }}
+              style={{ 
+                fontSize: `${fontSize}px`, 
+                lineHeight: "1.9", 
+                whiteSpace: 'pre-wrap'
+              }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
                   .replace(/\n\n+/g, '\n\n')
                   .replace(/<p>\s*<\/p>/g, '')
-                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string) => 
-                    `<p style="font-size: ${fontSize}px; margin-bottom: 1.5em;">${p1.trim()}</p>`)
+                  // Process paragraphs with better styling
+                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string, index: number) => {
+                    const trimmedContent = p1.trim();
+                    // Skip styling for empty paragraphs
+                    if (!trimmedContent) return '';
+                    
+                    return `<p style="
+                      font-size: ${fontSize}px; 
+                      margin-bottom: 1.8em; 
+                      font-kerning: normal;
+                      line-height: 1.9;
+                      letter-spacing: 0.0125em;
+                    ">${trimmedContent}</p>`;
+                  })
                   .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
                   .replace(/\s+/g, ' ')
                   .replace(/(\r\n|\r|\n){2,}/g, '\n\n')

@@ -47,6 +47,8 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
 
   const replyMutation = useMutation({
     mutationFn: async () => {
+      console.log(`Posting reply to comment ${commentId} with content: "${content.trim()}" by "${name.trim()}"`);
+      
       const response = await fetch(`/api/comments/${commentId}/replies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -58,12 +60,16 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to post reply');
+        console.error("Reply error response:", errorData);
+        throw new Error(errorData.message || errorData.error || 'Failed to post reply');
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log("Reply success response:", data);
+      return data;
     },
     onSuccess: () => {
+      console.log(`Successfully posted reply to comment ${commentId}`);
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setName("");
       setContent("");
@@ -86,6 +92,8 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Starting reply mutation:", { name, content, commentId, postId });
+    
     if (!name.trim() || !content.trim()) {
       toast({
         title: "Error",
@@ -94,7 +102,17 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
       });
       return;
     }
-    replyMutation.mutate();
+    
+    try {
+      replyMutation.mutate();
+    } catch (error) {
+      console.error("Reply mutation failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to post your reply. Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -202,6 +220,8 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Starting mutation:", { name, content, postId });
+    
     if (!name.trim() || !content.trim()) {
       toast({
         title: "Error",
@@ -210,7 +230,17 @@ export default function CommentSection({ postId, title }: CommentSectionProps) {
       });
       return;
     }
-    mutation.mutate();
+    
+    try {
+      mutation.mutate();
+    } catch (error) {
+      console.error("Mutation failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to post your comment. Please try again later.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

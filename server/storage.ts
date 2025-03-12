@@ -623,12 +623,58 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+  // Helper method to ensure post exists (especially for WordPress posts)
+  private async ensurePostExists(postId: number): Promise<boolean> {
+    try {
+      // First check if the post already exists
+      const existingPost = await this.getPostById(postId);
+      if (existingPost) {
+        return true;
+      }
+      
+      console.log(`[Storage] Post ${postId} doesn't exist, creating placeholder for WordPress post`);
+      
+      // Create a placeholder post for WordPress posts that don't exist in our DB yet
+      const [placeholderPost] = await db.insert(postsTable)
+        .values({
+          id: postId, // Use the WordPress ID
+          title: `WordPress Post ${postId}`,
+          content: "This is a placeholder for a WordPress post",
+          slug: `wordpress-post-${postId}`,
+          authorId: 1, // Default to admin user
+          createdAt: new Date(),
+          metadata: {
+            wordpressId: postId,
+            isPlaceholder: true
+          }
+        })
+        .returning();
+      
+      console.log(`[Storage] Created placeholder post with ID ${placeholderPost.id}`);
+      return true;
+    } catch (error) {
+      console.error(`[Storage] Error ensuring post exists: ${error}`);
+      return false;
+    }
+  }
+
   async createComment(comment: InsertComment): Promise<Comment> {
     try {
       console.log('[Storage] Creating new comment:', {
         postId: comment.postId,
         isAnonymous: !comment.userId
       });
+      
+      // Ensure the post exists before creating a comment on it
+      const postId = comment.postId;
+      if (typeof postId !== 'number') {
+        throw new Error('Invalid post ID: Post ID must be a number');
+      }
+      
+      const postExists = await this.ensurePostExists(postId);
+      if (!postExists) {
+        throw new Error(`Cannot create comment: Post with ID ${postId} does not exist and could not be created`);
+      }
 
       const commentMetadata: CommentMetadata = {
         moderated: false,
@@ -644,6 +690,7 @@ export class DatabaseStorage implements IStorage {
         .values({
           content: comment.content,
           postId: comment.postId,
+          parentId: comment.parentId ?? null, // Include parentId, default to null for top-level comments
           userId: comment.userId,
           approved: comment.approved ?? true,
           metadata: commentMetadata,
