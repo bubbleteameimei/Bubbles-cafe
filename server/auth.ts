@@ -191,7 +191,7 @@ export function setupAuth(app: Express) {
         socialId: req.body.socialId
       });
       
-      const { socialId, email, username, provider, photoURL } = req.body;
+      const { socialId, email, username, provider, photoURL, token } = req.body;
       
       if (!socialId || !email) {
         console.log('[Auth] Missing social login fields:', { socialId: !!socialId, email: !!email });
@@ -208,11 +208,19 @@ export function setupAuth(app: Express) {
         console.log('[Auth] Creating new user for social login:', { email, provider });
         
         try {
+          // Create new user with social metadata
           user = await storage.createUser({
             username: username || email.split('@')[0],
             email,
             password: randomPassword, // pass the unhashed password, storage handles hashing
-            isAdmin: false
+            isAdmin: false,
+            fullName: username || null,
+            avatar: photoURL || undefined,
+            metadata: {
+              socialId,
+              provider,
+              lastLogin: new Date().toISOString()
+            }
           });
           
           console.log('[Auth] New user created via social login:', { id: user.id, provider });
@@ -221,13 +229,31 @@ export function setupAuth(app: Express) {
           return res.status(500).json({ message: "Error creating user account" });
         }
       } else {
+        // Update existing user's social login metadata
         console.log('[Auth] Existing user found for social login:', { id: user.id, email });
+        
+        try {
+          // Update user metadata with latest social login info
+          await storage.updateUser(user.id, {
+            fullName: username || user.fullName,
+            avatar: photoURL || user.avatar,
+            metadata: {
+              ...user.metadata,
+              socialId,
+              provider,
+              lastLogin: new Date().toISOString()
+            }
+          });
+        } catch (updateError) {
+          console.error('[Auth] Error updating user for social login:', updateError);
+          // Continue with login even if update fails - don't block login
+        }
       }
       
       // Omit password_hash from user object
       const { password_hash, ...safeUser } = user;
       
-      // Log the user in
+      // Log the user in using the session
       req.login(safeUser, (err) => {
         if (err) {
           console.error('[Auth] Session creation error during social login:', err);

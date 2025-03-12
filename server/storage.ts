@@ -69,6 +69,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getAdminByEmail(email: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<User>): Promise<User>;
 
   // Sessions
   createSession(session: InsertSession): Promise<Session>;
@@ -253,14 +254,22 @@ export class DatabaseStorage implements IStorage {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(user.password, salt);
 
+      // Prepare user values with optional fields
+      const userValues = {
+        username: user.username,
+        email: user.email,
+        password_hash: hashedPassword,
+        isAdmin: user.isAdmin ?? false,
+        // Add optional fields if provided
+        fullName: user.fullName,
+        avatar: user.avatar,
+        bio: user.bio,
+        metadata: user.metadata
+      };
+
       // Insert user with hashed password
       const [newUser] = await db.insert(users)
-        .values({
-          username: user.username,
-          email: user.email,
-          password_hash: hashedPassword,
-          isAdmin: user.isAdmin ?? false
-        })
+        .values(userValues)
         .returning();
 
       return newUser;
@@ -272,6 +281,36 @@ export class DatabaseStorage implements IStorage {
         }
       }
       throw new Error("Failed to create user");
+    }
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    try {
+      console.log('[Storage] Updating user:', id, userData);
+      
+      // Don't allow direct updates to password_hash or sensitive fields
+      const { password_hash, id: userId, createdAt, ...safeUserData } = userData;
+      
+      // Update the user
+      const [updatedUser] = await db.update(users)
+        .set(safeUserData)
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (!updatedUser) {
+        throw new Error("User not found");
+      }
+      
+      console.log('[Storage] User updated successfully:', id);
+      return updatedUser;
+    } catch (error) {
+      console.error("Error in updateUser:", error);
+      if (error instanceof Error) {
+        if (error.message === "User not found") {
+          throw error;
+        }
+      }
+      throw new Error("Failed to update user");
     }
   }
 

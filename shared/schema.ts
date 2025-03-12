@@ -2,13 +2,18 @@ import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table and schema remain unchanged
+// Users table with social auth fields
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),
   email: text("email").notNull().unique(),
   password_hash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  fullName: text("full_name"),
+  avatar: text("avatar"),
+  bio: text("bio"),
+  metadata: json("metadata").default({}),
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   emailIdx: index("email_idx").on(table.email),
@@ -318,9 +323,14 @@ export const registrationSchema = z.object({
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   createdAt: true,
-  password_hash: true 
+  password_hash: true,
+  lastLogin: true
 }).extend({
-  password: z.string()
+  password: z.string(),
+  fullName: z.string().optional(),
+  avatar: z.string().optional(),
+  bio: z.string().optional(),
+  metadata: z.record(z.unknown()).optional()
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

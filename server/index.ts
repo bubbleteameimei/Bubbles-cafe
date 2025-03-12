@@ -9,6 +9,10 @@ import { seedDatabase } from "./seed";
 import path from "path";
 import helmet from "helmet";
 import compression from "compression";
+import session from "express-session";
+import { setupAuth } from "./auth";
+import { setupOAuth } from "./oauth";
+import { storage } from "./storage";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -22,6 +26,23 @@ let server: ReturnType<typeof createServer>;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
+
+// Configure session
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: !isDev,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  store: storage.sessionStore
+}));
+
+// Setup authentication
+setupAuth(app);
+setupOAuth(app);
 
 // Add health check endpoint
 app.get('/health', (req, res) => {

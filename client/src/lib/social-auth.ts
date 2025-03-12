@@ -2,7 +2,8 @@ import {
   signInWithPopup, 
   GoogleAuthProvider, 
   OAuthProvider,
-  AuthError
+  AuthError,
+  Auth
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -20,7 +21,8 @@ export const signInWithGoogle = async () => {
     googleProvider.addScope('email');
     googleProvider.addScope('profile');
 
-    const result = await signInWithPopup(auth, googleProvider);
+    if (!auth) throw new Error('Firebase auth is not initialized');
+    const result = await signInWithPopup(auth as Auth, googleProvider);
     const user = result.user;
     console.log("Google Sign-In Success:", user);
 
@@ -70,7 +72,8 @@ export const signInWithApple = async () => {
       locale: 'en'
     });
 
-    const result = await signInWithPopup(auth, appleProvider);
+    if (!auth) throw new Error('Firebase auth is not initialized');
+    const result = await signInWithPopup(auth as Auth, appleProvider);
     const user = result.user;
     console.log("Apple Sign-In Success:", user);
 
@@ -128,5 +131,5 @@ export const signOutSocialUser = async (): Promise<boolean> => {
  * @returns Current authenticated user or null
  */
 export const getCurrentUser = () => {
-  return auth.currentUser;
+  return auth ? auth.currentUser : null;
 };
