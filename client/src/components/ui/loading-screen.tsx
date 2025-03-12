@@ -1,9 +1,8 @@
-
 import { memo } from "react";
 
 export const LoadingScreen = memo(() => {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-[9999]" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50">
       <div className="loader">
         <span>L</span>
         <span>O</span>
@@ -23,20 +22,17 @@ export const LoadingScreen = memo(() => {
         .loader {
           display: flex;
           gap: 0.5rem;
-          position: relative;
-          z-index: 10000;
         }
 
         .loader span {
-          font-size: 28px;
+          font-size: 22px;
           font-family: 'Space Mono', monospace;
           font-weight: 600;
           animation: blur 2s linear infinite;
           line-height: 20px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
-          color: #ff0000;
-          text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+          color: var(--primary);
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }
@@ -52,7 +48,6 @@ export const LoadingScreen = memo(() => {
             filter: blur(0);
             opacity: 1;
           }
-
           40% {
             filter: blur(5px);
             opacity: 0.5;
