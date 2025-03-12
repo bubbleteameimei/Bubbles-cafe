@@ -66,17 +66,18 @@ export const LoadingScreen = memo(() => {
 
   return (
     <div 
-      className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-background z-[99999]" 
+      className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen flex flex-col items-center justify-center bg-background z-[999999]" 
       style={{ 
         position: 'fixed',
         width: '100vw',
         height: '100vh',
         top: 0, 
-        left: 0
+        left: 0,
+        zIndex: 999999
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-md"></div>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
       
       <div className="loader relative z-10">
         <span>L</span>
