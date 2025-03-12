@@ -1,8 +1,9 @@
+
 import { memo } from "react";
 
 export const LoadingScreen = memo(() => {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-[9999] w-full h-full">
       <div className="loader">
         <span>L</span>
         <span>O</span>
