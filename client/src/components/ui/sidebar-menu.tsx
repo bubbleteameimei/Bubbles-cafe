@@ -105,6 +105,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Community</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/horror-demo'}
+                onClick={() => handleNavigation('/horror-demo')}
+                tooltip="Horror Demo"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+              >
+                <Palette className="h-4 w-4" />
+                <span>Horror Demo</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 
 interface PageTransitionProps {
   children: React.ReactNode;
-  mode?: "fade" | "slide" | "blur" | "horror" | "zoom";
+  mode?: "fade" | "slide" | "blur" | "zoom";
   duration?: number;
 }
 
@@ -48,33 +48,7 @@ const PageTransition: React.FC<PageTransitionProps> = ({
           animate: { filter: "blur(0px)", opacity: 1 },
           exit: { filter: "blur(8px)", opacity: 0 },
         };
-      case "horror":
-        return {
-          initial: { 
-            filter: "contrast(1.8) brightness(0.3) blur(10px) hue-rotate(10deg) grayscale(0.4)",
-            opacity: 0, 
-            scale: 1.05,
-            x: Math.random() * 10 - 5,
-            y: Math.random() * 10 - 5,
-            rotate: Math.random() * 1 - 0.5,
-          },
-          animate: { 
-            filter: "contrast(1) brightness(1) blur(0px) hue-rotate(0deg) grayscale(0)",
-            opacity: 1, 
-            scale: 1,
-            x: 0,
-            y: 0,
-            rotate: 0,
-          },
-          exit: { 
-            filter: "contrast(2) brightness(0.2) blur(15px) hue-rotate(-10deg) grayscale(0.6)",
-            opacity: 0, 
-            scale: 0.95,
-            x: Math.random() * -10 - 5,
-            y: Math.random() * 10 - 5,
-            rotate: Math.random() * -1 - 0.5,
-          },
-        };
+
       case "zoom":
         return {
           initial: { opacity: 0, scale: 0.96 },
@@ -101,9 +75,9 @@ const PageTransition: React.FC<PageTransitionProps> = ({
         variants={getVariants()}
         transition={{ 
           duration: duration,
-          ease: mode === "horror" ? [0.37, 0.01, 0.94, 0.46] : "easeInOut",
-          damping: mode === "horror" ? 12 : 10,
-          stiffness: mode === "horror" ? 100 : 50
+          ease: "easeInOut",
+          damping: 10,
+          stiffness: 50
         }}
         style={{ 
           height: "100%",

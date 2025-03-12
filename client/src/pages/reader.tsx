@@ -16,7 +16,7 @@ import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
 import { ShareButton } from "@/components/ShareButton";
-import MistEffect from "@/components/MistEffect";
+
 import FloatingControls from "@/components/ui/FloatingControls";
 
 // Theme button component
@@ -411,30 +411,8 @@ export default function Reader({ slug }: ReaderPageProps) {
 
   // Add this ref just once
   const contentRef = useRef<HTMLDivElement>(null);
-  
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Horror mist effect */}
-      <MistEffect intensity="medium" color="rgba(0, 0, 0, 0.7)" pulsate={true} />
-      
-      {/* Flickering vignette effect */}
-      <motion.div 
-        className="fixed inset-0 pointer-events-none" 
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.8) 100%)',
-          zIndex: 0,
-        }}
-        animate={{
-          opacity: [0.7, 0.9, 0.7, 0.85, 0.7],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        }}
-      />
-      
       {/* Global UI controls */}
       <FloatingControls position="right" className="top-6" />
       

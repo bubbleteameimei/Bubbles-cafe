@@ -1,175 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 
 interface PageTransitionProps {
   children: React.ReactNode;
-  effect?: 'fade' | 'slide' | 'scale' | 'horror' | 'glitch' | 'none';
-  duration?: number;
+  intensity?: 'light' | 'medium' | 'heavy';
 }
 
 const PageTransition: React.FC<PageTransitionProps> = ({ 
   children, 
-  effect = 'fade',
-  duration = 0.4
+  intensity = 'medium' 
 }) => {
   const [location] = useLocation();
-  const prefersReducedMotion = useReducedMotion();
-  const [shouldAnimate, setShouldAnimate] = useState(true);
-  const [activeTransition, setActiveTransition] = useState(effect);
-
-  // Check user's motion preferences
+  const [key, setKey] = useState(location);
+  
+  // Update the key when location changes to trigger the transition
   useEffect(() => {
-    // If user prefers reduced motion, use fade transition or none
-    if (prefersReducedMotion) {
-      setActiveTransition(effect === 'none' ? 'none' : 'fade');
-      // Use shorter duration for reduced motion
-      duration = 0.2;
-    } else {
-      setActiveTransition(effect);
-    }
-  }, [prefersReducedMotion, effect]);
+    setKey(location);
+  }, [location]);
 
-  // Define different transition effects
-  const getTransitionProps = () => {
-    if (!shouldAnimate || activeTransition === 'none') {
-      return {
-        initial: {},
-        animate: {},
-        exit: {},
-        transition: { duration: 0 }
-      };
-    }
+  // Generate random values for the transition effects
+  const getRandomEffects = () => {
+    const effects = {
+      // Light intensity
+      light: {
+        initialOpacity: 0.9,
+        initialBlur: '0.5px',
+        initialScale: 0.98,
+        initialRotate: [-0.3, 0.3],
+        initialGrayscale: 0.05,
+        exitOpacity: 0.9,
+        exitBlur: '0.5px',
+        exitScale: 0.98,
+        exitRotate: [-0.3, 0.3],
+        exitGrayscale: 0.05,
+        duration: 0.4
+      },
+      // Medium intensity
+      medium: {
+        initialOpacity: 0.85,
+        initialBlur: '1px',
+        initialScale: 0.96,
+        initialRotate: [-0.8, 0.8],
+        initialGrayscale: 0.1,
+        exitOpacity: 0.85,
+        exitBlur: '1px',
+        exitScale: 0.96,
+        exitRotate: [-0.8, 0.8],
+        exitGrayscale: 0.1,
+        duration: 0.5
+      },
+      // Heavy intensity
+      heavy: {
+        initialOpacity: 0.8,
+        initialBlur: '1.5px',
+        initialScale: 0.94,
+        initialRotate: [-1.2, 1.2],
+        initialGrayscale: 0.15,
+        exitOpacity: 0.8,
+        exitBlur: '1.5px',
+        exitScale: 0.94,
+        exitRotate: [-1.2, 1.2],
+        exitGrayscale: 0.15,
+        duration: 0.6
+      }
+    };
 
-    switch (activeTransition) {
-      case 'slide':
-        return {
-          initial: { opacity: 0, x: 50 },
-          animate: { opacity: 1, x: 0 },
-          exit: { opacity: 0, x: -50 },
-          transition: {
-            duration,
-            ease: [0.25, 0.1, 0.25, 1]
-          }
-        };
-
-      case 'scale':
-        return {
-          initial: { opacity: 0, scale: 0.95 },
-          animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 1.05 },
-          transition: {
-            duration,
-            ease: [0.25, 0.1, 0.25, 1]
-          }
-        };
-
-      case 'horror':
-        return {
-          initial: { opacity: 0, scale: 0.98, filter: 'blur(8px)' },
-          animate: { 
-            opacity: 1, 
-            scale: 1, 
-            filter: 'blur(0px)',
-            transition: {
-              duration,
-              ease: [0.25, 0.1, 0.25, 1],
-              filter: { duration: duration * 1.5 }
-            }
-          },
-          exit: { 
-            opacity: 0, 
-            scale: 1.02, 
-            filter: 'blur(12px)',
-            transition: {
-              duration: duration * 0.7,
-              ease: [0.25, 0.1, 0.25, 1],
-              filter: { duration: duration * 0.5 }
-            }
-          }
-        };
-
-      case 'glitch':
-        return {
-          initial: { 
-            opacity: 0,
-            filter: 'brightness(1.2) contrast(1.2)',
-            x: 0
-          },
-          animate: { 
-            opacity: 1,
-            filter: 'brightness(1) contrast(1)',
-            x: 0,
-            transition: {
-              duration,
-              ease: "easeOut",
-              filter: { duration: duration * 0.8 },
-              x: {
-                duration: duration * 0.5,
-                ease: "easeInOut",
-                times: [0, 0.2, 0.4, 0.6, 0.8, 1],
-                keyframes: [0, -3, 3, -2, 2, 0]
-              }
-            }
-          },
-          exit: { 
-            opacity: 0, 
-            filter: 'brightness(1.2) contrast(1.2)',
-            x: 0,
-            transition: {
-              duration: duration * 0.7,
-              ease: "easeIn",
-              filter: { duration: duration * 0.5 },
-              x: {
-                duration: duration * 0.3,
-                ease: "easeInOut",
-                times: [0, 0.3, 0.6, 1],
-                keyframes: [0, 2, -2, 0]
-              }
-            }
-          }
-        };
-
-      case 'fade':
-      default:
-        return {
-          initial: { opacity: 0, y: 10 },
-          animate: { opacity: 1, y: 0 },
-          exit: { opacity: 0, y: -10 },
-          transition: {
-            duration,
-            ease: [0.25, 0.1, 0.25, 1]
-          }
-        };
-    }
+    // Get base values for selected intensity
+    const base = effects[intensity];
+    
+    // Randomize within a small range for each transition
+    return {
+      initialOpacity: base.initialOpacity - Math.random() * 0.05,
+      initialBlur: `${parseFloat(base.initialBlur) + Math.random() * 0.5}px`,
+      initialScale: base.initialScale - Math.random() * 0.03,
+      initialRotate: base.initialRotate[Math.floor(Math.random() * 2)],
+      initialGrayscale: base.initialGrayscale + Math.random() * 0.05,
+      exitOpacity: base.exitOpacity - Math.random() * 0.05,
+      exitBlur: `${parseFloat(base.exitBlur) + Math.random() * 0.5}px`,
+      exitScale: base.exitScale - Math.random() * 0.03,
+      exitRotate: base.exitRotate[Math.floor(Math.random() * 2)],
+      exitGrayscale: base.exitGrayscale + Math.random() * 0.05,
+      duration: base.duration + Math.random() * 0.2
+    };
   };
 
-  // Disable animations if user has requested reduced motion
-  useEffect(() => {
-    const handleReducedMotionChange = (e: MediaQueryListEvent) => {
-      setShouldAnimate(!e.matches);
-    };
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    mediaQuery.addEventListener('change', handleReducedMotionChange);
-    setShouldAnimate(!mediaQuery.matches);
-
-    return () => {
-      mediaQuery.removeEventListener('change', handleReducedMotionChange);
-    };
-  }, []);
-
-  const transitionProps = getTransitionProps();
+  const effects = getRandomEffects();
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={location}
-        initial={transitionProps.initial}
-        animate={transitionProps.animate}
-        exit={transitionProps.exit}
-        transition={transitionProps.transition as any}
-        className="page-transition-container"
+        key={key}
+        initial={{ 
+          opacity: effects.initialOpacity,
+          filter: `blur(${effects.initialBlur}) grayscale(${effects.initialGrayscale})`,
+          scale: effects.initialScale,
+          rotate: effects.initialRotate
+        }}
+        animate={{ 
+          opacity: 1,
+          filter: 'blur(0px) grayscale(0)',
+          scale: 1,
+          rotate: 0
+        }}
+        exit={{ 
+          opacity: effects.exitOpacity,
+          filter: `blur(${effects.exitBlur}) grayscale(${effects.exitGrayscale})`,
+          scale: effects.exitScale,
+          rotate: effects.exitRotate
+        }}
+        transition={{ 
+          duration: effects.duration, 
+          ease: [0.22, 1, 0.36, 1] 
+        }}
+        className="page-transition"
       >
         {children}
       </motion.div>

@@ -18,7 +18,7 @@ import PageTransition from './components/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
-import MistEffect from './components/effects/MistEffect';
+
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import NewStoryNotification from './components/NewStoryNotification';
 import FullscreenButton from './components/FullscreenButton';
@@ -49,7 +49,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
-const AnimationDemoPage = withSuspense(React.lazy(() => import('./pages/animation-demo')));
+
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -97,7 +97,6 @@ function App() {
         <ThemeProvider>
           <SidebarProvider defaultOpen={true}>
             <div className="relative min-h-screen bg-background">
-              <MistEffect />
               {/* Desktop Sidebar */}
               <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
                 <div className="p-4">
@@ -115,7 +114,7 @@ function App() {
               <main className="min-h-screen lg:pl-64">
                 <div className="container mx-auto px-4 py-6">
                   <ErrorBoundary>
-                    <PageTransition mode="horror" duration={0.4}>
+                    <PageTransition mode="fade" duration={0.4}>
                       <Switch>
                         {/* Auth Routes */}
                         <Route path="/auth" component={AuthPage} />
@@ -131,7 +130,7 @@ function App() {
                         <Route path="/contact" component={ContactPage} />
                         <Route path="/report-bug" component={ReportBugPage} />
                         <Route path="/privacy" component={PrivacyPage} />
-                        <Route path="/animation-demo" component={AnimationDemoPage} />
+
 
                         {/* Legal Routes */}
                         <Route path="/legal/copyright" component={CopyrightPage} />

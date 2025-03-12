@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import Mist from "@/components/effects/mist";
+
 import { getReadingTime, getExcerpt } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
@@ -101,7 +101,7 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <Mist className="opacity-30" />
+
       <div className="container">
         <motion.div
           className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"

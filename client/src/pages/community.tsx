@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
-import MistEffect from "@/components/MistEffect";
+
 
 interface PostsResponse {
   posts: Post[];
@@ -35,27 +35,6 @@ export default function CommunityPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Horror mist effect in the background */}
-      <MistEffect intensity="light" color="rgba(0, 0, 0, 0.5)" pulsate={true} />
-      
-      {/* Flickering vignette effect */}
-      <motion.div 
-        className="fixed inset-0 pointer-events-none" 
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.6) 100%)',
-          zIndex: 0,
-        }}
-        animate={{
-          opacity: [0.5, 0.7, 0.5, 0.65, 0.5],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        }}
-      />
-    
       <motion.div 
         className="container relative z-10 max-w-7xl mx-auto py-8"
         initial={{ opacity: 0, y: 20 }}
@@ -65,7 +44,7 @@ export default function CommunityPage() {
         <div className="flex flex-col items-center mb-12">
           <h1 className="stories-page-title mb-4 text-4xl font-bold text-center">Community Stories</h1>
           <p className="text-muted-foreground text-center mb-6">
-            Got a story that'll keep us up at night? We're dying to read it
+            Got a story you'd like to share? We'd love to read it
           </p>
           <Button onClick={() => navigate("/submit-story")}>
             Share Your Story
@@ -93,7 +72,7 @@ export default function CommunityPage() {
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold mb-2">No Stories Yet</h3>
             <p className="text-muted-foreground mb-4">
-              Be the first to share your horror story with our community!
+              Be the first to share your story with our community!
             </p>
             <Button onClick={() => navigate("/submit-story")}>
               Share Your Story
