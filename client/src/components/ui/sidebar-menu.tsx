@@ -2,9 +2,11 @@ import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
   Bug, Scroll, Shield, Monitor, ScrollText, Bell, Lock, Building,
-  Mail, MessageSquare, Database, Palette, SunMoon, Type, Volume2,
+  Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn
 } from "lucide-react"
+
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
@@ -219,7 +221,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/theme')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <SunMoon className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Sun className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Dark/Light Mode</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
