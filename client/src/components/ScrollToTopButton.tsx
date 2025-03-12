@@ -1,28 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronUp } from 'lucide-react';
-import { Button } from './ui/button';
+import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export const ScrollToTopButton: React.FC = () => {
+interface ScrollToTopButtonProps {
+  threshold?: number;
+  showLabel?: boolean;
+  position?: "bottom-right" | "bottom-left";
+  className?: string;
+}
+
+const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
+  threshold = 300,
+  showLabel = false,
+  position = "bottom-right",
+  className = ""
+}) => {
   const [isVisible, setIsVisible] = useState(false);
 
+  // Position classes based on the position prop
+  const positionClasses = {
+    "bottom-right": "right-6 bottom-6",
+    "bottom-left": "left-6 bottom-6"
+  };
+
   useEffect(() => {
+    // Function to handle scroll event and toggle button visibility
     const toggleVisibility = () => {
-      if (window.pageYOffset > 200) {
+      if (window.pageYOffset > threshold) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
-    return () => window.removeEventListener('scroll', toggleVisibility);
-  }, []);
+    // Add scroll event listener
+    window.addEventListener("scroll", toggleVisibility);
+    
+    // Initial check
+    toggleVisibility();
 
+    // Clean up event listener on component unmount
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, [threshold]);
+
+  // Scroll to top function
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth"
     });
   };
 
@@ -30,7 +57,11 @@ export const ScrollToTopButton: React.FC = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="fixed bottom-4 right-4 z-50"
+          className={cn(
+            "fixed z-50",
+            positionClasses[position],
+            className
+          )}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
@@ -39,13 +70,19 @@ export const ScrollToTopButton: React.FC = () => {
           <Button
             onClick={scrollToTop}
             variant="outline"
-            size="icon"
-            className="rounded-full shadow-lg backdrop-blur bg-background/80"
+            aria-label="Scroll to top"
+            className={cn(
+              "rounded-full bg-background/80 backdrop-blur-sm shadow-md hover:bg-accent/20",
+              showLabel ? "px-4" : "size-10"
+            )}
           >
-            <ChevronUp className="h-4 w-4" />
+            <ArrowUp className={cn("h-5 w-5", showLabel && "mr-2")} />
+            {showLabel && <span>Top</span>}
           </Button>
         </motion.div>
       )}
     </AnimatePresence>
   );
 };
+
+export default ScrollToTopButton;

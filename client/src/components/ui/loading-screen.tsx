@@ -33,8 +33,7 @@ export const LoadingScreen = memo(() => {
           line-height: 20px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
-          color: white;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+          color: var(--primary);
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }

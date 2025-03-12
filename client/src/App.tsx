@@ -13,8 +13,8 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
-import { ScrollToTopButton } from './components/ScrollToTopButton';
-import PageTransition from './components/transitions/PageTransition';
+import ScrollToTopButton from './components/ScrollToTopButton';
+import PageTransition from './components/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
@@ -49,6 +49,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const AnimationDemoPage = withSuspense(React.lazy(() => import('./pages/animation-demo')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -129,7 +130,7 @@ function App() {
               <main className="min-h-screen lg:pl-64">
                 <div className="container mx-auto px-4 py-6">
                   <ErrorBoundary>
-                    <PageTransition effect="horror" duration={0.4}>
+                    <PageTransition mode="horror" duration={0.4}>
                       <Switch>
                         {/* Auth Routes */}
                         <Route path="/auth" component={AuthPage} />
@@ -145,6 +146,7 @@ function App() {
                         <Route path="/contact" component={ContactPage} />
                         <Route path="/report-bug" component={ReportBugPage} />
                         <Route path="/privacy" component={PrivacyPage} />
+                        <Route path="/animation-demo" component={AnimationDemoPage} />
 
                         {/* Legal Routes */}
                         <Route path="/legal/copyright" component={CopyrightPage} />
@@ -196,7 +198,6 @@ function App() {
               <Toaster />
               <CookieConsent />
               <ScrollToTopButton />
-              <FullscreenButton position="bottom-right" />
               <NewStoryNotification newStories={2} />
             </div>
           </SidebarProvider>

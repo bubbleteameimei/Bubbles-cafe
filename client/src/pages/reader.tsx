@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, BookmarkIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -16,7 +16,11 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import "../styles/floating-pagination.css";
-import {ShareButton} from "@/components/ShareButton"; // Added import for ShareButton
+import { ShareButton } from "@/components/ShareButton";
+import FullscreenButton from "@/components/FullscreenButton";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
+import ParticleToggle from "@/components/effects/ParticleToggle";
+import FloatingParticles from "@/components/effects/FloatingParticles";
 
 // Theme button component
 const ThemeButton = () => {
@@ -408,9 +412,28 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Add this ref just once
+  const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Track if particles are enabled (add this as a new state)
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
+  
   return (
     <div className="relative min-h-screen bg-background">
+      {/* Background effects */}
       <Mist className="opacity-30" />
+      {particlesEnabled && <FloatingParticles type="dust" density="medium" speed="medium" />}
+      
+      {/* Global UI controls */}
+      <FullscreenButton position="top-right" className="z-50" showLabel={false} />
+      <ScrollToTopButton position="bottom-right" />
+      <ParticleToggle 
+        onToggleParticles={(enabled) => setParticlesEnabled(enabled)}
+        initialState={particlesEnabled}
+        className="bottom-left fixed z-40"
+      />
+      
+      {/* We'll add Reading progress tracker later after fixing it */}
 
       <div className="container max-w-3xl mx-auto px-4 pt-8">
         {/* Reading controls - Theme toggle, bookmark and font size */}
@@ -481,19 +504,22 @@ export default function Reader({ slug }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-16"
+              ref={contentRef}
+              className="story-content mb-16 relative"
               style={{ fontSize: `${fontSize}px`, whiteSpace: 'pre-wrap' }}
               dangerouslySetInnerHTML={{
                 __html: currentPost.content.rendered
                   .replace(/\n\n+/g, '\n\n')
                   .replace(/<p>\s*<\/p>/g, '')
-                  .replace(/<p>(.*?)<\/p>/g, (match, p1) => `<p>${p1.trim()}</p>`)
+                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string) => `<p>${p1.trim()}</p>`)
                   .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
                   .replace(/\s+/g, ' ')
                   .replace(/(\r\n|\r|\n){2,}/g, '\n\n')
                   .trim()
               }}
             />
+            
+            {/* Commenting features will be implemented separately */}
 
             <div className="mt-8 pt-8 border-t border-border">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">

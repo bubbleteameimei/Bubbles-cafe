@@ -31,8 +31,11 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
     }
   };
 
-  // Get configuration based on horror particle type
-  const getParticleOptions = (): ISourceOptions => {
+  // Get configuration for our horror particle type
+  const getOptions = (): ISourceOptions => {
+    const count = getParticleCount();
+
+    // Base configuration for all particle types
     const baseConfig = {
       background: {
         color: {
@@ -40,25 +43,6 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
         },
       },
       fpsLimit: 60,
-      interactivity: {
-        detectsOn: "canvas",
-        events: {
-          onClick: {
-            enable: false,
-          },
-          onHover: {
-            enable: interactive,
-            mode: "repulse",
-          },
-          resize: true,
-        },
-        modes: {
-          repulse: {
-            distance: 100,
-            duration: 0.4,
-          },
-        },
-      },
       particles: {
         color: {
           value: "#ffffff",
@@ -67,10 +51,10 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
           enable: false,
         },
         move: {
-          direction: "none" as const,
+          direction: "none",
           enable: true,
           outModes: {
-            default: "out" as const,
+            default: "out",
           },
           random: true,
           speed: 1,
@@ -81,20 +65,39 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
             enable: true,
             area: 800,
           },
-          value: getParticleCount(),
+          value: count,
         },
         opacity: {
           value: 0.5,
         },
         shape: {
-          type: "circle" as const,
+          type: "circle",
         },
         size: {
           value: { min: 1, max: 5 },
         },
       },
       detectRetina: true,
-    };
+      interactivity: {
+        detectsOn: "canvas",
+        events: {
+          onHover: {
+            enable: interactive,
+            mode: "repulse",
+          },
+          onClick: {
+            enable: false,
+          },
+          resize: true,
+        },
+        modes: {
+          repulse: {
+            distance: 100,
+            duration: 0.4,
+          },
+        },
+      },
+    } as ISourceOptions;
 
     // Customize based on type
     switch (type) {
@@ -102,162 +105,123 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
         return {
           ...baseConfig,
           particles: {
-            ...baseConfig.particles,
-            color: {
+            ...(baseConfig.particles || {}),
+            color: { 
               value: "#a0c4ff",
+            },
+            size: {
+              value: { min: 5, max: 10 },
+              animation: {
+                enable: true,
+                speed: 2,
+                sync: false
+              }
             },
             opacity: {
               value: 0.3,
               random: true,
-              anim: {
+              animation: {
                 enable: true,
                 speed: 0.5,
-                opacity_min: 0.1,
-                sync: false,
-              },
-            },
-            shape: {
-              type: "circle",
-            },
-            size: {
-              value: 10,
-              random: true,
-              anim: {
-                enable: true,
-                speed: 2,
-                size_min: 1,
-                sync: false,
-              },
+                minimumValue: 0.1,
+                sync: false
+              }
             },
             move: {
-              ...baseConfig.particles.move,
-              direction: "none",
+              ...(baseConfig.particles?.move || {}),
               speed: 0.8,
-              random: true,
-              straight: false,
-              bounce: false,
-              attract: {
-                enable: false,
-                rotateX: 600,
-                rotateY: 1200,
-              },
-            },
-          },
+            }
+          }
         };
       case "blood":
         return {
           ...baseConfig,
           particles: {
-            ...baseConfig.particles,
-            color: {
+            ...(baseConfig.particles || {}),
+            color: { 
               value: "#8B0000",
+            },
+            size: {
+              value: { min: 1, max: 4 },
+              animation: {
+                enable: true,
+                speed: 2, 
+                sync: false
+              }
             },
             opacity: {
               value: 0.8,
               random: false,
             },
-            size: {
-              value: 4,
-              random: true,
-              anim: {
-                enable: true,
-                speed: 2,
-                size_min: 1,
-                sync: false,
-              },
-            },
             move: {
-              ...baseConfig.particles.move,
+              ...(baseConfig.particles?.move || {}),
               direction: "bottom",
               speed: 4,
               straight: true,
-              random: true,
-            },
-          },
+            }
+          }
         };
       case "flies":
         return {
           ...baseConfig,
           particles: {
-            ...baseConfig.particles,
-            color: {
+            ...(baseConfig.particles || {}),
+            color: { 
               value: "#222222",
+            },
+            size: {
+              value: { min: 1, max: 2 },
             },
             opacity: {
               value: 0.8,
               random: false,
             },
-            shape: {
-              type: "circle",
-            },
-            size: {
-              value: 2,
-              random: true,
-            },
             move: {
-              ...baseConfig.particles.move,
-              enable: true,
+              ...(baseConfig.particles?.move || {}),
               speed: 5,
-              direction: "none",
-              random: true,
-              straight: false,
-              out_mode: "out",
               bounce: false,
-              attract: {
-                enable: false,
-                rotateX: 600,
-                rotateY: 1200,
-              },
-            },
-          },
+            }
+          }
         };
       case "fog":
         return {
           ...baseConfig,
           particles: {
-            ...baseConfig.particles,
+            ...(baseConfig.particles || {}),
             number: {
-              ...baseConfig.particles.number,
-              value: getParticleCount() * 0.5,
+              ...(baseConfig.particles?.number || {}),
+              value: Math.floor(count * 0.5),
             },
-            color: {
+            color: { 
               value: "#cccccc",
+            },
+            size: {
+              value: { min: 15, max: 30 },
+              animation: {
+                enable: true,
+                speed: 0.2,
+                sync: false
+              }
             },
             opacity: {
               value: 0.1,
               random: true,
-              anim: {
+              animation: {
                 enable: true,
                 speed: 0.3,
-                opacity_min: 0.05,
-                sync: false,
-              },
-            },
-            shape: {
-              type: "circle",
-            },
-            size: {
-              value: 30,
-              random: true,
-              anim: {
-                enable: true,
-                speed: 0.2,
-                size_min: 15,
-                sync: false,
-              },
+                minimumValue: 0.05,
+                sync: false
+              }
             },
             move: {
-              ...baseConfig.particles.move,
+              ...(baseConfig.particles?.move || {}),
               speed: 0.2,
-              direction: "none",
-              random: true,
-              straight: false,
-            },
+            }
           },
           interactivity: {
-            ...baseConfig.interactivity,
+            ...(baseConfig.interactivity || {}),
             modes: {
-              ...baseConfig.interactivity.modes,
+              ...(baseConfig.interactivity?.modes || {}),
               repulse: {
                 distance: 200,
                 duration: 2,
@@ -270,41 +234,34 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
         return {
           ...baseConfig,
           particles: {
-            ...baseConfig.particles,
-            color: {
+            ...(baseConfig.particles || {}),
+            color: { 
               value: "#2c2c2c",
+            },
+            size: {
+              value: { min: 0.5, max: 3 },
+              animation: {
+                enable: true,
+                speed: 1,
+                sync: false
+              }
             },
             opacity: {
               value: 0.6,
               random: true,
-              anim: {
+              animation: {
                 enable: true,
                 speed: 0.5,
-                opacity_min: 0.1,
-                sync: false,
-              },
-            },
-            shape: {
-              type: "circle",
-            },
-            size: {
-              value: 3,
-              random: true,
-              anim: {
-                enable: true,
-                speed: 1,
-                size_min: 0.5,
-                sync: false,
-              },
+                minimumValue: 0.1,
+                sync: false
+              }
             },
             move: {
-              ...baseConfig.particles.move,
+              ...(baseConfig.particles?.move || {}),
               direction: "bottom",
               speed: 1,
-              random: true,
-              straight: false,
-            },
-          },
+            }
+          }
         };
     }
   };
@@ -314,7 +271,7 @@ const HorrorParticles: React.FC<HorrorParticlesProps> = ({
       id={`horror-particles-${type}`}
       className={`absolute inset-0 ${className}`}
       init={particlesInit}
-      options={getParticleOptions()}
+      options={getOptions()}
     />
   );
 };
