@@ -1,10 +1,11 @@
 
-import { useToast } from "@/hooks/use-toast"
+import * as React from "react";
+import { useToast } from "@/hooks/use-toast";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts } = useToast();
 
   // Map custom toasts to react-toastify
   React.useEffect(() => {
@@ -16,10 +17,8 @@ export function Toaster() {
         </div>
       );
       
-      const toastType = variant === 'destructive' ? toast.error : 
-                         variant === 'success' ? toast.success : toast.info;
-      
-      toastType(toastContent, {
+      // Use the correct toast type based on variant
+      const toastOptions = {
         toastId: id,
         position: "bottom-center",
         autoClose: 5000,
@@ -27,7 +26,19 @@ export function Toaster() {
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-      });
+      };
+
+      // Cast variant to string to safely handle comparison
+      const variantStr = String(variant || 'default');
+      
+      if (variantStr === 'destructive') {
+        toast.error(toastContent, toastOptions);
+      } else if (variantStr === 'success') {
+        toast.success(toastContent, toastOptions);
+      } else {
+        // Default case for any other variant
+        toast.info(toastContent, toastOptions);
+      }
     });
   }, [toasts]);
 

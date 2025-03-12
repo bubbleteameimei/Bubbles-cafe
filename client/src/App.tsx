@@ -20,7 +20,6 @@ import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
-import NewStoryNotification from './components/NewStoryNotification';
 import FullscreenButton from './components/FullscreenButton';
 import SearchBar from './components/SearchBar';
 import { NotificationProvider } from './components/NotificationProvider';
@@ -184,7 +183,6 @@ function App() {
                 <Toaster />
                 <CookieConsent />
                 <ScrollToTopButton />
-                <NewStoryNotification newStories={2} />
               </div>
             </SidebarProvider>
           </NotificationProvider>
