@@ -9,6 +9,16 @@ import { z } from "zod";
 import { queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Define social user type that comes from Firebase
+type SocialUser = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  photoURL: string | null;
+  provider: string;
+  token?: string;
+};
+
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
@@ -17,6 +27,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
+  socialLoginMutation: UseMutationResult<SelectUser, Error, SocialUser>;
 };
 
 // Define the login schema using email and remember me
@@ -143,6 +154,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
   });
+  
+  // Social login mutation for handling Google/Apple sign-in
+  const socialLoginMutation = useMutation({
+    mutationFn: async (socialUserData: SocialUser) => {
+      const res = await fetch("/api/social-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          socialId: socialUserData.id,
+          email: socialUserData.email,
+          username: socialUserData.name || `user_${Date.now()}`,
+          provider: socialUserData.provider,
+          photoURL: socialUserData.photoURL,
+          token: socialUserData.token
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Social login failed");
+      }
+
+      return await res.json();
+    },
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "Welcome!",
+        description: "Successfully signed in with social account",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Social login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Add login function that uses loginMutation
   const login = async (email: string, password: string) => {
@@ -159,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        socialLoginMutation,
       }}
     >
       {children}

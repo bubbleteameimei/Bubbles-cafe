@@ -19,7 +19,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { loginMutation, registerMutation } = useAuth();
+  const { loginMutation, registerMutation, socialLoginMutation } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,9 +83,19 @@ export default function AuthPage() {
                 {/* OAuth Sign In Buttons */}
                 <div className="social-login-buttons">
                   <SocialLoginButtons 
-                    onSuccess={(userData) => {
+                    onSuccess={async (userData) => {
                       console.log("Social login successful", userData);
-                      setLocation("/");
+                      try {
+                        await socialLoginMutation.mutateAsync(userData);
+                        setLocation("/");
+                      } catch (error: any) {
+                        console.error("Failed to process social login:", error);
+                        toast({
+                          title: "Authentication Error",
+                          description: error?.message || "Failed to process social login",
+                          variant: "destructive"
+                        });
+                      }
                     }}
                     onError={(error) => {
                       toast({
@@ -198,9 +208,19 @@ export default function AuthPage() {
                 {/* Social Sign Up Buttons */}
                 <div className="social-login-buttons">
                   <SocialLoginButtons 
-                    onSuccess={(userData) => {
+                    onSuccess={async (userData) => {
                       console.log("Social signup successful", userData);
-                      setLocation("/");
+                      try {
+                        await socialLoginMutation.mutateAsync(userData);
+                        setLocation("/");
+                      } catch (error: any) {
+                        console.error("Failed to process social signup:", error);
+                        toast({
+                          title: "Registration Error",
+                          description: error?.message || "Failed to process social signup",
+                          variant: "destructive"
+                        });
+                      }
                     }}
                     onError={(error) => {
                       toast({

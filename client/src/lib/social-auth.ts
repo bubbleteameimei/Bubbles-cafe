@@ -10,6 +10,14 @@ const appleProvider = new OAuthProvider("apple.com");
  */
 export const signInWithGoogle = async () => {
   try {
+    // In Replit environment, we need to catch and handle specific errors
+    googleProvider.setCustomParameters({
+      // Force account selection even when one account is available
+      prompt: 'select_account',
+      // Request additional permissions
+      access_type: 'offline'
+    });
+    
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     console.log("Google Sign-In Success:", user);
@@ -27,9 +35,19 @@ export const signInWithGoogle = async () => {
       provider: "google",
       token
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Google Sign-In Error:", error);
-    throw error;
+    
+    // Provide more helpful error messages
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Sign-in popup was blocked by the browser. Please allow popups for this site.');
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in was cancelled. Please try again.');
+    } else if (error.code === 'auth/internal-error') {
+      throw new Error('Authentication service is temporarily unavailable. This may be due to network restrictions in the current environment.');
+    } else {
+      throw error;
+    }
   }
 };
 
@@ -42,6 +60,11 @@ export const signInWithApple = async () => {
     // Configure OAuth scopes
     appleProvider.addScope('email');
     appleProvider.addScope('name');
+    
+    // Add custom parameters for better UX
+    appleProvider.setCustomParameters({
+      locale: 'en'
+    });
     
     const result = await signInWithPopup(auth, appleProvider);
     const user = result.user;
@@ -60,9 +83,21 @@ export const signInWithApple = async () => {
       provider: "apple",
       token
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Apple Sign-In Error:", error);
-    throw error;
+    
+    // Provide more helpful error messages like we did for Google
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Sign-in popup was blocked by the browser. Please allow popups for this site.');
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in was cancelled. Please try again.');
+    } else if (error.code === 'auth/internal-error') {
+      throw new Error('Authentication service is temporarily unavailable. This may be due to network restrictions in the current environment.');
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('Apple Sign-In is not enabled in Firebase console. Please contact the administrator.');
+    } else {
+      throw error;
+    }
   }
 };
 

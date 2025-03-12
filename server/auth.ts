@@ -133,15 +133,12 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-      console.log('[Auth] Password hashed successfully');
-
-      // Create user
+      // Create user - storage will handle password hashing
+      console.log('[Auth] Creating user with registration data');
       const user = await storage.createUser({
         email,
         username,
-        password: hashedPassword,
+        password,
         isAdmin: false
       });
 
@@ -183,5 +180,66 @@ export function setupAuth(app: Express) {
     }
     console.log('[Auth] User info request:', { id: req.user?.id });
     res.json(req.user);
+  });
+  
+  // Add social login endpoint
+  app.post("/api/social-login", async (req, res) => {
+    try {
+      console.log('[Auth] Social login request received:', { 
+        provider: req.body.provider,
+        email: req.body.email,
+        socialId: req.body.socialId
+      });
+      
+      const { socialId, email, username, provider, photoURL } = req.body;
+      
+      if (!socialId || !email) {
+        console.log('[Auth] Missing social login fields:', { socialId: !!socialId, email: !!email });
+        return res.status(400).json({ message: "Social ID and email are required" });
+      }
+      
+      // Check if user exists with this email
+      let user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Create a new user if they don't exist
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        
+        console.log('[Auth] Creating new user for social login:', { email, provider });
+        
+        try {
+          user = await storage.createUser({
+            username: username || email.split('@')[0],
+            email,
+            password: randomPassword, // pass the unhashed password, storage handles hashing
+            isAdmin: false
+          });
+          
+          console.log('[Auth] New user created via social login:', { id: user.id, provider });
+        } catch (createError) {
+          console.error('[Auth] Error creating user for social login:', createError);
+          return res.status(500).json({ message: "Error creating user account" });
+        }
+      } else {
+        console.log('[Auth] Existing user found for social login:', { id: user.id, email });
+      }
+      
+      // Omit password_hash from user object
+      const { password_hash, ...safeUser } = user;
+      
+      // Log the user in
+      req.login(safeUser, (err) => {
+        if (err) {
+          console.error('[Auth] Session creation error during social login:', err);
+          return res.status(500).json({ message: "Error logging in with social account" });
+        }
+        
+        console.log('[Auth] Social login successful:', { id: user.id, provider });
+        return res.json(safeUser);
+      });
+    } catch (error) {
+      console.error("[Auth] Social login error:", error);
+      res.status(500).json({ message: "Error processing social login" });
+    }
   });
 }
