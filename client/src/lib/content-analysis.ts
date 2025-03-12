@@ -369,6 +369,98 @@ export const getReadingTime = (content: string): string => {
   return `${minutes} min read`;
 };
 
+export const getExcerpt = (content: string): string => {
+  if (!content) return '';
+  
+  // Create a clean version of content with HTML removed
+  const cleanContent = content.replace(/<[^>]+>/g, '');
+  
+  // Define keywords that indicate scary or engaging content
+  const scaryKeywords = [
+    'suddenly', 'blood', 'scream', 'fear', 'terror', 'dark', 'death', 
+    'horror', 'dread', 'cold', 'eyes', 'flesh', 'pain', 'afraid', 
+    'terrified', 'panic', 'trembling', 'heart', 'bones', 'empty',
+    'parasite', 'slime', 'gnaw', 'writhe', 'worm', 'brain', 'sanity',
+    'suffer', 'kill', 'murder', 'throat', 'knife', 'butcher', 'cut',
+    'choke', 'dying', 'grave', 'hell', 'nightmare', 'whisper', 'scream'
+  ];
+  
+  // Find a paragraph with scary content - try different approaches
+  
+  // First approach: look for paragraphs (separated by double newlines)
+  const paragraphs = cleanContent.split('\n\n')
+    .filter(p => p.trim().length > 40); // Filter out very short paragraphs
+  
+  // If no significant paragraphs found, try single newlines
+  const textSegments = paragraphs.length > 1 ? paragraphs : 
+    cleanContent.split('\n').filter(p => p.trim().length > 40);
+  
+  // If still no good segments, try sentence splitting
+  const sections = textSegments.length > 1 ? textSegments :
+    cleanContent.split(/(?<=\.)\s+/).filter(s => s.trim().length > 40);
+  
+  // Score each text segment
+  const scoredSegments = sections.map((segment, index) => {
+    let score = 0;
+    const text = segment.trim();
+    
+    // Skip very short segments
+    if (text.length < 50 && sections.length > 1) {
+      return { text, score: -1, index };
+    }
+    
+    // Score based on scary keywords
+    scaryKeywords.forEach(keyword => {
+      if (text.toLowerCase().includes(keyword)) {
+        score += 2;
+      }
+    });
+    
+    // Extra points for dramatic punctuation
+    if (text.includes('!')) score += 3;
+    if (text.includes('?')) score += 2;
+    if (text.includes('...')) score += 2;
+    
+    // Additional scoring for direct speech which is often more engaging
+    if (text.includes('"') || text.includes('"') || text.includes('"')) {
+      score += 3;
+    }
+    
+    // Bonus points for second-person narrative which is more engaging
+    if (text.toLowerCase().includes(' you ') || text.toLowerCase().includes(' your ')) {
+      score += 2;
+    }
+    
+    return { text, score, index };
+  });
+  
+  // Sort by score (highest first)
+  scoredSegments.sort((a, b) => b.score - a.score);
+  
+  // Use the highest scoring segment or fallback strategies
+  let selectedText;
+  
+  if (scoredSegments.length > 0 && scoredSegments[0].score > 1) {
+    // Use the highest scoring segment
+    selectedText = scoredSegments[0].text;
+  } else if (sections.length > 2) {
+    // If no high scores, pick a paragraph from the middle of the story (often more interesting)
+    const middleIndex = Math.floor(sections.length / 3); // Start at 1/3 through the story
+    selectedText = sections[middleIndex] || sections[0];
+  } else {
+    // Fallback to beginning of content
+    selectedText = cleanContent.substring(0, 300);
+  }
+  
+  // Ensure proper length and formatting
+  const maxLength = 200;
+  if (selectedText.length > maxLength) {
+    return selectedText.substring(0, maxLength).split(' ').slice(0, -1).join(' ') + '...';
+  }
+  
+  return selectedText;
+};
+
 // Added function to log post creation with theme information.
 export const logPostCreation = (postId: number, postTitle: string, date: string, theme: ThemeCategory) => {
   console.log(`Created post: "${postTitle}" (ID: ${postId}) with date: ${date} [Theme: ${theme}]`);

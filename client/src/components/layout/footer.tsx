@@ -11,16 +11,12 @@ export default function Footer() {
             © Bubble's Cafe 2022-{currentYear}. All rights reserved.
           </p>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <Link href="/privacy">
-              <a className="hover:text-foreground transition-colors">
-                Privacy
-              </a>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
+              Privacy
             </Link>
             <span>•</span>
-            <Link href="/contact">
-              <a className="hover:text-foreground transition-colors">
-                Contact
-              </a>
+            <Link href="/contact" className="hover:text-foreground transition-colors">
+              Contact
             </Link>
           </div>
         </div>

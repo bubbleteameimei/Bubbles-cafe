@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { getExcerpt } from "@/lib/content-analysis";
 
 export default function LatestStories() {
   const [, setLocation] = useLocation();
@@ -52,7 +53,7 @@ export default function LatestStories() {
                 {post.title}
               </h3>
               <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                {post.excerpt}
+                {post.content && getExcerpt(post.content)}
               </p>
             </div>
           ))}

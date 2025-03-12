@@ -18,11 +18,8 @@ import PageTransition from './components/transitions/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
-import MistEffect from './components/effects/MistEffect';
 
 // Create a wrapper for lazy-loaded components that properly handles props
-// Since this is a TypeScript issue that doesn't affect functionality,
-// we're using a simpler implementation that works in practice
 const withSuspense = <P extends object>(
   Component: React.LazyExoticComponent<React.ComponentType<any>>
 ) => {
@@ -90,32 +87,24 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <SidebarProvider defaultOpen={true}>
+          <SidebarProvider defaultOpen={false}>
             <div className="relative min-h-screen bg-background">
-              <MistEffect />
               {/* Desktop Sidebar */}
-              <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
+              <aside className="fixed top-0 left-0 z-50 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
                 <Navigation />
               </aside>
 
-              {/* Animated Mobile Sidebar */}
-              <AnimatedSidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
-
-              {/* Mobile Navigation Toggle */}
-              <div className="fixed top-4 left-4 z-30 block lg:hidden">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={toggleSidebar} 
-                  className="text-foreground"
+              {/* Mobile Navigation & Animated Sidebar */}
+              <div className="lg:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="fixed top-4 left-4 z-50"
+                  onClick={toggleSidebar}
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
-              </div>
-
-              {/* Mobile Navigation */}
-              <div className="block lg:hidden">
-                <Navigation />
+                <AnimatedSidebar isOpen={isSidebarOpen} toggle={toggleSidebar} />
               </div>
 
               {/* Main Content */}
