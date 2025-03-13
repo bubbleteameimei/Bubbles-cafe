@@ -1,6 +1,6 @@
 
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();

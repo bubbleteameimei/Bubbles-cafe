@@ -13,11 +13,13 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 };
 
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
+  toggleTheme: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -61,6 +63,23 @@ export function ThemeProvider({
     root.classList.add(theme);
   }, [theme]);
 
+  // Toggle between light and dark themes
+  const toggleTheme = () => {
+    setTheme(prevTheme => {
+      // If system, use detected system theme to determine toggle direction
+      if (prevTheme === "system") {
+        const systemIsDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const newTheme = systemIsDark ? "light" : "dark";
+        localStorage.setItem(storageKey, newTheme);
+        return newTheme;
+      }
+      // Otherwise toggle between light and dark
+      const newTheme = prevTheme === "dark" ? "light" : "dark";
+      localStorage.setItem(storageKey, newTheme);
+      return newTheme;
+    });
+  };
+
   const value = {
     theme,
     setTheme: (theme: Theme) => {
@@ -68,6 +87,7 @@ export function ThemeProvider({
       setTheme(theme);
       console.log(`Theme switched to: ${theme}`);
     },
+    toggleTheme,
   };
 
   return (

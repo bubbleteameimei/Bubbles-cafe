@@ -7,11 +7,7 @@ interface GlobalThemeToggleProps {
 }
 
 export function GlobalThemeToggle({ className = "" }: GlobalThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
-  
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <Button

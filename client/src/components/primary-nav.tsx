@@ -4,7 +4,7 @@ import { GlobalThemeToggle } from "@/components/global-theme-toggle";
 import { Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 
 export function PrimaryNav() {
   const sidebar = useSidebar();

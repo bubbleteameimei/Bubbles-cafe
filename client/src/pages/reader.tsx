@@ -15,7 +15,7 @@ import { getReadingTime, sanitizeHtmlContent } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 
 interface ReaderPageProps {
   slug?: string;

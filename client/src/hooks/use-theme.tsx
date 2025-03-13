@@ -1,16 +1,16 @@
 import { useEffect, useCallback, useState } from "react";
-import { theme } from "@/lib/theme";
+import { theme as themeConfig } from "@/lib/theme";
 
 type ColorMode = 'light' | 'dark';
 
 export function useTheme() {
-  const [colorMode, setColorMode] = useState<ColorMode>(() => {
+  const [theme, setTheme] = useState<ColorMode>(() => {
     if (typeof window === 'undefined') return 'dark';
     return (window.localStorage.getItem('color-mode') as ColorMode) || 'dark';
   });
 
   const toggleTheme = useCallback(() => {
-    setColorMode((prev) => {
+    setTheme((prev) => {
       const newMode = prev === 'light' ? 'dark' : 'light';
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('color-mode', newMode);
@@ -23,33 +23,32 @@ export function useTheme() {
     if (typeof window === 'undefined') return;
 
     const root = window.document.documentElement;
-    const colors = theme.colors[colorMode];
+    const colors = themeConfig.colors[theme];
 
     // Apply theme colors as CSS custom properties
     Object.entries(colors).forEach(([key, value]) => {
       // Convert the color to CSS custom property format
       const cssVarName = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      root.style.setProperty(cssVarName, value);
+      root.style.setProperty(cssVarName, value as string);
     });
 
     // Apply base styles
     const body = document.body;
     body.style.backgroundColor = colors.background;
     body.style.color = colors.foreground;
-    body.style.transition = theme.effects.transition.theme;
+    body.style.transition = themeConfig.effects.transition.theme;
 
     // Add debug information
     if (process.env.NODE_ENV === 'development') {
       console.log('Theme applied:', {
-        mode: colorMode,
+        mode: theme,
         colors: colors
       });
     }
-  }, [colorMode]);
+  }, [theme]);
 
   return {
     theme,
-    colorMode,
     toggleTheme,
   };
 }

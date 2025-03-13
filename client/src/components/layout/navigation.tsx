@@ -7,7 +7,7 @@ import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, Moon, Sun } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/components/NotificationProvider";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();

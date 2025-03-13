@@ -3,7 +3,7 @@ import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
 import { useNotifications } from './NotificationProvider';
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "@/lib/theme-provider";
+import { useTheme } from "@/components/theme-provider";
 
 interface SidebarHeaderProps {
   categories?: string[];

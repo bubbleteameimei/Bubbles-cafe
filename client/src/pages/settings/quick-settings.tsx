@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { useTheme } from '@/lib/theme-provider';
+import { useTheme } from '@/components/theme-provider';
 
 export default function QuickSettingsPage() {
   const { theme, setTheme } = useTheme();

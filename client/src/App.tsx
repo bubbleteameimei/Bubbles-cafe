@@ -5,7 +5,7 @@ import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
-import { ThemeProvider } from '@/lib/theme-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
