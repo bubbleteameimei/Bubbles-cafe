@@ -9,7 +9,7 @@ import compression from 'compression';
 import express from 'express';
 import * as session from 'express-session';
 import { z } from "zod";
-import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post } from "@shared/schema";
+import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type InsertBookmark } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -1073,6 +1073,122 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // Error handling middleware
+  // Bookmark API routes
+  app.post("/api/bookmarks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { postId, notes, tags } = req.body;
+      const userId = (req.user as any).id;
+      
+      if (!postId) {
+        return res.status(400).json({ error: "Post ID is required" });
+      }
+      
+      // Create bookmark
+      const bookmark = await storage.createBookmark({
+        userId,
+        postId,
+        notes,
+        tags,
+        lastPosition: "0"
+      });
+      
+      res.status(201).json(bookmark);
+    } catch (error) {
+      console.error("Error creating bookmark:", error);
+      res.status(500).json({ error: "Failed to create bookmark" });
+    }
+  });
+  
+  app.get("/api/bookmarks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id;
+      const tag = req.query.tag as string;
+      
+      let bookmarks;
+      if (tag) {
+        bookmarks = await storage.getBookmarksByTag(userId, tag);
+      } else {
+        bookmarks = await storage.getUserBookmarks(userId);
+      }
+      
+      res.json(bookmarks);
+    } catch (error) {
+      console.error("Error fetching bookmarks:", error);
+      res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+  
+  app.get("/api/bookmarks/:postId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id;
+      const postId = parseInt(req.params.postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      const bookmark = await storage.getBookmark(userId, postId);
+      
+      if (!bookmark) {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      
+      res.json(bookmark);
+    } catch (error) {
+      console.error("Error fetching bookmark:", error);
+      res.status(500).json({ error: "Failed to fetch bookmark" });
+    }
+  });
+  
+  app.patch("/api/bookmarks/:postId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id;
+      const postId = parseInt(req.params.postId);
+      const { notes, tags, lastPosition } = req.body;
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      const updateData: Partial<InsertBookmark> = {};
+      
+      if (notes !== undefined) updateData.notes = notes;
+      if (tags !== undefined) updateData.tags = tags;
+      if (lastPosition !== undefined) updateData.lastPosition = lastPosition;
+      
+      const updatedBookmark = await storage.updateBookmark(userId, postId, updateData);
+      
+      res.json(updatedBookmark);
+    } catch (error) {
+      console.error("Error updating bookmark:", error);
+      if ((error as Error).message === "Bookmark not found") {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      res.status(500).json({ error: "Failed to update bookmark" });
+    }
+  });
+  
+  app.delete("/api/bookmarks/:postId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id;
+      const postId = parseInt(req.params.postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      await storage.deleteBookmark(userId, postId);
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting bookmark:", error);
+      if ((error as Error).message === "Bookmark not found") {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      res.status(500).json({ error: "Failed to delete bookmark" });
+    }
+  });
+
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error('Global error handler:', err);
     res.status(500).json({

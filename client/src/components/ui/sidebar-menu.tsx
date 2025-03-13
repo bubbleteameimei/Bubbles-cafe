@@ -3,7 +3,7 @@ import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
   Bug, Scroll, Shield, Monitor, ScrollText, Bell, Lock, Building,
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
-  User, Link2 as Link, CircleUserRound as UserCircle, LogIn
+  User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon
 } from "lucide-react"
 
 
@@ -107,6 +107,21 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Community</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            
+            {/* Bookmarks - Only show when logged in */}
+            {user && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location === '/bookmarks'}
+                  onClick={() => handleNavigation('/bookmarks')}
+                  tooltip="Bookmarks"
+                  className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                >
+                  <BookmarkIcon className="h-4 w-4" />
+                  <span>Bookmarks</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             
             {/* Login/Sign Up Button - Show only when not logged in */}
             {!user && (

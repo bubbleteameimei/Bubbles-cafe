@@ -11,6 +11,7 @@ import CommentSection from "@/components/blog/comment-section";
 import { fetchPosts, fetchPost } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { FontSizeControls } from "@/components/ui/FontSizeControls";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { useTheme } from "@/lib/theme-provider";
@@ -18,6 +19,14 @@ import { Moon, Sun } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 import "../styles/reader.css";
 
 // Theme button component
@@ -39,32 +48,8 @@ const ThemeButton = () => {
   );
 };
 
-// Bookmark button component
-const BookmarkButton = () => {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
-  const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-  };
-
-  return (
-    <button
-      onClick={toggleBookmark}
-      className="h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105"
-      aria-label="Bookmark post"
-    >
-      {isBookmarked ? (
-        <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-        </svg>
-      ) : (
-        <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-        </svg>
-      )}
-    </button>
-  );
-};
+// Import BookmarkButton component
+import { BookmarkButton as BookmarkButtonComponent, useBookmarkPosition } from '@/components/ui/BookmarkButton';
 
 // Font size controls component has been replaced with the imported component
 
@@ -431,12 +416,31 @@ export default function Reader({ slug }: ReaderPageProps) {
       
       {/* We'll add Reading progress tracker later after fixing it */}
 
+      {/* Add the floating navigation component */}
+      <FloatingNavigation 
+        currentIndex={currentIndex}
+        totalStories={posts.length}
+        onPrevious={() => {
+          if (currentIndex > 0) {
+            setCurrentIndex(currentIndex - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}
+        onNext={() => {
+          if (currentIndex < posts.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}
+        onRandom={handleRandomStory}
+      />
+
       <div className="container max-w-3xl mx-auto px-4 pt-16 pb-16 relative z-10">
         {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
           <div className="flex space-x-4">
             <ThemeButton />
-            <BookmarkButton />
+            {currentPost && <BookmarkButtonComponent postId={currentPost.id} />}
           </div>
           <FontSizeControls />
         </div>
@@ -643,6 +647,43 @@ export default function Reader({ slug }: ReaderPageProps) {
 
               <div className="mt-8">
                 <CommentSection postId={currentPost.id} />
+
+                {/* Bottom pagination for better navigation */}
+                <div className="mt-12">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => {
+                            if (currentIndex > 0) {
+                              setCurrentIndex(currentIndex - 1);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
+                          className={currentIndex <= 0 ? "opacity-50 pointer-events-none" : "cursor-pointer hover:bg-accent"}
+                        />
+                      </PaginationItem>
+                      
+                      <PaginationItem>
+                        <span className="flex h-10 items-center justify-center px-4 text-sm font-medium">
+                          {currentIndex + 1} / {posts.length}
+                        </span>
+                      </PaginationItem>
+                      
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => {
+                            if (currentIndex < posts.length - 1) {
+                              setCurrentIndex(currentIndex + 1);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
+                          className={currentIndex >= posts.length - 1 ? "opacity-50 pointer-events-none" : "cursor-pointer hover:bg-accent"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
               </div>
             </div>
           </motion.article>

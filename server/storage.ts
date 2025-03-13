@@ -21,6 +21,7 @@ import {
   type SiteSetting, type InsertSiteSetting,
   type ActivityLog, type InsertActivityLog,
   type AdminNotification, type InsertAdminNotification,
+  type Bookmark, type InsertBookmark,
   // Tables
   posts as postsTable,
   comments,
@@ -43,6 +44,7 @@ import {
   siteSettings,
   activityLogs,
   adminNotifications,
+  bookmarks,
   type Achievement,
   type UserAchievement,
   achievements,
@@ -55,7 +57,7 @@ import {
 
 import type { CommentMetadata } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, lt, gt, sql, avg, count } from "drizzle-orm";
+import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from 'bcrypt';
@@ -190,6 +192,14 @@ export interface IStorage {
     totalLikes: number;
     recentActivity: ActivityLog[];
   }>;
+  
+  // Bookmark methods
+  createBookmark(bookmark: InsertBookmark): Promise<Bookmark>;
+  getBookmark(userId: number, postId: number): Promise<Bookmark | undefined>;
+  getUserBookmarks(userId: number): Promise<(Bookmark & { post: Post })[]>;
+  updateBookmark(userId: number, postId: number, data: Partial<InsertBookmark>): Promise<Bookmark>;
+  deleteBookmark(userId: number, postId: number): Promise<void>;
+  getBookmarksByTag(userId: number, tag: string): Promise<(Bookmark & { post: Post })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1594,6 +1604,190 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Bookmark methods implementation
+  async createBookmark(bookmark: InsertBookmark): Promise<Bookmark> {
+    try {
+      console.log(`[Storage] Creating bookmark for user ${bookmark.userId} and post ${bookmark.postId}`);
+      
+      // Check if bookmark already exists
+      const existingBookmark = await this.getBookmark(bookmark.userId, bookmark.postId);
+      if (existingBookmark) {
+        console.log(`[Storage] Bookmark already exists, updating instead`);
+        return this.updateBookmark(bookmark.userId, bookmark.postId, bookmark);
+      }
+      
+      // Create new bookmark
+      const [newBookmark] = await db.insert(bookmarks)
+        .values({
+          ...bookmark,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[Storage] Bookmark created successfully with ID: ${newBookmark.id}`);
+      return newBookmark;
+    } catch (error) {
+      console.error("Error in createBookmark:", error);
+      if (error instanceof Error) {
+        if (error.message.includes('foreign key')) {
+          throw new Error("Invalid user ID or post ID provided");
+        }
+      }
+      throw new Error("Failed to create bookmark");
+    }
+  }
+
+  async getBookmark(userId: number, postId: number): Promise<Bookmark | undefined> {
+    try {
+      const [bookmark] = await db.select()
+        .from(bookmarks)
+        .where(and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.postId, postId)
+        ))
+        .limit(1);
+      
+      return bookmark;
+    } catch (error) {
+      console.error("Error in getBookmark:", error);
+      throw new Error("Failed to fetch bookmark");
+    }
+  }
+
+  async getUserBookmarks(userId: number): Promise<(Bookmark & { post: Post })[]> {
+    try {
+      // First get all bookmarks for the user
+      const userBookmarks = await db.select()
+        .from(bookmarks)
+        .where(eq(bookmarks.userId, userId))
+        .orderBy(desc(bookmarks.createdAt));
+      
+      // If no bookmarks, return empty array
+      if (!userBookmarks.length) {
+        return [];
+      }
+      
+      // Get all post IDs from the bookmarks
+      const postIds = userBookmarks.map(bookmark => bookmark.postId);
+      
+      // Fetch all posts in a single query
+      const bookmarkedPosts = await db.select()
+        .from(postsTable)
+        .where(inArray(postsTable.id, postIds));
+      
+      // Create a map of post IDs to posts for quick lookups
+      const postsMap = new Map<number, Post>();
+      bookmarkedPosts.forEach(post => {
+        postsMap.set(post.id, {
+          ...post,
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        });
+      });
+      
+      // Combine bookmarks with their corresponding posts
+      return userBookmarks.map(bookmark => ({
+        ...bookmark,
+        post: postsMap.get(bookmark.postId)!,
+        createdAt: bookmark.createdAt instanceof Date ? bookmark.createdAt : new Date(bookmark.createdAt)
+      }));
+    } catch (error) {
+      console.error("Error in getUserBookmarks:", error);
+      throw new Error("Failed to fetch user bookmarks");
+    }
+  }
+
+  async updateBookmark(userId: number, postId: number, data: Partial<InsertBookmark>): Promise<Bookmark> {
+    try {
+      // Remove user and post IDs from the update data as those are used for the where clause
+      const { userId: _, postId: __, ...updateData } = data;
+      
+      const [updatedBookmark] = await db.update(bookmarks)
+        .set(updateData)
+        .where(and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.postId, postId)
+        ))
+        .returning();
+      
+      if (!updatedBookmark) {
+        throw new Error("Bookmark not found");
+      }
+      
+      return updatedBookmark;
+    } catch (error) {
+      console.error("Error in updateBookmark:", error);
+      if (error instanceof Error && error.message === "Bookmark not found") {
+        throw error;
+      }
+      throw new Error("Failed to update bookmark");
+    }
+  }
+
+  async deleteBookmark(userId: number, postId: number): Promise<void> {
+    try {
+      const result = await db.delete(bookmarks)
+        .where(and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.postId, postId)
+        ))
+        .returning();
+      
+      if (!result.length) {
+        throw new Error("Bookmark not found");
+      }
+    } catch (error) {
+      console.error("Error in deleteBookmark:", error);
+      if (error instanceof Error && error.message === "Bookmark not found") {
+        throw error; 
+      }
+      throw new Error("Failed to delete bookmark");
+    }
+  }
+
+  async getBookmarksByTag(userId: number, tag: string): Promise<(Bookmark & { post: Post })[]> {
+    try {
+      // Get all bookmarks that contain the tag for this user
+      const userBookmarks = await db.select()
+        .from(bookmarks)
+        .where(and(
+          eq(bookmarks.userId, userId),
+          sql`${bookmarks.tags} @> ARRAY[${tag}]` // PostgreSQL array contains operator
+        ))
+        .orderBy(desc(bookmarks.createdAt));
+      
+      // If no bookmarks with this tag, return empty array
+      if (!userBookmarks.length) {
+        return [];
+      }
+      
+      // Get all post IDs from the bookmarks
+      const postIds = userBookmarks.map(bookmark => bookmark.postId);
+      
+      // Fetch all posts in a single query
+      const bookmarkedPosts = await db.select()
+        .from(postsTable)
+        .where(inArray(postsTable.id, postIds));
+      
+      // Create a map of post IDs to posts for quick lookups
+      const postsMap = new Map<number, Post>();
+      bookmarkedPosts.forEach(post => {
+        postsMap.set(post.id, {
+          ...post,
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        });
+      });
+      
+      // Combine bookmarks with their corresponding posts
+      return userBookmarks.map(bookmark => ({
+        ...bookmark,
+        post: postsMap.get(bookmark.postId)!,
+        createdAt: bookmark.createdAt instanceof Date ? bookmark.createdAt : new Date(bookmark.createdAt)
+      }));
+    } catch (error) {
+      console.error("Error in getBookmarksByTag:", error);
+      throw new Error("Failed to fetch bookmarks by tag");
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

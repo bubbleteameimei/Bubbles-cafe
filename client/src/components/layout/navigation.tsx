@@ -22,6 +22,7 @@ export default function Navigation() {
     { href: '/stories', label: 'STORIES' },
     { href: '/reader', label: 'READER' },
     { href: '/community', label: 'COMMUNITY' },
+    { href: '/bookmarks', label: 'BOOKMARKS', requireAuth: true },
     { href: '/about', label: 'ABOUT' },
     { href: '/contact', label: 'CONTACT' }
   ];
@@ -58,17 +59,20 @@ export default function Navigation() {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            {navLinks.map(link => (
-              <button 
-                key={link.href}
-                onClick={() => setLocation(link.href)} 
-                className={`transition-colors hover:text-foreground/80 tracking-wider ${
-                  location === link.href ? 'text-primary font-semibold' : ''
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks
+              .filter(link => !link.requireAuth || user)
+              .map(link => (
+                <button 
+                  key={link.href}
+                  onClick={() => setLocation(link.href)} 
+                  className={`transition-colors hover:text-foreground/80 tracking-wider ${
+                    location === link.href ? 'text-primary font-semibold' : ''
+                  }`}
+                >
+                  {link.label}
+                </button>
+              ))
+            }
           </nav>
         </div>
 

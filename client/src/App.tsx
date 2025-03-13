@@ -53,6 +53,7 @@ const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
+const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
 
 
 // Legal Pages
@@ -130,6 +131,7 @@ function App() {
                           <Route path="/report-bug" component={ReportBugPage} />
                           <Route path="/privacy" component={PrivacyPage} />
                           <Route path="/content-test" component={ContentTestPage} />
+                          <ProtectedRoute path="/bookmarks" component={BookmarksPage} />
 
 
                           {/* Legal Routes */}

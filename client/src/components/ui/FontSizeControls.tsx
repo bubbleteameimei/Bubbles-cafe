@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Minus, Plus, Type, BookOpen } from 'lucide-react';
-import { Button } from './button';
 import { useFontSize } from '@/hooks/use-font-size';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -95,16 +94,14 @@ export function FontSizeControls() {
       <div className={cn("font-size-controls", bounce && "bounce-animation")}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={decreaseFontSize}
               disabled={fontSize <= MIN_FONT_SIZE}
-              className="font-size-btn decrease"
+              className={`size-btn ${fontSize <= MIN_FONT_SIZE ? 'disabled' : ''}`}
               aria-label="Decrease font size"
             >
-              <Minus className="h-3.5 w-3.5" />
-            </Button>
+              <Minus />
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Make text smaller</p>
@@ -113,28 +110,25 @@ export function FontSizeControls() {
         
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={cn("font-size-display", animated && "font-size-changed")}>
-              <BookOpen className="h-3.5 w-3.5 inline-block mr-1 opacity-70" />
+            <div className={cn("current-size", animated && "size-changed")}>
               <span>{fontSize}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Current font size</p>
+            <p>Current font size (px)</p>
           </TooltipContent>
         </Tooltip>
         
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={increaseFontSize}
               disabled={fontSize >= MAX_FONT_SIZE}
-              className="font-size-btn increase"
+              className={`size-btn ${fontSize >= MAX_FONT_SIZE ? 'disabled' : ''}`}
               aria-label="Increase font size"
             >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+              <Plus />
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>Make text larger</p>

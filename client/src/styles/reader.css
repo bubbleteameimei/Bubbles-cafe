@@ -17,6 +17,8 @@
   color: var(--foreground);
   max-width: 680px; /* Optimal reading width like The New Yorker */
   margin: 0 auto;
+  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
+  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
 }
 
 .story-content p {
@@ -26,6 +28,8 @@
   hyphens: auto;
   font-kerning: normal; /* Improved kerning for better character spacing */
   font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography enhancements */
+  font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
+  transition: font-size 0.2s ease; /* Smooth transition when font size changes */
 }
 
 .story-content p + p {
@@ -303,11 +307,28 @@
   }
 }
 
+/* Floating navigation adjustments */
+.floating-navigation {
+  z-index: 100; /* Ensure it's above other elements */
+}
+
+/* Adjust padding to account for floating navigation */
+.reader-interface {
+  padding-bottom: 6rem; /* Extra space for the floating navigation */
+}
+
+@media (max-width: 640px) {
+  .reader-interface {
+    padding-bottom: 5rem;
+  }
+}
+
 /* Print styles */
 @media print {
   .reading-controls,
   .navigation-buttons,
-  .social-support-section {
+  .social-support-section,
+  .floating-navigation {
     display: none;
   }
   

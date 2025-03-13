@@ -304,6 +304,19 @@ export const siteAnalytics = pgTable("site_analytics", {
   deviceStats: json("device_stats").default({}).notNull()
 });
 
+// Story Bookmarks
+export const bookmarks = pgTable("bookmarks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => posts.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  notes: text("notes"), // Optional user notes about the bookmark
+  lastPosition: decimal("last_position").default("0").notNull(), // Reading position
+  tags: text("tags").array(), // User-defined tags for organizing bookmarks
+}, (table) => ({
+  userPostUnique: unique().on(table.userId, table.postId) // A user can bookmark a post only once
+}));
+
 
 // Update login schema to use email instead of username
 export const loginSchema = z.object({
@@ -547,3 +560,11 @@ export const insertPerformanceMetricSchema = createInsertSchema(performanceMetri
 
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
 export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
+
+// Bookmark schema and types
+export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({ 
+  id: true, 
+  createdAt: true 
+});
+export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
+export type Bookmark = typeof bookmarks.$inferSelect;
