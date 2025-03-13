@@ -4,7 +4,6 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";
-import Mist from "@/components/effects/mist";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { MetaTags } from "@/components/ui/meta-tags";
 import { ShareButton } from "@/components/ui/share-button";
@@ -36,7 +35,6 @@ export default function StoryView({ slug }: StoryViewProps) {
   return (
     <div className="relative min-h-screen">
       <MetaTags post={post} />
-      <Mist />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <motion.article
           initial={{ opacity: 0, y: 20 }}

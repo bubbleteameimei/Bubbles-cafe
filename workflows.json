@@ -1,6 +1,6 @@
 {
   "Start application": {
-    "command": "npx tsx scripts/init-db.ts && npm run dev",
+    "command": "npm run dev",
     "environment": {
       "NODE_ENV": "development",
       "PORT": "5000",
@@ -30,7 +30,7 @@
       ".env.production"
     ],
     "kill_others": true,
-    "wait_time_after_up": 3000
+    "wait_time_after_up": 5000
   },
   "WordPress Sync": {
     "command": "node scripts/run-wp-sync.js",

@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import Mist from "@/components/effects/mist";
 
 export default function Schoop() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -48,7 +47,6 @@ export default function Schoop() {
 
   return (
     <div className="relative min-h-screen">
-      <Mist />
       <div className="story-container max-w-3xl mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           <motion.div
