@@ -75,6 +75,40 @@ interface ReaderPageProps {
 }
 
 export default function Reader({ slug }: ReaderPageProps) {
+  // Define styles first before any hooks to prevent uninitialized variable error
+  const storyContentStyles = `
+  /* Additional dynamic styles that complement our reader.css file */
+  .story-content a {
+    color: var(--primary);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition: all 0.2s ease;
+  }
+  
+  .story-content a:hover {
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  
+  /* Add subtle text shadow in dark mode */
+  @media (prefers-color-scheme: dark) {
+    .story-content h1, 
+    .story-content h2 {
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  /* Enhance image displays */
+  .story-content img {
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .story-content img:hover {
+    transform: scale(1.02);
+  }
+  `;
+
   // All hooks must be called in the same order on every render
   // Keep all useState and useEffect hooks at the top in a consistent order
   const [, setLocation] = useLocation();
@@ -211,14 +245,36 @@ export default function Reader({ slug }: ReaderPageProps) {
   useEffect(() => {
     try {
       console.log('[Reader] Injecting content styles');
-      const styleTag = document.createElement('style');
-      styleTag.textContent = storyContentStyles;
-      document.head.appendChild(styleTag);
-      return () => styleTag.remove();
+      // Update the storyContentStyles to include font size
+      const dynamicStyles = `
+        ${storyContentStyles}
+        .story-content p, .story-content li {
+          font-size: ${fontSize}px !important;
+          line-height: 1.9 !important;
+        }
+      `;
+      
+      // Create or update style tag
+      let styleTag = document.getElementById('reader-dynamic-styles') as HTMLStyleElement;
+      
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'reader-dynamic-styles';
+        document.head.appendChild(styleTag);
+      }
+      
+      // Update the content
+      styleTag.textContent = dynamicStyles;
+      
+      return () => {
+        if (styleTag && document.head.contains(styleTag)) {
+          styleTag.remove();
+        }
+      };
     } catch (error) {
       console.error('[Reader] Error injecting styles:', error);
     }
-  }, []);
+  }, [fontSize]);
 
   // All variables must be defined before any conditional returns to maintain hook order
   // Store values in variables first
@@ -357,39 +413,6 @@ export default function Reader({ slug }: ReaderPageProps) {
     }
   ];
 
-  const storyContentStyles = `
-  /* Additional dynamic styles that complement our reader.css file */
-  .story-content a {
-    color: var(--primary);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-    transition: all 0.2s ease;
-  }
-  
-  .story-content a:hover {
-    text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
-  }
-  
-  /* Add subtle text shadow in dark mode */
-  @media (prefers-color-scheme: dark) {
-    .story-content h1, 
-    .story-content h2 {
-      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
-    }
-  }
-  
-  /* Enhance image displays */
-  .story-content img {
-    transition: transform 0.3s ease;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  .story-content img:hover {
-    transform: scale(1.02);
-  }
-  `;
-
   const handleTip = () => {
     window.open('https://paystack.com/pay/z7fmj9rge1', '_blank');
   };
@@ -408,7 +431,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       
       {/* We'll add Reading progress tracker later after fixing it */}
 
-      <div className="container max-w-3xl mx-auto px-4 pt-8 pb-16 relative z-10">
+      <div className="container max-w-3xl mx-auto px-4 pt-16 pb-16 relative z-10">
         {/* Reading controls - Theme toggle, bookmark and font size */}
         <div className="mb-12 flex justify-between items-center">
           <div className="flex space-x-4">
@@ -494,10 +517,14 @@ export default function Reader({ slug }: ReaderPageProps) {
                     // First preserve italics and other formatting tags
                     const preservedTags: string[] = [];
                     const contentWithPlaceholders = currentPost.content.rendered.replace(
-                      /<(em|i|strong|b)(.*?)>(.*?)<\/(em|i|strong|b)>/g, 
-                      (match: string, tag: string, attributes: string, content: string) => {
+                      /<(em|i|strong|b|a|span|code)(.*?)>(.*?)<\/(em|i|strong|b|a|span|code)>/gis, 
+                      (match: string, tag: string, attributes: string, content: string, endTag: string) => {
+                        if (content.trim().length === 0) return ''; // Skip empty tags
                         const placeholder = `__PRESERVED_TAG_${preservedTags.length}__`;
-                        preservedTags.push(`<${tag}${attributes}>${content}</${tag}>`);
+                        const fullTag = tag === endTag 
+                          ? `<${tag}${attributes}>${content}</${tag}>`
+                          : match; // Keep original if opening/closing tags don't match
+                        preservedTags.push(fullTag);
                         return placeholder;
                       }
                     );

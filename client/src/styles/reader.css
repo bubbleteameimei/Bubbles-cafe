@@ -6,6 +6,7 @@
   margin: 0 auto;
   padding: 0 1.5rem;
   font-family: var(--font-sans);
+  /* No additional padding needed here since we added it to body */
 }
 
 /* Typography improvements using literary website standards */
@@ -199,7 +200,7 @@
 /* Reading controls */
 .reading-controls {
   position: sticky;
-  top: 1rem;
+  top: 4rem; /* Adjusted to account for the fixed header */
   z-index: 10;
   width: 100%;
   display: flex;

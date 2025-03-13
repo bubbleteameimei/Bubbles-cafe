@@ -35,7 +35,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    scroll-padding-top: 2rem;
+    scroll-padding-top: 4rem;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -46,6 +46,12 @@
     opacity: 0;
     animation: fadeIn 1s ease-in-out forwards;
     transition: background-color 0.3s ease, color 0.3s ease;
+    padding-top: 3.5rem; /* Add top padding to account for fixed header */
+  }
+  
+  /* Main content containers should have proper spacing */
+  main, .main-content, .container {
+    padding-top: 1rem; /* Additional padding for inner containers */
   }
   
   /* Theme transition animation */
