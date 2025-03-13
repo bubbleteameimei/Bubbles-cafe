@@ -75,9 +75,19 @@ export function useFontSize() {
     }
   }, []);
 
+  const increaseFontSize = useCallback(() => {
+    updateFontSize(fontSize + 1);
+  }, [fontSize, updateFontSize]);
+
+  const decreaseFontSize = useCallback(() => {
+    updateFontSize(fontSize - 1);
+  }, [fontSize, updateFontSize]);
+
   return {
     fontSize,
     updateFontSize,
+    increaseFontSize,
+    decreaseFontSize,
     MIN_FONT_SIZE,
     MAX_FONT_SIZE
   };

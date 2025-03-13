@@ -362,7 +362,8 @@ export const calculateIntensity = (content: string): number => {
 };
 
 // Define a type for WordPress content structure
-interface WordPressContent {
+// Define this as an exported interface so it can be imported elsewhere
+export interface WordPressContent {
   rendered: string;
   protected?: boolean;
   raw?: string;
@@ -521,4 +522,65 @@ export const getExcerpt = (content: string | WordPressContent | unknown): string
 // Added function to log post creation with theme information.
 export const logPostCreation = (postId: number, postTitle: string, date: string, theme: ThemeCategory) => {
   console.log(`Created post: "${postTitle}" (ID: ${postId}) with date: ${date} [Theme: ${theme}]`);
+};
+
+/**
+ * Sanitizes HTML content from WordPress, with special handling for italics and other formatting
+ * 
+ * @param content Raw WordPress content or string content
+ * @returns Sanitized HTML with preserved essential formatting
+ */
+export const sanitizeHtmlContent = (content: string | WordPressContent | unknown): string => {
+  if (!content) return '';
+
+  // Extract string content based on type
+  let htmlContent: string;
+  
+  if (typeof content === 'string') {
+    htmlContent = content;
+  } else if (typeof content === 'object' && content !== null) {
+    const wpContent = content as WordPressContent;
+    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
+      htmlContent = wpContent.rendered;
+    } else {
+      return '';
+    }
+  } else {
+    return '';
+  }
+
+  try {
+    // Clean up WordPress-specific formatting issues
+    const processed = htmlContent
+      // Fix WordPress paragraph formatting
+      .replace(/<p>\s*&nbsp;\s*<\/p>/g, '<p></p>')
+      // Clean up extra spaces
+      .replace(/\s+/g, ' ')
+      // Handle em and strong tags consistently
+      .replace(/<em>(.*?)<\/em>/g, '<i>$1</i>')
+      .replace(/<strong>(.*?)<\/strong>/g, '<b>$1</b>')
+      // Ensure all images have proper alt tags
+      .replace(/<img(.*?)>/g, (match, p1) => {
+        if (!p1.includes('alt=')) {
+          return match.replace(/<img(.*?)>/, '<img$1 alt="Story image">');
+        }
+        return match;
+      })
+      // Fix any self-closing div tags (which are invalid HTML)
+      .replace(/<div([^>]*?)\/>/g, '<div$1></div>')
+      // Normalize quotes
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
+      .replace(/&#8216;/g, "'")
+      .replace(/&#8217;/g, "'")
+      // Remove WordPress's auto-format for emojis
+      .replace(/<img class="wp-smiley.*?>/g, '')
+      // Process WordPress [caption] shortcodes if any remain
+      .replace(/\[caption.*?\](.*?)\[\/caption\]/g, '$1');
+
+    return processed;
+  } catch (error) {
+    console.error('[Content Sanitizer] Error:', error);
+    return htmlContent;
+  }
 };

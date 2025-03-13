@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { WordPressContent } from "./content-analysis";
 
-// WordPress post schema
+// WordPress post schema with better support for content handling
 export const wpPostSchema = z.object({
   id: z.number(),
   slug: z.string(),
@@ -8,10 +9,12 @@ export const wpPostSchema = z.object({
     rendered: z.string()
   }),
   content: z.object({
-    rendered: z.string()
+    rendered: z.string(),
+    protected: z.boolean().optional(),
   }),
   excerpt: z.object({
-    rendered: z.string()
+    rendered: z.string(),
+    protected: z.boolean().optional(),
   }),
   date: z.string(),
   modified: z.string(),

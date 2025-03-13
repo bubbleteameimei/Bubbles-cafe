@@ -1,13 +1,15 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ArrowRight, ChevronRight, Clock, Calendar } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
+import { FloatingPagination } from "@/components/ui/floating-pagination";
 
 import { getReadingTime, getExcerpt } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
@@ -20,6 +22,8 @@ interface WordPressResponse {
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 10; // Number of posts to display per page
 
   const {
     data,
@@ -48,6 +52,18 @@ export default function IndexView() {
     refetchOnWindowFocus: false,
     initialPageParam: 1
   });
+  
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Load more data if needed
+    const pagesNeeded = Math.ceil(page * POSTS_PER_PAGE / (data?.pages.length || 1) / POSTS_PER_PAGE);
+    if (pagesNeeded > (data?.pages.length || 0) && hasNextPage) {
+      fetchNextPage();
+    }
+  };
 
   const navigateToReader = (index: number) => {
     console.log('[Index] Navigating to reader:', {
@@ -97,12 +113,19 @@ export default function IndexView() {
     );
   }
 
-  const posts = data.pages.flatMap(page => page.posts);
+  const allPosts = data.pages.flatMap(page => page.posts);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(allPosts.length / POSTS_PER_PAGE);
+  
+  // Get current page of posts
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const currentPosts = allPosts.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen w-full bg-background">
-
-      <div className="container">
+      <div className="container pb-20">
         <motion.div
           className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
           initial={{ opacity: 0, y: -20 }}
@@ -128,9 +151,11 @@ export default function IndexView() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {posts.map((post, index) => {
+          {currentPosts.map((post, index) => {
             const readingTime = getReadingTime(post.content);
             const excerpt = getExcerpt(post.content);
+            const globalIndex = startIndex + index; // Calculate the global index for navigation
+            
             return (
               <motion.article
                 key={post.id}
@@ -144,7 +169,7 @@ export default function IndexView() {
                     <div className="flex justify-between items-start gap-4">
                       <CardTitle
                         className="text-xl group-hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => navigateToReader(index)}
+                        onClick={() => navigateToReader(globalIndex)}
                       >
                         {post.title}
                       </CardTitle>
@@ -176,7 +201,7 @@ export default function IndexView() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigateToReader(index)}
+                        onClick={() => navigateToReader(globalIndex)}
                         className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                       >
                         Read More <ArrowRight className="h-3 w-3" />
@@ -189,7 +214,36 @@ export default function IndexView() {
           })}
         </motion.div>
 
-        {hasNextPage && (
+        {/* Standard Pagination for Larger Screens */}
+        <div className="mt-8 hidden lg:flex justify-center">
+          {totalPages > 1 && (
+            <motion.div 
+              className="flex flex-wrap gap-2 justify-center"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                  className={`min-w-[40px] ${
+                    page === currentPage 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-primary/10 transition-colors"
+                  }`}
+                >
+                  {page}
+                </Button>
+              ))}
+            </motion.div>
+          )}
+        </div>
+
+        {/* Load More Button - Alternative to pagination */}
+        {hasNextPage && allPosts.length < 50 && (
           <div className="flex justify-center mt-8">
             <Button
               variant="outline"
@@ -201,6 +255,16 @@ export default function IndexView() {
               {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
             </Button>
           </div>
+        )}
+        
+        {/* Floating Pagination Component - visible on all screens */}
+        {totalPages > 1 && (
+          <FloatingPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            variant="default"
+          />
         )}
       </div>
     </div>

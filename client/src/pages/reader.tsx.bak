@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Sun, Moon, Minus, Plus, Bookmark } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -14,8 +14,6 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime, sanitizeHtmlContent } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useTheme } from "@/hooks/use-theme";
 
 interface ReaderPageProps {
   slug?: string;
@@ -24,8 +22,13 @@ interface ReaderPageProps {
 export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
   
-  // Theme is now managed by the useTheme hook
-  const { theme, colorMode, toggleColorMode } = useTheme();
+  // State for theme toggle
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
   
   // Font size adjustment
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
@@ -311,7 +314,20 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // The theme and toggleTheme functions are already declared at the top of the component
+  // Toggle dark/light mode
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Save preference
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
   
   return (
     <div className="relative min-h-screen bg-background">
@@ -380,10 +396,15 @@ export default function Reader({ slug }: ReaderPageProps) {
         </div>
         
         {/* Dark/Light mode toggle */}
-        <ThemeToggle 
-          variant="icon" 
-          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md border border-border/50" 
-        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleTheme}
+          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-md border border-border/50"
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
         
         {/* Bookmark button */}
         <BookmarkButton 

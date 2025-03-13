@@ -309,7 +309,79 @@
 
 /* Floating navigation adjustments */
 .floating-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 100; /* Ensure it's above other elements */
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.floating-navigation-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--background);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.floating-navigation-enter {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.floating-navigation-exit {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.nav-info {
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover:not(.disabled) {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  transform: translateY(-1px);
+}
+
+.nav-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.random-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  padding: 0;
 }
 
 /* Adjust padding to account for floating navigation */
@@ -320,6 +392,19 @@
 @media (max-width: 640px) {
   .reader-interface {
     padding-bottom: 5rem;
+  }
+  
+  .floating-navigation-inner {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .nav-buttons {
+    gap: 0.5rem;
+  }
+  
+  .nav-button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
   }
 }
 

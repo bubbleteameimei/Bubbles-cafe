@@ -16,9 +16,10 @@ interface StoryHighlightClipProps {
   postId: number;
   postTitle: string;
   className?: string;
+  variant?: 'default' | 'reader';
 }
 
-export function StoryHighlightClip({ postId, postTitle, className }: StoryHighlightClipProps) {
+export function StoryHighlightClip({ postId, postTitle, className, variant = 'default' }: StoryHighlightClipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -171,25 +172,38 @@ export function StoryHighlightClip({ postId, postTitle, className }: StoryHighli
 
   return (
     <>
-      {/* Floating action button that appears when text is selected */}
-      <AnimatePresence>
-        {hasSelectedText && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-20 right-6 z-50"
-          >
-            <Button 
-              onClick={openHighlightModal}
-              className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
-              aria-label="Share highlight"
+      {/* Reader variant - fixed button */}
+      {variant === 'reader' ? (
+        <button
+          onClick={openHighlightModal}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          aria-label="Create story highlight"
+        >
+          <svg className="h-6 w-6 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h5m-5 4h10" />
+          </svg>
+        </button>
+      ) : (
+        /* Floating action button that appears when text is selected - Default variant */
+        <AnimatePresence>
+          {hasSelectedText && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              className="fixed bottom-20 right-6 z-50"
             >
-              <Quote className="h-5 w-5" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <Button 
+                onClick={openHighlightModal}
+                className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
+                aria-label="Share highlight"
+              >
+                <Quote className="h-5 w-5" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Highlight dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
