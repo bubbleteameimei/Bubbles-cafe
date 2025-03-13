@@ -2,7 +2,7 @@ import React from 'react';
 import SearchBar from './SearchBar';
 import { NotificationIcon } from './ui/notification-icon';
 import { useNotifications } from './NotificationProvider';
-import { ThemeToggle } from './theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface SidebarHeaderProps {
   categories?: string[];

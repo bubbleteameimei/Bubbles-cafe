@@ -90,25 +90,25 @@
   /* System color preference - only applies when JS is disabled or theme toggle not used */
   @media (prefers-color-scheme: dark) {
     :root:not(.light) {
-      --background: 222 47% 11%;         /* Deep blue-gray background */
-      --foreground: 210 40% 98%;         /* Very light text */
-      --card: 223 47% 15%;               /* Slightly lighter card background */
-      --card-foreground: 210 40% 98%;    /* Light text on card */
-      --popover: 223 47% 15%;            /* Same as card */
-      --popover-foreground: 210 40% 98%; /* Same as foreground */
-      --primary: 199 89% 48%;            /* Sky blue primary - same in dark mode */
+      --background: 0 0% 9%;             /* Deep charcoal background (#171717) */
+      --foreground: 0 0% 92%;            /* Light gray text (#EAEAEA) */
+      --card: 0 0% 13%;                  /* Slightly lighter card background (#212121) */
+      --card-foreground: 0 0% 92%;       /* Light gray text on card */
+      --popover: 0 0% 13%;               /* Same as card */
+      --popover-foreground: 0 0% 92%;    /* Same as foreground */
+      --primary: 209 75% 48%;            /* Keeping the same primary for brand consistency (#1E78E5) */
       --primary-foreground: 0 0% 100%;   /* White text on primary */
-      --secondary: 217 33% 17%;          /* Darker secondary in dark mode */
-      --secondary-foreground: 210 40% 98%; /* Light text on secondary */
-      --muted: 217 33% 17%;              /* Darker muted background */
-      --muted-foreground: 215 20% 65%;   /* Lighter muted text */
-      --accent: 217 33% 17%;             /* Darker accent background */
-      --accent-foreground: 210 40% 98%;  /* Light text on accent */
-      --destructive: 0 84% 60%;          /* Same destructive color */
+      --secondary: 0 0% 18%;             /* Dark gray secondary (#2E2E2E) */
+      --secondary-foreground: 0 0% 92%;  /* Light gray text on secondary */
+      --muted: 0 0% 16%;                 /* Muted dark background (#282828) */
+      --muted-foreground: 0 0% 70%;      /* Medium gray muted text (#B3B3B3) */
+      --accent: 0 0% 20%;                /* Slightly lighter accent (#333333) */
+      --accent-foreground: 0 0% 92%;     /* Light gray text on accent */
+      --destructive: 0 72% 51%;          /* Same destructive color for consistency */
       --destructive-foreground: 0 0% 100%; /* White text on destructive */
-      --border: 217 33% 25%;             /* Darker border in dark mode */
-      --input: 217 33% 25%;              /* Darker input border */
-      --ring: 199 89% 48%;               /* Sky blue ring - same as primary */
+      --border: 0 0% 22%;                /* Dark border (#383838) */
+      --input: 0 0% 22%;                 /* Dark input border */
+      --ring: 209 75% 48%;               /* Same as primary */
     }
   }
 
@@ -286,6 +286,18 @@ h1, h2, h3, h4, h5, h6,
   flex-direction: column;
   min-height: 100vh;
   isolation: isolate;
+}
+
+/* Theme transition effect */
+.theme-transition {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.theme-transition * {
+  transition: background-color 0.5s ease, 
+              color 0.5s ease, 
+              border-color 0.5s ease,
+              box-shadow 0.5s ease;
 }
 
 /* Scrollbar styles */

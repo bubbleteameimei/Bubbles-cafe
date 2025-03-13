@@ -5,7 +5,7 @@ import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
-import { ThemeProvider } from './components/theme-provider';
+import { ThemeProvider } from '@/lib/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
@@ -102,13 +102,14 @@ function App() {
             <SidebarProvider defaultOpen={true}>
               <div className="relative min-h-screen bg-background">
                 {/* Desktop Sidebar */}
-                <aside className="fixed top-0 left-0 z-40 hidden h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block">
+                <aside className="fixed top-0 left-0 z-40 h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden lg:block">
                   <SidebarHeader />
                   <Navigation />
                 </aside>
 
                 {/* Main Content */}
-                <main className="min-h-screen pt-14 lg:pl-64">
+                <main className="min-h-screen lg:pl-64">
+                  <AutoHideNavbar />
                   <div className="container mx-auto px-4 py-6">
                     <ErrorBoundary>
                       <PageTransition mode="fade" duration={0.4}>

@@ -5,26 +5,26 @@
   "appearance": "system",
   "colors": {
     "dark": {
-      "background": "#1E293B",
-      "text": "#F1F5F9",
+      "background": "#121212",
+      "text": "#EAEAEA",
       "accent": "#0EA5E9",
-      "muted": "#64748B",
-      "hover": "#334155",
-      "border": "#475569",
-      "card": "#334155",
+      "muted": "#A6A6A6",
+      "hover": "#2A2A2A",
+      "border": "#3A3A3A",
+      "card": "#1E1E1E",
       "destructive": "#EF4444",
-      "shadow": "rgba(0, 0, 0, 0.2)"
+      "shadow": "rgba(0, 0, 0, 0.3)"
     },
     "light": {
-      "background": "#F8FAFC",
-      "text": "#0F172A",
+      "background": "#F5F5F5",
+      "text": "#333333",
       "accent": "#0EA5E9",
-      "muted": "#94A3B8",
-      "hover": "#E2E8F0",
-      "border": "#CBD5E1",
+      "muted": "#888888",
+      "hover": "#E8E8E8",
+      "border": "#DDDDDD",
       "card": "#FFFFFF",
       "destructive": "#EF4444",
-      "shadow": "rgba(0, 0, 0, 0.1)"
+      "shadow": "rgba(0, 0, 0, 0.08)"
     }
   }
 }

@@ -1,5 +1,5 @@
 
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Navbar() {
   return (
@@ -9,7 +9,7 @@ export function Navbar() {
           <h1 className="text-xl font-bold">Bubble's Cafe</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="animated" />
+          <ThemeToggle />
         </div>
       </div>
     </nav>

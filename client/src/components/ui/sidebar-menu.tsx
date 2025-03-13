@@ -6,7 +6,7 @@ import {
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn
 } from "lucide-react"
 
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+
 
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
@@ -450,6 +450,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             Sign Out
           </Button>
         )}
+
+
 
         <button
           onClick={() => handleNavigation('/report-bug')}

@@ -1,69 +1,27 @@
+"use client";
+
+import { Moon, Sun } from "lucide-react";
+import * as React from "react";
 
 import { useTheme } from "@/lib/theme-provider";
-import { Moon, Sun } from "lucide-react";
-import "./theme-toggle.css";
 
-interface ThemeToggleProps {
-  variant?: 'full' | 'icon' | 'animated';
-}
-
-export function ThemeToggle({ variant = 'animated' }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
-  
-  // Toggle function for all variants
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
-  if (variant === 'animated') {
-    return (
-      <div className="theme-toggle-container">
-        <div className="wrapper">
-          <input
-            type="checkbox"
-            className="switch"
-            checked={theme === 'dark'}
-            onChange={toggleTheme}
-            aria-label="Toggle theme"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === 'icon') {
-    return (
-      <button
-        onClick={toggleTheme}
-        className="theme-toggle-icon"
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? (
-          <Sun className="h-5 w-5" />
-        ) : (
-          <Moon className="h-5 w-5" />
-        )}
-      </button>
-    );
-  }
+export function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
-      className="theme-toggle-full"
+      className="inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-accent/50 hover:text-accent-foreground focus:outline-none"
       aria-label="Toggle theme"
     >
       {theme === 'dark' ? (
-        <>
-          <Sun className="h-5 w-5" />
-          <span>Light Mode</span>
-        </>
+        <Sun className="h-5 w-5" />
       ) : (
-        <>
-          <Moon className="h-5 w-5" />
-          <span>Dark Mode</span>
-        </>
+        <Moon className="h-5 w-5" />
       )}
+      <span className="sr-only">
+        {theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      </span>
     </button>
   );
 }

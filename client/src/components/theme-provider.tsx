@@ -31,7 +31,6 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
-  const [themeTransition, setThemeTransition] = useState(false);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -44,30 +43,23 @@ export function ThemeProvider({
         : "light";
 
       root.classList.add(systemTheme);
-      return;
+      
+      // Listen for changes in system preference
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      
+      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+        root.classList.remove("light", "dark");
+        const newTheme = e.matches ? "dark" : "light";
+        root.classList.add(newTheme);
+      };
+      
+      mediaQuery.addEventListener("change", handleSystemThemeChange);
+      return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
     }
 
-    // Adding visual transition effect
-    setThemeTransition(true);
+    // Apply theme immediately without transitions
     root.classList.add(theme);
-    
-    // Brief flash effect to make theme change more noticeable
-    const flashTimer = setTimeout(() => {
-      setThemeTransition(false);
-    }, 500);
-
-    return () => clearTimeout(flashTimer);
   }, [theme]);
-
-  // Add transition class to body during theme changes
-  useEffect(() => {
-    const body = document.body;
-    if (themeTransition) {
-      body.classList.add('theme-transition');
-    } else {
-      body.classList.remove('theme-transition');
-    }
-  }, [themeTransition]);
 
   const value = {
     theme,

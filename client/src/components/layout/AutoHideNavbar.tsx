@@ -1,14 +1,13 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
-  children: ReactNode;
   threshold?: number;
   hideOnPaths?: string[];
 }
 
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
-  children,
   threshold = 100,
   hideOnPaths = []
 }) => {
@@ -77,7 +76,7 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
           }}
           className="fixed top-0 left-0 right-0 z-50"
         >
-          {children}
+          <Navigation />
         </motion.div>
       )}
     </AnimatePresence>
