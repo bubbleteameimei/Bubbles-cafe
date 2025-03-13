@@ -9,7 +9,7 @@ export function useTheme() {
     return (window.localStorage.getItem('color-mode') as ColorMode) || 'dark';
   });
 
-  const toggleColorMode = useCallback(() => {
+  const toggleTheme = useCallback(() => {
     setColorMode((prev) => {
       const newMode = prev === 'light' ? 'dark' : 'light';
       if (typeof window !== 'undefined') {
@@ -50,7 +50,7 @@ export function useTheme() {
   return {
     theme,
     colorMode,
-    toggleColorMode,
+    toggleTheme,
   };
 }
 

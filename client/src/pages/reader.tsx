@@ -15,7 +15,7 @@ import { getReadingTime, sanitizeHtmlContent } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/lib/theme-provider";
 
 interface ReaderPageProps {
   slug?: string;
@@ -25,7 +25,7 @@ export default function Reader({ slug }: ReaderPageProps) {
   const [, setLocation] = useLocation();
   
   // Theme is now managed by the useTheme hook
-  const { theme, colorMode, toggleColorMode } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   
   // Font size adjustment
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
