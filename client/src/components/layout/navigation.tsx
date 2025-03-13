@@ -2,31 +2,32 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/components/NotificationProvider";
+import { useTheme } from "@/lib/theme-provider";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { notifications } = useNotifications();
+  const { theme, toggleTheme } = useTheme();
 
   // Navigation links configuration
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/stories', label: 'Stories' },
-    { href: '/reader', label: 'Reader' },
-    { href: '/community', label: 'Community' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' }
+    { href: '/', label: 'HOME' },
+    { href: '/stories', label: 'STORIES' },
+    { href: '/reader', label: 'READER' },
+    { href: '/community', label: 'COMMUNITY' },
+    { href: '/about', label: 'ABOUT' },
+    { href: '/contact', label: 'CONTACT' }
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 left-0 right-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container flex h-14 items-center justify-between">
         {/* Mobile Menu Trigger */}
         <div className="flex items-center">
@@ -52,7 +53,7 @@ export default function Navigation() {
             onClick={() => setLocation('/')} 
             className="mr-6 flex items-center space-x-2"
           >
-            <span className="hidden font-bold sm:inline-block">Horror Stories</span>
+            <span className="hidden font-bold uppercase tracking-wider sm:inline-block">Horror Stories</span>
           </button>
           
           {/* Desktop Navigation */}
@@ -61,7 +62,7 @@ export default function Navigation() {
               <button 
                 key={link.href}
                 onClick={() => setLocation(link.href)} 
-                className={`transition-colors hover:text-foreground/80 ${
+                className={`transition-colors hover:text-foreground/80 tracking-wider ${
                   location === link.href ? 'text-primary font-semibold' : ''
                 }`}
               >
@@ -74,7 +75,20 @@ export default function Navigation() {
         {/* Right-side Actions */}
         <div className="flex items-center space-x-4">
           <NotificationIcon notifications={notifications} />
-          <ThemeToggle />
+          <button
+            onClick={toggleTheme}
+            className="inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-accent/50 hover:text-accent-foreground focus:outline-none"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+            <span className="sr-only">
+              {theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            </span>
+          </button>
           {!user ? (
             <Button
               variant="default"
@@ -82,7 +96,7 @@ export default function Navigation() {
                 setIsOpen(false);
                 setLocation("/auth");
               }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider"
             >
               Sign In
             </Button>
@@ -91,6 +105,7 @@ export default function Navigation() {
               variant="ghost" 
               size="sm"
               onClick={() => setLocation('/settings/profile')}
+              className="uppercase tracking-wider"
             >
               Profile
             </Button>

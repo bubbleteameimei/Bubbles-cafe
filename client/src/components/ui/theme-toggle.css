@@ -1,115 +1,110 @@
-
-/* Theme Toggle Button Styles */
+/* Theme toggle container styles */
 .theme-toggle-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  width: 60px;
+  height: 30px;
 }
 
-/* Icon Toggle Style */
-.theme-toggle-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 50%;
-  color: hsl(var(--foreground));
-  transition: all 0.2s ease;
-}
-
-.theme-toggle-icon:hover {
-  background-color: hsl(var(--muted));
-}
-
-/* Animated Toggle Style */
+/* Wrapper for the toggle */
 .wrapper {
   position: relative;
   display: inline-block;
+  width: 100%;
+  height: 100%;
 }
 
+/* Base switch styles */
 .switch {
-  position: relative;
-  width: 60px;
-  height: 28px;
-  appearance: none;
-  background-color: hsl(var(--muted));
-  border-radius: 25px;
-  box-shadow: inset 0px 0px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: 0.3s;
-  outline: none;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.switch:checked {
-  background-color: hsl(var(--muted));
-}
-
-.switch::after {
+/* Switch background and elements */
+.wrapper::before {
   content: "";
   position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  top: 2px;
-  left: 2px;
-  background-color: hsl(var(--background));
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transform: translateX(0);
-  transition: 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: #150D0D;
+  border: 1px solid #73604F;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
 }
 
-.switch:checked::after {
-  transform: translateX(32px);
-  background-color: hsl(var(--background));
-}
-
-/* Sun and Moon indicators */
-.switch::before {
-  content: "☀️";
+/* Sun icon */
+.wrapper::after {
+  content: "";
   position: absolute;
-  top: 4px;
-  left: 7px;
-  font-size: 14px;
-  z-index: 1;
-  opacity: 1;
-  transition: 0.3s;
+  left: 6px;
+  top: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #D8D3D0;
+  box-shadow: 0 0 10px rgba(89, 8, 8, 0.6);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
 }
 
-.switch:checked::before {
-  opacity: 0;
+/* Moon elements when checked */
+.switch:checked + .wrapper::before {
+  background-color: #D8D3D0;
+  border: 1px solid #73604F;
 }
 
-.switch:checked::after {
-  content: "🌙";
+.switch:checked + .wrapper::after {
+  left: 34px;
+  background-color: #150D0D;
+  box-shadow: 0 0 10px rgba(89, 8, 8, 0.6);
+}
+
+/* For user accessibility */
+.switch:focus + .wrapper::before {
+  box-shadow: 0 0 0 2px rgba(89, 8, 8, 0.5);
+}
+
+/* Hover effect */
+.wrapper:hover::before {
+  opacity: 0.9;
+  box-shadow: 0 0 5px rgba(89, 8, 8, 0.8);
+}
+
+/* Icon and full toggle styles */
+.theme-toggle-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: hsl(var(--foreground));
-  font-size: 14px;
-  transform: translateX(32px);
+  padding: 6px;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  transition: all 0.15s ease;
 }
 
-/* Full toggle style with text */
+.theme-toggle-icon:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
 .theme-toggle-full {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  color: hsl(var(--foreground));
-  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 14px;
+  transition: all 0.15s ease;
 }
 
 .theme-toggle-full:hover {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  background-color: var(--accent);
+  color: var(--accent-foreground);
 }

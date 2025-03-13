@@ -71,10 +71,13 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
 
       {/* Accessible dialog for sharing when Web Share API is not available */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent 
+          className="sm:max-w-md"
+          aria-describedby="share-dialog-description"
+        >
           <DialogHeader>
             <DialogTitle>Share This Story</DialogTitle>
-            <DialogDescription>
+            <DialogDescription id="share-dialog-description">
               Share this story with friends or on social media
             </DialogDescription>
           </DialogHeader>

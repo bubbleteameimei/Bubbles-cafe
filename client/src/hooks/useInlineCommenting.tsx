@@ -96,10 +96,13 @@ const useInlineCommenting = ({
   // The comment dialog component
   const CommentDialog = () => (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        aria-describedby="comment-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle>Add a Comment</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="comment-dialog-description">
             You are commenting on:
             <blockquote className="border-l-2 border-accent pl-4 mt-2 italic">
               {selectedText.length > 100 ? `${selectedText.substring(0, 100)}...` : selectedText}

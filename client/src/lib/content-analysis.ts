@@ -1,4 +1,4 @@
-import { type ThemeCategory, type ThemeInfo } from "../shared/types";
+import { type ThemeCategory, type ThemeInfo } from "@/shared/types";
 import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
 
 export { type ThemeCategory, type ThemeInfo };
@@ -361,19 +361,69 @@ export const calculateIntensity = (content: string): number => {
   return Math.max(1, Math.min(5, Math.round(intensityScore)));
 };
 
-export const getReadingTime = (content: string): string => {
-  if (!content) return '0 min read';
+// Define a type for WordPress content structure
+interface WordPressContent {
+  rendered: string;
+  protected?: boolean;
+  raw?: string;
+}
+
+export const getReadingTime = (content: string | WordPressContent | unknown): string => {
+  if (!content) return '1 min read';
+  
+  // Process different content formats
+  let contentToProcess: string;
+  
+  if (typeof content === 'string') {
+    contentToProcess = content;
+  } else if (typeof content === 'object' && content !== null) {
+    // Handle WordPress format
+    const wpContent = content as WordPressContent;
+    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
+      contentToProcess = wpContent.rendered;
+    } else {
+      return '1 min read'; // Fallback
+    }
+  } else {
+    return '1 min read'; // Fallback
+  }
+  
+  // Clean HTML content if it exists
+  if (contentToProcess.indexOf('<') !== -1 && contentToProcess.indexOf('>') !== -1) {
+    // Likely contains HTML tags, attempt to clean
+    contentToProcess = contentToProcess.replace(/<[^>]+>/g, ' ');
+  }
+  
   const wordsPerMinute = 200;
-  const words = content.trim().split(/\s+/).length;
-  const minutes = Math.ceil(words / wordsPerMinute);
+  const words = contentToProcess.trim().split(/\s+/).filter((word: string) => word.length > 0).length;
+  
+  // Minimum 1 minute read time
+  const minutes = Math.max(1, Math.ceil(words / wordsPerMinute));
   return `${minutes} min read`;
 };
 
-export const getExcerpt = (content: string): string => {
+export const getExcerpt = (content: string | WordPressContent | unknown): string => {
   if (!content) return '';
   
+  // Handle both object content (WordPress) and string content
+  let contentToProcess: string;
+  
+  if (typeof content === 'string') {
+    contentToProcess = content;
+  } else if (typeof content === 'object' && content !== null) {
+    // This is likely the WordPress content format
+    const wpContent = content as WordPressContent;
+    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
+      contentToProcess = wpContent.rendered;
+    } else {
+      return 'Content unavailable';
+    }
+  } else {
+    return 'Content unavailable';
+  }
+  
   // Create a clean version of content with HTML removed
-  const cleanContent = content.replace(/<[^>]+>/g, '');
+  const cleanContent = contentToProcess.replace(/<[^>]+>/g, '');
   
   // Define keywords that indicate scary or engaging content
   const scaryKeywords = [
@@ -389,18 +439,25 @@ export const getExcerpt = (content: string): string => {
   
   // First approach: look for paragraphs (separated by double newlines)
   const paragraphs = cleanContent.split('\n\n')
-    .filter(p => p.trim().length > 40); // Filter out very short paragraphs
+    .filter((p: string) => p.trim().length > 40); // Filter out very short paragraphs
   
   // If no significant paragraphs found, try single newlines
   const textSegments = paragraphs.length > 1 ? paragraphs : 
-    cleanContent.split('\n').filter(p => p.trim().length > 40);
+    cleanContent.split('\n').filter((p: string) => p.trim().length > 40);
   
   // If still no good segments, try sentence splitting
   const sections = textSegments.length > 1 ? textSegments :
-    cleanContent.split(/(?<=\.)\s+/).filter(s => s.trim().length > 40);
+    cleanContent.split(/(?<=\.)\s+/).filter((s: string) => s.trim().length > 40);
+  
+  // Define interfaces for segment scoring
+  interface ScoredSegment {
+    text: string;
+    score: number;
+    index: number;
+  }
   
   // Score each text segment
-  const scoredSegments = sections.map((segment, index) => {
+  const scoredSegments = sections.map((segment: string, index: number): ScoredSegment => {
     let score = 0;
     const text = segment.trim();
     
@@ -410,7 +467,7 @@ export const getExcerpt = (content: string): string => {
     }
     
     // Score based on scary keywords
-    scaryKeywords.forEach(keyword => {
+    scaryKeywords.forEach((keyword: string) => {
       if (text.toLowerCase().includes(keyword)) {
         score += 2;
       }
@@ -435,7 +492,7 @@ export const getExcerpt = (content: string): string => {
   });
   
   // Sort by score (highest first)
-  scoredSegments.sort((a, b) => b.score - a.score);
+  scoredSegments.sort((a: ScoredSegment, b: ScoredSegment) => b.score - a.score);
   
   // Use the highest scoring segment or fallback strategies
   let selectedText;

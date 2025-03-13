@@ -52,6 +52,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 
 
 // Legal Pages
@@ -108,9 +109,9 @@ function App() {
                 </aside>
 
                 {/* Main Content */}
-                <main className="min-h-screen lg:pl-64">
+                <main className="min-h-screen lg:ml-64">
                   <AutoHideNavbar />
-                  <div className="container mx-auto px-4 py-6">
+                  <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
                     <ErrorBoundary>
                       <PageTransition mode="fade" duration={0.4}>
                         <Switch>
@@ -128,6 +129,7 @@ function App() {
                           <Route path="/contact" component={ContactPage} />
                           <Route path="/report-bug" component={ReportBugPage} />
                           <Route path="/privacy" component={PrivacyPage} />
+                          <Route path="/content-test" component={ContentTestPage} />
 
 
                           {/* Legal Routes */}

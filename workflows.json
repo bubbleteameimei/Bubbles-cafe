@@ -14,6 +14,8 @@
     "wait_for_output": "Server is running at http://0.0.0.0:5000",
     "onAfterCompleted": "continue",
     "persistent": true,
+    "type": "web",
+    "public_address": "http://localhost:5000",
     "restart_on": [
       "package.json",
       "package-lock.json",

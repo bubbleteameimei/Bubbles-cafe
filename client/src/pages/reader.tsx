@@ -8,15 +8,16 @@ import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import CommentSection from "@/components/blog/comment-section";
-import { fetchPosts } from "@/lib/wordpress-api";
+import { fetchPosts, fetchPost } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
 import { FontSizeControls } from "@/components/ui/FontSizeControls";
 import { getReadingTime } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/lib/theme-provider";
 import { Moon, Sun } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import "../styles/reader.css";
 
 // Theme button component
@@ -111,19 +112,51 @@ export default function Reader({ slug }: ReaderPageProps) {
   
   console.log('[Reader] Component mounted with slug:', slug);
 
-  const { data: postsData, isLoading: queryLoading, error } = useQuery({
+  const { data: postsData, isLoading: queryLoading, error, refetch } = useQuery({
     queryKey: ["wordpress", "posts", "reader", slug],
     queryFn: async () => {
       console.log('[Reader] Fetching posts...', { slug });
       try {
         if (slug) {
-          const response = await fetch(`/api/posts/${slug}`);
-          if (!response.ok) throw new Error('Failed to fetch post');
-          const post = await response.json();
-          return { posts: [post], hasMore: false };
+          // First try to get from API
+          try {
+            const response = await fetch(`/api/posts/${slug}`);
+            if (response.ok) {
+              const post = await response.json();
+              return { posts: [post], hasMore: false };
+            }
+          } catch (apiError) {
+            console.warn('[Reader] API fetch failed, trying WordPress:', apiError);
+            // If API fails, fall back to direct WordPress fetch
+          }
+          
+          // Try to fetch directly from WordPress as fallback
+          const post = await fetchPost(slug);
+          if (post) {
+            return { posts: [post], hasMore: false };
+          }
+          throw new Error('Post not found');
         } else {
+          // For the main reader page, fetch all posts
+          try {
+            // First try API for cached posts
+            const response = await fetch('/api/posts?limit=100');
+            if (response.ok) {
+              const data = await response.json();
+              if (data.posts && data.posts.length > 0) {
+                console.log('[Reader] Posts fetched from API successfully:', {
+                  totalPosts: data.posts.length,
+                });
+                return { posts: data.posts, hasMore: data.hasMore };
+              }
+            }
+          } catch (apiError) {
+            console.warn('[Reader] API fetch failed, falling back to WordPress:', apiError);
+          }
+          
+          // Fall back to WordPress direct fetch
           const data = await fetchPosts(1, 100);
-          console.log('[Reader] Posts fetched successfully:', {
+          console.log('[Reader] Posts fetched from WordPress successfully:', {
             totalPosts: data.posts?.length,
             hasMore: data.hasMore
           });
@@ -136,7 +169,9 @@ export default function Reader({ slug }: ReaderPageProps) {
     },
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    retry: 2, // Add retry for network failures
+    retryDelay: 1000 // Start with 1s delay
   });
 
   useEffect(() => {
@@ -200,8 +235,35 @@ export default function Reader({ slug }: ReaderPageProps) {
   let readingTime = '';
   
   if (currentPost) {
-    formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
-    readingTime = getReadingTime(currentPost.content.rendered);
+    try {
+      // Make sure we have a valid date - check both date and createdAt fields
+      const dateStr = currentPost.date || (currentPost.createdAt ? currentPost.createdAt : null);
+      if (dateStr) {
+        const postDate = new Date(dateStr);
+        if (!isNaN(postDate.getTime())) {
+          formattedDate = format(postDate, 'MMMM d, yyyy');
+        } else {
+          formattedDate = 'Date unavailable';
+          console.log('[Reader] Invalid date format, using fallback');
+        }
+      } else {
+        formattedDate = 'Date unavailable';
+        console.log('[Reader] No date information available');
+      }
+      
+      // Get reading time from rendered content
+      if (currentPost.content && currentPost.content.rendered) {
+        readingTime = getReadingTime(currentPost.content.rendered);
+      } else if (typeof currentPost.content === 'string') {
+        readingTime = getReadingTime(currentPost.content);
+      } else {
+        readingTime = '3 min read'; // Fallback
+      }
+    } catch (error) {
+      console.error('[Reader] Error processing post data:', error);
+      formattedDate = 'Date unavailable';
+      readingTime = '3 min read'; // Fallback
+    }
   }
   
   // Now render based on conditions
@@ -309,18 +371,6 @@ export default function Reader({ slug }: ReaderPageProps) {
     text-underline-offset: 3px;
   }
   
-  /* First paragraph styling for literary effect */
-  .story-content > p:first-of-type:first-letter {
-    float: left;
-    font-size: 3.2em;
-    line-height: 0.7em;
-    margin-right: 0.1em;
-    margin-top: 0.12em;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    color: var(--primary);
-  }
-  
   /* Add subtle text shadow in dark mode */
   @media (prefers-color-scheme: dark) {
     .story-content h1, 
@@ -380,7 +430,10 @@ export default function Reader({ slug }: ReaderPageProps) {
             <div className="flex flex-col items-center mb-8">
               <h1
                 className="text-4xl font-bold text-center mb-4 tracking-tight"
-                dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
+                dangerouslySetInnerHTML={{ 
+                  __html: currentPost.title?.rendered || 
+                          (typeof currentPost.title === 'string' ? currentPost.title : 'Untitled Story')
+                }}
               />
 
               <div className="flex flex-col items-center gap-3">
@@ -435,27 +488,87 @@ export default function Reader({ slug }: ReaderPageProps) {
                 whiteSpace: 'pre-wrap'
               }}
               dangerouslySetInnerHTML={{
-                __html: currentPost.content.rendered
-                  .replace(/\n\n+/g, '\n\n')
-                  .replace(/<p>\s*<\/p>/g, '')
-                  // Process paragraphs with better styling
-                  .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string, index: number) => {
-                    const trimmedContent = p1.trim();
-                    // Skip styling for empty paragraphs
-                    if (!trimmedContent) return '';
+                __html: (() => {
+                  // Handle content format from WordPress API
+                  if (currentPost.content && currentPost.content.rendered) {
+                    // First preserve italics and other formatting tags
+                    const preservedTags: string[] = [];
+                    const contentWithPlaceholders = currentPost.content.rendered.replace(
+                      /<(em|i|strong|b)(.*?)>(.*?)<\/(em|i|strong|b)>/g, 
+                      (match: string, tag: string, attributes: string, content: string) => {
+                        const placeholder = `__PRESERVED_TAG_${preservedTags.length}__`;
+                        preservedTags.push(`<${tag}${attributes}>${content}</${tag}>`);
+                        return placeholder;
+                      }
+                    );
                     
-                    return `<p style="
-                      font-size: ${fontSize}px; 
-                      margin-bottom: 1.8em; 
-                      font-kerning: normal;
-                      line-height: 1.9;
-                      letter-spacing: 0.0125em;
-                    ">${trimmedContent}</p>`;
-                  })
-                  .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
-                  .replace(/\s+/g, ' ')
-                  .replace(/(\r\n|\r|\n){2,}/g, '\n\n')
-                  .trim()
+                    // Now process the content with preserved formatting
+                    let processedContent = contentWithPlaceholders
+                      .replace(/\n\n+/g, '\n\n')
+                      .replace(/<p>\s*<\/p>/g, '')
+                      // Process paragraphs with better styling
+                      .replace(/<p>(.*?)<\/p>/g, (match: string, p1: string, index: number) => {
+                        const trimmedContent = p1.trim();
+                        // Skip styling for empty paragraphs
+                        if (!trimmedContent) return '';
+                        
+                        return `<p style="
+                          font-size: ${fontSize}px; 
+                          margin-bottom: 1.8em; 
+                          font-kerning: normal;
+                          line-height: 1.9;
+                          letter-spacing: 0.0125em;
+                        ">${trimmedContent}</p>`;
+                      })
+                      .replace(/(\s*<br\s*\/?>\s*){2,}/g, '<br/>')
+                      .replace(/\s+/g, ' ')
+                      .replace(/(\r\n|\r|\n){2,}/g, '\n\n')
+                      .trim();
+                      
+                    // Restore preserved tags
+                    preservedTags.forEach((tag, index) => {
+                      processedContent = processedContent.replace(
+                        `__PRESERVED_TAG_${index}__`, 
+                        tag
+                      );
+                    });
+                    
+                    return processedContent;
+                  } 
+                  // Handle content as plain string from database
+                  else if (typeof currentPost.content === 'string') {
+                    // First process italics/bold markdown-style syntax
+                    let markdownContent = currentPost.content;
+                    
+                    // Convert markdown-style formatting to HTML
+                    // Bold: **text** or __text__
+                    markdownContent = markdownContent.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+                    
+                    // Italic: *text* or _text_
+                    markdownContent = markdownContent.replace(/(\*|_)(.*?)\1/g, '<em>$2</em>');
+                    
+                    // Convert plain text to HTML with paragraphs
+                    const contentHtml = markdownContent
+                      .split('\n\n')
+                      .map((paragraph: string) => {
+                        const trimmedParagraph = paragraph.trim();
+                        if (!trimmedParagraph) return '';
+                        
+                        return `<p style="
+                          font-size: ${fontSize}px; 
+                          margin-bottom: 1.8em; 
+                          font-kerning: normal;
+                          line-height: 1.9;
+                          letter-spacing: 0.0125em;
+                        ">${trimmedParagraph}</p>`;
+                      })
+                      .join('');
+                    
+                    return contentHtml || '<p>Content unavailable</p>';
+                  }
+                  
+                  return '<p>Content unavailable</p>';
+                })()
               }}
             />
             
