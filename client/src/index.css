@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth theme transitions */
+html.dark, 
+html.light {
+  transition-property: background-color, color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+html.dark *, html.light * {
+  transition-property: background-color, color, border-color, opacity, transform, filter, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
 @layer base {
   :root {
     /* Light mode - Softer, Less Glaring Theme */

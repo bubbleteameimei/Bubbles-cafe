@@ -21,6 +21,8 @@ import { Textarea } from '@/components/ui/textarea';
 interface BookmarkButtonProps {
   postId: number;
   className?: string;
+  variant?: 'default' | 'reader';
+  showText?: boolean;
 }
 
 type BookmarkData = {
@@ -33,7 +35,7 @@ type BookmarkData = {
   createdAt: string;
 };
 
-export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
+export function BookmarkButton({ postId, className, variant = 'default', showText = true }: BookmarkButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -145,6 +147,99 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
 
   const isBookmarked = !!bookmark;
 
+  // Reader-style bookmark button
+  if (variant === 'reader') {
+    if (!user) {
+      return (
+        <button
+          onClick={() => {
+            toast({
+              title: 'Authentication required',
+              description: 'Please sign in to bookmark stories.',
+            });
+          }}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          aria-label="Bookmark post"
+        >
+          <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+          </svg>
+        </button>
+      );
+    }
+
+    if (isBookmarked) {
+      return (
+        <button
+          onClick={handleRemoveBookmark}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          aria-label="Remove bookmark"
+          disabled={isLoading || deleteMutation.isPending}
+        >
+          <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+          </svg>
+        </button>
+      );
+    }
+    
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <button
+            className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+            aria-label="Bookmark post"
+            disabled={isLoading || createMutation.isPending}
+          >
+            <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+            </svg>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Bookmark Story</DialogTitle>
+            <DialogDescription>
+              Add this story to your bookmarks. You can add notes and tags to organize your bookmarks.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tags" className="text-right">
+                Tags
+              </Label>
+              <Input
+                id="tags"
+                placeholder="horror, favorites (comma separated)"
+                className="col-span-3"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                placeholder="Add your personal notes about this story"
+                className="col-span-3"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
+              Add Bookmark
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Default button style
   if (!user) {
     return (
       <Button 
@@ -159,7 +254,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
         }}
       >
         <Bookmark className="h-4 w-4 mr-2" />
-        Bookmark
+        {showText && "Bookmark"}
       </Button>
     );
   }
@@ -175,7 +270,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
           disabled={deleteMutation.isPending}
         >
           <Bookmark className="h-4 w-4 mr-2 fill-current" />
-          Bookmarked
+          {showText && "Bookmarked"}
         </Button>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -187,7 +282,7 @@ export function BookmarkButton({ postId, className }: BookmarkButtonProps) {
               disabled={createMutation.isPending || isLoading}
             >
               <Bookmark className="h-4 w-4 mr-2" />
-              Bookmark
+              {showText && "Bookmark"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -242,7 +337,7 @@ export function useBookmarkPosition(postId: number) {
 
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
-      if (!user) return null;
+      if (!user || postId <= 0) return null;
       return apiRequest(`/api/bookmarks/${postId}`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -256,7 +351,7 @@ export function useBookmarkPosition(postId: number) {
   });
 
   const updatePosition = (position: string) => {
-    if (user) {
+    if (user && postId > 0) {
       updatePositionMutation.mutate(position);
     }
   };

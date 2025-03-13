@@ -939,7 +939,7 @@ Timestamp: ${new Date().toLocaleString()}
         storage.getPosts(1, 5),
         storage.getRecentComments(),
         storage.getAdminByEmail(req.user.email),
-        storage.getAnalytics() // Replace streak methods with general analytics
+        storage.getSiteAnalytics() // Replace streak methods with general analytics
       ]);
 
       res.json({
@@ -1213,12 +1213,10 @@ Timestamp: ${new Date().toLocaleString()}
       // Fetch all user-related data in parallel
       const [
         userAchievements,
-        analytics,
         posts,
         totalLikes
       ] = await Promise.all([
         storage.getUserAchievements(userId),
-        storage.getAnalytics(userId), // Replacing streak calls with analytics call
         storage.getUserPosts(userId),
         storage.getUserTotalLikes(userId)
       ]);
@@ -1241,22 +1239,19 @@ Timestamp: ${new Date().toLocaleString()}
 
       res.json({
         achievements: achievementsWithProgress,
-        readingStreak: analytics.readingStreak || {
+        readingStreak: {
           currentStreak: 0,
           longestStreak: 0,
           lastReadAt: null,
           totalReads: 0
         },
-        writerStreak: analytics.writerStreak || {
+        writerStreak: {
           currentStreak: 0,
           longestStreak: 0,
           lastWriteAt: null,
           totalPosts: 0
         },
-        featured: analytics.featuredAuthor ? {
-          monthYear: analytics.featuredAuthor.monthYear,
-          description: analytics.featuredAuthor.description
-        } : null,
+        featured: null,
         stats: {
           totalPosts: posts.length,
           totalLikes,

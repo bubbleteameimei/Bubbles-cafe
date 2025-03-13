@@ -22,37 +22,86 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
 
   // Share via navigator.share API if available, otherwise open dialog
   const handleShare = async () => {
-    const shareData = {
-      title: document.title,
-      text: "Check out this story on Bubble's Café!",
-      url: window.location.href
-    };
+    try {
+      // Get more detailed information for sharing
+      const pageTitle = document.title || "Horror Story";
+      const pageUrl = window.location.href;
+      const siteInfo = "Bubble's Café";
+      
+      // Create a richer sharing object
+      const shareData = {
+        title: pageTitle,
+        text: `Check out this horror story on ${siteInfo}!`,
+        url: pageUrl
+      };
 
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        console.log("Content shared successfully");
-      } catch (error) {
-        console.error("Sharing failed:", error);
-        if ((error as Error).name !== "AbortError") {
-          toast({
-            description: "Failed to share. Please try again.",
-            variant: "destructive"
-          });
+      // Check if navigator.share API is available
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          console.log("Content shared successfully via Web Share API");
+        } catch (error) {
+          console.error("Web Share API failed:", error);
+          
+          // Don't show error for user cancellations
+          if ((error as Error).name !== "AbortError") {
+            toast({
+              description: "Native sharing failed. Using alternative options.",
+              variant: "default"
+            });
+            // Fall back to dialog when share API fails
+            setIsModalOpen(true);
+          }
         }
+      } else {
+        // If Web Share API not available, open the dialog
+        console.log("Web Share API not available, using fallback dialog");
+        setIsModalOpen(true);
       }
-    } else {
-      // If Web Share API not available, open the dialog
+    } catch (err) {
+      console.error("Error in share handler:", err);
+      // Always ensure the dialog opens if any unexpected error occurs
       setIsModalOpen(true);
     }
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast({
-      description: "Link copied to clipboard!",
-    });
-    setIsModalOpen(false);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({
+        description: "Link copied to clipboard!",
+      });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement("textarea");
+      textArea.value = window.location.href;
+      textArea.style.position = "fixed";  // Avoid scrolling to bottom
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          toast({
+            description: "Link copied to clipboard!",
+          });
+          setIsModalOpen(false);
+        } else {
+          throw new Error("Copy command failed");
+        }
+      } catch (err) {
+        console.error("Fallback copy failed:", err);
+        toast({
+          description: "Could not copy link. Please try selecting and copying manually.",
+          variant: "destructive"
+        });
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
   };
 
   return (

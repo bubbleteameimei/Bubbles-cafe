@@ -19,6 +19,7 @@ import { Moon, Sun } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { StoryHighlightClip } from "@/components/ui/StoryHighlightClip";
 import { 
   Pagination, 
   PaginationContent, 
@@ -29,79 +30,80 @@ import {
 } from "@/components/ui/pagination";
 import "../styles/reader.css";
 
-// Theme button component
-const ThemeButton = () => {
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <button
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105"
-      aria-label="Toggle theme"
-    >
-      {theme === 'dark' ? (
-        <Sun className="h-7 w-7 text-amber-400" />
-      ) : (
-        <Moon className="h-7 w-7 text-indigo-500" />
-      )}
-    </button>
-  );
-};
-
-// Import BookmarkButton component
+// Import BookmarkButton component and position tracker
 import { BookmarkButton as BookmarkButtonComponent, useBookmarkPosition } from '@/components/ui/BookmarkButton';
 
-// Font size controls component has been replaced with the imported component
+// Improved theme button component with cute animation
+const ThemeButton = () => {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
 
-// FloatingPagination component removed as requested
+  return (
+    <motion.button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center overflow-hidden"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <motion.div
+        className="relative w-full h-full flex items-center justify-center"
+        animate={{ rotate: isDark ? 0 : 180 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 260, 
+          damping: 20,
+          duration: 0.15 
+        }}
+      >
+        <motion.div
+          className="absolute"
+          initial={false}
+          animate={{ 
+            opacity: isDark ? 1 : 0,
+            y: isDark ? 0 : -10,
+            scale: isDark ? 1 : 0.5,
+            filter: isDark ? "drop-shadow(0 0 2px rgba(255, 193, 7, 0.5))" : "none"
+          }}
+          transition={{ 
+            duration: 0.15,
+            ease: [0.16, 1, 0.3, 1]  // Custom easing for smoother feel
+          }}
+        >
+          <Sun className="h-7 w-7 text-amber-400" />
+        </motion.div>
+        <motion.div
+          className="absolute"
+          initial={false}
+          animate={{ 
+            opacity: isDark ? 0 : 1,
+            y: isDark ? 10 : 0,
+            scale: isDark ? 0.5 : 1,
+            filter: !isDark ? "drop-shadow(0 0 2px rgba(99, 102, 241, 0.5))" : "none"
+          }}
+          transition={{ 
+            duration: 0.15,
+            ease: [0.16, 1, 0.3, 1]  // Custom easing for smoother feel
+          }}
+        >
+          <Moon className="h-7 w-7 text-indigo-500" />
+        </motion.div>
+      </motion.div>
+    </motion.button>
+  );
+};
 
 interface ReaderPageProps {
   slug?: string;
 }
 
 export default function Reader({ slug }: ReaderPageProps) {
-  // Define styles first before any hooks to prevent uninitialized variable error
-  const storyContentStyles = `
-  /* Additional dynamic styles that complement our reader.css file */
-  .story-content a {
-    color: var(--primary);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-    transition: all 0.2s ease;
-  }
-  
-  .story-content a:hover {
-    text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
-  }
-  
-  /* Add subtle text shadow in dark mode */
-  @media (prefers-color-scheme: dark) {
-    .story-content h1, 
-    .story-content h2 {
-      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
-    }
-  }
-  
-  /* Enhance image displays */
-  .story-content img {
-    transition: transform 0.3s ease;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  .story-content img:hover {
-    transform: scale(1.02);
-  }
-  `;
-
-  // All hooks must be called in the same order on every render
-  // Keep all useState and useEffect hooks at the top in a consistent order
+  // All React hooks must be called in the same order on every render - define ALL hooks first
   const [, setLocation] = useLocation();
   const { fontSize, updateFontSize } = useFontSize();
   const [showControls, setShowControls] = useState(false);
-  
-  // Define initial state for currentIndex using sessionStorage
-  const initialIndex = (() => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndex = sessionStorage.getItem('selectedStoryIndex');
       console.log('[Reader] Retrieved saved index:', savedIndex);
@@ -122,15 +124,11 @@ export default function Reader({ slug }: ReaderPageProps) {
       console.error('[Reader] Error reading from sessionStorage:', error);
       return 0;
     }
-  })();
-  
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  
-  // Define handlers after all state hooks
-  const toggleControls = () => setShowControls(!showControls);
+  });
   
   console.log('[Reader] Component mounted with slug:', slug);
 
+  // Query for fetching posts - another hook that must be near the top
   const { data: postsData, isLoading: queryLoading, error, refetch } = useQuery({
     queryKey: ["wordpress", "posts", "reader", slug],
     queryFn: async () => {
@@ -193,6 +191,54 @@ export default function Reader({ slug }: ReaderPageProps) {
     retryDelay: 1000 // Start with 1s delay
   });
 
+  // Process query results into variables for use in the component
+  const loading = queryLoading || !postsData?.posts || postsData.posts.length === 0;
+  const hasError = !!error;
+  const posts = postsData?.posts || [];
+  const isInvalidIndex = posts.length > 0 && (currentIndex < 0 || currentIndex >= posts.length);
+  const currentPost = posts.length > 0 && currentIndex >= 0 && currentIndex < posts.length ? posts[currentIndex] : null;
+  
+  // Bookmark position tracking hook - Always call the hook, but use a fallback ID if needed
+  const bookmarkPositionHook = useBookmarkPosition(currentPost?.id || -1);
+  const { updatePosition } = bookmarkPositionHook;
+  
+  // Define static styles for content after all hooks are defined
+  const storyContentStyles = `
+  /* Additional dynamic styles that complement our reader.css file */
+  .story-content a {
+    color: var(--primary);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition: all 0.2s ease;
+  }
+  
+  .story-content a:hover {
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  
+  /* Add subtle text shadow in dark mode */
+  @media (prefers-color-scheme: dark) {
+    .story-content h1, 
+    .story-content h2 {
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  /* Enhance image displays */
+  .story-content img {
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .story-content img:hover {
+    transform: scale(1.02);
+  }
+  `;
+  
+  // Define handlers after all state hooks
+  const toggleControls = () => setShowControls(!showControls);
+
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
       console.log('[Reader] Validating current index:', {
@@ -210,11 +256,11 @@ export default function Reader({ slug }: ReaderPageProps) {
         sessionStorage.setItem('selectedStoryIndex', currentIndex.toString());
       }
 
-      const currentPost = postsData.posts[currentIndex];
-      console.log('[Reader] Selected post:', currentPost ? {
-        id: currentPost.id,
-        title: currentPost.title.rendered,
-        date: currentPost.date
+      const selectedPost = postsData.posts[currentIndex];
+      console.log('[Reader] Selected post:', selectedPost ? {
+        id: selectedPost.id,
+        title: selectedPost.title.rendered,
+        date: selectedPost.date
       } : 'No post found');
     }
   }, [currentIndex, postsData?.posts]);
@@ -226,6 +272,8 @@ export default function Reader({ slug }: ReaderPageProps) {
       instagram: !!FaInstagram
     });
   }, []);
+  
+  // We'll add bookmark position tracking later in the component, after variables are defined
 
   useEffect(() => {
     try {
@@ -260,16 +308,6 @@ export default function Reader({ slug }: ReaderPageProps) {
       console.error('[Reader] Error injecting styles:', error);
     }
   }, [fontSize]);
-
-  // All variables must be defined before any conditional returns to maintain hook order
-  // Store values in variables first
-  const loading = queryLoading || !postsData?.posts || postsData.posts.length === 0;
-  const hasError = !!error;
-  const posts = postsData?.posts || [];
-  const isInvalidIndex = posts.length > 0 && (currentIndex < 0 || currentIndex >= posts.length);
-  const currentPost = posts.length > 0 && currentIndex >= 0 && currentIndex < posts.length ? posts[currentIndex] : null;
-  // Initialize the contentRef before any conditional returns
-  const contentRef = useRef<HTMLDivElement>(null);
   
   // Define formatting variables that depend on currentPost
   let formattedDate = '';
@@ -409,12 +447,51 @@ export default function Reader({ slug }: ReaderPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Now that all variables are defined, we can add the bookmark position tracking effect
+  useEffect(() => {
+    if (!currentPost) return;
+    
+    // Debounce function to limit how often we update the bookmark position
+    let timeoutId: NodeJS.Timeout;
+    
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        // Calculate reading progress as percentage
+        const scrollPosition = window.scrollY;
+        const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = Math.min(Math.max(scrollPosition / documentHeight, 0), 1);
+        
+        // Store current reading position as percentage
+        const positionData = `${Math.round(progress * 100)}%`;
+        
+        // Update bookmark position
+        updatePosition(positionData);
+        
+        console.log('[Reader] Reading position updated:', positionData);
+      }, 500); // Update after 500ms of scrolling pause
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [currentPost, updatePosition]);
+
   // Define additional functions below
   return (
     <div className="relative min-h-screen bg-background reader-interface">
       {/* Fullscreen button removed as requested */}
       
       {/* We'll add Reading progress tracker later after fixing it */}
+
+      {/* Add StoryHighlightClip for shareable highlights */}
+      {currentPost && <StoryHighlightClip 
+        postId={currentPost.id} 
+        postTitle={currentPost.title?.rendered || currentPost.title || "Story"} 
+      />}
 
       {/* Add the floating navigation component */}
       <FloatingNavigation 
@@ -440,7 +517,7 @@ export default function Reader({ slug }: ReaderPageProps) {
         <div className="mb-12 flex justify-between items-center">
           <div className="flex space-x-4">
             <ThemeButton />
-            {currentPost && <BookmarkButtonComponent postId={currentPost.id} />}
+            {currentPost && <BookmarkButtonComponent postId={currentPost.id} variant="reader" />}
           </div>
           <FontSizeControls />
         </div>

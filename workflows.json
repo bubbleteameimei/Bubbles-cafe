@@ -29,7 +29,8 @@
       ".env.development",
       ".env.production"
     ],
-    "kill_others": true
+    "kill_others": true,
+    "wait_time_after_up": 3000
   },
   "WordPress Sync": {
     "command": "node scripts/run-wp-sync.js",

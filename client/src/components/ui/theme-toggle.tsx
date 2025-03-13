@@ -14,50 +14,45 @@ export function ThemeToggle({ variant = 'fancy', className = '' }: ThemeTogglePr
 
   if (variant === 'fancy') {
     return (
-      <motion.button
+      <button
         onClick={toggleTheme}
-        className={`relative h-10 w-10 overflow-hidden rounded-full bg-transparent text-current ${className}`}
-        whileTap={{ scale: 0.95 }}
-        transition={{ duration: 0.15 }}
+        className={`relative h-10 w-10 overflow-hidden rounded-full bg-transparent text-current 
+                   hover:scale-105 active:scale-95 transition-transform duration-150 ${className}`}
         aria-label="Toggle theme"
       >
         <div className="relative h-full w-full">
           {/* Sun icon */}
-          <motion.div
-            initial={{ opacity: isDark ? 1 : 0, y: isDark ? 0 : 15 }}
-            animate={{ opacity: isDark ? 1 : 0, y: isDark ? 0 : 15 }}
-            transition={{ duration: 0.15, ease: "easeInOut" }}
-            className="absolute inset-0 flex items-center justify-center"
+          <div
+            className={`absolute inset-0 flex items-center justify-center transition-transform duration-150 ease-out
+                      ${isDark ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
             <Sun 
               size={20} 
               className="text-amber-400 filter drop-shadow-md" 
             />
-          </motion.div>
+          </div>
           
           {/* Moon icon */}
-          <motion.div
-            initial={{ opacity: isDark ? 0 : 1, y: isDark ? -15 : 0 }}
-            animate={{ opacity: isDark ? 0 : 1, y: isDark ? -15 : 0 }}
-            transition={{ duration: 0.15, ease: "easeInOut" }}
-            className="absolute inset-0 flex items-center justify-center"
+          <div
+            className={`absolute inset-0 flex items-center justify-center transition-transform duration-150 ease-out
+                      ${isDark ? 'opacity-0 -translate-y-4' : 'opacity-100 translate-y-0'}`}
           >
             <Moon 
               size={20} 
               className="text-indigo-500 filter drop-shadow-md" 
             />
-          </motion.div>
+          </div>
         </div>
         
         {/* Background transition effect */}
         <div 
-          className={`absolute inset-0 rounded-full transition-colors duration-150 ${
+          className={`absolute inset-0 rounded-full ${
             isDark 
               ? 'bg-gradient-to-tr from-indigo-900/10 to-indigo-600/10 border border-indigo-500/20' 
               : 'bg-gradient-to-tr from-amber-500/10 to-amber-300/10 border border-amber-500/20'
           }`}
         />
-      </motion.button>
+      </button>
     );
   }
 
