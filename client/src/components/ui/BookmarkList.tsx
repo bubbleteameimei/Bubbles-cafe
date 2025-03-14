@@ -46,7 +46,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   const [filterTag, setFilterTag] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Query to fetch all bookmarks
+  // Query to fetch all bookmarks for authenticated users
   const { data: bookmarks = [], isLoading, error } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
     queryFn: async () => {
@@ -57,6 +57,15 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       return apiRequest<BookmarkWithPost[]>(url);
     },
     enabled: !!user,
+  });
+  
+  // Query to fetch recommended stories for non-authenticated users
+  const { data: recommendedStories = [], isLoading: isLoadingRecommended } = useQuery({
+    queryKey: ['/api/posts'],
+    queryFn: async () => {
+      return apiRequest<Post[]>('/api/posts?limit=5');
+    },
+    enabled: !user,
   });
 
   // Delete bookmark mutation
@@ -142,18 +151,66 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Display a limited number of bookmarks if specified
   const displayedBookmarks = limit ? filteredBookmarks.slice(0, limit) : filteredBookmarks;
 
-  // Allow non-authenticated users to see the bookmarks UI
+  // Show recommended stories for non-authenticated users
   if (!user) {
     return (
-      <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50">
-        <Bookmark className="mx-auto h-12 w-12 opacity-20 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Discover your reading list</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Create a free account to bookmark stories and track your reading progress.
-        </p>
-        <Link to="/auth">
-          <Button variant="default" size="sm">Sign in to get started</Button>
-        </Link>
+      <div className={className}>
+        <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50 mb-8">
+          <Bookmark className="mx-auto h-12 w-12 opacity-20 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Discover your reading list</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Create a free account to bookmark stories and track your reading progress.
+          </p>
+          <Link to="/auth">
+            <Button variant="default" size="sm">Sign in to get started</Button>
+          </Link>
+        </div>
+        
+        {isLoadingRecommended ? (
+          <div className="text-center p-4">Loading recommended stories...</div>
+        ) : recommendedStories.length > 0 ? (
+          <>
+            <h3 className="text-xl font-semibold mb-4">Recommended Stories</h3>
+            <div className="space-y-4">
+              {recommendedStories.map((story) => (
+                <Card key={story.id} className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">
+                      <Link to={`/reader/${story.slug}`} className="hover:underline">
+                        {story.title}
+                      </Link>
+                    </CardTitle>
+                    <CardDescription>
+                      <div className="flex items-center text-xs mt-1 text-muted-foreground">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {format(new Date(story.createdAt), 'MMM dd, yyyy')}
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="pb-3">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {story.excerpt}
+                    </p>
+                  </CardContent>
+                  
+                  <CardFooter>
+                    <Link to={`/reader/${story.slug}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Read Story
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center p-4">
+            <p className="text-sm text-muted-foreground">No recommended stories available.</p>
+          </div>
+        )}
       </div>
     );
   }

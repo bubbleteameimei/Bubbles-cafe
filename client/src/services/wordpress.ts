@@ -81,6 +81,81 @@ const sanitizeHTML = (content: string): string => {
     .join('\n\n');
 };
 
+// Local storage keys
+const WP_POSTS_CACHE_KEY = 'cached_wordpress_posts';
+const WP_LAST_UPDATED_KEY = 'wordpress_posts_last_updated';
+const CACHE_EXPIRY_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+/**
+ * Save WordPress posts to local storage cache
+ */
+function savePostsToLocalStorage(posts: WordPressPost[]): void {
+  try {
+    // Get any existing cached posts
+    const existingCache = getPostsFromLocalStorage();
+    
+    // Create a map of existing posts by ID for quick lookup
+    const existingPostsMap = new Map();
+    existingCache.forEach(post => existingPostsMap.set(post.id, post));
+    
+    // Merge new posts with existing cache, prioritizing newer posts
+    posts.forEach(post => existingPostsMap.set(post.id, post));
+    
+    // Convert map back to array and sort by date (newest first)
+    const mergedPosts = Array.from(existingPostsMap.values())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Save to localStorage
+    localStorage.setItem(WP_POSTS_CACHE_KEY, JSON.stringify(mergedPosts));
+    localStorage.setItem(WP_LAST_UPDATED_KEY, new Date().toISOString());
+    
+    console.log(`[WordPress Service] Cached ${mergedPosts.length} posts to local storage`);
+  } catch (error) {
+    console.error('[WordPress Service] Error saving posts to local storage:', error);
+  }
+}
+
+/**
+ * Retrieve WordPress posts from local storage cache
+ */
+function getPostsFromLocalStorage(): WordPressPost[] {
+  try {
+    const cachedData = localStorage.getItem(WP_POSTS_CACHE_KEY);
+    if (!cachedData) return [];
+    
+    const cachedPosts = JSON.parse(cachedData) as WordPressPost[];
+    const lastUpdated = localStorage.getItem(WP_LAST_UPDATED_KEY);
+    
+    // Check if cache is still valid
+    if (lastUpdated) {
+      const lastUpdatedTime = new Date(lastUpdated).getTime();
+      const currentTime = new Date().getTime();
+      
+      if (currentTime - lastUpdatedTime > CACHE_EXPIRY_TIME) {
+        console.log('[WordPress Service] Cache expired, should fetch fresh data');
+      } else {
+        console.log(`[WordPress Service] Using valid cache of ${cachedPosts.length} posts`);
+      }
+    }
+    
+    return cachedPosts;
+  } catch (error) {
+    console.error('[WordPress Service] Error retrieving posts from local storage:', error);
+    return [];
+  }
+}
+
+/**
+ * Get paginated posts from local storage
+ */
+function getPaginatedPostsFromCache(page: number, perPage: number): WordPressPost[] {
+  const allCachedPosts = getPostsFromLocalStorage();
+  const startIndex = (page - 1) * perPage;
+  const endIndex = startIndex + perPage;
+  
+  return allCachedPosts.slice(startIndex, endIndex);
+}
+
 export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
   try {
     console.log(`[WordPress Service] Fetching posts for page ${page}`);
@@ -123,7 +198,15 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       });
       console.log(`[WordPress Service] Response headers:`, headers);
       
-      // Return fallback data so the site continues to function
+      // Return cached data if available
+      const cachedPosts = getPaginatedPostsFromCache(page, 5);
+      if (cachedPosts.length > 0) {
+        console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts as fallback`);
+        return cachedPosts;
+      }
+      
+      // Return empty array if no cache is available
+      console.log('[WordPress Service] No cached posts available, returning empty array');
       return [];
     }
 
@@ -134,15 +217,89 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
     // Validate response format
     if (!Array.isArray(posts)) {
       console.error('[WordPress Service] Invalid response format (not an array):', typeof posts);
+      
+      // Return cached data as fallback
+      const cachedPosts = getPaginatedPostsFromCache(page, 5);
+      if (cachedPosts.length > 0) {
+        console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts as fallback`);
+        return cachedPosts;
+      }
+      
       return [];
     }
 
+    // Cache successful results to local storage
+    savePostsToLocalStorage(posts);
+    
     // Return successfully parsed posts
     return posts;
   } catch (error) {
     console.error('[WordPress Service] Fetch error:', error);
-    // Return empty array so UI doesn't break
+    
+    // Return cached data in case of network errors
+    const cachedPosts = getPaginatedPostsFromCache(page, 5);
+    if (cachedPosts.length > 0) {
+      console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts after fetch error`);
+      return cachedPosts;
+    }
+    
+    // Return empty array if no cache available
     return [];
+  }
+}
+
+// Store converted posts for easy retrieval
+const CONVERTED_POSTS_CACHE_KEY = 'converted_wordpress_posts';
+
+/**
+ * Save converted posts to localStorage for quick access
+ */
+function saveParsedPostToLocalStorage(post: Partial<Post>): void {
+  try {
+    // Get existing converted posts
+    const existingPosts = getConvertedPostsFromLocalStorage();
+    
+    // Create map for quick lookup
+    const postsMap = new Map();
+    existingPosts.forEach(p => postsMap.set(p.id, p));
+    
+    // Add new post
+    postsMap.set(post.id, post);
+    
+    // Convert map back to array
+    const mergedPosts = Array.from(postsMap.values());
+    
+    // Save to localStorage
+    localStorage.setItem(CONVERTED_POSTS_CACHE_KEY, JSON.stringify(mergedPosts));
+  } catch (error) {
+    console.error('[WordPress Service] Error saving converted post to local storage:', error);
+  }
+}
+
+/**
+ * Get all converted posts from localStorage
+ */
+function getConvertedPostsFromLocalStorage(): Partial<Post>[] {
+  try {
+    const data = localStorage.getItem(CONVERTED_POSTS_CACHE_KEY);
+    if (!data) return [];
+    return JSON.parse(data) as Partial<Post>[];
+  } catch (error) {
+    console.error('[WordPress Service] Error retrieving converted posts from local storage:', error);
+    return [];
+  }
+}
+
+/**
+ * Get a single converted post by slug from localStorage
+ */
+export function getConvertedPostBySlug(slug: string): Partial<Post> | undefined {
+  try {
+    const posts = getConvertedPostsFromLocalStorage();
+    return posts.find(post => post.slug === slug);
+  } catch (error) {
+    console.error('[WordPress Service] Error retrieving post by slug from local storage:', error);
+    return undefined;
   }
 }
 
@@ -150,7 +307,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
   try {
     if (!wpPost.title?.rendered || !wpPost.content?.rendered || !wpPost.slug) {
       console.error(`[WordPress Service] Invalid post data: Missing required fields for post ${wpPost.id}`);
-      return {
+      const fallbackPost = {
         id: wpPost.id || Math.floor(Math.random() * 10000),
         title: wpPost.title?.rendered?.trim() || 'Untitled Story',
         content: wpPost.content?.rendered || 'Content unavailable',
@@ -158,6 +315,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
         slug: wpPost.slug || `untitled-${Date.now()}`,
         createdAt: wpPost.date ? new Date(wpPost.date) : new Date()
       };
+      return fallbackPost;
     }
 
     const sanitizedContent = sanitizeHTML(wpPost.content.rendered);
@@ -165,7 +323,7 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       ? sanitizeHTML(wpPost.excerpt.rendered).replace(/<[^>]+>/g, '').trim()
       : sanitizedContent.replace(/<[^>]+>/g, '').substring(0, 200) + '...';
 
-    return {
+    const convertedPost = {
       id: wpPost.id,
       title: wpPost.title.rendered.trim(),
       content: sanitizedContent,
@@ -173,6 +331,11 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       slug: wpPost.slug,
       createdAt: new Date(wpPost.date)
     };
+    
+    // Cache the converted post
+    saveParsedPostToLocalStorage(convertedPost);
+    
+    return convertedPost;
   } catch (error) {
     console.error('[WordPress Service] Error converting post:', error);
     return {

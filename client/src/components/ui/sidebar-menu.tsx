@@ -430,6 +430,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
+                        isActive={location === '/feedback'}
+                        onClick={() => handleNavigation('/feedback')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Feedback & Suggestions</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
@@ -476,16 +486,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       >
                         <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Copyright Policy</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/feedback'}
-                        onClick={() => handleNavigation('/feedback')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Provide Feedback</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>

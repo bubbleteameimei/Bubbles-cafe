@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, Headphones, Volume2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
@@ -15,6 +15,15 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "@/components/theme-provider";
+import { AudioNarrator } from "@/components/ui/audio-narrator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface ReaderPageProps {
   slug?: string;
@@ -31,6 +40,10 @@ export default function Reader({ slug }: ReaderPageProps) {
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
+  
+  // Audio narrator settings
+  const [isNarratorOpen, setIsNarratorOpen] = useState(false);
+  const [narratorTone, setNarratorTone] = useState<"neutral" | "creepy" | "suspense" | "terror" | "panic" | "whisper">("whisper");
 
   console.log('[Reader] Component mounted with slug:', slug); // Debug log
 
@@ -502,6 +515,56 @@ export default function Reader({ slug }: ReaderPageProps) {
               <Plus className="h-4 w-4" />
             </Button>
           </div>
+          
+          <div className="w-px h-6 bg-border/50"></div>
+          
+          {/* Listen to Narrator button */}
+          <Dialog open={isNarratorOpen} onOpenChange={setIsNarratorOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant={isNarratorOpen ? "default" : "ghost"}
+                size="icon"
+                className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                aria-label="Listen to narration"
+              >
+                <Headphones className="h-4 w-4" />
+                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                  Whisper Narration
+                </span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Whisper Narration</DialogTitle>
+                <DialogDescription>
+                  Listen to the story with emotional tone modulation
+                </DialogDescription>
+              </DialogHeader>
+              
+              {/* Emotional tone selector */}
+              <div className="grid grid-cols-3 gap-2 my-4">
+                {["whisper", "creepy", "suspense", "terror", "panic", "neutral"].map((tone) => (
+                  <Button
+                    key={tone}
+                    variant={narratorTone === tone ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setNarratorTone(tone as any)}
+                    className="capitalize"
+                  >
+                    {tone}
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Audio narrator component */}
+              <AudioNarrator
+                content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
+                title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
+                emotionalTone={narratorTone}
+                autoScroll={false}
+              />
+            </DialogContent>
+          </Dialog>
           
           <div className="w-px h-6 bg-border/50"></div>
           

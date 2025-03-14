@@ -472,13 +472,7 @@ export default function Feedback() {
                           : "pr-10 focus:border-blue-500 focus:ring-blue-500/20"
                     }`}
                   />
-                  {formData.name.length >= 2 && !validationErrors.name && (
-                    <span className="absolute right-3 top-2.5 text-green-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    </span>
-                  )}
+                  {/* Check mark removed */}
                 </div>
                 {validationErrors.name && (
                   <p className="text-sm text-red-500 mt-1">{validationErrors.name}</p>
@@ -502,13 +496,7 @@ export default function Feedback() {
                           : "pr-10 focus:border-blue-500 focus:ring-blue-500/20"
                     }`}
                   />
-                  {formData.email.includes('@') && formData.email.includes('.') && !validationErrors.email && (
-                    <span className="absolute right-3 top-2.5 text-green-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    </span>
-                  )}
+                  {/* Email check mark removed */}
                 </div>
                 {validationErrors.email && (
                   <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
@@ -534,15 +522,9 @@ export default function Feedback() {
                     }`}
                   >
                     <SelectValue placeholder="Select type" />
-                    {formData.type && !validationErrors.type && (
-                      <span className="ml-2 text-green-500 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      </span>
-                    )}
+                    {/* Type check mark removed */}
                   </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-[300px] overflow-y-auto w-full min-w-[200px]">
+                  <SelectContent side="bottom" className="max-h-[300px] overflow-y-auto w-full min-w-[200px]">
                     {feedbackTypes.map((type) => (
                       <SelectItem 
                         key={type.value} 
@@ -579,13 +561,7 @@ export default function Feedback() {
                   }`} 
                   maxLength={2000}
                 />
-                {formData.content.length >= 10 && !validationErrors.content && (
-                  <span className="absolute right-3 top-3 text-green-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </span>
-                )}
+                {/* Content check mark removed */}
               </div>
               <div className="flex justify-between items-center mt-1">
                 <div>
@@ -661,13 +637,7 @@ export default function Feedback() {
                     </div>
                   ))}
                 </RadioGroup>
-                {parseInt(formData.rating.toString()) > 0 && !validationErrors.rating && (
-                  <span className="absolute right-3 top-3 text-green-500 bg-background/80 rounded-full p-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </span>
-                )}
+                {/* Rating check mark removed */}
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Poor</span>

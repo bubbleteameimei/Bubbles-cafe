@@ -4,10 +4,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, Moon, Sun } from "lucide-react";
+import { Menu } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/components/NotificationProvider";
 import { useTheme } from "@/components/theme-provider";
+import { SunMoonToggle } from "@/components/ui/sun-moon-toggle";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
@@ -79,20 +80,7 @@ export default function Navigation() {
         {/* Right-side Actions */}
         <div className="flex items-center space-x-4">
           <NotificationIcon notifications={notifications} />
-          <button
-            onClick={toggleTheme}
-            className="inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-accent/50 hover:text-accent-foreground focus:outline-none"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-            <span className="sr-only">
-              {theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            </span>
-          </button>
+          <SunMoonToggle />
           {!user ? (
             <Button
               variant="default"

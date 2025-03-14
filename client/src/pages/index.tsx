@@ -179,27 +179,27 @@ export default function IndexView() {
     <div className="min-h-screen w-full bg-background">
       <div className="container pb-20">
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pt-4 border-b pb-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div>
-            <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
-            <p className="text-muted-foreground">Explore our collection of haunting tales</p>
+            <h1 className="text-4xl font-decorative mb-2 text-primary">Latest Stories</h1>
+            <p className="text-muted-foreground italic">Explore our collection of haunting tales that will keep you up at night</p>
           </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => setLocation('/')}
-              className="hover:bg-primary/20 transition-colors"
+              className="hover:bg-primary/20 transition-colors shadow-sm"
             >
               Back to Home
             </Button>
             <Button
               variant="default"
               onClick={() => setLocation('/submit-story')}
-              className="hidden sm:flex items-center gap-2"
+              className="hidden sm:flex items-center gap-2 shadow-sm hover:shadow-md transition-all"
             >
               <BookOpen className="h-4 w-4" />
               Submit Your Story
@@ -209,7 +209,7 @@ export default function IndexView() {
 
         {/* Filter Bar */}
         <motion.div
-          className="mb-8 border rounded-lg p-4 bg-card"
+          className="mb-8 border rounded-lg p-5 bg-card/80 shadow-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
@@ -220,10 +220,10 @@ export default function IndexView() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search stories..."
+                  placeholder="Search stories by title or content..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 shadow-sm focus:shadow focus:border-primary/40 transition-all"
                 />
               </form>
             </div>
@@ -231,7 +231,7 @@ export default function IndexView() {
             <div className="flex gap-3 w-full md:w-auto">
               <div className="w-full md:w-[180px]">
                 <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger>
+                  <SelectTrigger className="shadow-sm hover:border-primary/30 transition-all">
                     <div className="flex items-center">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Theme" />
@@ -250,7 +250,7 @@ export default function IndexView() {
               
               <div className="w-full md:w-[180px]">
                 <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger>
+                  <SelectTrigger className="shadow-sm hover:border-primary/30 transition-all">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Sort by" />
@@ -268,6 +268,7 @@ export default function IndexView() {
                 size="icon"
                 onClick={() => refetch()}
                 title="Refresh stories"
+                className="shadow-sm hover:shadow hover:bg-primary/5 transition-all"
               >
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -294,29 +295,45 @@ export default function IndexView() {
         {/* Stories Grid */}
         {currentPosts.length === 0 ? (
           <motion.div
-            className="text-center py-12 border rounded-lg bg-card"
+            className="text-center py-12 border-2 border-dashed rounded-lg bg-card/50 px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <Book className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Stories Found</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchTerm 
-                ? `No stories matching "${searchTerm}" were found.`
-                : theme !== "all"
-                  ? `No stories in the selected theme were found.`
-                  : "No stories available at the moment."
-              }
-            </p>
-            <Button variant="outline" onClick={() => {
-              setSearchTerm("");
-              setTheme("all");
-              setSortOrder("newest");
-              refetch();
-            }}>
-              Reset Filters
-            </Button>
+            <div className="max-w-md mx-auto">
+              <Book className="h-16 w-16 mx-auto text-primary/40 mb-4 mt-4" />
+              <h3 className="text-xl font-decorative mb-3">No Stories Found</h3>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                {searchTerm 
+                  ? `We couldn't find any stories matching "${searchTerm}". Try different keywords or check your spelling.`
+                  : theme !== "all"
+                    ? `There are no stories in the ${theme.toLowerCase().replace(/_/g, ' ')} theme at the moment. Try selecting a different theme.`
+                    : "No stories are available at the moment. Check back soon or try refreshing the page."
+                }
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setTheme("all");
+                    setSortOrder("newest");
+                    refetch();
+                  }}
+                  className="shadow-sm flex items-center gap-1"
+                >
+                  <Filter className="h-4 w-4 mr-1" />
+                  Reset Filters
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={() => refetch()}
+                  className="shadow-sm"
+                >
+                  Refresh
+                </Button>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -343,15 +360,15 @@ export default function IndexView() {
                   transition={{ delay: index * 0.1 }}
                   className="group"
                 >
-                  <Card className="h-full hover:shadow-md transition-all duration-300 overflow-hidden">
+                  <Card className="h-full hover:shadow-md transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/30">
                     {themeCategory && THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] && (
-                      <div className="h-1 bg-primary w-full"></div>
+                      <div className="h-1.5 bg-primary w-full"></div>
                     )}
                     <CardHeader className="p-6">
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-start gap-4">
                           <CardTitle
-                            className="text-xl group-hover:text-primary transition-colors cursor-pointer"
+                            className="text-xl group-hover:text-primary transition-colors cursor-pointer font-decorative"
                             onClick={() => navigateToReader(globalIndex)}
                           >
                             {post.title}
@@ -371,7 +388,7 @@ export default function IndexView() {
                         {themeCategory && THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] && (
                           <Badge 
                             variant="outline" 
-                            className="w-fit text-xs text-muted-foreground"
+                            className="w-fit text-xs text-muted-foreground hover:bg-primary/5"
                           >
                             {themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')}
                           </Badge>
@@ -380,10 +397,10 @@ export default function IndexView() {
                     </CardHeader>
 
                     <CardContent className="px-6 flex-grow">
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3">
                         {excerpt}
                       </p>
-                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300">
+                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
@@ -392,10 +409,10 @@ export default function IndexView() {
                       <div className="w-full flex items-center justify-between">
                         <LikeDislike postId={post.id} />
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                           onClick={() => navigateToReader(globalIndex)}
-                          className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                          className="shadow-sm hover:shadow transition-all text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                         >
                           Read More <ArrowRight className="h-3 w-3" />
                         </Button>
@@ -438,17 +455,33 @@ export default function IndexView() {
 
         {/* Load More Button - Alternative to pagination */}
         {hasNextPage && allPosts.length < 50 && (
-          <div className="flex justify-center mt-8">
+          <motion.div 
+            className="flex justify-center mt-10 mb-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <Button
               variant="outline"
               size="lg"
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              className="w-full max-w-xs"
+              className="w-full max-w-sm border-dashed shadow-sm hover:shadow relative group overflow-hidden"
             >
-              {isFetchingNextPage ? 'Loading more stories...' : 'Load More Stories'}
+              {isFetchingNextPage ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full"></div>
+                  <span>Loading more stories...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Load More Stories</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              )}
+              <span className="absolute bottom-0 left-0 h-[2px] bg-primary w-0 group-hover:w-full transition-all duration-500"></span>
             </Button>
-          </div>
+          </motion.div>
         )}
         
         {/* Floating Pagination Component - visible on all screens */}
