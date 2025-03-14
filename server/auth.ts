@@ -85,7 +85,7 @@ export function setupAuth(app: Express) {
   }));
 
   // Add login endpoint with enhanced logging
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/auth/login", (req, res, next) => {
     console.log('[Auth] Login request received:', { 
       email: req.body.email,
       hasPassword: !!req.body.password,
@@ -113,7 +113,7 @@ export function setupAuth(app: Express) {
   });
 
   // Add other routes...
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
       const { email, password, username } = req.body;
@@ -160,7 +160,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/auth/logout", (req, res) => {
     const userId = req.user?.id;
     console.log('[Auth] Logout request received:', { userId });
     req.logout((err) => {
@@ -173,7 +173,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/auth/user", (req, res) => {
     if (!req.isAuthenticated()) {
       console.log('[Auth] Unauthenticated user info request');
       return res.status(401).json({ message: "Not authenticated" });
@@ -183,7 +183,7 @@ export function setupAuth(app: Express) {
   });
   
   // Add social login endpoint
-  app.post("/api/social-login", async (req, res) => {
+  app.post("/api/auth/social-login", async (req, res) => {
     try {
       console.log('[Auth] Social login request received:', { 
         provider: req.body.provider,
@@ -234,15 +234,18 @@ export function setupAuth(app: Express) {
         
         try {
           // Update user metadata with latest social login info
+          // Handle metadata with type safety
+          const existingMetadata = user.metadata || {};
+          const updatedMetadata = Object.assign({}, existingMetadata, {
+            socialId,
+            provider,
+            lastLogin: new Date().toISOString()
+          });
+          
           await storage.updateUser(user.id, {
             fullName: username || user.fullName,
             avatar: photoURL || user.avatar,
-            metadata: {
-              ...user.metadata,
-              socialId,
-              provider,
-              lastLogin: new Date().toISOString()
-            }
+            metadata: updatedMetadata
           });
         } catch (updateError) {
           console.error('[Auth] Error updating user for social login:', updateError);

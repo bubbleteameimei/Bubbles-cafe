@@ -198,12 +198,52 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
+                          isActive={location === '/admin/content'}
+                          onClick={() => handleNavigation('/admin/content')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Content</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/content-moderation'}
+                          onClick={() => handleNavigation('/admin/content-moderation')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <ShieldAlert className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Moderation</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/analytics'}
+                          onClick={() => handleNavigation('/admin/analytics')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <LineChart className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Analytics</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
                           isActive={location === '/admin/feedback'}
                           onClick={() => handleNavigation('/admin/feedback')}
                           className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                         >
                           <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
                           <span>User Feedback</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/bug-reports'}
+                          onClick={() => handleNavigation('/admin/bug-reports')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Bug Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>

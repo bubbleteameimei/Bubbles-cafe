@@ -1,16 +1,29 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  Clock, 
+  MessageSquare, 
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Star,
+  Mail,
+  Link2,
+  Smartphone,
+  Laptop,
+  User,
+  Menu,
+  Eye,
+  FileText,
+  HelpCircle,
+  Bug
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -21,6 +34,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 // Types for our feedback data
 interface FeedbackItem {
@@ -76,6 +91,242 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
+// Timeline item component for feedback
+function FeedbackTimelineItem({ 
+  feedback, 
+  onStatusChange 
+}: { 
+  feedback: FeedbackItem; 
+  onStatusChange: (id: number, status: string) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [status, setStatus] = useState(feedback.status);
+
+  // Handle status change
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus);
+    onStatusChange(feedback.id, newStatus);
+  };
+
+  // Get status icon
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'reviewed':
+        return <Eye className="h-4 w-4 text-blue-500" />;
+      case 'resolved':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <HelpCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get icon for feedback type
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'bug':
+        return <Bug className="h-4 w-4 text-red-500" />;
+      case 'feature':
+        return <Star className="h-4 w-4 text-purple-500" />;
+      case 'content':
+        return <FileText className="h-4 w-4 text-blue-500" />;
+      case 'general':
+      default:
+        return <MessageSquare className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  return (
+    <div className="flex gap-x-3">
+      <div className="relative last:after:hidden after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700">
+        <div className="relative z-10 size-7 flex justify-center items-center">
+          <span className={`size-7 flex justify-center items-center rounded-full ${
+            status === 'pending' ? 'bg-yellow-500/10' :
+            status === 'reviewed' ? 'bg-blue-500/10' :
+            status === 'resolved' ? 'bg-green-500/10' : 
+            status === 'rejected' ? 'bg-red-500/10' : 'bg-gray-500/10'
+          }`}>
+            {getStatusIcon(status)}
+          </span>
+        </div>
+      </div>
+      
+      <div className="grow pt-0.5 pb-8">
+        <Card className="w-full">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  {getTypeIcon(feedback.type)}
+                  <span className="ml-2">Feedback #{feedback.id}</span>
+                </CardTitle>
+                <CardDescription>
+                  Submitted {format(new Date(feedback.createdAt), 'MMM d, yyyy')} at{' '}
+                  {format(new Date(feedback.createdAt), 'h:mm a')}
+                </CardDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TypeBadge type={feedback.type} />
+                <StatusBadge status={status} />
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pb-3">
+            <div>
+              <div className="line-clamp-2 text-sm">
+                {feedback.content}
+              </div>
+              {!isExpanded && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="mt-2 h-8 text-xs" 
+                  onClick={() => setIsExpanded(true)}
+                >
+                  Show more <ChevronDown className="ml-1 h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            {isExpanded && (
+              <div className="space-y-4 mt-4 border-t pt-4">
+                {/* Full feedback content */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Details</h3>
+                  <div className="p-3 bg-muted/30 rounded-lg whitespace-pre-wrap text-sm">
+                    {feedback.content}
+                  </div>
+                </div>
+                
+                {/* Rating */}
+                {feedback.rating > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Rating</h3>
+                    <div className="flex">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className={`text-lg ${
+                            i < feedback.rating ? 'text-yellow-400' : 'text-gray-300'
+                          }`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({feedback.rating} out of 5)
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Contact info */}
+                {(feedback.metadata?.name || feedback.metadata?.email) && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Contact Information</h3>
+                    <div className="space-y-1 text-sm">
+                      {feedback.metadata?.name && (
+                        <p>
+                          <span className="font-medium">Name:</span> {feedback.metadata.name}
+                        </p>
+                      )}
+                      {feedback.metadata?.email && (
+                        <p>
+                          <span className="font-medium">Email:</span> {feedback.metadata.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Technical details */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Technical Details</h3>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>
+                      <span className="font-medium">Page:</span> {feedback.page}
+                    </p>
+                    {feedback.metadata?.browser && (
+                      <p>
+                        <span className="font-medium">Browser:</span> {feedback.metadata.browser}
+                      </p>
+                    )}
+                    {feedback.metadata?.operatingSystem && (
+                      <p>
+                        <span className="font-medium">OS:</span> {feedback.metadata.operatingSystem}
+                      </p>
+                    )}
+                    {feedback.metadata?.screenResolution && (
+                      <p>
+                        <span className="font-medium">Resolution:</span> {feedback.metadata.screenResolution}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Status management */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Update Status</h3>
+                  <div className="flex items-center space-x-2">
+                    <Select value={status} onValueChange={handleStatusChange}>
+                      <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue placeholder="Change status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="reviewed">Reviewed</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 text-xs" 
+                      onClick={() => setIsExpanded(false)}
+                    >
+                      Collapse <ChevronUp className="ml-1 h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Group feedback items by date for timeline display
+function groupFeedbackByDate(feedback: FeedbackItem[]): Record<string, FeedbackItem[]> {
+  const grouped: Record<string, FeedbackItem[]> = {};
+  
+  feedback.forEach(item => {
+    try {
+      const date = format(new Date(item.createdAt), 'MMM d, yyyy');
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(item);
+    } catch (error) {
+      // Handle invalid dates
+      const fallback = 'Undated';
+      if (!grouped[fallback]) {
+        grouped[fallback] = [];
+      }
+      grouped[fallback].push(item);
+    }
+  });
+  
+  return grouped;
+}
+
 // Type badge component to visualize feedback type
 function TypeBadge({ type }: { type: string }) {
   switch (type) {
@@ -113,107 +364,19 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 // Feedback detail card component
-function FeedbackDetailCard({ feedback }: { feedback: FeedbackItem }) {
-  const { toast } = useToast();
+function FeedbackDetailCard({ 
+  feedback, 
+  onStatusChange 
+}: { 
+  feedback: FeedbackItem;
+  onStatusChange: (id: number, status: string) => void;
+}) {
   const [status, setStatus] = useState(feedback.status);
-
-  // Debug and performance tracking
-  const logStatusUpdate = (id: number, newStatus: string) => {
-    console.log('[Admin:Feedback] Status update attempt', {
-      feedbackId: id,
-      newStatus: newStatus,
-      previousStatus: feedback.status,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  const trackUpdatePerformance = (id: number, duration: number) => {
-    console.log('[Admin:Performance]', {
-      operation: 'feedback-status-update',
-      feedbackId: id,
-      durationMs: duration,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  // Enhanced status update mutation with debugging
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const startTime = performance.now();
-      logStatusUpdate(id, status);
-      
-      try {
-        const response = await fetch(`/api/feedback/${id}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
-        });
-
-        // Log response time
-        const responseTime = performance.now() - startTime;
-        console.log(`[Admin:Feedback] Status update response time: ${responseTime.toFixed(2)}ms`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('[Admin:Feedback] Status update failed', {
-            feedbackId: id,
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData.error
-          });
-          throw new Error(errorData.error || 'Failed to update status');
-        }
-
-        // Track performance metrics
-        trackUpdatePerformance(id, performance.now() - startTime);
-        
-        return response.json();
-      } catch (error) {
-        // Enhanced error logging
-        console.error('[Admin:Feedback] Error updating status', {
-          feedbackId: id,
-          newStatus: status,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
-      console.log('[Admin:Feedback] Status update successful', {
-        feedbackId: feedback.id,
-        newStatus: status,
-        previousStatus: feedback.status !== status ? feedback.status : 'same'
-      });
-      
-      toast({
-        title: 'Status Updated',
-        description: 'The feedback status has been updated successfully.',
-        variant: 'default',
-      });
-    },
-    onError: (error: Error) => {
-      console.error('[Admin:Feedback] Client error handler triggered', {
-        feedbackId: feedback.id,
-        error: error.message
-      });
-      
-      toast({
-        title: 'Update Failed',
-        description: error.message || 'Failed to update feedback status.',
-        variant: 'destructive',
-      });
-      // Reset status to previous value on error
-      setStatus(feedback.status);
-    },
-  });
 
   // Handle status change
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
-    updateStatusMutation.mutate({ id: feedback.id, status: newStatus });
+    onStatusChange(feedback.id, newStatus);
   };
 
   return (
@@ -331,6 +494,89 @@ function FeedbackDetailCard({ feedback }: { feedback: FeedbackItem }) {
 export default function AdminFeedback() {
   const [activeTab, setActiveTab] = useState('all');
   const { toast } = useToast();
+
+  // Debug and performance tracking
+  const logStatusUpdate = (id: number, newStatus: string) => {
+    console.log('[Admin:Feedback] Status update attempt', {
+      feedbackId: id,
+      newStatus: newStatus,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const trackUpdatePerformance = (id: number, duration: number) => {
+    console.log('[Admin:Performance]', {
+      operation: 'feedback-status-update',
+      feedbackId: id,
+      durationMs: duration,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  // Status update mutation for timeline items
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const startTime = performance.now();
+      logStatusUpdate(id, status);
+      
+      try {
+        const response = await fetch(`/api/feedback/${id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        // Log response time
+        const responseTime = performance.now() - startTime;
+        console.log(`[Admin:Feedback] Status update response time: ${responseTime.toFixed(2)}ms`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Admin:Feedback] Status update failed', {
+            feedbackId: id,
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error
+          });
+          throw new Error(errorData.error || 'Failed to update status');
+        }
+
+        // Track performance metrics
+        trackUpdatePerformance(id, performance.now() - startTime);
+        
+        return response.json();
+      } catch (error) {
+        // Enhanced error logging
+        console.error('[Admin:Feedback] Error updating status', {
+          feedbackId: id,
+          newStatus: status,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Status Updated',
+        description: 'The feedback status has been updated successfully.',
+        variant: 'default',
+      });
+    },
+    onError: (error: Error) => {
+      console.error('[Admin:Feedback] Client error handler triggered', {
+        error: error.message
+      });
+      
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update feedback status.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Debug and performance tracking for list fetch
   const logFeedbackFetch = (status: string, details: any) => {
@@ -487,18 +733,41 @@ export default function AdminFeedback() {
 
         <TabsContent value={activeTab}>
           {filteredFeedback.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-xl text-muted-foreground">No feedback found in this category.</p>
+            <div className="text-center py-12 bg-muted/20 rounded-lg border border-border">
+              <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
+              <p className="text-muted-foreground">No {activeTab !== 'all' ? activeTab : ''} feedback found</p>
             </div>
           ) : (
-            <div>
-              <p className="mb-4 text-muted-foreground">
-                Showing {filteredFeedback.length} {activeTab !== 'all' ? activeTab : ''} feedback
-                entries
-              </p>
-
-              {filteredFeedback.map((feedback: FeedbackItem) => (
-                <FeedbackDetailCard key={feedback.id} feedback={feedback} />
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">
+                  Showing {filteredFeedback.length} {activeTab !== 'all' ? activeTab : ''} feedback entries
+                </h3>
+                <div className="text-sm text-muted-foreground">
+                  Last updated: {new Date().toLocaleString()}
+                </div>
+              </div>
+              
+              {/* Timeline view */}
+              {Object.entries(groupFeedbackByDate(filteredFeedback)).map(([date, items]) => (
+                <div key={date} className="space-y-4">
+                  {/* Date heading */}
+                  <div className="ps-2 my-4 first:mt-0">
+                    <h3 className="text-xs font-medium uppercase text-gray-500 dark:text-neutral-400 flex items-center">
+                      <Calendar className="mr-2 h-3 w-3" />
+                      {date}
+                    </h3>
+                  </div>
+                  
+                  {/* Feedback items for this date */}
+                  {items.map(item => (
+                    <FeedbackTimelineItem 
+                      key={item.id} 
+                      feedback={item} 
+                      onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
           )}
