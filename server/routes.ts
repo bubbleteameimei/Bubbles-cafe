@@ -9,7 +9,7 @@ import compression from 'compression';
 import express from 'express';
 import * as session from 'express-session';
 import { z } from "zod";
-import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type InsertBookmark } from "@shared/schema";
+import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type InsertBookmark, type InsertUserFeedback } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -1186,6 +1186,126 @@ Timestamp: ${new Date().toLocaleString()}
         return res.status(404).json({ error: "Bookmark not found" });
       }
       res.status(500).json({ error: "Failed to delete bookmark" });
+    }
+  });
+
+  // User Feedback API endpoints
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const { type, content, rating, page, browser, operatingSystem, screenResolution, userId, userAgent, category, metadata } = req.body;
+      
+      // Basic validation
+      if (!type || !content) {
+        return res.status(400).json({ error: "Type and content are required fields" });
+      }
+      
+      // Create feedback object
+      const feedbackData: InsertUserFeedback = {
+        type,
+        content,
+        rating: rating || 0,
+        page: page || "unknown",
+        browser: browser || "unknown",
+        operatingSystem: operatingSystem || "unknown",
+        screenResolution: screenResolution || "unknown",
+        userId: userId || null,
+        status: "pending",
+        userAgent: userAgent || req.headers["user-agent"] || "unknown",
+        category: category || "general",
+        metadata: metadata || {}
+      };
+      
+      // Submit feedback
+      const feedback = await storage.submitFeedback(feedbackData);
+      
+      res.status(201).json({ success: true, feedback });
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  // Get all feedback (admin only)
+  app.get("/api/feedback", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Check if user is admin
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      // Get query parameters
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const status = req.query.status as string || "all";
+      
+      // Get feedback
+      const feedback = await storage.getAllFeedback(limit, status);
+      
+      res.status(200).json({ feedback });
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  // Get specific feedback (admin only)
+  app.get("/api/feedback/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Check if user is admin
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      // Get feedback ID
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      // Get feedback
+      const feedback = await storage.getFeedback(id);
+      
+      if (!feedback) {
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      res.status(200).json({ feedback });
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  // Update feedback status (admin only)
+  app.patch("/api/feedback/:id/status", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Check if user is admin
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      // Get feedback ID and status
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      if (!status || !["pending", "reviewed", "resolved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      
+      // Update feedback status
+      const updatedFeedback = await storage.updateFeedbackStatus(id, status);
+      
+      res.status(200).json({ success: true, feedback: updatedFeedback });
+    } catch (error) {
+      console.error("Error updating feedback status:", error);
+      res.status(500).json({ error: "Failed to update feedback status" });
     }
   });
 

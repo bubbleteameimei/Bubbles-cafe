@@ -86,6 +86,7 @@ const AdminAnalyticsPage = withSuspense(React.lazy(() => import('./pages/admin/a
 const AdminUsersPage = withSuspense(React.lazy(() => import('./pages/admin/users')));
 const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/settings')));
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
+const AdminFeedbackPage = withSuspense(React.lazy(() => import('./pages/admin/feedback')));
 
 function App() {
   usePerformanceMonitoring();
@@ -164,6 +165,7 @@ function App() {
                           <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
                           <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
                           <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
+                          <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
 
                           {/* 404 Route */}
                           <Route>

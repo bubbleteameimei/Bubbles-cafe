@@ -22,6 +22,7 @@ import {
   type ActivityLog, type InsertActivityLog,
   type AdminNotification, type InsertAdminNotification,
   type Bookmark, type InsertBookmark,
+  type UserFeedback, type InsertUserFeedback,
   // Tables
   posts as postsTable,
   comments,
@@ -45,6 +46,7 @@ import {
   activityLogs,
   adminNotifications,
   bookmarks,
+  userFeedback,
   type Achievement,
   type UserAchievement,
   achievements,
@@ -200,6 +202,12 @@ export interface IStorage {
   updateBookmark(userId: number, postId: number, data: Partial<InsertBookmark>): Promise<Bookmark>;
   deleteBookmark(userId: number, postId: number): Promise<void>;
   getBookmarksByTag(userId: number, tag: string): Promise<(Bookmark & { post: Post })[]>;
+  
+  // User Feedback methods
+  submitFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  getFeedback(id: number): Promise<UserFeedback | undefined>;
+  getAllFeedback(limit?: number, status?: string): Promise<UserFeedback[]>;
+  updateFeedbackStatus(id: number, status: string): Promise<UserFeedback>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1786,6 +1794,114 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getBookmarksByTag:", error);
       throw new Error("Failed to fetch bookmarks by tag");
+    }
+  }
+
+  // User Feedback methods
+  async submitFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
+    try {
+      console.log('[Storage] Submitting user feedback:', feedback.type);
+      
+      // Extract extended fields that aren't directly in the schema
+      const browser = feedback.browser || "unknown";
+      const operatingSystem = feedback.operatingSystem || "unknown";
+      const screenResolution = feedback.screenResolution || "unknown";
+      const userAgent = feedback.userAgent || "unknown";
+      
+      // Create metadata object
+      const metadataObject = {
+        browser,
+        operatingSystem,
+        screenResolution,
+        userAgent
+      };
+      
+      // Prepare the data for insertion
+      const insertData = {
+        type: feedback.type,
+        content: feedback.content,
+        rating: feedback.rating || 0,
+        page: feedback.page || "unknown",
+        status: feedback.status || "pending",
+        userId: feedback.userId || null,
+        category: feedback.category || "general",
+        browser: browser,
+        operatingSystem: operatingSystem,
+        screenResolution: screenResolution,
+        userAgent: userAgent,
+        metadata: metadataObject,
+        createdAt: new Date()
+      };
+      
+      // Insert the feedback
+      const [newFeedback] = await db.insert(userFeedback)
+        .values(insertData)
+        .returning();
+      
+      console.log('[Storage] Feedback submitted successfully, ID:', newFeedback.id);
+      return newFeedback;
+    } catch (error) {
+      console.error('[Storage] Error submitting feedback:', error);
+      throw new Error('Failed to submit feedback');
+    }
+  }
+
+  async getFeedback(id: number): Promise<UserFeedback | undefined> {
+    try {
+      // Explicitly type the result
+      const results: UserFeedback[] = await db.select()
+        .from(userFeedback)
+        .where(eq(userFeedback.id, id))
+        .limit(1);
+      
+      return results.length > 0 ? results[0] : undefined;
+    } catch (error) {
+      console.error('[Storage] Error fetching feedback:', error);
+      throw new Error('Failed to fetch feedback');
+    }
+  }
+
+  async getAllFeedback(limit: number = 50, status: string = 'all'): Promise<UserFeedback[]> {
+    try {
+      let feedbackList: UserFeedback[] = [];
+      
+      if (status === 'all') {
+        feedbackList = await db.query.userFeedback.findMany({
+          orderBy: (userFeedback, { desc }) => [desc(userFeedback.createdAt)],
+          limit: limit
+        });
+      } else {
+        feedbackList = await db.query.userFeedback.findMany({
+          where: eq(userFeedback.status, status),
+          orderBy: (userFeedback, { desc }) => [desc(userFeedback.createdAt)],
+          limit: limit
+        });
+      }
+      
+      return feedbackList;
+    } catch (error) {
+      console.error('[Storage] Error fetching all feedback:', error);
+      return [];
+    }
+  }
+
+  async updateFeedbackStatus(id: number, status: string): Promise<UserFeedback> {
+    try {
+      console.log(`[Storage] Updating feedback ID ${id} status to ${status}`);
+      
+      const results = await db.update(userFeedback)
+        .set({ status })
+        .where(eq(userFeedback.id, id))
+        .returning();
+      
+      if (results.length === 0) {
+        throw new Error("Feedback not found");
+      }
+      
+      return results[0];
+    } catch (error) {
+      console.error('[Storage] Error updating feedback status:', error);
+      throw new Error('Failed to update feedback status');
     }
   }
 }

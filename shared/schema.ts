@@ -317,6 +317,24 @@ export const bookmarks = pgTable("bookmarks", {
   userPostUnique: unique().on(table.userId, table.postId) // A user can bookmark a post only once
 }));
 
+// User Feedback
+export const userFeedback = pgTable("user_feedback", {
+  id: serial("id").primaryKey(),
+  type: text("type").default("general").notNull(), // general, bug, feature, etc.
+  content: text("content").notNull(),
+  rating: integer("rating").default(0),
+  page: text("page").default("unknown"),
+  status: text("status").default("pending").notNull(), // pending, reviewed, resolved, rejected
+  userId: integer("user_id").references(() => users.id), // Optional, as feedback can be anonymous
+  browser: text("browser").default("unknown"),
+  operatingSystem: text("operating_system").default("unknown"),
+  screenResolution: text("screen_resolution").default("unknown"),
+  userAgent: text("user_agent").default("unknown"),
+  category: text("category").default("general"),
+  metadata: json("metadata").default({}), // For storing additional info
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 
 // Update login schema to use email instead of username
 export const loginSchema = z.object({
@@ -568,3 +586,16 @@ export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({
 });
 export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
 export type Bookmark = typeof bookmarks.$inferSelect;
+
+// User Feedback schema and types
+export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({ 
+  id: true, 
+  createdAt: true 
+}).extend({
+  browser: z.string().optional(),
+  operatingSystem: z.string().optional(),
+  screenResolution: z.string().optional(),
+  userAgent: z.string().optional()
+});
+export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
+export type UserFeedback = typeof userFeedback.$inferSelect;
