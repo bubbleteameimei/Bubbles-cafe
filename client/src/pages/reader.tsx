@@ -533,10 +533,14 @@ export default function Reader({ slug }: ReaderPageProps) {
                 </span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent 
+              className="sm:max-w-2xl"
+              aria-labelledby="dialog-title-narrator"
+              aria-describedby="dialog-desc-narrator"
+            >
               <DialogHeader>
-                <DialogTitle>Whisper Narration</DialogTitle>
-                <DialogDescription>
+                <DialogTitle id="dialog-title-narrator">Whisper Narration</DialogTitle>
+                <DialogDescription id="dialog-desc-narrator">
                   Listen to the story with emotional tone modulation
                 </DialogDescription>
               </DialogHeader>

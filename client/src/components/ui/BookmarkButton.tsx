@@ -223,10 +223,14 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
             </svg>
           </button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent 
+          className="sm:max-w-[425px]"
+          aria-labelledby="bookmark-dialog-title-reader"
+          aria-describedby="bookmark-dialog-desc-reader"
+        >
           <DialogHeader>
-            <DialogTitle>Bookmark Story</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="bookmark-dialog-title-reader">Bookmark Story</DialogTitle>
+            <DialogDescription id="bookmark-dialog-desc-reader">
               Add this story to your bookmarks. You can add notes and tags or simply bookmark it.
             </DialogDescription>
           </DialogHeader>
@@ -348,10 +352,14 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               {showText && "Bookmark"}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent 
+            className="sm:max-w-[425px]"
+            aria-labelledby="bookmark-dialog-title-default"
+            aria-describedby="bookmark-dialog-desc-default"
+          >
             <DialogHeader>
-              <DialogTitle>Bookmark Story</DialogTitle>
-              <DialogDescription>
+              <DialogTitle id="bookmark-dialog-title-default">Bookmark Story</DialogTitle>
+              <DialogDescription id="bookmark-dialog-desc-default">
                 Add this story to your bookmarks. You can add notes and tags or simply bookmark it.
               </DialogDescription>
             </DialogHeader>

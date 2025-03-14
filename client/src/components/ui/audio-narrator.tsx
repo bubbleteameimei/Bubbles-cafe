@@ -94,48 +94,82 @@ export function AudioNarrator({
       echo: 0.1
     },
     whisper: {
-      rate: 0.8,
-      pitch: 0.7,
-      modulation: 0.1,
-      filterFrequency: 1500,
-      filterQ: 1,
-      tremolo: 0,
-      echo: 0.5
+      rate: 0.65,      // Even slower rate for a more deliberate, breathy whisper
+      pitch: 0.5,      // Lower pitch for a softer, more intimate feel
+      modulation: 0.2,  // More modulation to create a breathy effect
+      filterFrequency: 2200, // Higher frequency to let through breathy sounds
+      filterQ: 1.8,    // Sharper filter response for more clear whispers
+      tremolo: 0.6,    // Slight tremolo for a subtle wavering effect
+      echo: 0.35       // Moderate echo to create an ambient feeling
     }
   };
 
   // Initialize audio context and speech synthesis
   useEffect(() => {
     if (!isInitialized && window.speechSynthesis) {
-      // Create AudioContext for effects processing
-      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-      setAudioContext(context);
-      
-      // Initialize speech synthesis
-      const utterance = new SpeechSynthesisUtterance();
-      
-      // Get available voices and select a good one for narration
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        // Try to find a good voice for narration (ideally deep and slow)
-        const preferredVoices = [
-          voices.find(voice => voice.name.includes('Daniel')),
-          voices.find(voice => voice.name.includes('Google US English Male')),
-          voices.find(voice => voice.name.includes('Microsoft David')),
-          voices.find(voice => voice.name.includes('Samantha')),
-          voices.find(voice => voice.name.includes('Google US English Female'))
-        ].filter(Boolean);
+      try {
+        // Create AudioContext for effects processing
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        setAudioContext(context);
         
-        if (preferredVoices.length > 0) {
-          utterance.voice = preferredVoices[0] as SpeechSynthesisVoice;
+        // Initialize speech synthesis
+        const utterance = new SpeechSynthesisUtterance();
+        
+        // Make sure we have the latest voices
+        const loadVoices = () => {
+          // Get available voices and select a good one for narration
+          const voices = window.speechSynthesis.getVoices();
+          console.log(`Available voices: ${voices.length}`);
+          
+          if (voices.length > 0) {
+            // Select different voices based on emotional tone
+            let preferredVoices;
+            
+            if (emotionalTone === 'whisper') {
+              // For whisper mode, prefer softer, feminine voices
+              preferredVoices = [
+                voices.find(voice => voice.name.includes('Whisper')),
+                voices.find(voice => voice.name.includes('Samantha')),
+                voices.find(voice => voice.name.includes('Google US English Female')),
+                voices.find(voice => voice.name.includes('Microsoft Zira')),
+                voices.find(voice => voice.name.includes('Karen'))
+              ].filter(Boolean);
+            } else {
+              // For other emotional tones, use appropriate voices
+              preferredVoices = [
+                voices.find(voice => voice.name.includes('Daniel')),
+                voices.find(voice => voice.name.includes('Google US English Male')),
+                voices.find(voice => voice.name.includes('Microsoft David')),
+                voices.find(voice => voice.name.toLowerCase().includes(emotionalTone)),
+                voices.find(voice => voice.name.includes('Google US English Female'))
+              ].filter(Boolean);
+            }
+            
+            if (preferredVoices.length > 0) {
+              utterance.voice = preferredVoices[0] as SpeechSynthesisVoice;
+              console.log(`Selected voice: ${utterance.voice.name}`);
+            } else if (voices.length > 0) {
+              // Fallback to any available voice
+              utterance.voice = voices[0];
+              console.log(`Fallback voice: ${utterance.voice.name}`);
+            }
+          }
+        };
+        
+        // Check if voices are already loaded
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          loadVoices();
+        } else {
+          // Wait for voices to be loaded
+          window.speechSynthesis.onvoiceschanged = loadVoices;
         }
-      }
-      
-      // Set initial properties
-      const settings = toneSettings[emotionalTone];
-      utterance.rate = settings.rate;
-      utterance.pitch = settings.pitch;
-      utterance.volume = volume;
+        
+        // Set initial properties
+        const settings = toneSettings[emotionalTone];
+        utterance.rate = settings.rate;
+        utterance.pitch = settings.pitch;
+        utterance.volume = volume;
       
       // Set up audio processing nodes for effects
       const gainNode = context.createGain();
@@ -167,7 +201,11 @@ export function AudioNarrator({
           context.close();
         }
       };
+    } catch (error) {
+      console.error("Error initializing audio context:", error);
+      setError("Failed to initialize audio. Please try again.");
     }
+  }
   }, [isInitialized, volume, emotionalTone, content]);
 
   // Generate approximate word timings
@@ -250,8 +288,30 @@ export function AudioNarrator({
         setIsLoading(false);
       };
       
+      // Prepare text for narration based on emotional tone
+      let textToSpeak = content;
+      
+      // Special processing for whisper mode
+      if (emotionalTone === 'whisper') {
+        // For whisper mode, we add extra spaces between words and 
+        // create special text formatting to make it sound more like a whisper
+        textToSpeak = content
+          // Add pauses between sentences
+          .replace(/([.!?])\s+/g, '$1... ')
+          // Add extra spaces between words for slower pacing in whisper mode
+          .replace(/\s+/g, '  ')
+          // Add soft inhale sounds at commas and periods for breath effect
+          .replace(/,/g, ', *soft breath* ')
+          .replace(/\./g, '. *soft breath* ');
+          
+        // Ensure volume is appropriately lower for whisper
+        if (utterance.volume > 0.4) {
+          utterance.volume = 0.4;
+        }
+      }
+      
       // Set the text to narrate
-      utterance.text = content;
+      utterance.text = textToSpeak;
       
       // Start narration
       window.speechSynthesis.speak(utterance);
@@ -303,8 +363,18 @@ export function AudioNarrator({
     
     // Restart from new position if we were playing
     if (isPlaying) {
-      // Create a new utterance with remaining text
-      const remainingText = wordsArray.current.slice(newWordIndex).join(' ');
+      // Get remaining text
+      let remainingText = wordsArray.current.slice(newWordIndex).join(' ');
+      
+      // Apply whisper formatting if in whisper mode
+      if (emotionalTone === 'whisper') {
+        remainingText = remainingText
+          .replace(/([.!?])\s+/g, '$1... ')
+          .replace(/\s+/g, '  ')
+          .replace(/,/g, ', *soft breath* ')
+          .replace(/\./g, '. *soft breath* ');
+      }
+      
       const utterance = utteranceRef.current;
       if (utterance) {
         utterance.text = remainingText;
@@ -473,7 +543,18 @@ export function AudioNarrator({
                 
                 // Restart from new position if we were playing
                 if (isPlaying) {
-                  const remainingText = wordsArray.current.slice(newWordIndex).join(' ');
+                  // Get remaining text
+                  let remainingText = wordsArray.current.slice(newWordIndex).join(' ');
+                  
+                  // Apply whisper formatting if in whisper mode
+                  if (emotionalTone === 'whisper') {
+                    remainingText = remainingText
+                      .replace(/([.!?])\s+/g, '$1... ')
+                      .replace(/\s+/g, '  ')
+                      .replace(/,/g, ', *soft breath* ')
+                      .replace(/\./g, '. *soft breath* ');
+                  }
+                  
                   const utterance = utteranceRef.current;
                   if (utterance) {
                     utterance.text = remainingText;
