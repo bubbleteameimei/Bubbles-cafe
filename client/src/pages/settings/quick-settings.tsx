@@ -55,6 +55,7 @@ export default function QuickSettingsPage() {
             <Switch
               checked={theme === 'dark'}
               onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              size="md"
             />
           </div>
 

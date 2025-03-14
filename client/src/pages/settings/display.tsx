@@ -142,6 +142,7 @@ export default function VisualHorrorSettingsPage() {
                 id="ambient" 
                 checked={effects.ambient}
                 onCheckedChange={() => toggleEffect('ambient')}
+                size="md"
               />
             </div>
 
@@ -154,6 +155,7 @@ export default function VisualHorrorSettingsPage() {
                 id="jumpscares" 
                 checked={effects.jumpscares}
                 onCheckedChange={() => toggleEffect('jumpscares')}
+                size="md"
               />
             </div>
 
@@ -166,6 +168,7 @@ export default function VisualHorrorSettingsPage() {
                 id="weatherEffects" 
                 checked={effects.weatherEffects}
                 onCheckedChange={() => toggleEffect('weatherEffects')}
+                size="md"
               />
             </div>
 
@@ -178,6 +181,7 @@ export default function VisualHorrorSettingsPage() {
                 id="textEffects" 
                 checked={effects.textEffects}
                 onCheckedChange={() => toggleEffect('textEffects')}
+                size="md"
               />
             </div>
           </div>

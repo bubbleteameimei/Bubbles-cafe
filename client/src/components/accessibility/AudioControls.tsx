@@ -92,6 +92,7 @@ export function AudioControls({
               checked={bgmEnabled}
               onCheckedChange={setBgmEnabled}
               aria-label="Toggle background music"
+              size="md"
             />
           </div>
           
@@ -122,6 +123,7 @@ export function AudioControls({
               checked={ttsEnabled}
               onCheckedChange={setTtsEnabled}
               aria-label="Toggle text-to-speech"
+              size="md"
             />
           </div>
           

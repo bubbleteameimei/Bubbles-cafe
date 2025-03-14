@@ -428,26 +428,53 @@ export default function Feedback() {
                 Your form is ready to submit!
               </p>
             ) : (
-              <div className="flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-400 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <div>
-                  <p className="text-blue-400 font-medium">Form Progress:</p>
-                  <div className="mt-2 w-full bg-gray-700/50 rounded-full h-2.5">
-                    <div 
-                      className="bg-blue-500 h-2.5 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${calculateFormProgress()}%`,
-                        backgroundColor: calculateFormProgress() === 100 ? '#10b981' : '#3b82f6'
-                      }}
-                    ></div>
+              <div className="space-y-2 p-3 bg-background/50 border border-border/60 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span className="text-blue-400 font-medium">Required Steps</span>
                   </div>
-                  <p className="text-xs text-blue-300 mt-1 text-right">
+                  <span className="text-sm font-medium" style={{
+                    color: calculateFormProgress() === 100 ? '#10b981' : '#3b82f6'
+                  }}>
                     {calculateFormProgress()}% complete
-                  </p>
+                  </span>
+                </div>
+
+                <div className="space-y-2 pl-1">
+                  <div>
+                    <span className={formData.name.length >= 2 ? 'text-green-500' : 'text-muted-foreground'}>
+                      1. Enter your name
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <span className={formData.email.includes('@') && formData.email.includes('.') ? 'text-green-500' : 'text-muted-foreground'}>
+                      2. Provide a valid email
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <span className={formData.type ? 'text-green-500' : 'text-muted-foreground'}>
+                      3. Select feedback type
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <span className={formData.content.length >= 10 ? 'text-green-500' : 'text-muted-foreground'}>
+                      4. Write your feedback (min. 10 characters)
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <span className={parseInt(formData.rating.toString()) > 0 ? 'text-green-500' : 'text-muted-foreground'}>
+                      5. Select a rating
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -496,7 +523,13 @@ export default function Feedback() {
                           : "pr-10 focus:border-blue-500 focus:ring-blue-500/20"
                     }`}
                   />
-                  {/* Email check mark removed */}
+                  {formData.email.includes('@') && formData.email.includes('.') && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 {validationErrors.email && (
                   <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
@@ -522,9 +555,15 @@ export default function Feedback() {
                     }`}
                   >
                     <SelectValue placeholder="Select type" />
-                    {/* Type check mark removed */}
+                    {formData.type && (
+                      <div className="absolute inset-y-0 right-[30px] flex items-center pr-2 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
                   </SelectTrigger>
-                  <SelectContent side="bottom" className="max-h-[300px] overflow-y-auto w-full min-w-[200px]">
+                  <SelectContent side="bottom" className="max-h-[140px] overflow-y-auto w-full min-w-[180px]">
                     {feedbackTypes.map((type) => (
                       <SelectItem 
                         key={type.value} 
@@ -561,7 +600,13 @@ export default function Feedback() {
                   }`} 
                   maxLength={2000}
                 />
-                {/* Content check mark removed */}
+                {formData.content.length >= 10 && (
+                  <div className="absolute top-3 right-3 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center mt-1">
                 <div>
@@ -637,7 +682,7 @@ export default function Feedback() {
                     </div>
                   ))}
                 </RadioGroup>
-                {/* Rating check mark removed */}
+                {/* Rating checkmark removed */}
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Poor</span>

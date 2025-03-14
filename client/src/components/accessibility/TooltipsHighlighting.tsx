@@ -57,6 +57,7 @@ export function TooltipsHighlighting({ defaultEnabled = false }: TooltipsHighlig
             checked={tooltipsEnabled}
             onCheckedChange={setTooltipsEnabled}
             aria-label="Enable tooltips for complex words"
+            size="md"
           />
         </div>
         
@@ -72,6 +73,7 @@ export function TooltipsHighlighting({ defaultEnabled = false }: TooltipsHighlig
             checked={highlightingEnabled}
             onCheckedChange={setHighlightingEnabled}
             aria-label="Enable highlighting of important elements"
+            size="md"
           />
         </div>
       </CardContent>
