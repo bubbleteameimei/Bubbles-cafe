@@ -1074,6 +1074,23 @@ Timestamp: ${new Date().toLocaleString()}
       res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
+  
+  // Public API for site analytics that doesn't require admin access
+  app.get("/api/analytics/site", async (_req: Request, res: Response) => {
+    try {
+      const analyticsSummary = await storage.getAnalyticsSummary();
+      
+      res.json({
+        totalViews: analyticsSummary.totalViews,
+        uniqueVisitors: analyticsSummary.uniqueVisitors,
+        avgReadTime: analyticsSummary.avgReadTime,
+        bounceRate: analyticsSummary.bounceRate
+      });
+    } catch (error) {
+      console.error("[Analytics] Error fetching site analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics data" });
+    }
+  });
 
   app.get("/api/admin/notifications", isAuthenticated, async (req: Request, res: Response) => {
     try {

@@ -4,7 +4,7 @@ import {
   Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
-  LineChart
+  LineChart, BarChart
 } from "lucide-react"
 
 
@@ -208,6 +208,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         >
                           <LineChart className="h-3.5 w-3.5 mr-2 opacity-70" />
                           <span>Analytics</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/site-statistics'}
+                          onClick={() => handleNavigation('/admin/site-statistics')}
+                          className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        >
+                          <BarChart className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Site Statistics</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>

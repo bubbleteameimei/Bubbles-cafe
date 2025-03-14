@@ -56,7 +56,8 @@ const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
 
-
+// Demo Pages
+const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -93,6 +94,7 @@ const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/
 const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
 const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
 const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
+const AdminSiteStatisticsPage = withSuspense(React.lazy(() => import('./pages/admin/site-statistics')));
 const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
 
 function App() {
@@ -142,6 +144,7 @@ function App() {
                             <Route path="/content-test" component={ContentTestPage} />
                             <Route path="/bookmarks" component={BookmarksPage} />
                             <Route path="/cookie-test" component={CookieTestPage} />
+                            <Route path="/demo/toast" component={ToastDemoPage} />
 
                             {/* Legal Routes */}
                             <Route path="/legal/copyright" component={CopyrightPage} />
@@ -179,6 +182,7 @@ function App() {
                             <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
                             <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
                             <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
+                            <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
 
                             {/* 404 Route */}
                             <Route>

@@ -3,6 +3,9 @@ import * as React from "react";
 // Toast variants types
 export type ToastVariant = "default" | "destructive" | "success";
 
+// Import action element type
+import type { ToastActionElement } from "@/components/ui/toast";
+
 // Toast interface
 export interface Toast {
   id: string;
@@ -10,11 +13,13 @@ export interface Toast {
   description?: React.ReactNode;
   variant?: ToastVariant;
   duration?: number; // Duration in milliseconds
+  action?: ToastActionElement;
 }
 
 // Toast input without id
 export type ToastInput = Omit<Toast, "id"> & {
   variant?: ToastVariant;
+  action?: ToastActionElement;
 };
 
 // Toast actions types

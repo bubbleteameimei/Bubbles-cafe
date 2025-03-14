@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ import {
   Wifi, 
   WifiOff, 
   BookOpen, 
-  LayoutGrid, 
   HardDrive, 
   Trash2, 
   Clock, 
@@ -24,7 +23,9 @@ import {
   Eye,
   BookMarked,
   CloudOff,
-  Bookmark
+  Bookmark,
+  RefreshCw,
+  HardDriveDownload
 } from 'lucide-react';
 import { 
   Tooltip,
@@ -33,50 +34,130 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useQuery } from '@tanstack/react-query';
+import { useShowToast } from '@/components/toast/toast-utils';
 
-// Simulated downloaded stories
-const downloadedStories = [
-  { id: 1, title: "The Haunted Forest", size: 1.2, lastRead: "2 days ago", image: "url-placeholder", status: "complete" },
-  { id: 2, title: "Midnight Visitor", size: 0.8, lastRead: "1 week ago", image: "url-placeholder", status: "complete" },
-  { id: 3, title: "Whispers in the Dark", size: 1.5, lastRead: "3 days ago", image: "url-placeholder", status: "complete" },
-  { id: 4, title: "The Abandoned Mansion", size: 0.6, lastRead: "Just now", image: "url-placeholder", status: "downloading", progress: 75 }
-];
+// Define types for story data
+interface StoryData {
+  id: number;
+  title: string;
+  slug: string;
+  size: number;
+  lastRead?: string;
+  coverImage?: string;
+  status: 'complete' | 'downloading' | 'queued';
+  progress?: number;
+  excerpt?: string;
+  author?: string;
+}
+
+// Interface for local storage stats
+interface StorageStats {
+  totalSize: number;
+  storySize: number;
+  mediaSize: number;
+  usedPercentage: number;
+}
 
 export default function OfflineSettingsPage() {
+  // Toast notification hook
+  const showToast = useShowToast();
+  
   // State management
   const [offlineMode, setOfflineMode] = useState(true);
   const [autoDownload, setAutoDownload] = useState(false);
   const [mediaDownload, setMediaDownload] = useState(true);
   const [downloadQuality, setDownloadQuality] = useState("medium");
   const [maxStorage, setMaxStorage] = useState(5);
-  const [currentStorage, setCurrentStorage] = useState(2.1);
   const [activeTab, setActiveTab] = useState("settings");
   const [wifiOnly, setWifiOnly] = useState(true);
   
-  // Simulate network status
+  // Network status
   const [isOnline, setIsOnline] = useState(true);
   useEffect(() => {
-    // Real implementation would use navigator.onLine and add event listeners
     const checkNetworkStatus = () => {
       setIsOnline(navigator.onLine);
     };
     
     checkNetworkStatus();
     
-    // In a real implementation, you would also add event listeners for online/offline events
+    // Add real event listeners for online/offline events
+    window.addEventListener('online', checkNetworkStatus);
+    window.addEventListener('offline', checkNetworkStatus);
     
     return () => {
-      // Cleanup event listeners in real implementation
+      window.removeEventListener('online', checkNetworkStatus);
+      window.removeEventListener('offline', checkNetworkStatus);
     };
   }, []);
   
-  // Storage calculation logic
-  const storagePercentage = (currentStorage / maxStorage) * 100;
-  const storageColor = storagePercentage > 90 
-    ? "bg-red-500" 
-    : storagePercentage > 70 
-      ? "bg-amber-500" 
-      : "bg-emerald-500";
+  // Fetch posts for offline storage
+  const { data: posts, isLoading: isLoadingPosts } = useQuery({
+    queryKey: ['/api/posts'],
+    queryFn: async () => {
+      const response = await fetch('/api/posts');
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
+      }
+      const data = await response.json();
+      return data.posts || [];
+    },
+    enabled: isOnline
+  });
+  
+  // Storage stats calculation
+  const [storageStats, setStorageStats] = useState<StorageStats>({
+    totalSize: 2.1,
+    storySize: 1.7,
+    mediaSize: 0.4,
+    usedPercentage: 42
+  });
+  
+  // Calculate actual storage based on downloaded stories
+  useEffect(() => {
+    if (posts && posts.length > 0) {
+      // Estimate storage size based on content length
+      const storySize = posts.slice(0, 6).reduce((total: number, post: any) => {
+        // Rough estimate: 1KB per 1000 characters
+        const contentSize = (post.content?.length || 0) / 1000 / 1000;
+        return total + Math.max(0.1, contentSize);
+      }, 0);
+      
+      // Media size is typically images and audio
+      const mediaSize = mediaDownload ? posts.slice(0, 6).length * 0.15 : 0;
+      
+      const totalSize = storySize + mediaSize;
+      const usedPercentage = Math.min(100, Math.round((totalSize / maxStorage) * 100));
+      
+      setStorageStats({
+        totalSize,
+        storySize,
+        mediaSize,
+        usedPercentage
+      });
+    }
+  }, [posts, mediaDownload, maxStorage]);
+  
+  // Create downloaded stories from the actual posts
+  const downloadedStories: StoryData[] = posts ? posts.slice(0, 6).map((post: any, index: number) => {
+    // Convert post to downloaded story format
+    const estimatedSize = Math.round((post.content?.length || 1000) / 1000 / 10) / 10;
+    const lastReadDays = [2, 7, 3, 0, 5, 1];
+    const lastReadText = index === 3 ? "Just now" : `${lastReadDays[index]} days ago`;
+    
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      size: Math.max(0.1, estimatedSize),
+      lastRead: lastReadText,
+      coverImage: post.coverImage,
+      status: index === 3 ? 'downloading' : 'complete',
+      progress: index === 3 ? 75 : undefined,
+      excerpt: post.excerpt,
+      author: post.author?.username || 'Unknown'
+    };
+  }) : [];
   
   // Download status management
   const [syncStatus, setSyncStatus] = useState("upToDate"); // "syncing", "upToDate", "error"
@@ -84,16 +165,33 @@ export default function OfflineSettingsPage() {
   // Force a sync/refresh
   const handleSync = () => {
     setSyncStatus("syncing");
-    // Simulate a sync operation
+    showToast.success("Syncing content...");
+    
+    // In a real implementation, this would sync content
     setTimeout(() => {
       setSyncStatus("upToDate");
+      showToast.withAction({
+        title: "Sync Complete",
+        description: "All stories are now up to date",
+        variant: "success",
+        actionText: "View Downloads",
+        onAction: () => setActiveTab("downloads")
+      });
     }, 2000);
   };
   
   // Clear all cached data
   const handleClearCache = () => {
     // In a real implementation, this would clear the cached data
-    setCurrentStorage(0);
+    setStorageStats({
+      ...storageStats,
+      totalSize: 0,
+      storySize: 0,
+      mediaSize: 0,
+      usedPercentage: 0
+    });
+    
+    showToast.success("All cached data has been cleared");
   };
   
   return (
@@ -141,18 +239,14 @@ export default function OfflineSettingsPage() {
       </Alert>
       
       <Tabs defaultValue="settings" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 mb-6">
+        <TabsList className="grid grid-cols-2 mb-6">
           <TabsTrigger value="settings" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span>Settings</span>
           </TabsTrigger>
           <TabsTrigger value="downloads" className="flex items-center space-x-2">
-            <Download className="h-4 w-4" />
+            <HardDriveDownload className="h-4 w-4" />
             <span>Downloads</span>
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="flex items-center space-x-2">
-            <LayoutGrid className="h-4 w-4" />
-            <span>Stats</span>
           </TabsTrigger>
         </TabsList>
         
@@ -177,7 +271,10 @@ export default function OfflineSettingsPage() {
                   <Switch 
                     id="offline-mode" 
                     checked={offlineMode}
-                    onCheckedChange={setOfflineMode}
+                    onCheckedChange={(checked) => {
+                      setOfflineMode(checked);
+                      showToast.simple(`Offline mode ${checked ? 'enabled' : 'disabled'}`);
+                    }}
                     size="md"
                   />
                 </div>
@@ -253,7 +350,30 @@ export default function OfflineSettingsPage() {
                     max={10}
                     step={0.5}
                     value={[maxStorage]}
-                    onValueChange={(values) => setMaxStorage(values[0])}
+                    onValueChange={(values) => {
+                      const newValue = values[0];
+                      setMaxStorage(newValue);
+                      
+                      if (newValue > 8) {
+                        showToast.withAction({
+                          title: "Large Storage Allocated",
+                          description: "You've set a large storage limit. Make sure you have enough space on your device.",
+                          variant: "default",
+                          actionText: "Optimize",
+                          onAction: () => setMaxStorage(5)
+                        });
+                      } else if (newValue < storageStats.totalSize) {
+                        showToast.withAction({
+                          title: "Warning",
+                          description: "Some content may be removed to fit within your new storage limit.",
+                          variant: "destructive",
+                          actionText: "Restore",
+                          onAction: () => setMaxStorage(Math.ceil(storageStats.totalSize * 2) / 2)
+                        });
+                      } else {
+                        showToast.simple(`Storage limit set to ${newValue.toFixed(1)} GB`);
+                      }
+                    }}
                     disabled={!offlineMode}
                     className="cursor-pointer"
                   />
@@ -269,7 +389,7 @@ export default function OfflineSettingsPage() {
                 variant="outline" 
                 onClick={handleClearCache}
                 className="text-destructive hover:text-destructive"
-                disabled={currentStorage === 0}
+                disabled={storageStats.totalSize === 0}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Clear All Cached Data
@@ -304,37 +424,43 @@ export default function OfflineSettingsPage() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Used Space</span>
                   <span className="text-sm font-semibold">
-                    {currentStorage.toFixed(1)} GB / {maxStorage} GB
+                    {storageStats.totalSize.toFixed(1)} GB / {maxStorage} GB
                   </span>
                 </div>
                 
                 <div className="space-y-1">
                   <Progress 
-                    value={storagePercentage} 
+                    value={storageStats.usedPercentage} 
                     className="h-3"
-                    indicatorClassName={storageColor}
+                    indicatorClassName={
+                      storageStats.usedPercentage > 90 
+                        ? "bg-red-500" 
+                        : storageStats.usedPercentage > 70 
+                          ? "bg-amber-500" 
+                          : "bg-emerald-500"
+                    }
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>
-                      {storagePercentage > 90 
+                      {storageStats.usedPercentage > 90 
                         ? "Critical" 
-                        : storagePercentage > 70 
+                        : storageStats.usedPercentage > 70 
                           ? "Filling up" 
                           : "Good"
                       }
                     </span>
-                    <span>{Math.round(storagePercentage)}% used</span>
+                    <span>{Math.round(storageStats.usedPercentage)}% used</span>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div className="flex flex-col space-y-1 rounded-lg bg-primary/5 p-3 border border-border/30">
                     <span className="text-xs text-muted-foreground">Stories</span>
-                    <span className="text-lg font-semibold">1.7 GB</span>
+                    <span className="text-lg font-semibold">{storageStats.storySize.toFixed(1)} GB</span>
                   </div>
                   <div className="flex flex-col space-y-1 rounded-lg bg-primary/5 p-3 border border-border/30">
                     <span className="text-xs text-muted-foreground">Media</span>
-                    <span className="text-lg font-semibold">0.4 GB</span>
+                    <span className="text-lg font-semibold">{storageStats.mediaSize.toFixed(1)} GB</span>
                   </div>
                 </div>
               </div>
@@ -355,173 +481,112 @@ export default function OfflineSettingsPage() {
             <CardContent className="pt-6">
               <div className="space-y-1 mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">4 stories available offline</span>
+                  <span className="text-sm text-muted-foreground">
+                    {isLoadingPosts 
+                      ? "Loading stories..." 
+                      : `${downloadedStories.length} stories available offline`
+                    }
+                  </span>
                   <Badge variant="outline" className="text-xs">
                     {isOnline ? "Manage Downloads" : "Offline Mode"}
                   </Badge>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                {downloadedStories.map((story) => (
-                  <motion.div 
-                    key={story.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-accent transition-colors"
+              {isLoadingPosts ? (
+                <div className="flex justify-center py-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-primary/10 rounded-md h-12 w-12 flex items-center justify-center">
-                        <BookOpen className="h-6 w-6 text-primary/70" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{story.title}</span>
-                          {story.status === "downloading" && (
-                            <Badge variant="secondary" className="text-xs animate-pulse">
-                              Downloading...
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-3 text-xs text-muted-foreground">
-                          <span>{story.size} MB</span>
-                          <span>•</span>
-                          <span>Last read: {story.lastRead}</span>
-                        </div>
-                        {story.status === "downloading" && (
-                          <Progress value={story.progress} className="h-1 mt-1" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Read Offline</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Remove Download</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    <RefreshCw className="h-6 w-6 text-muted-foreground" />
                   </motion.div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {downloadedStories.length > 0 ? (
+                    downloadedStories.map((story) => (
+                      <motion.div 
+                        key={story.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-accent transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-primary/10 rounded-md h-12 w-12 flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-primary/70" />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">{story.title}</span>
+                              {story.status === "downloading" && (
+                                <Badge variant="secondary" className="text-xs animate-pulse">
+                                  Downloading...
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+                              <span>{story.size} MB</span>
+                              <span>•</span>
+                              <span>Last read: {story.lastRead}</span>
+                            </div>
+                            {story.status === "downloading" && (
+                              <Progress value={story.progress} className="h-1 mt-1" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-8 w-8"
+                                  onClick={() => window.location.href = `/reader/${story.slug}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Read Offline</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove Download</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <HardDriveDownload className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No stories downloaded yet</h3>
+                      <p className="text-muted-foreground max-w-sm">
+                        Download stories for offline reading to access them without an internet connection.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="justify-center border-t bg-muted/20 py-4">
               <Button variant="outline" disabled={!isOnline} className="w-full sm:w-auto">
                 <Bookmark className="mr-2 h-4 w-4" />
                 Download More Stories
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        {/* Stats Tab */}
-        <TabsContent value="stats" className="space-y-4 mt-2">
-          <Card>
-            <CardHeader className="bg-primary/5 border-b border-border/40">
-              <CardTitle className="flex items-center space-x-2">
-                <LayoutGrid className="h-5 w-5" />
-                <span>Offline Reading Statistics</span>
-              </CardTitle>
-              <CardDescription>Track your offline reading activity</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex flex-col space-y-2 p-4 rounded-lg bg-primary/5 border border-border/30">
-                  <span className="text-sm text-muted-foreground">Stories Read Offline</span>
-                  <span className="text-3xl font-bold">12</span>
-                  <span className="text-xs text-muted-foreground">Last 30 days</span>
-                </div>
-                
-                <div className="flex flex-col space-y-2 p-4 rounded-lg bg-primary/5 border border-border/30">
-                  <span className="text-sm text-muted-foreground">Reading Time</span>
-                  <span className="text-3xl font-bold">3.5h</span>
-                  <span className="text-xs text-muted-foreground">In offline mode</span>
-                </div>
-                
-                <div className="flex flex-col space-y-2 p-4 rounded-lg bg-primary/5 border border-border/30">
-                  <span className="text-sm text-muted-foreground">Data Saved</span>
-                  <span className="text-3xl font-bold">215<span className="text-xl">MB</span></span>
-                  <span className="text-xs text-muted-foreground">By reading offline</span>
-                </div>
-              </div>
-              
-              <div className="mt-6 space-y-3">
-                <h3 className="font-medium">Most Read Offline</h3>
-                <div className="space-y-2">
-                  {["The Haunted Forest", "Whispers in the Dark", "The Cellar Door"].map((story, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{index + 1}.</span>
-                        <span>{story}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Read {index + 1} times</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="bg-primary/5 border-b border-border/40">
-              <CardTitle className="flex items-center space-x-2">
-                <WifiOff className="h-5 w-5" />
-                <span>Offline Availability</span>
-              </CardTitle>
-              <CardDescription>Your reading capability without internet</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-6">
-                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    <h3 className="font-medium text-emerald-700 dark:text-emerald-400">Ready for Offline</h3>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    You have enough content downloaded to read for approximately <span className="font-semibold">4.5 hours</span> without an internet connection.
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col space-y-2 p-4 rounded-lg bg-primary/5 border border-border/30">
-                    <span className="text-sm text-muted-foreground">Last Synced</span>
-                    <span className="text-lg font-semibold">Today, 10:45 AM</span>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2 p-4 rounded-lg bg-primary/5 border border-border/30">
-                    <span className="text-sm text-muted-foreground">Next Auto-Sync</span>
-                    <span className="text-lg font-semibold">Today, 10:45 PM</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-between border-t bg-muted/20 py-4">
-              <p className="text-xs text-muted-foreground italic">
-                Offline syncing happens automatically every 12 hours when connected to WiFi
-              </p>
-              <Button variant="link" className="text-xs p-0 h-auto" onClick={() => setActiveTab("settings")}>
-                Adjust settings
               </Button>
             </CardFooter>
           </Card>

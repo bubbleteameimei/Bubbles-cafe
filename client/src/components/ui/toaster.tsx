@@ -21,9 +21,10 @@ const Toast = React.forwardRef<
     description?: React.ReactNode;
     variant?: ToastVariant;
     duration?: number;
+    action?: React.ReactNode;
     onDismiss: (id: string) => void;
   }
->(({ id, title, description, variant = "default", duration = 5000, onDismiss }, ref) => {
+>(({ id, title, description, variant = "default", duration = 5000, action, onDismiss }, ref) => {
   // Auto dismiss after specified duration (default 5 seconds)
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -97,6 +98,11 @@ const Toast = React.forwardRef<
             {description}
           </div>
         )}
+        {action && (
+          <div className="mt-2">
+            {action}
+          </div>
+        )}
       </div>
       
       <button
@@ -126,6 +132,7 @@ export function Toaster() {
             description={toast.description} 
             variant={toast.variant} 
             duration={toast.duration}
+            action={toast.action}
             onDismiss={dismiss}
           />
         ))}

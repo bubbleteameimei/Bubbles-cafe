@@ -1,6 +1,5 @@
 import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
-import { motion } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
@@ -51,17 +50,7 @@ const Switch = React.forwardRef<
           "data-[state=checked]:bg-white",
           sizes.thumb
         )}
-        asChild
-      >
-        <motion.div
-          layout
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 30
-          }}
-        />
-      </SwitchPrimitives.Thumb>
+      />
     </SwitchPrimitives.Root>
   );
 });
