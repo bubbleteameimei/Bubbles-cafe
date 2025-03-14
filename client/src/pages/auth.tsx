@@ -17,6 +17,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { loginMutation, registerMutation, socialLoginMutation } = useAuth();
@@ -24,24 +25,53 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || loginMutation.isPending || registerMutation.isPending) {
+      return; // Prevent multiple submissions
+    }
+    
     setIsLoading(true);
 
     try {
+      // Enhanced logging for debugging
+      console.log("[Auth] Attempting authentication", { 
+        mode: isSignIn ? "sign-in" : "sign-up",
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasUsername: !!username,
+        rememberMe
+      });
+
       if (isSignIn) {
         if (!email || !password) {
           throw new Error("Please enter both email and password");
         }
-        await loginMutation.mutateAsync({ email, password });
+        
+        console.log("[Auth] Submitting login request");
+        const result = await loginMutation.mutateAsync({ 
+          email, 
+          password, 
+          remember: rememberMe 
+        });
+        
+        console.log("[Auth] Login successful, redirecting", { userId: result?.id });
         setLocation("/");
       } else {
         if (!username || !email || !password) {
           throw new Error("All fields are required");
         }
-        await registerMutation.mutateAsync({ username, email, password });
+        
+        console.log("[Auth] Submitting registration request");
+        const result = await registerMutation.mutateAsync({ 
+          username, 
+          email, 
+          password 
+        });
+        
+        console.log("[Auth] Registration successful, redirecting", { userId: result?.id });
         setLocation("/");
       }
     } catch (err: any) {
-      console.error("Auth error:", err);
+      console.error("[Auth] Authentication error:", err);
       toast({
         title: "Authentication Error",
         description: err?.message || "Authentication failed",
@@ -78,7 +108,7 @@ export default function AuthPage() {
           </div>
 
           <div className="login-form">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div style={{ display: isSignIn ? "block" : "none" }}>
                 {/* OAuth Sign In Buttons */}
                 <div className="social-login-buttons">
@@ -119,6 +149,12 @@ export default function AuthPage() {
                     placeholder="Enter your email"
                     className="auth-input"
                     required
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !loginMutation.isPending && !isLoading) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
                   />
                 </div>
 
@@ -134,18 +170,31 @@ export default function AuthPage() {
                       placeholder="Enter your password"
                       className="auth-input pr-10"
                       required
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !loginMutation.isPending && !isLoading) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
                     />
-                    <button 
-                      type="button" 
+                    <div 
+                      role="button"
+                      tabIndex={0}
                       onClick={togglePassword}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          togglePassword();
+                        }
+                      }}
                       className="password-toggle-btn"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -157,6 +206,8 @@ export default function AuthPage() {
                         type="checkbox" 
                         id="remember-me" 
                         className="peer sr-only"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
                       />
                       <span className="toggle-bg"></span>
                       <span className="ml-3 text-sm text-muted-foreground">Remember me</span>
@@ -177,6 +228,12 @@ export default function AuthPage() {
                     type="submit" 
                     className="w-full auth-submit-button"
                     disabled={loginMutation.isPending || isLoading}
+                    onClick={(e) => {
+                      if (!loginMutation.isPending && !isLoading) {
+                        // Use a direct click handler in addition to form submit
+                        handleSubmit(e);
+                      }
+                    }}
                   >
                     {loginMutation.isPending || isLoading ? (
                       <>
@@ -244,6 +301,12 @@ export default function AuthPage() {
                     placeholder="Choose a username"
                     className="auth-input"
                     required
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
                   />
                 </div>
 
@@ -258,6 +321,12 @@ export default function AuthPage() {
                     placeholder="Enter your email"
                     className="auth-input"
                     required
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
                   />
                 </div>
 
@@ -273,18 +342,31 @@ export default function AuthPage() {
                       placeholder="Create a password"
                       className="auth-input pr-10"
                       required
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
                     />
-                    <button 
-                      type="button" 
+                    <div 
+                      role="button"
+                      tabIndex={0}
                       onClick={togglePassword}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          togglePassword();
+                        }
+                      }}
                       className="password-toggle-btn"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -294,6 +376,12 @@ export default function AuthPage() {
                     type="submit" 
                     className="w-full auth-submit-button"
                     disabled={registerMutation.isPending || isLoading}
+                    onClick={(e) => {
+                      if (!registerMutation.isPending && !isLoading) {
+                        // Use a direct click handler in addition to form submit
+                        handleSubmit(e);
+                      }
+                    }}
                   >
                     {registerMutation.isPending || isLoading ? (
                       <>

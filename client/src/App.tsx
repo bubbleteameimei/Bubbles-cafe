@@ -54,6 +54,7 @@ const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
+const TestDialogPage = withSuspense(React.lazy(() => import('./components/test-dialog')));
 
 
 // Legal Pages
@@ -132,6 +133,7 @@ function App() {
                           <Route path="/report-bug" component={ReportBugPage} />
                           <Route path="/privacy" component={PrivacyPage} />
                           <Route path="/content-test" component={ContentTestPage} />
+                          <Route path="/test-dialog" component={TestDialogPage} />
                           <ProtectedRoute path="/bookmarks" component={BookmarksPage} />
 
 

@@ -24,7 +24,8 @@ export default function Navigation() {
     { href: '/community', label: 'COMMUNITY' },
     { href: '/bookmarks', label: 'BOOKMARKS', requireAuth: true },
     { href: '/about', label: 'ABOUT' },
-    { href: '/contact', label: 'CONTACT' }
+    { href: '/contact', label: 'CONTACT' },
+    { href: '/test-dialog', label: 'TEST DIALOG' }
   ];
 
   return (

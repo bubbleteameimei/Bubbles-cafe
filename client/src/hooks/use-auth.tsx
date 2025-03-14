@@ -29,7 +29,7 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<SelectUser | void>;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
@@ -83,20 +83,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      return await apiRequest<SelectUser>('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
+      console.log('[Auth] Initiating login request with credentials', { 
+        email: credentials.email,
+        hasPassword: !!credentials.password 
       });
+
+      try {
+        const response = await apiRequest<SelectUser>('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+        
+        console.log('[Auth] Login request successful', { userId: response.id });
+        return response;
+      } catch (error) {
+        console.error('[Auth] Login request failed', error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log('[Auth] Login mutation successful, updating state');
       setUser(user);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
+      console.error('[Auth] Login mutation error:', error);
       setError(error);
     },
   });
@@ -104,20 +119,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      return await apiRequest<SelectUser>('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
+      console.log('[Auth] Initiating registration request', { 
+        email: credentials.email,
+        hasUsername: !!credentials.username,
+        hasPassword: !!credentials.password 
       });
+
+      try {
+        const response = await apiRequest<SelectUser>('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+        
+        console.log('[Auth] Registration request successful', { userId: response.id });
+        return response;
+      } catch (error) {
+        console.error('[Auth] Registration request failed', error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log('[Auth] Registration mutation successful, updating state');
       setUser(user);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
+      console.error('[Auth] Registration mutation error:', error);
       setError(error);
     },
   });
@@ -125,13 +156,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('/api/auth/logout');
+      console.log('[Auth] Initiating logout request');
+      
+      try {
+        await apiRequest('/api/auth/logout');
+        console.log('[Auth] Logout request successful');
+      } catch (error) {
+        console.error('[Auth] Logout request failed', error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log('[Auth] Logout mutation successful, clearing user state');
       setUser(null);
       queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
+      console.error('[Auth] Logout mutation error:', error);
       setError(error);
     },
   });
@@ -139,41 +180,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Social login mutation
   const socialLoginMutation = useMutation({
     mutationFn: async (socialUserData: SocialUser) => {
-      return await apiRequest<SelectUser>('/api/auth/social-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          providerId: socialUserData.id,
-          email: socialUserData.email,
-          displayName: socialUserData.name,
-          photoURL: socialUserData.photoURL,
-          provider: socialUserData.provider,
-          token: socialUserData.token
-        }),
+      console.log('[Auth] Initiating social login request', { 
+        provider: socialUserData.provider,
+        hasEmail: !!socialUserData.email,
+        hasId: !!socialUserData.id,
+        hasToken: !!socialUserData.token
       });
+
+      try {
+        const response = await apiRequest<SelectUser>('/api/auth/social-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            providerId: socialUserData.id,
+            email: socialUserData.email,
+            displayName: socialUserData.name,
+            photoURL: socialUserData.photoURL,
+            provider: socialUserData.provider,
+            token: socialUserData.token
+          }),
+        });
+        
+        console.log('[Auth] Social login request successful', { userId: response.id });
+        return response;
+      } catch (error) {
+        console.error('[Auth] Social login request failed', error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log('[Auth] Social login mutation successful, updating state');
       setUser(user);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
     },
     onError: (error: Error) => {
-      console.error('Social login error:', error);
+      console.error('[Auth] Social login mutation error:', error);
       setError(error);
     },
   });
 
   // Login convenience method
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, remember?: boolean) => {
+    console.log('[Auth] Invoking login convenience method', { 
+      hasEmail: !!email, 
+      hasPassword: !!password,
+      remember
+    });
+    
     try {
-      await loginMutation.mutateAsync({ email, password });
+      console.log('[Auth] Attempting to login via convenience method');
+      const result = await loginMutation.mutateAsync({ email, password, remember });
+      console.log('[Auth] Login convenience method successful', { userId: result.id });
+      return result;
     } catch (error) {
+      console.error('[Auth] Login convenience method failed', error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('Login failed');
+      throw new Error('Login failed with an unknown error');
     }
   }, [loginMutation]);
 

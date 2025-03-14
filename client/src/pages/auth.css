@@ -84,6 +84,24 @@
   border: none;
   color: hsl(var(--muted-foreground));
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  z-index: 10;
+  transition: color 0.2s ease;
+  padding: 0;
+  outline: none;
+}
+
+.password-toggle-btn:hover,
+.password-toggle-btn:focus {
+  color: hsl(var(--foreground));
+}
+
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .auth-submit-button {
