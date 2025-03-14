@@ -124,7 +124,11 @@ export default function IndexView() {
     
     return posts.filter(post => {
       const metadata = post.metadata || {};
-      return metadata.themeCategory === theme;
+      // Handle metadata type safely
+      return typeof metadata === 'object' && 
+             metadata !== null && 
+             'themeCategory' in metadata && 
+             metadata.themeCategory === theme;
     });
   };
 
@@ -326,7 +330,10 @@ export default function IndexView() {
               const excerpt = getExcerpt(post.content);
               const globalIndex = startIndex + index; // Calculate the global index for navigation
               const metadata = post.metadata || {};
-              const themeCategory = metadata.themeCategory as string || "";
+              // Handle the type safely
+              const themeCategory = typeof metadata === 'object' && metadata !== null && 'themeCategory' in metadata
+                ? String(metadata.themeCategory || "") 
+                : "";
               
               return (
                 <motion.article

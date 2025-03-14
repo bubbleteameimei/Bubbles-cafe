@@ -256,10 +256,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroup>
       )}
 
-      {/* Display Settings */}
+      {/* Accessibility */}
       <SidebarGroup>
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
-          Display Settings
+          Reading & Accessibility
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -271,7 +271,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
-                      <span>Display Settings</span>
+                      <span>Accessibility Settings</span>
                     </div>
                     <ChevronDown className={cn(
                       "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
@@ -283,14 +283,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/settings/theme'}
-                        onClick={() => handleNavigation('/settings/theme')}
+                        isActive={location === '/settings/display'}
+                        onClick={() => handleNavigation('/settings/display')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <Sun className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Dark/Light Mode</span>
+                        <Palette className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Visual Horror Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
+
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
@@ -298,13 +299,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Type className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Font Size & Style</span>
+                        <span>Font Settings</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/accessibility'}
+                        onClick={() => handleNavigation('/settings/accessibility')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                      >
+                        <HelpCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/settings/tts'}
-                        onClick={() => handleNavigation('/settings/tts')}
+                        isActive={location === '/settings/text-to-speech'}
+                        onClick={() => handleNavigation('/settings/text-to-speech')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Volume2 className="h-3.5 w-3.5 mr-2 opacity-70" />

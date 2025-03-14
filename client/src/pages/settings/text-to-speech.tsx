@@ -14,24 +14,79 @@ import {
 } from "@/components/ui/select";
 
 export default function TextToSpeechPage() {
-  const [enabled, setEnabled] = useState(false);
-  const [volume, setVolume] = useState([75]);
-  const [rate, setRate] = useState([1]);
-  const [pitch, setPitch] = useState([1]);
-  const [voice, setVoice] = useState("");
+  // Initialize state from localStorage with defaults
+  const [enabled, setEnabled] = useState(localStorage.getItem('tts-enabled') === 'true' || false);
+  const [volume, setVolume] = useState([parseInt(localStorage.getItem('tts-volume') || '75')]);
+  const [rate, setRate] = useState([parseFloat(localStorage.getItem('tts-rate') || '1')]);
+  const [pitch, setPitch] = useState([parseFloat(localStorage.getItem('tts-pitch') || '1')]);
+  const [voice, setVoice] = useState(localStorage.getItem('tts-voice') || "");
   const [isPlaying, setIsPlaying] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [autoPlay, setAutoPlay] = useState(false);
-  const [highlightText, setHighlightText] = useState(true);
+  const [autoPlay, setAutoPlay] = useState(localStorage.getItem('tts-autoplay') === 'true' || false);
+  const [highlightText, setHighlightText] = useState(localStorage.getItem('tts-highlight') !== 'false');
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('tts-enabled', enabled.toString());
+    localStorage.setItem('tts-volume', volume[0].toString());
+    localStorage.setItem('tts-rate', rate[0].toString());
+    localStorage.setItem('tts-pitch', pitch[0].toString());
+    localStorage.setItem('tts-voice', voice);
+    localStorage.setItem('tts-autoplay', autoPlay.toString());
+    localStorage.setItem('tts-highlight', highlightText.toString());
+  }, [enabled, volume, rate, pitch, voice, autoPlay, highlightText]);
 
   // Initialize speech synthesis and handle voices loading
   useEffect(() => {
     const synth = window.speechSynthesis;
 
-    // Function to load and set voices
+    // Function to load and strictly filter English voices
     const loadVoices = () => {
-      const availableVoices = synth.getVoices();
-      setVoices(availableVoices);
+      const allVoices = synth.getVoices();
+      
+      // Only include English voices - strict filtering
+      const englishVoices = allVoices.filter(voice => 
+        // Include voices that explicitly mention English in language code
+        voice.lang.startsWith('en-') || 
+        // Also include some high-quality voices that may be labeled as "en" without region
+        voice.lang === 'en'
+      );
+      
+      // Sort the voices by quality and language specificity
+      const sortedVoices = englishVoices.sort((a, b) => {
+        // First priority: Premium branded voices
+        const premiumBrandsA = ['Google', 'Microsoft', 'Apple', 'Amazon', 'Neural'].some(brand => 
+          a.name.includes(brand));
+        const premiumBrandsB = ['Google', 'Microsoft', 'Apple', 'Amazon', 'Neural'].some(brand => 
+          b.name.includes(brand));
+        
+        if (premiumBrandsA && !premiumBrandsB) return -1;
+        if (!premiumBrandsA && premiumBrandsB) return 1;
+        
+        // Second priority: en-US or en-GB (major English varieties)
+        const majorVarietyA = a.lang === 'en-US' || a.lang === 'en-GB';
+        const majorVarietyB = b.lang === 'en-US' || b.lang === 'en-GB';
+        
+        if (majorVarietyA && !majorVarietyB) return -1;
+        if (!majorVarietyA && majorVarietyB) return 1;
+        
+        // Third priority: Natural/quality indicators in name
+        const qualityNameA = a.name.toLowerCase().includes('natural') || a.name.toLowerCase().includes('premium');
+        const qualityNameB = b.name.toLowerCase().includes('natural') || b.name.toLowerCase().includes('premium');
+        
+        if (qualityNameA && !qualityNameB) return -1;
+        if (!qualityNameA && qualityNameB) return 1;
+        
+        return 0;
+      });
+      
+      // Limit to top 6 voices to avoid overwhelming selection but provide good options
+      const limitedVoices = sortedVoices.slice(0, 6);
+      
+      // Use english voices if we have some, otherwise fall back to a minimal selection of top voices
+      setVoices(limitedVoices.length > 0 ? limitedVoices : allVoices.filter(v => 
+        v.lang.includes('en') || ['Google', 'Microsoft', 'Apple'].some(brand => v.name.includes(brand))
+      ).slice(0, 3));
     };
 
     // Load voices - both immediately and when they become available
@@ -62,7 +117,7 @@ export default function TextToSpeechPage() {
     }
 
     const utterance = new SpeechSynthesisUtterance(
-      "Welcome to our horror story platform. You can adjust these settings to customize how stories are read aloud."
+      "The old house creaked as the wind howled outside. A shadow moved across the wall, though I was alone. This is how stories will sound with your current settings."
     );
 
     utterance.volume = volume[0] / 100;
@@ -89,6 +144,22 @@ export default function TextToSpeechPage() {
   return (
     <div className="container mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold">Text-to-Speech Settings</h1>
+      <p className="text-muted-foreground mb-4">Customize the voice and reading settings for story narration.</p>
+
+      <Card className="p-6 space-y-6 mb-6">
+        <CardHeader className="p-0">
+          <CardTitle>Tips for Best Experience</CardTitle>
+          <CardDescription>How to get the best narration for horror stories</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0 pt-4">
+          <ul className="space-y-2 list-disc pl-5">
+            <li>Choose voices with good pronunciation and natural intonation</li>
+            <li>Try slightly slower speeds (0.9x) for dramatic effect</li>
+            <li>Adjust the pitch for character voices (lower for mysterious tone)</li>
+            <li>Enable text highlighting to follow along while listening</li>
+          </ul>
+        </CardContent>
+      </Card>
 
       <Card className="p-6 space-y-6">
         <CardHeader>
@@ -125,7 +196,12 @@ export default function TextToSpeechPage() {
                 <SelectContent>
                   {voices.map((voice) => (
                     <SelectItem key={voice.name} value={voice.name}>
-                      {voice.name}
+                      <div className="flex flex-col">
+                        <span>{voice.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {voice.lang.split('-')[0].toUpperCase()} - {voice.localService ? 'Local' : 'Cloud'}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

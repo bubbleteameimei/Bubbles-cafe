@@ -62,6 +62,11 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Delete bookmark mutation
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
+      // Validate input
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        throw new Error('Invalid post ID for bookmark deletion');
+      }
+      
       return apiRequest(`/api/bookmarks/${postId}`, {
         method: 'DELETE',
       });
@@ -73,10 +78,15 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
         description: 'The bookmark has been removed successfully.',
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error removing bookmark:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to remove bookmark. Please try again.';
+      
       toast({
         title: 'Error',
-        description: 'Failed to remove bookmark. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -84,7 +94,25 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
 
   // Handle removing a bookmark
   const handleRemoveBookmark = (postId: number) => {
-    deleteMutation.mutate(postId);
+    try {
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        toast({
+          title: 'Error',
+          description: 'Invalid bookmark ID. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      deleteMutation.mutate(postId);
+    } catch (error) {
+      console.error('Error in handleRemoveBookmark:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Filter bookmarks by search query
@@ -232,7 +260,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
               <CardContent className="pb-3">
                 {bookmark.notes && (
                   <ScrollArea className="h-[80px] mt-2 rounded-md border p-3 bg-muted/20">
-                    <div className="text-sm text-muted-foreground">{bookmark.notes}</div>
+                    <div className="text-sm text-muted-foreground min-h-[50px] w-full">{bookmark.notes}</div>
                   </ScrollArea>
                 )}
                 

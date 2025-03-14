@@ -51,7 +51,7 @@ export default function BookmarksPage() {
       
       <div className="mb-6">
         <p className="text-muted-foreground">
-          Manage your saved stories. Use tags to organize them and add notes to remember your thoughts.
+          Manage your saved stories. You can simply bookmark stories or add tags and notes to organize them.
         </p>
       </div>
       

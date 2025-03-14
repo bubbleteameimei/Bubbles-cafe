@@ -62,10 +62,18 @@ const DialogContent = React.forwardRef<
   const [dialogId] = React.useState(() => props.id || `dialog-${Math.random().toString(36).substring(2, 9)}`);
   
   // Create a context for accessibility attributes
-  const hasExplicitDescription = React.Children.toArray(children).some(
+  const childArray = React.Children.toArray(children);
+  const hasExplicitDescription = childArray.some(
     child => 
       React.isValidElement(child) && 
       child.type === DialogDescription
+  );
+  
+  // Check if there's a DialogTitle component among the children
+  const hasExplicitTitle = childArray.some(
+    child => 
+      React.isValidElement(child) && 
+      child.type === DialogTitle
   );
   
   // Ensure we have both title and description for accessibility
@@ -74,7 +82,14 @@ const DialogContent = React.forwardRef<
       {/* Original children content */}
       {children}
       
-      {/* Only add hidden elements if they're not already present */}
+      {/* Add hidden title if one isn't present */}
+      {!hasExplicitTitle && (
+        <DialogTitle className="sr-only" id={`${dialogId}-title`}>
+          Dialog Content
+        </DialogTitle>
+      )}
+      
+      {/* Add hidden description if one isn't present */}
       {!hasExplicitDescription && (
         <DialogDescription className="sr-only" id={`${dialogId}-description`}>
           This dialog contains interactive content.

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, parseISO } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ActivityTimeline } from "@/components/ui/timeline";
+import { ActivityTimeline, ActivityLog } from "@/components/admin/activity-timeline";
 
 interface SiteAnalytics {
   totalViews: number;
@@ -31,13 +31,7 @@ interface Notification {
   type: 'info' | 'warning' | 'error';
 }
 
-interface ActivityLog {
-  id: number;
-  action: string;
-  performedBy: string;
-  timestamp: string;
-  details?: string;
-}
+// We'll use the ActivityLog type imported from activity-timeline.tsx
 
 export default function AdminAnalyticsPage() {
   const { user } = useAuth();
@@ -222,10 +216,10 @@ export default function AdminAnalyticsPage() {
               ) : (
                 <ActivityTimeline 
                   activities={activityLogs.map(log => ({
-                    id: log.id.toString(),
+                    id: log.id,
                     timestamp: log.timestamp,
                     action: log.action,
-                    user: log.performedBy,
+                    performedBy: log.performedBy,
                     details: log.details
                   }))}
                   className="pb-4"

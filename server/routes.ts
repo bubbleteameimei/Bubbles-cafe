@@ -958,42 +958,88 @@ Timestamp: ${new Date().toLocaleString()}
   // Update analytics endpoint to handle the new metric format
   app.post("/api/analytics/vitals", async (req: Request, res: Response) => {
     try {
+      // Check if request body exists
+      if (!req.body || typeof req.body !== 'object') {
+        console.warn('[Analytics] Received invalid request body:', typeof req.body);
+        return res.status(400).json({
+          message: "Invalid request body",
+          details: "Request body must be a valid JSON object"
+        });
+      }
+      
       const { metricName, value, identifier, navigationType, url, userAgent } = req.body;
 
-      // Check if the metric data exists before logging
-      if (!metricName || typeof value !== 'number' || isNaN(value)) {
-        console.warn('[Analytics] Received invalid performance metric:', {
-          name: metricName,
-          value,
-          id: identifier,
-          navigationType,
-          url
+      // Comprehensive validation with detailed error messages
+      const validationErrors = [];
+      
+      if (!metricName || typeof metricName !== 'string') {
+        validationErrors.push({
+          field: 'metricName',
+          message: 'Metric name is required and must be a string'
+        });
+      }
+      
+      if (typeof value !== 'number' || isNaN(value)) {
+        validationErrors.push({
+          field: 'value',
+          message: 'Value is required and must be a valid number'
+        });
+      }
+      
+      if (!identifier) {
+        validationErrors.push({
+          field: 'identifier',
+          message: 'Identifier is required'
+        });
+      }
+      
+      // If we have validation errors, return them all at once
+      if (validationErrors.length > 0) {
+        console.warn('[Analytics] Validation errors in performance metric:', {
+          errors: validationErrors,
+          receivedData: {
+            name: metricName,
+            value,
+            id: identifier,
+            navigationType,
+            url
+          }
         });
         
         return res.status(400).json({
           message: "Invalid metric data",
-          details: "Metric name and numeric value are required"
+          details: "One or more required fields are invalid or missing",
+          errors: validationErrors
         });
       }
 
-      // Only log valid metrics
+      // Log sanitized metric data
+      const sanitizedValue = Math.round(value * 100) / 100;
+      const sanitizedUrl = url && typeof url === 'string' ? url : 'unknown';
+      const sanitizedNav = navigationType && typeof navigationType === 'string' ? navigationType : 'navigation';
+      
       console.log('[Analytics] Received performance metric:', {
         name: metricName,
-        value: Math.round(value * 100) / 100,
+        value: sanitizedValue,
         id: identifier,
-        navigationType,
-        url
+        navigationType: sanitizedNav,
+        url: sanitizedUrl
       });
 
       // Store the metric in database
-      await storage.storePerformanceMetric({
-        metricName,
-        value: Math.round(value * 100) / 100,
-        identifier: identifier || `metric-${Date.now()}`, // Ensure we have an identifier
-        navigationType: navigationType || null,
-        url: url || null,
-        userAgent: userAgent || null
-      });
+      try {
+        await storage.storePerformanceMetric({
+          metricName,
+          value: Math.round(value * 100) / 100,
+          identifier: identifier || `metric-${Date.now()}`, // Ensure we have an identifier
+          navigationType: navigationType || null,
+          url: url || null,
+          userAgent: userAgent || null
+        });
+      } catch (storageError) {
+        console.error('[Analytics] Error storing metric in database:', storageError);
+        // Continue even if there's an error storing the metric
+      }
 
       res.status(201).json({ message: "Metric recorded successfully" });
     } catch (error: unknown) {

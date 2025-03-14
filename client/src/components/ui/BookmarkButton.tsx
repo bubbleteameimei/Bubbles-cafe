@@ -5,6 +5,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { Bookmark, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 interface BookmarkButtonProps {
   postId: number;
@@ -64,6 +66,11 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   // Create bookmark mutation
   const createMutation = useMutation({
     mutationFn: async (data: { notes: string; tags: string[] }) => {
+      // Validate postId before sending request
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        throw new Error('Invalid post ID');
+      }
+      
       return apiRequest('/api/bookmarks', {
         method: 'POST',
         body: JSON.stringify({
@@ -80,14 +87,22 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         title: 'Bookmark added',
         description: 'This story has been added to your bookmarks.',
       });
+
+      // Toast notification only - no navigation to avoid errors
+      // We'll put a link to bookmarks in the sidebar instead
       setOpen(false);
       setNotes('');
       setTagsInput('');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Bookmark creation error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to add bookmark. Please try again.';
+      
       toast({
         title: 'Error',
-        description: 'Failed to add bookmark. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -96,6 +111,11 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   // Delete bookmark mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      // Validate postId before sending request
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        throw new Error('Invalid post ID for deletion');
+      }
+      
       return apiRequest(`/api/bookmarks/${postId}`, {
         method: 'DELETE',
       });
@@ -108,10 +128,15 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         description: 'This story has been removed from your bookmarks.',
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Bookmark deletion error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to remove bookmark. Please try again.';
+      
       toast({
         title: 'Error',
-        description: 'Failed to remove bookmark. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -200,16 +225,38 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           <DialogHeader>
             <DialogTitle>Bookmark Story</DialogTitle>
             <DialogDescription>
-              Add this story to your bookmarks. You can add notes and tags to organize your bookmarks.
+              Add this story to your bookmarks. You can add notes and tags or simply bookmark it.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-3 mb-2">
+              <Button 
+                variant="default" 
+                className="w-full py-6 text-lg"
+                onClick={() => createMutation.mutate({ notes: '', tags: [] })}
+                disabled={createMutation.isPending}
+              >
+                <Bookmark className="h-5 w-5 mr-3" />
+                Simply Bookmark This Story
+              </Button>
+              <div className="flex items-center justify-center mt-1">
+                <Bookmark className="h-4 w-4 mr-1 fill-amber-400" />
+                <p className="text-sm text-center text-muted-foreground">
+                  Quick save without tags or notes
+                </p>
+              </div>
+            </div>
+            
+            <Separator className="my-3" />
+            
+            <p className="text-sm font-medium text-center">Or add details to organize your bookmarks</p>
+            
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tags" className="text-right">
+              <Label htmlFor="tags-reader" className="text-right">
                 Tags
               </Label>
               <Input
-                id="tags"
+                id="tags-reader"
                 placeholder="horror, favorites (comma separated)"
                 className="col-span-3"
                 value={tagsInput}
@@ -217,11 +264,11 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="notes" className="text-right">
+              <Label htmlFor="notes-reader" className="text-right">
                 Notes
               </Label>
               <Textarea
-                id="notes"
+                id="notes-reader"
                 placeholder="Add your personal notes about this story"
                 className="col-span-3"
                 value={notes}
@@ -229,10 +276,22 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
-              Add Bookmark
+              Add Bookmark with Details
             </Button>
+            <Link to="/bookmarks">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  // Close the dialog
+                  setOpen(false);
+                }}
+              >
+                View All Bookmarks
+              </Button>
+            </Link>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -289,10 +348,32 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
             <DialogHeader>
               <DialogTitle>Bookmark Story</DialogTitle>
               <DialogDescription>
-                Add this story to your bookmarks. You can add notes and tags to organize your bookmarks.
+                Add this story to your bookmarks. You can add notes and tags or simply bookmark it.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              <div className="flex flex-col gap-3 mb-2">
+                <Button 
+                  variant="default" 
+                  className="w-full py-6 text-lg"
+                  onClick={() => createMutation.mutate({ notes: '', tags: [] })}
+                  disabled={createMutation.isPending}
+                >
+                  <Bookmark className="h-5 w-5 mr-3" />
+                  Simply Bookmark This Story
+                </Button>
+                <div className="flex items-center justify-center mt-1">
+                  <Bookmark className="h-4 w-4 mr-1 fill-amber-400" />
+                  <p className="text-sm text-center text-muted-foreground">
+                    Quick save without tags or notes
+                  </p>
+                </div>
+              </div>
+              
+              <Separator className="my-3" />
+              
+              <p className="text-sm font-medium text-center">Or add details to organize your bookmarks</p>
+              
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="tags" className="text-right">
                   Tags
@@ -318,10 +399,22 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
               <Button type="submit" onClick={handleAddBookmark} disabled={createMutation.isPending}>
-                Add Bookmark
+                Add Bookmark with Details
               </Button>
+              <Link to="/bookmarks">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    // Close the dialog
+                    setOpen(false);
+                  }}
+                >
+                  View All Bookmarks
+                </Button>
+              </Link>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -337,7 +430,18 @@ export function useBookmarkPosition(postId: number) {
 
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
-      if (!user || postId <= 0) return null;
+      // Validate inputs to prevent errors
+      if (!user || !postId || typeof postId !== 'number' || postId <= 0) {
+        console.warn('Invalid bookmark position update attempt', { user: !!user, postId });
+        return null;
+      }
+      
+      // Validate position
+      if (!position || typeof position !== 'string') {
+        console.warn('Invalid position value for bookmark update', { position });
+        return null;
+      }
+      
       return apiRequest(`/api/bookmarks/${postId}`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -348,11 +452,19 @@ export function useBookmarkPosition(postId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
     },
+    onError: (error) => {
+      // Silent error handling - just log to console without user-facing error
+      console.error('Error updating bookmark position:', error);
+    }
   });
 
   const updatePosition = (position: string) => {
-    if (user && postId > 0) {
-      updatePositionMutation.mutate(position);
+    if (user && postId > 0 && position) {
+      try {
+        updatePositionMutation.mutate(position);
+      } catch (error) {
+        console.error('Failed to update bookmark position:', error);
+      }
     }
   };
 

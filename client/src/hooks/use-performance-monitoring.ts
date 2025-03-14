@@ -27,7 +27,7 @@ const reportMetric = async (metric: PerformanceMetric) => {
   try {
     // Ensure we have valid data before sending to server
     const metricValue = typeof metric.value === 'number' && !isNaN(metric.value) 
-      ? Math.round(metric.value * 100) / 100
+      ? Math.round(metric.value * 100) / 100 
       : null;
     
     // Only proceed if we have valid data
@@ -40,14 +40,29 @@ const reportMetric = async (metric: PerformanceMetric) => {
       metricName: metric.name,
       value: metricValue,
       identifier: metric.id || `metric-${Date.now()}`,
-      navigationType: metric.navigationType,
+      navigationType: metric.navigationType || 'navigation',
       url: window.location.href,
       userAgent: navigator.userAgent
     });
 
     // Use sendBeacon for better reliability during page unload
     if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/analytics/vitals', body);
+      try {
+        const success = navigator.sendBeacon('/api/analytics/vitals', body);
+        if (!success) {
+          throw new Error('sendBeacon failed');
+        }
+      } catch (e) {
+        // If sendBeacon fails, fall back to fetch
+        await fetch('/api/analytics/vitals', {
+          body,
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }
     } else {
       await fetch('/api/analytics/vitals', {
         body,

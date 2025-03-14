@@ -20,7 +20,7 @@ const defaultEffects: HorrorEffects = {
   textEffects: false
 };
 
-export default function DisplaySettingsPage() {
+export default function VisualHorrorSettingsPage() {
   const { toast } = useToast();
   const [ambienceLevel, setAmbienceLevel] = useState<number>(50);
   const [effects, setEffects] = useState<HorrorEffects>(defaultEffects);
@@ -87,7 +87,8 @@ export default function DisplaySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-red-800 dark:text-red-500">Visual Settings</h1>
+      <h1 className="text-3xl font-bold text-red-800 dark:text-red-500">Visual Horror Settings</h1>
+      <p className="text-muted-foreground">Customize the horror elements and atmospheric effects for a more immersive reading experience.</p>
 
       <Card className="border-red-900/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <CardHeader>

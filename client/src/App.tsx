@@ -71,14 +71,12 @@ const GuidelinesPage = withSuspense(React.lazy(() => import('./pages/support/gui
 const ProfileSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/profile')));
 const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/settings/connected-accounts')));
 const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/text-to-speech')));
-const ThemeSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/theme')));
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
 const OfflineSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/offline')));
-const ContrastSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/contrast')));
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
 
@@ -156,14 +154,12 @@ function App() {
                           <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
                           <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
                           <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
-                          <ProtectedRoute path="/settings/theme" component={ThemeSettingsPage} />
-                          <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
-                          <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                          <ProtectedRoute path="/settings/display" component={DisplaySettingsPage} />
+                          <Route path="/settings/fonts" component={FontSettingsPage} />
+                          <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                          <Route path="/settings/display" component={DisplaySettingsPage} />
                           <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
                           <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
                           <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
-                          <ProtectedRoute path="/settings/contrast" component={ContrastSettingsPage} />
                           <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
                           <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
 
