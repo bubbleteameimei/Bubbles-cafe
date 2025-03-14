@@ -61,42 +61,30 @@ const DialogContent = React.forwardRef<
   // Generate a unique ID for accessibility if one isn't provided
   const [dialogId] = React.useState(() => props.id || `dialog-${Math.random().toString(36).substring(2, 9)}`);
   
-  // Create a context for accessibility attributes
-  const childArray = React.Children.toArray(children);
-  const hasExplicitDescription = childArray.some(
-    child => 
-      React.isValidElement(child) && 
-      child.type === DialogDescription
-  );
-  
-  // Check if there's a DialogTitle component among the children
-  const hasExplicitTitle = childArray.some(
-    child => 
-      React.isValidElement(child) && 
-      child.type === DialogTitle
-  );
-  
-  // Ensure we have both title and description for accessibility
-  const accessibleChildren = (
-    <>
-      {/* Original children content */}
-      {children}
+  // Find if there are DialogHeader, DialogTitle and DialogDescription among children
+  const findChildrenByType = (children: React.ReactNode, types: any[]): boolean => {
+    return React.Children.toArray(children).some(child => {
+      if (!React.isValidElement(child)) return false;
       
-      {/* Add hidden title if one isn't present */}
-      {!hasExplicitTitle && (
-        <DialogTitle className="sr-only" id={`${dialogId}-title`}>
-          Dialog Content
-        </DialogTitle>
-      )}
+      // Check direct match
+      if (types.includes(child.type)) return true;
       
-      {/* Add hidden description if one isn't present */}
-      {!hasExplicitDescription && (
-        <DialogDescription className="sr-only" id={`${dialogId}-description`}>
-          This dialog contains interactive content.
-        </DialogDescription>
-      )}
-    </>
-  );
+      // Check if it's a DialogHeader that might contain a DialogTitle
+      if (child.type === DialogHeader && child.props.children) {
+        return findChildrenByType(child.props.children, [DialogTitle]);
+      }
+      
+      // Check nested children
+      if (child.props && child.props.children) {
+        return findChildrenByType(child.props.children, types);
+      }
+      
+      return false;
+    });
+  };
+  
+  const hasTitle = findChildrenByType(children, [DialogTitle]);
+  const hasDescription = findChildrenByType(children, [DialogDescription]);
   
   return (
     <DialogPortal>
@@ -107,11 +95,26 @@ const DialogContent = React.forwardRef<
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full",
           className
         )}
-        aria-labelledby={props["aria-labelledby"] || `${dialogId}-title`}
-        aria-describedby={props["aria-describedby"] || `${dialogId}-description`}
+        aria-labelledby={props["aria-labelledby"] || (hasTitle ? `${dialogId}-title` : undefined)}
+        aria-describedby={props["aria-describedby"] || (hasDescription ? `${dialogId}-description` : undefined)}
         {...props}
       >
-        {accessibleChildren}
+        {/* Include a visually hidden title for screen readers if none exists */}
+        {!hasTitle && (
+          <DialogTitle id={`${dialogId}-title`} className="sr-only">
+            Dialog Content
+          </DialogTitle>
+        )}
+        
+        {/* Include a visually hidden description for screen readers if none exists */}
+        {!hasDescription && (
+          <DialogDescription id={`${dialogId}-description`} className="sr-only">
+            This dialog contains interactive content.
+          </DialogDescription>
+        )}
+        
+        {children}
+        
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>

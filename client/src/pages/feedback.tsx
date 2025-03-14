@@ -1,4 +1,3 @@
-
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { z } from "zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Define feedback types
 const feedbackTypes = [
@@ -20,6 +21,15 @@ const feedbackTypes = [
   { value: "content", label: "Content Suggestion" },
   { value: "other", label: "Other" }
 ];
+
+// Define validation schema
+const feedbackSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name cannot exceed 50 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  content: z.string().min(10, "Feedback must be at least 10 characters").max(2000, "Feedback cannot exceed 2000 characters"),
+  type: z.string().min(1, "Please select a feedback type"),
+  rating: z.number().min(1, "Please provide a rating").max(5, "Rating cannot exceed 5 stars")
+});
 
 // Define feedback data types
 interface FeedbackFormData {
@@ -53,6 +63,26 @@ interface FeedbackSubmissionData {
   };
 }
 
+// Helper functions to detect browser and OS
+function getBrowserName(userAgent: string): string {
+  if (userAgent.indexOf("Firefox") > -1) return "Firefox";
+  if (userAgent.indexOf("Opera") > -1 || userAgent.indexOf("OPR") > -1) return "Opera";
+  if (userAgent.indexOf("Trident") > -1 || userAgent.indexOf("MSIE") > -1) return "Internet Explorer";
+  if (userAgent.indexOf("Edge") > -1) return "Edge";
+  if (userAgent.indexOf("Chrome") > -1) return "Chrome";
+  if (userAgent.indexOf("Safari") > -1) return "Safari";
+  return "Unknown";
+}
+
+function getOperatingSystem(userAgent: string): string {
+  if (userAgent.indexOf("Windows") > -1) return "Windows";
+  if (userAgent.indexOf("Mac") > -1) return "MacOS";
+  if (userAgent.indexOf("Linux") > -1) return "Linux";
+  if (userAgent.indexOf("Android") > -1) return "Android";
+  if (userAgent.indexOf("iPhone") > -1 || userAgent.indexOf("iPad") > -1) return "iOS";
+  return "Unknown";
+}
+
 export default function Feedback() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -82,6 +112,16 @@ export default function Feedback() {
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Clear validation error for this field when user types
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -90,6 +130,15 @@ export default function Feedback() {
 
   // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -98,6 +147,15 @@ export default function Feedback() {
 
   // Handle rating changes
   const handleRatingChange = (value: string) => {
+    // Clear validation error for rating
+    if (validationErrors.rating) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.rating;
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({
       ...prev,
       rating: parseInt(value)
@@ -202,9 +260,39 @@ export default function Feedback() {
     }
   });
 
+  // State for validation errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Reset validation errors
+    setValidationErrors({});
+    
+    // Validate form data using Zod schema
+    const result = feedbackSchema.safeParse(formData);
+    
+    if (!result.success) {
+      // Extract and format validation errors
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach(error => {
+        const field = error.path[0].toString();
+        errors[field] = error.message;
+      });
+      
+      // Set validation errors
+      setValidationErrors(errors);
+      
+      // Display validation error toast
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form.",
+        variant: "destructive"
+      });
+      
+      return;
+    }
     
     // Prepare data for submission
     const feedbackData: FeedbackSubmissionData = {
@@ -219,6 +307,9 @@ export default function Feedback() {
         email: formData.email
       }
     };
+    
+    // Log validation success
+    console.log('[Feedback] Validation successful, submitting data');
     
     // Submit feedback
     submitMutation.mutate(feedbackData);
@@ -242,120 +333,230 @@ export default function Feedback() {
           <p className="text-green-400 font-medium">Thank you for your feedback! We'll review it shortly.</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium">Your Name</label>
-              <Input 
-                id="name" 
-                name="name" 
-                value={formData.name}
-                onChange={handleChange}
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">Your Email</label>
-              <Input 
-                id="email" 
-                name="email" 
-                type="email" 
-                value={formData.email}
-                onChange={handleChange}
-                required 
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
-            <Select 
-              value={formData.type} 
-              onValueChange={(value) => handleSelectChange('type', value)}
-            >
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {feedbackTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
+        <>
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-red-800/20 border border-red-500/50 rounded-md p-4 mb-6">
+              <h3 className="text-red-400 font-medium flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2" />
+                Please fix the following errors:
+              </h3>
+              <ul className="mt-2 list-disc pl-5 text-sm text-red-400">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <li key={field}>{message}</li>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="content" className="block text-sm font-medium">Your Feedback</label>
-            <Textarea 
-              id="content" 
-              name="content" 
-              rows={6} 
-              value={formData.content}
-              onChange={handleChange}
-              required 
-              className="resize-none" 
-            />
-          </div>
-          
-          <div className="space-y-3">
-            <label className="block text-sm font-medium">How would you rate your experience?</label>
-            <RadioGroup
-              className="flex space-x-4"
-              defaultValue="5"
-              value={formData.rating.toString()}
-              onValueChange={handleRatingChange}
-            >
-              {[1, 2, 3, 4, 5].map((num) => (
-                <div key={num} className="flex items-center space-x-1">
-                  <RadioGroupItem value={num.toString()} id={`rating-${num}`} />
-                  <Label htmlFor={`rating-${num}`}>{num}</Label>
-                </div>
-              ))}
-            </RadioGroup>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Poor</span>
-              <span>Excellent</span>
+              </ul>
             </div>
-          </div>
+          )}
           
-          <Button 
-            type="submit" 
-            className="w-full sm:w-auto"
-            disabled={submitMutation.isPending}
-          >
-            {submitMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Feedback"
-            )}
-          </Button>
-        </form>
+          {formData.name.length >= 2 && 
+           formData.email.includes('@') && 
+           formData.email.includes('.') && 
+           formData.type && 
+           formData.content.length >= 10 && 
+           !Object.keys(validationErrors).length && (
+            <div className="bg-green-800/20 border border-green-500/50 rounded-md p-4 mb-6">
+              <p className="text-green-400 font-medium flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Your form is ready to submit!
+              </p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="name" className="block text-sm font-medium">Your Name</label>
+                <div className="relative">
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    value={formData.name}
+                    onChange={handleChange}
+                    required 
+                    className={validationErrors.name 
+                      ? "border-red-500 pr-10" 
+                      : formData.name.length >= 2 
+                        ? "border-green-500 pr-10"
+                        : "pr-10"
+                    }
+                  />
+                  {formData.name.length >= 2 && !validationErrors.name && (
+                    <span className="absolute right-3 top-2.5 text-green-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                  )}
+                </div>
+                {validationErrors.name && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.name}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium">Your Email</label>
+                <div className="relative">
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    value={formData.email}
+                    onChange={handleChange}
+                    required 
+                    className={validationErrors.email 
+                      ? "border-red-500 pr-10" 
+                      : formData.email.includes('@') && formData.email.includes('.')
+                        ? "border-green-500 pr-10"
+                        : "pr-10"
+                    }
+                  />
+                  {formData.email.includes('@') && formData.email.includes('.') && !validationErrors.email && (
+                    <span className="absolute right-3 top-2.5 text-green-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                  )}
+                </div>
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
+              <div className="relative">
+                <Select 
+                  value={formData.type} 
+                  onValueChange={(value) => handleSelectChange('type', value)}
+                >
+                  <SelectTrigger 
+                    id="type" 
+                    className={validationErrors.type 
+                      ? "border-red-500 pr-10" 
+                      : formData.type 
+                        ? "border-green-500 pr-10"
+                        : "pr-10"
+                    }
+                  >
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {feedbackTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.type && !validationErrors.type && (
+                  <span className="absolute right-10 top-2.5 text-green-500 z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </span>
+                )}
+              </div>
+              {validationErrors.type && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.type}</p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="content" className="block text-sm font-medium">Your Feedback</label>
+              <div className="relative">
+                <Textarea 
+                  id="content" 
+                  name="content" 
+                  rows={6} 
+                  value={formData.content}
+                  onChange={handleChange}
+                  required 
+                  className={`resize-none pr-10 ${validationErrors.content 
+                    ? "border-red-500" 
+                    : formData.content.length >= 10 
+                      ? "border-green-500"
+                      : ""
+                  }`} 
+                  maxLength={2000}
+                />
+                {formData.content.length >= 10 && !validationErrors.content && (
+                  <span className="absolute right-3 top-3 text-green-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <div>
+                  {validationErrors.content && (
+                    <p className="text-sm text-red-500">{validationErrors.content}</p>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formData.content.length}/2000 characters
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block text-sm font-medium">How would you rate your experience?</label>
+              <div className="relative">
+                <RadioGroup
+                  className={`flex space-x-4 ${validationErrors.rating ? "border border-red-500 p-2 rounded-md" : ""}`}
+                  defaultValue="5"
+                  value={formData.rating.toString()}
+                  onValueChange={handleRatingChange}
+                >
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <div key={num} className="flex items-center space-x-1">
+                      <RadioGroupItem value={num.toString()} id={`rating-${num}`} />
+                      <Label 
+                        htmlFor={`rating-${num}`}
+                        className={parseInt(formData.rating.toString()) === num ? "font-medium text-primary" : ""}
+                      >
+                        {num}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+                {parseInt(formData.rating.toString()) > 0 && !validationErrors.rating && (
+                  <span className="absolute right-0 top-0 text-green-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Poor</span>
+                <span>Excellent</span>
+              </div>
+              {validationErrors.rating && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.rating}</p>
+              )}
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto"
+              disabled={submitMutation.isPending}
+            >
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Feedback"
+              )}
+            </Button>
+          </form>
+        </>
       )}
     </motion.div>
   );
-}
-
-// Helper functions to detect browser and OS
-function getBrowserName(userAgent: string): string {
-  if (userAgent.indexOf("Firefox") > -1) return "Firefox";
-  if (userAgent.indexOf("Opera") > -1 || userAgent.indexOf("OPR") > -1) return "Opera";
-  if (userAgent.indexOf("Trident") > -1 || userAgent.indexOf("MSIE") > -1) return "Internet Explorer";
-  if (userAgent.indexOf("Edge") > -1) return "Edge";
-  if (userAgent.indexOf("Chrome") > -1) return "Chrome";
-  if (userAgent.indexOf("Safari") > -1) return "Safari";
-  return "Unknown";
-}
-
-function getOperatingSystem(userAgent: string): string {
-  if (userAgent.indexOf("Windows") > -1) return "Windows";
-  if (userAgent.indexOf("Mac") > -1) return "MacOS";
-  if (userAgent.indexOf("Linux") > -1) return "Linux";
-  if (userAgent.indexOf("Android") > -1) return "Android";
-  if (userAgent.indexOf("iPhone") > -1 || userAgent.indexOf("iPad") > -1) return "iOS";
-  return "Unknown";
 }

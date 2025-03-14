@@ -11,6 +11,8 @@ import {
   MessageSquare, 
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Calendar,
   Star,
   Mail,
@@ -632,6 +634,10 @@ export default function AdminFeedback() {
     },
   });
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+  
   // Track tab changes for debugging
   const handleTabChange = (newTab: string) => {
     console.log('[Admin:Feedback] Tab changed', { 
@@ -639,6 +645,7 @@ export default function AdminFeedback() {
       to: newTab
     });
     setActiveTab(newTab);
+    setPage(1); // Reset to first page when changing tabs
   };
   
   // Filter feedback based on the active tab with performance tracking
@@ -658,6 +665,22 @@ export default function AdminFeedback() {
     
     return filtered;
   }, [data, activeTab]);
+  
+  // Get current page items
+  const currentFeedbackItems = useMemo(() => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    return filteredFeedback.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredFeedback, page, ITEMS_PER_PAGE]);
+  
+  const totalPages = Math.ceil(filteredFeedback.length / ITEMS_PER_PAGE);
+  
+  // Handle page changes
+  const handlePageChange = (newPage: number) => {
+    console.log('[Admin:Feedback] Page changed', { from: page, to: newPage });
+    setPage(newPage);
+    // Scroll to top of the list
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (isLoading) {
     console.log('[Admin:Feedback] Loading feedback data', {
@@ -753,7 +776,7 @@ export default function AdminFeedback() {
               </div>
               
               {/* Timeline view */}
-              {Object.entries(groupFeedbackByDate(filteredFeedback)).map(([date, items]) => (
+              {Object.entries(groupFeedbackByDate(currentFeedbackItems)).map(([date, items]) => (
                 <div key={date} className="space-y-4">
                   {/* Date heading */}
                   <div className="ps-2 my-4 first:mt-0">
@@ -773,6 +796,49 @@ export default function AdminFeedback() {
                   ))}
                 </div>
               ))}
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6 pt-4 border-t">
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePageChange(page - 1)} 
+                      disabled={page === 1}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={pageNum === page ? "default" : "outline"}
+                          size="sm"
+                          className="w-8 h-8 p-0"
+                          onClick={() => handlePageChange(pageNum)}
+                          aria-label={`Page ${pageNum}`}
+                          aria-current={pageNum === page ? "page" : undefined}
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePageChange(page + 1)} 
+                      disabled={page === totalPages}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </TabsContent>

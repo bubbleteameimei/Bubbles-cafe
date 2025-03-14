@@ -109,47 +109,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+            {/* Bookmarks - Always display the item */}
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={location === '/feedback'}
-                onClick={() => handleNavigation('/feedback')}
-                tooltip="Feedback"
+                isActive={location === '/bookmarks'}
+                onClick={() => handleNavigation('/bookmarks')}
+                tooltip="Bookmarks"
                 className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
               >
-                <MessageSquare className="h-4 w-4" />
-                <span>Feedback</span>
+                <BookmarkIcon className="h-4 w-4" />
+                <span>Bookmarks</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            
-            {/* Bookmarks - Only show when logged in */}
-            {user && (
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={location === '/bookmarks'}
-                  onClick={() => handleNavigation('/bookmarks')}
-                  tooltip="Bookmarks"
-                  className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                >
-                  <BookmarkIcon className="h-4 w-4" />
-                  <span>Bookmarks</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
-            
-            {/* Login/Sign Up Button - Show only when not logged in */}
-            {!user && (
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={location === '/auth'}
-                  onClick={() => handleNavigation('/auth')}
-                  tooltip="Login"
-                  className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Login / Sign Up</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
 
           </SidebarMenu>
         </SidebarGroupContent>
@@ -469,22 +440,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
-                        isActive={location === '/test-dialog'}
-                        onClick={() => handleNavigation('/test-dialog')}
+                        isActive={location === '/report-bug'}
+                        onClick={() => handleNavigation('/report-bug')}
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
-                        <HelpCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Dialog Accessibility</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/feedback'}
-                        onClick={() => handleNavigation('/feedback')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Feedback & Suggestions</span>
+                        <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Report a Bug</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
@@ -515,6 +476,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       >
                         <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Copyright Policy</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/feedback'}
+                        onClick={() => handleNavigation('/feedback')}
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Provide Feedback</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>

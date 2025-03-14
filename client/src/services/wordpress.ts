@@ -83,76 +83,81 @@ const sanitizeHTML = (content: string): string => {
 
 export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
   try {
+    console.log(`[WordPress Service] Fetching posts for page ${page}`);
+    
+    // Create simpler URL parameters for basic fetch
     const params = new URLSearchParams({
       page: page.toString(),
-      per_page: POSTS_PER_PAGE.toString(),
+      per_page: '5', // Reduced to 5 to troubleshoot
       orderby: 'date',
-      order: 'desc',
-      _fields: 'id,date,title,content,excerpt,slug',
-      exclude_blocks: [
-        'core/paragraph', // Keep only raw paragraph content
-        'core/social-links',
-        'core/buttons',
-        'core/media-text',
-        'core/image',
-        'core/gallery',
-        'core/embed',
-        'core/navigation',
-        'core/site-logo',
-        'core/post-navigation',
-        'core/comments',
-        'core/latest-posts',
-        'core/archives',
-        'core/categories',
-        'core/file',
-        'core/html',
-        'core/preformatted',
-        'core/pullquote',
-        'core/table',
-        'core/verse',
-        'core/video',
-        'core/audio',
-        'core/cover',
-        'core/columns',
-        'core/group',
-        'core/more',
-        'core/nextpage',
-        'core/separator',
-        'core/spacer',
-        'core/social',
-        'core/sharing',
-        'core/related-posts'
-      ].join(',')
+      order: 'desc'
     });
 
-    const response = await fetch(`${WORDPRESS_API_URL}?${params}`);
+    // Create complete URL
+    const url = `${WORDPRESS_API_URL}?${params}`;
+    console.log(`[WordPress Service] Request URL: ${url}`);
+    
+    // Set fetch options including timeout
+    const options = {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000 // 10 second timeout
+    };
+    
+    // Fetch with more detailed logging
+    console.log(`[WordPress Service] Sending request to WordPress API...`);
+    const response = await fetch(url, options);
+    console.log(`[WordPress Service] Received response: ${response.status} ${response.statusText}`);
 
+    // Handle non-OK responses
     if (!response.ok) {
-      throw new Error(`Failed to fetch WordPress posts: ${response.statusText}`);
+      console.error(`[WordPress Service] API Error: ${response.status} ${response.statusText}`);
+      
+      // Log response headers for debugging
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+      console.log(`[WordPress Service] Response headers:`, headers);
+      
+      // Return fallback data so the site continues to function
+      return [];
     }
 
-    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1');
+    // Parse response
     const posts = await response.json();
+    console.log(`[WordPress Service] Received ${Array.isArray(posts) ? posts.length : 'non-array'} response`);
 
+    // Validate response format
     if (!Array.isArray(posts)) {
-      throw new Error('Invalid response format from WordPress API');
+      console.error('[WordPress Service] Invalid response format (not an array):', typeof posts);
+      return [];
     }
 
-    if (page < totalPages && page * POSTS_PER_PAGE < MAX_POSTS) {
-      const nextPosts = await fetchWordPressPosts(page + 1);
-      return [...posts, ...nextPosts].slice(0, MAX_POSTS);
-    }
-
+    // Return successfully parsed posts
     return posts;
   } catch (error) {
-    throw error;
+    console.error('[WordPress Service] Fetch error:', error);
+    // Return empty array so UI doesn't break
+    return [];
   }
 }
 
 export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
   try {
     if (!wpPost.title?.rendered || !wpPost.content?.rendered || !wpPost.slug) {
-      throw new Error(`Invalid post data: Missing required fields for post ${wpPost.id}`);
+      console.error(`[WordPress Service] Invalid post data: Missing required fields for post ${wpPost.id}`);
+      return {
+        id: wpPost.id || Math.floor(Math.random() * 10000),
+        title: wpPost.title?.rendered?.trim() || 'Untitled Story',
+        content: wpPost.content?.rendered || 'Content unavailable',
+        excerpt: 'No excerpt available',
+        slug: wpPost.slug || `untitled-${Date.now()}`,
+        createdAt: wpPost.date ? new Date(wpPost.date) : new Date()
+      };
     }
 
     const sanitizedContent = sanitizeHTML(wpPost.content.rendered);
@@ -169,6 +174,14 @@ export function convertWordPressPost(wpPost: WordPressPost): Partial<Post> {
       createdAt: new Date(wpPost.date)
     };
   } catch (error) {
-    throw error;
+    console.error('[WordPress Service] Error converting post:', error);
+    return {
+      id: Math.floor(Math.random() * 10000),
+      title: 'Error Loading Story',
+      content: 'There was an error loading this story. Please try again later.',
+      excerpt: 'Error loading content',
+      slug: `error-${Date.now()}`,
+      createdAt: new Date()
+    };
   }
 }

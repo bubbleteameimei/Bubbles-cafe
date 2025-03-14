@@ -31,7 +31,7 @@ localPort = 5002
 externalPort = 3001
 
 [workflows]
-runButton = "Run"
+runButton = "Start Dev Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -100,3 +100,12 @@ author = 40164664
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx tsx scripts/init-db.ts && npm run dev"
+
+[[workflows.workflow]]
+name = "Start Dev Server"
+author = 40492995
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"

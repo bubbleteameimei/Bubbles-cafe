@@ -17,13 +17,12 @@ export default function Navigation() {
   const { theme, toggleTheme } = useTheme();
 
   // Navigation links configuration
-  const navLinks = [
+  const navLinks: Array<{ href: string; label: string; requireAuth?: boolean }> = [
     { href: '/', label: 'HOME' },
     { href: '/stories', label: 'STORIES' },
     { href: '/reader', label: 'READER' },
     { href: '/community', label: 'COMMUNITY' },
-    { href: '/bookmarks', label: 'BOOKMARKS', requireAuth: true },
-    { href: '/feedback', label: 'FEEDBACK' },
+    { href: '/bookmarks', label: 'BOOKMARKS' },
     { href: '/about', label: 'ABOUT' },
     { href: '/contact', label: 'CONTACT' }
   ];
