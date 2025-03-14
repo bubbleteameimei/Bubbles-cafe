@@ -52,12 +52,16 @@ export function TipPopup({ autoShow = false, triggerContent }: TipPopupProps) {
           </button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        aria-labelledby="tip-popup-title"
+        aria-describedby="tip-popup-description"
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle id="tip-popup-title" className="flex items-center gap-2">
             Support My Writing <Heart className="h-4 w-4 text-red-500 animate-pulse" />
           </DialogTitle>
-          <DialogDescription className="text-center pt-2">
+          <DialogDescription id="tip-popup-description" className="text-center pt-2">
             If you're enjoying my stories, consider buying me a coffee! Your support helps me create more engaging content.
           </DialogDescription>
         </DialogHeader>

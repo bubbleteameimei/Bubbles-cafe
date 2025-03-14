@@ -17,7 +17,7 @@ import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-const PORT = parseInt(process.env.PORT || "5000", 10);
+const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup

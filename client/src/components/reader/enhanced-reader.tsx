@@ -600,10 +600,10 @@ export function EnhancedReader({ post, className = '' }: EnhancedReaderProps) {
       
       {/* Flag Dialog */}
       <Dialog open={showFlagDialog} onOpenChange={setShowFlagDialog}>
-        <DialogContent>
+        <DialogContent aria-labelledby="report-content-title-reader" aria-describedby="report-content-description-reader">
           <DialogHeader>
-            <DialogTitle>Report Content</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="report-content-title-reader">Report Content</DialogTitle>
+            <DialogDescription id="report-content-description-reader">
               Please let us know why you're reporting this content. This will help our moderators review it appropriately.
             </DialogDescription>
           </DialogHeader>

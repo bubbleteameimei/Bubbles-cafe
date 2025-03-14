@@ -207,10 +207,14 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
 
       {/* Highlight dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent 
+          className="sm:max-w-md"
+          aria-labelledby="highlight-dialog-title"
+          aria-describedby="highlight-dialog-description"
+        >
           <DialogHeader>
-            <DialogTitle>Share Story Highlight</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="highlight-dialog-title">Share Story Highlight</DialogTitle>
+            <DialogDescription id="highlight-dialog-description">
               Create a shareable highlight clip from this story
             </DialogDescription>
           </DialogHeader>
