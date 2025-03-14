@@ -181,12 +181,9 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
             toast({
               title: 'Save for later reading',
               description: 'Create a free account to bookmark stories and track your progress.',
-              action: (
-                <Link to="/auth">
-                  <ToastAction altText="Sign in">Sign in</ToastAction>
-                </Link>
-              ),
             });
+            // Navigate to auth page after a short delay
+            setTimeout(() => window.location.href = '/auth', 1500);
           }}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
           aria-label="Bookmark post"
@@ -314,12 +311,9 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
           toast({
             title: 'Sign in to bookmark',
             description: 'Create a free account to save stories for later.',
-            action: (
-              <Link to="/auth">
-                <ToastAction altText="Sign in">Sign in</ToastAction>
-              </Link>
-            ),
           });
+          // Navigate to auth page after a short delay
+          setTimeout(() => window.location.href = '/auth', 1500);
         }}
       >
         <Bookmark className="h-4 w-4 mr-2" />

@@ -93,6 +93,40 @@ export default function Feedback() {
     type: "general",
     rating: 5
   });
+  
+  // Calculate form completion progress
+  const calculateFormProgress = () => {
+    let progress = 0;
+    const totalFields = 4; // name, email, content, type (rating has default value)
+    
+    // Name field (25%)
+    if (formData.name.length >= 2) {
+      progress += 25;
+    } else if (formData.name.length > 0) {
+      progress += Math.floor((formData.name.length / 2) * 25);
+    }
+    
+    // Email field (25%)
+    if (formData.email.includes('@') && formData.email.includes('.')) {
+      progress += 25;
+    } else if (formData.email.length > 0) {
+      progress += Math.min(15, Math.floor((formData.email.length / 5) * 15));
+    }
+    
+    // Content field (25%)
+    if (formData.content.length >= 10) {
+      progress += 25;
+    } else if (formData.content.length > 0) {
+      progress += Math.floor((formData.content.length / 10) * 25);
+    }
+    
+    // Type field (25%)
+    if (formData.type) {
+      progress += 25;
+    }
+    
+    return progress;
+  };
 
   // Detect browser and system info
   const [browserInfo] = useState<BrowserInfo>(() => {
@@ -329,9 +363,33 @@ export default function Feedback() {
       </div>
 
       {submitted ? (
-        <div className="bg-green-800/20 border border-green-500/50 rounded-md p-4 mb-8">
-          <p className="text-green-400 font-medium">Thank you for your feedback! We'll review it shortly.</p>
-        </div>
+        <motion.div 
+          className="bg-green-800/20 border border-green-500/50 rounded-md p-6 mb-8 overflow-hidden relative"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500 opacity-70"></div>
+          <div className="flex items-start">
+            <div className="shrink-0 bg-green-500/20 rounded-full p-2 mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-green-400 mb-1">Thank you for your feedback!</h3>
+              <p className="text-green-400/80">We appreciate your input and will review it shortly.</p>
+            </div>
+          </div>
+          
+          <motion.div 
+            className="w-full h-1 bg-gradient-to-r from-green-500 to-emerald-400 mt-4 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 4.5 }}
+          />
+        </motion.div>
       ) : (
         <>
           {/* Form Status Banner */}
@@ -377,21 +435,19 @@ export default function Feedback() {
                   <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
                 <div>
-                  <p className="text-blue-400 font-medium">Form Completion Status:</p>
-                  <ul className="mt-1 text-sm text-blue-300 list-none">
-                    <li className={`flex items-center ${formData.name.length >= 2 ? "text-green-400" : ""}`}>
-                      {formData.name.length >= 2 ? "✓" : "○"} Name {formData.name.length >= 2 ? "completed" : "required"}
-                    </li>
-                    <li className={`flex items-center ${formData.email.includes('@') && formData.email.includes('.') ? "text-green-400" : ""}`}>
-                      {formData.email.includes('@') && formData.email.includes('.') ? "✓" : "○"} Email {formData.email.includes('@') && formData.email.includes('.') ? "completed" : "required"}
-                    </li>
-                    <li className={`flex items-center ${formData.type ? "text-green-400" : ""}`}>
-                      {formData.type ? "✓" : "○"} Feedback type {formData.type ? "selected" : "required"}
-                    </li>
-                    <li className={`flex items-center ${formData.content.length >= 10 ? "text-green-400" : ""}`}>
-                      {formData.content.length >= 10 ? "✓" : "○"} Feedback content {formData.content.length >= 10 ? "completed" : `(${formData.content.length}/10 characters minimum)`}
-                    </li>
-                  </ul>
+                  <p className="text-blue-400 font-medium">Form Progress:</p>
+                  <div className="mt-2 w-full bg-gray-700/50 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-500 h-2.5 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${calculateFormProgress()}%`,
+                        backgroundColor: calculateFormProgress() === 100 ? '#10b981' : '#3b82f6'
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-blue-300 mt-1 text-right">
+                    {calculateFormProgress()}% complete
+                  </p>
                 </div>
               </div>
             )}
@@ -408,12 +464,13 @@ export default function Feedback() {
                     value={formData.name}
                     onChange={handleChange}
                     required 
-                    className={validationErrors.name 
-                      ? "border-red-500 pr-10" 
-                      : formData.name.length >= 2 
-                        ? "border-green-500 pr-10"
-                        : "pr-10"
-                    }
+                    className={`transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
+                      validationErrors.name 
+                        ? "border-red-500 pr-10 focus:border-red-500 focus:ring-red-500/20" 
+                        : formData.name.length >= 2 
+                          ? "border-green-500 pr-10 focus:border-green-500 focus:ring-green-500/20"
+                          : "pr-10 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                   />
                   {formData.name.length >= 2 && !validationErrors.name && (
                     <span className="absolute right-3 top-2.5 text-green-500">
@@ -437,12 +494,13 @@ export default function Feedback() {
                     value={formData.email}
                     onChange={handleChange}
                     required 
-                    className={validationErrors.email 
-                      ? "border-red-500 pr-10" 
-                      : formData.email.includes('@') && formData.email.includes('.')
-                        ? "border-green-500 pr-10"
-                        : "pr-10"
-                    }
+                    className={`transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
+                      validationErrors.email 
+                        ? "border-red-500 pr-10 focus:border-red-500 focus:ring-red-500/20" 
+                        : formData.email.includes('@') && formData.email.includes('.')
+                          ? "border-green-500 pr-10 focus:border-green-500 focus:ring-green-500/20"
+                          : "pr-10 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
                   />
                   {formData.email.includes('@') && formData.email.includes('.') && !validationErrors.email && (
                     <span className="absolute right-3 top-2.5 text-green-500">
@@ -467,12 +525,12 @@ export default function Feedback() {
                 >
                   <SelectTrigger 
                     id="type" 
-                    className={`focus:ring-0 mb-1 ${
+                    className={`transition-all duration-200 mb-1 ${
                       validationErrors.type 
-                        ? "border-red-500 focus:border-red-500 outline-red-500 ring-0" 
+                        ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-1 outline-none" 
                         : formData.type 
-                          ? "border-green-500 focus:border-green-500 ring-0 outline-green-500" 
-                          : "focus:ring-1 focus:ring-primary"
+                          ? "border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:ring-offset-1 outline-none" 
+                          : "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-1 outline-none"
                     }`}
                   >
                     <SelectValue placeholder="Select type" />
@@ -512,11 +570,12 @@ export default function Feedback() {
                   value={formData.content}
                   onChange={handleChange}
                   required 
-                  className={`resize-none pr-10 ${validationErrors.content 
-                    ? "border-red-500" 
-                    : formData.content.length >= 10 
-                      ? "border-green-500"
-                      : ""
+                  className={`resize-none pr-10 transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
+                    validationErrors.content 
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                      : formData.content.length >= 10 
+                        ? "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+                        : "focus:border-blue-500 focus:ring-blue-500/20"
                   }`} 
                   maxLength={2000}
                 />
@@ -534,8 +593,39 @@ export default function Feedback() {
                     <p className="text-sm text-red-500">{validationErrors.content}</p>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {formData.content.length}/2000 characters
+                <div className="text-xs flex items-center">
+                  <div className="relative w-[60px] h-[18px] mr-2">
+                    <svg className="w-full h-full" viewBox="0 0 60 18">
+                      <defs>
+                        <linearGradient id="characterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#3b82f6" />
+                          <stop offset="100%" stopColor="#10b981" />
+                        </linearGradient>
+                      </defs>
+                      {/* Background track */}
+                      <rect x="0" y="7" width="60" height="4" rx="2" fill="#374151" />
+                      {/* Animated fill */}
+                      <motion.rect
+                        initial={{ width: 0 }}
+                        animate={{ width: Math.min(60, (formData.content.length / 2000) * 60) }}
+                        transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                        x="0" 
+                        y="7" 
+                        height="4" 
+                        rx="2" 
+                        fill="url(#characterGradient)" 
+                      />
+                    </svg>
+                  </div>
+                  <span className={`transition-colors duration-300 ${
+                    formData.content.length > 1800 
+                      ? "text-amber-400" 
+                      : formData.content.length > 0 
+                        ? "text-muted-foreground" 
+                        : "text-muted-foreground/60"
+                  }`}>
+                    {formData.content.length}/2000
+                  </span>
                 </div>
               </div>
             </div>
@@ -590,16 +680,40 @@ export default function Feedback() {
             
             <Button 
               type="submit" 
-              className="w-full sm:w-auto"
+              className={`relative w-full sm:w-auto overflow-hidden transition-all duration-300 ${
+                submitMutation.isPending 
+                  ? "bg-primary/80 text-primary-foreground/90" 
+                  : "hover:shadow-md hover:shadow-primary/20"
+              }`}
               disabled={submitMutation.isPending}
             >
               {submitMutation.isPending ? (
-                <>
+                <motion.div 
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
+                  <span>Submitting...</span>
+                  
+                  {/* Animated loading bar at bottom of button */}
+                  <motion.div 
+                    className="absolute bottom-0 left-0 h-[2px] bg-primary-foreground/50"
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                  />
+                </motion.div>
               ) : (
-                "Submit Feedback"
+                <motion.span
+                  initial={{ y: 0 }}
+                  whileHover={{ y: -2 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                  className="flex items-center justify-center"
+                >
+                  Submit Feedback
+                </motion.span>
               )}
             </Button>
           </form>
