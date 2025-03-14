@@ -1191,12 +1191,26 @@ Timestamp: ${new Date().toLocaleString()}
   });
 
   // User Feedback API endpoints
+  // Add request logging middleware to feedback routes
+  app.use("/api/feedback*", requestLogger);
+
   app.post("/api/feedback", async (req: Request, res: Response) => {
     try {
+      feedbackLogger.info('Feedback submission received', { 
+        page: req.body.page, 
+        type: req.body.type, 
+        browser: req.body.browser,
+        os: req.body.operatingSystem
+      });
+      
       const { type, content, rating, page, browser, operatingSystem, screenResolution, userId, userAgent, category, metadata } = req.body;
       
       // Basic validation
       if (!type || !content) {
+        feedbackLogger.warn('Validation failed - missing required fields', { 
+          hasType: !!type, 
+          hasContent: !!content 
+        });
         return res.status(400).json({ error: "Type and content are required fields" });
       }
       
@@ -1216,12 +1230,27 @@ Timestamp: ${new Date().toLocaleString()}
         metadata: metadata || {}
       };
       
+      // Enhanced logging and performance tracking
+      const startTime = Date.now();
+      feedbackLogger.debug('Submitting feedback to database', { feedbackData: { type, page, category }});
+      
       // Submit feedback
       const feedback = await storage.submitFeedback(feedbackData);
       
+      // Log performance metrics
+      const duration = Date.now() - startTime;
+      feedbackLogger.info('Feedback submitted successfully', { 
+        id: feedback.id,
+        duration: `${duration}ms`,
+        type: feedback.type
+      });
+      
       res.status(201).json({ success: true, feedback });
     } catch (error) {
-      console.error("Error submitting feedback:", error);
+      feedbackLogger.error('Error submitting feedback', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       res.status(500).json({ error: "Failed to submit feedback" });
     }
   });
@@ -1232,6 +1261,10 @@ Timestamp: ${new Date().toLocaleString()}
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
+        feedbackLogger.warn('Unauthorized access attempt to feedback list', {
+          userId: user?.id,
+          isAdmin: user?.isAdmin
+        });
         return res.status(403).json({ error: "Unauthorized access" });
       }
       
@@ -1239,12 +1272,29 @@ Timestamp: ${new Date().toLocaleString()}
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const status = req.query.status as string || "all";
       
+      feedbackLogger.info('Fetching feedback list', { limit, status });
+      
+      // Performance tracking
+      const startTime = Date.now();
+      
       // Get feedback
       const feedback = await storage.getAllFeedback(limit, status);
       
+      // Log performance metrics
+      const duration = Date.now() - startTime;
+      feedbackLogger.info('Feedback list retrieved', { 
+        count: feedback.length,
+        duration: `${duration}ms`,
+        status: status,
+        limit: limit
+      });
+      
       res.status(200).json({ feedback });
     } catch (error) {
-      console.error("Error fetching feedback:", error);
+      feedbackLogger.error('Error fetching feedback list', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
@@ -1255,6 +1305,11 @@ Timestamp: ${new Date().toLocaleString()}
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
+        feedbackLogger.warn('Unauthorized access attempt to feedback detail', {
+          userId: user?.id,
+          isAdmin: user?.isAdmin,
+          feedbackId: req.params.id
+        });
         return res.status(403).json({ error: "Unauthorized access" });
       }
       
@@ -1262,19 +1317,28 @@ Timestamp: ${new Date().toLocaleString()}
       const id = parseInt(req.params.id);
       
       if (isNaN(id)) {
+        feedbackLogger.warn('Invalid feedback ID provided', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
+      
+      feedbackLogger.info('Fetching specific feedback', { id });
       
       // Get feedback
       const feedback = await storage.getFeedback(id);
       
       if (!feedback) {
+        feedbackLogger.warn('Feedback not found', { id });
         return res.status(404).json({ error: "Feedback not found" });
       }
       
+      feedbackLogger.info('Feedback retrieved successfully', { id, type: feedback.type });
       res.status(200).json({ feedback });
     } catch (error) {
-      console.error("Error fetching feedback:", error);
+      feedbackLogger.error('Error fetching specific feedback', {
+        id: req.params.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
@@ -1285,6 +1349,11 @@ Timestamp: ${new Date().toLocaleString()}
       // Check if user is admin
       const user = req.user as any;
       if (!user.isAdmin) {
+        feedbackLogger.warn('Unauthorized attempt to update feedback status', {
+          userId: user?.id,
+          isAdmin: user?.isAdmin,
+          feedbackId: req.params.id
+        });
         return res.status(403).json({ error: "Unauthorized access" });
       }
       
@@ -1293,25 +1362,62 @@ Timestamp: ${new Date().toLocaleString()}
       const { status } = req.body;
       
       if (isNaN(id)) {
+        feedbackLogger.warn('Invalid feedback ID for status update', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
       
       if (!status || !["pending", "reviewed", "resolved", "rejected"].includes(status)) {
+        feedbackLogger.warn('Invalid status value provided', { status, feedbackId: id });
         return res.status(400).json({ error: "Invalid status value" });
       }
+      
+      feedbackLogger.info('Updating feedback status', { id, status, adminId: user.id });
+      
+      // Performance tracking
+      const startTime = Date.now();
       
       // Update feedback status
       const updatedFeedback = await storage.updateFeedbackStatus(id, status);
       
+      // Log performance metrics
+      const duration = Date.now() - startTime;
+      feedbackLogger.info('Feedback status updated successfully', { 
+        id, 
+        status,
+        previousStatus: updatedFeedback.status !== status ? updatedFeedback.status : 'same',
+        duration: `${duration}ms`,
+        adminId: user.id
+      });
+      
       res.status(200).json({ success: true, feedback: updatedFeedback });
     } catch (error) {
-      console.error("Error updating feedback status:", error);
+      feedbackLogger.error('Error updating feedback status', {
+        id: req.params.id,
+        status: req.body.status,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       res.status(500).json({ error: "Failed to update feedback status" });
     }
   });
 
+  // Add error logger middleware
+  app.use(errorLogger);
+  
+  // Global error handler with enhanced logging
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error('Global error handler:', err);
+    // Use the already imported feedbackLogger
+    // Log the error with full details
+    feedbackLogger.error('Unhandled application error', { 
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+      method: req.method,
+      ip: req.ip,
+      headers: req.headers
+    });
+    
+    // Send appropriate response to the client
     res.status(500).json({
       message: "An unexpected error occurred",
       error: process.env.NODE_ENV === 'development' ? err.message : undefined

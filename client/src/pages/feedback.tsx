@@ -104,25 +104,76 @@ export default function Feedback() {
     }));
   };
 
-  // Submit mutation
+  // Performance and debug tracking
+  const logSubmissionAttempt = (data: FeedbackSubmissionData) => {
+    // Log submission attempt with sanitized data (omitting personal info)
+    console.log('[Feedback] Submission attempt', {
+      type: data.type,
+      contentLength: data.content.length,
+      page: data.page,
+      browser: data.browser,
+      operatingSystem: data.operatingSystem,
+      hasMetadata: !!data.metadata
+    });
+  };
+
+  const trackSubmissionMetrics = () => {
+    // Track timing for feedback submissions
+    const metric = {
+      name: 'feedback-submission',
+      value: new Date().getTime(),
+      id: `feedback-${new Date().getTime()}`
+    };
+    
+    // Log the performance metric
+    console.log('[Performance]', metric);
+  };
+
+  // Submit mutation with enhanced error tracking and performance metrics
   const submitMutation = useMutation({
     mutationFn: async (data: FeedbackSubmissionData) => {
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+      const startTime = performance.now();
+      logSubmissionAttempt(data);
+      
+      try {
+        const response = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        // Log response time
+        const responseTime = performance.now() - startTime;
+        console.log(`[Feedback] Server response time: ${responseTime.toFixed(2)}ms`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Feedback] Submission failed', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error
+          });
+          throw new Error(errorData.error || 'Something went wrong');
+        }
+        
+        return response.json();
+      } catch (error) {
+        // Enhanced error logging
+        console.error('[Feedback] Error submitting feedback', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      console.log('[Feedback] Submission successful', {
+        id: data.feedback?.id,
+        type: data.feedback?.type
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Something went wrong');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
       toast({
         title: "Feedback Submitted",
         description: "Thank you for your feedback! We'll review it shortly.",
@@ -131,10 +182,18 @@ export default function Feedback() {
       setSubmitted(true);
       setFormData({ name: "", email: "", content: "", type: "general", rating: 5 });
       
+      // Log success metrics
+      trackSubmissionMetrics();
+      
       // Reset form visibility after 5 seconds
       setTimeout(() => setSubmitted(false), 5000);
     },
     onError: (error: Error) => {
+      // Log client-side error handling
+      console.error('[Feedback] Client error handler triggered', {
+        error: error.message
+      });
+      
       toast({
         title: "Error",
         description: error.message || "Failed to submit feedback. Please try again.",

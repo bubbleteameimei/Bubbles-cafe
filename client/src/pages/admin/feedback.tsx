@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -117,25 +117,77 @@ function FeedbackDetailCard({ feedback }: { feedback: FeedbackItem }) {
   const { toast } = useToast();
   const [status, setStatus] = useState(feedback.status);
 
-  // Status update mutation
+  // Debug and performance tracking
+  const logStatusUpdate = (id: number, newStatus: string) => {
+    console.log('[Admin:Feedback] Status update attempt', {
+      feedbackId: id,
+      newStatus: newStatus,
+      previousStatus: feedback.status,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const trackUpdatePerformance = (id: number, duration: number) => {
+    console.log('[Admin:Performance]', {
+      operation: 'feedback-status-update',
+      feedbackId: id,
+      durationMs: duration,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  // Enhanced status update mutation with debugging
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await fetch(`/api/feedback/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
+      const startTime = performance.now();
+      logStatusUpdate(id, status);
+      
+      try {
+        const response = await fetch(`/api/feedback/${id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update status');
+        // Log response time
+        const responseTime = performance.now() - startTime;
+        console.log(`[Admin:Feedback] Status update response time: ${responseTime.toFixed(2)}ms`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Admin:Feedback] Status update failed', {
+            feedbackId: id,
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error
+          });
+          throw new Error(errorData.error || 'Failed to update status');
+        }
+
+        // Track performance metrics
+        trackUpdatePerformance(id, performance.now() - startTime);
+        
+        return response.json();
+      } catch (error) {
+        // Enhanced error logging
+        console.error('[Admin:Feedback] Error updating status', {
+          feedbackId: id,
+          newStatus: status,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
       }
-
-      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[Admin:Feedback] Status update successful', {
+        feedbackId: feedback.id,
+        newStatus: status,
+        previousStatus: feedback.status !== status ? feedback.status : 'same'
+      });
+      
       toast({
         title: 'Status Updated',
         description: 'The feedback status has been updated successfully.',
@@ -143,6 +195,11 @@ function FeedbackDetailCard({ feedback }: { feedback: FeedbackItem }) {
       });
     },
     onError: (error: Error) => {
+      console.error('[Admin:Feedback] Client error handler triggered', {
+        feedbackId: feedback.id,
+        error: error.message
+      });
+      
       toast({
         title: 'Update Failed',
         description: error.message || 'Failed to update feedback status.',
@@ -275,42 +332,142 @@ export default function AdminFeedback() {
   const [activeTab, setActiveTab] = useState('all');
   const { toast } = useToast();
 
-  // Fetch feedback data
+  // Debug and performance tracking for list fetch
+  const logFeedbackFetch = (status: string, details: any) => {
+    console.log(`[Admin:Feedback] Fetching feedback list ${status}`, details);
+  };
+
+  // Fetch feedback data with enhanced debugging
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['/api/feedback'],
     queryFn: async () => {
-      const response = await fetch('/api/feedback');
+      const startTime = performance.now();
+      logFeedbackFetch('started', { activeTab });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load feedback');
+      try {
+        const response = await fetch('/api/feedback');
+        
+        const responseTime = performance.now() - startTime;
+        console.log(`[Admin:Feedback] List fetch response time: ${responseTime.toFixed(2)}ms`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Admin:Feedback] List fetch failed', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error
+          });
+          throw new Error(errorData.error || 'Failed to load feedback');
+        }
+        
+        const data = await response.json();
+        
+        // Log success with summary info
+        logFeedbackFetch('completed', { 
+          count: data.feedback?.length || 0,
+          duration: `${(performance.now() - startTime).toFixed(2)}ms`,
+          statuses: data.feedback?.reduce((acc: Record<string, number>, item: FeedbackItem) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+          }, {})
+        });
+        
+        return data.feedback;
+      } catch (error) {
+        // Enhanced error logging
+        console.error('[Admin:Feedback] Error fetching feedback list', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        throw error;
       }
-      
-      const data = await response.json();
-      return data.feedback;
     },
   });
 
-  // Filter feedback based on the active tab
-  const filteredFeedback = data
-    ? data.filter((item: FeedbackItem) => (activeTab === 'all' ? true : item.status === activeTab))
-    : [];
+  // Track tab changes for debugging
+  const handleTabChange = (newTab: string) => {
+    console.log('[Admin:Feedback] Tab changed', { 
+      from: activeTab, 
+      to: newTab
+    });
+    setActiveTab(newTab);
+  };
+  
+  // Filter feedback based on the active tab with performance tracking
+  const filteredFeedback = useMemo(() => {
+    if (!data) return [];
+    
+    const startTime = performance.now();
+    const filtered = data.filter((item: FeedbackItem) => (activeTab === 'all' ? true : item.status === activeTab));
+    
+    // Log filtering performance
+    console.log('[Admin:Feedback] Filtered feedback', {
+      totalItems: data.length,
+      filteredItems: filtered.length,
+      activeTab,
+      filterTime: `${(performance.now() - startTime).toFixed(2)}ms`
+    });
+    
+    return filtered;
+  }, [data, activeTab]);
 
   if (isLoading) {
+    console.log('[Admin:Feedback] Loading feedback data', {
+      timestamp: new Date().toISOString(),
+      activeTab
+    });
+    
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading feedback...</span>
+      <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-4">
+        <div className="flex items-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading feedback...</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          This may take a moment while we retrieve the data
+        </p>
+        <div id="feedback-loading-progress" className="w-64 h-1 bg-muted rounded overflow-hidden">
+          <div 
+            className="h-full bg-primary animate-pulse" 
+            style={{width: '60%'}}
+            ref={(el) => {
+              if (el) {
+                // Log loading animation for debugging
+                console.log('[Admin:Feedback] Loading indicator rendered');
+              }
+            }}
+          ></div>
+        </div>
       </div>
     );
   }
 
   if (isError) {
+    // Log detailed error information for debugging
+    console.error('[Admin:Feedback] Failed to load feedback data', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      time: new Date().toISOString(),
+      browser: navigator.userAgent
+    });
+
     return (
       <div className="flex flex-col justify-center items-center min-h-[60vh]">
         <AlertCircle className="h-8 w-8 text-red-500" />
         <h3 className="mt-2 text-xl font-bold">Error Loading Feedback</h3>
         <p className="text-muted-foreground">{(error as Error).message}</p>
+        <div className="mt-6">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              console.log('[Admin:Feedback] Manual retry attempt');
+              window.location.reload();
+            }}
+          >
+            <Loader2 className="mr-2 h-4 w-4" />
+            Retry Loading
+          </Button>
+        </div>
       </div>
     );
   }
@@ -319,7 +476,7 @@ export default function AdminFeedback() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold mb-6">Feedback Management</h1>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6">
           <TabsTrigger value="all">All Feedback</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>

@@ -13,6 +13,7 @@ import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
+import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -62,21 +63,25 @@ app.use(helmet({
   }
 }));
 
+// Create a server logger
+const serverLogger = createLogger('Server');
+
 async function startServer() {
   try {
-    console.log('\n=== Starting Server ===');
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Host: ${HOST}`);
-    console.log(`Port: ${PORT}`);
+    serverLogger.info('Starting server', {
+      environment: process.env.NODE_ENV,
+      host: HOST,
+      port: PORT
+    });
 
     // Check database connection first
     const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-    console.log(`Database connected, found ${postsCount} posts`);
+    serverLogger.info('Database connected', { postsCount });
 
     if (postsCount === 0) {
-      console.log('Seeding database...');
+      serverLogger.info('Seeding database...');
       await seedDatabase();
-      console.log('Database seeding completed');
+      serverLogger.info('Database seeding completed');
     }
 
     // Create server instance
@@ -84,18 +89,28 @@ async function startServer() {
 
     // Setup routes based on environment
     if (isDev) {
-      console.log('Setting up development environment');
+      serverLogger.info('Setting up development environment');
+      
+      // Add global request logging in development
+      app.use(requestLogger);
+      
       registerRoutes(app);
       await setupVite(app, server);
     } else {
-      console.log('Setting up production environment');
+      serverLogger.info('Setting up production environment');
       serveStatic(app);
     }
 
     // Start listening with enhanced error handling and port notification
     return new Promise<void>((resolve, reject) => {
+      const startTime = Date.now();
+      
       server.listen(PORT, HOST, () => {
-        console.log(`\nServer is running at http://${HOST}:${PORT}`);
+        const bootDuration = Date.now() - startTime;
+        serverLogger.info('Server started successfully', { 
+          url: `http://${HOST}:${PORT}`,
+          bootTime: `${bootDuration}ms`
+        });
 
         // Send port readiness signal
         if (process.send) {
@@ -104,7 +119,7 @@ async function startServer() {
             wait_for_port: true,
             ready: true
           });
-          console.log('Sent port readiness signal');
+          serverLogger.debug('Sent port readiness signal');
         }
 
         resolve();
@@ -112,29 +127,62 @@ async function startServer() {
 
       server.on('error', (error: Error & { code?: string }) => {
         if (error.code === 'EADDRINUSE') {
-          console.error(`Port ${PORT} is already in use`);
+          serverLogger.error('Port already in use', { port: PORT });
+        } else {
+          serverLogger.error('Server error', { 
+            error: error.message,
+            code: error.code,
+            stack: error.stack 
+          });
         }
         reject(error);
       });
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    serverLogger.error('Critical startup error', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     process.exit(1);
   }
 }
 
 // Start the server
 startServer().catch(error => {
-  console.error('Critical startup error:', error);
+  serverLogger.error('Critical startup error', {
+    error: error instanceof Error ? error.message : 'Unknown error',
+    stack: error instanceof Error ? error.stack : undefined
+  });
   process.exit(1);
 });
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server...');
+  serverLogger.info('SIGTERM received, initiating graceful shutdown');
   server?.close(() => {
-    console.log('Server closed');
+    serverLogger.info('Server closed successfully');
     process.exit(0);
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  serverLogger.error('Uncaught exception', {
+    error: error.message,
+    stack: error.stack
+  });
+  
+  // Give time for the error to be logged before exiting
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (reason, promise) => {
+  serverLogger.error('Unhandled promise rejection', {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined
   });
 });
 
