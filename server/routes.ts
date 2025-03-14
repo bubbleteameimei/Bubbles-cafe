@@ -16,6 +16,7 @@ import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
+import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 
 // Add interfaces for analytics data
 interface UserAgent {
