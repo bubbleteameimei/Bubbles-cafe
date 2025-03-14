@@ -3,6 +3,7 @@ import { Route, Switch, RouteComponentProps, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
+import { Sonner } from './components/ui/sonner';
 import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -59,6 +60,7 @@ const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks'))
 // Demo Pages
 const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
 const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
+const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -147,6 +149,7 @@ function App() {
                             <Route path="/cookie-test" component={CookieTestPage} />
                             <Route path="/demo/toast" component={ToastDemoPage} />
                             <Route path="/demo/toast-docs" component={ToastDocsPage} />
+                            <Route path="/toast-test" component={ToastTestPage} />
 
                             {/* Legal Routes */}
                             <Route path="/legal/copyright" component={CopyrightPage} />
@@ -203,6 +206,7 @@ function App() {
 
                   {/* Global UI Elements */}
                   <Toaster />
+                  <Sonner />
                   <CookieConsent />
                   <ScrollToTopButton />
                 </div>

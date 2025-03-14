@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Slider } from "@/components/ui/slider";
+import { SelectDemo } from "@/components/ui/select-demo";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -47,8 +50,10 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfileSettingsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast: showToast } = useToast();
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [privacyLevel, setPrivacyLevel] = useState(50); // Default to medium privacy
+  const [selectedTheme, setSelectedTheme] = useState("default");
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -64,12 +69,22 @@ export default function ProfileSettingsPage() {
   async function onSubmit(data: ProfileFormValues) {
     try {
       // Here you would implement the API call to update the profile
-      toast({
+      toast.success("Profile updated successfully", {
+        description: "Your profile settings have been updated."
+      });
+      
+      // Also show in the traditional toast for demonstration
+      showToast({
         title: "Profile updated",
         description: "Your profile settings have been updated successfully.",
       });
     } catch (error) {
-      toast({
+      toast.error("Failed to update profile", {
+        description: "Please try again."
+      });
+      
+      // Also show in the traditional toast for demonstration
+      showToast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
@@ -81,12 +96,22 @@ export default function ProfileSettingsPage() {
     setIsDeactivating(true);
     try {
       // Here you would implement the API call to deactivate the account
-      toast({
+      toast.success("Account deactivated", {
+        description: "Your account has been deactivated successfully."
+      });
+      
+      // Also show in the traditional toast for demonstration
+      showToast({
         title: "Account deactivated",
         description: "Your account has been deactivated successfully.",
       });
     } catch (error) {
-      toast({
+      toast.error("Failed to deactivate account", {
+        description: "Please try again."
+      });
+      
+      // Also show in the traditional toast for demonstration
+      showToast({
         title: "Error",
         description: "Failed to deactivate account. Please try again.",
         variant: "destructive",
@@ -98,6 +123,69 @@ export default function ProfileSettingsPage() {
   return (
     <div className="container mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Profile Visibility</h2>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label htmlFor="profile-visibility" className="text-sm font-medium">
+                Profile Privacy Level
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {privacyLevel === 0 ? "Private" : privacyLevel === 100 ? "Public" : "Limited"}
+              </span>
+            </div>
+            <Slider 
+              id="profile-visibility"
+              className="my-4" 
+              value={[privacyLevel]} 
+              max={100}
+              step={1}
+              onValueChange={(value: number[]) => setPrivacyLevel(value[0])}
+            />
+            <p className="text-sm text-muted-foreground">
+              {privacyLevel < 30 ? 
+                "Only you can see your profile information" : 
+                privacyLevel < 70 ? 
+                "Only followers and friends can see your profile" : 
+                "Everyone can see your profile information"
+              }
+            </p>
+          </div>
+        </div>
+      </Card>
+      
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Theme Preferences</h2>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="theme-select" className="text-sm font-medium">
+              Select Theme
+            </label>
+            <div className="pt-2">
+              <SelectDemo />
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Choose a theme that matches your reading preferences
+            </p>
+            
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                className="mr-2"
+                onClick={() => {
+                  toast.info("Theme updated!", {
+                    description: "Your theme preference has been saved.",
+                  });
+                }}
+              >
+                Save Theme Preference
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <Card className="p-6">
         <Form {...form}>
