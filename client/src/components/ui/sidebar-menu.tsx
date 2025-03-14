@@ -108,6 +108,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Community</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/feedback'}
+                onClick={() => handleNavigation('/feedback')}
+                tooltip="Feedback"
+                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Feedback</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             
             {/* Bookmarks - Only show when logged in */}
             {user && (
