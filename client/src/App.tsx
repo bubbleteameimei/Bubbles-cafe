@@ -7,7 +7,7 @@ import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
-import { CookieConsent } from './components/ui/cookie-consent-backup';
+import { CookieConsent } from './components/ui/cookie-consent-fixed';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';

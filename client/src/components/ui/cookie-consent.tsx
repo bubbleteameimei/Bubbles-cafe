@@ -33,6 +33,28 @@ const cookieDropVariants = {
   })
 };
 
+// Floating chocolate chip animations
+const floatingChipVariants = {
+  initial: (i: number) => ({
+    y: 0,
+    x: 0,
+    opacity: 0,
+  }),
+  animate: (i: number) => ({
+    y: [0, -5, 0],
+    x: [0, Math.random() * 10 - 5, 0],
+    opacity: 1,
+    rotate: [0, Math.random() * 10 - 5, 0],
+    transition: {
+      duration: 3,
+      ease: "easeInOut",
+      repeat: Infinity,
+      repeatType: "mirror" as const,
+      delay: i * 0.2
+    }
+  })
+};
+
 // Mini cookie component for animations
 const MiniCookie = ({ index }: { index: number }) => {
   return (
@@ -128,16 +150,32 @@ export function CookieConsent() {
           ease: [0.4, 0, 0.2, 1],
           y: { type: "spring", stiffness: 300, damping: 30 }
         }}
-        className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm overflow-hidden"
+        className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-2xl"
         role="dialog"
         aria-labelledby="cookie-consent-title"
       >
-        {/* Falling cookies animation */}
-        {Array.from({ length: 6 }).map((_, i) => (
-          <MiniCookie key={i} index={i} />
-        ))}
+        {/* Floating cookies animation for small screens */}
+        <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute"
+              style={{
+                top: `${20 + Math.random() * 60}%`,
+                left: `${10 + i * 20}%`,
+                zIndex: 0
+              }}
+              variants={floatingChipVariants}
+              custom={i}
+              initial="initial"
+              animate="animate"
+            >
+              <div className="h-3 w-3 rounded-full bg-[#6F4E37]" />
+            </motion.div>
+          ))}
+        </div>
         
-        <div className="max-w-md w-full mx-auto bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] rounded-xl shadow-xl border-2 border-[#C4A484] p-6 space-y-4 relative">
+        <div className="relative p-5 bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] rounded-lg shadow-xl border-2 border-[#C4A484]">
           {/* Steam animation */}
           <AnimatePresence>
             {showSteam && (
@@ -147,33 +185,26 @@ export function CookieConsent() {
                   animate={{ opacity: [0, 0.8, 0], y: [-5, -20, -40] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-1/4 w-2 h-8 bg-white/40 rounded-full blur-sm"
+                  className="absolute -top-2 right-1/4 w-2 h-8 bg-white/40 rounded-full blur-sm"
                 />
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: [0, 0.6, 0], y: [-5, -25, -45] }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2.3, delay: 0.3, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-1/2 w-3 h-10 bg-white/30 rounded-full blur-sm"
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: [0, 0.7, 0], y: [-5, -15, -35] }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1.8, delay: 0.5, times: [0, 0.4, 1] }}
-                  className="absolute -top-2 left-3/4 w-2 h-6 bg-white/40 rounded-full blur-sm"
+                  className="absolute -top-2 right-1/3 w-3 h-10 bg-white/30 rounded-full blur-sm"
                 />
               </>
             )}
           </AnimatePresence>
-          
-          <div className="flex justify-center relative">
+
+          <div className="flex items-start gap-4">
             <motion.div
               whileHover={{ rotate: 10, scale: 1.05 }}
-              className="relative"
+              className="hidden sm:block flex-shrink-0"
             >
               <motion.svg 
-                className="w-[80px] h-[80px] drop-shadow-lg" 
+                className="w-16 h-16 drop-shadow-lg" 
                 viewBox="0 0 122.88 122.25"
                 animate={isBitten ? { scale: [1, 0.9, 1] } : {}}
                 transition={{ duration: 0.3 }}
@@ -185,13 +216,12 @@ export function CookieConsent() {
                   }
                   className="fill-[#E8B88C]"
                 />
-                <circle cx="45" cy="25" r="9" className="fill-[#6F4E37]" />
-                <circle cx="92" cy="42" r="8" className="fill-[#6F4E37]" />
-                <circle cx="35" cy="68" r="10" className="fill-[#6F4E37]" />
-                <circle cx="73" cy="55" r="7" className="fill-[#6F4E37]" />
-                <circle cx="58" cy="82" r="8" className="fill-[#6F4E37]" />
-                <circle cx="25" cy="45" r="7" className="fill-[#6F4E37]" />
-                <circle cx="82" cy="75" r="6" className="fill-[#6F4E37]" />
+                <circle cx="45" cy="25" r="7" className="fill-[#6F4E37]" />
+                <circle cx="92" cy="42" r="6" className="fill-[#6F4E37]" />
+                <circle cx="35" cy="68" r="8" className="fill-[#6F4E37]" />
+                <circle cx="73" cy="55" r="5" className="fill-[#6F4E37]" />
+                <circle cx="58" cy="82" r="6" className="fill-[#6F4E37]" />
+                <circle cx="25" cy="45" r="5" className="fill-[#6F4E37]" />
               </motion.svg>
               
               {/* Cookie crumbs animation when bitten */}
@@ -212,53 +242,48 @@ export function CookieConsent() {
                       transition={{ duration: 0.4 }}
                       className="absolute top-1/3 left-1/3 w-1 h-1 rounded-full bg-[#E8B88C]"
                     />
-                    <motion.div
-                      initial={{ opacity: 0, x: 0, y: 0 }}
-                      animate={{ opacity: 1, x: -10, y: 20 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.6 }}
-                      className="absolute top-1/3 left-1/3 w-1.5 h-1.5 rounded-full bg-[#E8B88C]"
-                    />
                   </>
                 )}
               </AnimatePresence>
             </motion.div>
-          </div>
 
-          <div className="text-center space-y-3">
-            <h2 id="cookie-consent-title" className="text-2xl font-bold text-[#6F4E37]">Fresh Baked Cookies!</h2>
-            <p className="text-sm text-[#8B5A2B]">
-              Our website uses cookies to enhance your browsing experience. They're warm, delicious, and help make your visit even better!
-              <Link href="/legal/cookie-policy" className="block mt-1 underline hover:text-[#6F4E37] transition-colors">
-                View our cookie recipe (policy)
-              </Link>
-            </p>
-          </div>
+            <div className="flex-1">
+              <h2 id="cookie-consent-title" className="text-xl font-bold mb-2 text-[#6F4E37]">
+                Fresh Baked Cookies!
+              </h2>
+              <p className="text-sm text-[#8B5A2B] mb-3">
+                This website uses cookies to enhance your experience. They're warm, delicious, and help make your visit even better! 
+                We use cookies for essential site functionality, analytics, personalization, and performance.
+                <Link href="/legal/cookie-policy" className="underline hover:text-[#6F4E37] transition-colors inline-block mt-1">
+                  View our cookie recipe (policy)
+                </Link>
+              </p>
 
-          <div className="flex flex-col gap-3 mt-2">
-            <Button 
-              onClick={handleAcceptAll}
-              variant="default"
-              className="w-full font-semibold shadow-lg bg-[#8B5A2B] hover:bg-[#6F4E37] hover:scale-105 transition-all text-white"
-            >
-              Take a bite (Accept All)
-            </Button>
-            
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleAcceptEssential}
-                variant="outline"
-                className="flex-1 font-medium border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:scale-105 transition-all"
-              >
-                Just a small taste (Essential Only)
-              </Button>
-              <Button 
-                onClick={handleCustomize}
-                variant="ghost"
-                className="flex-1 underline underline-offset-4 text-[#8B5A2B] hover:text-[#6F4E37] hover:scale-105 transition-all"
-              >
-                Choose ingredients (Customize)
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  onClick={handleAcceptAll}
+                  variant="default"
+                  className="font-semibold shadow-md bg-[#8B5A2B] hover:bg-[#6F4E37] hover:scale-105 transition-all text-white"
+                >
+                  Take a bite (Accept All)
+                </Button>
+                
+                <Button 
+                  onClick={handleAcceptEssential}
+                  variant="outline"
+                  className="font-medium border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:scale-105 transition-all"
+                >
+                  Just essentials (Decline)
+                </Button>
+                
+                <Button 
+                  onClick={handleCustomize}
+                  variant="ghost"
+                  className="underline underline-offset-4 text-[#8B5A2B] hover:text-[#6F4E37] hover:scale-105 transition-all"
+                >
+                  Choose ingredients (Settings)
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -26,7 +26,7 @@ const cookieDropVariants = {
     transition: {
       duration: 0.5 + Math.random() * 0.5,
       delay: 0.1 * i,
-      type: "spring",
+      type: "spring" as const,
       stiffness: 200,
       damping: 15
     }
@@ -41,15 +41,15 @@ const floatingChipVariants = {
     opacity: 0,
   }),
   animate: (i: number) => ({
-    y: [0, -5, 0],
-    x: [0, Math.random() * 10 - 5, 0],
+    y: [0, -5, 0] as number[],
+    x: [0, Math.random() * 10 - 5, 0] as number[],
     opacity: 1,
-    rotate: [0, Math.random() * 10 - 5, 0],
+    rotate: [0, Math.random() * 10 - 5, 0] as number[],
     transition: {
       duration: 3,
-      ease: "easeInOut",
+      ease: "easeInOut" as const,
       repeat: Infinity,
-      repeatType: "mirror",
+      repeatType: "mirror" as const,
       delay: i * 0.2
     }
   })
