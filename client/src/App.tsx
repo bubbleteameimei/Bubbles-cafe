@@ -137,7 +137,7 @@ function App() {
                           <Route path="/report-bug" component={ReportBugPage} />
                           <Route path="/privacy" component={PrivacyPage} />
                           <Route path="/content-test" component={ContentTestPage} />
-                          <ProtectedRoute path="/bookmarks" component={BookmarksPage} />
+                          <Route path="/bookmarks" component={BookmarksPage} />
 
 
                           {/* Legal Routes */}

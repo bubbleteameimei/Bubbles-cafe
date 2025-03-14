@@ -179,8 +179,13 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         <button
           onClick={() => {
             toast({
-              title: 'Authentication required',
-              description: 'Please sign in to bookmark stories.',
+              title: 'Save for later reading',
+              description: 'Create a free account to bookmark stories and track your progress.',
+              action: (
+                <Link to="/auth">
+                  <ToastAction altText="Sign in">Sign in</ToastAction>
+                </Link>
+              ),
             });
           }}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
@@ -307,8 +312,13 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         className={className}
         onClick={() => {
           toast({
-            title: 'Authentication required',
-            description: 'Please sign in to bookmark stories.',
+            title: 'Sign in to bookmark',
+            description: 'Create a free account to save stories for later.',
+            action: (
+              <Link to="/auth">
+                <ToastAction altText="Sign in">Sign in</ToastAction>
+              </Link>
+            ),
           });
         }}
       >

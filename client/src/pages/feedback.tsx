@@ -334,35 +334,68 @@ export default function Feedback() {
         </div>
       ) : (
         <>
-          {Object.keys(validationErrors).length > 0 && (
-            <div className="bg-red-800/20 border border-red-500/50 rounded-md p-4 mb-6">
-              <h3 className="text-red-400 font-medium flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                Please fix the following errors:
-              </h3>
-              <ul className="mt-2 list-disc pl-5 text-sm text-red-400">
-                {Object.entries(validationErrors).map(([field, message]) => (
-                  <li key={field}>{message}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {formData.name.length >= 2 && 
-           formData.email.includes('@') && 
-           formData.email.includes('.') && 
-           formData.type && 
-           formData.content.length >= 10 && 
-           !Object.keys(validationErrors).length && (
-            <div className="bg-green-800/20 border border-green-500/50 rounded-md p-4 mb-6">
+          {/* Form Status Banner */}
+          <div className={`rounded-md p-4 mb-6 transition-all duration-300 ${
+            Object.keys(validationErrors).length > 0 
+              ? "bg-red-800/20 border border-red-500/50" 
+              : formData.name.length >= 2 && 
+                formData.email.includes('@') && 
+                formData.email.includes('.') && 
+                formData.type && 
+                formData.content.length >= 10
+                ? "bg-green-800/20 border border-green-500/50"
+                : "bg-blue-800/10 border border-blue-500/50"
+          }`}>
+            {Object.keys(validationErrors).length > 0 ? (
+              <>
+                <h3 className="text-red-400 font-medium flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  Please fix the following errors:
+                </h3>
+                <ul className="mt-2 list-disc pl-5 text-sm text-red-400">
+                  {Object.entries(validationErrors).map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
+                </ul>
+              </>
+            ) : formData.name.length >= 2 && 
+                formData.email.includes('@') && 
+                formData.email.includes('.') && 
+                formData.type && 
+                formData.content.length >= 10 ? (
               <p className="text-green-400 font-medium flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 Your form is ready to submit!
               </p>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-400 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <div>
+                  <p className="text-blue-400 font-medium">Form Completion Status:</p>
+                  <ul className="mt-1 text-sm text-blue-300 list-none">
+                    <li className={`flex items-center ${formData.name.length >= 2 ? "text-green-400" : ""}`}>
+                      {formData.name.length >= 2 ? "✓" : "○"} Name {formData.name.length >= 2 ? "completed" : "required"}
+                    </li>
+                    <li className={`flex items-center ${formData.email.includes('@') && formData.email.includes('.') ? "text-green-400" : ""}`}>
+                      {formData.email.includes('@') && formData.email.includes('.') ? "✓" : "○"} Email {formData.email.includes('@') && formData.email.includes('.') ? "completed" : "required"}
+                    </li>
+                    <li className={`flex items-center ${formData.type ? "text-green-400" : ""}`}>
+                      {formData.type ? "✓" : "○"} Feedback type {formData.type ? "selected" : "required"}
+                    </li>
+                    <li className={`flex items-center ${formData.content.length >= 10 ? "text-green-400" : ""}`}>
+                      {formData.content.length >= 10 ? "✓" : "○"} Feedback content {formData.content.length >= 10 ? "completed" : `(${formData.content.length}/10 characters minimum)`}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -434,30 +467,35 @@ export default function Feedback() {
                 >
                   <SelectTrigger 
                     id="type" 
-                    className={validationErrors.type 
-                      ? "border-red-500 pr-10" 
-                      : formData.type 
-                        ? "border-green-500 pr-10"
-                        : "pr-10"
-                    }
+                    className={`focus:ring-0 mb-1 ${
+                      validationErrors.type 
+                        ? "border-red-500 focus:border-red-500 outline-red-500 ring-0" 
+                        : formData.type 
+                          ? "border-green-500 focus:border-green-500 ring-0 outline-green-500" 
+                          : "focus:ring-1 focus:ring-primary"
+                    }`}
                   >
                     <SelectValue placeholder="Select type" />
+                    {formData.type && !validationErrors.type && (
+                      <span className="ml-2 text-green-500 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </span>
+                    )}
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[300px] overflow-y-auto w-full min-w-[200px]">
                     {feedbackTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
+                      <SelectItem 
+                        key={type.value} 
+                        value={type.value}
+                        className="cursor-pointer focus:bg-primary/10 focus:text-foreground hover:bg-primary/10"
+                      >
                         {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {formData.type && !validationErrors.type && (
-                  <span className="absolute right-10 top-2.5 text-green-500 z-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </span>
-                )}
               </div>
               {validationErrors.type && (
                 <p className="text-sm text-red-500 mt-1">{validationErrors.type}</p>
@@ -506,17 +544,27 @@ export default function Feedback() {
               <label className="block text-sm font-medium">How would you rate your experience?</label>
               <div className="relative">
                 <RadioGroup
-                  className={`flex space-x-4 ${validationErrors.rating ? "border border-red-500 p-2 rounded-md" : ""}`}
+                  className={`flex flex-wrap gap-2 sm:gap-4 justify-between sm:justify-start sm:space-x-4 ${
+                    validationErrors.rating 
+                      ? "border border-red-500 p-3 rounded-md" 
+                      : parseInt(formData.rating.toString()) > 0 
+                        ? "border border-green-500/40 p-3 rounded-md" 
+                        : "p-3"
+                  }`}
                   defaultValue="5"
                   value={formData.rating.toString()}
                   onValueChange={handleRatingChange}
                 >
                   {[1, 2, 3, 4, 5].map((num) => (
-                    <div key={num} className="flex items-center space-x-1">
-                      <RadioGroupItem value={num.toString()} id={`rating-${num}`} />
+                    <div key={num} className="flex items-center space-x-1 bg-background/50 p-1 rounded hover:bg-accent/30 transition-colors">
+                      <RadioGroupItem 
+                        value={num.toString()} 
+                        id={`rating-${num}`} 
+                        className="text-primary border-primary focus:ring-primary focus-visible:ring-primary"
+                      />
                       <Label 
                         htmlFor={`rating-${num}`}
-                        className={parseInt(formData.rating.toString()) === num ? "font-medium text-primary" : ""}
+                        className={`text-base ${parseInt(formData.rating.toString()) === num ? "font-medium text-primary" : ""}`}
                       >
                         {num}
                       </Label>
@@ -524,7 +572,7 @@ export default function Feedback() {
                   ))}
                 </RadioGroup>
                 {parseInt(formData.rating.toString()) > 0 && !validationErrors.rating && (
-                  <span className="absolute right-0 top-0 text-green-500">
+                  <span className="absolute right-3 top-3 text-green-500 bg-background/80 rounded-full p-0.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>

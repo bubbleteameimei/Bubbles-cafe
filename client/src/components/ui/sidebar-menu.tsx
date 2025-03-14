@@ -502,7 +502,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="default"
             size="sm"
-            className="w-full text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:opacity-90"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
             onClick={() => handleNavigation("/auth")}
           >
             Sign In

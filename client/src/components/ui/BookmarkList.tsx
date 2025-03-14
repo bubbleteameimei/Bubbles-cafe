@@ -142,14 +142,18 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Display a limited number of bookmarks if specified
   const displayedBookmarks = limit ? filteredBookmarks.slice(0, limit) : filteredBookmarks;
 
+  // Allow non-authenticated users to see the bookmarks UI
   if (!user) {
     return (
-      <div className="text-center p-6">
+      <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50">
         <Bookmark className="mx-auto h-12 w-12 opacity-20 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Sign in to see your bookmarks</h3>
-        <p className="text-sm text-muted-foreground">
-          Save your favorite stories to read later.
+        <h3 className="text-lg font-semibold mb-2">Discover your reading list</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Create a free account to bookmark stories and track your reading progress.
         </p>
+        <Link to="/auth">
+          <Button variant="default" size="sm">Sign in to get started</Button>
+        </Link>
       </div>
     );
   }

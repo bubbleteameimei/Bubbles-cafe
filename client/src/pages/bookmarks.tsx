@@ -17,25 +17,24 @@ export default function BookmarksPage() {
     );
   }
 
+  // Allow non-authenticated users to see the bookmark page
   if (!user) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-6">Bookmarks</h1>
-        <div className="bg-muted/30 rounded-lg p-10 text-center">
-          <Bookmark className="mx-auto h-16 w-16 opacity-20 mb-6" />
-          <h2 className="text-2xl font-semibold mb-3">Sign in to view your bookmarks</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Create an account or sign in to access your bookmarked stories and track your reading progress.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link to="/auth">
-              <Button>Sign In</Button>
-            </Link>
-            <Link to="/">
-              <Button variant="outline">Browse Stories</Button>
-            </Link>
-          </div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Bookmarks</h1>
+          <Link to="/">
+            <Button variant="outline" size="sm">Browse Stories</Button>
+          </Link>
         </div>
+        
+        <div className="mb-6">
+          <p className="text-muted-foreground">
+            Save your favorite stories to read later. Sign in to unlock personalized bookmarks with tags and notes.
+          </p>
+        </div>
+        
+        <BookmarkList className="mt-8" showFilter={false} />
       </div>
     );
   }
