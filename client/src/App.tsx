@@ -87,6 +87,7 @@ const AdminAnalyticsPage = withSuspense(React.lazy(() => import('./pages/admin/a
 const AdminUsersPage = withSuspense(React.lazy(() => import('./pages/admin/users')));
 const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/settings')));
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
+const AdminManagePostsPage = withSuspense(React.lazy(() => import('./pages/admin/manage-posts')));
 const AdminFeedbackPage = withSuspense(React.lazy(() => import('./pages/admin/feedback')));
 const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/bug-reports')));
 const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
@@ -171,6 +172,7 @@ function App() {
                           <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
                           <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
                           <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
+                          <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
                           <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
                           <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
                           <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
