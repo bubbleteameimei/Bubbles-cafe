@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CookieConsent } from '@/components/ui/cookie-consent-new';
+import { CookieConsent } from '@/components/ui/cookie-consent-backup';
 import { CookieConsentProvider, useCookieConsent } from '@/hooks/use-cookie-consent';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
