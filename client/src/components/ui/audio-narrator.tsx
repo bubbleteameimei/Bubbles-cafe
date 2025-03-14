@@ -127,13 +127,38 @@ export function AudioNarrator({
             
             if (emotionalTone === 'whisper') {
               // For whisper mode, prefer softer, feminine voices
-              preferredVoices = [
-                voices.find(voice => voice.name.includes('Whisper')),
-                voices.find(voice => voice.name.includes('Samantha')),
-                voices.find(voice => voice.name.includes('Google US English Female')),
-                voices.find(voice => voice.name.includes('Microsoft Zira')),
-                voices.find(voice => voice.name.includes('Karen'))
-              ].filter(Boolean);
+              // Log all available voices to help with debugging
+              console.log("Available voices for whisper mode:", voices.map(v => v.name));
+              
+              // Create a ranked list of preferred voices for whisper narration
+              const whisperyVoices = voices.filter(voice => 
+                voice.name.toLowerCase().includes('whisper') || 
+                voice.name.toLowerCase().includes('soft') || 
+                voice.name.toLowerCase().includes('quiet')
+              );
+              
+              const feminineVoices = voices.filter(voice => 
+                voice.name.includes('Samantha') || 
+                voice.name.includes('Karen') ||
+                voice.name.includes('Zira') ||
+                voice.name.includes('Female') ||
+                voice.name.includes('Moira') ||
+                voice.name.includes('Veena') ||
+                voice.name.includes('Tessa')
+              );
+              
+              // Combine both lists, prioritizing actual whisper voices
+              preferredVoices = [...whisperyVoices, ...feminineVoices];
+              
+              // If no specific voices found, fallback to these options
+              if (preferredVoices.length === 0) {
+                preferredVoices = [
+                  voices.find(voice => voice.name.includes('Samantha')),
+                  voices.find(voice => voice.name.includes('Google US English Female')),
+                  voices.find(voice => voice.name.includes('Microsoft Zira')),
+                  voices.find(voice => voice.name.includes('Karen'))
+                ].filter(Boolean);
+              }
             } else {
               // For other emotional tones, use appropriate voices
               preferredVoices = [
@@ -293,20 +318,33 @@ export function AudioNarrator({
       
       // Special processing for whisper mode
       if (emotionalTone === 'whisper') {
-        // For whisper mode, we add extra spaces between words and 
-        // create special text formatting to make it sound more like a whisper
+        // For whisper mode, we add several effects to create a more authentic whisper
+        
+        // First, apply text transformations to make it sound more like a whisper
         textToSpeak = content
-          // Add pauses between sentences
+          // Add pauses between sentences for dramatic effect
           .replace(/([.!?])\s+/g, '$1... ')
-          // Add extra spaces between words for slower pacing in whisper mode
-          .replace(/\s+/g, '  ')
-          // Add soft inhale sounds at commas and periods for breath effect
-          .replace(/,/g, ', *soft breath* ')
-          .replace(/\./g, '. *soft breath* ');
           
-        // Ensure volume is appropriately lower for whisper
+          // Insert special SSML whisper markers for browsers that support it
+          .replace(/\b(\w+)\b/g, '<prosody rate="slow" pitch="low" volume="soft">$1</prosody>')
+          
+          // Add extra spaces between words for slower pacing
+          .replace(/\s+/g, '   ')
+          
+          // Add breath sounds at punctuation for realistic effect
+          .replace(/,/g, ', <break time="0.3s"/> <prosody volume="x-soft">*inhale*</prosody> ')
+          .replace(/\./g, '. <break time="0.5s"/> <prosody volume="x-soft">*soft breath*</prosody> ')
+          
+          // Add occasional whispery emphasis to important words
+          .replace(/\b(fear|dark|death|blood|scream|hide|watch|listen|careful|behind|danger|hear|kill)\b/gi, 
+                   '<emphasis level="strong">$1</emphasis>');
+        
+        // Log the formatted text for debugging
+        console.log("Whisper text processing applied:", textToSpeak.substring(0, 100) + "...");
+        
+        // Ensure volume is appropriately lower for whisper effect
         if (utterance.volume > 0.4) {
-          utterance.volume = 0.4;
+          utterance.volume = 0.35; // Even lower volume for whisper
         }
       }
       
