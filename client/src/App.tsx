@@ -8,6 +8,7 @@ import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
+import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
@@ -106,99 +107,101 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <NotificationProvider>
-            <SidebarProvider defaultOpen={true}>
-              <div className="relative min-h-screen bg-background">
-                {/* Desktop Sidebar */}
-                <aside className="fixed top-0 left-0 z-40 h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden lg:block">
-                  <SidebarHeader />
-                  <Navigation />
-                </aside>
+          <CookieConsentProvider>
+            <NotificationProvider>
+              <SidebarProvider defaultOpen={true}>
+                <div className="relative min-h-screen bg-background">
+                  {/* Desktop Sidebar */}
+                  <aside className="fixed top-0 left-0 z-40 h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden lg:block">
+                    <SidebarHeader />
+                    <Navigation />
+                  </aside>
 
-                {/* Main Content */}
-                <main className="min-h-screen lg:ml-64">
-                  <AutoHideNavbar />
-                  <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
-                    <ErrorBoundary>
-                      <PageTransition mode="fade" duration={0.4}>
-                        <Switch>
-                          {/* Auth Routes */}
-                          <Route path="/auth" component={AuthPage} />
-                          <Route path="/signin" component={AuthPage} />
-                          <Route path="/login" component={AuthPage} />
-                          <Route path="/signup" component={AuthPage} />
+                  {/* Main Content */}
+                  <main className="min-h-screen lg:ml-64">
+                    <AutoHideNavbar />
+                    <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
+                      <ErrorBoundary>
+                        <PageTransition mode="fade" duration={0.4}>
+                          <Switch>
+                            {/* Auth Routes */}
+                            <Route path="/auth" component={AuthPage} />
+                            <Route path="/signin" component={AuthPage} />
+                            <Route path="/login" component={AuthPage} />
+                            <Route path="/signup" component={AuthPage} />
 
-                          {/* Public Routes */}
-                          <Route path="/" component={HomePage} />
-                          <Route path="/stories" component={StoriesPage} />
-                          <Route path="/reader/:slug?" component={ReaderPage} />
-                          <Route path="/about" component={AboutPage} />
-                          <Route path="/contact" component={ContactPage} />
-                          <Route path="/report-bug" component={ReportBugPage} />
-                          <Route path="/privacy" component={PrivacyPage} />
-                          <Route path="/content-test" component={ContentTestPage} />
-                          <Route path="/bookmarks" component={BookmarksPage} />
+                            {/* Public Routes */}
+                            <Route path="/" component={HomePage} />
+                            <Route path="/stories" component={StoriesPage} />
+                            <Route path="/reader/:slug?" component={ReaderPage} />
+                            <Route path="/about" component={AboutPage} />
+                            <Route path="/contact" component={ContactPage} />
+                            <Route path="/report-bug" component={ReportBugPage} />
+                            <Route path="/privacy" component={PrivacyPage} />
+                            <Route path="/content-test" component={ContentTestPage} />
+                            <Route path="/bookmarks" component={BookmarksPage} />
 
 
-                          {/* Legal Routes */}
-                          <Route path="/legal/copyright" component={CopyrightPage} />
-                          <Route path="/legal/terms" component={TermsPage} />
-                          <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+                            {/* Legal Routes */}
+                            <Route path="/legal/copyright" component={CopyrightPage} />
+                            <Route path="/legal/terms" component={TermsPage} />
+                            <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
 
-                          {/* Community Routes */}
-                          <Route path="/community" component={CommunityPage} />
-                          <Route path="/feedback" component={FeedbackPage} />
-                          <Route path="/support/guidelines" component={GuidelinesPage} />
+                            {/* Community Routes */}
+                            <Route path="/community" component={CommunityPage} />
+                            <Route path="/feedback" component={FeedbackPage} />
+                            <Route path="/support/guidelines" component={GuidelinesPage} />
 
-                          {/* Settings Routes */}
-                          <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-                          <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                          <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
-                          <Route path="/settings/fonts" component={FontSettingsPage} />
-                          <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                          <Route path="/settings/display" component={DisplaySettingsPage} />
-                          <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
-                          <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-                          <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
-                          <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
-                          <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
+                            {/* Settings Routes */}
+                            <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
+                            <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                            <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
+                            <Route path="/settings/fonts" component={FontSettingsPage} />
+                            <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                            <Route path="/settings/display" component={DisplaySettingsPage} />
+                            <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
+                            <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
+                            <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+                            <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
+                            <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
 
-                          {/* Admin Routes */}
-                          <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
-                          <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
-                          <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
-                          <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
-                          <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
-                          <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
-                          <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
+                            {/* Admin Routes */}
+                            <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                            <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
+                            <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
+                            <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
+                            <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
+                            <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
 
-                          {/* 404 Route */}
-                          <Route>
-                            {() => (
-                              <div className="flex min-h-[60vh] items-center justify-center">
-                                <h1 className="text-2xl">404 - Page Not Found</h1>
-                              </div>
-                            )}
-                          </Route>
-                        </Switch>
-                      </PageTransition>
-                    </ErrorBoundary>
-                  </div>
-                  <Footer />
-                </main>
+                            {/* 404 Route */}
+                            <Route>
+                              {() => (
+                                <div className="flex min-h-[60vh] items-center justify-center">
+                                  <h1 className="text-2xl">404 - Page Not Found</h1>
+                                </div>
+                              )}
+                            </Route>
+                          </Switch>
+                        </PageTransition>
+                      </ErrorBoundary>
+                    </div>
+                    <Footer />
+                  </main>
 
-                {/* Global UI Elements */}
-                <Toaster />
-                <CookieConsent />
-                <ScrollToTopButton />
-              </div>
-            </SidebarProvider>
-          </NotificationProvider>
+                  {/* Global UI Elements */}
+                  <Toaster />
+                  <CookieConsent />
+                  <ScrollToTopButton />
+                </div>
+              </SidebarProvider>
+            </NotificationProvider>
+          </CookieConsentProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
