@@ -6,9 +6,9 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-  DialogClose
+  DialogTitle
 } from '@/components/ui/dialog';
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -278,7 +278,7 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
             </div>
           </div>
           
-          <DialogClose asChild>
+          <DialogPrimitive.Close asChild>
             <Button 
               type="button" 
               variant="ghost" 
@@ -287,7 +287,7 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
             >
               <X className="h-4 w-4" />
             </Button>
-          </DialogClose>
+          </DialogPrimitive.Close>
         </DialogContent>
       </Dialog>
     </>

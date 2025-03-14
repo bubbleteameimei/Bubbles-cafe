@@ -80,9 +80,13 @@ export function ShareButton({ title, text, url = window.location.href, className
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Share This Story</DialogTitle>
-          <DialogDescription>
+        <DialogContent 
+          className="sm:max-w-md"
+          aria-labelledby="share-dialog-title"
+          aria-describedby="share-dialog-description"
+        >
+          <DialogTitle id="share-dialog-title">Share This Story</DialogTitle>
+          <DialogDescription id="share-dialog-description">
             Share this story with friends via copy/paste or social media
           </DialogDescription>
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
