@@ -74,9 +74,17 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       const hasChoice = hasConsentChoice();
       console.log('Cookie consent choice detected:', hasChoice);
       
-      // For development/testing, always show the banner
-      // In production, only show if no choice has been made
-      setShowConsentBanner(true); // Always show for now
+      // Only force the banner on the test page
+      const isTestPage = window.location.pathname === '/cookie-test';
+      if (isTestPage) {
+        localStorage.removeItem('cookieConsent');
+        localStorage.removeItem('cookie-preferences');
+        setShowConsentBanner(true);
+        console.log('Forced cookie consent banner to show for testing page');
+      } else {
+        // Normal behavior for other pages - show banner if no choice made
+        setShowConsentBanner(!hasChoice);
+      }
       
       // Initialize preferences from localStorage
       setCookiePreferences(getCookiePreferences());

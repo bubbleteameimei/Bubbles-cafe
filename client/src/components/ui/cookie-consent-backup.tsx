@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { CookieCategory } from '@/lib/cookie-manager';
 
 // Cookie animation variants
 const cookieDropVariants = {
@@ -72,12 +67,10 @@ const MiniCookie = ({ index }: { index: number }) => {
 export function CookieConsent() {
   const { 
     showConsentBanner, 
-    cookiePreferences,
     acceptAll, 
     acceptEssentialOnly,
-    updatePreferences,
-    isPreferencesModalOpen,
     openPreferencesModal,
+    isPreferencesModalOpen,
     closePreferencesModal
   } = useCookieConsent();
   
@@ -236,187 +229,120 @@ export function CookieConsent() {
           </div>
 
           <div className="flex flex-col gap-3 mt-2">
-            <Button 
+            <button 
               onClick={handleAcceptAll}
-              variant="default"
-              className="w-full font-semibold shadow-lg bg-[#8B5A2B] hover:bg-[#6F4E37] hover:scale-105 transition-all text-white"
+              className="w-full py-2.5 font-semibold shadow-lg bg-[#8B5A2B] hover:bg-[#6F4E37] hover:scale-105 transition-all text-white rounded-lg"
             >
               Take a bite (Accept All)
-            </Button>
+            </button>
             
             <div className="flex gap-2">
-              <Button 
+              <button 
                 onClick={handleAcceptEssential}
-                variant="outline"
-                className="flex-1 font-medium border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:scale-105 transition-all"
+                className="flex-1 py-2 font-medium border border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:scale-105 transition-all rounded-lg"
               >
                 Just a small taste (Essential Only)
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={handleCustomize}
-                variant="ghost"
                 className="flex-1 underline underline-offset-4 text-[#8B5A2B] hover:text-[#6F4E37] hover:scale-105 transition-all"
               >
                 Choose ingredients (Customize)
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       </motion.div>
-
-      <CookiePreferencesModal 
-        open={isPreferencesModalOpen} 
-        onOpenChange={closePreferencesModal}
-      />
+      
+      {isPreferencesModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] rounded-xl shadow-xl border-2 border-[#C4A484] p-6 max-w-lg w-full mx-4 animate-in fade-in slide-in-from-bottom-4">
+            <div className="absolute top-2 right-3 opacity-60">
+              <svg className="w-[40px] h-[40px]" viewBox="0 0 122.88 122.25">
+                <path 
+                  d="M101.77,49.38c2.09,3.1,4.37,5.11,6.86,5.78c2.45,0.66,5.32,0.06,8.7-2.01c1.36-0.84,3.14-0.41,3.97,0.95c0.28,0.46,0.42,0.96,0.43,1.47c0.13,1.4,0.21,2.82,0.24,4.26c0.03,1.46,0.02,2.91-0.05,4.35h0v0c0,0.13-0.01,0.26-0.03,0.38c-0.91,16.72-8.47,31.51-20,41.93c-11.55,10.44-27.06,16.49-43.82,15.69v0.01h0c-0.13,0-0.26-0.01-0.38-0.03c-16.72-0.91-31.51-8.47-41.93-20C5.31,90.61-0.73,75.1,0.07,58.34H0.07v0c0-0.13,0.01-0.26,0.03-0.38C1,41.22,8.81,26.35,20.57,15.87C32.34,5.37,48.09-0.73,64.85,0.07V0.07h0c1.6,0,2.89,1.29,2.89,2.89c0,0.4-0.08,0.78-0.23,1.12c-1.17,3.81-1.25,7.34-0.27,10.14c0.89,2.54,2.7,4.51,5.41,5.52c1.44,0.54,2.2,2.1,1.74,3.55l0.01,0c-1.83,5.89-1.87,11.08-0.52,15.26c0.82,2.53,2.14,4.69,3.88,6.4c1.74,1.72,3.9,3,6.39,3.78c4.04,1.26,8.94,1.18,14.31-0.55C99.73,47.78,101.08,48.3,101.77,49.38L101.77,49.38z" 
+                  className="fill-[#D2A76C]" 
+                />
+                <circle cx="45" cy="25" r="5" className="fill-[#6F4E37]" />
+                <circle cx="92" cy="42" r="4" className="fill-[#6F4E37]" />
+                <circle cx="35" cy="68" r="6" className="fill-[#6F4E37]" />
+              </svg>
+            </div>
+            
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-[#6F4E37]">Cookie Recipe Builder</h2>
+              <p className="text-[#8B5A2B]">
+                Choose your cookie ingredients! Essential ingredients cannot be removed as they're needed for the basic cookie recipe to work.
+              </p>
+            </div>
+            
+            <div className="py-4 space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#F5F5DC]/50 border border-[#D2A76C]/30">
+                <div className="space-y-0.5">
+                  <label className="text-base font-semibold text-[#6F4E37]">Essential Ingredients</label>
+                  <p className="text-sm text-[#8B5A2B]">The base of our cookie recipe - can't make cookies without these!</p>
+                </div>
+                <input type="checkbox" checked disabled className="rounded-full bg-[#8B5A2B]" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
+                <div className="space-y-0.5">
+                  <label className="text-base font-semibold text-[#6F4E37]">Chocolate Chips (Functional)</label>
+                  <p className="text-sm text-[#8B5A2B]">Makes your cookie experience richer and more flavorful</p>
+                </div>
+                <input type="checkbox" className="rounded-full" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
+                <div className="space-y-0.5">
+                  <label className="text-base font-semibold text-[#6F4E37]">Sprinkles (Analytics)</label>
+                  <p className="text-sm text-[#8B5A2B]">Helps us see which cookies are most popular with visitors</p>
+                </div>
+                <input type="checkbox" className="rounded-full" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
+                <div className="space-y-0.5">
+                  <label className="text-base font-semibold text-[#6F4E37]">Extra Butter (Performance)</label>
+                  <p className="text-sm text-[#8B5A2B]">Makes everything run smoother with the perfect texture</p>
+                </div>
+                <input type="checkbox" className="rounded-full" />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
+                <div className="space-y-0.5">
+                  <label className="text-base font-semibold text-[#6F4E37]">Special Flavors (Marketing)</label>
+                  <p className="text-sm text-[#8B5A2B]">Adds special flavors to make your cookie experience personalized</p>
+                </div>
+                <input type="checkbox" className="rounded-full" />
+              </div>
+            </div>
+            
+            <div className="flex justify-between flex-wrap gap-2 pt-2 border-t border-[#D2A76C]/30">
+              <div className="flex gap-2 flex-wrap">
+                <button 
+                  onClick={handleAcceptEssential}
+                  className="px-4 py-2 border border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:text-[#6F4E37] rounded-lg"
+                >
+                  Basic Recipe
+                </button>
+                <button 
+                  onClick={handleAcceptAll}
+                  className="px-4 py-2 border border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:text-[#6F4E37] rounded-lg"
+                >
+                  Deluxe Recipe
+                </button>
+              </div>
+              <button 
+                onClick={() => closePreferencesModal()}
+                className="px-4 py-2 bg-[#8B5A2B] hover:bg-[#6F4E37] text-white rounded-lg"
+              >
+                Bake My Cookies
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
-  );
-}
-
-interface CookiePreferencesModalProps {
-  open: boolean;
-  onOpenChange: () => void;
-}
-
-function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalProps) {
-  const { 
-    cookiePreferences, 
-    acceptAll, 
-    acceptEssentialOnly,
-    updatePreferences
-  } = useCookieConsent();
-
-  // Local state to track changes before saving
-  const [localPreferences, setLocalPreferences] = useState(cookiePreferences);
-
-  // Reset local preferences when modal opens
-  React.useEffect(() => {
-    if (open) {
-      setLocalPreferences(cookiePreferences);
-    }
-  }, [open, cookiePreferences]);
-
-  const handleToggleCategory = (category: CookieCategory) => {
-    // Don't allow essential to be toggled
-    if (category === 'essential') return;
-    
-    setLocalPreferences(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
-
-  const handleSave = () => {
-    // Update preferences excluding 'lastUpdated' which is handled by the manager
-    const { lastUpdated, ...prefsToUpdate } = localPreferences;
-    updatePreferences(prefsToUpdate);
-    onOpenChange();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] border-2 border-[#C4A484] p-6">
-        <div className="absolute top-2 right-3 opacity-60">
-          <svg className="w-[40px] h-[40px]" viewBox="0 0 122.88 122.25">
-            <path 
-              d="M101.77,49.38c2.09,3.1,4.37,5.11,6.86,5.78c2.45,0.66,5.32,0.06,8.7-2.01c1.36-0.84,3.14-0.41,3.97,0.95c0.28,0.46,0.42,0.96,0.43,1.47c0.13,1.4,0.21,2.82,0.24,4.26c0.03,1.46,0.02,2.91-0.05,4.35h0v0c0,0.13-0.01,0.26-0.03,0.38c-0.91,16.72-8.47,31.51-20,41.93c-11.55,10.44-27.06,16.49-43.82,15.69v0.01h0c-0.13,0-0.26-0.01-0.38-0.03c-16.72-0.91-31.51-8.47-41.93-20C5.31,90.61-0.73,75.1,0.07,58.34H0.07v0c0-0.13,0.01-0.26,0.03-0.38C1,41.22,8.81,26.35,20.57,15.87C32.34,5.37,48.09-0.73,64.85,0.07V0.07h0c1.6,0,2.89,1.29,2.89,2.89c0,0.4-0.08,0.78-0.23,1.12c-1.17,3.81-1.25,7.34-0.27,10.14c0.89,2.54,2.7,4.51,5.41,5.52c1.44,0.54,2.2,2.1,1.74,3.55l0.01,0c-1.83,5.89-1.87,11.08-0.52,15.26c0.82,2.53,2.14,4.69,3.88,6.4c1.74,1.72,3.9,3,6.39,3.78c4.04,1.26,8.94,1.18,14.31-0.55C99.73,47.78,101.08,48.3,101.77,49.38L101.77,49.38z" 
-              className="fill-[#D2A76C]" 
-            />
-            <circle cx="45" cy="25" r="5" className="fill-[#6F4E37]" />
-            <circle cx="92" cy="42" r="4" className="fill-[#6F4E37]" />
-            <circle cx="35" cy="68" r="6" className="fill-[#6F4E37]" />
-          </svg>
-        </div>
-        
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-[#6F4E37]">Cookie Recipe Builder</DialogTitle>
-          <DialogDescription className="text-[#8B5A2B]">
-            Choose your cookie ingredients! Essential ingredients cannot be removed as they're needed for the basic cookie recipe to work.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="py-4 space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#F5F5DC]/50 border border-[#D2A76C]/30">
-            <div className="space-y-0.5">
-              <Label className="text-base font-semibold text-[#6F4E37]">Essential Ingredients</Label>
-              <p className="text-sm text-[#8B5A2B]">The base of our cookie recipe - can't make cookies without these!</p>
-            </div>
-            <Switch checked={true} disabled className="data-[state=checked]:bg-[#8B5A2B]" />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
-            <div className="space-y-0.5">
-              <Label className="text-base font-semibold text-[#6F4E37]">Chocolate Chips (Functional)</Label>
-              <p className="text-sm text-[#8B5A2B]">Makes your cookie experience richer and more flavorful</p>
-            </div>
-            <Switch 
-              checked={localPreferences.functional} 
-              onCheckedChange={() => handleToggleCategory('functional')} 
-              className="data-[state=checked]:bg-[#8B5A2B]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
-            <div className="space-y-0.5">
-              <Label className="text-base font-semibold text-[#6F4E37]">Sprinkles (Analytics)</Label>
-              <p className="text-sm text-[#8B5A2B]">Helps us see which cookies are most popular with visitors</p>
-            </div>
-            <Switch 
-              checked={localPreferences.analytics} 
-              onCheckedChange={() => handleToggleCategory('analytics')} 
-              className="data-[state=checked]:bg-[#8B5A2B]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
-            <div className="space-y-0.5">
-              <Label className="text-base font-semibold text-[#6F4E37]">Extra Butter (Performance)</Label>
-              <p className="text-sm text-[#8B5A2B]">Makes everything run smoother with the perfect texture</p>
-            </div>
-            <Switch 
-              checked={localPreferences.performance} 
-              onCheckedChange={() => handleToggleCategory('performance')} 
-              className="data-[state=checked]:bg-[#8B5A2B]"
-            />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
-            <div className="space-y-0.5">
-              <Label className="text-base font-semibold text-[#6F4E37]">Special Flavors (Marketing)</Label>
-              <p className="text-sm text-[#8B5A2B]">Adds special flavors to make your cookie experience personalized</p>
-            </div>
-            <Switch 
-              checked={localPreferences.marketing} 
-              onCheckedChange={() => handleToggleCategory('marketing')} 
-              className="data-[state=checked]:bg-[#8B5A2B]"
-            />
-          </div>
-        </div>
-        
-        <DialogFooter className="flex justify-between flex-wrap gap-2 pt-2 border-t border-[#D2A76C]/30">
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              onClick={acceptEssentialOnly}
-              className="border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:text-[#6F4E37]"
-            >
-              Basic Recipe
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={acceptAll}
-              className="border-[#8B5A2B] text-[#8B5A2B] hover:bg-[#F5F5DC] hover:text-[#6F4E37]"
-            >
-              Deluxe Recipe
-            </Button>
-          </div>
-          <Button 
-            onClick={handleSave}
-            className="bg-[#8B5A2B] hover:bg-[#6F4E37] text-white"
-          >
-            Bake My Cookies
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

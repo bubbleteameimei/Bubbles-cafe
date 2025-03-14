@@ -7,7 +7,7 @@ import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './hooks/use-auth';
-import { CookieConsent } from './components/ui/cookie-consent';
+import { CookieConsent } from './components/ui/cookie-consent-backup';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
@@ -93,6 +93,7 @@ const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/
 const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
 const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
 const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
+const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
 
 function App() {
   usePerformanceMonitoring();
@@ -140,7 +141,7 @@ function App() {
                             <Route path="/privacy" component={PrivacyPage} />
                             <Route path="/content-test" component={ContentTestPage} />
                             <Route path="/bookmarks" component={BookmarksPage} />
-
+                            <Route path="/cookie-test" component={CookieTestPage} />
 
                             {/* Legal Routes */}
                             <Route path="/legal/copyright" component={CopyrightPage} />
