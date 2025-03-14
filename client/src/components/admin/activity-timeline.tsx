@@ -65,6 +65,33 @@ const formatDateHeader = (dateString: string) => {
   }
 };
 
+// Format details to make them more readable
+const formatActivityDetails = (details?: string): React.ReactNode => {
+  if (!details) return null;
+  
+  try {
+    // Check if it's a JSON string and parse if needed
+    const detailsObj = typeof details === 'string' ? JSON.parse(details) : details;
+    
+    if (typeof detailsObj === 'object') {
+      return (
+        <div className="space-y-1 mt-1">
+          {Object.entries(detailsObj).map(([key, value]) => (
+            <div key={key} className="text-xs">
+              <span className="font-medium">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {' '}
+              <span className="text-muted-foreground">{String(value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  } catch (e) {
+    // Not JSON, just return as string
+  }
+  
+  return details;
+};
+
 interface ActivityTimelineProps {
   activities: ActivityLog[];
   className?: string;
@@ -102,10 +129,15 @@ export const ActivityTimeline = ({
             {activity.action}
           </>
         ),
-        description: activity.details,
+        description: formatActivityDetails(activity.details),
         user: activity.performedBy ? {
           name: activity.performedBy,
-          // We could add avatar here if available
+          // Add a default initial based on the name
+          initials: activity.performedBy.split(' ')
+            .map(part => part[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2)
         } : undefined,
         date: formatDistanceToNow(parseISO(activity.timestamp), { addSuffix: true })
       }))

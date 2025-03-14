@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportedContent } from "@shared/schema";
+import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -30,7 +31,9 @@ import {
   Clock,
   FileText,
   Loader2,
-  User
+  User,
+  Activity,
+  History
 } from "lucide-react";
 
 // Extended interface to include additional properties needed for the UI
@@ -267,6 +270,16 @@ export default function ContentModerationPage() {
       return response.json();
     }
   });
+  
+  const { data: activityLogs, isLoading: activityLoading } = useQuery({
+    queryKey: ['/api/admin/activity'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/activity');
+      if (!response.ok) throw new Error('Failed to fetch activity data');
+      return response.json();
+    },
+    enabled: activeTab === 'activity', // Only fetch when activity tab is active
+  });
 
   const updateContentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -476,12 +489,44 @@ export default function ContentModerationPage() {
                 </TabsTrigger>
                 <TabsTrigger value="approved">Approved</TabsTrigger>
                 <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                <TabsTrigger value="activity">
+                  <History className="mr-1.5 h-3.5 w-3.5" />
+                  Activity History
+                </TabsTrigger>
               </TabsList>
             </div>
 
             {/* Tabs Content */}
             <TabsContent value={activeTab} className="mt-6">
-              {filteredContent && filteredContent.length > 0 ? (
+              {activeTab === 'activity' ? (
+                activityLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !activityLogs || activityLogs.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/20 rounded-lg border border-border">
+                    <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
+                    <p className="text-muted-foreground">No moderation activity found</p>
+                  </div>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Moderation Activity History</CardTitle>
+                      <CardDescription>
+                        Timeline of recent moderation actions and system activities
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[500px] pr-4">
+                        <ActivityTimeline 
+                          activities={activityLogs} 
+                          initialCollapsed={false}
+                        />
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )
+              ) : filteredContent && filteredContent.length > 0 ? (
                 <ScrollArea className="h-[500px] pr-4">
                   <div className="space-y-4">
                     {filteredContent.map((content) => {
@@ -654,7 +699,9 @@ export default function ContentModerationPage() {
         </CardContent>
         <CardFooter className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            {filteredContent?.length || 0} items found
+            {activeTab === 'activity' 
+              ? `${activityLogs?.length || 0} activity entries found`
+              : `${filteredContent?.length || 0} items found`}
           </p>
           <div className="flex items-center">
             {updateContentStatus.isPending && (

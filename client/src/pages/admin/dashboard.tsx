@@ -526,44 +526,38 @@ export default function AdminDashboard() {
               <CardDescription>Latest actions in the system</CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px] pr-4">
-                <div className="space-y-8">
-                  {activityLoading ? (
-                    Array(5).fill(0).map((_, i) => (
-                      <div key={i} className="flex gap-4">
-                        <Skeleton className="h-12 w-12 rounded-full" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-[250px]" />
-                          <Skeleton className="h-4 w-[150px]" />
-                        </div>
+              {activityLoading ? (
+                <div className="space-y-4">
+                  {Array(5).fill(0).map((_, i) => (
+                    <div key={i} className="flex gap-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-[250px]" />
+                        <Skeleton className="h-4 w-[150px]" />
                       </div>
-                    ))
-                  ) : (
-                    data?.recentActivity?.map((activity: any, index: number) => (
-                      <div key={index} className="relative pl-6 pb-6 last:pb-0">
-                        {/* Timeline line */}
-                        {index !== data.recentActivity.length - 1 && (
-                          <div className="absolute left-2 top-2 h-full w-[1px] bg-border"></div>
-                        )}
-                        
-                        {/* Timeline dot */}
-                        <div className="absolute left-0 top-2 h-4 w-4 rounded-full border border-primary bg-background"></div>
-                        
-                        <div>
-                          <p className="text-sm font-medium">{activity.action}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            By {activity.performedBy} • {new Date(activity.timestamp).toLocaleString()}
-                          </p>
-                          {activity.details && (
-                            <p className="text-xs mt-1 bg-muted p-2 rounded-md">{activity.details}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
+                    </div>
+                  ))}
                 </div>
-              </ScrollArea>
+              ) : activityLogs?.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
+                  No activity logs found
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px] pr-4">
+                  <div className="px-1">
+                    <ActivityTimeline 
+                      activities={activityLogs} 
+                      initialCollapsed={false}
+                    />
+                  </div>
+                </ScrollArea>
+              )}
             </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full">
+                View All Activity
+              </Button>
+            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
