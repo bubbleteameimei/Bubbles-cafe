@@ -1,9 +1,10 @@
 import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
-  Bug, Scroll, Shield, Monitor, ScrollText, Bell, Lock, Building,
+  Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
-  User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon
+  User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
+  LineChart
 } from "lucide-react"
 
 

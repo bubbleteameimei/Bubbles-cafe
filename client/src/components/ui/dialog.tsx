@@ -61,66 +61,23 @@ const DialogContent = React.forwardRef<
   // Generate a unique ID for accessibility if one isn't provided
   const [dialogId] = React.useState(() => props.id || `dialog-${Math.random().toString(36).substring(2, 9)}`);
   
-  // Flag to detect if a DialogTitle is provided as a direct child
-  let hasDialogTitle = false;
-  let hasDialogDescription = false;
-  let modifiedChildren = children;
-  
-  // Check if children is a React element or an array of React elements
-  if (React.Children.count(children) > 0) {
-    // Iterate through children to check for DialogTitle and DialogDescription
-    React.Children.forEach(children, (child) => {
-      if (React.isValidElement(child)) {
-        if (child.type === DialogTitle) {
-          hasDialogTitle = true;
-        }
-        if (child.type === DialogDescription) {
-          hasDialogDescription = true;
-        }
-      }
-    });
-    
-    // Add missing accessibility components
-    if (!hasDialogTitle || !hasDialogDescription) {
-      const elements = [];
+  // Always include the accessibility elements at the beginning of children
+  const accessibleChildren = (
+    <>
+      {/* Hidden title for screen readers - required for accessibility */}
+      <DialogTitle className="sr-only" id={`${dialogId}-title`}>
+        Dialog Content
+      </DialogTitle>
       
-      if (!hasDialogTitle) {
-        elements.push(
-          <DialogTitle key="auto-title" className="sr-only" id={`${dialogId}-title`}>
-            Dialog Content
-          </DialogTitle>
-        );
-      }
+      {/* Hidden description for screen readers - required for accessibility */}
+      <DialogDescription className="sr-only" id={`${dialogId}-description`}>
+        This dialog contains interactive content.
+      </DialogDescription>
       
-      if (!hasDialogDescription) {
-        elements.push(
-          <DialogDescription key="auto-desc" className="sr-only" id={`${dialogId}-description`}>
-            This dialog contains interactive content.
-          </DialogDescription>
-        );
-      }
-      
-      modifiedChildren = (
-        <>
-          {elements}
-          {children}
-        </>
-      );
-    }
-  } else {
-    // If no children or empty array, add visually hidden accessibility elements
-    modifiedChildren = (
-      <>
-        <DialogTitle className="sr-only" id={`${dialogId}-title`}>
-          Dialog Content
-        </DialogTitle>
-        <DialogDescription className="sr-only" id={`${dialogId}-description`}>
-          This dialog contains interactive content.
-        </DialogDescription>
-        {children}
-      </>
-    );
-  }
+      {/* Original children content */}
+      {children}
+    </>
+  );
   
   return (
     <DialogPortal>
@@ -128,14 +85,14 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full",
           className
         )}
         aria-labelledby={props["aria-labelledby"] || `${dialogId}-title`}
         aria-describedby={props["aria-describedby"] || `${dialogId}-description`}
         {...props}
       >
-        {modifiedChildren}
+        {accessibleChildren}
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>

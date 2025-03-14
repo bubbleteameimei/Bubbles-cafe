@@ -54,7 +54,7 @@ const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
-const TestDialogPage = withSuspense(React.lazy(() => import('./components/test-dialog')));
+
 
 
 // Legal Pages
@@ -89,6 +89,9 @@ const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/se
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
 const AdminFeedbackPage = withSuspense(React.lazy(() => import('./pages/admin/feedback')));
 const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/bug-reports')));
+const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
+const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
+const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
 
 function App() {
   usePerformanceMonitoring();
@@ -134,7 +137,6 @@ function App() {
                           <Route path="/report-bug" component={ReportBugPage} />
                           <Route path="/privacy" component={PrivacyPage} />
                           <Route path="/content-test" component={ContentTestPage} />
-                          <Route path="/test-dialog" component={TestDialogPage} />
                           <ProtectedRoute path="/bookmarks" component={BookmarksPage} />
 
 
@@ -164,12 +166,16 @@ function App() {
 
                           {/* Admin Routes */}
                           <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                          <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
                           <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
                           <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
+                          <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
                           <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
                           <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
                           <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
                           <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
+                          <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
+                          <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
 
                           {/* 404 Route */}
                           <Route>

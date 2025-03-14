@@ -636,44 +636,46 @@ export default function BugReportsPage() {
       </div>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="mb-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full">
-          <TabsTrigger value="all">
-            All
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.total}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="new">
-            New
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.new}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="in-progress">
-            In Progress
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.inProgress}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="resolved">
-            Resolved
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.resolved}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="wont-fix">
-            Won't Fix
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.wontFix}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="duplicate">
-            Duplicate
-            <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
-              {reportStats.duplicate}
-            </span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-2">
+          <TabsList className="inline-flex w-auto">
+            <TabsTrigger value="all">
+              All
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.total}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="new">
+              New
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.new}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="in-progress">
+              In Progress
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.inProgress}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="resolved">
+              Resolved
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.resolved}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="wont-fix">
+              Won't Fix
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.wontFix}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="duplicate">
+              Duplicate
+              <span className="ml-1.5 size-5 inline-flex items-center justify-center rounded-full bg-muted text-xs">
+                {reportStats.duplicate}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value={activeTab} className="mt-6">
           {filteredReports.length === 0 ? (

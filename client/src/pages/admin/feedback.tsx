@@ -140,8 +140,8 @@ function FeedbackTimelineItem({
   };
 
   return (
-    <div className="flex gap-x-3">
-      <div className="relative last:after:hidden after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700">
+    <div className="flex gap-x-3 max-w-full overflow-hidden">
+      <div className="relative last:after:hidden after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700 flex-shrink-0">
         <div className="relative z-10 size-7 flex justify-center items-center">
           <span className={`size-7 flex justify-center items-center rounded-full ${
             status === 'pending' ? 'bg-yellow-500/10' :
@@ -154,10 +154,10 @@ function FeedbackTimelineItem({
         </div>
       </div>
       
-      <div className="grow pt-0.5 pb-8">
+      <div className="grow pt-0.5 pb-8 min-w-0">
         <Card className="w-full">
           <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
               <div>
                 <CardTitle className="text-lg flex items-center">
                   {getTypeIcon(feedback.type)}
@@ -168,7 +168,7 @@ function FeedbackTimelineItem({
                   {format(new Date(feedback.createdAt), 'h:mm a')}
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <TypeBadge type={feedback.type} />
                 <StatusBadge status={status} />
               </div>
@@ -382,7 +382,7 @@ function FeedbackDetailCard({
   return (
     <Card className="mb-6">
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
           <div>
             <CardTitle className="text-xl">Feedback #{feedback.id}</CardTitle>
             <CardDescription>
@@ -390,7 +390,9 @@ function FeedbackDetailCard({
               {new Date(feedback.createdAt).toLocaleTimeString()}
             </CardDescription>
           </div>
-          <TypeBadge type={feedback.type} />
+          <div className="self-start">
+            <TypeBadge type={feedback.type} />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -470,10 +472,10 @@ function FeedbackDetailCard({
           {/* Status management */}
           <div>
             <h3 className="text-lg font-medium mb-2">Status</h3>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <StatusBadge status={status} />
               <Select value={status} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Change status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -719,17 +721,19 @@ export default function AdminFeedback() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 px-4 sm:px-6">
       <h1 className="text-3xl font-bold mb-6">Feedback Management</h1>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Feedback</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-2">
+          <TabsList className="mb-4 w-auto inline-flex">
+            <TabsTrigger value="all">All Feedback</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value={activeTab}>
           {filteredFeedback.length === 0 ? (

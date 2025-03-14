@@ -1,141 +1,206 @@
-import React from 'react';
-import { FileText, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp, FileText, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export interface TimelineItem {
-  id: string;
-  date: string;
-  title: string;
-  description?: string;
+export interface TimelineItemProps {
+  id: string | number;
+  date?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
   icon?: React.ReactNode;
   user?: {
     name: string;
     avatar?: string;
+    initials?: string;
   };
-  isLastItem?: boolean;
+  isLast?: boolean;
 }
 
-export interface TimelineGroup {
+export interface TimelineGroupProps {
   date: string;
-  items: TimelineItem[];
+  items: TimelineItemProps[];
 }
 
 export interface TimelineProps {
-  groups: TimelineGroup[];
+  groups: TimelineGroupProps[];
   className?: string;
+  showOlderText?: string;
+  initialCollapsed?: boolean;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ groups, className = '' }) => {
+const TimelineItem = ({
+  title,
+  description,
+  icon,
+  user,
+  isLast = false
+}: TimelineItemProps) => {
   return (
-    <div className={`timeline ${className}`}>
-      {groups.map((group, groupIndex) => (
-        <React.Fragment key={`group-${groupIndex}`}>
-          {/* Heading */}
-          <div className="ps-2 my-2 first:mt-0">
-            <h3 className="text-xs font-medium uppercase text-gray-500 dark:text-neutral-400">
-              {group.date}
-            </h3>
-          </div>
-          {/* End Heading */}
+    <div className="flex gap-x-3">
+      {/* Icon */}
+      <div className={cn(
+        "relative after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700",
+        isLast && "after:hidden"
+      )}>
+        <div className="relative z-10 size-7 flex justify-center items-center">
+          {icon || <div className="size-2 rounded-full bg-gray-400 dark:bg-neutral-600"></div>}
+        </div>
+      </div>
+      {/* End Icon */}
 
-          {/* Timeline Items */}
-          {group.items.map((item, itemIndex) => (
-            <div key={item.id || `item-${groupIndex}-${itemIndex}`} className="flex gap-x-3">
-              {/* Icon */}
-              <div className="relative last:after:hidden after:absolute after:top-7 after:bottom-0 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-gray-200 dark:after:bg-neutral-700">
-                <div className="relative z-10 size-7 flex justify-center items-center">
-                  <div className="size-2 rounded-full bg-gray-400 dark:bg-neutral-600"></div>
-                </div>
-              </div>
-              {/* End Icon */}
-
-              {/* Right Content */}
-              <div className={`grow pt-0.5 ${item.isLastItem ? 'pb-0' : 'pb-8'}`}>
-                <h3 className="flex gap-x-1.5 font-semibold text-gray-800 dark:text-white">
-                  {item.icon || (
-                    <FileText className="shrink-0 size-4 mt-1" />
-                  )}
-                  {item.title}
-                </h3>
-                {item.description && (
-                  <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">
-                    {item.description}
-                  </p>
-                )}
-                {item.user && (
-                  <button 
-                    type="button"
-                    className="mt-1 -ms-1 p-1 inline-flex items-center gap-x-2 text-xs rounded-lg border border-transparent text-gray-500 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-                  >
-                    {item.user.avatar ? (
-                      <img 
-                        className="shrink-0 size-4 rounded-full" 
-                        src={item.user.avatar} 
-                        alt={`${item.user.name}'s avatar`}
-                      />
-                    ) : (
-                      <span className="flex shrink-0 justify-center items-center size-4 bg-white border border-gray-200 text-[10px] font-semibold uppercase text-gray-600 rounded-full dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400">
-                        {item.user.name.charAt(0)}
-                      </span>
-                    )}
-                    {item.user.name}
-                  </button>
-                )}
-              </div>
-              {/* End Right Content */}
-            </div>
-          ))}
-        </React.Fragment>
-      ))}
+      {/* Right Content */}
+      <div className="grow pt-0.5 pb-8">
+        <h3 className="flex gap-x-1.5 font-semibold text-gray-800 dark:text-white">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">
+            {description}
+          </p>
+        )}
+        {user && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="mt-1 -ms-1 p-1 inline-flex items-center gap-x-2 text-xs rounded-lg border border-transparent text-gray-500 hover:bg-gray-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
+          >
+            {user.avatar ? (
+              <Avatar className="shrink-0 size-4 rounded-full">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback className="text-[10px]">{user.initials || user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <span className="flex shrink-0 justify-center items-center size-4 bg-white border border-gray-200 text-[10px] font-semibold uppercase text-gray-600 rounded-full dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400">
+                {user.initials || user.name.charAt(0)}
+              </span>
+            )}
+            {user.name}
+          </Button>
+        )}
+      </div>
+      {/* End Right Content */}
     </div>
   );
 };
 
-// A simpler version for activity logs
-export interface ActivityItem {
-  id: string;
-  timestamp: string;
-  action: string;
-  user?: string;
-  details?: string;
-}
-
-interface ActivityTimelineProps {
-  activities: ActivityItem[];
-  className?: string;
-}
-
-export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ activities, className = '' }) => {
-  // Group activities by date
-  const groupedActivities = activities.reduce((acc, activity) => {
-    const date = new Date(activity.timestamp);
-    const dateStr = date.toLocaleDateString('en-US', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    });
-    
-    if (!acc[dateStr]) {
-      acc[dateStr] = [];
-    }
-    
-    acc[dateStr].push({
-      id: activity.id,
-      title: activity.action,
-      description: activity.details,
-      user: activity.user ? { name: activity.user } : undefined,
-      date: date.toISOString()
-    });
-    
-    return acc;
-  }, {} as Record<string, TimelineItem[]>);
-  
-  // Convert to TimelineGroup array
-  const timelineGroups: TimelineGroup[] = Object.keys(groupedActivities).map(date => ({
-    date,
-    items: groupedActivities[date]
-  }));
-  
-  return <Timeline groups={timelineGroups} className={className} />;
+export const TimelineHeader = ({ 
+  date, 
+  className 
+}: { 
+  date: string, 
+  className?: string 
+}) => {
+  return (
+    <div className={cn("ps-2 my-2 first:mt-0", className)}>
+      <h3 className="text-xs font-medium uppercase text-gray-500 dark:text-neutral-400">
+        {date}
+      </h3>
+    </div>
+  );
 };
 
-export default Timeline;
+export const Timeline = ({ 
+  groups, 
+  className,
+  showOlderText = "Show older",
+  initialCollapsed = true
+}: TimelineProps) => {
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [showAll, setShowAll] = useState(!initialCollapsed);
+  
+  // Show the first two groups by default, unless showAll is true
+  const visibleGroups = showAll ? groups : groups.slice(0, 2);
+
+  const toggleCollapse = () => {
+    setCollapsed(!collapsed);
+    setShowAll(!showAll);
+  };
+
+  return (
+    <div className={cn("", className)}>
+      {visibleGroups.map((group, groupIndex) => (
+        <React.Fragment key={group.date}>
+          <TimelineHeader date={group.date} />
+          
+          {group.items.map((item, itemIndex) => (
+            <TimelineItem 
+              key={item.id} 
+              {...item} 
+              isLast={itemIndex === group.items.length - 1 && groupIndex === visibleGroups.length - 1}
+            />
+          ))}
+        </React.Fragment>
+      ))}
+
+      {groups.length > 2 && (
+        <div className="ps-2 -ms-px flex gap-x-3">
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={toggleCollapse}
+            className="text-start inline-flex items-center gap-x-1 text-sm text-blue-600 font-medium decoration-2 hover:underline dark:text-blue-500"
+          >
+            {collapsed ? (
+              <>
+                <ChevronDown className="shrink-0 size-3.5" />
+                {showOlderText}
+              </>
+            ) : (
+              <>
+                <ChevronUp className="shrink-0 size-3.5" />
+                Show less
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Example Usage:
+/*
+const timelineData = [
+  {
+    date: "1 Aug, 2023",
+    items: [
+      {
+        id: 1,
+        title: (
+          <>
+            <FileText className="shrink-0 size-4 mt-1" />
+            Created "Preline in React" task
+          </>
+        ),
+        description: "Find more detailed instructions here.",
+        user: {
+          name: "James Collins",
+          avatar: "https://images.unsplash.com/photo-1659482633369-9fe69af50bfb?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=3&w=320&h=320&q=80"
+        }
+      },
+      {
+        id: 2,
+        title: "Release v5.2.0 quick bug fix 🐞",
+        user: {
+          name: "Alex Gregarov",
+          initials: "AG"
+        }
+      }
+    ]
+  },
+  {
+    date: "31 Jul, 2023",
+    items: [
+      {
+        id: 3,
+        title: "Take a break ⛳️",
+        description: "Just chill for now... 😉"
+      }
+    ]
+  }
+];
+
+<Timeline groups={timelineData} />
+*/
