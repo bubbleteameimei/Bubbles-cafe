@@ -149,6 +149,12 @@ export default function ToastDemoPage() {
         <p className="text-muted-foreground mt-2">
           Explore different toast notification styles and interactions available in the application.
         </p>
+        <div className="mt-2">
+          <Link href="/demo/toast-docs" className="inline-flex items-center text-sm font-medium text-primary hover:underline">
+            <Info className="mr-1 h-4 w-4" />
+            View complete toast documentation
+          </Link>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">

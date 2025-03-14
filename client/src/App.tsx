@@ -58,6 +58,7 @@ const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks'))
 
 // Demo Pages
 const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
+const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -145,6 +146,7 @@ function App() {
                             <Route path="/bookmarks" component={BookmarksPage} />
                             <Route path="/cookie-test" component={CookieTestPage} />
                             <Route path="/demo/toast" component={ToastDemoPage} />
+                            <Route path="/demo/toast-docs" component={ToastDocsPage} />
 
                             {/* Legal Routes */}
                             <Route path="/legal/copyright" component={CopyrightPage} />

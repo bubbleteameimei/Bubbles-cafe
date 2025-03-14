@@ -2,63 +2,108 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { ExternalLink, Download, Trash2, ArrowRight } from 'lucide-react';
 import { useShowToast } from './toast-utils';
 
-export const ToastActionsDemo = () => {
+export function ToastActionsDemo() {
   const { toast } = useToast();
   const showToast = useShowToast();
-  
+
   const showActionToast = () => {
     toast({
       title: "Action Required",
-      description: "Please confirm this action to continue",
+      description: "Please confirm or dismiss this notification",
       variant: "default",
       action: (
-        <ToastAction altText="Confirm" onClick={() => alert('Action confirmed!')}>
+        <ToastAction altText="Confirm" onClick={() => showToast.success("Action confirmed!")}>
           Confirm
         </ToastAction>
       ),
     });
   };
-  
-  const showSuccessWithAction = () => {
+
+  const showDownloadToast = () => {
     showToast.withAction({
-      title: "Success!",
-      description: "File has been uploaded successfully",
-      actionText: "View File",
-      altText: "View uploaded file",
-      onAction: () => alert('Viewing file...'),
-      variant: "success"
+      title: "Download Started",
+      description: "Your file is being prepared for download",
+      actionText: "View",
+      onAction: () => {
+        showToast.success("Viewing downloads...");
+      }
     });
   };
-  
-  const showErrorWithAction = () => {
+
+  const showDestructiveToast = () => {
     showToast.withAction({
-      title: "Error!",
-      description: "Failed to save your changes",
-      actionText: "Retry",
-      altText: "Try again",
-      onAction: () => alert('Retrying...'),
-      variant: "destructive"
+      title: "Delete Item?",
+      description: "This action cannot be undone",
+      variant: "destructive",
+      actionText: "Delete",
+      onAction: () => {
+        setTimeout(() => {
+          showToast.success("Item deleted successfully");
+        }, 500);
+      }
     });
   };
-  
+
+  const showLinkToast = () => {
+    toast({
+      title: "New Update Available",
+      description: "A new version of the application is available",
+      action: (
+        <ToastAction 
+          altText="View Details" 
+          onClick={() => showToast.simple("Viewing update details...")}
+          className="flex items-center"
+        >
+          <ArrowRight className="mr-1 h-4 w-4" />
+          View
+        </ToastAction>
+      ),
+    });
+  };
+
   return (
-    <div className="flex flex-col space-y-4 items-center mt-4">
-      <h2 className="text-xl font-bold">Toast Actions Demo</h2>
-      <div className="flex flex-wrap gap-2 justify-center">
-        <Button onClick={showActionToast} className="bg-blue-600 hover:bg-blue-700">
-          Show Action Toast
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-2 items-center">
+        <Button onClick={showActionToast} variant="outline">
+          Simple Action
         </Button>
-        <Button onClick={showSuccessWithAction} className="bg-green-600 hover:bg-green-700">
-          Success with Action
+        <span className="text-xs text-muted-foreground">
+          Basic confirmation action
+        </span>
+      </div>
+      
+      <div className="flex gap-2 items-center">
+        <Button onClick={showDownloadToast} variant="outline">
+          <Download className="mr-2 h-4 w-4" />
+          Download Action
         </Button>
-        <Button onClick={showErrorWithAction} className="bg-red-600 hover:bg-red-700">
-          Error with Action
+        <span className="text-xs text-muted-foreground">
+          Action with follow-up
+        </span>
+      </div>
+      
+      <div className="flex gap-2 items-center">
+        <Button onClick={showDestructiveToast} variant="outline" className="border-red-500">
+          <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+          Destructive Action
         </Button>
+        <span className="text-xs text-muted-foreground">
+          Dangerous action confirmation
+        </span>
+      </div>
+      
+      <div className="flex gap-2 items-center">
+        <Button onClick={showLinkToast} variant="outline">
+          <ExternalLink className="mr-2 h-4 w-4" />
+          Link Action
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Navigation action
+        </span>
       </div>
     </div>
   );
-};
-
-export default ToastActionsDemo;
+}
