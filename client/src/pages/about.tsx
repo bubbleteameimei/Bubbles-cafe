@@ -12,7 +12,18 @@ export default function AboutPage() {
       className="container max-w-4xl mx-auto px-4 py-8"
     >
       <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
+        <div className="flex flex-col items-center justify-center gap-6 mb-8">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 100, 
+              damping: 15
+            }}
+          >
+            <ProfileImage />
+          </motion.div>
           <div className="flex flex-col">
             <h1 className="text-4xl font-bold text-center">About Me</h1>
             <p className="text-muted-foreground italic mt-1 text-center">Writer, Designer, and Developer</p>
@@ -65,27 +76,9 @@ export default function AboutPage() {
             />
           </div>
           
+          {/* Footer section without author name */}
           <div className="mt-12 flex flex-col items-center justify-center">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 100, 
-                damping: 15,
-                delay: 0.3
-              }}
-            >
-              <ProfileImage />
-            </motion.div>
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-            >
-              <p className="mt-4 text-lg font-semibold text-center">Vanessa</p>
-              <p className="text-sm text-center text-muted-foreground">Horror Story Writer</p>
-            </motion.div>
+            {/* Removed text as requested */}
           </div>
         </div>
       </div>
