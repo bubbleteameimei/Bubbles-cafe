@@ -8,6 +8,7 @@ import { useLocation } from 'wouter';
 interface AuthButtonProps {
   email: string;
   password: string;
+  confirmPassword?: string;
   username?: string;
   rememberMe?: boolean;
   isSignIn: boolean;
@@ -16,7 +17,8 @@ interface AuthButtonProps {
 
 export function AuthButton({ 
   email, 
-  password, 
+  password,
+  confirmPassword,
   username, 
   rememberMe = false,
   isSignIn,
@@ -30,8 +32,9 @@ export function AuthButton({
   const handleAction = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     
-    if (isLoading || registerMutation.isPending) {
-      return; // Prevent multiple submissions
+    // Prevent multiple submissions or if mutations are pending
+    if (isLoading || (isSignIn ? false : registerMutation.isPending)) {
+      return;
     }
     
     setIsLoading(true);
@@ -60,9 +63,20 @@ export function AuthButton({
           throw new Error("Password must be at least 6 characters long");
         }
         
-        console.log("[Auth-Button] Validations passed, submitting login request");
-        // Use the direct login method
-        const result = await login(email, password, rememberMe);
+        console.log("[Auth-Button] Login validations passed, submitting login request");
+        // Use the direct login method with a timeout
+        const loginPromise = login(email, password, rememberMe);
+        
+        // Add timeout to prevent long-running requests
+        const timeoutPromise = new Promise((_, reject) => {
+          const id = setTimeout(() => {
+            clearTimeout(id);
+            reject(new Error("Login request timed out. Please try again."));
+          }, 10000); // 10 seconds timeout
+        });
+        
+        // Race between the login and timeout
+        const result = await Promise.race([loginPromise, timeoutPromise]) as any;
         
         if (!result) {
           throw new Error("Login failed - no user data received");
@@ -82,7 +96,7 @@ export function AuthButton({
         }, 300);
       } else {
         // Registration validation
-        if (!username || !email || !password) {
+        if (!username || !email || !password || !confirmPassword) {
           throw new Error("All fields are required");
         }
         
@@ -98,12 +112,29 @@ export function AuthButton({
           throw new Error("Password must be at least 6 characters long");
         }
         
-        console.log("[Auth-Button] Validations passed, submitting registration request");
-        const result = await registerMutation.mutateAsync({ 
+        // Password match validation
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        
+        console.log("[Auth-Button] Registration validations passed, submitting registration request");
+        
+        // Add timeout to prevent long-running requests
+        const registerPromise = registerMutation.mutateAsync({ 
           username, 
           email, 
           password 
         });
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          const id = setTimeout(() => {
+            clearTimeout(id);
+            reject(new Error("Registration request timed out. Please try again."));
+          }, 10000); // 10 seconds timeout
+        });
+        
+        // Race between the registration and timeout
+        const result = await Promise.race([registerPromise, timeoutPromise]) as any;
         
         if (!result) {
           throw new Error("Registration failed - no user data received");
@@ -125,8 +156,18 @@ export function AuthButton({
     } catch (err: any) {
       console.error("[Auth-Button] Authentication error:", err);
       
-      // Enhanced error reporting
-      const errorMessage = err?.message || "Authentication failed";
+      // Enhanced error reporting and handling
+      let errorMessage = err?.message || "Authentication failed";
+      
+      // More user-friendly error messages for common issues
+      if (errorMessage.includes("Invalid email or password")) {
+        errorMessage = "The email or password you entered is incorrect";
+      } else if (errorMessage.includes("timeout")) {
+        errorMessage = "Request timed out. Please check your connection and try again.";
+      } else if (errorMessage.includes("Email already registered")) {
+        errorMessage = "This email is already registered. Try logging in or use a different email.";
+      }
+      
       console.error("[Auth-Button] Error details:", {
         message: errorMessage,
         stack: err?.stack,

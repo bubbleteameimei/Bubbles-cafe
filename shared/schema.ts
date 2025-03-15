@@ -133,6 +133,16 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// Password Reset Tokens
+export const resetTokens = pgTable("reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // Keep post likes table intact
 export const postLikes = pgTable("post_likes", {
   id: serial("id").primaryKey(),
@@ -345,11 +355,15 @@ export const loginSchema = z.object({
 
 export type LoginCredentials = z.infer<typeof loginSchema>;
 
-// Registration schema remains unchanged as it already uses email
+// Enhanced registration schema with password confirmation
 export const registrationSchema = z.object({
   username: z.string().min(1, "Username is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ 
@@ -443,6 +457,11 @@ export type ContactMessage = typeof contactMessages.$inferSelect;
 export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true });
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
+
+// Reset Token Schema
+export const insertResetTokenSchema = createInsertSchema(resetTokens).omit({ id: true, createdAt: true });
+export type InsertResetToken = z.infer<typeof insertResetTokenSchema>;
+export type ResetToken = typeof resetTokens.$inferSelect;
 
 export type PostLike = typeof postLikes.$inferSelect;
 

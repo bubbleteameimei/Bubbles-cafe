@@ -103,6 +103,7 @@ const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/con
 const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
 const AdminSiteStatisticsPage = withSuspense(React.lazy(() => import('./pages/admin/site-statistics')));
 const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
+const ResetPasswordPage = withSuspense(React.lazy(() => import('./pages/reset-password')));
 
 function App() {
   usePerformanceMonitoring();
@@ -139,6 +140,7 @@ function App() {
                             <Route path="/signin" component={AuthPage} />
                             <Route path="/login" component={AuthPage} />
                             <Route path="/signup" component={AuthPage} />
+                            <Route path="/reset-password" component={ResetPasswordPage} />
 
                             {/* Public Routes */}
                             <Route path="/" component={HomePage} />

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Slider } from "@/components/ui/slider";
-import { SelectDemo } from "@/components/ui/select-demo";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Form,
@@ -52,8 +52,7 @@ export default function ProfileSettingsPage() {
   const { user } = useAuth();
   const { toast: showToast } = useToast();
   const [isDeactivating, setIsDeactivating] = useState(false);
-  const [privacyLevel, setPrivacyLevel] = useState(50); // Default to medium privacy
-  const [selectedTheme, setSelectedTheme] = useState("default");
+  const [visibilityOption, setVisibilityOption] = useState("display"); // "display" or "anonymous"
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -128,59 +127,52 @@ export default function ProfileSettingsPage() {
         <h2 className="text-xl font-semibold mb-4">Profile Visibility</h2>
         <div className="space-y-6">
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label htmlFor="profile-visibility" className="text-sm font-medium">
-                Profile Privacy Level
+            <div className="mb-4">
+              <label className="text-sm font-medium">
+                Profile Visibility Options
               </label>
-              <span className="text-xs text-muted-foreground">
-                {privacyLevel === 0 ? "Private" : privacyLevel === 100 ? "Public" : "Limited"}
-              </span>
+              <RadioGroup 
+                value={visibilityOption} 
+                onValueChange={setVisibilityOption}
+                className="mt-3"
+              >
+                <div className="flex items-start space-x-2 mb-3">
+                  <RadioGroupItem value="display" id="display-username" />
+                  <Label
+                    htmlFor="display-username"
+                    className="font-normal cursor-pointer"
+                  >
+                    <div>Display Username</div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your username will be displayed with your comments and interactions.
+                    </p>
+                  </Label>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <RadioGroupItem value="anonymous" id="remain-anonymous" />
+                  <Label
+                    htmlFor="remain-anonymous"
+                    className="font-normal cursor-pointer"
+                  >
+                    <div>Remain Anonymous</div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your activity will be posted anonymously without revealing your identity.
+                    </p>
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
-            <Slider 
-              id="profile-visibility"
-              className="my-4" 
-              value={[privacyLevel]} 
-              max={100}
-              step={1}
-              onValueChange={(value: number[]) => setPrivacyLevel(value[0])}
-            />
-            <p className="text-sm text-muted-foreground">
-              {privacyLevel < 30 ? 
-                "Only you can see your profile information" : 
-                privacyLevel < 70 ? 
-                "Only followers and friends can see your profile" : 
-                "Everyone can see your profile information"
-              }
-            </p>
-          </div>
-        </div>
-      </Card>
-      
-      <Card className="p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Theme Preferences</h2>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="theme-select" className="text-sm font-medium">
-              Select Theme
-            </label>
-            <div className="pt-2">
-              <SelectDemo />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Choose a theme that matches your reading preferences
-            </p>
-            
             <div className="mt-4">
               <Button 
                 variant="outline" 
                 className="mr-2"
                 onClick={() => {
-                  toast.info("Theme updated!", {
-                    description: "Your theme preference has been saved.",
+                  toast.success("Visibility updated!", {
+                    description: `Your profile is now set to ${visibilityOption === 'display' ? 'display your username' : 'remain anonymous'}.`,
                   });
                 }}
               >
-                Save Theme Preference
+                Save Visibility Preference
               </Button>
             </div>
           </div>

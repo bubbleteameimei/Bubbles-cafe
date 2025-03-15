@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
+import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import "./auth.css";
 
 // Import user schema
@@ -16,8 +17,10 @@ export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
@@ -78,7 +81,7 @@ export default function AuthPage() {
         }, 300);
       } else {
         // Registration validation
-        if (!username || !email || !password) {
+        if (!username || !email || !password || !confirmPassword) {
           throw new Error("All fields are required");
         }
         
@@ -92,6 +95,11 @@ export default function AuthPage() {
         
         if (password.length < 6) {
           throw new Error("Password must be at least 6 characters long");
+        }
+        
+        // Password match validation
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
         }
         
         console.log("[Auth] Validations passed, submitting registration request");
@@ -142,6 +150,10 @@ export default function AuthPage() {
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
+  };
+  
+  const toggleConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -245,13 +257,7 @@ export default function AuthPage() {
                       <span className="ml-3 text-sm text-muted-foreground">Remember me</span>
                     </label>
                   </div>
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="text-sm text-primary"
-                  >
-                    Forgot Password?
-                  </Button>
+                  <ForgotPasswordDialog />
                 </div>
 
                 {/* Sign In Button */}
@@ -364,11 +370,52 @@ export default function AuthPage() {
                   </div>
                 </div>
 
+                {/* Confirm Password Field with Toggle */}
+                <div className="group">
+                  <Label htmlFor="confirm-password" className="auth-label">Confirm Password</Label>
+                  <div className="relative">
+                    <Input 
+                      id="confirm-password" 
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="auth-input pr-10"
+                      required
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
+                    />
+                    <div 
+                      role="button"
+                      tabIndex={0}
+                      onClick={toggleConfirmPassword}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          toggleConfirmPassword();
+                        }
+                      }}
+                      className="password-toggle-btn"
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Sign Up Button */}
                 <div className="group">
                   <AuthButton
                     email={email}
                     password={password}
+                    confirmPassword={confirmPassword}
                     username={username}
                     isSignIn={false}
                   />

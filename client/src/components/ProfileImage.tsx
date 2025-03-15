@@ -68,10 +68,10 @@ export default function ProfileImage() {
                 decoding="async"
                 style={{
                   position: "absolute",
-                  height: "250%", /* 2.5x zoom for more dramatic effect */
+                  height: "180%", /* 1.8x zoom as requested */
                   width: "auto", /* Width auto to maintain aspect ratio */
                   left: "53%", /* Slight rightward shift (3% from center) */
-                  top: "73%", /* Perfect downward shift as requested */
+                  top: "100%", /* Updated to 100% top position as requested */
                   transform: "translate(-50%, -50%)", /* Center the image properly */
                   objectFit: "cover", /* Ensure the image covers the area */
                 }}

@@ -8,6 +8,7 @@ import {
   type Session, type InsertSession,
   type PostLike,
   type CommentVote,
+  type ResetToken, type InsertResetToken,
   type CommentReply,
   type InsertCommentReply,
   type AuthorStats,
@@ -47,6 +48,7 @@ import {
   adminNotifications,
   bookmarks,
   userFeedback,
+  resetTokens,
   type Achievement,
   type UserAchievement,
   achievements,
@@ -74,6 +76,11 @@ export interface IStorage {
   getAdminByEmail(email: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
+  
+  // Password Reset
+  createResetToken(tokenData: InsertResetToken): Promise<ResetToken>;
+  getResetTokenByToken(token: string): Promise<ResetToken | undefined>;
+  markResetTokenAsUsed(token: string): Promise<void>;
 
   // Sessions
   createSession(session: InsertSession): Promise<Session>;
@@ -384,6 +391,70 @@ export class DatabaseStorage implements IStorage {
     await db.update(sessions)
       .set({ lastAccessedAt: new Date() })
       .where(eq(sessions.token, token));
+  }
+
+  // Password Reset Methods
+  async createResetToken(tokenData: InsertResetToken): Promise<ResetToken> {
+    try {
+      console.log('[Storage] Creating reset token for user:', tokenData.userId);
+      
+      // Insert the reset token
+      const [newToken] = await db.insert(resetTokens)
+        .values({
+          ...tokenData,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log('[Storage] Reset token created successfully');
+      return newToken;
+    } catch (error) {
+      console.error("Error in createResetToken:", error);
+      throw new Error("Failed to create password reset token");
+    }
+  }
+
+  async getResetTokenByToken(token: string): Promise<ResetToken | undefined> {
+    try {
+      console.log('[Storage] Looking up reset token:', token.substring(0, 6) + '...');
+      
+      // Find the token that's not expired and not used
+      const [resetToken] = await db.select()
+        .from(resetTokens)
+        .where(and(
+          eq(resetTokens.token, token),
+          eq(resetTokens.used, false),
+          gt(resetTokens.expiresAt, new Date())
+        ))
+        .limit(1);
+      
+      if (resetToken) {
+        console.log('[Storage] Reset token found for user:', resetToken.userId);
+      } else {
+        console.log('[Storage] Reset token not found or expired');
+      }
+      
+      return resetToken;
+    } catch (error) {
+      console.error("Error in getResetTokenByToken:", error);
+      throw new Error("Failed to verify reset token");
+    }
+  }
+
+  async markResetTokenAsUsed(token: string): Promise<void> {
+    try {
+      console.log('[Storage] Marking reset token as used:', token.substring(0, 6) + '...');
+      
+      // Update the token to mark it as used
+      await db.update(resetTokens)
+        .set({ used: true })
+        .where(eq(resetTokens.token, token));
+      
+      console.log('[Storage] Reset token marked as used successfully');
+    } catch (error) {
+      console.error("Error in markResetTokenAsUsed:", error);
+      throw new Error("Failed to mark reset token as used");
+    }
   }
 
   // Posts operations

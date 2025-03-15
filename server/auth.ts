@@ -1,9 +1,10 @@
-import { Express } from "express";
+import { Express, Request, Response } from "express";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { storage } from "./storage";
 import * as bcrypt from "bcrypt";
-import { User } from "@shared/schema";
+import * as crypto from "crypto";
+import { User, InsertResetToken } from "@shared/schema";
 
 // Extend Express.User with our User type but avoid password_hash
 declare global {
@@ -269,6 +270,172 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error("[Auth] Social login error:", error);
       res.status(500).json({ message: "Error processing social login" });
+    }
+  });
+
+  // Password reset request route
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      console.log('[Auth] Password reset requested for email:', email);
+      
+      // Find the user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal that the user doesn't exist for security reasons
+        // Instead, pretend success but don't actually do anything
+        console.log('[Auth] Password reset requested for non-existent email:', email);
+        return res.json({ 
+          success: true, 
+          message: "If your email exists in our system, you'll receive a password reset link shortly" 
+        });
+      }
+      
+      // Generate a unique token for password reset
+      const token = crypto.randomBytes(32).toString('hex');
+      
+      // Calculate token expiration (1 hour from now)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+      
+      // Store token in database
+      const resetTokenData: InsertResetToken = {
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false
+      };
+      
+      await storage.createResetToken(resetTokenData);
+      
+      console.log('[Auth] Password reset token created for user:', user.id);
+      
+      // In a real application, we would send an email here
+      // But for this simulation, we'll just log the token and return it
+      console.log('[Auth] Password reset token (for testing):', token);
+      
+      return res.json({ 
+        success: true, 
+        message: "If your email exists in our system, you'll receive a password reset link shortly",
+        // Including token in response only for testing - would be sent via email in production
+        token: token
+      });
+    } catch (error) {
+      console.error('[Auth] Password reset request error:', error);
+      return res.status(500).json({ message: "Error processing password reset request" });
+    }
+  });
+  
+  // Verify reset token
+  app.get("/api/auth/verify-reset-token/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+      
+      console.log('[Auth] Verifying password reset token:', token);
+      
+      // Check if token exists and is valid
+      const resetToken = await storage.getResetTokenByToken(token);
+      
+      if (!resetToken) {
+        console.log('[Auth] Invalid password reset token:', token);
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      if (new Date() > resetToken.expiresAt) {
+        console.log('[Auth] Expired password reset token:', token);
+        return res.status(400).json({ message: "Token has expired" });
+      }
+      
+      // Check if token is already used
+      if (resetToken.used) {
+        console.log('[Auth] Already used password reset token:', token);
+        return res.status(400).json({ message: "Token has already been used" });
+      }
+      
+      console.log('[Auth] Valid password reset token for user:', resetToken.userId);
+      
+      return res.json({ 
+        success: true, 
+        userId: resetToken.userId 
+      });
+    } catch (error) {
+      console.error('[Auth] Verify reset token error:', error);
+      return res.status(500).json({ message: "Error verifying token" });
+    }
+  });
+  
+  // Reset password with token
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+      
+      console.log('[Auth] Processing password reset with token');
+      
+      // Check if token exists and is valid
+      const resetToken = await storage.getResetTokenByToken(token);
+      
+      if (!resetToken) {
+        console.log('[Auth] Invalid reset token for password reset');
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+      
+      // Check if token is expired
+      if (new Date() > resetToken.expiresAt) {
+        console.log('[Auth] Expired reset token for password reset');
+        return res.status(400).json({ message: "Token has expired" });
+      }
+      
+      // Check if token is already used
+      if (resetToken.used) {
+        console.log('[Auth] Already used reset token for password reset');
+        return res.status(400).json({ message: "Token has already been used" });
+      }
+      
+      // Get user from token
+      const user = await storage.getUser(resetToken.userId);
+      
+      if (!user) {
+        console.log('[Auth] User not found for reset token:', resetToken.userId);
+        return res.status(400).json({ message: "User not found" });
+      }
+      
+      // Update user's password
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      
+      await storage.updateUser(user.id, {
+        password_hash: hashedPassword
+      });
+      
+      // Mark token as used
+      await storage.markResetTokenAsUsed(token);
+      
+      console.log('[Auth] Password reset successful for user:', user.id);
+      
+      return res.json({ 
+        success: true, 
+        message: "Password has been reset successfully" 
+      });
+    } catch (error) {
+      console.error('[Auth] Reset password error:', error);
+      return res.status(500).json({ message: "Error resetting password" });
     }
   });
 }
