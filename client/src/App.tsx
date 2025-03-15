@@ -7,7 +7,7 @@ import { Sonner } from './components/ui/sonner';
 import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from './hooks/use-auth';
+import { AuthProvider, useAuth } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
@@ -20,6 +20,7 @@ import PageTransition from './components/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
+import { SidebarNavigationIOS } from '@/components/ui/sidebar-menu-ios';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
@@ -105,14 +106,145 @@ const AdminSiteStatisticsPage = withSuspense(React.lazy(() => import('./pages/ad
 const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
 const ResetPasswordPage = withSuspense(React.lazy(() => import('./pages/reset-password')));
 
-function App() {
-  usePerformanceMonitoring();
+const AppContent = () => {
+  const { user, logoutMutation } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [location] = useLocation();
-
+  const locationStr = location.toString();
+  
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  
+  return (
+    <div className="relative min-h-screen bg-background">
+      {/* Desktop Sidebar */}
+      <aside className="fixed top-0 left-0 z-40 h-screen w-64 hidden lg:block overflow-hidden">
+        <div className="h-full w-full">
+          <div className="h-[56px] px-4 flex items-center border-b border-[var(--ios-separator)] bg-[#1c1c1e]">
+            <h1 className="text-white font-medium text-lg">Horror Stories</h1>
+          </div>
+          <SidebarNavigationIOS user={user} logoutMutation={logoutMutation} />
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="min-h-screen lg:ml-64">
+        <AutoHideNavbar />
+        <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
+          <ErrorBoundary>
+            <PageTransition mode="fade" duration={0.4}>
+              <Switch>
+                {/* Auth Routes */}
+                <Route path="/auth" component={AuthPage} />
+                <Route path="/signin" component={AuthPage} />
+                <Route path="/login" component={AuthPage} />
+                <Route path="/signup" component={AuthPage} />
+                <Route path="/reset-password" component={ResetPasswordPage} />
+
+                {/* Public Routes */}
+                <Route path="/" component={HomePage} />
+                <Route path="/stories" component={StoriesPage} />
+                <Route path="/reader/:slug?" component={ReaderPage} />
+                <Route path="/about" component={AboutPage} />
+                <Route path="/contact" component={ContactPage} />
+                <Route path="/report-bug" component={ReportBugPage} />
+                <Route path="/privacy" component={PrivacyPage} />
+                <Route path="/content-test" component={ContentTestPage} />
+                <Route path="/bookmarks" component={BookmarksPage} />
+                <Route path="/cookie-test" component={CookieTestPage} />
+                <Route path="/demo/toast" component={ToastDemoPage} />
+                <Route path="/demo/toast-docs" component={ToastDocsPage} />
+                <Route path="/toast-test" component={ToastTestPage} />
+                <Route path="/charts" component={ChartDashboardPage} />
+
+                {/* Legal Routes */}
+                <Route path="/legal/copyright" component={CopyrightPage} />
+                <Route path="/legal/terms" component={TermsPage} />
+                <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
+
+                {/* Community Routes */}
+                <Route path="/community" component={CommunityPage} />
+                <Route path="/feedback" component={FeedbackPage} />
+                <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
+                <Route path="/support/guidelines" component={GuidelinesPage} />
+
+                {/* Settings Routes */}
+                <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
+                <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
+                <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
+                <Route path="/settings/fonts" component={FontSettingsPage} />
+                <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
+                <Route path="/settings/display" component={DisplaySettingsPage} />
+                <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
+                <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
+                <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+                <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
+                <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
+
+                {/* Admin Routes */}
+                <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
+                <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
+                <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
+                <ProtectedRoute path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} requireAdmin />
+                <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
+                <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
+                <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
+                <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
+                <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
+                <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
+                <ProtectedRoute path="/admin/feedback-review" component={AdminFeedbackReviewPage} requireAdmin />
+                <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
+                <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
+                <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
+                <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
+
+                {/* 404 Route */}
+                <Route>
+                  {() => (
+                    <div className="flex min-h-[60vh] items-center justify-center">
+                      <h1 className="text-2xl">404 - Page Not Found</h1>
+                    </div>
+                  )}
+                </Route>
+              </Switch>
+            </PageTransition>
+          </ErrorBoundary>
+        </div>
+        {/* Don't show footer on 404 or error pages */}
+        {!locationStr.includes('404') && locationStr !== '/not-found' && <Footer />}
+      </main>
+
+      {/* Global UI Elements */}
+      <Toaster />
+      <Sonner />
+      <CookieConsent />
+      <ScrollToTopButton />
+    </div>
+  );
+};
+
+function App() {
+  usePerformanceMonitoring();
+
+  // Detect touch capability and add appropriate class to body
+  useEffect(() => {
+    const isTouchDevice = () => {
+      return (('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0));
+    };
+    
+    if (isTouchDevice()) {
+      document.body.classList.add('touch-device');
+    } else {
+      document.body.classList.add('no-touch');
+    }
+    
+    return () => {
+      document.body.classList.remove('touch-device');
+      document.body.classList.remove('no-touch');
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -121,105 +253,7 @@ function App() {
           <CookieConsentProvider>
             <NotificationProvider>
               <SidebarProvider defaultOpen={true}>
-                <div className="relative min-h-screen bg-background">
-                  {/* Desktop Sidebar */}
-                  <aside className="fixed top-0 left-0 z-40 h-screen w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden lg:block">
-                    <SidebarHeader />
-                    <Navigation />
-                  </aside>
-
-                  {/* Main Content */}
-                  <main className="min-h-screen lg:ml-64">
-                    <AutoHideNavbar />
-                    <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
-                      <ErrorBoundary>
-                        <PageTransition mode="fade" duration={0.4}>
-                          <Switch>
-                            {/* Auth Routes */}
-                            <Route path="/auth" component={AuthPage} />
-                            <Route path="/signin" component={AuthPage} />
-                            <Route path="/login" component={AuthPage} />
-                            <Route path="/signup" component={AuthPage} />
-                            <Route path="/reset-password" component={ResetPasswordPage} />
-
-                            {/* Public Routes */}
-                            <Route path="/" component={HomePage} />
-                            <Route path="/stories" component={StoriesPage} />
-                            <Route path="/reader/:slug?" component={ReaderPage} />
-                            <Route path="/about" component={AboutPage} />
-                            <Route path="/contact" component={ContactPage} />
-                            <Route path="/report-bug" component={ReportBugPage} />
-                            <Route path="/privacy" component={PrivacyPage} />
-                            <Route path="/content-test" component={ContentTestPage} />
-                            <Route path="/bookmarks" component={BookmarksPage} />
-                            <Route path="/cookie-test" component={CookieTestPage} />
-                            <Route path="/demo/toast" component={ToastDemoPage} />
-                            <Route path="/demo/toast-docs" component={ToastDocsPage} />
-                            <Route path="/toast-test" component={ToastTestPage} />
-                            <Route path="/charts" component={ChartDashboardPage} />
-
-                            {/* Legal Routes */}
-                            <Route path="/legal/copyright" component={CopyrightPage} />
-                            <Route path="/legal/terms" component={TermsPage} />
-                            <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-
-                            {/* Community Routes */}
-                            <Route path="/community" component={CommunityPage} />
-                            <Route path="/feedback" component={FeedbackPage} />
-                            <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
-                            <Route path="/support/guidelines" component={GuidelinesPage} />
-
-                            {/* Settings Routes */}
-                            <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
-                            <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                            <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
-                            <Route path="/settings/fonts" component={FontSettingsPage} />
-                            <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                            <Route path="/settings/display" component={DisplaySettingsPage} />
-                            <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
-                            <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-                            <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
-                            <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
-                            <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
-
-                            {/* Admin Routes */}
-                            <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
-                            <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
-                            <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} requireAdmin />
-                            <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
-                            <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
-                            <ProtectedRoute path="/admin/feedback-review" component={AdminFeedbackReviewPage} requireAdmin />
-                            <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
-                            <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
-                            <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
-                            <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
-
-                            {/* 404 Route */}
-                            <Route>
-                              {() => (
-                                <div className="flex min-h-[60vh] items-center justify-center">
-                                  <h1 className="text-2xl">404 - Page Not Found</h1>
-                                </div>
-                              )}
-                            </Route>
-                          </Switch>
-                        </PageTransition>
-                      </ErrorBoundary>
-                    </div>
-                    <Footer />
-                  </main>
-
-                  {/* Global UI Elements */}
-                  <Toaster />
-                  <Sonner />
-                  <CookieConsent />
-                  <ScrollToTopButton />
-                </div>
+                <AppContent />
               </SidebarProvider>
             </NotificationProvider>
           </CookieConsentProvider>

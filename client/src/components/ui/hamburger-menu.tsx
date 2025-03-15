@@ -43,27 +43,35 @@ export function HamburgerMenu({ isOpen, className, onClick }: HamburgerMenuProps
 
   return (
     <div 
-      className={cn("flex flex-col justify-center items-center w-6 h-6 cursor-pointer", className)}
+      className={cn(
+        "flex flex-col justify-center items-center w-10 h-10 cursor-pointer touch-manipulation rounded-md relative", 
+        "active:scale-95 transition-all duration-150 ease-out", 
+        "hover:bg-foreground/5 active:bg-foreground/10", 
+        className
+      )}
       onClick={onClick}
+      style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      <motion.span
-        initial="closed"
-        animate={variant}
-        variants={top}
-        className="w-6 h-0.5 bg-foreground mb-1.5 block"
-      />
-      <motion.span
-        initial="closed"
-        animate={variant}
-        variants={center}
-        className="w-6 h-0.5 bg-foreground mb-1.5 block"
-      />
-      <motion.span
-        initial="closed"
-        animate={variant}
-        variants={bottom}
-        className="w-6 h-0.5 bg-foreground block"
-      />
+      <div className="w-6 h-6 flex flex-col justify-center items-center">
+        <motion.span
+          initial="closed"
+          animate={variant}
+          variants={top}
+          className="w-6 h-0.5 bg-foreground mb-1.5 block rounded-full"
+        />
+        <motion.span
+          initial="closed"
+          animate={variant}
+          variants={center}
+          className="w-6 h-0.5 bg-foreground mb-1.5 block rounded-full"
+        />
+        <motion.span
+          initial="closed"
+          animate={variant}
+          variants={bottom}
+          className="w-6 h-0.5 bg-foreground block rounded-full"
+        />
+      </div>
     </div>
   );
 }
