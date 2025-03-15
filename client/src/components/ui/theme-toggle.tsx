@@ -1,16 +1,25 @@
 import { useTheme } from "@/components/theme-provider";
 import { Moon, Sun } from "lucide-react";
-import { motion } from "framer-motion";
+import { DayNightToggle } from "./day-night-toggle";
 import "./theme-toggle.css";
 
 interface ThemeToggleProps {
-  variant?: 'full' | 'icon' | 'animated' | 'fancy';
+  variant?: 'full' | 'icon' | 'animated' | 'fancy' | 'day-night';
   className?: string;
 }
 
-export function ThemeToggle({ variant = 'fancy', className = '' }: ThemeToggleProps) {
+export function ThemeToggle({ variant = 'day-night', className = '' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+
+  // Use our new day-night toggle component as default
+  if (variant === 'day-night') {
+    return (
+      <div className={className}>
+        <DayNightToggle />
+      </div>
+    );
+  }
 
   if (variant === 'fancy') {
     return (
