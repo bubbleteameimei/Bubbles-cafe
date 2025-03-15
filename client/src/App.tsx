@@ -93,6 +93,7 @@ const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/se
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
 const AdminManagePostsPage = withSuspense(React.lazy(() => import('./pages/admin/manage-posts')));
 const AdminFeedbackPage = withSuspense(React.lazy(() => import('./pages/admin/feedback')));
+const AdminFeedbackReviewPage = withSuspense(React.lazy(() => import('./pages/admin/feedback-review')));
 const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/bug-reports')));
 const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
 const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
@@ -184,6 +185,7 @@ function App() {
                             <ProtectedRoute path="/admin/manage-posts" component={AdminManagePostsPage} requireAdmin />
                             <ProtectedRoute path="/admin/settings" component={AdminSettingsPage} requireAdmin />
                             <ProtectedRoute path="/admin/feedback" component={AdminFeedbackPage} requireAdmin />
+                            <ProtectedRoute path="/admin/feedback-review" component={AdminFeedbackReviewPage} requireAdmin />
                             <ProtectedRoute path="/admin/bug-reports" component={AdminBugReportsPage} requireAdmin />
                             <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
                             <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />

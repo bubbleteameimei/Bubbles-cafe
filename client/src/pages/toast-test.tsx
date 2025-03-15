@@ -56,6 +56,9 @@ export default function ToastTest() {
       userAgent: navigator.userAgent
     };
 
+    // Use a unique ID for the toast to manage it properly - moved outside of try block so it's accessible in catch
+    const toastId = Date.now().toString();
+    
     try {
       // Create the feedback data payload
       const feedbackData = {
@@ -71,35 +74,60 @@ export default function ToastTest() {
           toastHasAction: closeButton
         }
       };
-
-      // Show loading toast
-      toast.promise(
-        fetch('/api/feedback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(feedbackData)
-        }).then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to submit feedback');
-          }
-          return response.json();
-        }),
-        {
-          loading: 'Submitting feedback...',
-          success: (data) => {
-            // Reset form state
-            setFeedbackContent('');
-            setFeedbackRating(4);
-            return 'Feedback submitted successfully!';
-          },
-          error: 'Failed to submit feedback. Please try again.'
+      
+      // Show loading toast with the ID
+      toast.loading('Submitting feedback...', {
+        id: toastId,
+        description: `Sending your ${feedbackType} feedback to our servers`,
+        duration: 10000 // Longer duration to ensure visibility during processing
+      });
+      
+      // Make the API call
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData)
+      });
+      
+      // Handle response
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+      
+      // Parse the response data
+      const responseData = await response.json();
+      
+      // Success - dismiss loading toast and show success with the same ID
+      toast.success('Feedback submitted successfully!', {
+        id: toastId,
+        description: `Thanks for your feedback (#${responseData.feedback.id})`,
+        duration: 5000,
+        action: {
+          label: 'Done',
+          onClick: () => toast.dismiss(toastId)
         }
-      );
+      });
+      
+      // Reset form state
+      setFeedbackContent('');
+      setFeedbackRating(4);
+      
     } catch (error) {
+      // Error - show error toast with the same ID to replace loading toast
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error submitting feedback:', error);
-      toast.error('An error occurred while submitting feedback');
+      
+      toast.error('Failed to submit feedback', {
+        id: toastId, // Use the same ID to replace the loading toast
+        description: errorMessage,
+        duration: 5000,
+        action: {
+          label: 'Retry',
+          onClick: () => submitFeedback()
+        }
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -360,11 +388,29 @@ export default function ToastTest() {
                 onClick={submitFeedback}
                 disabled={isSubmitting || !feedbackContent.trim()}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Submitting...
+                  </>
+                ) : 'Submit Feedback'}
               </Button>
               
               <div className="text-sm text-muted-foreground mt-2">
                 This will submit real feedback to the API and display toast notifications for the process.
+              </div>
+              
+              <div className="mt-4 p-3 bg-primary/10 rounded-md">
+                <h4 className="text-sm font-medium">What happens when you submit:</h4>
+                <ol className="text-xs mt-2 space-y-1 text-muted-foreground list-decimal list-inside">
+                  <li>Your feedback is sent to the API endpoint</li>
+                  <li>Toast notifications show submission progress</li>
+                  <li>Data is stored in the PostgreSQL database</li>
+                  <li>Admin users can view and manage feedback</li>
+                </ol>
               </div>
             </CardContent>
           </Card>
