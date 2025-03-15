@@ -2,6 +2,31 @@ import React from "react";
 import { motion } from "framer-motion";
 import { SocialButtons } from "@/components/ui/social-buttons";
 import ProfileImage from "@/components/ProfileImage";
+import InstagramCarousel from "@/components/InstagramCarousel";
+
+// Sample images for the carousel
+const carouselImages = [
+  {
+    src: "/images/IMG_4748.jpeg",
+    alt: "Horror story image 1"
+  },
+  {
+    src: "/images/IMG_4750.jpeg",
+    alt: "Horror story image 2"
+  },
+  {
+    src: "/images/IMG_4752.jpeg",
+    alt: "Horror story image 3"
+  },
+  {
+    src: "/images/IMG_4762.jpeg",
+    alt: "Horror story image 4"
+  },
+  {
+    src: "/images/IMG_5266.png",
+    alt: "Horror story image 5"
+  }
+];
 
 export default function AboutPage() {
   return (
@@ -11,6 +36,12 @@ export default function AboutPage() {
       transition={{ duration: 0.5 }}
       className="container max-w-4xl mx-auto px-4 py-8"
     >
+      <InstagramCarousel 
+        images={carouselImages}
+        profileImage="/images/profile-image.jpg"
+        profileName="Vanessa's Horror Stories"
+      />
+      
       <div className="space-y-8">
         <div className="flex flex-col items-center justify-center gap-6 mb-8">
           <motion.div

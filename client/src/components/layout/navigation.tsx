@@ -8,7 +8,7 @@ import { Menu } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/components/NotificationProvider";
 import { useTheme } from "@/components/theme-provider";
-import { SunMoonToggle } from "@/components/ui/sun-moon-toggle";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
@@ -79,8 +79,8 @@ export default function Navigation() {
 
         {/* Right-side Actions */}
         <div className="flex items-center space-x-4">
-          <NotificationIcon notifications={notifications} />
-          <SunMoonToggle />
+          <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} />
+          <ThemeToggleButton />
           {!user ? (
             <Button
               variant="default"

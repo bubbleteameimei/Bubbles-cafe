@@ -1,5 +1,5 @@
 
-import { DayNightToggle } from "@/components/ui/day-night-toggle";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 export function Navbar() {
   return (
@@ -9,9 +9,7 @@ export function Navbar() {
           <h1 className="text-xl font-bold">Bubble's Cafe</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="scale-75">
-            <DayNightToggle />
-          </div>
+          <ThemeToggleButton />
         </div>
       </div>
     </nav>

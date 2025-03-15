@@ -1,6 +1,6 @@
 import React from 'react';
 import './day-night-toggle.css';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '../../components/theme-provider';
 
 interface DayNightToggleProps {
   className?: string;

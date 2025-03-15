@@ -13,7 +13,7 @@ import { useFontSize } from "@/hooks/use-font-size";
 import { getReadingTime, sanitizeHtmlContent } from "@/lib/content-analysis";
 import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import { AudioNarrator } from "@/components/ui/audio-narrator";
 import {
@@ -573,8 +573,7 @@ export default function Reader({ slug }: ReaderPageProps) {
           <div className="w-px h-6 bg-border/50"></div>
           
           {/* Dark/Light mode toggle */}
-          <ThemeToggle 
-            variant="icon" 
+          <ThemeToggleButton 
             className="h-8 w-8 rounded-full hover:bg-background/80" 
           />
           
