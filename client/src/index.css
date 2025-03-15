@@ -54,6 +54,23 @@
   }
 }
 
+/* Dropdown animation for search results */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-menu-animation {
+  animation: dropdown-in 0.2s ease-out;
+  transform-origin: top center;
+}
+
 /* Smooth theme transitions */
 html.dark, 
 html.light {

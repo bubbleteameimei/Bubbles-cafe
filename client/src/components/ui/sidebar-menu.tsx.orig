@@ -1,136 +1,91 @@
-import * as React from "react";
-import { useLocation, Link as RouterLink } from "wouter";
-import { motion } from "framer-motion";
+import * as React from "react"
+import {
+  Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
+  Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
+  Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
+  User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
+  LineChart, BarChart, Search, X
+} from "lucide-react"
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Home, 
-  Scroll, 
-  Book, 
-  Users, 
-  BookmarkIcon, 
-  Shield, 
-  Palette, 
-  Type, 
-  HelpCircle, 
-  Volume2, 
-  Monitor, 
-  ScrollText, 
-  FileText, 
-  ShieldAlert, 
-  LineChart, 
-  BarChart, 
-  MessageSquare, 
-  Bug, 
-  Search, 
-  X, 
-  ChevronDown, 
-  ChevronUp, 
-  Mail, 
-  Building, 
-  Lock,
-  User,
-  ChevronRight,
-  Settings,
-  Bell,
-  CircleUserRound,
-  ExternalLink
-} from "lucide-react";
 
+import { cn } from "@/lib/utils"
+import { useLocation } from "wouter"
+import { useAuth } from "@/hooks/use-auth"
+import { Button } from "@/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  CollapsibleTrigger
+} from "@/components/ui/collapsible"
 
 import {
+  SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
+  useSidebar
+} from "@/components/ui/sidebar"
 
-// This component represents an enhanced sidebar navigation with search capabilities
-export function SidebarNavigation({
-  onNavigate,
-  user,
-  logoutMutation,
-}: { 
-  onNavigate?: () => void;
-  user?: { 
-    id: number; 
-    username: string; 
-    email: string; 
-    isAdmin?: boolean;
-  } | null;
-  logoutMutation?: any;
-}) {
-  // Router state
-  const [location] = useLocation();
-  
-  // Search state
+export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
+  const [location, setLocation] = useLocation();
+  const { user, logoutMutation } = useAuth();
+  const [displayOpen, setDisplayOpen] = React.useState(false);
+  const [accountOpen, setAccountOpen] = React.useState(false);
+  const [supportOpen, setSupportOpen] = React.useState(false);
+  const [adminOpen, setAdminOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
   const searchRef = React.useRef<HTMLDivElement>(null);
+  const sidebar = useSidebar();
   
-  // Collapsible state
-  const [adminOpen, setAdminOpen] = React.useState(false);
-  const [displayOpen, setDisplayOpen] = React.useState(false);
-  const [supportOpen, setSupportOpen] = React.useState(false);
-  const [accountOpen, setAccountOpen] = React.useState(false);
-
-  // Handle navigation
-  const handleNavigation = (path: string) => {
-    // Add route change handling
-    window.history.pushState({}, "", path);
-    
-    // Trigger any additional callbacks
-    if (onNavigate) {
-      onNavigate();
-    }
-  };
-
-  // Handle click outside search to close results
+  // Handle clicks outside of search component
   React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setSearchFocused(false);
-        setSearchQuery("");
       }
     };
-
-    // Handle both mouse and touch events for better mobile support
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
     
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
-  // Render active indicator for the current route
+  const handleNavigation = React.useCallback((path: string) => {
+    if (onNavigate) {
+      onNavigate();
+    }
+    if (sidebar?.isMobile) {
+      sidebar.setOpenMobile(false);
+    }
+    setLocation(path);
+  }, [onNavigate, sidebar, setLocation]);
+  
+  // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {
     if (location === path) {
       return (
-        <div className="absolute left-0 top-1/2 h-6 w-2.5 -translate-y-1/2 rounded-r-md bg-amber-500 dark:bg-amber-400 animate-pulse-subtle shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
+          <div className="h-4 w-1 rounded-r-md bg-primary shadow-[0_0_8px_rgba(var(--primary)/0.5)] animate-pulse-subtle" />
+          <div className="h-3 w-0.5 rounded-r-md bg-primary/40 ml-0.5 animate-pulse-slow" />
+        </div>
       );
     }
     return null;
   };
 
   // Enhanced menu item class with hover effects
-  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90%)] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
+  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
   
   // Enhanced submenu item class with hover effects
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90%)] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
 
   // Define menu structure for searchable items
   const menuItems = React.useMemo(() => [
@@ -166,14 +121,6 @@ export function SidebarNavigation({
     );
   }, [searchQuery, menuItems]);
 
-  // Check if the device is a mobile device
-  const isMobile = React.useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-    return false;
-  }, []);
-
   // Clear search and reset focus
   const handleClearSearch = () => {
     setSearchQuery("");
@@ -181,7 +128,7 @@ export function SidebarNavigation({
   };
 
   return (
-    <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide overscroll-contain">
+    <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
       {/* Search Input */}
       <div className="px-2 pt-1 pb-3" ref={searchRef}>
         <div className="relative">
@@ -189,36 +136,12 @@ export function SidebarNavigation({
             <Search className="h-4 w-4 text-[hsl(var(--sidebar-muted-foreground))]" />
           </div>
           <input
-            type="search"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck="false"
-            // Set inputMode to search only on desktop, none on mobile to prevent keyboard
-            inputMode={isMobile ? "none" : "search"} 
-            // Prevent mobile browsers from showing specialized keyboards
-            readOnly={isMobile}
+            type="text"
             className="block w-full pl-10 pr-10 py-2 text-sm rounded-md bg-[hsl(var(--sidebar-secondary))] text-[hsl(var(--sidebar-foreground))] placeholder:text-[hsl(var(--sidebar-muted-foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--sidebar-accent))] transition-all duration-200"
             placeholder="Search menu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => {
-              setSearchFocused(true);
-            }}
-            onBlur={() => {
-              setSearchFocused(false);
-            }}
-            onKeyDown={(e) => {
-              // Prevent keyboard shortcuts from triggering while searching
-              if (e.key === '/' || e.key === 'Escape' || (e.ctrlKey && e.key === 'k')) {
-                e.stopPropagation();
-                e.preventDefault();
-              }
-              // Close search results on Escape key
-              if (e.key === 'Escape') {
-                setSearchFocused(false);
-                setSearchQuery('');
-              }
-            }}
+            onFocus={() => setSearchFocused(true)}
           />
           {searchQuery && (
             <button 
@@ -491,6 +414,7 @@ export function SidebarNavigation({
                         <span>Visual Horror Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
+
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
@@ -501,6 +425,7 @@ export function SidebarNavigation({
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
+
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/accessibility'}
@@ -541,7 +466,7 @@ export function SidebarNavigation({
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
                     <div className="flex items-center">
-                      <CircleUserRound className="h-4 w-4 mr-2" />
+                      <UserCircle className="h-4 w-4 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
@@ -588,8 +513,18 @@ export function SidebarNavigation({
                         onClick={() => handleNavigation('/settings/connected')}
                         className={submenuItemClass}
                       >
-                        <User className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Link className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Connected Accounts</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/offline'}
+                        onClick={() => handleNavigation('/settings/offline')}
+                        className={submenuItemClass}
+                      >
+                        <Database className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Offline Access</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -610,9 +545,7 @@ export function SidebarNavigation({
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
-                  >
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>
@@ -629,7 +562,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
                         onClick={() => handleNavigation('/about')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/about')}
                         <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -640,7 +573,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/feedback'}
                         onClick={() => handleNavigation('/feedback')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/feedback')}
                         <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -651,7 +584,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/contact')}
                         <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -662,7 +595,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/report-bug'}
                         onClick={() => handleNavigation('/report-bug')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/report-bug')}
                         <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -673,7 +606,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/legal/terms'}
                         onClick={() => handleNavigation('/legal/terms')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/legal/terms')}
                         <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -684,7 +617,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/privacy')}
                         <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -695,7 +628,7 @@ export function SidebarNavigation({
                       <SidebarMenuSubButton
                         isActive={location === '/legal/copyright'}
                         onClick={() => handleNavigation('/legal/copyright')}
-                        className={submenuItemClass}
+                        className={submenuItemClass} data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
                         {renderActiveIndicator('/legal/copyright')}
                         <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
@@ -709,6 +642,8 @@ export function SidebarNavigation({
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      {/* Demo section removed */}
 
       {/* Footer Buttons */}
       <div className="mt-auto pt-4 border-t border-[hsl(var(--sidebar-border))]">
@@ -735,6 +670,8 @@ export function SidebarNavigation({
             Sign Out
           </Button>
         )}
+
+
 
         <button
           onClick={() => handleNavigation('/report-bug')}
