@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { SocialButtons } from "@/components/ui/social-buttons";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import ProfileImage from "@/components/ProfileImage";
 
 export default function AboutPage() {
   return (
@@ -13,16 +13,9 @@ export default function AboutPage() {
     >
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-primary/10 blur-md transform scale-110"></div>
-            <Avatar className="h-32 w-32 relative border-2 border-primary/40 shadow-lg ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-              <AvatarImage src="/images/IMG_5266.png" alt="Vanessa" />
-              <AvatarFallback>VR</AvatarFallback>
-            </Avatar>
-          </div>
           <div className="flex flex-col">
-            <h1 className="text-4xl font-bold text-center sm:text-left">About Me</h1>
-            <p className="text-muted-foreground italic mt-1">Writer, Designer, and Developer</p>
+            <h1 className="text-4xl font-bold text-center">About Me</h1>
+            <p className="text-muted-foreground italic mt-1 text-center">Writer, Designer, and Developer</p>
           </div>
         </div>
 
@@ -70,6 +63,29 @@ export default function AboutPage() {
               }}
               className="text-2xl"
             />
+          </div>
+          
+          <div className="mt-12 flex flex-col items-center justify-center">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 100, 
+                damping: 15,
+                delay: 0.3
+              }}
+            >
+              <ProfileImage />
+            </motion.div>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
+              <p className="mt-4 text-lg font-semibold text-center">Vanessa</p>
+              <p className="text-sm text-center text-muted-foreground">Horror Story Writer</p>
+            </motion.div>
           </div>
         </div>
       </div>
