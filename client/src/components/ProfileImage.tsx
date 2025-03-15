@@ -1,26 +1,134 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function ProfileImage() {
   const [loadError, setLoadError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
   
-  // Use PNG image as requested
-  const imagePath = '/images/IMG_5307.png';
-  
-  // Try to preload the image
+  // Debug message on component mount
   useEffect(() => {
-    const preloadImage = new Image();
-    preloadImage.src = imagePath;
-    
-    preloadImage.onload = () => {
-      setImageLoaded(true);
-    };
-    
-    preloadImage.onerror = () => {
-      setLoadError(true);
-    };
+    console.log("ProfileImage component mounted");
   }, []);
   
+  // Define single image (all other images removed per user request)
+  const images = [
+    { src: '/images/IMG_5266.png', alt: 'Profile Image 1' }
+  ];
+  
+  // Ensure images pre-load
+  useEffect(() => {
+    // Preload all carousel images to avoid loading issues
+    images.forEach((image) => {
+      const img = new Image();
+      img.src = image.src;
+      img.onload = () => {
+        console.log(`Image loaded: ${image.src}`);
+        setImageLoaded(true);
+      };
+      img.onerror = () => {
+        console.error(`Failed to load image: ${image.src}`);
+        setLoadError(true);
+      };
+    });
+  }, []);
+  
+  // Scroll to a specific image index with smoother animation
+  const scrollToIndex = useCallback((index: number) => {
+    const validIndex = ((index % images.length) + images.length) % images.length; // Ensures positive modulo
+    
+    if (carouselRef.current) {
+      const scrollAmount = validIndex * carouselRef.current.offsetWidth;
+      carouselRef.current.scrollTo({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
+      setActiveIndex(validIndex);
+    }
+  }, [images.length]);
+  
+  // Go to next image with loop
+  const handleNext = () => {
+    if (activeIndex < images.length - 1) {
+      scrollToIndex(activeIndex + 1);
+    } else {
+      scrollToIndex(0); // Loop back to the first image
+    }
+  };
+
+  // Go to previous image with loop
+  const handlePrev = () => {
+    if (activeIndex > 0) {
+      scrollToIndex(activeIndex - 1);
+    } else {
+      scrollToIndex(images.length - 1); // Loop to the last image
+    }
+  };
+
+  // Handle touch events for swipe gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  // Detect swipe direction and navigate
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffX = touchStartXRef.current - touchEndX;
+    const threshold = 50; // Minimum distance to trigger swipe
+    
+    if (Math.abs(diffX) > threshold) {
+      if (diffX > 0) {
+        // Swiped left, go next
+        handleNext();
+      } else {
+        // Swiped right, go previous
+        handlePrev();
+      }
+    }
+    
+    touchStartXRef.current = null;
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        handlePrev();
+      } else if (e.key === 'ArrowRight') {
+        handleNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeIndex]); // Add dependency to fix the closure issue
+
+  // Update the active index based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      if (carouselRef.current) {
+        const scrollLeft = carouselRef.current.scrollLeft;
+        const itemWidth = carouselRef.current.offsetWidth;
+        const index = Math.round(scrollLeft / itemWidth);
+        if (index !== activeIndex && index >= 0 && index < images.length) {
+          setActiveIndex(index);
+        }
+      }
+    };
+
+    const carouselElement = carouselRef.current;
+    if (carouselElement) {
+      carouselElement.addEventListener('scroll', handleScroll);
+      return () => carouselElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [activeIndex, images.length]);
+  
+  // Handle image error and loading state
   const handleImageError = () => {
     setLoadError(true);
   };
@@ -31,63 +139,70 @@ export default function ProfileImage() {
   
   return (
     <div className="relative flex justify-center mt-4" style={{ width: '100%' }}>
-      {/* Outer shadow container for dramatic horror effect */}
-      <div className="absolute rounded-full w-[210px] h-[210px] opacity-20 blur-md bg-black transform -translate-x-1 translate-y-2"></div>
+      {/* Subtle shadow container for depth */}
+      <div className="absolute rounded-full w-[210px] h-[210px] opacity-15 blur-md bg-black transform -translate-x-1 translate-y-2"></div>
+      
+      {/* Navigation buttons removed per user request */}
       
       <div className="relative" style={{ width: '200px', height: '200px' }}>
-        {/* Primary deep crimson glow effect behind the image - stronger in dark mode */}
-        <div className="absolute inset-0 rounded-full bg-[#8B0000]/50 dark:bg-[#8B0000]/70 blur-xl transform scale-[1.9] animate-pulse-slow"></div>
-        
-        {/* Secondary blood-red glow layer for depth - stronger in dark mode */}
-        <div className="absolute inset-0 rounded-full bg-[#660000]/40 dark:bg-[#660000]/60 blur-lg transform scale-[1.6] animate-pulse-medium"></div>
-        
-        {/* Third subtle burgundy glow layer for added dimensionality */}
-        <div className="absolute inset-0 rounded-full bg-[#990000]/35 dark:bg-[#990000]/50 blur-md transform scale-[1.3] animate-pulse opacity-90"></div>
-        
-        {/* Intense blood drip effect - only visible in dark mode */}
-        <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-3/4 h-8 bg-[#660000]/0 dark:bg-[#660000]/25 blur-md animate-pulse-medium rounded-b-3xl hidden dark:block"></div>
-        
-        {/* Container for the image */}
-        <div className="h-48 w-48 relative border-2 border-[#8B0000]/50 dark:border-[#8B0000]/70 shadow-xl 
-                      ring-2 ring-[#660000]/30 dark:ring-[#660000]/50 ring-offset-2 ring-offset-background 
+        {/* Reduced subtle glow effect behind the image */}
+        <div className="absolute inset-0 rounded-full bg-[#8B0000]/20 dark:bg-[#8B0000]/30 blur-xl transform scale-[1.2]" 
+             style={{ animation: 'pulse-slow 4s ease-in-out infinite' }}></div>
+                
+        {/* Container for the image carousel */}
+        <div className="h-48 w-48 relative border-2 border-[#8B0000]/30 dark:border-[#8B0000]/40 shadow-lg 
+                      ring-1 ring-[#660000]/20 dark:ring-[#660000]/30 ring-offset-1 ring-offset-background 
                       rounded-full overflow-hidden
-                      p-1 bg-background/50 mx-auto transition-all duration-500 
-                      hover:ring-[#990000]/80 hover:border-[#990000]/90 hover:ring-offset-4 
-                      hover:shadow-[0_0_20px_rgba(139,0,0,0.7)] dark:hover:shadow-[0_0_30px_rgba(139,0,0,0.9)]
-                      hover:scale-105">
-          {!loadError ? (
-            <div 
-              className="w-full h-full rounded-full overflow-hidden" 
-              style={{ position: "relative" }}
-            >
-              {/* New direct image positioning */}
-              <img 
-                src={imagePath}
-                alt="Author" 
-                loading="eager"
-                decoding="async"
-                style={{
-                  position: "absolute",
-                  height: "180%", /* 1.8x zoom as requested */
-                  width: "auto", /* Width auto to maintain aspect ratio */
-                  left: "53%", /* Slight rightward shift (3% from center) */
-                  top: "100%", /* Updated to 100% top position as requested */
-                  transform: "translate(-50%, -50%)", /* Center the image properly */
-                  objectFit: "cover", /* Ensure the image covers the area */
-                }}
-                onError={handleImageError}
-                onLoad={handleImageLoad}
-                className="transition-all duration-500 filter hover:contrast-[1.05] hover:brightness-[0.95]"
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center w-full h-full bg-muted/50 text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-          )}
+                      p-1 bg-background/70 mx-auto transition-all duration-700 
+                      hover:shadow-[0_0_15px_rgba(139,0,0,0.4)] dark:hover:shadow-[0_0_20px_rgba(139,0,0,0.5)]">
+          {/* Carousel wrapper */}
+          <div 
+            ref={carouselRef}
+            className="w-full h-full rounded-full overflow-hidden flex scroll-smooth"
+            style={{ 
+              position: "relative",
+              scrollSnapType: "x mandatory",
+              scrollbarWidth: "none", 
+              msOverflowStyle: "none",
+              overflowX: "auto",
+              display: "flex"
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Render all three images in the carousel */}
+            {images.map((image, idx) => (
+              <div 
+                key={idx}
+                className="min-w-full h-full rounded-full overflow-hidden flex-shrink-0 scroll-snap-align-start"
+                style={{ position: "relative" }}
+              >
+                <img 
+                  src={image.src}
+                  alt={image.alt} 
+                  loading="eager"
+                  decoding="async"
+                  style={{
+                    position: "absolute",
+                    height: "145%", /* Reduced zoom to 145% per user request */
+                    width: "auto", /* Width auto to maintain aspect ratio */
+                    left: "45%", /* Shifted left as requested (from 50% to 45%) */
+                    top: "20%", /* Keeps position high as requested */
+                    transform: "translate(-50%, -15%)", /* Adjusted for top focus */
+                    objectFit: "cover", /* Ensure the image covers the area */
+                    objectPosition: "center 10%", /* Focus point high */
+                    transition: "all 0.8s ease-in-out", /* Smoother animation transition */
+                  }}
+                  className="transition-all duration-1000"
+                  onError={handleImageError}
+                  onLoad={handleImageLoad}
+                />
+                {/* Overlay removed per user request */}
+              </div>
+            ))}
+          </div>
+          
+          {/* Dot indicators removed since there's only one image */}
         </div>
       </div>
     </div>

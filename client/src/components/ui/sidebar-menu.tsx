@@ -51,6 +51,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     }
     setLocation(path);
   }, [onNavigate, sidebar, setLocation]);
+  
+  // Function to render the active indicator for menu items
+  const renderActiveIndicator = (path: string) => {
+    if (location === path) {
+      return (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
+          <div className="h-4 w-1 rounded-r-md bg-primary shadow-[0_0_8px_rgba(var(--primary)/0.5)] animate-pulse-subtle" />
+          <div className="h-3 w-0.5 rounded-r-md bg-primary/40 ml-0.5 animate-pulse-slow" />
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Enhanced menu item class with hover effects
+  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
+  
+  // Enhanced submenu item class with hover effects
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
 
   return (
     <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
@@ -66,8 +85,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/'}
                 onClick={() => handleNavigation('/')}
                 tooltip="Home"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                className={menuItemClass}
               >
+                {renderActiveIndicator('/')}
                 <Home className="h-4 w-4" />
                 <span>Home</span>
               </SidebarMenuButton>
@@ -78,8 +98,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/stories'}
                 onClick={() => handleNavigation('/stories')}
                 tooltip="Index"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                className={menuItemClass}
               >
+                {renderActiveIndicator('/stories')}
                 <Scroll className="h-4 w-4" />
                 <span>Index</span>
               </SidebarMenuButton>
@@ -90,8 +111,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/reader'}
                 onClick={() => handleNavigation('/reader')}
                 tooltip="Reader"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                className={menuItemClass}
               >
+                {renderActiveIndicator('/reader')}
                 <Book className="h-4 w-4" />
                 <span>Reader</span>
               </SidebarMenuButton>
@@ -102,8 +124,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/community'}
                 onClick={() => handleNavigation('/community')}
                 tooltip="Community"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                className={menuItemClass}
               >
+                {renderActiveIndicator('/community')}
                 <Users className="h-4 w-4" />
                 <span>Community</span>
               </SidebarMenuButton>
@@ -115,8 +138,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 isActive={location === '/bookmarks'}
                 onClick={() => handleNavigation('/bookmarks')}
                 tooltip="Bookmarks"
-                className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                className={menuItemClass}
               >
+                {renderActiveIndicator('/bookmarks')}
                 <BookmarkIcon className="h-4 w-4" />
                 <span>Bookmarks</span>
               </SidebarMenuButton>
@@ -432,8 +456,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
                         onClick={() => handleNavigation('/about')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/about')}
                         <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>About Me</span>
                       </SidebarMenuSubButton>
@@ -442,8 +467,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/feedback'}
                         onClick={() => handleNavigation('/feedback')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/feedback')}
                         <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Feedback & Suggestions</span>
                       </SidebarMenuSubButton>
@@ -452,8 +478,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/contact')}
                         <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
@@ -462,8 +489,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/report-bug'}
                         onClick={() => handleNavigation('/report-bug')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/report-bug')}
                         <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Report a Bug</span>
                       </SidebarMenuSubButton>
@@ -472,8 +500,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/legal/terms'}
                         onClick={() => handleNavigation('/legal/terms')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/legal/terms')}
                         <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Terms of Service</span>
                       </SidebarMenuSubButton>
@@ -482,8 +511,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/privacy')}
                         <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Privacy Policy</span>
                       </SidebarMenuSubButton>
@@ -492,8 +522,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       <SidebarMenuSubButton
                         isActive={location === '/legal/copyright'}
                         onClick={() => handleNavigation('/legal/copyright')}
-                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                        className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] relative pl-6"
                       >
+                        {renderActiveIndicator('/legal/copyright')}
                         <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
