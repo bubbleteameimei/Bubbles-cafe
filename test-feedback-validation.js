@@ -1,48 +1,163 @@
-// Test script for feedback form validation
-console.log('Testing feedback form validation');
+// Comprehensive feedback testing script to validate the entire feedback system
 
-// This would typically be a test with Cypress, Jest or similar framework
-// Here we outline what a test would verify:
+const URL_BASE = 'http://localhost:3000';
 
-// Test Case 1: Empty form submission
-// - Submit empty form
-// - Expect validation errors for all required fields 
-// - Expect red outline on all form controls
-// - Expect error summary at top of form
+// Test feedback submission with missing fields
+async function testInvalidFeedback() {
+  console.log('Testing feedback validation...');
+  
+  const incompleteData = {
+    // Missing 'type' - required field
+    content: 'This is test feedback without a type'
+  };
+  
+  try {
+    console.log('Submitting incomplete feedback:', JSON.stringify(incompleteData, null, 2));
+    
+    const response = await fetch(`${URL_BASE}/api/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(incompleteData)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.error('Validation error: Incomplete feedback was accepted!');
+      return { success: false, data: result };
+    } else {
+      const errorData = await response.json();
+      console.log('Validation worked: Server correctly rejected incomplete feedback');
+      console.log('Error response:', JSON.stringify(errorData, null, 2));
+      return { success: true, error: errorData };
+    }
+  } catch (error) {
+    console.error('Exception during validation test:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-// Test Case 2: Invalid email format
-// - Enter valid name
-// - Enter invalid email (no @ symbol)
-// - Enter valid content and select type
-// - Submit form
-// - Expect validation error for email field only
-// - Expect green outline on valid fields
-// - Expect red outline on email field
+// Test feedback with minimum required fields
+async function testMinimalFeedback() {
+  console.log('Testing minimal valid feedback...');
+  
+  const minimalData = {
+    type: 'general',
+    content: 'This is minimal test feedback with only required fields'
+  };
+  
+  try {
+    console.log('Submitting minimal feedback:', JSON.stringify(minimalData, null, 2));
+    
+    const response = await fetch(`${URL_BASE}/api/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(minimalData)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Minimal feedback accepted successfully');
+      console.log('Response:', JSON.stringify(result, null, 2));
+      return { success: true, data: result };
+    } else {
+      const errorData = await response.json();
+      console.error('Error submitting minimal feedback:', errorData);
+      return { success: false, error: errorData };
+    }
+  } catch (error) {
+    console.error('Exception during minimal feedback test:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-// Test Case 3: Valid submission
-// - Enter valid data in all fields
-// - Expect green outlines on all fields
-// - Expect "form is ready to submit" message
-// - Submit form
-// - Expect success message
+// Test feedback with all possible fields
+async function testCompleteFeedback() {
+  console.log('Testing complete feedback submission...');
+  
+  const completeData = {
+    type: 'feature',
+    content: 'This is a comprehensive test of the feedback system with all fields',
+    rating: 5,
+    page: '/test-complete-feedback',
+    category: 'enhancement',
+    browser: 'Mozilla Firefox',
+    operatingSystem: 'macOS',
+    screenResolution: '2560x1440',
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0',
+    metadata: {
+      name: 'Complete Test',
+      email: 'complete@test.com',
+      additionalInfo: 'This is a test of all fields'
+    }
+  };
+  
+  try {
+    console.log('Submitting complete feedback data:', JSON.stringify(completeData, null, 2));
+    
+    const response = await fetch(`${URL_BASE}/api/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(completeData)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Complete feedback submitted successfully!');
+      console.log('Response:', JSON.stringify(result, null, 2));
+      return { success: true, data: result };
+    } else {
+      const errorData = await response.json();
+      console.error('Error submitting complete feedback:', errorData);
+      return { success: false, error: errorData };
+    }
+  } catch (error) {
+    console.error('Exception when submitting complete feedback:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-// Test Case 4: Real-time validation
-// - Start with empty form
-// - Type valid name
-// - Verify green outline appears as soon as name.length >= 2
-// - Type valid email
-// - Verify green outline appears as soon as email includes @ and .
-// - Select type
-// - Verify green outline appears
-// - Type short content (< 10 chars)
-// - Verify red outline when focus leaves field
-// - Extend to 10+ chars
-// - Verify green outline appears
+// Run all the tests
+async function runTests() {
+  console.log('=== Starting Feedback Validation Tests ===');
+  
+  // Test 1: Invalid feedback (missing required fields)
+  const invalidTest = await testInvalidFeedback();
+  
+  // Test 2: Minimal valid feedback
+  const minimalTest = await testMinimalFeedback();
+  
+  // Test 3: Complete feedback with all fields
+  const completeTest = await testCompleteFeedback();
+  
+  // Check if all tests succeeded  
+  const allPassed = 
+    (invalidTest.success === true) && 
+    (minimalTest.success === true) && 
+    (completeTest.success === true);
+  
+  console.log('=== Feedback Validation Tests Complete ===');
+  console.log(`Overall test result: ${allPassed ? 'PASSED' : 'FAILED'}`);
+  
+  return {
+    passed: allPassed,
+    invalidTest,
+    minimalTest,
+    completeTest
+  };
+}
 
-console.log('Validation features implemented:');
-console.log('✅ Visual validation indicators with colored borders');
-console.log('✅ Success checkmarks for valid fields');
-console.log('✅ Form error summary at the top of the form');
-console.log('✅ Form success indicator when all fields are valid');
-console.log('✅ Real-time validation as user types');
-console.log('✅ Character counter for content field');
+// Execute all tests
+runTests().then(results => {
+  if (!results.passed) {
+    console.error('Some tests failed!');
+    process.exit(1);
+  } else {
+    console.log('All tests passed successfully!');
+  }
+});

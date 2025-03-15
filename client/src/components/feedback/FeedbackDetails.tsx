@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from 'react';
-import { MoreHorizontal, Check, X, Clock, Tag, MessageCircle } from 'lucide-react';
+import { MoreHorizontal, Check, X, Clock, Tag, MessageCircle, Copy, Bot, AlertCircle, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { 
   DropdownMenu, 
@@ -15,6 +16,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FeedbackCategory, FeedbackStatus } from './FeedbackCategoryFilter';
 import { cn } from '@/lib/utils';
+
+export interface ResponseSuggestion {
+  suggestion: string;
+  confidence: number;
+  category: string;
+  tags?: string[];
+  template?: string;
+  isAutomated: boolean;
+}
 
 export interface FeedbackItem {
   id: number;
@@ -34,6 +44,8 @@ export interface FeedbackItem {
     email?: string;
   };
   internalNotes?: string;
+  responseSuggestion?: ResponseSuggestion;
+  responseHints?: string[];
 }
 
 interface FeedbackDetailsProps {
@@ -226,6 +238,74 @@ export function FeedbackDetails({ feedback, onStatusChange, onAddNote }: Feedbac
                 Mark as addressed in next release
               </label>
             </div>
+            
+            {/* AI Response Suggestion Section */}
+            {feedback.responseSuggestion && (
+              <div className="pt-3 border-t">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-xs flex items-center">
+                    <Bot className="h-3 w-3 mr-1" />
+                    AI Response Suggestion
+                    <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-500 border-blue-500/20">
+                      {Math.round(feedback.responseSuggestion.confidence * 100)}% confidence
+                    </Badge>
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => {
+                      if (feedback.responseSuggestion) {
+                        navigator.clipboard.writeText(feedback.responseSuggestion.suggestion);
+                        toast.success('Response suggestion copied to clipboard');
+                      }
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                    <span className="sr-only">Copy suggestion</span>
+                  </Button>
+                </div>
+                
+                <Card className="p-2 bg-muted/50 text-xs">
+                  <p>{feedback.responseSuggestion?.suggestion}</p>
+                </Card>
+                
+                {feedback.responseSuggestion?.tags && feedback.responseSuggestion.tags.length > 0 && (
+                  <div className="mt-1">
+                    <p className="text-[10px] text-muted-foreground flex items-center mb-1">
+                      <Tag className="h-3 w-3 mr-1" />
+                      Tags:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {feedback.responseSuggestion.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline" className="px-1 py-0 text-[10px]">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Admin Response Hints */}
+            {feedback.responseHints && feedback.responseHints.length > 0 && (
+              <div className="pt-3 border-t">
+                <p className="font-medium text-xs flex items-center mb-2">
+                  <Lightbulb className="h-3 w-3 mr-1" />
+                  Response Hints
+                </p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {feedback.responseHints.map((hint, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-primary mr-1">•</span>
+                      <span>{hint}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
           </div>
         )}
       </div>

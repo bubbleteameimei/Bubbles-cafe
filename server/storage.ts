@@ -208,6 +208,7 @@ export interface IStorage {
   getFeedback(id: number): Promise<UserFeedback | undefined>;
   getAllFeedback(limit?: number, status?: string): Promise<UserFeedback[]>;
   updateFeedbackStatus(id: number, status: string): Promise<UserFeedback>;
+  getUserFeedback(userId: number): Promise<UserFeedback[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1956,6 +1957,25 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('[Storage] Error updating feedback status:', error);
       throw new Error('Failed to update feedback status');
+    }
+  }
+
+  async getUserFeedback(userId: number): Promise<UserFeedback[]> {
+    try {
+      console.log(`[Storage] Retrieving feedback for user ID: ${userId}`);
+      
+      // Using the most efficient query pattern available
+      const feedbackList = await db.query.userFeedback.findMany({
+        where: eq(userFeedback.userId, userId),
+        orderBy: (userFeedbackTable, { desc }) => [desc(userFeedbackTable.createdAt)],
+      });
+      
+      console.log(`[Storage] Found ${feedbackList.length} feedback items for user ${userId}`);
+      return feedbackList;
+    } catch (error) {
+      console.error(`[Storage] Error retrieving user feedback:`, error);
+      // Return empty array instead of throwing to prevent cascade failures
+      return [];
     }
   }
 }

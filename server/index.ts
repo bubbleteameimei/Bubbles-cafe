@@ -14,6 +14,7 @@ import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
 import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
+import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -75,13 +76,20 @@ async function startServer() {
     });
 
     // Check database connection first
-    const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-    serverLogger.info('Database connected', { postsCount });
-
-    if (postsCount === 0) {
-      serverLogger.info('Seeding database...');
-      await seedDatabase();
-      serverLogger.info('Database seeding completed');
+    try {
+      const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+      serverLogger.info('Database connected', { postsCount });
+  
+      if (postsCount === 0) {
+        serverLogger.info('Seeding database...');
+        await seedDatabase();
+        serverLogger.info('Database seeding completed');
+      }
+    } catch (error) {
+      serverLogger.warn('Database table check failed, will attempt to continue', { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      // Continue execution anyway - tables should have been created by our init script
     }
 
     // Create server instance
@@ -94,10 +102,22 @@ async function startServer() {
       // Add global request logging in development
       app.use(requestLogger);
       
+      // Register main routes
       registerRoutes(app);
+      
+      // Register user feedback routes
+      registerUserFeedbackRoutes(app, storage);
+      
       await setupVite(app, server);
     } else {
       serverLogger.info('Setting up production environment');
+      
+      // Register main routes
+      registerRoutes(app);
+      
+      // Register user feedback routes
+      registerUserFeedbackRoutes(app, storage);
+      
       serveStatic(app);
     }
 

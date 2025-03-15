@@ -5,7 +5,8 @@ console.log('Setting up database...');
 
 try {
   console.log('Running database push...');
-  const output = execSync('npx drizzle-kit push:pg', { 
+  // Use the updated push command - the old command was deprecated
+  const output = execSync('npx drizzle-kit push', { 
     env: { ...process.env },
     encoding: 'utf-8' 
   });

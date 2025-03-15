@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import express from 'express';
 import * as session from 'express-session';
+import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
 import { z } from "zod";
 import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
@@ -1403,7 +1404,7 @@ export function registerRoutes(app: Express): Server {
         os: req.body.operatingSystem
       });
       
-      const { type, content, rating, page, browser, operatingSystem, screenResolution, userId, userAgent, category, metadata } = req.body;
+      const { type, content, rating, page, browser, operatingSystem, screenResolution, userAgent, category, metadata } = req.body;
       
       // Basic validation
       if (!type || !content) {
@@ -1412,6 +1413,14 @@ export function registerRoutes(app: Express): Server {
           hasContent: !!content 
         });
         return res.status(400).json({ error: "Type and content are required fields" });
+      }
+      
+      // Check for authenticated user
+      const user = req.user as any;
+      const userId = user?.id || null;
+      
+      if (userId) {
+        feedbackLogger.info('Associating feedback with authenticated user', { userId });
       }
       
       // Create feedback object
@@ -1423,7 +1432,7 @@ export function registerRoutes(app: Express): Server {
         browser: browser || "unknown",
         operatingSystem: operatingSystem || "unknown",
         screenResolution: screenResolution || "unknown",
-        userId: userId || null,
+        userId: userId, // Use the authenticated user's ID
         status: "pending",
         userAgent: userAgent || req.headers["user-agent"] || "unknown",
         category: category || "general",
@@ -1531,8 +1540,25 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Feedback not found" });
       }
       
-      feedbackLogger.info('Feedback retrieved successfully', { id, type: feedback.type });
-      res.status(200).json({ feedback });
+      // Use the imported functions from the top of the file
+      
+      // Generate automated response suggestion
+      const responseSuggestion = generateResponseSuggestion(feedback);
+      
+      // Get response hints for admin
+      const responseHints = getResponseHints(feedback);
+      
+      feedbackLogger.info('Feedback retrieved successfully with AI suggestions', { 
+        id, 
+        type: feedback.type,
+        suggestionConfidence: responseSuggestion.confidence
+      });
+      
+      res.status(200).json({ 
+        feedback,
+        responseSuggestion,
+        responseHints
+      });
     } catch (error) {
       feedbackLogger.error('Error fetching specific feedback', {
         id: req.params.id,
