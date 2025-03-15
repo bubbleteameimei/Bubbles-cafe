@@ -16,7 +16,7 @@ export default function AboutPage() {
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-primary/10 blur-md transform scale-110"></div>
             <Avatar className="h-32 w-32 relative border-2 border-primary/40 shadow-lg ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-              <AvatarImage src="/assets/images/author.png" alt="Vanessa" />
+              <AvatarImage src="/images/IMG_5266.png" alt="Vanessa" />
               <AvatarFallback>VR</AvatarFallback>
             </Avatar>
           </div>
