@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
-import OrDivider from "@/components/auth/OrDivider";
-import { useSocialAuth } from "@/hooks/use-social-auth";
+import { AuthButton } from "@/components/auth/auth-button";
 import "./auth.css";
+
+// Import user schema
+import { loginSchema } from "@shared/schema";
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -20,12 +21,12 @@ export default function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { loginMutation, registerMutation, socialLoginMutation } = useAuth();
+  const { login, registerMutation } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading || loginMutation.isPending || registerMutation.isPending) {
+    if (isLoading || registerMutation.isPending) {
       return; // Prevent multiple submissions
     }
     
@@ -33,7 +34,7 @@ export default function AuthPage() {
 
     try {
       // Enhanced logging for debugging
-      console.log("[Auth] Attempting authentication", { 
+      console.log("[Auth] Attempting authentication via form submit", { 
         mode: isSignIn ? "sign-in" : "sign-up",
         hasEmail: !!email,
         hasPassword: !!password,
@@ -42,39 +43,96 @@ export default function AuthPage() {
       });
 
       if (isSignIn) {
+        // Validate email and password
         if (!email || !password) {
           throw new Error("Please enter both email and password");
         }
         
-        console.log("[Auth] Submitting login request");
-        const result = await loginMutation.mutateAsync({ 
-          email, 
-          password, 
-          remember: rememberMe 
+        if (email.trim() === '') {
+          throw new Error("Email cannot be empty");
+        }
+        
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+        
+        console.log("[Auth] Validations passed, submitting login request");
+        // Use the direct login method
+        const result = await login(email, password, rememberMe);
+        
+        if (!result) {
+          throw new Error("Login failed - no user data received");
+        }
+        
+        console.log("[Auth] Login successful, redirecting", { userId: result.id });
+        
+        // Show success notification
+        toast({
+          title: "Success",
+          description: "You have been logged in successfully",
         });
         
-        console.log("[Auth] Login successful, redirecting", { userId: result?.id });
-        setLocation("/");
+        // Give a slight delay before redirecting to allow the toast to be seen
+        setTimeout(() => {
+          setLocation("/");
+        }, 300);
       } else {
+        // Registration validation
         if (!username || !email || !password) {
           throw new Error("All fields are required");
         }
         
-        console.log("[Auth] Submitting registration request");
+        if (username.trim() === '') {
+          throw new Error("Username cannot be empty");
+        }
+        
+        if (email.trim() === '') {
+          throw new Error("Email cannot be empty");
+        }
+        
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+        
+        console.log("[Auth] Validations passed, submitting registration request");
         const result = await registerMutation.mutateAsync({ 
           username, 
           email, 
           password 
         });
         
-        console.log("[Auth] Registration successful, redirecting", { userId: result?.id });
-        setLocation("/");
+        if (!result) {
+          throw new Error("Registration failed - no user data received");
+        }
+        
+        console.log("[Auth] Registration successful, redirecting", { userId: result.id });
+        
+        // Show success notification
+        toast({
+          title: "Account Created",
+          description: "Your account has been created successfully",
+        });
+        
+        // Give a slight delay before redirecting to allow the toast to be seen
+        setTimeout(() => {
+          setLocation("/");
+        }, 300);
       }
     } catch (err: any) {
       console.error("[Auth] Authentication error:", err);
+      
+      // Enhanced error reporting
+      const errorMessage = err?.message || "Authentication failed";
+      console.error("[Auth] Error details:", {
+        message: errorMessage,
+        stack: err?.stack,
+        isNetworkError: err?.name === 'NetworkError',
+        isAPIError: err?.isAPIError
+      });
+      
       toast({
         title: "Authentication Error",
-        description: err?.message || "Authentication failed",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -110,33 +168,7 @@ export default function AuthPage() {
           <div className="login-form">
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ display: isSignIn ? "block" : "none" }}>
-                {/* OAuth Sign In Buttons */}
-                <div className="social-login-buttons">
-                  <SocialLoginButtons 
-                    onSuccess={async (userData) => {
-                      console.log("Social login successful", userData);
-                      try {
-                        await socialLoginMutation.mutateAsync(userData);
-                        setLocation("/");
-                      } catch (error: any) {
-                        console.error("Failed to process social login:", error);
-                        toast({
-                          title: "Authentication Error",
-                          description: error?.message || "Failed to process social login",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                    onError={(error) => {
-                      toast({
-                        title: "Authentication Error",
-                        description: error.message || "Social sign-in failed",
-                        variant: "destructive"
-                      });
-                    }}
-                  />
-                  <OrDivider />
-                </div>
+                {/* Regular login only - social authentication removed */}
                 
                 {/* Email Field */}
                 <div className="group">
@@ -150,7 +182,7 @@ export default function AuthPage() {
                     className="auth-input"
                     required
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !loginMutation.isPending && !isLoading) {
+                      if (e.key === 'Enter' && !isLoading) {
                         e.preventDefault();
                         handleSubmit(e);
                       }
@@ -171,7 +203,7 @@ export default function AuthPage() {
                       className="auth-input pr-10"
                       required
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !loginMutation.isPending && !isLoading) {
+                        if (e.key === 'Enter' && !isLoading) {
                           e.preventDefault();
                           handleSubmit(e);
                         }
@@ -224,24 +256,12 @@ export default function AuthPage() {
 
                 {/* Sign In Button */}
                 <div className="group">
-                  <Button 
-                    type="submit" 
-                    className="w-full auth-submit-button"
-                    disabled={loginMutation.isPending || isLoading}
-                    onClick={(e) => {
-                      if (!loginMutation.isPending && !isLoading) {
-                        // Use a direct click handler in addition to form submit
-                        handleSubmit(e);
-                      }
-                    }}
-                  >
-                    {loginMutation.isPending || isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        SIGNING IN...
-                      </>
-                    ) : "SIGN IN"}
-                  </Button>
+                  <AuthButton
+                    email={email}
+                    password={password}
+                    rememberMe={rememberMe}
+                    isSignIn={true}
+                  />
                 </div>
 
                 <div className="tiny-disclaimer">
@@ -262,33 +282,7 @@ export default function AuthPage() {
               </div>
 
               <div style={{ display: isSignIn ? "none" : "block" }}>
-                {/* Social Sign Up Buttons */}
-                <div className="social-login-buttons">
-                  <SocialLoginButtons 
-                    onSuccess={async (userData) => {
-                      console.log("Social signup successful", userData);
-                      try {
-                        await socialLoginMutation.mutateAsync(userData);
-                        setLocation("/");
-                      } catch (error: any) {
-                        console.error("Failed to process social signup:", error);
-                        toast({
-                          title: "Registration Error",
-                          description: error?.message || "Failed to process social signup",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                    onError={(error) => {
-                      toast({
-                        title: "Registration Error",
-                        description: error.message || "Social sign-up failed",
-                        variant: "destructive"
-                      });
-                    }}
-                  />
-                  <OrDivider />
-                </div>
+                {/* Regular sign up only - social authentication removed */}
 
                 {/* Username Field */}
                 <div className="group">
@@ -372,24 +366,12 @@ export default function AuthPage() {
 
                 {/* Sign Up Button */}
                 <div className="group">
-                  <Button 
-                    type="submit" 
-                    className="w-full auth-submit-button"
-                    disabled={registerMutation.isPending || isLoading}
-                    onClick={(e) => {
-                      if (!registerMutation.isPending && !isLoading) {
-                        // Use a direct click handler in addition to form submit
-                        handleSubmit(e);
-                      }
-                    }}
-                  >
-                    {registerMutation.isPending || isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : "Sign Up"}
-                  </Button>
+                  <AuthButton
+                    email={email}
+                    password={password}
+                    username={username}
+                    isSignIn={false}
+                  />
                 </div>
 
                 <div className="tiny-disclaimer">

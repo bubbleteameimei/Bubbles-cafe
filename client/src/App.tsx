@@ -71,6 +71,7 @@ const CookiePolicyPage = withSuspense(React.lazy(() => import('./pages/legal/coo
 // Community Pages
 const CommunityPage = withSuspense(React.lazy(() => import('./pages/community')));
 const FeedbackPage = withSuspense(React.lazy(() => import('./pages/feedback')));
+const UserFeedbackDashboardPage = withSuspense(React.lazy(() => import('./pages/user/feedback-dashboard')));
 const GuidelinesPage = withSuspense(React.lazy(() => import('./pages/support/guidelines')));
 
 // Settings Pages
@@ -163,6 +164,7 @@ function App() {
                             {/* Community Routes */}
                             <Route path="/community" component={CommunityPage} />
                             <Route path="/feedback" component={FeedbackPage} />
+                            <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
                             <Route path="/support/guidelines" component={GuidelinesPage} />
 
                             {/* Settings Routes */}

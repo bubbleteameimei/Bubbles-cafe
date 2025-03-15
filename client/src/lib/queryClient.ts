@@ -87,9 +87,7 @@ async function throwIfResNotOk(res: Response) {
 
 // Enhanced API request with input validation and better error handling
 export async function apiRequest<T = unknown>(
-  method: string,
   url: string,
-  data?: any,
   options: RequestInit = {}
 ): Promise<T> {
   // Validate inputs
@@ -99,22 +97,18 @@ export async function apiRequest<T = unknown>(
 
   // Prepare request options
   const requestOptions: RequestInit = {
-    method,
+    method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
+    credentials: 'include', // Always include credentials for auth cookies
     ...options,
   };
 
-  // Add body for non-GET requests if data is provided
-  if (method !== 'GET' && data !== undefined) {
-    requestOptions.body = JSON.stringify(data);
-  }
-
   try {
     if (import.meta.env.DEV) {
-      console.log(`API Request to ${url}`, method);
+      console.log(`API Request to ${url}`, requestOptions.method);
     }
     
     // Handle network errors explicitly

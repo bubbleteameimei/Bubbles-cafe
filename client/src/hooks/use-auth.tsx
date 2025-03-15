@@ -2,7 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useState 
 import { useMutation, useQuery, useQueryClient, UseMutationResult } from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
-import { insertUserSchema } from '@shared/schema';
+import { insertUserSchema, loginSchema } from '@shared/schema';
 
 // Types
 type SelectUser = {
@@ -16,32 +16,14 @@ type SelectUser = {
   bio?: string | null;
 };
 
-type SocialUser = {
-  id: string;
-  email: string | null;
-  name: string | null;
-  photoURL: string | null;
-  provider: string;
-  token?: string;
-};
-
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
   login: (email: string, password: string, remember?: boolean) => Promise<SelectUser | void>;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
-  socialLoginMutation: UseMutationResult<SelectUser, Error, SocialUser>;
 };
-
-// Schemas
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  remember: z.boolean().optional(),
-});
 
 type LoginData = z.infer<typeof loginSchema>;
 type RegisterData = z.infer<typeof insertUserSchema>;
@@ -59,9 +41,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['auth', 'status'],
     queryFn: async () => {
       try {
-        return await apiRequest<{ isAuthenticated: boolean; user?: SelectUser }>('/api/auth/status');
+        console.log('[Auth] Fetching auth status from server');
+        const response = await apiRequest<{ isAuthenticated: boolean; user?: SelectUser }>('/api/auth/status');
+        
+        if (response?.isAuthenticated && response?.user) {
+          console.log('[Auth] User is authenticated:', {
+            id: response.user.id,
+            username: response.user.username,
+            isAdmin: response.user.isAdmin
+          });
+        } else {
+          console.log('[Auth] User is not authenticated');
+        }
+        
+        return response;
       } catch (error) {
-        console.error('Error fetching auth status:', error);
+        console.error('[Auth] Error fetching auth status:', error);
+        // Log more details about the error for debugging
+        if (error instanceof Error) {
+          console.error('[Auth] Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
+        }
         return { isAuthenticated: false };
       }
     },
@@ -79,42 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [isLoadingAuth, userData]);
-
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      console.log('[Auth] Initiating login request with credentials', { 
-        email: credentials.email,
-        hasPassword: !!credentials.password 
-      });
-
-      try {
-        const response = await apiRequest<SelectUser>('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
-        
-        console.log('[Auth] Login request successful', { userId: response.id });
-        return response;
-      } catch (error) {
-        console.error('[Auth] Login request failed', error);
-        throw error;
-      }
-    },
-    onSuccess: (user: SelectUser) => {
-      console.log('[Auth] Login mutation successful, updating state');
-      setUser(user);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
-    },
-    onError: (error: Error) => {
-      console.error('[Auth] Login mutation error:', error);
-      setError(error);
-    },
-  });
 
   // Register mutation
   const registerMutation = useMutation({
@@ -177,72 +144,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Social login mutation
-  const socialLoginMutation = useMutation({
-    mutationFn: async (socialUserData: SocialUser) => {
-      console.log('[Auth] Initiating social login request', { 
-        provider: socialUserData.provider,
-        hasEmail: !!socialUserData.email,
-        hasId: !!socialUserData.id,
-        hasToken: !!socialUserData.token
-      });
-
-      try {
-        const response = await apiRequest<SelectUser>('/api/auth/social-login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            providerId: socialUserData.id,
-            email: socialUserData.email,
-            displayName: socialUserData.name,
-            photoURL: socialUserData.photoURL,
-            provider: socialUserData.provider,
-            token: socialUserData.token
-          }),
-        });
-        
-        console.log('[Auth] Social login request successful', { userId: response.id });
-        return response;
-      } catch (error) {
-        console.error('[Auth] Social login request failed', error);
-        throw error;
-      }
-    },
-    onSuccess: (user: SelectUser) => {
-      console.log('[Auth] Social login mutation successful, updating state');
-      setUser(user);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
-    },
-    onError: (error: Error) => {
-      console.error('[Auth] Social login mutation error:', error);
-      setError(error);
-    },
-  });
-
   // Login convenience method
   const login = useCallback(async (email: string, password: string, remember?: boolean) => {
-    console.log('[Auth] Invoking login convenience method', { 
+    console.log('[Auth] Invoking login method', { 
       hasEmail: !!email, 
       hasPassword: !!password,
       remember
     });
     
     try {
-      console.log('[Auth] Attempting to login via convenience method');
-      const result = await loginMutation.mutateAsync({ email, password, remember });
-      console.log('[Auth] Login convenience method successful', { userId: result.id });
-      return result;
+      console.log('[Auth] Attempting to login');
+      
+      const response = await apiRequest<SelectUser>('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, remember }),
+      });
+      
+      console.log('[Auth] Login successful', { userId: response?.id });
+      setUser(response);
+      setError(null);
+      
+      // Force re-fetch of auth status to update UI
+      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
+      
+      // Log the successful authentication event
+      console.log('[Auth] User authenticated successfully, updating authentication state');
+      
+      return response;
     } catch (error) {
-      console.error('[Auth] Login convenience method failed', error);
+      console.error('[Auth] Login failed', error);
+      
+      // Enhanced error logging
       if (error instanceof Error) {
+        console.error('[Auth] Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        setError(error);
         throw error;
       }
-      throw new Error('Login failed with an unknown error');
+      
+      const unknownError = new Error('Login failed with an unknown error');
+      console.error('[Auth] Unknown error occurred during login');
+      setError(unknownError);
+      throw unknownError;
     }
-  }, [loginMutation]);
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider
@@ -251,10 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         error,
         login,
-        loginMutation,
         logoutMutation,
         registerMutation,
-        socialLoginMutation,
       }}
     >
       {children}

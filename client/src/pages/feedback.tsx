@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, ClipboardList } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -85,6 +86,7 @@ function getOperatingSystem(userAgent: string): string {
 
 export default function Feedback() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState<FeedbackFormData>({
     name: "",
@@ -233,6 +235,7 @@ export default function Feedback() {
           headers: {
             'Content-Type': 'application/json'
           },
+          credentials: 'include', // Include credentials for auth cookies
           body: JSON.stringify(data)
         });
         
@@ -356,10 +359,30 @@ export default function Feedback() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-4xl font-bold mb-8">Feedback & Suggestions</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8">
+        <h1 className="text-4xl font-bold">Feedback & Suggestions</h1>
+        
+        {user && (
+          <Button variant="outline" className="mt-4 sm:mt-0" asChild>
+            <a href="/feedback/dashboard" className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              View Your Feedback
+            </a>
+          </Button>
+        )}
+      </div>
       
       <div className="prose dark:prose-invert max-w-none mb-8">
         <p>We value your feedback and suggestions to improve our platform. Please let us know your thoughts, ideas, or report any issues you've encountered.</p>
+        
+        {!user && (
+          <Alert className="mt-4 bg-blue-800/10 border border-blue-500/50">
+            <AlertCircle className="h-4 w-4 text-blue-400" />
+            <AlertDescription className="text-blue-400">
+              <span className="font-medium">Tip:</span> Log in to view the status of your submitted feedback and track responses.
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       {submitted ? (
@@ -535,50 +558,50 @@ export default function Feedback() {
                   <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
                 )}
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
-              <div className="relative">
-                <Select 
-                  value={formData.type} 
-                  onValueChange={(value) => handleSelectChange('type', value)}
-                >
-                  <SelectTrigger 
-                    id="type" 
-                    className={`transition-all duration-200 mb-1 ${
-                      validationErrors.type 
-                        ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-1 outline-none" 
-                        : formData.type 
-                          ? "border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:ring-offset-1 outline-none" 
-                          : "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-1 outline-none"
-                    }`}
+              
+              <div className="space-y-2 sm:col-span-2">
+                <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
+                <div className="relative">
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(value) => handleSelectChange('type', value)}
                   >
-                    <SelectValue placeholder="Select type" />
-                    {formData.type && (
-                      <div className="absolute inset-y-0 right-[30px] flex items-center pr-2 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </SelectTrigger>
-                  <SelectContent side="bottom" className="max-h-[140px] overflow-y-auto w-full min-w-[180px]">
-                    {feedbackTypes.map((type) => (
-                      <SelectItem 
-                        key={type.value} 
-                        value={type.value}
-                        className="cursor-pointer focus:bg-primary/10 focus:text-foreground hover:bg-primary/10"
-                      >
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger 
+                      id="type" 
+                      className={`transition-all duration-200 mb-1 w-full ${
+                        validationErrors.type 
+                          ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-1 outline-none" 
+                          : formData.type 
+                            ? "border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:ring-offset-1 outline-none" 
+                            : "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-1 outline-none"
+                      }`}
+                    >
+                      <SelectValue placeholder="Select type" />
+                      {formData.type && (
+                        <div className="absolute inset-y-0 right-[30px] flex items-center pr-2 pointer-events-none">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </SelectTrigger>
+                    <SelectContent side="bottom" className="max-h-[140px] overflow-y-auto w-full">
+                      {feedbackTypes.map((type) => (
+                        <SelectItem 
+                          key={type.value} 
+                          value={type.value}
+                          className="cursor-pointer focus:bg-primary/10 focus:text-foreground hover:bg-primary/10"
+                        >
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {validationErrors.type && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.type}</p>
+                )}
               </div>
-              {validationErrors.type && (
-                <p className="text-sm text-red-500 mt-1">{validationErrors.type}</p>
-              )}
             </div>
             
             <div className="space-y-2">
