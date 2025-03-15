@@ -15,47 +15,30 @@ import {
   TabsList, 
   TabsTrigger 
 } from "@/components/ui/tabs";
-// Mock components for charts until we can properly integrate recharts
-// This prevents module import failures
-const ResponsiveContainer = ({ children, width, height }: any) => (
-  <div style={{ width: width || '100%', height: height || '100%' }}>{children}</div>
-);
+// Import recharts components
+import { 
+  ResponsiveContainer,
+  BarChart, 
+  LineChart,
+  AreaChart,
+  PieChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Bar,
+  Line,
+  Area,
+  Pie
+} from "recharts";
 
-const BarChart = ({ children, data, layout, margin }: any) => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-muted-foreground">Chart visualization will appear here</div>
-  </div>
-);
-
-const LineChart = ({ children, data, margin }: any) => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-muted-foreground">Chart visualization will appear here</div>
-  </div>
-);
-
-const AreaChart = ({ children, data, margin }: any) => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-muted-foreground">Chart visualization will appear here</div>
-  </div>
-);
-
-const PieChart = ({ children }: any) => (
-  <div className="flex items-center justify-center h-full">
-    <div className="text-muted-foreground">Chart visualization will appear here</div>
-  </div>
-);
-
-// Mock chart components
-const XAxis = ({ dataKey, type }: any) => null;
-const YAxis = ({ dataKey, type }: any) => null;
-const CartesianGrid = ({ strokeDasharray, opacity }: any) => null;
-const Tooltip = ({ content }: any) => null;
-const Legend = () => null;
-const Bar = ({ dataKey, name, fill, radius }: any) => null;
-const Line = ({ type, dataKey, stroke, activeDot, name }: any) => null;
-const Area = ({ type, dataKey, stroke, fillOpacity, fill }: any) => null;
-const Pie = ({ data, cx, cy, outerRadius, fill, dataKey, label }: any) => null;
-const Cell = ({ key, fill }: any) => null;
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartCell
+} from "@/components/ui/chart";
 
 // Type for tooltip props
 interface TooltipProps<ValueType = number, NameType = string> {
@@ -137,14 +120,12 @@ interface SiteAnalytics {
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background p-3 border border-border rounded-md shadow-md">
-        <p className="font-medium">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value?.toLocaleString()}
-          </p>
-        ))}
-      </div>
+      <ChartTooltipContent
+        active={active}
+        payload={payload as any}
+        label={label}
+        formatter={(value) => value.toLocaleString()}
+      />
     );
   }
   return null;
@@ -340,10 +321,10 @@ export default function SiteStatisticsPage() {
                       <XAxis dataKey="date" />
                       <YAxis />
                       <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <ChartTooltip content={<CustomTooltip />} />
                       <Area type="monotone" dataKey="views" stroke="#8884d8" fillOpacity={1} fill="url(#colorViews)" />
                       <Area type="monotone" dataKey="visitors" stroke="#82ca9d" fillOpacity={1} fill="url(#colorVisitors)" />
-                      <Legend />
+                      <ChartLegend />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -370,11 +351,11 @@ export default function SiteStatisticsPage() {
                         label={({ name, percent }: { name: string, percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
                         {deviceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <ChartCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                      <ChartTooltip />
+                      <ChartLegend />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -412,8 +393,8 @@ export default function SiteStatisticsPage() {
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" />
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
+                    <ChartTooltip content={<CustomTooltip />} />
+                    <ChartLegend />
                     <Bar dataKey="value" name="Percentage" fill="#8884d8" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -432,8 +413,8 @@ export default function SiteStatisticsPage() {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis dataKey="date" />
                     <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
+                    <ChartTooltip content={<CustomTooltip />} />
+                    <ChartLegend />
                     <Line type="monotone" dataKey="views" stroke="#8884d8" activeDot={{ r: 8 }} name="Views" />
                     <Line type="monotone" dataKey="visitors" stroke="#82ca9d" name="Visitors" />
                   </LineChart>
@@ -578,11 +559,11 @@ export default function SiteStatisticsPage() {
                       label={({ name, percent }: { name: string, percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
                       {deviceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <ChartCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <ChartTooltip />
+                    <ChartLegend />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -608,7 +589,7 @@ export default function SiteStatisticsPage() {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis dataKey="day" />
                     <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
+                    <ChartTooltip content={<CustomTooltip />} />
                     <Bar dataKey="views" name="Views" fill="#8884d8" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -687,7 +668,7 @@ export default function SiteStatisticsPage() {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis dataKey="hour" />
                     <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
+                    <ChartTooltip content={<CustomTooltip />} />
                     <Line type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} name="Active Users" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -715,7 +696,7 @@ export default function SiteStatisticsPage() {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis dataKey="week" />
                     <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
+                    <ChartTooltip content={<CustomTooltip />} />
                     <Bar dataKey="returnRate" name="Return Rate %" fill="#8884d8" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

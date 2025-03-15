@@ -45,10 +45,15 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 
@@ -193,8 +198,8 @@ export default function AdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <ChartTooltip />
+                    <ChartLegend />
                     <Line 
                       type="monotone" 
                       dataKey="visits" 
@@ -388,8 +393,8 @@ export default function AdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <ChartTooltip />
+                    <ChartLegend />
                     <Bar dataKey="visits" fill="#8884d8" name="Page Views" />
                     <Bar dataKey="comments" fill="#82ca9d" name="Comments" />
                     <Bar dataKey="likes" fill="#ffc658" name="Likes" />

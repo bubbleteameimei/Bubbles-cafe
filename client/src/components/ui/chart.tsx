@@ -158,17 +158,15 @@ function ChartTooltipContent({
   )
 }
 
-// Simple wrapper components using any type to avoid TypeScript errors
-function ChartLegend(props: any) {
-  return <Legend {...props} />;
-}
+// Simple re-export of recharts components to solve TypeScript issues
+const ChartLegend = Legend;
+const ChartTooltip = Tooltip;
+const ChartCell = Cell;
 
-function ChartTooltip(props: any) {
-  return <Tooltip {...props} />;
+export { 
+  ChartContainer, 
+  ChartTooltipContent, 
+  ChartLegend, 
+  ChartTooltip, 
+  ChartCell 
 }
-
-function ChartCell(props: any) {
-  return <Cell {...props} />;
-}
-
-export { ChartContainer, ChartLegend, ChartTooltip, ChartTooltipContent, ChartCell }

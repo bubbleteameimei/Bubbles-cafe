@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContactMessageSchema } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
+import { useToast, ToastVariant } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
   Form,
@@ -18,6 +18,13 @@ import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 
+// API response type
+interface ContactResponse {
+  message: string;
+  data: any;
+  emailStatus: 'sent' | 'failed';
+}
+
 export default function ContactForm() {
   const { toast } = useToast();
   const form = useForm({
@@ -32,17 +39,27 @@ export default function ContactForm() {
 
   const onSubmit = async (data: any) => {
     try {
-      const response = await apiRequest('POST', '/api/contact', data);
+      const response = await apiRequest<{
+        message: string;
+        data: any;
+        emailStatus: 'sent' | 'failed';
+      }>('POST', '/api/contact', data);
 
+      // Handle the case where message was saved but email failed
+      const toastVariant = response.emailStatus === "failed" ? "destructive" : "default";
+      
       toast({
-        title: "Message sent successfully",
+        title: response.emailStatus === "failed" ? "Message saved with warning" : "Message sent successfully",
         description: response.message || "Thank you for your message. I'll get back to you soon.",
+        variant: toastVariant,
       });
 
       form.reset();
     } catch (error: any) {
+      console.error("Contact form submission error:", error);
+      
       // Handle structured error responses
-      const errorDetails = error.details || {};
+      const errorDetails = error.data?.details || {};
 
       // Set form errors if we received field-specific errors
       Object.entries(errorDetails).forEach(([field, message]) => {

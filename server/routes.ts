@@ -455,109 +455,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Contact form submission
-  app.post("/api/contact", async (req, res) => {
-    try {
-      const { name, email, message, subject = 'Contact Form Message' } = req.body;
-      console.log('Received contact form submission from:', name);
-
-      // Input validation
-      if (!name || !email || !message) {
-        return res.status(400).json({
-          message: "Please fill in all required fields",
-          details: {
-            name: !name ? "Name is required" : null,
-            email: !email ? "Email is required" : null,
-            message: !message ? "Message is required" : null
-          }
-        });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        console.log('Invalid email format:', email);
-        return res.status(400).json({
-          message: "Invalid email format",
-          details: { email: "Please enter a valid email address" }
-        });
-      }
-
-      console.log('Saving message to database...');
-      // Save to database first
-      const savedMessage = await storage.createContactMessage({
-        name,
-        email,
-        message,
-        subject
-      });
-      console.log('Message saved successfully with ID:', savedMessage.id);
-
-      // Attempt to send email notification
-      let emailSent = false;
-      try {
-        console.log('Attempting to send email notification...');
-        const emailBody = `
-New message received from your horror blog contact form:
-
-Sender Details:
---------------
-Name: ${name}
-Email: ${email}
-
-Message Content:
----------------
-${message}
-
-Timestamp: ${new Date().toLocaleString()}
-`;
-
-        const emailHtml = `
-<h2>New message received from your horror blog contact form</h2>
-
-<h3>Sender Details:</h3>
-<p><strong>Name:</strong> ${name}</p>
-<p><strong>Email:</strong> ${email}</p>
-
-<h3>Message Content:</h3>
-<p style="white-space: pre-wrap;">${message}</p>
-
-<p><small>Received at: ${new Date().toLocaleString()}</small></p>
-`;
-        await transporter.sendMail({
-          from: 'vantalison@gmail.com',
-          to: 'vantalison@gmail.com',
-          subject: `New Contact Form Message from ${name}`,
-          text: emailBody,
-          html: emailHtml
-        });
-        emailSent = true;
-        console.log('Email notification sent successfully');
-      } catch (emailError: any) {
-        console.error('Email sending failed:', {
-          error: emailError.message,
-          code: emailError.code,
-          command: emailError.command,
-          response: emailError.response
-        });
-      }
-
-      // Return appropriate response
-      res.json({
-        message: emailSent
-          ? "Message sent successfully"
-          : "Message saved successfully, but there was an issue with email notification. Our team has been notified.",
-        data: savedMessage,
-        emailStatus: emailSent ? 'sent' : 'failed'
-      });
-    } catch (error: unknown) {
-      console.error("Contact form error:", error);
-      res.status(500).json({
-        message: "Failed to process your message. Please try again later.",
-        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
-      });
-    }
-  });
+  // Contact form submission handled below around line 1392
 
   // Get contact messages (admin only)
 
@@ -1464,6 +1362,107 @@ Timestamp: ${new Date().toLocaleString()}
     }
   });
 
+  // Contact form submission
+  app.post("/api/contact", async (req: Request, res: Response) => {
+    try {
+      const { name, email, message, subject = 'Contact Form Message' } = req.body;
+      console.log('Received contact form submission from:', name);
+
+      // Input validation
+      if (!name || !email || !message) {
+        return res.status(400).json({
+          message: "Please fill in all required fields",
+          details: {
+            name: !name ? "Name is required" : null,
+            email: !email ? "Email is required" : null,
+            message: !message ? "Message is required" : null
+          }
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        console.log('Invalid email format:', email);
+        return res.status(400).json({
+          message: "Invalid email format",
+          details: { email: "Please enter a valid email address" }
+        });
+      }
+
+      console.log('Saving message to database...');
+      // Save to database first
+      const savedMessage = await storage.createContactMessage({
+        name,
+        email,
+        message,
+        subject
+      });
+      console.log('Message saved successfully with ID:', savedMessage.id);
+
+      // Attempt to send email notification
+      let emailSent = false;
+      try {
+        console.log('Attempting to send email notification...');
+        const emailBody = `
+New message received from your horror blog contact form:
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+
+Time: ${new Date().toLocaleString()}
+Message ID: ${savedMessage.id}
+`;
+
+        const mailOptions = {
+          from: process.env.GMAIL_USER || 'vantalison@gmail.com',
+          to: 'vantalison@gmail.com', // Hardcoded primary recipient
+          subject: `[Horror Blog] New Contact Form Message: ${subject}`,
+          text: emailBody,
+        };
+
+        // Try primary Gmail transport first
+        try {
+          console.log('Sending email via primary Gmail transport...');
+          await primaryTransporter.sendMail(mailOptions);
+          console.log('Email notification sent successfully via Gmail');
+          emailSent = true;
+        } catch (primaryError) {
+          console.error('Failed to send via Gmail, trying fallback:', primaryError);
+          
+          // Try fallback transport if Gmail fails
+          try {
+            console.log('Attempting to send via fallback transport...');
+            await fallbackTransporter.sendMail(mailOptions);
+            console.log('Email notification sent successfully via fallback');
+            emailSent = true;
+          } catch (fallbackError) {
+            console.error('Fallback transport also failed:', fallbackError);
+            throw fallbackError; // Re-throw to be caught by outer try/catch
+          }
+        }
+      } catch (emailError) {
+        console.error('All email transports failed:', emailError);
+        // We continue even if email fails - the message is already saved in DB
+      }
+
+      res.status(200).json({
+        message: emailSent 
+          ? "Message received successfully"
+          : "Message saved successfully, but there was an issue with email notification. Our team has been notified.",
+        data: savedMessage,
+        emailStatus: emailSent ? "success" : "failed"
+      });
+    } catch (error) {
+      console.error('Error processing contact form submission:', error);
+      res.status(500).json({ message: "Failed to process your message. Please try again later." });
+    }
+  });
+
   // Add error logger middleware
   app.use(errorLogger);
   
@@ -1565,7 +1564,8 @@ Timestamp: ${new Date().toLocaleString()}
 }
 
 // Configure nodemailer with optimized settings
-const transporter = createTransport({
+// Primary Gmail transporter
+const primaryTransporter = createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
@@ -1584,6 +1584,16 @@ const transporter = createTransport({
   tls: {
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2'
+  }
+});
+
+// Secondary fallback transporter using a different service
+// This is used if the primary Gmail transport fails
+const fallbackTransporter = createTransport({
+  service: 'SendGrid',
+  auth: {
+    user: process.env.SENDGRID_USER || 'apikey',
+    pass: process.env.SENDGRID_API_KEY
   }
 });
 
