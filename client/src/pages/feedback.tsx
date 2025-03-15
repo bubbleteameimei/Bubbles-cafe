@@ -561,7 +561,8 @@ export default function Feedback() {
               
               <div className="space-y-2 sm:col-span-2">
                 <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
-                <div className="relative">
+                <div className="relative max-w-md mx-auto sm:mx-0">
+                  {/* Use Select component without className prop */}
                   <Select 
                     value={formData.type} 
                     onValueChange={(value) => handleSelectChange('type', value)}

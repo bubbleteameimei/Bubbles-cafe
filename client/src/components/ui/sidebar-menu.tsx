@@ -455,7 +455,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className="text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
                       >
                         <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Contact Support</span>
+                        <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
