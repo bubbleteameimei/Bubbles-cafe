@@ -56,6 +56,14 @@ html.dark *, html.light * {
     --input: 215 20% 88%;              /* Light input border */
     --ring: 209 75% 48%;               /* Same as primary */
     --radius: 0.5rem;                  /* Rounded corners */
+    
+    /* Chart Colors */
+    --chart-1: 209 75% 48%;            /* Blue - same as primary */
+    --chart-2: 259 75% 48%;            /* Purple */
+    --chart-3: 329 75% 48%;            /* Pink */
+    --chart-4: 24 75% 48%;             /* Orange */
+    --chart-5: 160 75% 48%;            /* Teal */
+    --chart-6: 0 75% 48%;              /* Red */
   }
 
   /* Base layout and typography */

@@ -61,6 +61,7 @@ const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks'))
 const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
 const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
 const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
+const ChartDashboardPage = withSuspense(React.lazy(() => import('./pages/chart-dashboard')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -88,6 +89,7 @@ const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settin
 // Admin Pages
 const AdminPage = withSuspense(React.lazy(() => import('./pages/admin')));
 const AdminAnalyticsPage = withSuspense(React.lazy(() => import('./pages/admin/analytics')));
+const AdminAnalyticsDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/analytics-dashboard')));
 const AdminUsersPage = withSuspense(React.lazy(() => import('./pages/admin/users')));
 const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/settings')));
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
@@ -151,6 +153,7 @@ function App() {
                             <Route path="/demo/toast" component={ToastDemoPage} />
                             <Route path="/demo/toast-docs" component={ToastDocsPage} />
                             <Route path="/toast-test" component={ToastTestPage} />
+                            <Route path="/charts" component={ChartDashboardPage} />
 
                             {/* Legal Routes */}
                             <Route path="/legal/copyright" component={CopyrightPage} />
@@ -179,6 +182,7 @@ function App() {
                             <ProtectedRoute path="/admin" component={AdminPage} requireAdmin />
                             <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin />
                             <ProtectedRoute path="/admin/analytics" component={AdminAnalyticsPage} requireAdmin />
+                            <ProtectedRoute path="/admin/analytics-dashboard" component={AdminAnalyticsDashboardPage} requireAdmin />
                             <ProtectedRoute path="/admin/users" component={AdminUsersPage} requireAdmin />
                             <ProtectedRoute path="/admin/stories" component={AdminPostsPage} requireAdmin />
                             <ProtectedRoute path="/admin/posts" component={AdminPostsPage} requireAdmin />

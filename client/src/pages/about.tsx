@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { SocialButtons } from "@/components/ui/social-buttons";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function AboutPage() {
   return (
@@ -11,8 +12,18 @@ export default function AboutPage() {
       className="container max-w-4xl mx-auto px-4 py-8"
     >
       <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold">About Me</h1>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-primary/10 blur-md transform scale-110"></div>
+            <Avatar className="h-32 w-32 relative border-2 border-primary/40 shadow-lg ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+              <AvatarImage src="/assets/images/author.png" alt="Vanessa" />
+              <AvatarFallback>VR</AvatarFallback>
+            </Avatar>
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-4xl font-bold text-center sm:text-left">About Me</h1>
+            <p className="text-muted-foreground italic mt-1">Writer, Designer, and Developer</p>
+          </div>
         </div>
 
         <div className="prose dark:prose-invert max-w-none space-y-6">

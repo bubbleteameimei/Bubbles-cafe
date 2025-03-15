@@ -107,7 +107,7 @@
     "react-resizable-panels": "^2.1.4",
     "react-toastify": "^11.0.5",
     "react-tsparticles": "^2.12.2",
-    "recharts": "^2.13.0",
+    "recharts": "^2.15.1",
     "remark-gfm": "^4.0.1",
     "rimraf": "^6.0.1",
     "sonner": "^2.0.1",

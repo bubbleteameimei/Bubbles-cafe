@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, decimal, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, jsonb, decimal, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -119,6 +119,7 @@ export const contactMessages = pgTable("contact_messages", {
   email: text("email").notNull(),
   subject: text("subject").notNull(),
   message: text("message").notNull(),
+  metadata: json("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -433,7 +434,9 @@ export const insertSecretProgressSchema = createInsertSchema(secretProgress).omi
 export type InsertSecretProgress = z.infer<typeof insertSecretProgressSchema>;
 export type SecretProgress = typeof secretProgress.$inferSelect;
 
-export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true });
+export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, createdAt: true }).extend({
+  metadata: z.record(z.any()).optional()
+});
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 
