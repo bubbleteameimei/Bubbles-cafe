@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import CommentSection from "@/components/blog/comment-section";
 import { motion } from "framer-motion";

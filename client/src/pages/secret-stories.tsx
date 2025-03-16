@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function SecretStories() {
@@ -24,7 +24,11 @@ export default function SecretStories() {
   });
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex justify-center items-center min-h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error || !postsResponse?.posts) {

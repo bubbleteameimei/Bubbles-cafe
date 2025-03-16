@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 
 export default function Schoop() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,7 +40,11 @@ export default function Schoop() {
   }, [currentIndex]);
 
   if (isLoading || !posts || posts.length === 0) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   const currentPost = posts[currentIndex];

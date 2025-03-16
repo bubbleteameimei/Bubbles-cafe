@@ -10,7 +10,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
-import { LoadingScreen } from './components/ui/loading-screen';
+// Removed LoadingScreen import
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -41,7 +41,7 @@ const withSuspense = <P extends object>(
 ) => {
   return function WithSuspenseWrapper(props: any) {
     return (
-      <React.Suspense fallback={<LoadingScreen />}>
+      <React.Suspense fallback={<div></div>}>
         {/* @ts-ignore - This works in practice but has TypeScript issues */}
         <Component {...props} />
       </React.Suspense>

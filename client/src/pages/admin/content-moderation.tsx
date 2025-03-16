@@ -44,7 +44,7 @@ interface ExtendedReportedContent extends ReportedContent {
 }
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+// LoadingScreen import removed
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -355,7 +355,14 @@ export default function ContentModerationPage() {
   }
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex items-center justify-center w-full h-[50vh]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Loading content moderation data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

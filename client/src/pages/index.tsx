@@ -133,8 +133,14 @@ export default function IndexView() {
   };
 
   if (isLoading) {
-    // Use the primary loading screen component
-    return <LoadingScreen />;
+    // Return simple loading indicator instead of LoadingScreen
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Loading stories...</h2>
+        </div>
+      </div>
+    );
   }
 
   if (error || !data?.pages[0]?.posts) {

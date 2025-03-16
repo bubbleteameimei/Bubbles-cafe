@@ -1,9 +1,9 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navigate } from "wouter";
+import { Redirect } from "wouter";
 import { type Post } from "@shared/schema";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 
 interface PostMetadata {
   isCommunityPost?: boolean;
@@ -72,12 +71,17 @@ export default function AdminContentPage() {
   });
 
   if (authLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Verifying access...</p>
+      </div>
+    );
   }
 
   // Redirect if not admin
   if (!user?.isAdmin) {
-    return <Navigate to="/" />;
+    return <Redirect to="/" />;
   }
 
   const handleDelete = async (postId: number) => {
@@ -89,7 +93,12 @@ export default function AdminContentPage() {
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Loading content...</p>
+      </div>
+    );
   }
 
   return (

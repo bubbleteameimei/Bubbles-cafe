@@ -2,9 +2,8 @@ import React from 'react';
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Redirect } from "wouter";
-import { TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp, Bell, Activity } from "lucide-react";
+import { TrendingUp, Users, Clock, Eye, Monitor, ArrowDownUp, Bell, Activity, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -64,7 +63,12 @@ export default function AdminAnalyticsPage() {
   });
 
   if (analyticsLoading || notificationsLoading || logsLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Loading analytics data...</p>
+      </div>
+    );
   }
 
   if (analyticsError) {

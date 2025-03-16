@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPost } from "@/lib/wordpress-api";
 import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 
 // Function to extract the most impactful horror line
 function extractHorrorExcerpt(content: string): string {
@@ -51,7 +51,11 @@ function Post() {
   });
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error) {

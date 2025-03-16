@@ -63,18 +63,19 @@ import {
   BarChart as BarChartIcon, 
   PieChart as PieChartIcon,
   LineChart as LineChartIcon,
-  Gauge
+  Gauge,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-// Create loading component for the page
-const LoadingScreen = () => (
+// Simple loading indicator component
+const LoadingIndicator = () => (
   <div className="flex items-center justify-center w-full h-[50vh]">
     <div className="flex flex-col items-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
       <p className="mt-4 text-muted-foreground">Loading analytics data...</p>
     </div>
   </div>
@@ -184,7 +185,7 @@ export default function SiteStatisticsPage() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   if (isLoading) {
-    return <LoadingScreen />;
+    return <LoadingIndicator />;
   }
 
   if (error) {

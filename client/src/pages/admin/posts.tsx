@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Redirect } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,7 +125,12 @@ export default function AdminPostsPage() {
   });
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-muted-foreground">Loading posts...</p>
+      </div>
+    );
   }
 
   if (error) {

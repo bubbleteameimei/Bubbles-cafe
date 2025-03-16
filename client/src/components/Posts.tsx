@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Loader2 } from "lucide-react";
 
 function Posts() {
   const [page, setPage] = useState(1);
@@ -14,7 +14,11 @@ function Posts() {
   });
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error) {
