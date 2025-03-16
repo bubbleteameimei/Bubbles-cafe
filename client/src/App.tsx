@@ -121,10 +121,10 @@ const AppContent = () => {
       {/* Desktop Sidebar */}
       <aside className="fixed top-0 left-0 z-40 h-screen w-64 hidden lg:block overflow-hidden">
         <div className="h-full w-full">
-          <div className="h-[56px] px-4 flex items-center border-b border-[var(--ios-separator)] bg-[#1c1c1e]">
-            <h1 className="text-white font-medium text-lg">Horror Stories</h1>
+          <div className="h-[56px] px-4 flex items-center border-b border-border bg-background">
+            <h1 className="text-foreground font-medium text-lg">Horror Stories</h1>
           </div>
-          <SidebarNavigationIOS user={user} logoutMutation={logoutMutation} />
+          <SidebarNavigation onNavigate={() => {}} />
         </div>
       </aside>
 

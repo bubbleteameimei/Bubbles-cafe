@@ -637,8 +637,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Demo section removed */}
-
       {/* Footer Buttons */}
       <div className="mt-auto pt-4 border-t border-[hsl(var(--sidebar-border))]">
         {!user ? (
@@ -664,8 +662,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             Sign Out
           </Button>
         )}
-
-
 
         <button
           onClick={() => handleNavigation('/report-bug')}
