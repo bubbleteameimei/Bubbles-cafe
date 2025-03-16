@@ -14,7 +14,7 @@ export function ThemeToggleButton({ className = "" }: ThemeToggleButtonProps) {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={`w-8 h-8 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 ${className}`}
+      className={`w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 ${className}`}
       aria-label="Toggle theme"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >

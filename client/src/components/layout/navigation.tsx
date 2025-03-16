@@ -4,8 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { SidebarNavigationIOS } from "@/components/ui/sidebar-menu-ios";
-import { Menu } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/components/NotificationProvider";
 import { useTheme } from "@/components/theme-provider";
@@ -58,7 +57,7 @@ export default function Navigation() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-[280px]">
-              <SidebarNavigationIOS onNavigate={() => setIsOpen(false)} user={user} logoutMutation={null} />
+              <SidebarNavigation onNavigate={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>
           
@@ -94,7 +93,7 @@ export default function Navigation() {
         </div>
 
         {/* Right-side Actions */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-5">
           <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} />
           <ThemeToggleButton />
           {!user ? (
@@ -113,18 +112,24 @@ export default function Navigation() {
               </span>
             </Button>
           ) : (
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={() => setLocation('/settings/profile')}
-              className="uppercase tracking-wider touch-manipulation transition-all duration-150 ease-out active:scale-95 active:opacity-90 relative"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <span className="relative">
-                Profile
-                <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
-              </span>
-            </Button>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLocation('/settings/profile')}
+                className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 mb-1"
+                aria-label="Profile"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <span className="relative">
+                  <User className="h-4 w-4" strokeWidth={1.75} />
+                  <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
+                </span>
+              </Button>
+              <div className="absolute top-[38px] text-[10px] font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30">
+                {user?.username}
+              </div>
+            </div>
           )}
         </div>
       </div>

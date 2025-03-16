@@ -5,7 +5,7 @@ import {
   Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
-  LineChart, BarChart, Search, X
+  LineChart, BarChart
 } from "lucide-react"
 
 
@@ -40,24 +40,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [searchFocused, setSearchFocused] = React.useState(false);
-  const searchRef = React.useRef<HTMLDivElement>(null);
   const sidebar = useSidebar();
-  
-  // Handle clicks outside of search component
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchFocused(false);
-      }
-    };
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const handleNavigation = React.useCallback((path: string) => {
     if (onNavigate) {
@@ -74,111 +57,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     if (location === path) {
       return (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
-          <div className="h-4 w-1 rounded-r-md bg-primary shadow-[0_0_8px_rgba(var(--primary)/0.5)] animate-pulse-subtle" />
-          <div className="h-3 w-0.5 rounded-r-md bg-primary/40 ml-0.5 animate-pulse-slow" />
+          <div className="h-3 w-0.5 rounded-r-md bg-primary/80 animate-pulse-subtle" />
         </div>
       );
     }
     return null;
   };
 
-  // Enhanced menu item class with hover effects
-  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
+  // Enhanced menu item class with hover effects and prevent text wrapping
+  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap py-0.5";
   
-  // Enhanced submenu item class with hover effects
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6";
+  // Enhanced submenu item class with hover effects and prevent text wrapping
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap";
 
-  // Define menu structure for searchable items
-  const menuItems = React.useMemo(() => [
-    { path: '/', label: 'Home', icon: <Home className="h-4 w-4" /> },
-    { path: '/stories', label: 'Index', icon: <Scroll className="h-4 w-4" /> },
-    { path: '/reader', label: 'Reader', icon: <Book className="h-4 w-4" /> },
-    { path: '/community', label: 'Community', icon: <Users className="h-4 w-4" /> },
-    { path: '/bookmarks', label: 'Bookmarks', icon: <BookmarkIcon className="h-4 w-4" /> },
-    ...(user?.isAdmin ? [
-      { path: '/admin/dashboard', label: 'Admin Dashboard', icon: <Monitor className="h-4 w-4" /> },
-      { path: '/admin/users', label: 'Manage Users', icon: <Users className="h-4 w-4" /> },
-      { path: '/admin/stories', label: 'Manage Stories', icon: <ScrollText className="h-4 w-4" /> },
-      { path: '/admin/content', label: 'Content', icon: <FileText className="h-4 w-4" /> },
-      { path: '/admin/content-moderation', label: 'Moderation', icon: <ShieldAlert className="h-4 w-4" /> },
-      { path: '/admin/analytics', label: 'Analytics', icon: <LineChart className="h-4 w-4" /> },
-      { path: '/admin/site-statistics', label: 'Site Statistics', icon: <BarChart className="h-4 w-4" /> },
-      { path: '/admin/feedback', label: 'User Feedback', icon: <MessageSquare className="h-4 w-4" /> },
-      { path: '/admin/bug-reports', label: 'Bug Reports', icon: <Bug className="h-4 w-4" /> },
-    ] : []),
-    { path: '/settings/display', label: 'Visual Horror Settings', icon: <Palette className="h-4 w-4" /> },
-    { path: '/settings/fonts', label: 'Font Settings', icon: <Type className="h-4 w-4" /> },
-    { path: '/settings/accessibility', label: 'Reading Preferences', icon: <HelpCircle className="h-4 w-4" /> },
-    { path: '/settings/text-to-speech', label: 'Text-to-Speech', icon: <Volume2 className="h-4 w-4" /> },
-  ], [user?.isAdmin]);
 
-  // Filter menu items based on search query
-  const filteredMenuItems = React.useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    
-    return menuItems.filter(item => 
-      item.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      item.path.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, menuItems]);
 
-  // Clear search and reset focus
-  const handleClearSearch = () => {
-    setSearchQuery("");
-    setSearchFocused(false);
-  };
+
 
   return (
-    <div className="flex flex-col space-y-2 p-2 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
-      {/* Search Input */}
-      <div className="px-2 pt-1 pb-3" ref={searchRef}>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-4 w-4 text-[hsl(var(--sidebar-muted-foreground))]" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-10 py-2 text-sm rounded-md bg-[hsl(var(--sidebar-secondary))] text-[hsl(var(--sidebar-foreground))] placeholder:text-[hsl(var(--sidebar-muted-foreground))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--sidebar-accent))] transition-all duration-200"
-            placeholder="Search menu..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-          />
-          {searchQuery && (
-            <button 
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-[hsl(var(--sidebar-muted-foreground))] hover:text-[hsl(var(--sidebar-foreground))]"
-              onClick={handleClearSearch}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Search Results */}
-        {searchFocused && searchQuery.trim() !== "" && (
-          <div className="mt-1 p-1 rounded-md bg-[hsl(var(--sidebar-secondary))] border border-[hsl(var(--sidebar-border))] shadow-lg max-h-60 overflow-y-auto dropdown-menu-animation">
-            {filteredMenuItems.length > 0 ? (
-              filteredMenuItems.map((item) => (
-                <button
-                  key={item.path}
-                  className="flex items-center w-full px-3 py-2 text-sm text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] rounded-md transition-colors duration-200"
-                  onClick={() => {
-                    handleNavigation(item.path);
-                    handleClearSearch();
-                  }}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-sm text-[hsl(var(--sidebar-muted-foreground))]">
-                No menu items found
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col space-y-0 p-1 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
 
       {/* Main Navigation */}
       <SidebarGroup>
@@ -268,7 +165,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                       <div className="flex items-center">
                         <Shield className="h-4 w-4 mr-2" />
                         <span>Admin Controls</span>
@@ -391,7 +288,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
                   >
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
@@ -465,7 +362,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                     <div className="flex items-center">
                       <UserCircle className="h-4 w-4 mr-2" />
                       <span>Account Settings</span>
@@ -546,7 +443,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>

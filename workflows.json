@@ -14,7 +14,7 @@
     "onAfterCompleted": "continue",
     "persistent": true,
     "type": "web",
-    "public_address": "http://localhost:3000",
+    "public_address": "https://${REPL_SLUG}.${REPL_OWNER}.repl.co",
     "restart_on": [
       "package.json",
       "package-lock.json",

@@ -20,7 +20,8 @@ import PageTransition from './components/PageTransition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
-import { SidebarNavigationIOS } from '@/components/ui/sidebar-menu-ios';
+// Import SidebarNavigation directly from sidebar-menu
+import { SidebarNavigation } from './components/ui/sidebar-menu';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
