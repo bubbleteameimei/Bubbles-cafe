@@ -1,50 +1,34 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect } from "react";
 
-export const LoadingScreen = memo(({ timeout = 10000 }: { timeout?: number }) => {
-  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // Add a timeout to show a message if loading takes too long
+export const LoadingScreen = memo(() => {
+  // Ensure the viewport is properly filled by locking body overflow
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowTimeoutMessage(true);
-    }, timeout);
-
-    // Set a maximum loading time to prevent infinite loading
-    const maxTimer = setTimeout(() => {
-      setLoading(false);
-    }, timeout + 5000);
-
-    // Add a class to hide all elements except the loading screen
-    document.body.classList.add('loading-active');
+    // Save the original overflow, height, and position styles
+    const originalOverflow = document.body.style.overflow;
+    const originalHeight = document.body.style.height;
+    const originalPosition = document.body.style.position;
     
+    // Apply styles to ensure the loading screen fills the viewport
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100vh';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    
+    // Cleanup function to restore original styles
     return () => {
-      clearTimeout(timer);
-      clearTimeout(maxTimer);
-      document.body.classList.remove('loading-active');
+      document.body.style.overflow = originalOverflow;
+      document.body.style.height = originalHeight;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
     };
-  }, [timeout]);
-
-  if (!loading) {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-[9999] p-6">
-        <h2 className="text-xl font-semibold mb-4 text-center">Unable to load content</h2>
-        <p className="text-muted-foreground mb-4 text-center">
-          We're having trouble loading the content. Please try refreshing the page.
-        </p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-        >
-          Refresh Page
-        </button>
-      </div>
-    );
-  }
+  }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-[9999]">
-      <div className="loader mb-6">
+    <div className="fixed top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-[9999] w-[100vw] h-[100vh] overflow-hidden">
+      {/* Vignette effect */}
+      <div className="absolute inset-0 bg-radial-gradient pointer-events-none"></div>
+      
+      <div className="loader z-10">
         <span>L</span>
         <span>O</span>
         <span>A</span>
@@ -54,40 +38,32 @@ export const LoadingScreen = memo(({ timeout = 10000 }: { timeout?: number }) =>
         <span>G</span>
       </div>
 
-      {showTimeoutMessage && (
-        <p className="text-muted-foreground text-sm animate-fade-in max-w-md text-center px-4">
-          This is taking longer than expected. Please wait a moment...
-        </p>
-      )}
-
       {/* ARIA live region for accessibility */}
       <div className="sr-only" role="status" aria-live="polite">
-        {showTimeoutMessage 
-          ? "Loading is taking longer than expected. Please wait a moment..."
-          : "Loading content, please wait..."
-        }
+        Loading content, please wait...
       </div>
 
       <style>{`
-        /* Hide all elements when loading except the loading screen */
-        body.loading-active > *:not(.fixed) {
-          display: none !important;
+        .bg-radial-gradient {
+          background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0.8) 100%);
         }
         
         .loader {
           display: flex;
           gap: 0.5rem;
+          position: relative;
         }
 
         .loader span {
-          font-size: 28px; /* Increased size */
+          font-size: 28px;
           font-family: 'Space Mono', monospace;
           font-weight: 600;
-          animation: blur 1.8s linear infinite; /* Slightly faster animation */
+          animation: flicker 3s linear infinite;
           line-height: 20px;
+          transition: all 0.5s;
           letter-spacing: 0.2em;
-          color: var(--primary);
-          transition: color 0.2s ease; /* Smooth transition for color changes */
+          color: rgba(255, 255, 255, 0.9);
+          text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }
@@ -98,26 +74,22 @@ export const LoadingScreen = memo(({ timeout = 10000 }: { timeout?: number }) =>
         .loader span:nth-child(6) { animation-delay: 1.0s; }
         .loader span:nth-child(7) { animation-delay: 1.2s; }
 
-        @keyframes blur {
+        @keyframes flicker {
           0%, 80% {
             filter: blur(0);
             opacity: 1;
             transform: translateY(0);
           }
           40% {
+            filter: blur(3px);
+            opacity: 0.7;
+            transform: translateY(-1px);
+          }
+          45% {
             filter: blur(5px);
             opacity: 0.5;
-            transform: translateY(-3px);
+            transform: translateY(1px);
           }
-        }
-        
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-in-out;
         }
       `}</style>
     </div>

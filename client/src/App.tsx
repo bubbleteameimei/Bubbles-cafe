@@ -22,6 +22,8 @@ import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
+// Import the global loading provider
+import { LoadingProvider } from './contexts/loading-context';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
@@ -58,6 +60,14 @@ const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
+
+// Error Pages
+const Error403Page = withSuspense(React.lazy(() => import('./pages/errors/403')));
+const Error404Page = withSuspense(React.lazy(() => import('./pages/errors/404')));
+const Error429Page = withSuspense(React.lazy(() => import('./pages/errors/429')));
+const Error500Page = withSuspense(React.lazy(() => import('./pages/errors/500')));
+const Error503Page = withSuspense(React.lazy(() => import('./pages/errors/503')));
+const Error504Page = withSuspense(React.lazy(() => import('./pages/errors/504')));
 
 // Demo Pages
 const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
@@ -113,10 +123,36 @@ const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
   
+  // Check if current route is an error page
+  const isErrorPage = 
+    locationStr.includes('/errors/403') || 
+    locationStr.includes('/errors/404') || 
+    locationStr.includes('/errors/429') || 
+    locationStr.includes('/errors/500') || 
+    locationStr.includes('/errors/503') || 
+    locationStr.includes('/errors/504');
+  
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
+  // If we're on an error page, render only the error page without layout
+  if (isErrorPage) {
+    return (
+      <ErrorBoundary>
+        <Switch>
+          <Route path="/errors/403" component={Error403Page} />
+          <Route path="/errors/404" component={Error404Page} />
+          <Route path="/errors/429" component={Error429Page} />
+          <Route path="/errors/500" component={Error500Page} />
+          <Route path="/errors/503" component={Error503Page} />
+          <Route path="/errors/504" component={Error504Page} />
+        </Switch>
+      </ErrorBoundary>
+    );
+  }
+  
+  // For all other pages, render with normal layout
   return (
     <div className="relative min-h-screen bg-background">
       {/* Desktop Sidebar */}
@@ -169,7 +205,7 @@ const AppContent = () => {
                 <Route path="/feedback" component={FeedbackPage} />
                 <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
                 <Route path="/support/guidelines" component={GuidelinesPage} />
-
+                
                 {/* Settings Routes */}
                 <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
                 <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
@@ -212,8 +248,7 @@ const AppContent = () => {
             </PageTransition>
           </ErrorBoundary>
         </div>
-        {/* Don't show footer on 404 or error pages */}
-        {!locationStr.includes('404') && locationStr !== '/not-found' && <Footer />}
+        <Footer />
       </main>
 
       {/* Global UI Elements */}
@@ -253,9 +288,11 @@ function App() {
         <ThemeProvider>
           <CookieConsentProvider>
             <NotificationProvider>
-              <SidebarProvider defaultOpen={true}>
-                <AppContent />
-              </SidebarProvider>
+              <LoadingProvider>
+                <SidebarProvider defaultOpen={true}>
+                  <AppContent />
+                </SidebarProvider>
+              </LoadingProvider>
             </NotificationProvider>
           </CookieConsentProvider>
         </ThemeProvider>

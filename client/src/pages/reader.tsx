@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, Headphones, Volume2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
@@ -16,6 +15,7 @@ import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import { AudioNarrator } from "@/components/ui/audio-narrator";
+import ApiLoader from "@/components/api-loader";
 import {
   Dialog,
   DialogContent,
@@ -162,10 +162,11 @@ export default function Reader({ slug }: ReaderPageProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (isLoading) {
-    console.log('[Reader] Loading state');
-    return <LoadingScreen />;
-  }
+  // Use our ApiLoader component to handle loading state with the global context
+  return (
+    <>
+      <ApiLoader isLoading={isLoading} />
+      {isLoading ? null : (
 
   if (error || !postsData?.posts || postsData.posts.length === 0) {
     console.error('[Reader] Error or no posts available:', {
@@ -199,7 +200,7 @@ export default function Reader({ slug }: ReaderPageProps) {
       savedIndex: sessionStorage.getItem('selectedStoryIndex')
     });
     setCurrentIndex(0);
-    return <LoadingScreen />;
+    return null; // ApiLoader will handle the loading state
   }
 
   const currentPost = posts[currentIndex];
