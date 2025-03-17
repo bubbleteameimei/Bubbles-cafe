@@ -42,116 +42,98 @@ const DialogContent = React.forwardRef<
   const hasAriaLabelledby = Boolean(props['aria-labelledby']);
   const hasAriaDescribedby = Boolean(props['aria-describedby']);
   
-  // Find title and description components in children
-  let titleComponent = null;
-  let descComponent = null;
-  let foundTitleInHeader = false;
-  let foundDescInHeader = false;
+  // Use React.Children.toArray to get a flat, searchable array
+  const childrenArray = React.Children.toArray(children);
   
-  // Recursive function to search for dialog components with IDs
-  const findComponents = (element: React.ReactNode): void => {
-    if (!React.isValidElement(element)) return;
-    
-    // Check if this element is a DialogTitle or DialogDescription
-    if (element.type === DialogTitle) {
-      titleComponent = element;
+  // Check if DialogTitle is present at the top level
+  const hasDirectTitle = childrenArray.some(child => 
+    React.isValidElement(child) && child.type === DialogTitle
+  );
+  
+  // Check if DialogDescription is present at the top level
+  const hasDirectDescription = childrenArray.some(child => 
+    React.isValidElement(child) && child.type === DialogDescription
+  );
+  
+  // Check for DialogHeader and if it contains DialogTitle or DialogDescription
+  let hasTitleInHeader = false;
+  let hasDescriptionInHeader = false;
+  
+  childrenArray.forEach(child => {
+    if (React.isValidElement(child) && child.type === DialogHeader) {
+      const headerChildren = React.Children.toArray(child.props.children);
+      
+      hasTitleInHeader = headerChildren.some(headerChild => 
+        React.isValidElement(headerChild) && headerChild.type === DialogTitle
+      );
+      
+      hasDescriptionInHeader = headerChildren.some(headerChild => 
+        React.isValidElement(headerChild) && headerChild.type === DialogDescription
+      );
     }
-    else if (element.type === DialogDescription) {
-      descComponent = element;
-    }
-    
-    // Check if this is a DialogHeader that might contain DialogTitle/DialogDescription
-    if (element.type === DialogHeader && element.props && element.props.children) {
-      React.Children.forEach(element.props.children, (child) => {
-        if (React.isValidElement(child)) {
-          if (child.type === DialogTitle) {
-            foundTitleInHeader = true;
-            titleComponent = child;
-          }
-          else if (child.type === DialogDescription) {
-            foundDescInHeader = true;
-            descComponent = child;
-          }
-        }
-      });
-    }
-    
-    // If element has children, recursively search them
-    if (element.props && element.props.children) {
-      // Handle both arrays of children and single children
-      if (Array.isArray(element.props.children)) {
-        React.Children.forEach(element.props.children, findComponents);
-      } else {
-        findComponents(element.props.children);
-      }
-    }
-  };
+  });
   
-  // Start the search
-  React.Children.forEach(children, findComponents);
+  // Determine if we have title and description
+  const hasTitle = hasDirectTitle || hasTitleInHeader;
+  const hasDescription = hasDirectDescription || hasDescriptionInHeader;
   
-  // Check if we found what we need
-  const hasTitle = Boolean(titleComponent) || foundTitleInHeader;
-  const hasDescription = Boolean(descComponent) || foundDescInHeader;
+  // Create modified children array with necessary accessibility elements
+  let contentChildren = [...childrenArray];
   
-  // Get IDs from components if available
-  const titleId = titleComponent?.props?.id || (foundTitleInHeader ? defaultTitleId : undefined);
-  const descId = descComponent?.props?.id || (foundDescInHeader ? defaultDescId : undefined);
-  
-  // Create complete children with accessibility support
-  let contentChildren = children;
-  
-  // If required accessibility attributes are missing, add them
+  // If no title is found and no aria-label or aria-labelledby is provided, add a title
   if (!hasTitle && !hasAriaLabel && !hasAriaLabelledby) {
-    console.warn(
-      "Dialog is missing a title. Adding a visually hidden title for accessibility."
+    const srOnlyTitle = (
+      <DialogPrimitive.Title 
+        key={`title-${id}`}
+        id={defaultTitleId} 
+        className="sr-only"
+      >
+        Dialog Content
+      </DialogPrimitive.Title>
     );
-    contentChildren = (
-      <>
-        <DialogPrimitive.Title id={defaultTitleId} className="sr-only">
-          Dialog Content
-        </DialogPrimitive.Title>
-        {children}
-      </>
-    );
+    
+    contentChildren = [srOnlyTitle, ...contentChildren];
   }
   
+  // If no description is found and no aria-describedby is provided, add a description
   if (!hasDescription && !hasAriaDescribedby) {
-    contentChildren = (
-      <>
-        {contentChildren}
-        <DialogPrimitive.Description id={defaultDescId} className="sr-only">
-          Dialog contains additional information and actions.
-        </DialogPrimitive.Description>
-      </>
+    const srOnlyDescription = (
+      <DialogPrimitive.Description 
+        key={`desc-${id}`}
+        id={defaultDescId} 
+        className="sr-only"
+      >
+        This dialog contains additional information and actions.
+      </DialogPrimitive.Description>
     );
+    
+    contentChildren = [...contentChildren, srOnlyDescription];
   }
   
-  // Use provided aria attributes first, or the auto-detected IDs if available, or fallback to defaults
-  const finalAriaLabelledby = props['aria-labelledby'] || 
-                      (titleId ? titleId : 
-                      (!hasAriaLabel ? defaultTitleId : undefined));
-                      
-  const finalAriaDescribedby = props['aria-describedby'] || 
-                      (descId ? descId : defaultDescId);
+  // Set aria attributes properly based on what we've found
+  const finalAriaLabelledby = props['aria-labelledby'] || (hasAriaLabel ? undefined : defaultTitleId);
+  const finalAriaDescribedby = props['aria-describedby'] || defaultDescId;
   
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
-        aria-labelledby={hasAriaLabel ? undefined : finalAriaLabelledby}
+        aria-labelledby={finalAriaLabelledby}
         aria-describedby={finalAriaDescribedby}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full",
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
           className
         )}
         {...props}
       >
         {contentChildren}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
+        <DialogPrimitive.Close 
+          className="absolute right-4 top-4 rounded-sm p-1.5 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          aria-label="Close dialog"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">Close dialog</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>
@@ -228,7 +210,28 @@ const DialogDescription = React.forwardRef<
 })
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
-const DialogClose = DialogPrimitive.Close
+const DialogClose = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
+>(({ className, children, ...props }, ref) => {
+  // Add default aria-label if not provided and children is text
+  const hasAriaLabel = Boolean(props['aria-label']);
+  const childrenText = typeof children === 'string' ? children : undefined;
+  
+  return (
+    <DialogPrimitive.Close
+      ref={ref}
+      className={cn(
+        "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        className
+      )}
+      aria-label={!hasAriaLabel && childrenText ? `${childrenText}` : !hasAriaLabel ? "Close dialog" : undefined}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Close>
+  );
+})
 DialogClose.displayName = DialogPrimitive.Close.displayName
 
 export {

@@ -18,8 +18,8 @@ async function testFeedbackEndpoints() {
       name: 'Accessibility Tester',
       email: 'a11y@test.com',
       type: 'feature',
-      content: 'Testing accessibility features of the feedback form',
-      rating: 5
+      content: 'Testing accessibility features of the feedback form'
+      // rating field removed
     };
     
     const submitResponse = await fetch('http://localhost:3000/api/feedback', {
@@ -77,7 +77,7 @@ async function testFeedbackEndpoints() {
         name: 'Test Validation',
         // email is missing
         content: 'This should trigger validation errors'
-        // type and rating are missing
+        // type is missing
       };
       
       const validationResponse = await fetch('http://localhost:3000/api/feedback', {

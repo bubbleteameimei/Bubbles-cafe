@@ -5,7 +5,8 @@ import {
   Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
-  LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff
+  LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
+  Search, Sparkles, GanttChart
 } from "lucide-react"
 
 
@@ -148,6 +149,34 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 {renderActiveIndicator('/bookmarks')}
                 <BookmarkIcon className="h-4 w-4" />
                 <span>Bookmarks</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* Advanced Search */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/search'}
+                onClick={() => handleNavigation('/search')}
+                tooltip="Advanced Search"
+                className={menuItemClass}
+              >
+                {renderActiveIndicator('/search')}
+                <Search className="h-4 w-4" />
+                <span>Search</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {/* Feature Showcase */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/features'}
+                onClick={() => handleNavigation('/features')}
+                tooltip="New Features"
+                className={menuItemClass}
+              >
+                {renderActiveIndicator('/features')}
+                <Sparkles className="h-4 w-4" />
+                <span>New Features</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
@@ -343,6 +372,17 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       >
                         <Volume2 className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Text-to-Speech</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/accessibility-test'}
+                        onClick={() => handleNavigation('/accessibility-test')}
+                        className={submenuItemClass}
+                      >
+                        <HelpCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Accessibility Test</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -625,19 +665,21 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             size="sm"
             className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
             onClick={() => handleNavigation("/auth")}
+            aria-label="Sign in to your account"
           >
             Sign In
           </Button>
         ) : (
           <Button
-            variant="ghost"
+            variant="default"
             size="sm"
-            className="w-full text-sm text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+            className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
             onClick={() => {
               if (logoutMutation) {
                 logoutMutation.mutate();
               }
             }}
+            aria-label="Sign out of your account"
           >
             Sign Out
           </Button>
@@ -646,13 +688,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         <button
           onClick={() => handleNavigation('/report-bug')}
           className={cn(
-            "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors",
+            "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
               ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
               : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
           )}
+          aria-label="Report a bug or issue"
+          role="link"
         >
-          <Bug className="h-4 w-4" />
+          <Bug className="h-4 w-4" aria-hidden="true" />
           Report Bug
         </button>
       </div>

@@ -1946,7 +1946,7 @@ export class DatabaseStorage implements IStorage {
       const insertData = {
         type: feedback.type,
         content: feedback.content,
-        rating: feedback.rating || 0,
+        // rating field removed
         page: feedback.page || "unknown",
         status: feedback.status || "pending",
         userId: feedback.userId || null,

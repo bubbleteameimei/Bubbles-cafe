@@ -6,7 +6,7 @@ async function testFeedbackSubmission() {
   const feedbackData = {
     type: 'bug',
     content: 'This is a test feedback for bug reporting',
-    rating: 4,
+    // rating field removed
     page: '/test-page',
     category: 'bug',
     browser: 'Chrome',

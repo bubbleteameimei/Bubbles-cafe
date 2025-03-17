@@ -56,14 +56,7 @@ export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
     }));
   }, [feedbackItems]);
 
-  const feedbackByRating = React.useMemo(() => {
-    const ratings = [1, 2, 3, 4, 5];
-    const counts = ratings.map(rating => {
-      const count = feedbackItems.filter(item => item.rating === rating).length;
-      return { rating: `${rating} Star${rating !== 1 ? 's' : ''}`, count };
-    });
-    return counts;
-  }, [feedbackItems]);
+  // Rating analytics removed
 
   const feedbackByStatus = React.useMemo(() => {
     const result = {
@@ -136,16 +129,7 @@ export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
     },
   } satisfies ChartConfig;
 
-  const ratingChartConfig = {
-    count: {
-      label: "Count",
-      color: "hsl(var(--foreground))",
-    },
-    rating: {
-      label: "Rating",
-      color: "hsl(var(--chart-5))",
-    },
-  } satisfies ChartConfig;
+  // Rating chart config removed
 
   return (
     <div className="space-y-6">
@@ -271,57 +255,7 @@ export function FeedbackAnalytics({ feedbackItems }: FeedbackAnalyticsProps) {
         </Card>
       </div>
 
-      {/* Feedback by Rating Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Feedback Ratings</CardTitle>
-          <CardDescription>Distribution of feedback ratings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={ratingChartConfig}>
-            <BarChart
-              data={feedbackByRating}
-              layout="vertical"
-              height={200}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid horizontal={false} />
-              <XAxis type="number" hide />
-              <ChartTooltip cursor={false} />
-              <Bar
-                dataKey="count"
-                fill="var(--color-rating)"
-                radius={4}
-                barSize={30}
-              >
-                <LabelList
-                  dataKey="rating"
-                  position="insideLeft"
-                  offset={10}
-                  className="fill-background"
-                  fontSize={12}
-                />
-                <LabelList
-                  dataKey="count"
-                  position="right"
-                  offset={10}
-                  className="fill-foreground"
-                  fontSize={12}
-                />
-              </Bar>
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-        <CardFooter className="flex-col items-start gap-2 text-sm">
-          <div className="flex gap-2 font-medium leading-none">
-            {Math.round(feedbackItems.reduce((acc, item) => acc + item.rating, 0) / (feedbackItems.length || 1) * 10) / 10} average rating
-            <TrendingUp className="h-4 w-4 ml-2" />
-          </div>
-          <div className="leading-none text-muted-foreground">
-            Based on {totalFeedback} feedback submissions
-          </div>
-        </CardFooter>
-      </Card>
+      {/* Rating chart section removed */}
     </div>
   );
 }

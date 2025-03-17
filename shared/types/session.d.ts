@@ -5,5 +5,11 @@ declare module 'express-session' {
     likes: {
       [postId: string]: boolean;
     };
+    user?: {
+      id: number;
+      email: string;
+      username: string;
+      isAdmin: boolean;
+    };
   }
 }

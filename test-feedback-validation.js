@@ -81,7 +81,7 @@ async function testCompleteFeedback() {
   const completeData = {
     type: 'feature',
     content: 'This is a comprehensive test of the feedback system with all fields',
-    rating: 5,
+    // rating field removed
     page: '/test-complete-feedback',
     category: 'enhancement',
     browser: 'Mozilla Firefox',

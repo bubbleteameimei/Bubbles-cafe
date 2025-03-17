@@ -419,6 +419,8 @@ export const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
+    role="menu"
+    aria-orientation="vertical"
     className={cn("flex w-full min-w-0 flex-col gap-0 -space-y-2", className)}
     {...props}
   />
@@ -432,6 +434,7 @@ export const SidebarMenuItem = React.forwardRef<
   <li
     ref={ref}
     data-sidebar="menu-item"
+    role="presentation"
     className={cn("group/menu-item relative", className)}
     {...props}
   />
@@ -476,6 +479,7 @@ export const SidebarMenuButton = React.forwardRef<
       size = "default",
       tooltip,
       className,
+      "aria-label": ariaLabel,
       ...props
     },
     ref
@@ -489,16 +493,21 @@ export const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
+        role="menuitem"
+        aria-selected={isActive}
+        aria-current={isActive ? "page" : undefined}
+        aria-label={ariaLabel}
+        tabIndex={0}
         className={cn(
           sidebarMenuButtonVariants({ variant, size }),
-          "touch-manipulation relative active:scale-[0.98] active:opacity-90 transition-all duration-150 ease-out",
+          "touch-manipulation relative active:scale-[0.98] active:opacity-90 transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
           className
         )}
         style={{ WebkitTapHighlightColor: 'transparent' }}
         {...props}
       >
         {props.children}
-        <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
+        <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
       </Comp>
     )
 
@@ -533,15 +542,18 @@ export const SidebarMenuAction = React.forwardRef<
     asChild?: boolean
     showOnHover?: boolean
   }
->(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
+>(({ className, asChild = false, showOnHover = false, "aria-label": ariaLabel, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
       ref={ref}
       data-sidebar="menu-action"
+      role="button"
+      aria-label={ariaLabel || "Menu action"}
+      tabIndex={0}
       className={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0 active:scale-95 active:opacity-90 touch-manipulation",
+        "absolute right-1 top-1.5 flex aspect-square w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none transition-all duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0 active:scale-95 active:opacity-90 touch-manipulation",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-3 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
@@ -556,7 +568,7 @@ export const SidebarMenuAction = React.forwardRef<
       {...props}
     >
       {props.children}
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
+      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
     </Comp>
   )
 })
@@ -628,6 +640,8 @@ export const SidebarMenuSub = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu-sub"
+    role="menu"
+    aria-orientation="vertical"
     className={cn(
       "mx-3.5 flex min-w-0 translate-x-px flex-col gap-3 border-l border-sidebar-border px-2.5 py-1",
       "group-data-[collapsible=icon]:hidden",
@@ -641,7 +655,14 @@ SidebarMenuSub.displayName = "SidebarMenuSub"
 export const SidebarMenuSubItem = React.forwardRef<
   HTMLLIElement,
   React.ComponentProps<"li">
->(({ ...props }, ref) => <li ref={ref} {...props} />)
+>(({ className, ...props }, ref) => (
+  <li 
+    ref={ref} 
+    role="presentation"
+    className={cn(className)}
+    {...props} 
+  />
+))
 SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 
 export const SidebarMenuSubButton = React.forwardRef<
@@ -651,7 +672,7 @@ export const SidebarMenuSubButton = React.forwardRef<
     size?: "sm" | "md"
     isActive?: boolean
   }
->(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
+>(({ asChild = false, size = "md", isActive, className, "aria-label": ariaLabel, ...props }, ref) => {
   const Comp = asChild ? Slot : "a"
 
   return (
@@ -660,8 +681,13 @@ export const SidebarMenuSubButton = React.forwardRef<
       data-sidebar="menu-sub-button"
       data-size={size}
       data-active={isActive}
+      role="menuitem"
+      aria-selected={isActive}
+      aria-current={isActive ? "page" : undefined}
+      aria-label={ariaLabel}
+      tabIndex={0}
       className={cn(
-        "relative flex h-6 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-none active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90",
+        "relative flex h-6 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
@@ -672,7 +698,7 @@ export const SidebarMenuSubButton = React.forwardRef<
       {...props}
     >
       {props.children}
-      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
+      <span className="absolute inset-0 rounded-md bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" aria-hidden="true" />
     </Comp>
   )
 })

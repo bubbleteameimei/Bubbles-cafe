@@ -1,24 +1,24 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response, Express, NextFunction } from 'express';
 import { IStorage } from '../storage';
 import { feedbackLogger } from '../utils/debug-logger';
 import { UserFeedback } from '../../shared/schema';
 
 // Middleware for checking if user is authenticated
-const isAuthenticated = (req: Request, res: Response, next: Function) => {
-  if (!req.user) {
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
 };
 
-export function registerUserFeedbackRoutes(router: Router, storage: IStorage) {
+export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
   /**
    * GET /api/user/feedback
    * Retrieves a user's feedback submissions
    */
-  router.get('/api/user/feedback', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.session?.user?.id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });

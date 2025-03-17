@@ -60,6 +60,8 @@ const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
+const SearchPage = withSuspense(React.lazy(() => import('./pages/search')));
+const FeatureShowcasePage = withSuspense(React.lazy(() => import('./pages/feature-showcase')));
 
 // Error Pages
 const Error403Page = withSuspense(React.lazy(() => import('./pages/errors/403')));
@@ -94,6 +96,7 @@ const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/sett
 const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/text-to-speech')));
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
+const AccessibilityTestPage = withSuspense(React.lazy(() => import('./pages/accessibility-test')));
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
@@ -198,6 +201,9 @@ const AppContent = () => {
                 <Route path="/charts" component={ChartDashboardPage} />
                 <Route path="/switch-test" component={SwitchTestPage} />
                 <Route path="/toggle-comparison" component={ToggleComparisonPage} />
+                <Route path="/accessibility-test" component={AccessibilityTestPage} />
+                <Route path="/search" component={SearchPage} />
+                <Route path="/features" component={FeatureShowcasePage} />
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />

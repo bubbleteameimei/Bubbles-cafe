@@ -87,6 +87,9 @@ interface PostMetadata {
 }
 
 // Update the registerRoutes function to add compression and proper caching
+// Import our recommendation routes
+import { registerRecommendationsRoutes } from "./routes/recommendations";
+
 export function registerRoutes(app: Express): Server {
   // Set trust proxy before any middleware
   app.set('trust proxy', 1);
