@@ -44,7 +44,7 @@ interface FeedbackItem {
   id: number;
   type: string;
   content: string;
-  rating: number;
+  // rating field removed
   status: string;
   page: string;
   createdAt: string;
@@ -204,27 +204,7 @@ function FeedbackTimelineItem({
                   </div>
                 </div>
                 
-                {/* Rating */}
-                {feedback.rating > 0 && (
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Rating</h3>
-                    <div className="flex">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className={`text-lg ${
-                            i < feedback.rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          ★
-                        </span>
-                      ))}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        ({feedback.rating} out of 5)
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {/* Rating section removed */}
                 
                 {/* Contact info */}
                 {(feedback.metadata?.name || feedback.metadata?.email) && (
@@ -405,27 +385,7 @@ function FeedbackDetailCard({
             <div className="p-4 bg-muted/30 rounded-lg whitespace-pre-wrap">{feedback.content}</div>
           </div>
 
-          {/* Rating */}
-          {feedback.rating > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Rating</h3>
-              <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`text-2xl ${
-                      i < feedback.rating ? 'text-yellow-400' : 'text-gray-300'
-                    }`}
-                  >
-                    ★
-                  </span>
-                ))}
-                <span className="ml-2 text-sm text-muted-foreground">
-                  ({feedback.rating} out of 5)
-                </span>
-              </div>
-            </div>
-          )}
+          {/* Rating section removed */}
 
           {/* Contact info */}
           {(feedback.metadata?.name || feedback.metadata?.email) && (

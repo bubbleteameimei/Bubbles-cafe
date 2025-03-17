@@ -1405,7 +1405,7 @@ export function registerRoutes(app: Express): Server {
         os: req.body.operatingSystem
       });
       
-      const { type, content, rating, page, browser, operatingSystem, screenResolution, userAgent, category, metadata } = req.body;
+      const { type, content, page, browser, operatingSystem, screenResolution, userAgent, category, metadata } = req.body;
       
       // Basic validation
       if (!type || !content) {
@@ -1428,7 +1428,7 @@ export function registerRoutes(app: Express): Server {
       const feedbackData: InsertUserFeedback = {
         type,
         content,
-        rating: rating || 0,
+        // rating field removed
         page: page || "unknown",
         browser: browser || "unknown",
         operatingSystem: operatingSystem || "unknown",

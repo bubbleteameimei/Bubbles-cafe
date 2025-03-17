@@ -30,7 +30,7 @@ export interface FeedbackItem {
   id: number;
   content: string;
   type: FeedbackCategory;
-  rating: number;
+  // rating field removed
   page: string;
   category: string;
   status: FeedbackStatus;
@@ -112,11 +112,7 @@ export function FeedbackDetails({ feedback, onStatusChange, onAddNote }: Feedbac
               {statusIcons[feedback.status as keyof typeof statusIcons]}
               <span className="ml-1">{feedback.status}</span>
             </Badge>
-            {feedback.rating && (
-              <Badge variant="outline" className="px-2 py-0.5 bg-gray-500/10 border-gray-500/20">
-                Rating: {feedback.rating}/5
-              </Badge>
-            )}
+            {/* Rating badge removed */}
           </div>
           <h3 className="text-base font-medium">
             Feedback #{feedback.id}

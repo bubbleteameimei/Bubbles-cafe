@@ -333,7 +333,7 @@ export const userFeedback = pgTable("user_feedback", {
   id: serial("id").primaryKey(),
   type: text("type").default("general").notNull(), // general, bug, feature, etc.
   content: text("content").notNull(),
-  rating: integer("rating").default(0),
+  // rating field removed
   page: text("page").default("unknown"),
   status: text("status").default("pending").notNull(), // pending, reviewed, resolved, rejected
   userId: integer("user_id").references(() => users.id), // Optional, as feedback can be anonymous

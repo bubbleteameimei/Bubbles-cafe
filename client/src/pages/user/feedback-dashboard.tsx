@@ -23,7 +23,7 @@ export interface FeedbackItem {
   id: number;
   content: string;
   type: string;
-  rating?: number;
+  // Rating field removed from interface
   page: string;
   category: string;
   status: FeedbackStatus;
@@ -254,9 +254,7 @@ export default function UserFeedbackDashboard() {
                         {item.status}
                       </Badge>
                       <Badge variant="outline">{item.type}</Badge>
-                      {item.rating && (
-                        <Badge variant="outline">Rating: {item.rating}/5</Badge>
-                      )}
+                      {/* Rating badge removed */}
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {formatDate(item.createdAt)}
@@ -289,7 +287,6 @@ export default function UserFeedbackDashboard() {
             .filter((item: FeedbackItem) => item.status === 'pending')
             .map((item: FeedbackItem) => (
               <Card key={item.id} className="mb-4">
-                {/* Same card content as in 'all' tab */}
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -297,9 +294,7 @@ export default function UserFeedbackDashboard() {
                         {item.status}
                       </Badge>
                       <Badge variant="outline">{item.type}</Badge>
-                      {item.rating && (
-                        <Badge variant="outline">Rating: {item.rating}/5</Badge>
-                      )}
+                      {/* Rating badge removed */}
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {formatDate(item.createdAt)}
@@ -321,7 +316,6 @@ export default function UserFeedbackDashboard() {
             .filter((item: FeedbackItem) => item.status === 'reviewed')
             .map((item: FeedbackItem) => (
               <Card key={item.id} className="mb-4">
-                {/* Same card content as in 'all' tab */}
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -329,9 +323,7 @@ export default function UserFeedbackDashboard() {
                         {item.status}
                       </Badge>
                       <Badge variant="outline">{item.type}</Badge>
-                      {item.rating && (
-                        <Badge variant="outline">Rating: {item.rating}/5</Badge>
-                      )}
+                      {/* Rating badge removed */}
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {formatDate(item.createdAt)}
@@ -363,7 +355,6 @@ export default function UserFeedbackDashboard() {
             .filter((item: FeedbackItem) => item.status === 'resolved')
             .map((item: FeedbackItem) => (
               <Card key={item.id} className="mb-4">
-                {/* Same card content as in 'all' tab */}
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -371,9 +362,7 @@ export default function UserFeedbackDashboard() {
                         {item.status}
                       </Badge>
                       <Badge variant="outline">{item.type}</Badge>
-                      {item.rating && (
-                        <Badge variant="outline">Rating: {item.rating}/5</Badge>
-                      )}
+                      {/* Rating badge removed */}
                     </div>
                     <span className="text-sm text-muted-foreground">
                       {formatDate(item.createdAt)}

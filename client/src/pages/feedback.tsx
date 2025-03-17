@@ -28,8 +28,8 @@ const feedbackSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name cannot exceed 50 characters"),
   email: z.string().email("Please enter a valid email address"),
   content: z.string().min(10, "Feedback must be at least 10 characters").max(2000, "Feedback cannot exceed 2000 characters"),
-  type: z.string().min(1, "Please select a feedback type"),
-  rating: z.number().min(1, "Please provide a rating").max(5, "Rating cannot exceed 5 stars")
+  type: z.string().min(1, "Please select a feedback type")
+  // rating field removed
 });
 
 // Define feedback data types
@@ -38,7 +38,7 @@ interface FeedbackFormData {
   email: string;
   content: string;
   type: string;
-  rating: number;
+  // rating field removed
 }
 
 interface BrowserInfo {
@@ -51,7 +51,7 @@ interface BrowserInfo {
 interface FeedbackSubmissionData {
   type: string;
   content: string;
-  rating: number;
+  // rating field removed
   page: string;
   category: string;
   browser: string;
@@ -92,8 +92,8 @@ export default function Feedback() {
     name: "",
     email: "",
     content: "",
-    type: "general",
-    rating: 5
+    type: "general"
+    // rating field removed
   });
   
   // Calculate form completion progress
@@ -181,22 +181,7 @@ export default function Feedback() {
     }));
   };
 
-  // Handle rating changes
-  const handleRatingChange = (value: string) => {
-    // Clear validation error for rating
-    if (validationErrors.rating) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.rating;
-        return newErrors;
-      });
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      rating: parseInt(value)
-    }));
-  };
+  // Rating changes handler removed
 
   // Performance and debug tracking
   const logSubmissionAttempt = (data: FeedbackSubmissionData) => {
@@ -275,7 +260,7 @@ export default function Feedback() {
         variant: "default"
       });
       setSubmitted(true);
-      setFormData({ name: "", email: "", content: "", type: "general", rating: 5 });
+      setFormData({ name: "", email: "", content: "", type: "general" });
       
       // Log success metrics
       trackSubmissionMetrics();
@@ -335,7 +320,7 @@ export default function Feedback() {
     const feedbackData: FeedbackSubmissionData = {
       type: formData.type,
       content: formData.content,
-      rating: formData.rating,
+      // rating field removed
       page: window.location.pathname,
       category: formData.type,
       ...browserInfo,
@@ -493,20 +478,24 @@ export default function Feedback() {
                     </span>
                   </div>
                   
-                  <div>
-                    <span className={parseInt(formData.rating.toString()) > 0 ? 'text-green-500' : 'text-muted-foreground'}>
-                      5. Select a rating
-                    </span>
-                  </div>
+                  {/* Rating field removed */}
                 </div>
               </div>
             )}
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="mb-4 p-4 bg-muted/40 rounded-lg border border-muted" role="region" aria-labelledby="form-instructions">
+              <h3 id="form-instructions" className="text-sm font-medium mb-2">Form Instructions</h3>
+              <ul className="text-sm space-y-1 text-muted-foreground list-disc pl-5">
+                <li>Required fields are marked with an asterisk (<span aria-hidden="true" className="text-red-500">*</span>)</li>
+                <li>Complete all fields for a more detailed response to your feedback</li>
+                <li>You'll receive a confirmation after successful submission</li>
+              </ul>
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="name" className="block text-sm font-medium">Your Name</label>
+                <label htmlFor="name" className="block text-sm font-medium">Your Name <span aria-hidden="true" className="text-red-500">*</span></label>
                 <div className="relative">
                   <Input 
                     id="name" 
@@ -514,6 +503,9 @@ export default function Feedback() {
                     value={formData.name}
                     onChange={handleChange}
                     required 
+                    aria-required="true"
+                    aria-invalid={!!validationErrors.name}
+                    aria-describedby={validationErrors.name ? "name-error" : undefined}
                     className={`transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
                       validationErrors.name 
                         ? "border-red-500 pr-10 focus:border-red-500 focus:ring-red-500/20" 
@@ -525,11 +517,11 @@ export default function Feedback() {
                   {/* Check mark removed */}
                 </div>
                 {validationErrors.name && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.name}</p>
+                  <p id="name-error" className="text-sm text-red-500 mt-1" role="alert">{validationErrors.name}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium">Your Email</label>
+                <label htmlFor="email" className="block text-sm font-medium">Your Email <span aria-hidden="true" className="text-red-500">*</span></label>
                 <div className="relative">
                   <Input 
                     id="email" 
@@ -538,6 +530,9 @@ export default function Feedback() {
                     value={formData.email}
                     onChange={handleChange}
                     required 
+                    aria-required="true"
+                    aria-invalid={!!validationErrors.email}
+                    aria-describedby={validationErrors.email ? "email-error" : undefined}
                     className={`transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
                       validationErrors.email 
                         ? "border-red-500 pr-10 focus:border-red-500 focus:ring-red-500/20" 
@@ -547,7 +542,7 @@ export default function Feedback() {
                     }`}
                   />
                   {formData.email.includes('@') && formData.email.includes('.') && (
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
@@ -555,20 +550,22 @@ export default function Feedback() {
                   )}
                 </div>
                 {validationErrors.email && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+                  <p id="email-error" className="text-sm text-red-500 mt-1" role="alert">{validationErrors.email}</p>
                 )}
               </div>
               
               <div className="space-y-2 sm:col-span-2">
-                <label htmlFor="type" className="block text-sm font-medium">Feedback Type</label>
+                <label htmlFor="type" className="block text-sm font-medium">Feedback Type <span aria-hidden="true" className="text-red-500">*</span></label>
                 <div className="relative max-w-md mx-auto sm:mx-0">
-                  {/* Use Select component without className prop */}
                   <Select 
                     value={formData.type} 
                     onValueChange={(value) => handleSelectChange('type', value)}
                   >
                     <SelectTrigger 
                       id="type" 
+                      aria-required="true"
+                      aria-invalid={!!validationErrors.type}
+                      aria-describedby={validationErrors.type ? "type-error" : undefined}
                       className={`transition-all duration-200 mb-1 w-full ${
                         validationErrors.type 
                           ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-1 outline-none" 
@@ -579,7 +576,7 @@ export default function Feedback() {
                     >
                       <SelectValue placeholder="Select type" />
                       {formData.type && (
-                        <div className="absolute inset-y-0 right-[30px] flex items-center pr-2 pointer-events-none">
+                        <div className="absolute inset-y-0 right-[30px] flex items-center pr-2 pointer-events-none" aria-hidden="true">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
@@ -600,13 +597,13 @@ export default function Feedback() {
                   </Select>
                 </div>
                 {validationErrors.type && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.type}</p>
+                  <p id="type-error" className="text-sm text-red-500 mt-1" role="alert">{validationErrors.type}</p>
                 )}
               </div>
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="content" className="block text-sm font-medium">Your Feedback</label>
+              <label htmlFor="content" className="block text-sm font-medium">Your Feedback <span aria-hidden="true" className="text-red-500">*</span></label>
               <div className="relative">
                 <Textarea 
                   id="content" 
@@ -615,6 +612,13 @@ export default function Feedback() {
                   value={formData.content}
                   onChange={handleChange}
                   required 
+                  aria-required="true"
+                  aria-invalid={!!validationErrors.content}
+                  aria-describedby={
+                    validationErrors.content 
+                      ? "content-error" 
+                      : "content-description"
+                  }
                   className={`resize-none pr-10 transition-all duration-200 focus:ring-2 focus:ring-offset-1 ${
                     validationErrors.content 
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
@@ -625,7 +629,7 @@ export default function Feedback() {
                   maxLength={2000}
                 />
                 {formData.content.length >= 10 && (
-                  <div className="absolute top-3 right-3 pointer-events-none">
+                  <div className="absolute top-3 right-3 pointer-events-none" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
@@ -635,11 +639,11 @@ export default function Feedback() {
               <div className="flex justify-between items-center mt-1">
                 <div>
                   {validationErrors.content && (
-                    <p className="text-sm text-red-500">{validationErrors.content}</p>
+                    <p id="content-error" className="text-sm text-red-500" role="alert">{validationErrors.content}</p>
                   )}
                 </div>
-                <div className="text-xs flex items-center">
-                  <div className="relative w-[60px] h-[18px] mr-2">
+                <div className="text-xs flex items-center" id="content-description">
+                  <div className="relative w-[60px] h-[18px] mr-2" aria-hidden="true">
                     <svg className="w-full h-full" viewBox="0 0 60 18">
                       <defs>
                         <linearGradient id="characterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -675,47 +679,7 @@ export default function Feedback() {
               </div>
             </div>
             
-            <div className="space-y-3">
-              <label className="block text-sm font-medium">How would you rate your experience?</label>
-              <div className="relative">
-                <RadioGroup
-                  className={`flex flex-wrap gap-2 sm:gap-4 justify-between sm:justify-start sm:space-x-4 ${
-                    validationErrors.rating 
-                      ? "border border-red-500 p-3 rounded-md" 
-                      : parseInt(formData.rating.toString()) > 0 
-                        ? "border border-green-500/40 p-3 rounded-md" 
-                        : "p-3"
-                  }`}
-                  defaultValue="5"
-                  value={formData.rating.toString()}
-                  onValueChange={handleRatingChange}
-                >
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <div key={num} className="flex items-center space-x-1 bg-background/50 p-1 rounded hover:bg-accent/30 transition-colors">
-                      <RadioGroupItem 
-                        value={num.toString()} 
-                        id={`rating-${num}`} 
-                        className="text-primary border-primary focus:ring-primary focus-visible:ring-primary"
-                      />
-                      <Label 
-                        htmlFor={`rating-${num}`}
-                        className={`text-base ${parseInt(formData.rating.toString()) === num ? "font-medium text-primary" : ""}`}
-                      >
-                        {num}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-                {/* Rating checkmark removed */}
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Poor</span>
-                <span>Excellent</span>
-              </div>
-              {validationErrors.rating && (
-                <p className="text-sm text-red-500 mt-1">{validationErrors.rating}</p>
-              )}
-            </div>
+            {/* Rating section removed */}
             
             <Button 
               type="submit" 
@@ -725,6 +689,8 @@ export default function Feedback() {
                   : "hover:shadow-md hover:shadow-primary/20"
               }`}
               disabled={submitMutation.isPending}
+              aria-live="polite"
+              aria-busy={submitMutation.isPending}
             >
               {submitMutation.isPending ? (
                 <motion.div 
@@ -733,7 +699,7 @@ export default function Feedback() {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   <span>Submitting...</span>
                   
                   {/* Animated loading bar at bottom of button */}
@@ -742,6 +708,7 @@ export default function Feedback() {
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
                     transition={{ duration: 2.5, repeat: Infinity }}
+                    aria-hidden="true"
                   />
                 </motion.div>
               ) : (
