@@ -25,7 +25,11 @@ export default function StoryView({ slug }: StoryViewProps) {
   });
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="flex justify-center items-center min-h-[300px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error || !post) {

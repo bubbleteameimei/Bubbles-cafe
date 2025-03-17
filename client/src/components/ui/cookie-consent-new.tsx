@@ -200,10 +200,10 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="cookie-preferences-description">
         <DialogHeader>
           <DialogTitle>Cookie Preferences</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="cookie-preferences-description">
             Choose which cookies you want to accept. Essential cookies cannot be disabled as they are necessary for the website to function properly.
           </DialogDescription>
         </DialogHeader>

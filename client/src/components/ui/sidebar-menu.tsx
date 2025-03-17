@@ -416,16 +416,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Connected Accounts</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/offline'}
-                        onClick={() => handleNavigation('/settings/offline')}
-                        className={submenuItemClass}
-                      >
-                        <Database className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Offline Access</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </Collapsible>

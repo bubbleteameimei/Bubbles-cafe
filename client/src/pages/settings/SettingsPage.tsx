@@ -113,6 +113,7 @@ export default function SettingsPage() {
               checked={offlineMode}
               onCheckedChange={handleOfflineModeChange}
               id="offline-mode"
+              size="md"
             />
             <label htmlFor="offline-mode" className="flex-grow cursor-pointer">
               <div className="font-medium">Enable offline reading</div>

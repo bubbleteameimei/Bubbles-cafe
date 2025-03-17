@@ -70,6 +70,7 @@ export default function ReadingPreferencesPage() {
                   checked={highContrast}
                   onCheckedChange={setHighContrast}
                   aria-label="Toggle high contrast mode"
+                  size="md"
                 />
               </div>
               
@@ -92,6 +93,7 @@ export default function ReadingPreferencesPage() {
                   checked={reduceMotion}
                   onCheckedChange={setReduceMotion}
                   aria-label="Toggle reduced motion"
+                  size="md"
                 />
               </div>
               
@@ -102,6 +104,7 @@ export default function ReadingPreferencesPage() {
                   checked={screenReader}
                   onCheckedChange={setScreenReader}
                   aria-label="Toggle screen reader optimization"
+                  size="md"
                 />
               </div>
             </CardContent>

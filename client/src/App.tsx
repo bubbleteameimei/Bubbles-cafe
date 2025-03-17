@@ -74,6 +74,7 @@ const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-d
 const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
 const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
 const ChartDashboardPage = withSuspense(React.lazy(() => import('./pages/chart-dashboard')));
+const SwitchTestPage = withSuspense(React.lazy(() => import('./pages/switch-test')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -95,7 +96,7 @@ const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
-const OfflineSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/offline')));
+// Removed offline settings page import
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
 
@@ -194,6 +195,7 @@ const AppContent = () => {
                 <Route path="/demo/toast-docs" component={ToastDocsPage} />
                 <Route path="/toast-test" component={ToastTestPage} />
                 <Route path="/charts" component={ChartDashboardPage} />
+                <Route path="/switch-test" component={SwitchTestPage} />
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />
@@ -215,7 +217,7 @@ const AppContent = () => {
                 <Route path="/settings/display" component={DisplaySettingsPage} />
                 <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
                 <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-                <ProtectedRoute path="/settings/offline" component={OfflineSettingsPage} />
+
                 <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
                 <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
 

@@ -6,8 +6,8 @@ import { useState } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LoadingScreen } from "@/components/ui/loading-screen";
-import { ArrowRight, ChevronRight, Clock, Calendar, BookOpen, Search, Filter, Book } from "lucide-react";
+// Removed LoadingScreen import
+import { ArrowRight, ChevronRight, Clock, Calendar, BookOpen, Search, Filter, Book, Loader2 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { FloatingPagination } from "@/components/ui/floating-pagination";
 import { Input } from "@/components/ui/input";
@@ -133,10 +133,10 @@ export default function IndexView() {
   };
 
   if (isLoading) {
-    // Return simple loading indicator instead of LoadingScreen
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
           <h2 className="text-xl font-semibold text-foreground">Loading stories...</h2>
         </div>
       </div>

@@ -365,7 +365,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
               <Label className="text-base font-semibold text-[#6F4E37]">Essential Ingredients</Label>
               <p className="text-sm text-[#8B5A2B]">The base of our cookie recipe - can't make cookies without these!</p>
             </div>
-            <Switch checked={true} disabled className="data-[state=checked]:bg-[#8B5A2B]" />
+            <Switch checked={true} disabled className="data-[state=checked]:bg-[#8B5A2B]" size="md" />
           </div>
           
           <div className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5DC]/50 transition-colors border border-transparent hover:border-[#D2A76C]/30">
@@ -377,6 +377,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
               checked={localPreferences.functional} 
               onCheckedChange={() => handleToggleCategory('functional')} 
               className="data-[state=checked]:bg-[#8B5A2B]"
+              size="md"
             />
           </div>
           
@@ -389,6 +390,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
               checked={localPreferences.analytics} 
               onCheckedChange={() => handleToggleCategory('analytics')} 
               className="data-[state=checked]:bg-[#8B5A2B]"
+              size="md"
             />
           </div>
           
@@ -401,6 +403,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
               checked={localPreferences.performance} 
               onCheckedChange={() => handleToggleCategory('performance')} 
               className="data-[state=checked]:bg-[#8B5A2B]"
+              size="md"
             />
           </div>
           
@@ -413,6 +416,7 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
               checked={localPreferences.marketing} 
               onCheckedChange={() => handleToggleCategory('marketing')} 
               className="data-[state=checked]:bg-[#8B5A2B]"
+              size="md"
             />
           </div>
         </div>
