@@ -1,0 +1,27 @@
+Component Stack:
+Lazy
+Suspense
+WithSuspenseWrapper
+Route@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+div
+motion.div@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:945:40
+PresenceChild@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:121:41
+AnimatePresence@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js:210:34
+PageTransition@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/components/PageTransition.tsx:23:7
+ErrorBoundary@
+div
+main
+div
+AppContent@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/App.tsx:176:43
+div
+TooltipProviderProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-JJS7DLG7.js:38:13
+TooltipProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:62:43
+SidebarProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/components/ui/sidebar.tsx:52:6
+LoadingProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/contexts/loading-context.tsx:21:5
+NotificationProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/components/NotificationProvider.tsx:52:19
+CookieConsentProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/hooks/use-cookie-consent.tsx:56:5
+ThemeProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/components/theme-provider.tsx:28:15
+AuthProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/hooks/use-auth.tsx:23:5
+QueryClientProvider@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2835:9
+App@https://b9d882f8-9202-451c-a677-44de52e87e65-00-jwwfsfppa4iy.riker.replit.dev:3002/src/App.tsx:616:27
