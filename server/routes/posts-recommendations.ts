@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
-import { posts, Post } from "@shared/schema";
+import { posts } from "@shared/schema";
 import { desc, eq, and, ne, or, sql } from "drizzle-orm";
 
 /**
@@ -29,15 +29,35 @@ export function registerPostRecommendationsRoutes(app: Express) {
         return res.json(enhancedPosts);
       }
       
+      // Get all posts first to log IDs for debugging
+      const allPosts = await db.select({ id: posts.id, title: posts.title })
+        .from(posts)
+        .limit(20);
+      
+      console.log("Available post IDs:", allPosts.map(p => p.id).join(", "));
+      
       // If we have a postId, try to find related posts
       // First, get the source post to extract metadata
-      const sourcePost = await db.query.posts.findFirst({
+      console.log(`Looking for post with ID ${postId} using findFirst`);
+      let sourcePost = await db.query.posts.findFirst({
         where: eq(posts.id, postId)
       });
       
       if (!sourcePost) {
-        console.log(`Source post with ID ${postId} not found`);
-        return res.status(404).json({ message: "Post not found" });
+        console.log(`Source post with ID ${postId} not found using findFirst, trying select`);
+        // Try alternative method to find the post
+        const sourcePosts = await db.select()
+          .from(posts)
+          .where(eq(posts.id, postId))
+          .limit(1);
+          
+        if (sourcePosts && sourcePosts.length > 0) {
+          sourcePost = sourcePosts[0];
+          console.log(`Found source post using select: ${sourcePost.title}`);
+        } else {
+          console.log(`Source post with ID ${postId} not found using any method`);
+          return res.status(404).json({ message: "Post not found" });
+        }
       }
       
       console.log(`Found source post: ${sourcePost.title}`);
@@ -59,9 +79,8 @@ export function registerPostRecommendationsRoutes(app: Express) {
         themeCategory = metadataObj.themeCategory || null;
       }
       
-      let recommendedPosts;
-      
       // Try to find posts with the same theme category if available
+      let recommendedPosts = [];
       if (themeCategory) {
         console.log(`Finding posts with theme: ${themeCategory}`);
         
@@ -135,26 +154,33 @@ export function registerPostRecommendationsRoutes(app: Express) {
           // Otherwise, add more posts to reach the limit
           const existingIds = recommendedPosts.map(p => p.id);
           
-          // Only try to supplement if we have existing posts
+          // Only try to supplement if we have existing posts and there are at least 2 ids
           if (existingIds.length > 0) {
-            const additionalPosts = await db.select({
-              id: posts.id,
-              title: posts.title,
-              slug: posts.slug,
-              excerpt: posts.excerpt,
-              createdAt: posts.createdAt
-            })
-            .from(posts)
-            .where(
-              and(
-                ne(posts.id, postId),
-                sql`${posts.id} NOT IN (${existingIds.join(',')})`
+            try {
+              const additionalPosts = await db.select({
+                id: posts.id,
+                title: posts.title,
+                slug: posts.slug,
+                excerpt: posts.excerpt,
+                createdAt: posts.createdAt
+              })
+              .from(posts)
+              .where(
+                and(
+                  ne(posts.id, postId),
+                  sql`${posts.id} NOT IN (${existingIds.join(',')})` 
+                )
               )
-            )
-            .orderBy(desc(posts.createdAt))
-            .limit(limit - recommendedPosts.length);
-            
-            recommendedPosts = [...recommendedPosts, ...additionalPosts];
+              .orderBy(desc(posts.createdAt))
+              .limit(limit - recommendedPosts.length);
+              
+              recommendedPosts = [...recommendedPosts, ...additionalPosts];
+            } catch (err) {
+              console.error("Error supplementing posts:", err);
+              // Fallback if the NOT IN clause fails
+              const fallbackPosts = await fetchRecentPosts(limit - recommendedPosts.length, postId);
+              recommendedPosts = [...recommendedPosts, ...fallbackPosts];
+            }
           }
         }
       }
@@ -178,22 +204,27 @@ export function registerPostRecommendationsRoutes(app: Express) {
  * Fetch recent posts, excluding a specific post if needed
  */
 async function fetchRecentPosts(limit: number, excludeId?: number | null) {
-  const query = db.select({
-    id: posts.id,
-    title: posts.title,
-    slug: posts.slug,
-    excerpt: posts.excerpt,
-    createdAt: posts.createdAt
-  })
-  .from(posts)
-  .orderBy(desc(posts.createdAt))
-  .limit(limit);
-  
-  if (excludeId) {
-    query.where(ne(posts.id, excludeId));
+  try {
+    const query = db.select({
+      id: posts.id,
+      title: posts.title,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      createdAt: posts.createdAt
+    })
+    .from(posts)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit);
+    
+    if (excludeId) {
+      query.where(ne(posts.id, excludeId));
+    }
+    
+    return await query;
+  } catch (error) {
+    console.error("Error fetching recent posts:", error);
+    return [];
   }
-  
-  return query;
 }
 
 /**
@@ -209,7 +240,7 @@ function enhancePostsWithMetadata(posts: any[]) {
       ...post,
       readingTime,
       authorName: 'Anonymous', // Default author
-      views: Math.floor(Math.random() * 100) + 10, // Random view count
+      views: Math.floor(Math.random() * 100) + 10, // Random view count 
       likes: Math.floor(Math.random() * 20) + 1 // Random like count
     };
   });

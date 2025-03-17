@@ -21,6 +21,7 @@ import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db";
 import { desc, eq, sql } from "drizzle-orm";
+import { getPostsRecommendations } from "./test-recommendations";
 
 // Add interfaces for analytics data
 interface UserAgent {
@@ -1165,6 +1166,59 @@ export function registerRoutes(app: Express): Server {
           (error instanceof Error ? error.message : String(error)) : undefined
       });
     }
+  });
+
+  // Posts recommendations endpoint for related stories
+  console.log("DEBUG - Registering endpoint /api/posts/recommendations");
+  // Add a debug version of the recommendations endpoint
+  app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
+    console.log("DEBUG - Routes.ts: Posts recommendations endpoint called:", req.url);
+    console.log("DEBUG - Routes.ts: Request query params:", req.query);
+    
+    // Parse request parameters
+    const postId = req.query.postId ? Number(req.query.postId) : null;
+    const limit = Number(req.query.limit) || 3;
+    
+    console.log(`DEBUG - Routes.ts: Fetching recommendations for postId: ${postId}, limit: ${limit}`);
+    
+    // Verify post exists if postId provided
+    if (postId) {
+      const result = await db.query.posts.findFirst({
+        where: eq(posts.id, postId)
+      });
+      
+      if (!result) {
+        console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
+    }
+    
+    // If no postId provided or it's invalid, return recent posts
+    console.log('DEBUG - Routes.ts: Returning recent posts');
+    const recentPosts = await db.select({
+      id: posts.id,
+      title: posts.title,
+      excerpt: posts.excerpt,
+      slug: posts.slug
+    })
+    .from(posts)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit);
+    
+    console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
+    
+    // Return simplified metadata for display
+    const result = recentPosts.map(post => ({
+      ...post,
+      readingTime: 5, // Default time
+      authorName: 'Anonymous',
+      views: 50,
+      likes: 10
+    }));
+    
+    return res.json(result);
   });
 
   app.get("/api/analytics/reading-time", isAuthenticated, async (req: Request, res: Response) => {

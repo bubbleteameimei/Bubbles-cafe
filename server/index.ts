@@ -16,7 +16,7 @@ import { storage } from "./storage";
 import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
-import { registerPostRecommendationsRoutes } from "./routes/posts-recommendations";
+import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -113,8 +113,8 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
-      // Register post-specific recommendation routes
-      registerPostRecommendationsRoutes(app);
+      // We've moved the post recommendations endpoint to main routes.ts
+      // registerPostRecommendationsRoutes(app);
       
       await setupVite(app, server);
     } else {
@@ -129,8 +129,8 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
-      // Register post-specific recommendation routes
-      registerPostRecommendationsRoutes(app);
+      // We've moved the post recommendations endpoint to main routes.ts
+      // registerPostRecommendationsRoutes(app);
       
       serveStatic(app);
     }

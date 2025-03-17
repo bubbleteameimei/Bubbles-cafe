@@ -1,165 +1,167 @@
-import { useState } from 'react';
-import { DirectRecommendations } from '../components/direct-recommendations';
-import { StoryRecommendations } from '../components/story-recommendations';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+
+interface Post {
+  id: number;
+  title: string;
+  excerpt: string | null;
+  slug: string;
+  readingTime?: number;
+  authorName?: string;
+  views?: number;
+  likes?: number;
+}
 
 export default function TestRecommendationsPage() {
-  const [layout, setLayout] = useState<"grid" | "carousel" | "sidebar">("grid");
-  const [limit, setLimit] = useState(3);
-  
-  const handleBookmark = (postId: number) => {
-    console.log(`Bookmarked post ${postId}`);
-    alert(`Bookmarked post ${postId}`);
-  };
-  
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">Testing Recommendations</h1>
-      <p className="text-muted-foreground mb-6">Testing different recommendation components and layouts</p>
+  const [directRecommendations, setDirectRecommendations] = useState<Post[] | null>(null);
+  const [postRecommendations, setPostRecommendations] = useState<Post[] | null>(null);
+  const [loading, setLoading] = useState({ direct: false, posts: false });
+  const [error, setError] = useState<{ direct: string | null, posts: string | null }>({ direct: null, posts: null });
+  const [postId, setPostId] = useState<number>(12); // Default to post ID 12
+
+  // Fetch direct recommendations
+  const fetchDirectRecommendations = async () => {
+    setLoading(prev => ({ ...prev, direct: true }));
+    setError(prev => ({ ...prev, direct: null }));
+    
+    try {
+      const response = await fetch('/api/recommendations/direct');
       
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Configuration</CardTitle>
-          <CardDescription>Adjust the settings to test different layouts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <h3 className="mb-2 font-medium">Layout Style</h3>
-              <RadioGroup 
-                value={layout} 
-                onValueChange={(val) => setLayout(val as "grid" | "carousel" | "sidebar")}
-                className="grid grid-cols-3 gap-2"
-              >
-                <div>
-                  <RadioGroupItem value="grid" id="grid" className="peer sr-only" />
-                  <Label
-                    htmlFor="grid"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Grid
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="carousel" id="carousel" className="peer sr-only" />
-                  <Label
-                    htmlFor="carousel"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Carousel
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="sidebar" id="sidebar" className="peer sr-only" />
-                  <Label
-                    htmlFor="sidebar"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    Sidebar
-                  </Label>
-                </div>
-              </RadioGroup>
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Direct recommendations:', data);
+      setDirectRecommendations(data);
+    } catch (err) {
+      console.error('Error fetching direct recommendations:', err);
+      setError(prev => ({ ...prev, direct: err instanceof Error ? err.message : String(err) }));
+    } finally {
+      setLoading(prev => ({ ...prev, direct: false }));
+    }
+  };
+
+  // Fetch posts recommendations based on a post ID
+  const fetchPostRecommendations = async () => {
+    if (!postId) return;
+    
+    setLoading(prev => ({ ...prev, posts: true }));
+    setError(prev => ({ ...prev, posts: null }));
+    
+    try {
+      const response = await fetch(`/api/posts/recommendations?postId=${postId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Post recommendations:', data);
+      setPostRecommendations(data);
+    } catch (err) {
+      console.error('Error fetching post recommendations:', err);
+      setError(prev => ({ ...prev, posts: err instanceof Error ? err.message : String(err) }));
+    } finally {
+      setLoading(prev => ({ ...prev, posts: false }));
+    }
+  };
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchDirectRecommendations();
+    fetchPostRecommendations();
+  }, []);
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-8">Recommendations API Test</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Direct Recommendations */}
+        <div className="border p-4 rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Direct Recommendations</h2>
+          <button 
+            onClick={fetchDirectRecommendations}
+            className="px-4 py-2 bg-blue-500 text-white rounded mb-4"
+            disabled={loading.direct}
+          >
+            {loading.direct ? 'Loading...' : 'Refresh'}
+          </button>
+          
+          {error.direct && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              Error: {error.direct}
             </div>
-            
-            <div>
-              <h3 className="mb-2 font-medium">Number of Items</h3>
-              <RadioGroup 
-                value={String(limit)} 
-                onValueChange={(val) => setLimit(Number(val))}
-                className="grid grid-cols-3 gap-2"
+          )}
+          
+          {directRecommendations ? (
+            <ul className="space-y-4">
+              {directRecommendations.map(post => (
+                <li key={post.id} className="border-b pb-3">
+                  <h3 className="font-medium">{post.title}</h3>
+                  <p className="text-sm text-gray-600">{post.excerpt}</p>
+                  <div className="flex text-xs text-gray-500 mt-2">
+                    <span className="mr-3">ID: {post.id}</span>
+                    {post.readingTime && <span className="mr-3">{post.readingTime} min read</span>}
+                    {post.views && <span className="mr-3">{post.views} views</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : !loading.direct && !error.direct ? (
+            <p>No recommendations available</p>
+          ) : null}
+        </div>
+        
+        {/* Post Recommendations */}
+        <div className="border p-4 rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Posts Recommendations</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Post ID:</label>
+            <div className="flex">
+              <input
+                type="number"
+                value={postId}
+                onChange={(e) => setPostId(Number(e.target.value))}
+                className="border rounded px-3 py-2 w-24 mr-2"
+                min="1"
+              />
+              <button 
+                onClick={fetchPostRecommendations}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+                disabled={loading.posts}
               >
-                <div>
-                  <RadioGroupItem value="2" id="limit-2" className="peer sr-only" />
-                  <Label
-                    htmlFor="limit-2"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    2
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="3" id="limit-3" className="peer sr-only" />
-                  <Label
-                    htmlFor="limit-3"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    3
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="5" id="limit-5" className="peer sr-only" />
-                  <Label
-                    htmlFor="limit-5"
-                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                  >
-                    5
-                  </Label>
-                </div>
-              </RadioGroup>
+                {loading.posts ? 'Loading...' : 'Fetch'}
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Tabs defaultValue="direct" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="direct">Direct Recommendations</TabsTrigger>
-          <TabsTrigger value="story">Story Recommendations</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="direct" className="p-2 border rounded-lg">
-          <h2 className="text-xl font-bold mb-4">Testing Direct Recommendations</h2>
-          <p className="text-muted-foreground mb-6">
-            This component uses the direct recommendations API endpoint which is simpler and more reliable.
-          </p>
           
-          <DirectRecommendations 
-            layout={layout}
-            limit={limit}
-            showAuthor={true}
-            showExcerpt={true}
-            onBookmark={handleBookmark}
-          />
-        </TabsContent>
-        
-        <TabsContent value="story" className="p-2 border rounded-lg">
-          <h2 className="text-xl font-bold mb-4">Testing Story Recommendations</h2>
-          <p className="text-muted-foreground mb-6">
-            This is the more complex component with fallback to Direct Recommendations.
-          </p>
+          {error.posts && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              Error: {error.posts}
+            </div>
+          )}
           
-          <StoryRecommendations 
-            currentPostId={1}
-            layout={layout}
-            maxRecommendations={limit}
-            showAnalytics={true}
-            onBookmark={handleBookmark}
-          />
-        </TabsContent>
-      </Tabs>
-      
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Implementation Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-disc pl-5 space-y-2">
-            <li>The DirectRecommendations component uses the /api/recommendations/direct endpoint</li>
-            <li>The StoryRecommendations component attempts to use /api/posts/recommendations but falls back to DirectRecommendations</li>
-            <li>Error states and loading states are handled in both components</li>
-            <li>Different layouts (grid, carousel, sidebar) can be tested</li>
-            <li>Bookmark functionality is implemented but just shows an alert for demo purposes</li>
-          </ul>
-        </CardContent>
-      </Card>
+          {postRecommendations ? (
+            <ul className="space-y-4">
+              {postRecommendations.map(post => (
+                <li key={post.id} className="border-b pb-3">
+                  <h3 className="font-medium">{post.title}</h3>
+                  <p className="text-sm text-gray-600">{post.excerpt}</p>
+                  <div className="flex text-xs text-gray-500 mt-2">
+                    <span className="mr-3">ID: {post.id}</span>
+                    {post.readingTime && <span className="mr-3">{post.readingTime} min read</span>}
+                    {post.views && <span className="mr-3">{post.views} views</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : !loading.posts && !error.posts ? (
+            <p>No recommendations available</p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
