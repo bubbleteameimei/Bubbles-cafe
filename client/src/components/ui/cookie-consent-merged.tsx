@@ -339,7 +339,11 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] border-2 border-[#C4A484] p-6">
+      <DialogContent 
+        className="sm:max-w-[500px] bg-gradient-to-b from-[#F5F5DC] to-[#E8D9B5] border-2 border-[#C4A484] p-6"
+        aria-labelledby="cookie-preferences-title"
+        aria-describedby="cookie-preferences-description"
+      >
         <div className="absolute top-2 right-3 opacity-60">
           <svg className="w-[40px] h-[40px]" viewBox="0 0 122.88 122.25">
             <path 
@@ -353,8 +357,8 @@ function CookiePreferencesModal({ open, onOpenChange }: CookiePreferencesModalPr
         </div>
         
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-[#6F4E37]">Cookie Recipe Builder</DialogTitle>
-          <DialogDescription className="text-[#8B5A2B]">
+          <DialogTitle id="cookie-preferences-title" className="text-2xl font-bold text-[#6F4E37]">Cookie Recipe Builder</DialogTitle>
+          <DialogDescription id="cookie-preferences-description" className="text-[#8B5A2B]">
             Choose your cookie ingredients! Essential ingredients cannot be removed as they're needed for the basic cookie recipe to work.
           </DialogDescription>
         </DialogHeader>
