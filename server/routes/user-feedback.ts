@@ -49,9 +49,9 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
    * GET /api/user/feedback/stats
    * Retrieves statistics about a user's feedback submissions
    */
-  router.get('/api/user/feedback/stats', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback/stats', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.session?.user?.id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -94,9 +94,9 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
    * GET /api/user/feedback/:id
    * Retrieves a specific feedback submission by ID for the authenticated user
    */
-  router.get('/api/user/feedback/:id', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback/:id', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.session?.user?.id;
       const feedbackId = parseInt(req.params.id);
 
       if (!userId) {
