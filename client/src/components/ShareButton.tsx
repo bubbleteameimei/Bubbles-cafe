@@ -122,11 +122,12 @@ export const ShareButton = ({ className }: ShareButtonProps) => {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent 
           className="sm:max-w-md"
-          aria-describedby="share-dialog-description"
+          aria-labelledby="share-story-dialog-title"
+          aria-describedby="share-story-dialog-description"
         >
           <DialogHeader>
-            <DialogTitle>Share This Story</DialogTitle>
-            <DialogDescription id="share-dialog-description">
+            <DialogTitle id="share-story-dialog-title">Share This Story</DialogTitle>
+            <DialogDescription id="share-story-dialog-description">
               Share this story with friends or on social media
             </DialogDescription>
           </DialogHeader>

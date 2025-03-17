@@ -1170,10 +1170,14 @@ export default function ManagePostsPage() {
       
       {/* Edit Post Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent 
+          className="sm:max-w-[600px]"
+          aria-labelledby="edit-post-title"
+          aria-describedby="edit-post-description"
+        >
           <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-            <DialogDescription>
+            <DialogTitle id="edit-post-title">Edit Post</DialogTitle>
+            <DialogDescription id="edit-post-description">
               Make changes to the post. Click save when you're done.
             </DialogDescription>
           </DialogHeader>

@@ -97,8 +97,50 @@ const DialogContent = React.forwardRef<
   }
   
   // Set default aria attributes if none are provided
-  const ariaLabelledby = props['aria-labelledby'] || (hasTitle ? undefined : defaultTitleId);
-  const ariaDescribedby = props['aria-describedby'] || (hasDescription ? undefined : defaultDescId);
+  // First try to find a DialogTitle with an ID
+  let titleId: string | undefined = undefined;
+  let descId: string | undefined = undefined;
+  
+  // Recursive function to search for dialog components with IDs
+  const findComponentIds = (element: React.ReactNode) => {
+    if (!React.isValidElement(element)) return;
+    
+    // Check if this element is a DialogTitle or DialogDescription with an id
+    if (element.type === DialogTitle && element.props && 'id' in element.props) {
+      titleId = element.props.id as string;
+    }
+    else if (element.type === DialogDescription && element.props && 'id' in element.props) {
+      descId = element.props.id as string;
+    }
+    
+    // Check if this is a DialogHeader that might contain DialogTitle/DialogDescription
+    if (element.type === DialogHeader && element.props && element.props.children) {
+      // Search through the header's children
+      React.Children.forEach(element.props.children, findComponentIds);
+    }
+    
+    // If element has children, recursively search them
+    if (element.props && element.props.children) {
+      // Handle both arrays of children and single children
+      if (Array.isArray(element.props.children)) {
+        React.Children.forEach(element.props.children, findComponentIds);
+      } else {
+        findComponentIds(element.props.children);
+      }
+    }
+  };
+  
+  // Start the search
+  React.Children.forEach(children, findComponentIds);
+  
+  // Use provided aria attributes, or auto-detected IDs, or fallback to defaults
+  const ariaLabelledby = props['aria-labelledby'] || 
+                         (titleId ? titleId : 
+                         (hasTitle ? undefined : defaultTitleId));
+                         
+  const ariaDescribedby = props['aria-describedby'] || 
+                         (descId ? descId : 
+                         (hasDescription ? undefined : defaultDescId));
   
   return (
     <DialogPortal>
@@ -155,28 +197,42 @@ DialogFooter.displayName = "DialogFooter"
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, id, ...props }, ref) => {
+  // Create an ID if none is provided
+  const generatedId = React.useId();
+  const titleId = id || `dialog-title-${generatedId}`;
+  
+  return (
+    <DialogPrimitive.Title
+      ref={ref}
+      id={titleId}
+      className={cn(
+        "text-lg font-semibold leading-none tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  );
+})
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
+>(({ className, id, ...props }, ref) => {
+  // Create an ID if none is provided
+  const generatedId = React.useId();
+  const descId = id || `dialog-desc-${generatedId}`;
+  
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      id={descId}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
+})
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 const DialogClose = DialogPrimitive.Close

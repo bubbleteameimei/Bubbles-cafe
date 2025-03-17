@@ -286,10 +286,14 @@ function BugReportItem({ report, onStatusChange }: {
                   </div>
                   
                   <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent 
+                      className="max-w-4xl" 
+                      aria-labelledby="bug-screenshot-title"
+                      aria-describedby="bug-screenshot-description"
+                    >
                       <DialogHeader>
-                        <DialogTitle>Screenshot</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle id="bug-screenshot-title">Screenshot</DialogTitle>
+                        <DialogDescription id="bug-screenshot-description">
                           Screenshot submitted with bug report #{report.id}
                         </DialogDescription>
                       </DialogHeader>

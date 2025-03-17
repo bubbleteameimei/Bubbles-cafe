@@ -98,10 +98,11 @@ const useInlineCommenting = ({
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogContent 
         className="sm:max-w-md"
+        aria-labelledby="comment-dialog-title"
         aria-describedby="comment-dialog-description"
       >
         <DialogHeader>
-          <DialogTitle>Add a Comment</DialogTitle>
+          <DialogTitle id="comment-dialog-title">Add a Comment</DialogTitle>
           <DialogDescription id="comment-dialog-description">
             You are commenting on:
             <blockquote className="border-l-2 border-accent pl-4 mt-2 italic">

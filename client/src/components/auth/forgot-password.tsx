@@ -157,10 +157,14 @@ export function ForgotPasswordDialog() {
           Forgot Password?
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-background text-foreground border border-slate-800 shadow-xl shadow-black/20">
+      <DialogContent 
+        className="sm:max-w-[425px] bg-background text-foreground border border-slate-800 shadow-xl shadow-black/20"
+        aria-labelledby="forgot-password-title"
+        aria-describedby="forgot-password-description"
+      >
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Reset your password</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogTitle id="forgot-password-title" className="text-xl font-bold">Reset your password</DialogTitle>
+          <DialogDescription id="forgot-password-description" className="text-muted-foreground">
             Enter your email address to receive a password reset link.
           </DialogDescription>
         </DialogHeader>

@@ -28,19 +28,36 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
-        className
-      )}
-      {...props}
-    />
-  </AlertDialogPortal>
-))
+>(({ className, children, ...props }, ref) => {
+  // Generate a unique ID for the content
+  const id = React.useId();
+  
+  // Check if aria attributes are already provided
+  const hasAriaLabelled = Boolean(props['aria-labelledby']);
+  const hasAriaDescribed = Boolean(props['aria-describedby']);
+  
+  // Default IDs for title and description
+  const defaultTitleId = `alert-dialog-title-${id}`;
+  const defaultDescId = `alert-dialog-desc-${id}`;
+  
+  return (
+    <AlertDialogPortal>
+      <AlertDialogOverlay />
+      <AlertDialogPrimitive.Content
+        ref={ref}
+        aria-labelledby={hasAriaLabelled ? props['aria-labelledby'] : defaultTitleId}
+        aria-describedby={hasAriaDescribed ? props['aria-describedby'] : defaultDescId}
+        className={cn(
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </AlertDialogPrimitive.Content>
+    </AlertDialogPortal>
+  );
+})
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName
 
 const AlertDialogHeader = ({
@@ -74,25 +91,39 @@ AlertDialogFooter.displayName = "AlertDialogFooter"
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold", className)}
-    {...props}
-  />
-))
+>(({ className, id, ...props }, ref) => {
+  // Create an ID derived from the parent if none provided
+  const defaultId = React.useId();
+  const titleId = id || `alert-dialog-title-${defaultId}`;
+  
+  return (
+    <AlertDialogPrimitive.Title
+      ref={ref}
+      id={titleId}
+      className={cn("text-lg font-semibold", className)}
+      {...props}
+    />
+  );
+})
 AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName
 
 const AlertDialogDescription = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
+>(({ className, id, ...props }, ref) => {
+  // Create an ID derived from the parent if none provided
+  const defaultId = React.useId();
+  const descId = id || `alert-dialog-desc-${defaultId}`;
+  
+  return (
+    <AlertDialogPrimitive.Description
+      ref={ref}
+      id={descId}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
+})
 AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayName
 
 const AlertDialogAction = React.forwardRef<
