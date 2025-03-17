@@ -44,7 +44,7 @@ export default function ReadingPreferencesPage() {
     
     if (screenReader) {
       document.documentElement.setAttribute('role', 'application');
-      document.documentElement.setAttribute('aria-label', 'Horror Stories Reading Application');
+      document.documentElement.setAttribute('aria-label', 'Stories Reading Application');
     } else {
       document.documentElement.removeAttribute('role');
       document.documentElement.removeAttribute('aria-label');

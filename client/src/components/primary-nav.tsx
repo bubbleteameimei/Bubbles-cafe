@@ -30,7 +30,7 @@ export function PrimaryNav() {
             onClick={() => navigate('/')} 
             className="mr-6 flex items-center space-x-2"
           >
-            <span className="hidden font-bold sm:inline-block">Horror Stories</span>
+            <span className="hidden font-bold sm:inline-block">Stories</span>
           </button>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <NavLink to="/" label="Home" />

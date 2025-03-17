@@ -196,7 +196,21 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // Use our ApiLoader component to handle loading state with the global context
   if (isLoading) {
     return (
-      <ApiLoader isLoading={true} />
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Loading story..."
+          minimumLoadTime={800}
+          debug={true}
+          overlayZIndex={100}
+        >
+          <div className="invisible">
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading story content...</span>
+            </div>
+          </div>
+        </ApiLoader>
+      </div>
     );
   }
 
@@ -760,7 +774,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 whiteSpace: 'pre-wrap'
               }}
               dangerouslySetInnerHTML={{
-                __html: sanitizeHtmlContent(currentPost.content)
+                __html: sanitizeHtmlContent(currentPost.content.rendered)
               }}
             />
 

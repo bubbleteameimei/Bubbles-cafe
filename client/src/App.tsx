@@ -10,13 +10,14 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
-// Removed LoadingScreen import
+import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import PageTransition from './components/PageTransition';
+import { EnhancedPageTransition } from './components/enhanced-page-transition';
 import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
@@ -24,6 +25,10 @@ import { Menu } from 'lucide-react';
 import { SidebarNavigation } from './components/ui/sidebar-menu';
 // Import the global loading provider
 import { LoadingProvider } from './contexts/loading-context';
+// Import ApiLoader for Suspense fallback
+import ApiLoader from './components/api-loader';
+// Import GlobalLoadingOverlay and Registry
+import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/GlobalLoadingOverlay';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
@@ -56,6 +61,8 @@ const withSuspense = <P extends Record<string, any>>(
       }
     };
 
+    // The key to making the loading screen show above everything is making sure it's rendered
+    // directly in the DOM, outside of any layout containers that might cause z-index stacking issues
     return (
       <ErrorBoundary
         fallback={
@@ -67,8 +74,20 @@ const withSuspense = <P extends Record<string, any>>(
       >
         <React.Suspense 
           fallback={
-            <div className="flex items-center justify-center p-4 h-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <div className="relative min-h-[300px]">
+              <ApiLoader 
+                isLoading={true}
+                message="Loading page content..."
+                minimumLoadTime={800}
+                debug={true}
+                overlayZIndex={100}
+              >
+                <div className="invisible">
+                  <div className="h-[300px] w-full flex items-center justify-center">
+                    <span className="sr-only">Loading page content...</span>
+                  </div>
+                </div>
+              </ApiLoader>
             </div>
           }
         >
@@ -202,7 +221,7 @@ const AppContent = () => {
       <aside className="fixed top-0 left-0 z-40 h-screen w-64 hidden lg:block overflow-hidden">
         <div className="h-full w-full">
           <div className="h-[56px] px-4 flex items-center border-b border-border bg-background">
-            <h1 className="text-foreground font-medium text-lg">Horror Stories</h1>
+            <h1 className="text-foreground font-medium text-lg">Stories</h1>
           </div>
           <SidebarNavigation onNavigate={() => {}} />
         </div>
@@ -213,7 +232,7 @@ const AppContent = () => {
         <AutoHideNavbar />
         <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
           <ErrorBoundary>
-            <PageTransition mode="fade" duration={0.4}>
+            <EnhancedPageTransition transitionDuration={400}>
               <Switch>
                 {/* Auth Routes */}
                 <Route path="/auth" component={AuthPage} />
@@ -296,7 +315,7 @@ const AppContent = () => {
                   )}
                 </Route>
               </Switch>
-            </PageTransition>
+            </EnhancedPageTransition>
           </ErrorBoundary>
         </div>
         <Footer />
@@ -340,9 +359,16 @@ function App() {
           <CookieConsentProvider>
             <NotificationProvider>
               <LoadingProvider>
-                <SidebarProvider defaultOpen={true}>
-                  <AppContent />
-                </SidebarProvider>
+                <GlobalLoadingOverlay
+                  defaultMessage="Loading..."
+                  minimumLoadingDuration={800}
+                  debugMode={true}
+                >
+                  <GlobalLoadingRegistry />
+                  <SidebarProvider defaultOpen={true}>
+                    <AppContent />
+                  </SidebarProvider>
+                </GlobalLoadingOverlay>
               </LoadingProvider>
             </NotificationProvider>
           </CookieConsentProvider>

@@ -1,6 +1,5 @@
 
-import React from 'react';
-import { Helmet } from 'react-helmet';
+import React, { useEffect } from 'react';
 
 interface SEOProps {
   title?: string;
@@ -15,67 +14,133 @@ interface SEOProps {
 }
 
 export default function SEO({
-  title = 'Horror Stories',
-  description = 'Explore original horror stories, dark fiction, and supernatural tales.',
+  title = 'Stories',
+  description = 'Explore original stories and immersive fiction.',
   canonical,
   image,
   type = 'website',
   author,
   published,
   modified,
-  keywords = ['horror', 'stories', 'fiction', 'supernatural', 'dark fiction']
+  keywords = ['stories', 'fiction', 'immersive', 'reading']
 }: SEOProps) {
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const pageUrl = canonical ? `${siteUrl}${canonical}` : '';
   const imageUrl = image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : '';
   
-  return (
-    <Helmet>
-      {/* Basic Meta Tags */}
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
-      {canonical && <link rel="canonical" href={pageUrl} />}
+  useEffect(() => {
+    // Set document title
+    document.title = title;
+    
+    // Helper function to create or update meta tags
+    const setMetaTag = (name: string, content: string, property = false) => {
+      let meta = document.querySelector(property ? `meta[property="${name}"]` : `meta[name="${name}"]`);
       
-      {/* Open Graph Tags */}
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:type" content={type} />
-      {pageUrl && <meta property="og:url" content={pageUrl} />}
-      {imageUrl && <meta property="og:image" content={imageUrl} />}
-      {author && <meta property="article:author" content={author} />}
-      {published && <meta property="article:published_time" content={published} />}
-      {modified && <meta property="article:modified_time" content={modified} />}
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property) {
+          meta.setAttribute('property', name);
+        } else {
+          meta.setAttribute('name', name);
+        }
+        document.head.appendChild(meta);
+      }
       
-      {/* Twitter Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      {imageUrl && <meta name="twitter:image" content={imageUrl} />}
-      
-      {/* Schema.org markup for Google */}
-      <script type="application/ld+json">
-        {JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': type === 'article' ? 'Article' : 'WebSite',
-          headline: title,
-          description: description,
-          image: imageUrl,
-          url: pageUrl,
-          ...(type === 'article' && author ? {
-            author: {
-              '@type': 'Person',
-              name: author
-            }
-          } : {}),
-          ...(type === 'article' && published ? {
-            datePublished: published
-          } : {}),
-          ...(type === 'article' && modified ? {
-            dateModified: modified
-          } : {})
-        })}
-      </script>
-    </Helmet>
-  );
+      meta.setAttribute('content', content);
+    };
+    
+    // Set basic meta tags
+    setMetaTag('description', description);
+    if (keywords.length > 0) {
+      setMetaTag('keywords', keywords.join(', '));
+    }
+    
+    // Set Open Graph tags
+    setMetaTag('og:title', title, true);
+    setMetaTag('og:description', description, true);
+    setMetaTag('og:type', type, true);
+    
+    if (pageUrl) {
+      setMetaTag('og:url', pageUrl, true);
+    }
+    
+    if (imageUrl) {
+      setMetaTag('og:image', imageUrl, true);
+    }
+    
+    if (author) {
+      setMetaTag('article:author', author, true);
+    }
+    
+    if (published) {
+      setMetaTag('article:published_time', published, true);
+    }
+    
+    if (modified) {
+      setMetaTag('article:modified_time', modified, true);
+    }
+    
+    // Set Twitter tags
+    setMetaTag('twitter:card', 'summary_large_image');
+    setMetaTag('twitter:title', title);
+    setMetaTag('twitter:description', description);
+    
+    if (imageUrl) {
+      setMetaTag('twitter:image', imageUrl);
+    }
+    
+    // Set canonical link
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonical) {
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', pageUrl);
+    } else if (canonicalLink) {
+      canonicalLink.remove();
+    }
+    
+    // Set JSON-LD script for Schema.org
+    let jsonLdScript = document.querySelector('script[type="application/ld+json"]');
+    if (!jsonLdScript) {
+      jsonLdScript = document.createElement('script');
+      jsonLdScript.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(jsonLdScript);
+    }
+    
+    const jsonLdData = {
+      '@context': 'https://schema.org',
+      '@type': type === 'article' ? 'Article' : 'WebSite',
+      headline: title,
+      description: description,
+      image: imageUrl,
+      url: pageUrl,
+      ...(type === 'article' && author ? {
+        author: {
+          '@type': 'Person',
+          name: author
+        }
+      } : {}),
+      ...(type === 'article' && published ? {
+        datePublished: published
+      } : {}),
+      ...(type === 'article' && modified ? {
+        dateModified: modified
+      } : {})
+    };
+    
+    jsonLdScript.textContent = JSON.stringify(jsonLdData);
+    
+    // Cleanup function to remove custom tags when component unmounts
+    return () => {
+      if (jsonLdScript) {
+        jsonLdScript.remove();
+      }
+    };
+  }, [title, description, canonical, image, type, author, published, modified, keywords, siteUrl, pageUrl, imageUrl]);
+  
+  // This component doesn't render anything visible
+  return null;
 }

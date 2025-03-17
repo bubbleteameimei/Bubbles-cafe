@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import ApiLoader from '@/components/api-loader';
 
 type Post = {
   id: number;
@@ -47,26 +48,64 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Query to fetch all bookmarks for authenticated users
-  const { data: bookmarks = [], isLoading, error } = useQuery({
+  const { data: bookmarks = [], isLoading, error, status, fetchStatus } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
     queryFn: async () => {
       if (!user) return [];
       const url = filterTag
         ? `/api/bookmarks?tag=${encodeURIComponent(filterTag)}`
         : '/api/bookmarks';
-      return apiRequest<BookmarkWithPost[]>(url);
+      console.log(`[BookmarkList] Fetching bookmarks with URL: ${url}`);
+      try {
+        const result = await apiRequest<BookmarkWithPost[]>(url);
+        console.log(`[BookmarkList] Successfully fetched ${result.length} bookmarks`);
+        return result;
+      } catch (err) {
+        console.error('[BookmarkList] Error fetching bookmarks:', err);
+        throw err;
+      }
     },
     enabled: !!user,
   });
   
   // Query to fetch recommended stories for non-authenticated users
-  const { data: recommendedStories = [], isLoading: isLoadingRecommended } = useQuery({
+  const { 
+    data: recommendedStories = [], 
+    isLoading: isLoadingRecommended,
+    status: recommendedStatus,
+    fetchStatus: recommendedFetchStatus
+  } = useQuery({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      return apiRequest<Post[]>('/api/posts?limit=5');
+      console.log('[BookmarkList] Fetching recommended stories');
+      try {
+        const result = await apiRequest<Post[]>('/api/posts?limit=5');
+        console.log(`[BookmarkList] Successfully fetched ${result.length} recommended stories`);
+        return result;
+      } catch (err) {
+        console.error('[BookmarkList] Error fetching recommended stories:', err);
+        throw err;
+      }
     },
     enabled: !user,
   });
+  
+  // Enhanced debug logging for loading states with more detailed information
+  useEffect(() => {
+    console.log(`[BookmarkList] Loading state changed: 
+      - isLoading: ${isLoading}
+      - Status: ${status}
+      - Fetch status: ${fetchStatus}
+      - Time: ${new Date().toISOString()}`);
+  }, [isLoading, status, fetchStatus]);
+  
+  useEffect(() => {
+    console.log(`[BookmarkList] Recommended loading state changed: 
+      - isLoadingRecommended: ${isLoadingRecommended}
+      - Status: ${recommendedStatus}
+      - Fetch status: ${recommendedFetchStatus}
+      - Time: ${new Date().toISOString()}`);
+  }, [isLoadingRecommended, recommendedStatus, recommendedFetchStatus]);
 
   // Delete bookmark mutation
   const deleteMutation = useMutation({
@@ -167,7 +206,21 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
         </div>
         
         {isLoadingRecommended ? (
-          <div className="text-center p-4">Loading recommended stories...</div>
+          <div className="relative min-h-[200px]">
+            <ApiLoader 
+              isLoading={true} 
+              message="Loading recommended stories..."
+              minimumLoadTime={800}
+              debug={true}
+              overlayZIndex={100}
+            >
+              <div className="invisible">
+                <div className="h-[200px] w-full flex items-center justify-center">
+                  <span className="sr-only">Loading recommended stories...</span>
+                </div>
+              </div>
+            </ApiLoader>
+          </div>
         ) : recommendedStories.length > 0 ? (
           <>
             <h3 className="text-xl font-semibold mb-4">Recommended Stories</h3>
@@ -215,8 +268,27 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     );
   }
 
+  // Enhanced loading state handling with improved debugging and user feedback
   if (isLoading) {
-    return <div className="text-center p-4">Loading your bookmarks...</div>;
+    return (
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Loading your bookmarks..."
+          minimumLoadTime={800}  
+          debug={true}
+          overlayZIndex={100}
+          spinnerSize={48}
+        >
+          <div className="invisible">
+            {/* This creates proper space for the content while invisible */}
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading bookmarks...</span>
+            </div>
+          </div>
+        </ApiLoader>
+      </div>
+    );
   }
 
   if (error) {

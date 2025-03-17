@@ -26,7 +26,7 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Fixed header */}
         <div className="sticky top-0 z-50 flex-none h-16 px-4 border-b border-[hsl(var(--sidebar-border))] flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[hsl(var(--sidebar-foreground))]">Horror Stories</h2>
+          <h2 className="text-lg font-semibold text-[hsl(var(--sidebar-foreground))]">Stories</h2>
           {isMobile && (
             <Button
               variant="ghost"

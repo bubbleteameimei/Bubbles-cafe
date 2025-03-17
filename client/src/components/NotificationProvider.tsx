@@ -43,8 +43,8 @@ const fetchNotifications = async (): Promise<Notification[]> => {
   return [
     {
       id: uuidv4(),
-      title: 'Welcome to the Horror Stories Platform',
-      description: 'Explore our vast library of chilling tales and immersive experiences.',
+      title: 'Welcome to Stories',
+      description: 'Explore our vast library of immersive stories and experiences.',
       read: false,
       date: new Date().toISOString(),
       type: 'system',

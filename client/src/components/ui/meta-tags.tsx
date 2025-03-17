@@ -10,8 +10,8 @@ interface MetaTagsProps {
 }
 
 export function MetaTags({ post, title, description, image, url }: MetaTagsProps) {
-  const pageTitle = post?.title || title || "Horror Stories";
-  const pageDescription = post?.excerpt || description || "Experience chilling horror stories that will keep you on the edge of your seat.";
+  const pageTitle = post?.title || title || "Stories";
+  const pageDescription = post?.excerpt || description || "Experience immersive stories that will keep you engaged.";
   const pageImage = image || "/og-image.svg";
   const pageUrl = url || window.location.href;
 

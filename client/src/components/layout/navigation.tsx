@@ -69,7 +69,7 @@ export default function Navigation() {
             className="mr-6 flex items-center space-x-2 rounded-md px-2 py-1 touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <span className="hidden font-bold uppercase tracking-wider sm:inline-block">Horror Stories</span>
+            <span className="hidden font-bold uppercase tracking-wider sm:inline-block">Stories</span>
           </button>
           
           {/* Desktop Navigation */}

@@ -62,7 +62,7 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
       // Add to notification system
       addNotification({
         title: 'New Stories Available',
-        description: `${newStories} new horror ${newStories === 1 ? 'story' : 'stories'} since your last visit.`,
+        description: `${newStories} new ${newStories === 1 ? 'story' : 'stories'} since your last visit.`,
         type: 'story',
         link: '/stories'
       });
@@ -114,8 +114,8 @@ const NewStoryNotification: React.FC<NewStoryNotificationProps> = ({
               <h3 className="font-medium text-foreground">New Stories Available</h3>
               <p className="text-sm text-muted-foreground">
                 {showCount 
-                  ? `${newStories} new horror ${newStories === 1 ? 'story' : 'stories'} since your last visit.`
-                  : 'New horror stories have been added.'
+                  ? `${newStories} new ${newStories === 1 ? 'story' : 'stories'} since your last visit.`
+                  : 'New stories have been added.'
                 }
               </p>
               <Button

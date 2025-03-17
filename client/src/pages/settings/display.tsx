@@ -6,14 +6,14 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 
-interface HorrorEffects {
+interface VisualEffects {
   ambient: boolean;
   jumpscares: boolean;
   weatherEffects: boolean;
   textEffects: boolean;
 }
 
-const defaultEffects: HorrorEffects = {
+const defaultEffects: VisualEffects = {
   ambient: false,
   jumpscares: false,
   weatherEffects: false,
@@ -23,13 +23,13 @@ const defaultEffects: HorrorEffects = {
 export default function VisualHorrorSettingsPage() {
   const { toast } = useToast();
   const [ambienceLevel, setAmbienceLevel] = useState<number>(50);
-  const [effects, setEffects] = useState<HorrorEffects>(defaultEffects);
+  const [effects, setEffects] = useState<VisualEffects>(defaultEffects);
 
   // Load saved preferences on component mount
   useEffect(() => {
     try {
       // Load theme
-      const savedTheme = localStorage.getItem('horror-theme');
+      const savedTheme = localStorage.getItem('visual-theme');
       if (savedTheme) {
         handleThemeChange(savedTheme, false);
       }
@@ -41,7 +41,7 @@ export default function VisualHorrorSettingsPage() {
       }
 
       // Load effects
-      const savedEffects = localStorage.getItem('horror-effects');
+      const savedEffects = localStorage.getItem('visual-effects');
       if (savedEffects) {
         setEffects(JSON.parse(savedEffects));
       }
@@ -63,7 +63,7 @@ export default function VisualHorrorSettingsPage() {
       });
     }
     // Save theme preference to localStorage
-    localStorage.setItem('horror-theme', value);
+    localStorage.setItem('visual-theme', value);
   };
 
   const handleAmbienceChange = (value: number[]) => {
@@ -73,14 +73,14 @@ export default function VisualHorrorSettingsPage() {
     localStorage.setItem('ambience-level', newValue.toString());
   };
 
-  const toggleEffect = (effect: keyof HorrorEffects) => {
-    setEffects(prev => {
+  const toggleEffect = (effect: keyof VisualEffects) => {
+    setEffects((prev: VisualEffects) => {
       const newEffects = {
         ...prev,
         [effect]: !prev[effect]
       };
       // Save effects state to localStorage
-      localStorage.setItem('horror-effects', JSON.stringify(newEffects));
+      localStorage.setItem('visual-effects', JSON.stringify(newEffects));
       return newEffects;
     });
   };
@@ -142,7 +142,6 @@ export default function VisualHorrorSettingsPage() {
                 id="ambient" 
                 checked={effects.ambient}
                 onCheckedChange={() => toggleEffect('ambient')}
-                size="md"
               />
             </div>
 
@@ -155,7 +154,6 @@ export default function VisualHorrorSettingsPage() {
                 id="jumpscares" 
                 checked={effects.jumpscares}
                 onCheckedChange={() => toggleEffect('jumpscares')}
-                size="md"
               />
             </div>
 
@@ -168,7 +166,6 @@ export default function VisualHorrorSettingsPage() {
                 id="weatherEffects" 
                 checked={effects.weatherEffects}
                 onCheckedChange={() => toggleEffect('weatherEffects')}
-                size="md"
               />
             </div>
 
@@ -181,7 +178,6 @@ export default function VisualHorrorSettingsPage() {
                 id="textEffects" 
                 checked={effects.textEffects}
                 onCheckedChange={() => toggleEffect('textEffects')}
-                size="md"
               />
             </div>
           </div>

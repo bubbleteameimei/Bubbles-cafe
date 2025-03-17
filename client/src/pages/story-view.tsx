@@ -51,7 +51,7 @@ export default function StoryView({ slug }: StoryViewProps) {
             <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
             <ShareButton 
               title={post.title} 
-              text={`Read "${post.title}" on Horror Stories`}
+              text={`Read "${post.title}" on Stories`}
               className="ml-auto"
             />
           </div>

@@ -4,15 +4,29 @@ import { useAuth } from '@/hooks/use-auth';
 import { Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
+import { useLoading } from '@/contexts/loading-context';
+import ApiLoader from '@/components/api-loader';
 
 export default function BookmarksPage() {
   const { user, isLoading } = useAuth();
 
+  // Use ApiLoader to show global loading state via the portal-based system
   if (isLoading) {
     return (
-      <div className="container max-w-4xl mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-6">Bookmarks</h1>
-        <div className="text-center py-12">Loading...</div>
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Loading your bookmarks..."
+          minimumLoadTime={800}
+          debug={true}
+          overlayZIndex={100}
+        >
+          <div className="invisible">
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading bookmarks page...</span>
+            </div>
+          </div>
+        </ApiLoader>
       </div>
     );
   }

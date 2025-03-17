@@ -15,7 +15,7 @@ interface SearchBarProps {
 
 export const SearchBar = ({
   className = "",
-  placeholder = "Search horror stories...",
+  placeholder = "Search stories...",
   showIcon = true,
   animate = true,
   onSearchChange,

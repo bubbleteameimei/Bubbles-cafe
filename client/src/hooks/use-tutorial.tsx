@@ -11,13 +11,13 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     target: '[data-tutorial="home"]',
-    content: 'Welcome to our horror story platform! Start your journey here.',
+    content: 'Welcome to our story platform! Start your journey here.',
     title: 'Welcome!',
     placement: 'right'
   },
   {
     target: '[data-tutorial="library"]',
-    content: 'Explore our collection of horror stories in the Library section.',
+    content: 'Explore our collection of stories in the Library section.',
     title: 'Story Library',
     placement: 'right'
   },

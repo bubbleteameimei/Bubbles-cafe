@@ -1,59 +1,107 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+import AbsoluteLoadingOverlay from './absolute-loading-overlay';
 
 interface ApiLoaderProps {
   isLoading: boolean;
-  loadingDelay?: number;
-  minDisplayTime?: number;
+  message?: string;
+  children: React.ReactNode;
+  minimumLoadTime?: number;
+  showDelay?: number;
+  debug?: boolean;
+  overlayZIndex?: number;
+  spinnerSize?: number;
 }
 
 /**
- * Global API Loading component with configurable delay and minimum display time
- * Shows a full-page loading indicator that covers the entire application
- * including header and footer for a seamless loading experience
+ * ApiLoader - A component that provides a consistent loading experience
+ * for API requests across the application.
+ *
+ * This component:
+ * 1. Shows a loading overlay while the API request is in progress
+ * 2. Enforces a minimum loading time to prevent flashes
+ * 3. Adds a small delay before showing to avoid flickering for fast requests
+ * 4. Can be debugged with console logs
  */
-export function ApiLoader({ 
+const ApiLoader: React.FC<ApiLoaderProps> = ({
   isLoading,
-  loadingDelay = 300, 
-  minDisplayTime = 500 
-}: ApiLoaderProps) {
+  message = 'Loading...',
+  children,
+  minimumLoadTime = 500,
+  showDelay = 300,
+  debug = false,
+  overlayZIndex = 100,
+  spinnerSize = 40
+}) => {
   const [showLoader, setShowLoader] = useState(false);
-  
+  const loadingStartTime = useRef<number | null>(null);
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Log loading state changes when debug is enabled
   useEffect(() => {
-    let delayTimer: NodeJS.Timeout;
-    let minDisplayTimer: NodeJS.Timeout;
-    
+    if (debug) {
+      if (isLoading) {
+        console.log('API Loader: Showing loading screen');
+      } else {
+        console.log('API Loader: Loading complete');
+      }
+    }
+  }, [isLoading, debug]);
+
+  // Handle loading state changes
+  useEffect(() => {
     if (isLoading) {
-      delayTimer = setTimeout(() => {
+      // Start loading
+      loadingStartTime.current = Date.now();
+      
+      // Add delay before showing loader to prevent flashing
+      showTimeoutRef.current = setTimeout(() => {
         setShowLoader(true);
-      }, loadingDelay);
-    } else if (showLoader) {
-      minDisplayTimer = setTimeout(() => {
+      }, showDelay);
+    } else {
+      // Calculate how long the request took
+      const timeElapsed = loadingStartTime.current 
+        ? Date.now() - loadingStartTime.current 
+        : 0;
+      
+      // Clear the show timeout if it's still pending
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+        showTimeoutRef.current = null;
+      }
+      
+      // Enforce minimum loading time
+      const remainingTime = Math.max(0, minimumLoadTime - timeElapsed);
+      
+      if (remainingTime > 0 && showLoader) {
+        setTimeout(() => {
+          setShowLoader(false);
+          loadingStartTime.current = null;
+        }, remainingTime);
+      } else {
         setShowLoader(false);
-      }, minDisplayTime);
+        loadingStartTime.current = null;
+      }
     }
     
+    // Clean up on unmount
     return () => {
-      clearTimeout(delayTimer);
-      clearTimeout(minDisplayTimer);
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
     };
-  }, [isLoading, loadingDelay, minDisplayTime, showLoader]);
-  
-  if (!showLoader) return null;
-  
+  }, [isLoading, minimumLoadTime, showDelay]);
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-6">
-        <div className="relative w-20 h-20">
-          <div className="absolute inset-0 border-4 border-primary/30 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-primary rounded-full animate-spin border-t-transparent"></div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-1">Horror Stories</h2>
-          <p className="text-lg font-medium text-foreground/80 animate-pulse">Loading your story...</p>
-        </div>
-      </div>
+    <div className="relative">
+      <AbsoluteLoadingOverlay 
+        isLoading={showLoader} 
+        message={message}
+        zIndex={overlayZIndex}
+        spinnerSize={spinnerSize}
+      />
+      {children}
     </div>
   );
-}
+};
 
 export default ApiLoader;

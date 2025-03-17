@@ -55,7 +55,7 @@ const AdaptiveSidebar: React.FC<AdaptiveSidebarProps> = ({ className = "" }) => 
           transition={{ duration: 0.2 }}
           className="font-bold text-xl"
         >
-          {isOpen && "Horror Stories"}
+          {isOpen && "Stories"}
         </motion.div>
         <Button
           variant="ghost"

@@ -4,6 +4,8 @@ import App from "./App";
 import "./index.css";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
+// Import the global loading manager - just importing initializes it
+import "@/utils/global-loading-manager";
 
 console.log("[Client] Starting application...");
 
