@@ -75,6 +75,7 @@ const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-d
 const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
 const ChartDashboardPage = withSuspense(React.lazy(() => import('./pages/chart-dashboard')));
 const SwitchTestPage = withSuspense(React.lazy(() => import('./pages/switch-test')));
+const ToggleComparisonPage = withSuspense(React.lazy(() => import('./pages/toggle-comparison')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -196,6 +197,7 @@ const AppContent = () => {
                 <Route path="/toast-test" component={ToastTestPage} />
                 <Route path="/charts" component={ChartDashboardPage} />
                 <Route path="/switch-test" component={SwitchTestPage} />
+                <Route path="/toggle-comparison" component={ToggleComparisonPage} />
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />

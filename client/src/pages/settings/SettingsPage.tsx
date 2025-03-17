@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Moon, Sun } from "lucide-react";
@@ -12,7 +11,6 @@ export default function SettingsPage() {
   const [location] = useLocation();
   const [fontSize, setFontSize] = useState(16);
   const [readingMode, setReadingMode] = useState<'scroll' | 'page'>('scroll');
-  const [offlineMode, setOfflineMode] = useState(false);
   const { theme, setTheme } = useTheme();
 
   // Font size handler
@@ -25,18 +23,6 @@ export default function SettingsPage() {
   const handleReadingModeChange = (mode: 'scroll' | 'page') => {
     setReadingMode(mode);
     document.body.dataset.readingMode = mode;
-  };
-
-  // Offline mode handler
-  const handleOfflineModeChange = (enabled: boolean) => {
-    setOfflineMode(enabled);
-    if (enabled) {
-      navigator.serviceWorker?.register('/service-worker.js');
-    } else {
-      navigator.serviceWorker?.getRegistrations().then(registrations => {
-        registrations.forEach(registration => registration.unregister());
-      });
-    }
   };
 
   return (
@@ -103,24 +89,6 @@ export default function SettingsPage() {
             >
               Page Mode
             </Button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Offline Mode</h2>
-          <div className="flex items-center space-x-4 p-4 border rounded-md bg-card">
-            <Switch
-              checked={offlineMode}
-              onCheckedChange={handleOfflineModeChange}
-              id="offline-mode"
-              size="md"
-            />
-            <label htmlFor="offline-mode" className="flex-grow cursor-pointer">
-              <div className="font-medium">Enable offline reading</div>
-              <p className="text-sm text-muted-foreground mt-1">
-                When enabled, stories will be available offline
-              </p>
-            </label>
           </div>
         </div>
       </Card>

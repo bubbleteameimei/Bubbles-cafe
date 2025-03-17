@@ -18,106 +18,100 @@ export default function SwitchTestPage() {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Switch Sizes</CardTitle>
+            <CardTitle>Switch Examples</CardTitle>
             <CardDescription>
-              Showing all available switch sizes with both checked and unchecked states
+              All toggles now match the "Remember me" toggle from the login form
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="grid gap-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-sm">Small Switch (Unchecked)</Label>
+                  <Label htmlFor="switch-1">Toggle 1 (Unchecked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Small size toggle switch (sm)
+                    Standard toggle switch in unchecked state
                   </p>
                 </div>
                 <Switch
-                  id="switch-sm"
+                  id="switch-1"
                   checked={toggle1}
                   onCheckedChange={setToggle1}
-                  size="sm"
-                  aria-label="Toggle small switch"
+                  aria-label="Toggle switch"
                 />
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-sm-checked">Small Switch (Checked)</Label>
+                  <Label htmlFor="switch-2">Toggle 2 (Checked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Small size toggle switch (sm) in checked state
+                    Standard toggle switch in checked state
                   </p>
                 </div>
                 <Switch
-                  id="switch-sm-checked"
+                  id="switch-2"
                   checked={toggle2}
                   onCheckedChange={setToggle2}
-                  size="sm"
-                  aria-label="Toggle small switch checked"
+                  aria-label="Toggle switch checked"
                 />
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-md">Medium Switch (Unchecked)</Label>
+                  <Label htmlFor="switch-3">Toggle 3 (Unchecked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Medium size toggle switch (md) - default size
+                    Standard toggle switch - matches "Remember me" toggle
                   </p>
                 </div>
                 <Switch
-                  id="switch-md"
+                  id="switch-3"
                   checked={toggle3}
                   onCheckedChange={setToggle3}
-                  size="md"
-                  aria-label="Toggle medium switch"
+                  aria-label="Toggle switch"
                 />
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-md-checked">Medium Switch (Checked)</Label>
+                  <Label htmlFor="switch-4">Toggle 4 (Checked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Medium size toggle switch (md) in checked state
+                    Standard toggle switch in checked state
                   </p>
                 </div>
                 <Switch
-                  id="switch-md-checked"
+                  id="switch-4"
                   checked={toggle4}
                   onCheckedChange={setToggle4}
-                  size="md"
-                  aria-label="Toggle medium switch checked"
+                  aria-label="Toggle switch checked"
                 />
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-lg">Large Switch (Unchecked)</Label>
+                  <Label htmlFor="switch-5">Toggle 5 (Unchecked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Large size toggle switch (lg)
+                    Standard toggle switch in unchecked state
                   </p>
                 </div>
                 <Switch
-                  id="switch-lg"
+                  id="switch-5"
                   checked={toggle5}
                   onCheckedChange={setToggle5}
-                  size="lg"
-                  aria-label="Toggle large switch"
+                  aria-label="Toggle switch"
                 />
               </div>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="switch-lg-checked">Large Switch (Checked)</Label>
+                  <Label htmlFor="switch-6">Toggle 6 (Checked)</Label>
                   <p className="text-sm text-muted-foreground">
-                    Large size toggle switch (lg) in checked state
+                    Standard toggle switch in checked state
                   </p>
                 </div>
                 <Switch
-                  id="switch-lg-checked"
+                  id="switch-6"
                   checked={toggle6}
                   onCheckedChange={setToggle6}
-                  size="lg"
-                  aria-label="Toggle large switch checked"
+                  aria-label="Toggle switch checked"
                 />
               </div>
             </div>
@@ -144,7 +138,6 @@ export default function SwitchTestPage() {
                   id="switch-disabled-unchecked"
                   checked={false}
                   disabled
-                  size="md"
                   aria-label="Disabled toggle switch unchecked"
                 />
               </div>
@@ -160,7 +153,6 @@ export default function SwitchTestPage() {
                   id="switch-disabled-checked"
                   checked={true}
                   disabled
-                  size="md"
                   aria-label="Disabled toggle switch checked"
                 />
               </div>

@@ -9,7 +9,7 @@
       "VITE_DEBUG_ENABLED": "true",
       "VITE_HOT_RELOAD": "true"
     },
-    "wait_for_port": 3000,
+    "wait_for_port": true,
     "port": 3000,
     "onAfterCompleted": "continue",
     "persistent": true,
