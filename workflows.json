@@ -11,6 +11,7 @@
     },
     "wait_for_port": true,
     "port": 3000,
+    "protocol": "http",
     "onAfterCompleted": "continue",
     "persistent": true,
     "type": "web",
