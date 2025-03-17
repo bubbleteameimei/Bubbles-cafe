@@ -16,6 +16,7 @@ import { storage } from "./storage";
 import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
+import { registerPostRecommendationsRoutes } from "./routes/posts-recommendations";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -112,6 +113,9 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
+      // Register post-specific recommendation routes
+      registerPostRecommendationsRoutes(app);
+      
       await setupVite(app, server);
     } else {
       serverLogger.info('Setting up production environment');
@@ -124,6 +128,9 @@ async function startServer() {
       
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
+      
+      // Register post-specific recommendation routes
+      registerPostRecommendationsRoutes(app);
       
       serveStatic(app);
     }

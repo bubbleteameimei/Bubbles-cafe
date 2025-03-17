@@ -19,59 +19,7 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
     return res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  /**
-   * GET /api/posts/recommendations
-   * Get story recommendations based on a given post ID and theme categories
-   */
-  app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
-    console.log("Received recommendations request:", req.url);
-    try {
-      // Simplified implementation
-      const limit = Number(req.query.limit) || 3;
-      console.log(`Getting ${limit} recent posts for recommendations`);
-      
-      // Simple query to get the most recent posts
-      try {
-        const simplePosts = await db.select({
-          id: posts.id,
-          title: posts.title,
-          slug: posts.slug,
-          excerpt: posts.excerpt,
-          createdAt: posts.createdAt
-        })
-        .from(posts)
-        .orderBy(desc(posts.createdAt))
-        .limit(limit);
-        
-        console.log(`Successfully retrieved ${simplePosts.length} posts`);
-        return res.json(simplePosts);
-      } catch (dbError) {
-        console.error("Database query error:", dbError);
-        
-        // Attempt direct SQL as fallback
-        try {
-          // Raw SQL query as a last resort
-          const result = await db.execute(sql`
-            SELECT id, title, slug, excerpt, created_at as "createdAt"
-            FROM posts
-            ORDER BY created_at DESC
-            LIMIT ${limit}
-          `);
-          
-          // The result may not have a length property depending on the type
-          const resultArray = Array.isArray(result) ? result : (result as any).rows || [];
-          console.log("Raw SQL query successful:", resultArray.length);
-          return res.json(resultArray);
-        } catch (sqlError) {
-          console.error("Raw SQL error:", sqlError);
-          throw sqlError;
-        }
-      }
-    } catch (error) {
-      console.error("Error getting recommendations:", error);
-      return res.status(500).json({ message: "An error occurred while fetching recommendations" });
-    }
-  });
+  // Post recommendations endpoint moved to posts-recommendations.ts
   
   /**
    * GET /api/users/recommendations
@@ -121,13 +69,10 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         createdAt: posts.createdAt
       })
       .from(posts)
-      .where(
-        sql`(metadata->>'isHidden' IS NULL OR metadata->>'isHidden' = 'false')`
-      )
       .orderBy(desc(posts.createdAt))
       .limit(limit);
       
-      console.log(`Successfully retrieved ${recommendedPosts.length} posts for direct recommendations`);
+      console.log(`Direct recommendations found ${recommendedPosts.length} posts`);
       return res.json(recommendedPosts);
     } catch (error) {
       console.error("Error getting direct recommendations:", error);
