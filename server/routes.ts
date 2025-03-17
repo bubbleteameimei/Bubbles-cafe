@@ -1115,6 +1115,58 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Reading time analytics endpoint for enhanced visualizations
+  // Direct recommendations endpoint in main routes file for reliability
+  app.get("/api/recommendations/direct", async (req: Request, res: Response) => {
+    console.log("Direct recommendations endpoint called");
+    try {
+      const limit = Number(req.query.limit) || 3;
+      
+      // Direct SQL query for latest posts as recommendations
+      try {
+        const result = await db.execute(sql`
+          SELECT id, title, slug, excerpt, created_at as "createdAt"
+          FROM posts
+          ORDER BY created_at DESC
+          LIMIT ${limit}
+        `);
+        
+        // Handle the result properly
+        const resultArray = Array.isArray(result) ? result : (result as any).rows || [];
+        console.log(`Direct recommendations found ${resultArray.length} posts`);
+        return res.json(resultArray);
+      } catch (error) {
+        console.error("Direct recommendations database error:", error);
+        
+        // Fallback to standard Drizzle query
+        try {
+          const simplePosts = await db.select({
+            id: posts.id,
+            title: posts.title,
+            slug: posts.slug,
+            excerpt: posts.excerpt,
+            createdAt: posts.createdAt
+          })
+          .from(posts)
+          .orderBy(desc(posts.createdAt))
+          .limit(limit);
+          
+          console.log(`Fallback found ${simplePosts.length} posts`);
+          return res.json(simplePosts);
+        } catch (fallbackError) {
+          console.error("Fallback recommendations error:", fallbackError);
+          throw fallbackError;
+        }
+      }
+    } catch (error) {
+      console.error("Error in direct recommendations:", error);
+      return res.status(500).json({ 
+        message: "Failed to fetch recommendations",
+        error: process.env.NODE_ENV === 'development' ? 
+          (error instanceof Error ? error.message : String(error)) : undefined
+      });
+    }
+  });
+
   app.get("/api/analytics/reading-time", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {

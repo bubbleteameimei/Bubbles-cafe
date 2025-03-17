@@ -11,124 +11,62 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
   console.log("Registering recommendations routes");
   
   /**
+   * GET /api/recommendations/health
+   * Simple health check endpoint for recommendations subsystem
+   */
+  app.get("/api/recommendations/health", (req: Request, res: Response) => {
+    console.log("Recommendations health check called");
+    return res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  /**
    * GET /api/posts/recommendations
    * Get story recommendations based on a given post ID and theme categories
    */
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
     console.log("Received recommendations request:", req.url);
     try {
-      // Parse query parameters with safe defaults
-      const postIdParam = req.query.postId;
-      const postId = postIdParam ? Number(postIdParam) : 0;
-      const categories = (req.query.categories as string || "").split(",").filter(Boolean);
+      // Simplified implementation
       const limit = Number(req.query.limit) || 3;
+      console.log(`Getting ${limit} recent posts for recommendations`);
       
-      // Log incoming request parameters for debugging
-      console.log("Recommendations API request:", { 
-        postIdParam, 
-        postId, 
-        categories, 
-        limit 
-      });
-      
-      // Get the current post if a postId is explicitly provided
-      let currentPost: Post | undefined;
-      if (postIdParam && postId > 0) {
-        currentPost = await db.query.posts.findFirst({
-          where: eq(posts.id, postId)
-        });
+      // Simple query to get the most recent posts
+      try {
+        const simplePosts = await db.select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          createdAt: posts.createdAt
+        })
+        .from(posts)
+        .orderBy(desc(posts.createdAt))
+        .limit(limit);
         
-        if (!currentPost) {
-          // Only return error if a postId was explicitly provided but not found
-          console.log(`Post with ID ${postId} not found`);
-          return res.status(404).json({ message: "Post not found" });
-        }
-      } else {
-        // If no postId was provided, skip the check entirely
-        console.log("No postId provided, proceeding with general recommendations");
-      }
-      // No else branch needed - if no postId is provided, we'll just continue with general recommendations
-      
-      // If we have categories, filter by them
-      if (categories.length > 0) {
-        // Build the where conditions for categories
-        const whereConditions = [];
+        console.log(`Successfully retrieved ${simplePosts.length} posts`);
+        return res.json(simplePosts);
+      } catch (dbError) {
+        console.error("Database query error:", dbError);
         
-        // Add category conditions if we have them
-        // For now, we're just getting recent posts, but in a real implementation,
-        // we would filter by metadata.themeCategory or similar field
-        
-        // Exclude current post if we have a postId
-        if (postId > 0) {
-          whereConditions.push(ne(posts.id, postId));
-        }
-        
-        // Get recommendations based on categories
-        const catRecommendations = await db.query.posts.findMany({
-          where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-          limit: limit,
-          orderBy: [desc(posts.createdAt)]
-        });
-        
-        return res.json(catRecommendations);
-      }
-      
-      // If we have a current post, use it to find similar content
-      if (currentPost) {
-        // Get recommendations based on similar title/content
-        const keywords = extractKeywords(currentPost.title + " " + currentPost.content);
-        
-        if (keywords.length > 0) {
-          // Try to find similar posts based on content keywords
-          // In a full implementation, we would use the keywords to find similar posts
-          const contentRecommendations = await db.query.posts.findMany({
-            where: ne(posts.id, postId),
-            limit: limit,
-            orderBy: [desc(posts.createdAt)]
-          });
+        // Attempt direct SQL as fallback
+        try {
+          // Raw SQL query as a last resort
+          const result = await db.execute(sql`
+            SELECT id, title, slug, excerpt, created_at as "createdAt"
+            FROM posts
+            ORDER BY created_at DESC
+            LIMIT ${limit}
+          `);
           
-          return res.json(contentRecommendations);
+          // The result may not have a length property depending on the type
+          const resultArray = Array.isArray(result) ? result : (result as any).rows || [];
+          console.log("Raw SQL query successful:", resultArray.length);
+          return res.json(resultArray);
+        } catch (sqlError) {
+          console.error("Raw SQL error:", sqlError);
+          throw sqlError;
         }
       }
-      
-      // Fallback - get recent posts
-      // Create an array of where conditions
-      const fallbackWhereConditions = [];
-      
-      // Only exclude the current post if we have a valid postId
-      if (postId > 0) {
-        fallbackWhereConditions.push(ne(posts.id, postId));
-      }
-      
-      console.log("Executing fallback query for recent posts");
-      
-      const recentPosts = await db.query.posts.findMany({
-        where: fallbackWhereConditions.length > 0 ? and(...fallbackWhereConditions) : undefined,
-        limit: limit,
-        orderBy: [desc(posts.createdAt)]
-      });
-      
-      console.log(`Found ${recentPosts.length} recent posts for recommendations`);
-      
-      // Add extra check to ensure we have data
-      if (recentPosts.length === 0) {
-        console.log("No posts found in database, checking posts count directly");
-        
-        // Double-check posts count
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        console.log(`Total posts in database: ${postsCount}`);
-        
-        if (postsCount > 0) {
-          // Try one more query without conditions
-          const allPosts = await db.query.posts.findMany({
-            limit: limit
-          });
-          console.log(`Direct query found ${allPosts.length} posts`);
-          return res.json(allPosts);
-        }
-      }
-      
-      return res.json(recentPosts);
     } catch (error) {
       console.error("Error getting recommendations:", error);
       return res.status(500).json({ message: "An error occurred while fetching recommendations" });
@@ -160,6 +98,63 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
     } catch (error) {
       console.error("Error getting user recommendations:", error);
       return res.status(500).json({ message: "An error occurred while fetching recommendations" });
+    }
+  });
+
+  /**
+   * GET /api/recommendations/direct
+   * Direct recommendations endpoint for simpler integration
+   * This endpoint is designed for easier frontend consumption without complex logic
+   */
+  app.get("/api/recommendations/direct", async (req: Request, res: Response) => {
+    console.log("Direct recommendations endpoint called");
+    try {
+      const limit = Number(req.query.limit) || 4;
+      console.log(`Getting ${limit} stories for direct recommendations`);
+      
+      // Simple query to get recent posts
+      const recommendedPosts = await db.select({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        excerpt: posts.excerpt,
+        createdAt: posts.createdAt
+      })
+      .from(posts)
+      .where(
+        sql`(metadata->>'isHidden' IS NULL OR metadata->>'isHidden' = 'false')`
+      )
+      .orderBy(desc(posts.createdAt))
+      .limit(limit);
+      
+      console.log(`Successfully retrieved ${recommendedPosts.length} posts for direct recommendations`);
+      return res.json(recommendedPosts);
+    } catch (error) {
+      console.error("Error getting direct recommendations:", error);
+      
+      // Fallback to simpler query if the first one fails
+      try {
+        console.log("Attempting fallback query for direct recommendations");
+        const fallbackPosts = await db.select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          createdAt: posts.createdAt
+        })
+        .from(posts)
+        .orderBy(desc(posts.createdAt))
+        .limit(Number(req.query.limit) || 4);
+        
+        console.log(`Fallback successful: retrieved ${fallbackPosts.length} posts`);
+        return res.json(fallbackPosts);
+      } catch (fallbackError) {
+        console.error("Fallback query failed:", fallbackError);
+        return res.status(500).json({ 
+          message: "An error occurred while fetching recommendations",
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
   });
 }

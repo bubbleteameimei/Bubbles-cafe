@@ -18,14 +18,16 @@ export default function Navigation() {
   const { theme, toggleTheme } = useTheme();
 
   // Navigation links configuration
-  const navLinks: Array<{ href: string; label: string; requireAuth?: boolean }> = [
+  const navLinks: Array<{ href: string; label: string; requireAuth?: boolean; isDev?: boolean }> = [
     { href: '/', label: 'HOME' },
     { href: '/stories', label: 'STORIES' },
     { href: '/reader', label: 'READER' },
     { href: '/community', label: 'COMMUNITY' },
     { href: '/bookmarks', label: 'BOOKMARKS' },
     { href: '/about', label: 'ABOUT' },
-    { href: '/contact', label: 'CONTACT' }
+    { href: '/contact', label: 'CONTACT' },
+    // Development-only routes
+    { href: '/test-recommendations', label: 'TEST RECS', isDev: true }
   ];
 
   return (
@@ -73,7 +75,13 @@ export default function Navigation() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-4 text-sm font-medium">
             {navLinks
-              .filter(link => !link.requireAuth || user)
+              .filter(link => {
+                // Filter by authentication requirements
+                const authOk = !link.requireAuth || user;
+                // Only show dev links in development mode
+                const devOk = !link.isDev || import.meta.env.DEV;
+                return authOk && devOk;
+              })
               .map(link => (
                 <button 
                   key={link.href}
@@ -82,7 +90,7 @@ export default function Navigation() {
                     location === link.href 
                       ? 'text-primary font-semibold before:absolute before:bottom-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary before:rounded-full' 
                       : 'hover:bg-foreground/5 active:bg-foreground/10'
-                  }`}
+                  }${link.isDev ? ' text-amber-500' : ''}`}
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
                   {link.label}

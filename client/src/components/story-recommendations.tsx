@@ -9,14 +9,51 @@ import {
   Clock,
   ThumbsUp
 } from "lucide-react"
+import { DirectRecommendations } from "./direct-recommendations"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-import type { Post } from "@/shared/schema"
-import type { ThemeCategory } from "@/shared/types"
+// Temporarily define the types directly to avoid import issues
+type ThemeCategory = 
+  | 'PARASITE'
+  | 'LOVECRAFTIAN'
+  | 'PSYCHOLOGICAL' 
+  | 'TECHNOLOGICAL'
+  | 'SUICIDAL'
+  | 'BODY_HORROR'
+  | 'PSYCHOPATH'
+  | 'SUPERNATURAL'
+  | 'POSSESSION'
+  | 'CANNIBALISM'
+  | 'STALKING'
+  | 'DEATH'
+  | 'GOTHIC'
+  | 'APOCALYPTIC'
+  | 'ISOLATION'
+  | 'AQUATIC'
+  | 'VIRAL'
+  | 'URBAN_LEGEND'
+  | 'TIME_HORROR'
+  | 'DREAMSCAPE';
+
+// Minimal Post type for our component
+interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  authorName?: string;
+  readingTime?: number;
+  views?: number;
+  likesCount?: number;
+  metadata?: {
+    themeCategory?: string;
+  };
+}
 
 interface StoryRecommendationsProps {
   /** Current post ID to exclude from recommendations */
@@ -96,11 +133,25 @@ export function StoryRecommendations({
     sidebar: "",
   };
   
-  // If there's an error, show error message
+  // If there's an error, use DirectRecommendations component as a fallback
   if (error) {
     return (
-      <div className="p-4 border rounded-lg text-destructive bg-destructive/10">
-        <p>Unable to load recommendations. Please try again later.</p>
+      <div className="py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">You Might Also Enjoy</h2>
+          <Button variant="link" asChild>
+            <a href="/search">
+              Browse All <ArrowRight className="ml-1 h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+        <DirectRecommendations
+          layout={layout}
+          showAuthor={true}
+          showExcerpt={true}
+          limit={maxRecommendations}
+          onBookmark={onBookmark}
+        />
       </div>
     );
   }
