@@ -1,24 +1,35 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db";
 import { posts, Post } from "@shared/schema";
-import { and, eq, ne, or, like, desc, asc, sql } from "drizzle-orm";
+import { and, eq, ne, or, like, desc, asc, sql, count } from "drizzle-orm";
 import { IStorage } from "../storage";
 
 /**
  * Get recommendations based on post content, theme categories, and user history
  */
 export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
+  console.log("Registering recommendations routes");
+  
   /**
    * GET /api/posts/recommendations
    * Get story recommendations based on a given post ID and theme categories
    */
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
+    console.log("Received recommendations request:", req.url);
     try {
       // Parse query parameters with safe defaults
       const postIdParam = req.query.postId;
       const postId = postIdParam ? Number(postIdParam) : 0;
       const categories = (req.query.categories as string || "").split(",").filter(Boolean);
       const limit = Number(req.query.limit) || 3;
+      
+      // Log incoming request parameters for debugging
+      console.log("Recommendations API request:", { 
+        postIdParam, 
+        postId, 
+        categories, 
+        limit 
+      });
       
       // Get the current post if a postId is explicitly provided
       let currentPost: Post | undefined;
@@ -29,8 +40,12 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         
         if (!currentPost) {
           // Only return error if a postId was explicitly provided but not found
+          console.log(`Post with ID ${postId} not found`);
           return res.status(404).json({ message: "Post not found" });
         }
+      } else {
+        // If no postId was provided, skip the check entirely
+        console.log("No postId provided, proceeding with general recommendations");
       }
       // No else branch needed - if no postId is provided, we'll just continue with general recommendations
       
@@ -85,11 +100,33 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
         fallbackWhereConditions.push(ne(posts.id, postId));
       }
       
+      console.log("Executing fallback query for recent posts");
+      
       const recentPosts = await db.query.posts.findMany({
         where: fallbackWhereConditions.length > 0 ? and(...fallbackWhereConditions) : undefined,
         limit: limit,
         orderBy: [desc(posts.createdAt)]
       });
+      
+      console.log(`Found ${recentPosts.length} recent posts for recommendations`);
+      
+      // Add extra check to ensure we have data
+      if (recentPosts.length === 0) {
+        console.log("No posts found in database, checking posts count directly");
+        
+        // Double-check posts count
+        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+        console.log(`Total posts in database: ${postsCount}`);
+        
+        if (postsCount > 0) {
+          // Try one more query without conditions
+          const allPosts = await db.query.posts.findMany({
+            limit: limit
+          });
+          console.log(`Direct query found ${allPosts.length} posts`);
+          return res.json(allPosts);
+        }
+      }
       
       return res.json(recentPosts);
     } catch (error) {

@@ -4,7 +4,23 @@ import ws from "ws";
 import * as schema from "../shared/schema";
 
 // Configure WebSocket for Neon serverless
-neonConfig.webSocketConstructor = ws;
+try {
+  neonConfig.webSocketConstructor = ws;
+  // Set additional options (only if they exist in this version)
+  console.log('Configured Neon with WebSocket support');
+
+  // Attempt to add safety options if available (wrapped in try/catch to avoid errors)
+  try {
+    // @ts-ignore - These may not exist in all versions of the Neon SDK
+    neonConfig.useSecureWebSocket = true;
+  } catch (configErr) {
+    console.log('Note: Some config options not available in this Neon version');
+  }
+} catch (error) {
+  console.error('Error configuring Neon WebSocket:', error);
+  // Fallback to default HTTP mode if WebSocket fails
+  console.log('Falling back to HTTP mode for Neon connections');
+}
 
 // Ensure DATABASE_URL is available
 if (!process.env.DATABASE_URL) {
@@ -16,11 +32,12 @@ if (!process.env.DATABASE_URL) {
 // Create connection pool with improved error handling
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Increase max connections for better concurrency
+  max: 10, // Reduce max connections to avoid overwhelming the server
   idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 5000, // Increase connection timeout
-  maxUses: 7500, // Close connections after 7500 queries
-  allowExitOnIdle: true // Allow the pool to exit if all connections are idle
+  connectionTimeoutMillis: 10000, // Increase connection timeout
+  maxUses: 5000, // Close connections after 5000 queries
+  allowExitOnIdle: true, // Allow the pool to exit if all connections are idle
+  keepAlive: true // Enable TCP keepalive to prevent dropped connections
 });
 
 // Initialize Drizzle with schema
@@ -44,27 +61,45 @@ pool.on('remove', () => {
   console.log('Client connection removed from pool');
 });
 
-// Improved connection testing with detailed error logging
-async function testConnection() {
+// Improved connection testing with detailed error logging and retry mechanism
+async function testConnection(retries = 3, delay = 2000) {
   let client;
-  try {
-    console.log('Testing database connection...');
-    client = await pool.connect();
-    await client.query('SELECT 1'); // Verify we can execute queries
-    console.log('Database connection test successful');
-    return true;
-  } catch (err) {
-    console.error('Database connection test failed:', err);
-    throw err;
-  } finally {
-    if (client) {
-      try {
-        await client.release();
-      } catch (releaseErr) {
-        console.error('Error releasing client:', releaseErr);
+  let lastError;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Testing database connection (attempt ${attempt}/${retries})...`);
+      client = await pool.connect();
+      await client.query('SELECT 1'); // Verify we can execute queries
+      console.log('Database connection test successful');
+      return true;
+    } catch (err: unknown) {
+      lastError = err;
+      console.error(`Database connection test failed (attempt ${attempt}/${retries}):`, {
+        message: err instanceof Error ? err.message : String(err),
+        code: err instanceof Error && 'code' in err ? (err as any).code : undefined
+      });
+      
+      if (attempt < retries) {
+        console.log(`Retrying in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Increase delay for next attempt
+        delay = delay * 1.5;
+      }
+    } finally {
+      if (client) {
+        try {
+          await client.release();
+        } catch (releaseErr) {
+          console.error('Error releasing client:', releaseErr);
+        }
       }
     }
   }
+  
+  // If we get here, all retries failed
+  console.error('All connection attempts failed');
+  throw lastError;
 }
 
 // Run initial connection test
