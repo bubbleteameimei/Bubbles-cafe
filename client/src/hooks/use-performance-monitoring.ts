@@ -45,33 +45,23 @@ const reportMetric = async (metric: PerformanceMetric) => {
       userAgent: navigator.userAgent
     });
 
-    // Use sendBeacon for better reliability during page unload
-    if (navigator.sendBeacon) {
-      try {
-        const success = navigator.sendBeacon('/api/analytics/vitals', body);
-        if (!success) {
-          throw new Error('sendBeacon failed');
-        }
-      } catch (e) {
-        // If sendBeacon fails, fall back to fetch
-        await fetch('/api/analytics/vitals', {
-          body,
-          method: 'POST',
-          keepalive: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-    } else {
-      await fetch('/api/analytics/vitals', {
-        body,
+    // Always use fetch instead of sendBeacon for now
+    // This ensures proper Content-Type and payload handling
+    try {
+      const response = await fetch('/api/analytics/vitals', {
         method: 'POST',
+        body,
         keepalive: true,
         headers: {
           'Content-Type': 'application/json'
         }
       });
+      
+      if (!response.ok) {
+        console.warn('[Performance] API response not OK:', await response.text());
+      }
+    } catch (fetchError) {
+      console.error('[Performance] Fetch error:', fetchError);
     }
   } catch (error) {
     console.error('[Performance] Failed to report metrics:', error);
