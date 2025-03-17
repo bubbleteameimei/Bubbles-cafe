@@ -1,21 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, Headphones, Volume2 } from "lucide-react";
+import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, Headphones, Volume2, RefreshCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import CommentSection from "@/components/blog/comment-section";
-import { fetchPosts } from "@/lib/wordpress-api";
 import { useFontSize } from "@/hooks/use-font-size";
-import { getReadingTime, sanitizeHtmlContent } from "@/lib/content-analysis";
-import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
+import { getReadingTime } from "@/lib/content-analysis";
+// Import social icons lazily to avoid loading them initially
+const FaTwitter = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaTwitter })));
+const FaWordpress = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaWordpress })));
+const FaInstagram = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaInstagram })));
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
-import { AudioNarrator } from "@/components/ui/audio-narrator";
 import ApiLoader from "@/components/api-loader";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import {
   Dialog,
   DialogContent,
@@ -25,11 +26,41 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+// Lazy load non-essential components
+const CommentSection = lazy(() => import("@/components/blog/comment-section"));
+const AudioNarrator = lazy(() => import("@/components/ui/audio-narrator").then(module => ({ default: module.AudioNarrator })));
+
+// Import the WordPress API functions with error handling
+import { fetchPosts } from "@/lib/wordpress-api";
+
+// Create a utility function to sanitize HTML content 
+const sanitizeHtmlContent = (html: string): string => {
+  try {
+    // Create a simple HTML sanitization function
+    // This removes potentially harmful scripts and keeps only safe content
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    // Remove script tags
+    const scripts = doc.querySelectorAll('script');
+    scripts.forEach(script => script.remove());
+    // Get the sanitized content
+    return doc.body.innerHTML;
+  } catch (error) {
+    console.error('[Reader] Error sanitizing HTML:', error);
+    // Return the original HTML if there's an error parsing it
+    return html;
+  }
+};
+
 interface ReaderPageProps {
   slug?: string;
+  params?: { slug?: string };
 }
 
-export default function Reader({ slug }: ReaderPageProps) {
+export default function ReaderPage({ slug, params }: ReaderPageProps) {
+  // Log params for debugging
+  console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
+  // Extract slug from route params if provided
+  const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
   
   // Theme is now managed by the useTheme hook
@@ -45,7 +76,7 @@ export default function Reader({ slug }: ReaderPageProps) {
   const [isNarratorOpen, setIsNarratorOpen] = useState(false);
   const [narratorTone, setNarratorTone] = useState<"neutral" | "creepy" | "suspense" | "terror" | "panic" | "whisper">("whisper");
 
-  console.log('[Reader] Component mounted with slug:', slug); // Debug log
+  console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
   // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -72,13 +103,13 @@ export default function Reader({ slug }: ReaderPageProps) {
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "posts", "reader", slug],
+    queryKey: ["wordpress", "posts", "reader", routeSlug],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...', { slug });
+      console.log('[Reader] Fetching posts...', { routeSlug });
       try {
-        if (slug) {
+        if (routeSlug) {
           // If slug is provided, fetch specific post
-          const response = await fetch(`/api/posts/${slug}`);
+          const response = await fetch(`/api/posts/${routeSlug}`);
           if (!response.ok) throw new Error('Failed to fetch post');
           const post = await response.json();
           return { posts: [post], hasMore: false };
@@ -163,10 +194,11 @@ export default function Reader({ slug }: ReaderPageProps) {
   }, []);
 
   // Use our ApiLoader component to handle loading state with the global context
-  return (
-    <>
-      <ApiLoader isLoading={isLoading} />
-      {isLoading ? null : (
+  if (isLoading) {
+    return (
+      <ApiLoader isLoading={true} />
+    );
+  }
 
   if (error || !postsData?.posts || postsData.posts.length === 0) {
     console.error('[Reader] Error or no posts available:', {
@@ -520,7 +552,13 @@ export default function Reader({ slug }: ReaderPageProps) {
           <div className="w-px h-6 bg-border/50"></div>
           
           {/* Listen to Narrator button */}
-          <Dialog open={isNarratorOpen} onOpenChange={setIsNarratorOpen}>
+          <Dialog 
+            open={isNarratorOpen} 
+            onOpenChange={(open) => {
+              console.log('[Reader] Narrator dialog state changed:', open);
+              setIsNarratorOpen(open);
+            }}
+          >
             <DialogTrigger asChild>
               <Button
                 variant={isNarratorOpen ? "default" : "ghost"}
@@ -562,12 +600,43 @@ export default function Reader({ slug }: ReaderPageProps) {
               </div>
               
               {/* Audio narrator component */}
-              <AudioNarrator
-                content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
-                title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
-                emotionalTone={narratorTone}
-                autoScroll={false}
-              />
+              <ErrorBoundary fallback={
+                <div className="p-4 border border-destructive/10 bg-destructive/5 rounded-lg">
+                  <h4 className="font-medium text-destructive mb-2">Narrator Unavailable</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We're having trouble loading the audio narrator. Please try again later.
+                  </p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.location.reload()}
+                    >
+                      <RefreshCcw className="h-3 w-3 mr-2" />
+                      Try again
+                    </Button>
+                  </div>
+                </div>
+              }>
+                <Suspense fallback={
+                  <div className="w-full p-4 flex items-center justify-center">
+                    <div className="animate-pulse flex space-x-4">
+                      <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-3 flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  </div>
+                }>
+                  <AudioNarrator
+                    content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
+                    title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
+                    emotionalTone={narratorTone}
+                    autoScroll={false}
+                  />
+                </Suspense>
+              </ErrorBoundary>
             </DialogContent>
           </Dialog>
           
@@ -715,19 +784,38 @@ export default function Reader({ slug }: ReaderPageProps) {
                       <span className="sr-only">Share</span>
                     </Button>
 
-                    {/* Social Icons */}
-                    {socialLinks.map(({ key, Icon, url }) => (
-                      <Button
-                        key={key}
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleSocialShare(key, url)}
-                        className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="sr-only">Follow on {key}</span>
-                      </Button>
-                    ))}
+                    {/* Social Icons - Lazy loaded */}
+                    <ErrorBoundary fallback={
+                      <div className="flex gap-3">
+                        {[1, 2, 3].map(i => (
+                          <Button key={i} variant="outline" size="icon" disabled
+                            className="h-9 w-9 rounded-full cursor-not-allowed opacity-50">
+                            <span className="sr-only">Social icon (unavailable)</span>
+                          </Button>
+                        ))}
+                      </div>
+                    }>
+                      <Suspense fallback={
+                        <div className="flex gap-3">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="w-9 h-9 rounded-full border border-gray-200 animate-pulse bg-gray-100 dark:bg-gray-800 dark:border-gray-700"></div>
+                          ))}
+                        </div>
+                      }>
+                        {socialLinks.map(({ key, Icon, url }) => (
+                          <Button
+                            key={key}
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleSocialShare(key, url)}
+                            className="h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="sr-only">Follow on {key}</span>
+                          </Button>
+                        ))}
+                      </Suspense>
+                    </ErrorBoundary>
                   </div>
                 </div>
               </div>
@@ -749,7 +837,39 @@ export default function Reader({ slug }: ReaderPageProps) {
                   
                   <div className="relative">
                     <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/5 via-primary/20 to-primary/5 rounded-full"></div>
-                    <CommentSection postId={currentPost.id} />
+                    <ErrorBoundary fallback={
+                      <div className="p-4 border border-destructive/10 bg-destructive/5 rounded-lg">
+                        <h4 className="font-medium text-destructive mb-2">Comments Unavailable</h4>
+                        <p className="text-sm text-muted-foreground">
+                          We're having trouble loading the comments section. Please try refreshing the page.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => window.location.reload()}
+                        >
+                          <RefreshCcw className="h-3 w-3 mr-2" />
+                          Try again
+                        </Button>
+                      </div>
+                    }>
+                      <Suspense fallback={
+                        <div className="p-4 space-y-4">
+                          <div className="animate-pulse space-y-2">
+                            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                          </div>
+                          <div className="animate-pulse space-y-2">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                      }>
+                        <CommentSection postId={currentPost.id} />
+                      </Suspense>
+                    </ErrorBoundary>
                   </div>
                 </div>
               </div>

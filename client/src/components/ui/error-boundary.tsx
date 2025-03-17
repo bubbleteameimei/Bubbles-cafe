@@ -114,6 +114,12 @@ export class ErrorBoundary extends Component<Props, State> {
     if (error.message.includes('route') || error.message.includes('navigation')) {
       return "There was an error with page navigation. Please try going back or refreshing the page.";
     }
+    if (error.message.includes('Suspense') || error.message.includes('suspended')) {
+      return "The page component couldn't be loaded. This might be due to a temporary network issue.";
+    }
+    if (error.message.includes('database') || error.message.includes('bookmarks')) {
+      return "There was an issue connecting to the database. Please try again later.";
+    }
 
     return error.message || "An unexpected error occurred. We're looking into it.";
   }

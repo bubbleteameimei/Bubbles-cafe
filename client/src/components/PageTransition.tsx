@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 
@@ -10,6 +10,7 @@ interface PageTransitionProps {
 
 /**
  * Component for adding smooth transitions between pages
+ * Improved version with better error handling and performance
  */
 const PageTransition: React.FC<PageTransitionProps> = ({
   children,
@@ -17,22 +18,7 @@ const PageTransition: React.FC<PageTransitionProps> = ({
   duration = 0.4
 }) => {
   const [location] = useLocation();
-  const [key, setKey] = useState(location);
-  const [rendering, setRendering] = useState(false);
   
-  // Update the key when location changes to trigger animation
-  useEffect(() => {
-    setRendering(true);
-    setKey(location);
-    
-    // Small delay to allow rendering to complete
-    const timer = setTimeout(() => {
-      setRendering(false);
-    }, 50);
-    
-    return () => clearTimeout(timer);
-  }, [location]);
-
   // Define transition variants based on the mode
   const getVariants = useCallback(() => {
     switch (mode) {
@@ -44,16 +30,15 @@ const PageTransition: React.FC<PageTransitionProps> = ({
         };
       case "blur":
         return {
-          initial: { filter: "blur(8px)", opacity: 0 },
-          animate: { filter: "blur(0px)", opacity: 1 },
-          exit: { filter: "blur(8px)", opacity: 0 },
+          initial: { opacity: 0 },
+          animate: { opacity: 1 },
+          exit: { opacity: 0 },
         };
-
       case "zoom":
         return {
-          initial: { opacity: 0, scale: 0.96 },
+          initial: { opacity: 0, scale: 0.98 },
           animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 1.04 },
+          exit: { opacity: 0, scale: 0.98 },
         };
       case "fade":
       default:
@@ -65,29 +50,32 @@ const PageTransition: React.FC<PageTransitionProps> = ({
     }
   }, [mode]);
 
+  // Memoize variants to avoid unnecessary recalculations
+  const variants = useMemo(() => getVariants(), [getVariants]);
+  
+  // Create stable transition config
+  const transition = useMemo(() => ({
+    duration: duration,
+    ease: "easeInOut"
+  }), [duration]);
+
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={key}
+        key={location}
         initial="initial"
         animate="animate"
         exit="exit"
-        variants={getVariants()}
-        transition={{ 
-          duration: duration,
-          ease: "easeInOut",
-          damping: 10,
-          stiffness: 50
-        }}
+        variants={variants}
+        transition={transition}
         style={{ 
           height: "100%",
-          willChange: "opacity, transform, filter",
-          WebkitBackfaceVisibility: "hidden",
-          backfaceVisibility: "hidden",
-          perspective: 1000,
+          width: "100%",
+          position: "relative",
+          overflowX: "hidden"
         }}
       >
-        {!rendering && children}
+        {children}
       </motion.div>
     </AnimatePresence>
   );

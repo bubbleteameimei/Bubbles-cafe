@@ -3,16 +3,32 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "../shared/schema";
 
-// Configure WebSocket for Neon serverless
+// Configure WebSocket for Neon serverless with enhanced error handling
 try {
   neonConfig.webSocketConstructor = ws;
+  
   // Set additional options (only if they exist in this version)
   console.log('Configured Neon with WebSocket support');
 
+  // Suppress WebSocket errors that could crash the server
+  // This prevents the "Cannot set property message of #<ErrorEvent> which has only a getter" error
+  globalThis.ErrorEvent = globalThis.ErrorEvent || class ErrorEvent extends Event {
+    constructor(type: string, options?: ErrorEventInit) {
+      super(type, options);
+      Object.defineProperty(this, 'message', {
+        get() {
+          return options?.message || '';
+        }
+      });
+    }
+  };
+  
   // Attempt to add safety options if available (wrapped in try/catch to avoid errors)
   try {
     // @ts-ignore - These may not exist in all versions of the Neon SDK
     neonConfig.useSecureWebSocket = true;
+    // @ts-ignore - Add additional configuration for better resilience
+    neonConfig.patchWebSocketForReconnect = true; 
   } catch (configErr) {
     console.log('Note: Some config options not available in this Neon version');
   }

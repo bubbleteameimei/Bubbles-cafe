@@ -34,24 +34,61 @@ import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
 
 // Create a wrapper for lazy-loaded components that properly handles props
-// Since this is a TypeScript issue that doesn't affect functionality,
-// we're using a simpler implementation that works in practice
-const withSuspense = <P extends object>(
+// This version fixes the component stack issues and improves error handling
+const withSuspense = <P extends Record<string, any>>(
   Component: React.LazyExoticComponent<React.ComponentType<any>>
-) => {
-  return function WithSuspenseWrapper(props: any) {
+): React.FC<P> => {
+  // Create a named wrapper component to improve debugging in component stack traces
+  const WithSuspenseWrapper: React.FC<P> = (props) => {
+    // Handle potential errors in suspense rendering
+    const renderSuspendedComponent = () => {
+      try {
+        // For routes with params, ensure they're passed correctly
+        return <Component {...props} />;
+      } catch (error) {
+        console.error("Error rendering lazy component:", error);
+        return (
+          <div className="p-4 m-4 rounded-md bg-amber-50 border border-amber-200 text-amber-700">
+            <h3 className="text-lg font-medium">Component Error</h3>
+            <p className="text-sm mt-1">Error loading component: {String(error)}</p>
+          </div>
+        );
+      }
+    };
+
     return (
-      <React.Suspense fallback={<div></div>}>
-        {/* @ts-ignore - This works in practice but has TypeScript issues */}
-        <Component {...props} />
-      </React.Suspense>
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 m-4 rounded-md bg-red-50 border border-red-200 text-red-700">
+            <h3 className="text-lg font-medium">Failed to load component</h3>
+            <p className="text-sm mt-1">The page component could not be loaded. Please try refreshing.</p>
+          </div>
+        }
+      >
+        <React.Suspense 
+          fallback={
+            <div className="flex items-center justify-center p-4 h-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          }
+        >
+          {renderSuspendedComponent()}
+        </React.Suspense>
+      </ErrorBoundary>
     );
   };
+  
+  // Set display name for better debugging
+  WithSuspenseWrapper.displayName = "WithSuspense";
+  
+  return WithSuspenseWrapper;
 };
 
-// Lazy load pages
+// Import critical reading components directly for immediate loading
+import ReaderPage from './pages/reader';
+
+// Lazy load non-critical pages
 const HomePage = withSuspense(React.lazy(() => import('./pages/home')));
-const ReaderPage = withSuspense(React.lazy(() => import('./pages/reader')));
 const StoriesPage = withSuspense(React.lazy(() => import('./pages/index')));
 const AboutPage = withSuspense(React.lazy(() => import('./pages/about')));
 const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
@@ -188,7 +225,9 @@ const AppContent = () => {
                 {/* Public Routes */}
                 <Route path="/" component={HomePage} />
                 <Route path="/stories" component={StoriesPage} />
-                <Route path="/reader/:slug?" component={ReaderPage} />
+                <Route path="/reader/:slug?">
+                  {(params) => <ReaderPage params={params} />}
+                </Route>
                 <Route path="/about" component={AboutPage} />
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />

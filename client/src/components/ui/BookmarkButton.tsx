@@ -46,7 +46,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const [tagsInput, setTagsInput] = useState('');
 
   // Query to check if post is already bookmarked
-  const { data: bookmark, isLoading } = useQuery({
+  const { data: bookmark, isLoading, error: bookmarkError } = useQuery({
     queryKey: ['/api/bookmarks', postId],
     queryFn: async () => {
       if (!user) return null;
@@ -57,10 +57,17 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         if ((error as any).status === 404) {
           return null;
         }
-        throw error;
+        // Log any other errors but don't throw to prevent breaking the UI
+        console.error('Error checking bookmark status:', error);
+        return null;
       }
     },
     enabled: !!user,
+    // Add retry options to handle temporary connection issues
+    retry: 2,
+    retryDelay: 1000,
+    // Don't refetch on window focus to minimize error repetition
+    refetchOnWindowFocus: false,
   });
 
   // Create bookmark mutation
@@ -454,12 +461,19 @@ export function useBookmarkPosition(postId: number) {
         return null;
       }
       
-      return apiRequest(`/api/bookmarks/${postId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          lastPosition: position,
-        }),
-      });
+      try {
+        return await apiRequest(`/api/bookmarks/${postId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            lastPosition: position,
+          }),
+        });
+      } catch (error) {
+        // Log the error but don't throw it to prevent UI issues
+        console.error('Error updating bookmark position:', error);
+        // Return null instead of throwing to avoid breaking the reader experience
+        return null;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
@@ -467,7 +481,10 @@ export function useBookmarkPosition(postId: number) {
     onError: (error) => {
       // Silent error handling - just log to console without user-facing error
       console.error('Error updating bookmark position:', error);
-    }
+    },
+    // Add retry options
+    retry: 1,
+    retryDelay: 1000
   });
 
   const updatePosition = (position: string) => {
