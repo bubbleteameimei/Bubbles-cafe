@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";
 import "./index.css";
+// Import preloader CSS first to ensure it takes effect immediately
+import "./styles/preloader.css";
+// Import the preloader script
+import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
 // Import the global loading manager - just importing initializes it
@@ -22,8 +26,14 @@ linkElements.forEach(link => {
   console.log("[Client] Found stylesheet:", link.getAttribute('href'));
 });
 
+// Add initial loading indicator to prevent FOUC
+addInitialLoadingIndicator();
+
 // Optimize images based on connection speed
 optimizeImagesForConnection();
+
+// Initialize style preloader
+setupStylePreloader();
 
 console.log("[Client] CSS styles loaded");
 console.log("[Client] Mounting React application...");

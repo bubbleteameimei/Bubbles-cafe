@@ -39,6 +39,7 @@ import { NotificationProvider } from './components/NotificationProvider';
 import { NotificationIcon } from './components/ui/notification-icon';
 import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
+import ErrorToastProvider from './components/providers/error-toast-provider';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // This version fixes the component stack issues and improves error handling
@@ -227,7 +228,7 @@ const AppContent = () => {
         <AutoHideNavbar />
         <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
           <ErrorBoundary>
-            <EnhancedPageTransition transitionDuration={400}>
+            <EnhancedPageTransition>
               <Switch>
                 {/* Auth Routes */}
                 <Route path="/auth" component={AuthPage} />
@@ -368,9 +369,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <CookieConsentProvider>
-            <NotificationProvider>
-              <LoadingProvider>
+          <ErrorToastProvider>
+            <CookieConsentProvider>
+              <NotificationProvider>
+                <LoadingProvider>
                 <GlobalLoadingOverlay
                   minimumLoadingDuration={800}
                   debugMode={true}
@@ -383,6 +385,7 @@ function App() {
               </LoadingProvider>
             </NotificationProvider>
           </CookieConsentProvider>
+          </ErrorToastProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

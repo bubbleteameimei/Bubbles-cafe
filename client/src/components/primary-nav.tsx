@@ -43,12 +43,13 @@ export function PrimaryNav() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="mr-2 md:hidden" 
+          className="mr-2 md:hidden w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation relative overflow-hidden" 
           onClick={() => sidebar?.setOpenMobile(true)}
           noOutline={true}
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" strokeWidth={1.75} />
           <span className="sr-only">Toggle menu</span>
+          <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150" />
         </Button>
         
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">

@@ -469,6 +469,7 @@ export const SidebarMenuButton = React.forwardRef<
     asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    noOutline?: boolean
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
@@ -671,6 +672,7 @@ export const SidebarMenuSubButton = React.forwardRef<
     asChild?: boolean
     size?: "sm" | "md"
     isActive?: boolean
+    noOutline?: boolean
   }
 >(({ asChild = false, size = "md", isActive, className, "aria-label": ariaLabel, ...props }, ref) => {
   const Comp = asChild ? Slot : "a"

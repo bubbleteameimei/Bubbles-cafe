@@ -5,12 +5,13 @@ import { hideGlobalLoading } from '@/utils/global-loading-manager';
 interface ApiLoaderProps {
   isLoading: boolean;
   message?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   minimumLoadTime?: number;
   showDelay?: number;
   maximumLoadTime?: number; // Maximum time to show loading before forcing it to hide
   debug?: boolean;
   shouldRedirectOnTimeout?: boolean; // Control whether to redirect to 404 on timeout
+  overlayZIndex?: number; // Optional z-index for the overlay
 }
 
 /**
@@ -155,9 +156,11 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
     <>
       {/* Only render LoadingScreen when needed */}
       {showLoader && <LoadingScreen />}
-      <div className="relative">
-        {children}
-      </div>
+      {children && (
+        <div className="relative">
+          {children}
+        </div>
+      )}
     </>
   );
 };

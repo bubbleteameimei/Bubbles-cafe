@@ -1,158 +1,170 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useGlobalLoadingOverlay } from './GlobalLoadingOverlay';
 
+// Define props interface with optional transitionDuration to maintain backward compatibility
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
-  transitionDuration?: number;
-  disableAnimation?: boolean;
   loadingMessage?: string;
   enableLoadingScreen?: boolean;
-  mode?: 'sync' | 'wait' | 'popLayout';
   loadingTimeout?: number;
+  transitionDuration?: number; // Added for backward compatibility
+  disableAnimation?: boolean; // Added for backward compatibility
+  mode?: 'sync' | 'wait' | 'popLayout'; // Added for backward compatibility
 }
 
 /**
- * EnhancedPageTransition - A component for smooth transitions between pages
+ * PRE-EMPTIVE EnhancedPageTransition - Shows loading screen BEFORE content changes
  * 
- * This component:
- * 1. Detects route changes using wouter's useLocation
- * 2. Shows a loading screen during transitions when enabled
- * 3. Animates pages in and out with configurable durations
- * 4. Integrates with the global loading system
- * 5. Includes logic to auto-hide loading screen after timeout
+ * This implementation addresses the specific issue where a blank screen with just 
+ * navigation and footer is visible before loading animation appears.
  */
 export function EnhancedPageTransition({
   children,
-  transitionDuration = 200, // Reduced from 300ms to make transitions faster
-  disableAnimation = false,
   loadingMessage = 'Loading page...',
   enableLoadingScreen = true,
-  mode = 'wait',
-  loadingTimeout = 1500 // Auto-hide loading screen after 1.5 seconds to prevent it showing too long
+  loadingTimeout = 10000,
+  // Unused props (kept for backward compatibility)
+  transitionDuration,
+  disableAnimation,
+  mode
 }: EnhancedPageTransitionProps) {
-  // Always call hooks in the same order
   const [location] = useLocation();
-  const [currentLocation, setCurrentLocation] = useState(location);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const globalLoading = useGlobalLoadingOverlay();
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const initialRenderRef = useRef(true);
+  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevLocationRef = useRef<string>(location);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [currentKey, setCurrentKey] = useState('page-key');
 
-  // Helper for hiding the loading screen
-  const hideLoadingScreen = () => {
-    if (enableLoadingScreen && globalLoading) {
-      globalLoading.hideLoadingOverlay();
-    }
-  };
-
-  // Handle location changes and trigger transitions
-  useEffect(() => {
-    // Always ensure hooks are called even if we return early
-    const shouldSkipInitialRender = initialRenderRef.current;
-    
-    // Skip the initial render to prevent showing loading on first page load
-    if (shouldSkipInitialRender) {
-      initialRenderRef.current = false;
-      setCurrentLocation(location);
-      return;
-    }
-    
-    // Only proceed with the transition if needed
-    const needsTransition = location !== currentLocation && !isTransitioning;
-    if (!needsTransition) return;
-    
-    // Start transition
-    setIsTransitioning(true);
-    
-    // Show loading screen for page transitions if enabled
+  // Function to show loading overlay
+  const showLoading = useCallback(() => {
     if (enableLoadingScreen && globalLoading) {
       globalLoading.setLoadingMessage(loadingMessage);
       globalLoading.showLoadingOverlay();
-      
-      // Set a timeout to automatically hide the loading screen
-      // This prevents the loading screen from showing indefinitely
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      
-      loadingTimeoutRef.current = setTimeout(() => {
-        hideLoadingScreen();
-      }, loadingTimeout);
     }
+  }, [enableLoadingScreen, globalLoading, loadingMessage]);
 
-    // Clear existing timeout if any
-    if (transitionTimeoutRef.current) {
-      clearTimeout(transitionTimeoutRef.current);
+  // Function to hide loading overlay
+  const hideLoading = useCallback((delay = 0) => {
+    if (enableLoadingScreen && globalLoading) {
+      if (delay > 0) {
+        setTimeout(() => {
+          globalLoading.hideLoadingOverlay();
+        }, delay);
+      } else {
+        globalLoading.hideLoadingOverlay();
+      }
     }
-    
-    // Schedule the location update
-    const delay = disableAnimation ? 0 : transitionDuration;
-    transitionTimeoutRef.current = setTimeout(() => {
-      setCurrentLocation(location);
-      setIsTransitioning(false);
+  }, [enableLoadingScreen, globalLoading]);
+
+  // Intercept navigation links to show loading screen
+  useEffect(() => {
+    // Function to handle link clicks
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
       
-      // Hide the loading overlay after the content has loaded
-      hideLoadingScreen();
-      
-      // Clean up the loading timeout
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
+      if (link && link.href && !link.href.startsWith('javascript:') && 
+          !link.href.startsWith('#') && !link.href.startsWith('mailto:') && 
+          !link.target && link.getAttribute('href') !== location) {
+        // Show loading screen before navigation
+        showLoading();
       }
-    }, delay);
-    
-    // Clean up timeout on unmount or before re-running effect
-    return () => {
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-        transitionTimeoutRef.current = null;
-      }
-      
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-      
-      // Ensure loading screen is hidden when component unmounts
-      hideLoadingScreen();
     };
-  }, [location, currentLocation, transitionDuration, disableAnimation, enableLoadingScreen, globalLoading, loadingMessage, isTransitioning, loadingTimeout]);
-
-  // Additional cleanup effect specifically for unmounting
+    
+    // Add event listener for link clicks
+    document.addEventListener('click', handleLinkClick);
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('click', handleLinkClick);
+    };
+  }, [showLoading, location]);
+  
+  // Handle navigation changes to hide loading screen after content loads
+  useEffect(() => {
+    // Skip initial render
+    if (prevLocationRef.current === location) {
+      return;
+    }
+    
+    // Update previous location
+    prevLocationRef.current = location;
+    
+    // Generate a new key to force re-render of children
+    setCurrentKey(`page-${Date.now()}`);
+    
+    // Clean up any existing timeouts
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+    }
+    
+    // Set up timeouts for hiding loading screen
+    // Normal timeout - hide after content has likely loaded
+    loadingTimeoutRef.current = setTimeout(() => {
+      hideLoading();
+    }, 300); // Short delay to ensure content is ready
+    
+    // Safety timeout - ensure loading always hides eventually
+    safetyTimeoutRef.current = setTimeout(() => {
+      hideLoading();
+    }, loadingTimeout);
+    
+    // Clean up timeouts on unmount or location change
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+      }
+    };
+  }, [location, hideLoading, loadingTimeout]);
+  
+  // Additional cleanup on unmount
   useEffect(() => {
     return () => {
-      // Make sure to clean up any timeouts and hide loading screens on unmount
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-      }
-      
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
-      
-      hideLoadingScreen();
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+      }
+      hideLoading();
     };
-  }, []);
-
-  // Always render the same component structure, just with or without animation props
-  // This helps avoid React hooks inconsistency with conditional returns
+  }, [hideLoading]);
+  
+  // Content loaded handler - called when content is fully rendered
+  const onContentLoad = useCallback(() => {
+    // Slight delay before hiding loading to prevent flicker
+    setTimeout(() => {
+      hideLoading();
+    }, 100);
+  }, [hideLoading]);
+  
+  // Effect to detect when content has fully rendered
+  useEffect(() => {
+    if (contentRef.current) {
+      onContentLoad();
+    }
+  }, [children, onContentLoad]);
+  
   return (
-    <AnimatePresence mode={mode}>
-      <motion.div
-        key={currentLocation}
-        initial={disableAnimation ? undefined : { opacity: 0 }}
-        animate={disableAnimation ? undefined : { opacity: 1 }}
-        exit={disableAnimation ? undefined : { opacity: 0 }}
-        transition={disableAnimation ? undefined : { 
-          duration: transitionDuration / 1000,
-          ease: "easeInOut" // Add easing for smoother transitions
-        }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <div 
+      ref={contentRef}
+      key={currentKey}
+      style={{ 
+        width: "100%", 
+        position: "relative",
+        minHeight: "100vh"
+      }}
+      data-location={location}
+    >
+      {children}
+    </div>
   );
 }

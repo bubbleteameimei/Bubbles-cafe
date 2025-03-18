@@ -1,586 +1,337 @@
-import { type ThemeCategory, type ThemeInfo } from "@/shared/types";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Axe, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon } from "lucide-react";
+/**
+ * Content Analysis Utility
+ * 
+ * This module provides functions for analyzing and processing content,
+ * including readability metrics, keyword extraction, and content validation.
+ */
 
-export { type ThemeCategory, type ThemeInfo };
+import { z } from 'zod';
+import { ErrorCategory, handleError } from './error-handler';
 
-// Enhanced theme categories with more detailed keywords and visual effects
-export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
-  PARASITE: {
-    keywords: [
-      'parasite', 'worm', 'maggot', 'crawl', 'burrow', 'gnaw', 'squirm',
-      'writhe', 'infest', 'nostalgia', 'memory', 'forget', 'distort',
-      'whisper', 'dig', 'flesh', 'brain', 'skin', 'nest', 'host',
-      'consume', 'larvae', 'cocoon', 'egg', 'molt', 'transform'
-    ],
-    badgeVariant: "parasite",
-    icon: 'Worm',
-    description: 'Parasitic and invasive horror',
-    visualEffects: ['mist', 'shadows', 'wiggle', 'pulse']
-  },
-  LOVECRAFTIAN: {
-    keywords: [
-      'ancient', 'deity', 'worship', 'kneel', 'statue', 'monolithic',
-      'forgotten', 'blood', 'ritual', 'cave', 'underground', 'eternal',
-      'revelations', 'forbidden', 'cyclopean', 'eldritch', 'cosmic',
-      'madness', 'insanity', 'incomprehensible', 'tentacle', 'void',
-      'abyss', 'dimension', 'otherworldly', 'cultist', 'grimoire'
-    ],
-    badgeVariant: "lovecraftian",
-    icon: 'Skull',
-    description: 'Lovecraftian and cosmic horror',
-    visualEffects: ['fog', 'darkness', 'tentacles', 'void']
-  },
-  PSYCHOLOGICAL: {
-    keywords: [
-      'mind', 'sanity', 'therapy', 'mental', 'obsession', 'delusion',
-      'reality', 'perception', 'consciousness', 'paranoia', 'hallucination',
-      'trauma', 'identity', 'control', 'manipulation', 'rain'
-    ],
-    badgeVariant: "psychological",
-    icon: 'Brain',
-    description: 'Psychological manipulation and mental horror',
-    visualEffects: ['distortion', 'flashbacks']
-  },
-  SUICIDAL: {
-    keywords: [
-      'suicide', 'bleach', 'end', 'death', 'pain', 'guilt', 'survive',
-      'medication', 'hospital', 'poison', 'overdose', 'self-harm',
-      'depression', 'despair', 'darkness'
-    ],
-    badgeVariant: "suicidal",
-    icon: 'Pill',
-    description: 'Self-destructive and survival horror',
-    visualEffects: ['grayscale', 'desaturation']
-  },
-  TECHNOLOGICAL: {
-    keywords: [
-      'machine', 'computer', 'technology', 'artificial', 'circuit',
-      'wire', 'mechanical', 'digital', 'system', 'consciousness',
-      'upload', 'transfer', 'merge', 'cybernetic'
-    ],
-    badgeVariant: "technological",
-    icon: 'Cpu',
-    description: 'Technological and cybernetic horror',
-    visualEffects: ['glitches', 'static']
-  },
-  BODY_HORROR: {
-    keywords: [
-      'flesh', 'transform', 'mutation', 'organic', 'grotesque', 'deform',
-      'tissue', 'metamorphosis', 'skin', 'bone', 'blood', 'insect',
-      'crawl', 'bug', 'inside', 'pain'
-    ],
-    badgeVariant: "body",
-    icon: 'Dna',
-    description: 'Body transformation horror',
-    visualEffects: ['close-ups', 'detail']
-  },
-  PSYCHOPATH: {
-    keywords: [
-      'kill', 'murder', 'blood', 'knife', 'stalk', 'watch', 'follow',
-      'obsess', 'hunt', 'capture', 'torture', 'victim', 'pleasure',
-      'excitement', 'thrill'
-    ],
-    badgeVariant: "psychopath",
-    icon: 'Axe',
-    description: 'Psychopathic and murderous horror',
-    visualEffects: ['red', 'blood splatter']
-  },
-  SUPERNATURAL: {
-    keywords: [
-      'ghost', 'spirit', 'haunted', 'ethereal', 'paranormal', 'entity',
-      'apparition', 'mirror', 'reflection', 'portal', 'otherworldly',
-      'presence', 'manifestation', 'swap', 'change'
-    ],
-    badgeVariant: "supernatural",
-    icon: 'Ghost',
-    description: 'Supernatural and paranormal horror',
-    visualEffects: ['transparency', 'shimmer']
-  },
-  POSSESSION: {
-    keywords: [
-      'possess', 'demon', 'spirit', 'doll', 'puppet', 'control',
-      'evil', 'exorcism', 'ritual', 'curse', 'dark', 'entity',
-      'soul', 'corrupt', 'innocent'
-    ],
-    badgeVariant: "possession",
-    icon: 'Ghost',
-    description: 'Demonic possession horror',
-    visualEffects: ['distortion', 'shadow']
-  },
-  CANNIBALISM: {
-    keywords: [
-      'eat', 'consume', 'flesh', 'meat', 'hunger', 'appetite',
-      'feast', 'cook', 'recipe', 'cookbook', 'taste', 'devour',
-      'cannibalism', 'human', 'meal'
-    ],
-    badgeVariant: "cannibalism",
-    icon: 'Axe',
-    description: 'Cannibalistic horror',
-    visualEffects: ['gore', 'blood']
-  },
-  STALKING: {
-    keywords: [
-      'follow', 'watch', 'hide', 'shadow', 'stalk', 'observe',
-      'track', 'pursue', 'hunt', 'predator', 'prey', 'tunnel',
-      'dark', 'alone', 'fear', 'chase'
-    ],
-    badgeVariant: "stalking",
-    icon: 'Footprints',
-    description: 'Stalking and pursuit horror',
-    visualEffects: ['shadows', 'darkness']
-  },
-  DEATH: {
-    keywords: [
-      'death', 'reaper', 'soul', 'afterlife', 'descent', 'fall',
-      'darkness', 'eternal', 'end', 'final', 'grave', 'tombstone',
-      'spirit', 'beyond', 'mortal'
-    ],
-    badgeVariant: "death",
-    icon: 'Skull',
-    description: 'Death and mortality horror',
-    visualEffects: ['grayscale', 'fade']
-  },
-  GOTHIC: {
-    keywords: [
-      'castle', 'mansion', 'aristocrat', 'Victorian', 'gothic',
-      'estate', 'cathedral', 'crypt', 'family', 'legacy',
-      'ancestor', 'portrait', 'painting'
-    ],
-    badgeVariant: "gothic",
-    icon: 'Castle',
-    description: 'Gothic and ancestral horror',
-    visualEffects: ['darkness', 'shadows']
-  },
-  APOCALYPTIC: {
-    keywords: [
-      'apocalypse', 'collapse', 'extinction', 'devastation',
-      'wasteland', 'survival', 'pandemic', 'plague', 'end',
-      'world', 'civilization', 'ruin'
-    ],
-    badgeVariant: "apocalyptic",
-    icon: 'Radiation',
-    description: 'Post-apocalyptic horror',
-    visualEffects: ['destruction', 'ruin']
-  },
-  ISOLATION: {
-    keywords: [
-      'alone', 'solitude', 'abandoned', 'desolate', 'empty',
-      'isolated', 'remote', 'stranded', 'lonely', 'silence',
-      'void', 'cut-off', 'separation'
-    ],
-    badgeVariant: "isolation",
-    icon: 'UserMinus2',
-    description: 'Isolation horror',
-    visualEffects: ['emptiness', 'silence']
-  },
-  AQUATIC: {
-    keywords: [
-      'ocean', 'deep', 'underwater', 'sea', 'abyss', 'maritime',
-      'submarine', 'drowning', 'flood', 'marine', 'depths',
-      'vessel', 'ship'
-    ],
-    badgeVariant: "aquatic",
-    icon: 'Anchor',
-    description: 'Deep sea horror',
-    visualEffects: ['water', 'blue']
-  },
-  VIRAL: {
-    keywords: [
-      'infection', 'spread', 'contagion', 'disease', 'epidemic',
-      'virus', 'outbreak', 'contamination', 'mutation',
-      'transmission', 'infected', 'pandemic'
-    ],
-    badgeVariant: "viral",
-    icon: 'AlertTriangle',
-    description: 'Viral and epidemic horror',
-    visualEffects: ['red', 'infection']
-  },
-  URBAN_LEGEND: {
-    keywords: [
-      'legend', 'myth', 'rumor', 'urban', 'tale', 'folklore',
-      'city', 'street', 'local', 'whisper', 'mystery',
-      'warning', 'curse'
-    ],
-    badgeVariant: "urban",
-    icon: 'Building',
-    description: 'Urban legend horror',
-    visualEffects: ['city', 'night']
-  },
-  TIME_HORROR: {
-    keywords: [
-      'time', 'temporal', 'loop', 'paradox', 'clock', 'past',
-      'future', 'timeline', 'moment', 'eternity', 'repeat',
-      'trapped', 'forever'
-    ],
-    badgeVariant: "time",
-    icon: 'Clock',
-    description: 'Temporal horror',
-    visualEffects: ['rewind', 'fast-forward']
-  },
-  DREAMSCAPE: {
-    keywords: [
-      'dream', 'nightmare', 'sleep', 'subconscious', 'surreal',
-      'vision', 'lucid', 'phantasm', 'fantasy', 'illusion',
-      'reality', 'trance', 'slumber', 'drowsy', 'hypnotic',
-      'ethereal', 'floating', 'distorted', 'twisted', 'warped'
-    ],
-    badgeVariant: "dreamscape",
-    icon: 'Moon',
-    description: 'Dream-based horror',
-    visualEffects: ['blur', 'fade', 'float', 'distort']
-  }
-};
+// Content validation schema
+export const contentSchema = z.object({
+  title: z.string().min(3).max(100),
+  content: z.string().min(10),
+  excerpt: z.string().optional(),
+  author: z.string().optional(),
+  publishDate: z.string().datetime().optional(),
+  modifiedDate: z.string().datetime().optional(),
+  tags: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(),
+  featuredImage: z.string().url().optional(),
+  readingTime: z.number().min(1).optional()
+});
 
-// Enhanced theme detection with weighted scoring and context analysis
-export const detectThemes = (content: string): ThemeCategory[] => {
-  try {
-    const weightedScores = new Map<ThemeCategory, number>();
-    const lowerContent = content.toLowerCase();
-    const paragraphs = content.split('\n\n');
-    const firstParagraph = paragraphs[0]?.toLowerCase() || '';
-    const lastParagraph = paragraphs[paragraphs.length - 1]?.toLowerCase() || '';
-
-    Object.entries(THEME_CATEGORIES).forEach(([theme, info]) => {
-      let score = 0;
-
-      // Keyword matching with context weights
-      info.keywords.forEach(keyword => {
-        const keywordRegex = new RegExp(`\\b${keyword}\\b`, 'gi');
-        const matches = content.match(keywordRegex);
-
-        if (matches) {
-          // Base score for keyword presence
-          score += matches.length * 0.5;
-
-          // Higher weight for keywords in first/last paragraphs
-          if (firstParagraph.includes(keyword)) score += 1;
-          if (lastParagraph.includes(keyword)) score += 0.75;
-
-          // Bonus for repeated keywords
-          if (matches.length > 2) score += 0.5;
-        }
-      });
-
-      // Context-based adjustments
-      if (theme === 'PSYCHOLOGICAL' && /mind|sanity|reality/i.test(firstParagraph)) {
-        score *= 1.5;
-      }
-      if (theme === 'LOVECRAFTIAN' && /ancient|forgotten|eternal/i.test(lastParagraph)) {
-        score *= 1.5;
-      }
-      if (theme === 'BODY_HORROR' && /transform|mutate|flesh/i.test(content)) {
-        score *= 1.25;
-      }
-
-      if (score > 0) {
-        weightedScores.set(theme as ThemeCategory, score);
-      }
-    });
-
-    // Get top 2 themes if they meet minimum threshold
-    const sortedThemes = Array.from(weightedScores.entries())
-      .sort(([, a], [, b]) => b - a)
-      .filter(([, score]) => score >= 2)
-      .map(([theme]) => theme);
-
-    return sortedThemes.length > 0 ? sortedThemes : ['PSYCHOLOGICAL']; // Default fallback
-  } catch (error) {
-    console.error('[Theme Detection] Error:', error);
-    return ['PSYCHOLOGICAL'];
-  }
-};
-
-// Enhanced intensity calculation with more nuanced factors
-export const calculateIntensity = (content: string): number => {
-  if (!content) return 3;
-
-  const emotionalPatterns = {
-    extreme: /terrified|horrified|petrified|screaming|agony|blood|gore|mutilate|torture|kill|die/gi,
-    strong: /scared|frightened|panic|terror|dread|possessed|demon|evil|monster|beast/gi,
-    moderate: /worried|nervous|anxious|uneasy|fear|strange|weird|dark|shadow/gi,
-    subtle: /whisper|quiet|soft|creep|watch|wait|lurk|hide/gi
-  };
-
-  let intensityScore = 3; // Base score
-
-  // Theme-based intensity adjustment
-  const themes = detectThemes(content);
-  const themeIntensity = themes.reduce((acc, theme) => {
-    const baseIntensity = {
-      BODY_HORROR: 4.5,
-      CANNIBALISM: 4.5,
-      SUICIDAL: 4.5,
-      PSYCHOPATH: 4,
-      POSSESSION: 4,
-      LOVECRAFTIAN: 3.5,
-      SUPERNATURAL: 3,
-      PSYCHOLOGICAL: 3,
-      PARASITE: 3.5,
-      TECHNOLOGICAL: 2.5,
-      STALKING: 3.5,
-      DEATH: 3.5,
-      GOTHIC: 2.5,
-      APOCALYPTIC: 3.5,
-      ISOLATION: 2.5,
-      AQUATIC: 2.5,
-      VIRAL: 3,
-      URBAN_LEGEND: 2.5,
-      TIME_HORROR: 2.5,
-      DREAMSCAPE: 2.5
-    }[theme] || 3;
-    return acc + baseIntensity;
-  }, 0) / themes.length;
-
-  intensityScore = themeIntensity;
-
-  // Content pattern analysis
-  Object.entries(emotionalPatterns).forEach(([level, pattern]) => {
-    const matches = content.match(pattern);
-    if (matches) {
-      intensityScore += matches.length * (
-        level === 'extreme' ? 0.4 :
-        level === 'strong' ? 0.3 :
-        level === 'moderate' ? 0.2 :
-        0.1
-      );
-    }
-  });
-
-  // Structural analysis
-  const shortSentences = content.split(/[.!?]+/).filter(s =>
-    s.trim().split(/\s+/).length < 6
-  ).length;
-  intensityScore += Math.min(0.5, shortSentences * 0.1);
-
-  // Style analysis
-  if (/[A-Z]{3,}/.test(content)) intensityScore += 0.4;
-  if (content.match(/!{2,}/g)) intensityScore += 0.3;
-  if (content.match(/\?{2,}/g)) intensityScore += 0.2;
-
-  // Normalize to 1-5 range
-  return Math.max(1, Math.min(5, Math.round(intensityScore)));
-};
-
-// Define a type for WordPress content structure
-// Define this as an exported interface so it can be imported elsewhere
-export interface WordPressContent {
-  rendered: string;
-  protected?: boolean;
-  raw?: string;
-}
-
-export const getReadingTime = (content: string | WordPressContent | unknown): string => {
-  if (!content) return '1 min read';
-  
-  // Process different content formats
-  let contentToProcess: string;
-  
-  if (typeof content === 'string') {
-    contentToProcess = content;
-  } else if (typeof content === 'object' && content !== null) {
-    // Handle WordPress format
-    const wpContent = content as WordPressContent;
-    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
-      contentToProcess = wpContent.rendered;
-    } else {
-      return '1 min read'; // Fallback
-    }
-  } else {
-    return '1 min read'; // Fallback
-  }
-  
-  // Clean HTML content if it exists
-  if (contentToProcess.indexOf('<') !== -1 && contentToProcess.indexOf('>') !== -1) {
-    // Likely contains HTML tags, attempt to clean
-    contentToProcess = contentToProcess.replace(/<[^>]+>/g, ' ');
-  }
-  
-  const wordsPerMinute = 200;
-  const words = contentToProcess.trim().split(/\s+/).filter((word: string) => word.length > 0).length;
-  
-  // Minimum 1 minute read time
-  const minutes = Math.max(1, Math.ceil(words / wordsPerMinute));
-  return `${minutes} min read`;
-};
-
-export const getExcerpt = (content: string | WordPressContent | unknown): string => {
-  if (!content) return '';
-  
-  // Handle both object content (WordPress) and string content
-  let contentToProcess: string;
-  
-  if (typeof content === 'string') {
-    contentToProcess = content;
-  } else if (typeof content === 'object' && content !== null) {
-    // This is likely the WordPress content format
-    const wpContent = content as WordPressContent;
-    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
-      contentToProcess = wpContent.rendered;
-    } else {
-      return 'Content unavailable';
-    }
-  } else {
-    return 'Content unavailable';
-  }
-  
-  // Create a clean version of content with HTML removed
-  const cleanContent = contentToProcess.replace(/<[^>]+>/g, '');
-  
-  // Define keywords that indicate scary or engaging content
-  const scaryKeywords = [
-    'suddenly', 'blood', 'scream', 'fear', 'terror', 'dark', 'death', 
-    'horror', 'dread', 'cold', 'eyes', 'flesh', 'pain', 'afraid', 
-    'terrified', 'panic', 'trembling', 'heart', 'bones', 'empty',
-    'parasite', 'slime', 'gnaw', 'writhe', 'worm', 'brain', 'sanity',
-    'suffer', 'kill', 'murder', 'throat', 'knife', 'butcher', 'cut',
-    'choke', 'dying', 'grave', 'hell', 'nightmare', 'whisper', 'scream'
-  ];
-  
-  // Find a paragraph with scary content - try different approaches
-  
-  // First approach: look for paragraphs (separated by double newlines)
-  const paragraphs = cleanContent.split('\n\n')
-    .filter((p: string) => p.trim().length > 40); // Filter out very short paragraphs
-  
-  // If no significant paragraphs found, try single newlines
-  const textSegments = paragraphs.length > 1 ? paragraphs : 
-    cleanContent.split('\n').filter((p: string) => p.trim().length > 40);
-  
-  // If still no good segments, try sentence splitting
-  const sections = textSegments.length > 1 ? textSegments :
-    cleanContent.split(/(?<=\.)\s+/).filter((s: string) => s.trim().length > 40);
-  
-  // Define interfaces for segment scoring
-  interface ScoredSegment {
-    text: string;
-    score: number;
-    index: number;
-  }
-  
-  // Score each text segment
-  const scoredSegments = sections.map((segment: string, index: number): ScoredSegment => {
-    let score = 0;
-    const text = segment.trim();
-    
-    // Skip very short segments
-    if (text.length < 50 && sections.length > 1) {
-      return { text, score: -1, index };
-    }
-    
-    // Score based on scary keywords
-    scaryKeywords.forEach((keyword: string) => {
-      if (text.toLowerCase().includes(keyword)) {
-        score += 2;
-      }
-    });
-    
-    // Extra points for dramatic punctuation
-    if (text.includes('!')) score += 3;
-    if (text.includes('?')) score += 2;
-    if (text.includes('...')) score += 2;
-    
-    // Additional scoring for direct speech which is often more engaging
-    if (text.includes('"') || text.includes('"') || text.includes('"')) {
-      score += 3;
-    }
-    
-    // Bonus points for second-person narrative which is more engaging
-    if (text.toLowerCase().includes(' you ') || text.toLowerCase().includes(' your ')) {
-      score += 2;
-    }
-    
-    return { text, score, index };
-  });
-  
-  // Sort by score (highest first)
-  scoredSegments.sort((a: ScoredSegment, b: ScoredSegment) => b.score - a.score);
-  
-  // Use the highest scoring segment or fallback strategies
-  let selectedText;
-  
-  if (scoredSegments.length > 0 && scoredSegments[0].score > 1) {
-    // Use the highest scoring segment
-    selectedText = scoredSegments[0].text;
-  } else if (sections.length > 2) {
-    // If no high scores, pick a paragraph from the middle of the story (often more interesting)
-    const middleIndex = Math.floor(sections.length / 3); // Start at 1/3 through the story
-    selectedText = sections[middleIndex] || sections[0];
-  } else {
-    // Fallback to beginning of content
-    selectedText = cleanContent.substring(0, 300);
-  }
-  
-  // Ensure proper length and formatting
-  const maxLength = 200;
-  if (selectedText.length > maxLength) {
-    return selectedText.substring(0, maxLength).split(' ').slice(0, -1).join(' ') + '...';
-  }
-  
-  return selectedText;
-};
-
-// Added function to log post creation with theme information.
-export const logPostCreation = (postId: number, postTitle: string, date: string, theme: ThemeCategory) => {
-  console.log(`Created post: "${postTitle}" (ID: ${postId}) with date: ${date} [Theme: ${theme}]`);
-};
+export type ContentData = z.infer<typeof contentSchema>;
 
 /**
- * Sanitizes HTML content from WordPress, with special handling for italics and other formatting
- * 
- * @param content Raw WordPress content or string content
- * @returns Sanitized HTML with preserved essential formatting
+ * Content readability levels
  */
-export const sanitizeHtmlContent = (content: string | WordPressContent | unknown): string => {
-  if (!content) return '';
+export enum ReadabilityLevel {
+  EASY = 'easy',
+  MEDIUM = 'medium',
+  DIFFICULT = 'difficult'
+}
 
-  // Extract string content based on type
-  let htmlContent: string;
-  
-  if (typeof content === 'string') {
-    htmlContent = content;
-  } else if (typeof content === 'object' && content !== null) {
-    const wpContent = content as WordPressContent;
-    if (wpContent.rendered && typeof wpContent.rendered === 'string') {
-      htmlContent = wpContent.rendered;
-    } else {
-      return '';
-    }
-  } else {
-    return '';
-  }
+/**
+ * Content analysis result interface
+ */
+export interface ContentAnalysis {
+  wordCount: number;
+  sentenceCount: number;
+  paragraphCount: number;
+  readingTime: number;
+  readabilityScore: number;
+  readabilityLevel: ReadabilityLevel;
+  keyPhrases: string[];
+  hasImages: boolean;
+  hasLinks: boolean;
+  emotionalTone: string;
+}
 
+/**
+ * Analyze content and return detailed metrics
+ */
+export function analyzeContent(content: string): ContentAnalysis {
   try {
-    // Clean up WordPress-specific formatting issues
-    const processed = htmlContent
-      // Fix WordPress paragraph formatting
-      .replace(/<p>\s*&nbsp;\s*<\/p>/g, '<p></p>')
-      // Clean up extra spaces
-      .replace(/\s+/g, ' ')
-      // Handle em and strong tags consistently
-      .replace(/<em>(.*?)<\/em>/g, '<i>$1</i>')
-      .replace(/<strong>(.*?)<\/strong>/g, '<b>$1</b>')
-      // Ensure all images have proper alt tags
-      .replace(/<img(.*?)>/g, (match, p1) => {
-        if (!p1.includes('alt=')) {
-          return match.replace(/<img(.*?)>/, '<img$1 alt="Story image">');
-        }
-        return match;
-      })
-      // Fix any self-closing div tags (which are invalid HTML)
-      .replace(/<div([^>]*?)\/>/g, '<div$1></div>')
-      // Normalize quotes
-      .replace(/&#8220;/g, '"')
-      .replace(/&#8221;/g, '"')
-      .replace(/&#8216;/g, "'")
-      .replace(/&#8217;/g, "'")
-      // Remove WordPress's auto-format for emojis
-      .replace(/<img class="wp-smiley.*?>/g, '')
-      // Process WordPress [caption] shortcodes if any remain
-      .replace(/\[caption.*?\](.*?)\[\/caption\]/g, '$1');
-
-    return processed;
+    if (!content) {
+      throw new Error('Content is empty or undefined');
+    }
+    
+    // Strip HTML tags for text analysis
+    const plainText = content.replace(/<\/?[^>]+(>|$)/g, '');
+    
+    // Basic metrics
+    const words = plainText.split(/\s+/).filter(word => word.length > 0);
+    const sentences = plainText.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+    const paragraphs = content.split(/<\/p>/).filter(p => p.trim().length > 0);
+    
+    // Calculate reading time (words per minute)
+    const wordsPerMinute = 225;
+    const readingTime = Math.max(1, Math.ceil(words.length / wordsPerMinute));
+    
+    // Check for images and links
+    const hasImages = /<img[^>]+>/g.test(content);
+    const hasLinks = /<a[^>]+>/g.test(content);
+    
+    // Simple readability score (higher is more complex)
+    // Based on a simplified Flesch-Kincaid calculation
+    const avgWordsPerSentence = sentences.length > 0 ? words.length / sentences.length : 0;
+    const avgSyllablesPerWord = estimateAverageSyllables(plainText);
+    const readabilityScore = 0.39 * avgWordsPerSentence + 11.8 * avgSyllablesPerWord - 15.59;
+    
+    // Determine readability level
+    let readabilityLevel: ReadabilityLevel;
+    if (readabilityScore < 30) {
+      readabilityLevel = ReadabilityLevel.EASY;
+    } else if (readabilityScore < 50) {
+      readabilityLevel = ReadabilityLevel.MEDIUM;
+    } else {
+      readabilityLevel = ReadabilityLevel.DIFFICULT;
+    }
+    
+    // Extract key phrases (simplified implementation)
+    const keyPhrases = extractKeyPhrases(plainText);
+    
+    // Determine emotional tone (simplified implementation)
+    const emotionalTone = analyzeEmotionalTone(plainText);
+    
+    return {
+      wordCount: words.length,
+      sentenceCount: sentences.length,
+      paragraphCount: paragraphs.length,
+      readingTime,
+      readabilityScore,
+      readabilityLevel,
+      keyPhrases,
+      hasImages,
+      hasLinks,
+      emotionalTone
+    };
   } catch (error) {
-    console.error('[Content Sanitizer] Error:', error);
-    return htmlContent;
+    // Handle any errors during analysis
+    handleError(error, {
+      category: ErrorCategory.VALIDATION,
+      showToast: false
+    });
+    
+    // Return default values
+    return {
+      wordCount: 0,
+      sentenceCount: 0,
+      paragraphCount: 0,
+      readingTime: 1,
+      readabilityScore: 0,
+      readabilityLevel: ReadabilityLevel.MEDIUM,
+      keyPhrases: [],
+      hasImages: false,
+      hasLinks: false,
+      emotionalTone: 'neutral'
+    };
   }
-};
+}
+
+/**
+ * Estimate average syllables per word in text (simplified)
+ */
+function estimateAverageSyllables(text: string): number {
+  // This is a simplified syllable counter
+  // A more accurate implementation would use a dictionary or complex rules
+  const words = text.split(/\s+/).filter(word => word.length > 0);
+  
+  if (words.length === 0) return 0;
+  
+  let totalSyllables = 0;
+  
+  for (const word of words) {
+    // Count vowel groups as syllables (simplified approach)
+    const syllables = word.toLowerCase()
+      .replace(/(?:[^laeiouy]|ed|[^laeiouy]e)$/, '')
+      .replace(/^y/, '')
+      .match(/[aeiouy]{1,2}/g);
+    
+    totalSyllables += syllables ? syllables.length : 1;
+  }
+  
+  return totalSyllables / words.length;
+}
+
+/**
+ * Extract key phrases from text (simplified implementation)
+ */
+function extractKeyPhrases(text: string): string[] {
+  // This is a simplified implementation
+  // A more robust solution would use NLP techniques or a specialized library
+  
+  // Remove common stop words and punctuation
+  const cleanText = text.toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ');
+  
+  const stopWords = new Set([
+    'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with',
+    'by', 'about', 'as', 'into', 'like', 'through', 'after', 'over', 'between',
+    'out', 'against', 'during', 'without', 'before', 'under', 'around', 'among',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+    'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'can', 'could',
+    'may', 'might', 'must', 'of', 'from', 'then', 'than', 'that', 'this',
+    'these', 'those', 'it', 'they', 'them', 'their', 'we', 'us', 'our'
+  ]);
+  
+  // Split into words and filter out stop words
+  const words = cleanText.split(' ').filter(word => 
+    word.length > 3 && !stopWords.has(word)
+  );
+  
+  // Count word frequencies
+  const wordFrequencies: Record<string, number> = {};
+  for (const word of words) {
+    wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+  }
+  
+  // Extract two-word phrases (bigrams)
+  const phrases: Record<string, number> = {};
+  for (let i = 0; i < words.length - 1; i++) {
+    if (!stopWords.has(words[i]) && !stopWords.has(words[i + 1])) {
+      const phrase = `${words[i]} ${words[i + 1]}`;
+      phrases[phrase] = (phrases[phrase] || 0) + 1;
+    }
+  }
+  
+  // Combine words and phrases, sort by frequency
+  const combined = [
+    ...Object.entries(wordFrequencies),
+    ...Object.entries(phrases)
+  ].sort((a, b) => b[1] - a[1]);
+  
+  // Return top 5 key phrases
+  return combined.slice(0, 5).map(entry => entry[0]);
+}
+
+/**
+ * Analyze emotional tone of text (simplified implementation)
+ */
+function analyzeEmotionalTone(text: string): string {
+  // This is a simplified implementation
+  // A production solution would use sentiment analysis libraries or ML models
+  
+  const toneIndicators: Record<string, string[]> = {
+    positive: ['happy', 'joy', 'love', 'exciting', 'amazing', 'good', 'great', 'wonderful', 'delighted', 'pleased'],
+    negative: ['sad', 'angry', 'fear', 'terrible', 'horrible', 'bad', 'awful', 'frightening', 'scary', 'dreadful'],
+    suspenseful: ['mysterious', 'unknown', 'suspense', 'tension', 'eerie', 'strange', 'unusual', 'bizarre', 'creepy'],
+    informative: ['explain', 'information', 'data', 'research', 'study', 'analysis', 'conclusion', 'result', 'evidence']
+  };
+  
+  const lowerText = text.toLowerCase();
+  const toneScores: Record<string, number> = {
+    positive: 0,
+    negative: 0,
+    suspenseful: 0,
+    informative: 0,
+    neutral: 0
+  };
+  
+  // Count tone indicators
+  for (const [tone, indicators] of Object.entries(toneIndicators)) {
+    for (const word of indicators) {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = lowerText.match(regex);
+      if (matches) {
+        toneScores[tone] += matches.length;
+      }
+    }
+  }
+  
+  // Find dominant tone
+  let dominantTone = 'neutral';
+  let highestScore = 0;
+  
+  for (const [tone, score] of Object.entries(toneScores)) {
+    if (score > highestScore) {
+      highestScore = score;
+      dominantTone = tone;
+    }
+  }
+  
+  return dominantTone;
+}
+
+/**
+ * Validate content data with proper error handling
+ */
+export function validateContent(data: unknown): { 
+  isValid: boolean; 
+  content?: ContentData;
+  errors?: z.ZodError;
+} {
+  try {
+    const result = contentSchema.safeParse(data);
+    
+    if (!result.success) {
+      return {
+        isValid: false,
+        errors: result.error
+      };
+    }
+    
+    return {
+      isValid: true,
+      content: result.data
+    };
+  } catch (error) {
+    handleError(error, {
+      category: ErrorCategory.VALIDATION,
+      showToast: true
+    });
+    
+    return {
+      isValid: false
+    };
+  }
+}
+
+/**
+ * Calculate text similarity between two content pieces
+ * Returns a score between 0 and 1, where 1 means identical
+ */
+export function calculateContentSimilarity(text1: string, text2: string): number {
+  try {
+    // Simple implementation using Jaccard similarity
+    // (more sophisticated implementations would use word embeddings or NLP)
+    
+    if (!text1 || !text2) return 0;
+    
+    // Convert to lowercase and remove HTML, punctuation
+    const clean1 = text1.toLowerCase()
+      .replace(/<[^>]+>/g, '')
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+      
+    const clean2 = text2.toLowerCase()
+      .replace(/<[^>]+>/g, '')
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Split into words
+    const words1 = new Set(clean1.split(' '));
+    const words2 = new Set(clean2.split(' '));
+    
+    // Calculate intersection
+    const intersection = new Set([...words1].filter(word => words2.has(word)));
+    
+    // Calculate union
+    const union = new Set([...words1, ...words2]);
+    
+    // Jaccard similarity
+    return intersection.size / union.size;
+  } catch (error) {
+    handleError(error, {
+      category: ErrorCategory.VALIDATION,
+      showToast: false
+    });
+    
+    return 0;
+  }
+}

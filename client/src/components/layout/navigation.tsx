@@ -40,7 +40,7 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2 lg:hidden relative overflow-hidden touch-manipulation"
+                className="mr-2 lg:hidden relative overflow-hidden touch-manipulation w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20"
                 title="Toggle navigation menu"
                 noOutline={true}
                 style={{ 
@@ -103,7 +103,7 @@ export default function Navigation() {
         {/* Right-side Actions */}
         <div className="flex items-center space-x-5">
           <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} noOutline={true} />
-          <ThemeToggleButton />
+          <ThemeToggleButton noOutline={true} />
           {!user ? (
             <Button
               variant="default"
@@ -112,7 +112,7 @@ export default function Navigation() {
                 setLocation("/auth");
               }}
               className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider touch-manipulation transition-all duration-150 ease-out active:scale-95 active:opacity-90"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              noOutline={true}
             >
               <span className="relative">
                 Sign In
@@ -127,7 +127,7 @@ export default function Navigation() {
                 onClick={() => setLocation('/settings/profile')}
                 className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 mb-1"
                 aria-label="Profile"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
+                noOutline={true}
               >
                 <span className="relative">
                   <User className="h-4 w-4" strokeWidth={1.75} />

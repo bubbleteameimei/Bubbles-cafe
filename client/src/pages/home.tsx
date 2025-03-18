@@ -62,7 +62,7 @@ export default function Home() {
               backgroundAttachment: 'fixed',
               width: '100vw',
               height: '100vh',
-              zIndex: -2,
+              zIndex: 0, // Changed from -2 to 0
               willChange: 'transform',
               transform: 'translateZ(0)'
             }} 
@@ -74,7 +74,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1.5, delay: 0.3 }}
             className="fixed inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50"
-            style={{ zIndex: -1 }}
+            style={{ zIndex: 1 }} // Changed from -1 to 1
           />
 
           {/* Content */}
