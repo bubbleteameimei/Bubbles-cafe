@@ -18,6 +18,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
+import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db";
 import { desc, eq, sql } from "drizzle-orm";
@@ -1918,6 +1919,9 @@ Message ID: ${savedMessage.id}
   
   // Register user feedback routes
   registerUserFeedbackRoutes(app, storage);
+  
+  // Register privacy settings routes
+  registerPrivacySettingsRoutes(app, storage);
 
   // User statistics endpoint
   app.get("/api/users/stats", isAuthenticated, async (req, res) => {

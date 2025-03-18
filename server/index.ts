@@ -17,6 +17,7 @@ import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
+import { registerUserDataExportRoutes } from "./routes/user-data-export";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -113,6 +114,9 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
+      // Register user data export routes
+      registerUserDataExportRoutes(app, storage);
+      
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
       
@@ -128,6 +132,9 @@ async function startServer() {
       
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
+      
+      // Register user data export routes
+      registerUserDataExportRoutes(app, storage);
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);

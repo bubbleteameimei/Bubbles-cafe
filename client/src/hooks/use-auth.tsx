@@ -216,5 +216,16 @@ export function useAuth() {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  
+  // Add a derived state to check if the user is authenticated
+  const isAuthenticated = !!context.user;
+  
+  // Add a method to check if auth state is fully loaded and user is authenticated
+  const isAuthReady = !context.isLoading;
+  
+  return {
+    ...context,
+    isAuthenticated,
+    isAuthReady
+  };
 }

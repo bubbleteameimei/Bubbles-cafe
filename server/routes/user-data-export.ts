@@ -1,0 +1,143 @@
+/**
+ * User data export routes
+ * Handles requests for user data export functionalities
+ */
+import { Request, Response, NextFunction, Express } from 'express';
+import { IStorage } from '../storage';
+
+/**
+ * Authorization middleware to ensure user can only access their own data
+ */
+const isAuthorizedForUserData = (req: Request, res: Response, next: NextFunction) => {
+  // If not authenticated
+  if (!req.session.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  
+  // If requested userId doesn't match authenticated user (unless admin)
+  const requestedUserId = parseInt(req.params.userId || req.query.userId as string || '0');
+  if (requestedUserId && requestedUserId !== req.session.user.id && !req.session.user.isAdmin) {
+    return res.status(403).json({ message: 'You can only access your own data' });
+  }
+  
+  next();
+};
+
+/**
+ * Register user data export routes
+ */
+export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
+  /**
+   * GET /api/user/export-info
+   * Get user export information with counts of available data
+   */
+  app.get('/api/user/export-info', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      
+      // Get user posts
+      const userPosts = await storage.getUserPosts(userId);
+      
+      // Get user comments
+      const userComments = await storage.getUserComments(userId);
+      
+      // Get user bookmarks
+      const userBookmarks = await storage.getUserBookmarks(userId);
+      
+      // Get reading history
+      const readingHistory = await storage.getUserReadingHistory(userId);
+      
+      // Return counts of available data
+      res.json({
+        availableData: {
+          profile: true,
+          posts: userPosts.length,
+          comments: userComments.length,
+          bookmarks: userBookmarks.length,
+          readingHistory: readingHistory.length
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching user export info:', error);
+      res.status(500).json({ message: 'Failed to fetch export information' });
+    }
+  });
+  
+  /**
+   * GET /api/user/reading-history
+   * Get user reading history for export
+   */
+  app.get('/api/user/reading-history', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      const readingHistory = await storage.getUserReadingHistory(userId);
+      
+      // Process for export - include post titles
+      const processedHistory = await Promise.all(
+        readingHistory.map(async (item) => {
+          const post = await storage.getPostById(item.postId);
+          return {
+            ...item,
+            postTitle: post?.title || 'Unknown Post',
+            readDate: item.lastRead
+          };
+        })
+      );
+      
+      res.json(processedHistory);
+    } catch (error) {
+      console.error('Error fetching reading history:', error);
+      res.status(500).json({ message: 'Failed to fetch reading history' });
+    }
+  });
+  
+  /**
+   * GET /api/user/comments
+   * Get user comments for export
+   */
+  app.get('/api/user/comments', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      const userComments = await storage.getUserComments(userId);
+      
+      // Process for export - include post titles
+      const processedComments = await Promise.all(
+        userComments.map(async (comment) => {
+          const post = await storage.getPostById(comment.postId);
+          return {
+            id: comment.id,
+            content: comment.content,
+            createdAt: comment.createdAt,
+            postId: comment.postId,
+            postTitle: post?.title || 'Unknown Post',
+            edited: comment.edited,
+            metadata: comment.metadata
+          };
+        })
+      );
+      
+      res.json(processedComments);
+    } catch (error) {
+      console.error('Error fetching user comments:', error);
+      res.status(500).json({ message: 'Failed to fetch user comments' });
+    }
+  });
+  
+  /**
+   * GET /api/user/activity
+   * Get user activity timeline for export
+   */
+  app.get('/api/user/activity', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      
+      // Get user activity logs
+      const activityLogs = await storage.getUserActivity(userId);
+      
+      res.json(activityLogs);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      res.status(500).json({ message: 'Failed to fetch user activity' });
+    }
+  });
+}

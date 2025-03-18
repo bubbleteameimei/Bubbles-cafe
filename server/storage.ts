@@ -24,6 +24,7 @@ import {
   type AdminNotification, type InsertAdminNotification,
   type Bookmark, type InsertBookmark,
   type UserFeedback, type InsertUserFeedback,
+  type UserPrivacySettings, type InsertUserPrivacySettings,
   // Tables
   posts as postsTable,
   comments,
@@ -49,6 +50,7 @@ import {
   bookmarks,
   userFeedback,
   resetTokens,
+  userPrivacySettings,
   type Achievement,
   type UserAchievement,
   achievements,
@@ -76,6 +78,9 @@ export interface IStorage {
   getAdminByEmail(email: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
+  getUserComments(userId: number): Promise<Comment[]>;
+  getUserReadingHistory(userId: number): Promise<ReadingProgress[]>;
+  getUserActivity(userId: number): Promise<ActivityLog[]>;
   
   // Password Reset
   createResetToken(tokenData: InsertResetToken): Promise<ResetToken>;
@@ -216,6 +221,11 @@ export interface IStorage {
   getAllFeedback(limit?: number, status?: string): Promise<UserFeedback[]>;
   updateFeedbackStatus(id: number, status: string): Promise<UserFeedback>;
   getUserFeedback(userId: number): Promise<UserFeedback[]>;
+  
+  // User Privacy Settings methods
+  getUserPrivacySettings(userId: number): Promise<UserPrivacySettings | undefined>;
+  createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings>;
+  updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1640,6 +1650,70 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  /**
+   * Get all comments made by a specific user
+   * Used for user data export functionality
+   */
+  async getUserComments(userId: number): Promise<Comment[]> {
+    try {
+      console.log(`[Storage] Fetching comments for user: ${userId}`);
+      
+      const userComments = await db.select()
+        .from(comments)
+        .where(eq(comments.userId, userId.toString()))
+        .orderBy(desc(comments.createdAt));
+      
+      console.log(`[Storage] Found ${userComments.length} comments for user: ${userId}`);
+      return userComments;
+    } catch (error) {
+      console.error('Error getting user comments:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get user's reading history
+   * Used for user data export functionality
+   */
+  async getUserReadingHistory(userId: number): Promise<ReadingProgress[]> {
+    try {
+      console.log(`[Storage] Fetching reading history for user: ${userId}`);
+      
+      const readingHistory = await db.select()
+        .from(readingProgress)
+        .where(eq(readingProgress.userId, userId))
+        .orderBy(desc(readingProgress.lastRead));
+      
+      console.log(`[Storage] Found ${readingHistory.length} reading history entries for user: ${userId}`);
+      return readingHistory;
+    } catch (error) {
+      console.error('Error getting user reading history:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get user's activity log
+   * Used for user data export functionality
+   */
+  async getUserActivity(userId: number): Promise<ActivityLog[]> {
+    try {
+      console.log(`[Storage] Fetching activity logs for user: ${userId}`);
+      
+      const userLogs = await db.select()
+        .from(activityLogs)
+        .where(eq(activityLogs.userId, userId))
+        .orderBy(desc(activityLogs.createdAt))
+        .limit(100); // Limit to reasonable amount
+      
+      console.log(`[Storage] Found ${userLogs.length} activity logs for user: ${userId}`);
+      return userLogs;
+    } catch (error) {
+      console.error('Error getting user activity logs:', error);
+      return [];
+    }
+  }
+  
   async getUserTotalLikes(userId: number): Promise<number> {
     try {
       console.log(`[Storage] Calculating total likes for user: ${userId}`);
@@ -2047,6 +2121,102 @@ export class DatabaseStorage implements IStorage {
       console.error(`[Storage] Error retrieving user feedback:`, error);
       // Return empty array instead of throwing to prevent cascade failures
       return [];
+    }
+  }
+
+  // User Privacy Settings methods
+  async getUserPrivacySettings(userId: number): Promise<UserPrivacySettings | undefined> {
+    try {
+      console.log(`[Storage] Retrieving privacy settings for user ID: ${userId}`);
+      
+      const [settings] = await db.select()
+        .from(userPrivacySettings)
+        .where(eq(userPrivacySettings.userId, userId))
+        .limit(1);
+      
+      if (settings) {
+        console.log(`[Storage] Found privacy settings for user ${userId}`);
+      } else {
+        console.log(`[Storage] No privacy settings found for user ${userId}`);
+      }
+      
+      return settings;
+    } catch (error) {
+      console.error(`[Storage] Error retrieving user privacy settings:`, error);
+      return undefined;
+    }
+  }
+
+  async createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings> {
+    try {
+      console.log(`[Storage] Creating privacy settings for user ID: ${userId}`);
+      
+      // First check if settings already exist
+      const existingSettings = await this.getUserPrivacySettings(userId);
+      if (existingSettings) {
+        console.log(`[Storage] Privacy settings already exist for user ${userId}, updating instead`);
+        return await this.updateUserPrivacySettings(userId, settings);
+      }
+      
+      // Create default settings with user override
+      const defaultSettings: InsertUserPrivacySettings = {
+        userId: userId,
+        profileVisible: settings.profileVisible ?? true,
+        shareReadingHistory: settings.shareReadingHistory ?? false,
+        anonymousCommenting: settings.anonymousCommenting ?? false,
+        twoFactorAuthEnabled: settings.twoFactorAuthEnabled ?? false,
+        loginNotifications: settings.loginNotifications ?? true
+      };
+      
+      // Insert the settings
+      const [newSettings] = await db.insert(userPrivacySettings)
+        .values({
+          ...defaultSettings,
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[Storage] Privacy settings created successfully for user ${userId}`);
+      return newSettings;
+    } catch (error) {
+      console.error(`[Storage] Error creating user privacy settings:`, error);
+      throw new Error('Failed to create privacy settings');
+    }
+  }
+
+  async updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings> {
+    try {
+      console.log(`[Storage] Updating privacy settings for user ID: ${userId}`);
+      
+      // Make sure we're not trying to update the userId
+      const { userId: _, ...updateData } = settings;
+      
+      // Get existing settings to ensure they exist
+      const existingSettings = await this.getUserPrivacySettings(userId);
+      
+      if (!existingSettings) {
+        console.log(`[Storage] No existing privacy settings for user ${userId}, creating new settings`);
+        return await this.createUserPrivacySettings(userId, settings as InsertUserPrivacySettings);
+      }
+      
+      // Update the settings
+      const [updatedSettings] = await db.update(userPrivacySettings)
+        .set({
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(userPrivacySettings.userId, userId))
+        .returning();
+      
+      if (!updatedSettings) {
+        throw new Error('Failed to update privacy settings');
+      }
+      
+      console.log(`[Storage] Privacy settings updated successfully for user ${userId}`);
+      return updatedSettings;
+    } catch (error) {
+      console.error(`[Storage] Error updating user privacy settings:`, error);
+      throw new Error('Failed to update privacy settings');
     }
   }
 }

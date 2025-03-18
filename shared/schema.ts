@@ -346,6 +346,18 @@ export const userFeedback = pgTable("user_feedback", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// User Privacy Settings
+export const userPrivacySettings = pgTable("user_privacy_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  profileVisible: boolean("profile_visible").default(true).notNull(),
+  shareReadingHistory: boolean("share_reading_history").default(false).notNull(),
+  anonymousCommenting: boolean("anonymous_commenting").default(false).notNull(),
+  twoFactorAuthEnabled: boolean("two_factor_auth_enabled").default(false).notNull(),
+  loginNotifications: boolean("login_notifications").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 
 // Update login schema to use email instead of username
 export const loginSchema = z.object({
@@ -621,3 +633,11 @@ export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({
 });
 export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
 export type UserFeedback = typeof userFeedback.$inferSelect;
+
+// User Privacy Settings schema and types
+export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings).omit({ 
+  id: true, 
+  updatedAt: true 
+});
+export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettingsSchema>;
+export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;

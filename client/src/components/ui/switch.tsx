@@ -1,42 +1,68 @@
 import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
 import { cn } from "@/lib/utils"
 import "./switch.css"
 
 /**
- * Custom Switch component that exactly matches the "Remember me" toggle in auth.css
- * Dimensions: 40px width by 20px height
- * Thumb size: 16px by 16px
- * Positioning: 2px from edges
- * Translation: 20px on check
+ * Custom Switch component that matches the provided design
+ * Simple toggle switch based on standard HTML elements
  */
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <div className="inline-flex items-center">
-    <SwitchPrimitives.Root
-      className={cn(
-        "standardized-switch relative h-[20px] w-[40px] shrink-0 cursor-pointer rounded-[30px]",
-        "border-0 bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2",
-        "focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed",
-        "disabled:opacity-50 data-[state=checked]:bg-primary",
-        className
-      )}
-      {...props}
-      ref={ref}
-    >
-      <SwitchPrimitives.Thumb
-        className={cn(
-          "standardized-switch-thumb block h-[16px] w-[16px] rounded-full bg-background",
-          "pointer-events-none absolute left-[2px] top-[2px] transition-transform",
-          "data-[state=checked]:translate-x-5 shadow-lg ring-0"
-        )}
-      />
-    </SwitchPrimitives.Root>
-  </div>
-))
+interface SwitchProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  id?: string;
+  className?: string;
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+}
 
-Switch.displayName = SwitchPrimitives.Root.displayName
+const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
+  ({ className, checked, onCheckedChange, disabled, id = "switch-" + Math.random().toString(36).substr(2, 9), ...props }, ref) => {
+    // Handle the change event
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(event.target.checked);
+      }
+    };
+
+    return (
+      <label 
+        htmlFor={id} 
+        className={cn(
+          "relative inline-block w-11 h-6 cursor-pointer",
+          disabled && "opacity-50 pointer-events-none",
+          className
+        )}
+      >
+        <input 
+          type="checkbox"
+          id={id}
+          className="peer sr-only"
+          checked={checked}
+          onChange={handleChange}
+          disabled={disabled}
+          ref={ref}
+          {...props}
+        />
+        <span 
+          className={cn(
+            "absolute inset-0 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out",
+            "peer-checked:bg-primary dark:bg-neutral-700 dark:peer-checked:bg-primary",
+            "peer-disabled:opacity-50 peer-disabled:pointer-events-none"
+          )}
+          data-state={checked ? "checked" : "unchecked"}
+        />
+        <span 
+          className={cn(
+            "absolute top-1/2 start-0.5 -translate-y-1/2 size-5 bg-white rounded-full shadow-xs",
+            "transition-transform duration-200 ease-in-out peer-checked:translate-x-full",
+            "dark:bg-neutral-400 dark:peer-checked:bg-white"
+          )}
+          data-state={checked ? "checked" : "unchecked"}
+        />
+      </label>
+    );
+  }
+);
+
+Switch.displayName = "Switch";
 
 export { Switch }

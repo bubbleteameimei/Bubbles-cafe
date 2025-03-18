@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -7,8 +7,14 @@ import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info, Loader2, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { usePrivacySettings } from '@/hooks/use-privacy-settings';
+import { useAuth } from '@/hooks/use-auth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getPrivacyImpactLevel } from '@/utils/privacy-settings-utils';
+import { Progress } from '@/components/ui/progress';
 
 export default function PrivacySettingsPage() {
   const { 
@@ -17,6 +23,41 @@ export default function PrivacySettingsPage() {
     acceptAll, 
     acceptEssentialOnly 
   } = useCookieConsent();
+  
+  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { 
+    settings, 
+    isLoading, 
+    updateSetting, 
+    isUpdating,
+    isAuthReady: settingsAuthReady 
+  } = usePrivacySettings();
+
+  // Calculate privacy impact level based on current settings
+  const privacyImpactLevel = useMemo(() => {
+    if (isLoading || !settings) return 'medium';
+    return getPrivacyImpactLevel(settings);
+  }, [settings, isLoading]);
+
+  // Calculate privacy score as a percentage (higher = more private)
+  const privacyScore = useMemo(() => {
+    if (isLoading || !settings) return 50;
+    
+    let score = 0;
+    const totalFactors = 8; // Updated to match all the factors we're checking
+    
+    // Add points for each privacy-enhancing setting
+    if (!settings.profileVisible) score += 1;
+    if (!settings.shareReadingHistory) score += 1;
+    if (settings.anonymousCommenting) score += 1;
+    if (settings.twoFactorAuthEnabled) score += 1;
+    if (settings.loginNotifications) score += 1;
+    if (settings.dataRetentionPeriod <= 90) score += 1;
+    if (!settings.activityTracking) score += 1;
+    if (settings.emailNotifications) score += 1; // Notifications help with security alerts
+    
+    return Math.round((score / totalFactors) * 100);
+  }, [settings, isLoading]);
 
   // Function to toggle a specific cookie category
   const handleToggleCategory = (category: CookieCategory) => {
@@ -38,28 +79,277 @@ export default function PrivacySettingsPage() {
           <CardDescription>Manage your privacy preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="profile-visible">Public Profile Visibility</Label>
-            <Switch id="profile-visible" />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="reading-history">Share Reading History</Label>
-            <Switch id="reading-history" />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="anonymous-comments">Anonymous Commenting</Label>
-            <Switch id="anonymous-comments" />
-          </div>
-          
-          <div className="mt-6">
-            <Button variant="destructive">
-              Delete Account Data
-            </Button>
-          </div>
+          {isAuthReady && !isAuthenticated ? (
+            <div className="p-4 text-center">
+              <p className="text-muted-foreground mb-4">You must be logged in to manage your privacy settings.</p>
+              <Link href="/login">
+                <Button>Log in</Button>
+              </Link>
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="profile-visible">Public Profile Visibility</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Allow other users to view your profile including your reading history and authored stories</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="profile-visible" 
+                  checked={settings.profileVisible}
+                  disabled={isUpdating} 
+                  onCheckedChange={(checked) => updateSetting('profileVisible', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="reading-history">Share Reading History</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Allow the system to use your reading history for personalized recommendations</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="reading-history" 
+                  checked={settings.shareReadingHistory}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('shareReadingHistory', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="anonymous-comments">Anonymous Commenting</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Hide your identity when posting comments on stories</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="anonymous-comments" 
+                  checked={settings.anonymousCommenting}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('anonymousCommenting', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="two-factor-auth">Two-Factor Authentication</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Enable 2FA for additional account security</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="two-factor-auth" 
+                  checked={settings.twoFactorAuthEnabled}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('twoFactorAuthEnabled', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="login-notifications">Login Notifications</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Receive notifications when your account is accessed from a new device</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="login-notifications" 
+                  checked={settings.loginNotifications}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('loginNotifications', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="email-notifications">Email Notifications</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Receive email notifications about new stories, comments, and site features</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="email-notifications" 
+                  checked={settings.emailNotifications}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('emailNotifications', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="activity-tracking">Activity Tracking</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Allow tracking of your activity on the site for improved functionality</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch 
+                  id="activity-tracking" 
+                  checked={settings.activityTracking}
+                  disabled={isUpdating}
+                  onCheckedChange={(checked) => updateSetting('activityTracking', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="data-retention">Data Retention Period</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">How long we keep your activity data before automatically deleting it</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Select 
+                  value={settings.dataRetentionPeriod.toString()} 
+                  onValueChange={(value) => updateSetting('dataRetentionPeriod', parseInt(value))}
+                  disabled={isUpdating}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                    <SelectItem value="180">180 days</SelectItem>
+                    <SelectItem value="365">1 year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="mt-6">
+                <Button variant="destructive">
+                  Delete Account Data
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {isAuthReady && isAuthenticated && !isLoading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Privacy Impact Summary</CardTitle>
+            <CardDescription>Understanding how your settings affect your privacy</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Privacy Protection Score</h3>
+                <span className="text-sm font-medium">{privacyScore}%</span>
+              </div>
+              <Progress value={privacyScore} className="h-2" />
+              
+              <div className="flex gap-3 mt-4">
+                {privacyImpactLevel === 'low' ? (
+                  <div className="flex-1 rounded-md border p-3 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                    <div className="flex gap-2 items-center">
+                      <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <h4 className="font-medium text-green-700 dark:text-green-300">High Privacy</h4>
+                    </div>
+                    <p className="mt-2 text-sm text-green-700 dark:text-green-300">
+                      Your current settings prioritize privacy. You've made choices that minimize data collection and visibility.
+                    </p>
+                  </div>
+                ) : privacyImpactLevel === 'medium' ? (
+                  <div className="flex-1 rounded-md border p-3 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                    <div className="flex gap-2 items-center">
+                      <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <h4 className="font-medium text-amber-700 dark:text-amber-300">Balanced Privacy</h4>
+                    </div>
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+                      Your settings balance privacy with functionality. Consider reviewing settings to increase protection if desired.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 rounded-md border p-3 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+                    <div className="flex gap-2 items-center">
+                      <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      <h4 className="font-medium text-red-700 dark:text-red-300">Reduced Privacy</h4>
+                    </div>
+                    <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                      Your settings prioritize functionality over privacy. This increases data collection and visibility of your activity.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 text-sm text-muted-foreground">
+                <h4 className="font-medium mb-2">Privacy Tips</h4>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Enable two-factor authentication for extra account security</li>
+                  <li>Keep login notifications on to detect unauthorized access</li>
+                  <li>Anonymous commenting helps protect your identity</li>
+                  <li>Limiting data retention reduces long-term data exposure</li>
+                  <li>Disabling activity tracking prevents detailed usage analysis</li>
+                  <li>Be cautious with profile visibility to control who can see your information</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -90,7 +380,6 @@ export default function PrivacySettingsPage() {
                   <Switch 
                     checked={true} 
                     disabled 
-                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
               </AccordionTrigger>
@@ -109,7 +398,6 @@ export default function PrivacySettingsPage() {
                   <Switch 
                     checked={cookiePreferences.functional} 
                     onCheckedChange={() => handleToggleCategory('functional')}
-                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
               </AccordionTrigger>
@@ -129,7 +417,6 @@ export default function PrivacySettingsPage() {
                   <Switch 
                     checked={cookiePreferences.analytics} 
                     onCheckedChange={() => handleToggleCategory('analytics')}
-                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
               </AccordionTrigger>
@@ -149,7 +436,6 @@ export default function PrivacySettingsPage() {
                   <Switch 
                     checked={cookiePreferences.performance} 
                     onCheckedChange={() => handleToggleCategory('performance')}
-                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
               </AccordionTrigger>
@@ -169,7 +455,6 @@ export default function PrivacySettingsPage() {
                   <Switch 
                     checked={cookiePreferences.marketing} 
                     onCheckedChange={() => handleToggleCategory('marketing')}
-                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
               </AccordionTrigger>
@@ -207,9 +492,11 @@ export default function PrivacySettingsPage() {
             You can request a copy of your personal data in a machine-readable format.
             This includes your profile information, reading history, comments, and other data associated with your account.
           </p>
-          <Button>
-            Export My Data
-          </Button>
+          <Link href="/settings/data-export">
+            <Button>
+              Export My Data
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>

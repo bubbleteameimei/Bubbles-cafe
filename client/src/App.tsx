@@ -156,6 +156,7 @@ const AccessibilityTestPage = withSuspense(React.lazy(() => import('./pages/acce
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
+const DataExportPage = withSuspense(React.lazy(() => import('./pages/settings/data-export')));
 // Removed offline settings page import
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
@@ -284,6 +285,7 @@ const AppContent = () => {
                 <Route path="/settings/display" component={DisplaySettingsPage} />
                 <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
                 <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
+                <ProtectedRoute path="/settings/data-export" component={DataExportPage} />
 
                 <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
                 <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
