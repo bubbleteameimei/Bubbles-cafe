@@ -38,10 +38,11 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  noOutline?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, children, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, noOutline = false, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     
     // Extract text content for automatic aria-label when none provided
@@ -56,14 +57,28 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const hasRole = Boolean(props.role);
     const hasTabIndex = 'tabIndex' in props;
     
+    // Generate additional style for removing outlines if requested
+    const customStyle = noOutline ? {
+      outline: 'none',
+      boxShadow: 'none'
+    } : {};
+    
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }), 
+          noOutline ? 'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0' : ''
+        )}
         ref={ref}
         aria-label={!hasAriaLabel && childrenText ? childrenText : undefined}
         aria-busy={isLoading ? 'true' : undefined}
         role={!hasRole && asChild ? 'button' : undefined}
         tabIndex={!hasTabIndex && asChild ? 0 : undefined}
+        style={{
+          WebkitTapHighlightColor: noOutline ? 'transparent' : undefined,
+          ...customStyle,
+          ...props.style
+        }}
         {...props}
       >
         {children}

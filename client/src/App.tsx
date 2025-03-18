@@ -29,6 +29,8 @@ import { LoadingProvider } from './contexts/loading-context';
 import ApiLoader from './components/api-loader';
 // Import GlobalLoadingOverlay and Registry
 import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/GlobalLoadingOverlay';
+// Import global loading manager functions
+import { hideGlobalLoading } from '@/utils/global-loading-manager';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
@@ -77,6 +79,7 @@ const withSuspense = <P extends Record<string, any>>(
             <ApiLoader 
               isLoading={true}
               minimumLoadTime={800}
+              maximumLoadTime={3000} // 3 seconds maximum to prevent endless loading
               debug={true}
             >
               <div aria-hidden="true" className="h-[300px] w-full"></div>
@@ -298,13 +301,30 @@ const AppContent = () => {
                 <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
                 <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
 
-                {/* 404 Route */}
+                {/* 404 Route - Immediate error handling with no delay */}
                 <Route>
-                  {() => (
-                    <div className="flex min-h-[60vh] items-center justify-center">
-                      <h1 className="text-2xl">404 - Page Not Found</h1>
-                    </div>
-                  )}
+                  {(params) => {
+                    // Get navigate function from wouter
+                    const [_, setLocation] = useLocation();
+                    
+                    // Use useEffect for side effects and cleanup
+                    useEffect(() => {
+                      // Immediately hide any global loading indicators
+                      hideGlobalLoading();
+                      
+                      // Redirect instantly to the error page without any timeout
+                      setLocation('/errors/404');
+                      
+                      // Ensure proper cleanup on unmount
+                      return () => {
+                        // Force hide loading screen again on unmount to prevent stuck loading states
+                        hideGlobalLoading();
+                      };
+                    }, [setLocation]);
+                    
+                    // Return an empty fragment (more semantically correct than empty div)
+                    return <></>;
+                  }}
                 </Route>
               </Switch>
             </EnhancedPageTransition>

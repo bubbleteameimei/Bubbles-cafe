@@ -6,9 +6,10 @@ interface NotificationIconProps {
   notifications?: Notification[];
   onClick?: () => void;
   className?: string;
+  noOutline?: boolean;
 }
 
-export function NotificationIcon({ notifications = [], onClick, className = "" }: NotificationIconProps) {
+export function NotificationIcon({ notifications = [], onClick, className = "", noOutline = false }: NotificationIconProps) {
   const unreadCount = notifications.filter(notification => !notification.read).length;
 
   return (
@@ -18,7 +19,7 @@ export function NotificationIcon({ notifications = [], onClick, className = "" }
       onClick={onClick}
       className={`w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 relative touch-manipulation transition-all duration-150 ease-out active:scale-95 ${className}`}
       aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      noOutline={noOutline}
     >
       <span className="relative">
         <Bell className="h-4 w-4" strokeWidth={1.75} />

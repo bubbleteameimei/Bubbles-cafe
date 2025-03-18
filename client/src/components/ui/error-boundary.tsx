@@ -42,26 +42,30 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     };
 
+    // Only listen for popstate events instead of patching history API
+    // This is safer and won't interfere with routing libraries
     window.addEventListener('popstate', handleRouteChange);
-    const originalPushState = window.history.pushState;
-    const originalReplaceState = window.history.replaceState;
-
-    window.history.pushState = function(...args) {
-      const result = originalPushState.apply(this, args);
-      handleRouteChange();
-      return result;
-    };
-
-    window.history.replaceState = function(...args) {
-      const result = originalReplaceState.apply(this, args);
-      handleRouteChange();
-      return result;
-    };
+    
+    // Also check for hash changes which might indicate route changes
+    window.addEventListener('hashchange', handleRouteChange);
+    
+    // For single page applications, monitor URL changes directly
+    let lastPathname = window.location.pathname;
+    
+    // Set up a simple interval to check for URL changes
+    // This avoids patching the history API which can cause compatibility issues
+    const urlCheckInterval = setInterval(() => {
+      const currentPathname = window.location.pathname;
+      if (currentPathname !== lastPathname) {
+        lastPathname = currentPathname;
+        handleRouteChange();
+      }
+    }, 200);
 
     this.cleanup = () => {
       window.removeEventListener('popstate', handleRouteChange);
-      window.history.pushState = originalPushState;
-      window.history.replaceState = originalReplaceState;
+      window.removeEventListener('hashchange', handleRouteChange);
+      clearInterval(urlCheckInterval);
     };
   }
 
@@ -144,23 +148,73 @@ export class ErrorBoundary extends Component<Props, State> {
     const errorMessage = this.getErrorMessage(this.state.error!);
     const errorTime = this.state.errorTime ? this.formatTime(this.state.errorTime) : '';
 
+    // Apply our horror theme to error boundary
+    const errorStyles = `
+      @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+      
+      .horror-error-title {
+        font-family: 'Creepster', cursive !important;
+        letter-spacing: 0.05em;
+        text-shadow: 1px 1px 3px rgba(255, 0, 0, 0.4);
+      }
+      
+      .horror-error-text {
+        font-family: 'Special Elite', cursive !important;
+        letter-spacing: 0.02em;
+      }
+      
+      .horror-error-button {
+        font-family: 'Special Elite', cursive !important;
+        letter-spacing: 0.02em;
+        transition: all 0.3s ease;
+      }
+      
+      .horror-error-button:hover {
+        border-color: rgba(220, 38, 38, 0.5);
+        color: rgb(220, 38, 38);
+      }
+      
+      .horror-error-container {
+        background: linear-gradient(to bottom, rgba(10, 10, 10, 0.95), rgba(25, 25, 25, 0.98));
+        backdrop-filter: blur(6px);
+      }
+      
+      .horror-error-card {
+        border-color: rgba(220, 38, 38, 0.2);
+        background-color: rgba(20, 20, 20, 0.9);
+      }
+    `;
+    
+    // Add style element
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = errorStyles;
+    document.head.appendChild(styleElement);
+    
+    // Clean up when unmounted
+    setTimeout(() => {
+      if (document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
+    }, 100);
+
     return (
-      <div className="min-h-[50vh] flex items-center justify-center p-4 bg-background/50 backdrop-blur-sm">
-        <Alert variant="destructive" className="max-w-xl shadow-lg">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="text-lg font-semibold mb-2">
+      <div className="min-h-[50vh] flex items-center justify-center p-4 horror-error-container">
+        <Alert variant="destructive" className="max-w-xl shadow-lg horror-error-card border">
+          <AlertCircle className="h-5 w-5 text-red-500" />
+          <AlertTitle className="text-lg mb-2 horror-error-title text-red-500">
             Something went wrong
           </AlertTitle>
           <AlertDescription className="space-y-4">
-            <p className="text-sm opacity-90">
+            <p className="text-sm opacity-90 horror-error-text">
               {errorMessage}
             </p>
             {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
               <div className="space-y-2">
-                <p className="text-xs opacity-70">Error occurred at: {errorTime}</p>
+                <p className="text-xs opacity-70 horror-error-text">Error occurred at: {errorTime}</p>
                 <details className="text-xs">
-                  <summary className="cursor-pointer hover:opacity-80">Technical Details</summary>
-                  <pre className="mt-2 bg-black/10 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight whitespace-pre-wrap break-words">
+                  <summary className="cursor-pointer hover:opacity-80 horror-error-text">Technical Details</summary>
+                  <pre className="mt-2 bg-black/20 p-2 rounded overflow-auto max-h-40 text-[10px] leading-tight whitespace-pre-wrap break-words">
                     {this.state.error?.stack}
                     {"\n\nComponent Stack:"}
                     {this.state.errorInfo.componentStack}
@@ -172,7 +226,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <Button
                 variant="outline"
                 onClick={this.handleReload}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 horror-error-button"
               >
                 <RefreshCcw className="h-4 w-4" />
                 Try Again
@@ -180,7 +234,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <Button
                 variant="outline"
                 onClick={this.handleGoBack}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 horror-error-button"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Go Back
@@ -188,7 +242,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <Button
                 variant="outline"
                 onClick={this.handleGoHome}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 horror-error-button"
               >
                 <Home className="h-4 w-4" />
                 Go Home

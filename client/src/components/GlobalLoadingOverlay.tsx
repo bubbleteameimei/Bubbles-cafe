@@ -37,22 +37,43 @@ interface GlobalLoadingOverlayProps {
 export function GlobalLoadingOverlay({
   children,
   defaultMessage = 'Loading...',
-  minimumLoadingDuration = 800,
+  minimumLoadingDuration = 400, // Reduced from 800ms to 400ms for faster loading
   debugMode = false,
 }: GlobalLoadingOverlayProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [message, setMessage] = useState(defaultMessage);
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  const [maxLoadingTimeout, setMaxLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Show the loading overlay
   const showLoadingOverlay = useCallback(() => {
     if (debugMode) console.log('[GlobalLoading] Showing loading overlay');
     setLoadingStartTime(Date.now());
     setIsVisible(true);
-  }, [debugMode]);
+    
+    // Set a maximum time the loading screen can be shown (3 seconds)
+    // This prevents it from getting stuck indefinitely
+    if (maxLoadingTimeout) {
+      clearTimeout(maxLoadingTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      if (debugMode) console.log('[GlobalLoading] Maximum loading time reached, forcing hide');
+      setIsVisible(false);
+      setLoadingStartTime(null);
+    }, 3000); // Force hide after 3 seconds
+    
+    setMaxLoadingTimeout(timeout);
+  }, [debugMode, maxLoadingTimeout]);
 
   // Hide the loading overlay with minimum duration enforcement
   const hideLoadingOverlay = useCallback(() => {
+    // Clear the maximum loading timeout
+    if (maxLoadingTimeout) {
+      clearTimeout(maxLoadingTimeout);
+      setMaxLoadingTimeout(null);
+    }
+    
     if (!loadingStartTime) {
       setIsVisible(false);
       return;
@@ -67,19 +88,19 @@ export function GlobalLoadingOverlay({
 
     // Always remove the loading overlay, even if there's remaining time
     // This ensures we don't get stuck with a persistent overlay
-    if (remainingTime > 0) {
-      // Use a shorter delay to avoid excessive waiting
-      const adjustedDelay = Math.min(remainingTime, 200);
+    if (remainingTime > 0 && remainingTime < 1000) { // Only wait if less than 1 second remaining
+      // Use an even shorter delay to make loading feel faster
+      const adjustedDelay = Math.min(remainingTime, 100);
       setTimeout(() => {
         setIsVisible(false);
         setLoadingStartTime(null);
       }, adjustedDelay);
     } else {
-      // Immediately hide
+      // Immediately hide in most cases
       setIsVisible(false);
       setLoadingStartTime(null);
     }
-  }, [loadingStartTime, minimumLoadingDuration, debugMode]);
+  }, [loadingStartTime, minimumLoadingDuration, debugMode, maxLoadingTimeout]);
 
   // Update the loading message
   const setLoadingMessage = useCallback((newMessage: string) => {
@@ -89,10 +110,16 @@ export function GlobalLoadingOverlay({
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      // Clear the timeout to prevent memory leaks
+      if (maxLoadingTimeout) {
+        clearTimeout(maxLoadingTimeout);
+      }
+      
       setIsVisible(false);
       setLoadingStartTime(null);
+      setMaxLoadingTimeout(null);
     };
-  }, []);
+  }, [maxLoadingTimeout]);
 
   return (
     <GlobalLoadingContext.Provider

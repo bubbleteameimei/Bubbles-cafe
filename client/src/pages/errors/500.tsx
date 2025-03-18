@@ -1,11 +1,11 @@
 import React from 'react';
-import ErrorPage from '@/components/errors/ErrorPage';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function InternalServerError500() {
   return (
-    <ErrorPage
+    <SimplifiedErrorPage
       code="500"
-      title="INTERNAL SERVER ERROR"
+      title="Internal Server Error"
       message="What did you do? Something has gone wrong."
     />
   );

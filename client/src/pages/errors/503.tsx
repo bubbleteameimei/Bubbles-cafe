@@ -1,11 +1,11 @@
 import React from 'react';
-import ErrorPage from '@/components/errors/ErrorPage';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function ServiceUnavailable503() {
   return (
-    <ErrorPage
+    <SimplifiedErrorPage
       code="503"
-      title="SERVICE UNAVAILABLE"
+      title="Service Unavailable"
       message="The system is.. busy with something else"
     />
   );

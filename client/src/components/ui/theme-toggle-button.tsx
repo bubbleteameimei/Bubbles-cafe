@@ -4,9 +4,10 @@ import { Moon, Sun } from "lucide-react";
 
 interface ThemeToggleButtonProps {
   className?: string;
+  noOutline?: boolean;
 }
 
-export function ThemeToggleButton({ className = "" }: ThemeToggleButtonProps) {
+export function ThemeToggleButton({ className = "", noOutline = false }: ThemeToggleButtonProps) {
   const { toggleTheme, theme } = useTheme();
 
   return (
@@ -16,7 +17,7 @@ export function ThemeToggleButton({ className = "" }: ThemeToggleButtonProps) {
       onClick={toggleTheme}
       className={`w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 ${className}`}
       aria-label="Toggle theme"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      noOutline={noOutline}
     >
       <span className="relative">
         <Sun 

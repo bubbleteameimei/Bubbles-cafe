@@ -1,11 +1,11 @@
 import React from 'react';
-import ErrorPage from '@/components/errors/ErrorPage';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function Forbidden403() {
   return (
-    <ErrorPage
+    <SimplifiedErrorPage
       code="403"
-      title="FORBIDDEN"
+      title="Forbidden"
       message="It's locked for a reason. Leave!"
     />
   );

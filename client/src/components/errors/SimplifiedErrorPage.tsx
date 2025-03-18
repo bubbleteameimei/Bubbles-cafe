@@ -4,7 +4,45 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { useTheme } from '@/components/theme-provider';
 import SimpleGlitchText from './SimpleGlitchText';
-import { useLoading } from '@/hooks/use-loading';
+import { hideGlobalLoading } from '@/utils/global-loading-manager';
+
+// Add horror-themed font styling
+const horrorFontStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+  
+  .horror-title {
+    font-family: 'Creepster', cursive !important;
+    letter-spacing: 0.04em;
+    text-shadow: 2px 2px 4px rgba(255, 0, 0, 0.4);
+  }
+  
+  .horror-heading {
+    font-family: 'Special Elite', cursive !important;
+    letter-spacing: 0.05em;
+  }
+  
+  .horror-text {
+    font-family: 'Special Elite', cursive !important;
+    letter-spacing: 0.03em;
+  }
+  
+  .error-button {
+    font-family: 'Special Elite', cursive !important;
+    letter-spacing: 0.03em;
+    transition: all 0.3s ease;
+  }
+  
+  .error-button:hover {
+    color: #ff3333;
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+    transform: scale(1.05);
+  }
+  
+  .error-container {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.95));
+  }
+`;
 
 export interface ErrorPageProps {
   code: string;
@@ -15,73 +53,78 @@ export interface ErrorPageProps {
 export function SimplifiedErrorPage({ code, title, message }: ErrorPageProps) {
   const [_, setLocation] = useLocation();
   const { theme } = useTheme();
-  const { hideLoading } = useLoading();
   const isDarkMode = theme === 'dark';
 
   // Ensure loading screen is hidden when error page is displayed
   useEffect(() => {
-    hideLoading();
-  }, [hideLoading]);
+    hideGlobalLoading();
+    
+    // Add horror-themed font styles
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = horrorFontStyles;
+    document.head.appendChild(styleElement);
+    
+    // Clean up when component unmounts
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   const handleReturnHome = () => {
     setLocation('/');
   };
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center p-4 ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        {/* Simple noise background */}
-        <div className={`w-full h-full ${isDarkMode ? 'bg-opacity-10' : 'bg-opacity-5'}`} 
-          style={{backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")"}}
-        />
-      </div>
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-background/95 backdrop-blur-sm error-container">
+      {/* Subtle blood drip effect at the top */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-900 to-transparent opacity-80"></div>
       
       <motion.div
-        className="relative z-10 flex flex-col items-center justify-center p-8 max-w-md text-center"
+        className="relative z-10 flex flex-col items-center justify-center p-8 max-w-lg text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <h1 className={`text-8xl font-mono font-bold mb-6 ${isDarkMode ? 'text-red-500' : 'text-red-600'}`}>
-            <SimpleGlitchText text={code} />
+          <h1 className="text-8xl horror-title mb-8 text-red-500">
+            <SimpleGlitchText text={code} lineGlitch={false} />
           </h1>
         </motion.div>
         
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
         >
-          <h2 className={`text-3xl font-mono uppercase tracking-widest mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
-            <SimpleGlitchText text={title} />
+          <h2 className="text-3xl horror-heading mb-8 text-foreground">
+            <SimpleGlitchText text={title} lineGlitch={true} />
           </h2>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+          transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
         >
-          <p className={`text-xl mb-10 font-mono ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <SimpleGlitchText text={message} />
+          <p className="text-xl mb-12 horror-text text-muted-foreground max-w-md mx-auto leading-relaxed">
+            <SimpleGlitchText text={message} lineGlitch={true} />
           </p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
         >
           <Button
-            variant={isDarkMode ? "destructive" : "default"}
+            variant="outline"
             size="lg"
             onClick={handleReturnHome}
-            className="font-mono text-lg"
+            className="error-button text-base border-red-900/40 hover:border-red-800"
           >
             Return Home
           </Button>

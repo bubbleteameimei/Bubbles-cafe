@@ -45,6 +45,7 @@ export function PrimaryNav() {
           size="icon" 
           className="mr-2 md:hidden" 
           onClick={() => sidebar?.setOpenMobile(true)}
+          noOutline={true}
         >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>

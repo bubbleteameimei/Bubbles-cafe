@@ -1,62 +1,39 @@
+// Error page test script
+// This script navigates to a non-existent route to test the 404 error page
+
 import puppeteer from 'puppeteer';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-(async () => {
-  // Create screenshots directory if it doesn't exist
-  const screenshotsDir = path.join(__dirname, 'screenshots');
-  if (!fs.existsSync(screenshotsDir)) {
-    fs.mkdirSync(screenshotsDir);
-  }
-
-  // Launch browser
+async function testErrorPage() {
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   
+  const page = await browser.newPage();
+  console.log("Testing 404 error page...");
+  
   try {
-    const page = await browser.newPage();
+    // Navigate to a route that doesn't exist (should show 404)
+    await page.goto('http://localhost:3000/this-page-does-not-exist', {
+      waitUntil: 'networkidle2',
+      timeout: 10000
+    });
     
-    // Set viewport to a decent size
-    await page.setViewport({ width: 1280, height: 800 });
+    // Check for the 404 text
+    await page.waitForSelector('.glitch-text', { timeout: 5000 });
     
-    // Test all error pages in both light and dark modes
-    const errorPages = [403, 404, 429, 500, 503, 504];
-    const themes = ['dark', 'light'];
+    console.log("404 error page displayed successfully!");
     
-    for (const theme of themes) {
-      // Set theme using localStorage
-      await page.evaluateOnNewDocument((themeSetting) => {
-        localStorage.setItem('vite-ui-theme', themeSetting);
-      }, theme);
-      
-      for (const errorCode of errorPages) {
-        const url = `http://localhost:3000/errors/${errorCode}`;
-        
-        console.log(`Testing ${url} in ${theme} mode`);
-        
-        await page.goto(url, { waitUntil: 'networkidle0' });
-        
-        // Allow animations to settle
-        await page.waitForTimeout(1000);
-        
-        // Take screenshot
-        await page.screenshot({
-          path: path.join(screenshotsDir, `error-${errorCode}-${theme}.png`),
-          fullPage: true
-        });
-        
-        console.log(`Screenshot saved for ${errorCode} in ${theme} mode`);
-      }
-    }
+    // Take a screenshot for verification
+    await page.screenshot({ path: 'screenshots/404-error-page.png' });
+    
+    // Wait a moment to see the page
+    await new Promise(resolve => setTimeout(resolve, 3000));
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error during test:', error);
   } finally {
     await browser.close();
   }
-})();
+}
+
+testErrorPage();

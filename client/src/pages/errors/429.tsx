@@ -1,12 +1,12 @@
 import React from 'react';
-import ErrorPage from '@/components/errors/ErrorPage';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function TooManyRequests429() {
   return (
-    <ErrorPage
+    <SimplifiedErrorPage
       code="429"
-      title="TOO MANY REQUESTS"
-      message="You're asking for too much!"
+      title="Too Many Requests"
+      message="You're asking for too much"
     />
   );
 }

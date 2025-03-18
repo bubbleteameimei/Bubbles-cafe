@@ -6,7 +6,7 @@ import { memo, useEffect } from "react";
  * 
  * This component applies additional techniques to ensure it appears above all other UI elements:
  * 1. Uses maximum z-index (999999)
- * 2. Applies backdrop blur for a modern effect
+ * 2. Uses clean black background for a sophisticated look
  * 3. Uses consistent animation pattern across all loading states
  * 4. Temporarily disables scrolling while loading is shown
  * 5. Includes proper ARIA attributes for accessibility
@@ -27,7 +27,7 @@ export const LoadingScreen = memo(() => {
 
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50" 
+      className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50" 
       style={{ 
         position: 'fixed', 
         top: 0, 
@@ -40,8 +40,7 @@ export const LoadingScreen = memo(() => {
         padding: 0,
         isolation: 'isolate',
         zIndex: 9999999,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(8px)'
+        backgroundColor: '#000000',
       }}
       aria-live="polite"
       role="status"

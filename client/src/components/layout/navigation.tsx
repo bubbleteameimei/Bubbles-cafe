@@ -42,8 +42,8 @@ export default function Navigation() {
                 size="icon"
                 className="mr-2 lg:hidden relative overflow-hidden touch-manipulation"
                 title="Toggle navigation menu"
+                noOutline={true}
                 style={{ 
-                  WebkitTapHighlightColor: 'transparent',
                   transition: 'all 0.15s ease-out'
                 }}
               >
@@ -102,7 +102,7 @@ export default function Navigation() {
 
         {/* Right-side Actions */}
         <div className="flex items-center space-x-5">
-          <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} />
+          <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} noOutline={true} />
           <ThemeToggleButton />
           {!user ? (
             <Button
