@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';
-import { AlertTriangle, Info, Loader2, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Download, Info, Lock, Loader, Shield, ShieldAlert, ShieldCheck, User, Cookie } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrivacySettings } from '@/hooks/use-privacy-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -88,7 +88,7 @@ export default function PrivacySettingsPage() {
             </div>
           ) : isLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <>
@@ -471,13 +471,20 @@ export default function PrivacySettingsPage() {
               View Cookie Policy
             </Link>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleClearAllCookies}>
               Clear All Cookies
             </Button>
             <Button onClick={acceptAll}>
               Accept All Cookies
             </Button>
+            <Link href="/settings/cookie-management">
+              <Button variant="link" className="flex items-center gap-1">
+                <Cookie size={16} />
+                Advanced Cookie Management
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
           </div>
         </CardFooter>
       </Card>

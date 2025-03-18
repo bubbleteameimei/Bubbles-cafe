@@ -188,3 +188,23 @@ export function clearNonEssentialCookies(): void {
     }
   }
 }
+
+/**
+ * Get all cookies as an object
+ * @returns Object with all cookies
+ */
+export function getAllCookies(): Record<string, string> {
+  const result: Record<string, string> = {};
+  const cookies = document.cookie.split(';');
+  
+  for (const cookie of cookies) {
+    if (cookie.trim()) {
+      const [cookieName, cookieValue] = cookie.trim().split('=');
+      const name = decodeURIComponent(cookieName.trim());
+      const value = cookieValue ? decodeURIComponent(cookieValue) : '';
+      result[name] = value;
+    }
+  }
+  
+  return result;
+}

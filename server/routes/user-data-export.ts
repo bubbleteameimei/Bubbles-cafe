@@ -28,6 +28,60 @@ const isAuthorizedForUserData = (req: Request, res: Response, next: NextFunction
  */
 export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
   /**
+   * GET /api/user/profile-data
+   * Get user profile data for export
+   */
+  app.get('/api/user/profile-data', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      
+      // Get user details
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get privacy settings
+      let privacySettings = await storage.getUserPrivacySettings(userId);
+      
+      // If no privacy settings exist, create default ones
+      if (!privacySettings) {
+        const defaultSettings = {
+          userId,
+          profileVisible: true,
+          shareReadingHistory: false,
+          anonymousCommenting: false,
+          twoFactorAuthEnabled: false,
+          loginNotifications: true,
+        };
+        
+        privacySettings = await storage.createUserPrivacySettings(
+          userId, 
+          defaultSettings
+        );
+      }
+      
+      // Format user data for export (excluding sensitive fields)
+      const profileData = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        displayName: user.displayName || user.username,
+        bio: user.bio || '',
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin || user.createdAt,
+        privacySettings
+      };
+      
+      res.json(profileData);
+    } catch (error) {
+      console.error('Error fetching user profile data:', error);
+      res.status(500).json({ message: 'Failed to fetch profile data' });
+    }
+  });
+
+  /**
    * GET /api/user/export-info
    * Get user export information with counts of available data
    */
@@ -138,6 +192,35 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
     } catch (error) {
       console.error('Error fetching user activity:', error);
       res.status(500).json({ message: 'Failed to fetch user activity' });
+    }
+  });
+
+  /**
+   * GET /api/user/bookmarks
+   * Get user bookmarks for export
+   */
+  app.get('/api/user/bookmarks', isAuthorizedForUserData, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.user!.id;
+      
+      // Get user bookmarks with associated posts
+      const bookmarks = await storage.getUserBookmarks(userId);
+      
+      // Format for export
+      const processedBookmarks = bookmarks.map(bookmark => ({
+        id: bookmark.id,
+        postId: bookmark.postId,
+        postTitle: bookmark.post?.title || 'Unknown Post',
+        createdAt: bookmark.createdAt,
+        notes: bookmark.notes || '',
+        tags: bookmark.tags || [],
+        folder: bookmark.folder || 'Default'
+      }));
+      
+      res.json(processedBookmarks);
+    } catch (error) {
+      console.error('Error fetching user bookmarks:', error);
+      res.status(500).json({ message: 'Failed to fetch bookmarks' });
     }
   });
 }

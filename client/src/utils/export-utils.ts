@@ -61,12 +61,18 @@ export function exportAsCsv(userData: UserDataExport, filename?: string): void {
   // Convert privacy settings to CSV rows
   const settingsRows = Object.entries(userData.privacySettings || {})
     .map(([key, value]) => `"Privacy:${key}","${String(value).replace(/"/g, '""')}"`);
+    
+  // Convert activities to CSV rows (if included)
+  const activityRows = (userData.activities || []).map((activity, index) => 
+    `"Activity:${index + 1}","${JSON.stringify(activity).replace(/"/g, '""')}"`
+  );
   
   // Combine all rows with headers
   const csvContent = [
     '"Category","Value"',
     ...profileRows,
-    ...settingsRows
+    ...settingsRows,
+    ...activityRows
   ].join('\n');
   
   // Create CSV blob

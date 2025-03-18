@@ -1,20 +1,31 @@
 /**
  * WordPress API Integration
  * 
- * This module provides a clean interface for interacting with the WordPress API,
- * including proper error handling and data validation.
+ * This module provides a robust interface for interacting with the WordPress API,
+ * with comprehensive error handling, validation, and fallback mechanisms.
+ * 
+ * Features:
+ * - Enhanced error detection and handling
+ * - Local storage cache with fallback support 
+ * - Automatic retries for intermittent failures
+ * - Rich logging for debugging
  */
 
 import { z } from 'zod';
 import { ErrorCategory, ErrorSeverity, handleError, handleValidationError } from './error-handler';
 
-// Base URL for WordPress API
-const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://bubbleteameimei.wordpress.com/wp-json/wp/v2';
+// Base URL for WordPress API - properly formatted with wp-json path
+const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
 // Fallback to server API if WordPress is unavailable
 const SERVER_FALLBACK_API = '/api/posts';
 
-// WordPress post schema for validation
+// Cache configuration
+const CACHE_KEY_PREFIX = 'wp_cache_';
+const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const LAST_ERROR_KEY = 'wp_last_error';
+
+// WordPress post schema with relaxed validation - allows more flexibility for parsing
 export const wordpressPostSchema = z.object({
   id: z.number(),
   date: z.string(),
@@ -38,7 +49,7 @@ export const wordpressPostSchema = z.object({
   categories: z.array(z.number()).optional(),
   tags: z.array(z.number()).optional(),
   meta: z.record(z.any()).optional()
-});
+}).passthrough(); // Allow additional properties
 
 // WordPress post type
 export type WordPressPost = z.infer<typeof wordpressPostSchema>;
@@ -52,12 +63,96 @@ export interface FetchPostsOptions {
   search?: string;
   slug?: string;
   includeContent?: boolean;
+  skipCache?: boolean;
+  maxRetries?: number;
+}
+
+// Cache management utilities
+const cacheUtils = {
+  getCacheKey(options: FetchPostsOptions): string {
+    // Create a unique key based on request options
+    const { page = 1, perPage = 10, categories, tags, search, slug } = options;
+    const optionsKey = JSON.stringify({ page, perPage, categories, tags, search, slug });
+    return `${CACHE_KEY_PREFIX}${btoa(optionsKey)}`;
+  },
+  
+  saveToCache(key: string, data: any): void {
+    try {
+      const cacheItem = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(key, JSON.stringify(cacheItem));
+      console.log(`[WordPress] Cache saved: ${key}`);
+    } catch (error) {
+      console.warn(`[WordPress] Failed to save cache: ${error}`);
+    }
+  },
+  
+  getFromCache(key: string): any {
+    try {
+      const item = localStorage.getItem(key);
+      if (!item) return null;
+      
+      const cacheItem = JSON.parse(item);
+      const now = Date.now();
+      
+      // Check if cache is still valid
+      if (now - cacheItem.timestamp > CACHE_DURATION_MS) {
+        console.log(`[WordPress] Cache expired: ${key}`);
+        localStorage.removeItem(key);
+        return null;
+      }
+      
+      console.log(`[WordPress] Cache hit: ${key}`);
+      return cacheItem.data;
+    } catch (error) {
+      console.warn(`[WordPress] Failed to retrieve cache: ${error}`);
+      return null;
+    }
+  },
+  
+  saveError(error: any): void {
+    try {
+      localStorage.setItem(LAST_ERROR_KEY, JSON.stringify({
+        message: error?.message || 'Unknown error',
+        timestamp: Date.now(),
+        details: error
+      }));
+    } catch (e) {
+      console.error(`[WordPress] Failed to save error details: ${e}`);
+    }
+  },
+  
+  getLastError(): any {
+    try {
+      const data = localStorage.getItem(LAST_ERROR_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+};
+
+/**
+ * Safely parse JSON with extensive error handling
+ */
+function safeJsonParse(text: string): any {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error(`[WordPress] JSON parse error: ${error}`);
+    console.log(`[WordPress] Problematic JSON content: ${text.substring(0, 100)}...`);
+    throw new Error('Invalid JSON response');
+  }
 }
 
 /**
- * Fetch posts from WordPress API with validation and error handling
+ * Fetch posts from WordPress API with enhanced reliability
  */
 export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
+  console.log(`[WordPress] Fetching posts with options:`, options);
+  
   const {
     page = 1,
     perPage = 10,
@@ -65,112 +160,309 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     tags,
     search,
     slug,
-    includeContent = true
+    includeContent = true,
+    skipCache = false,
+    maxRetries = 2
   } = options;
 
-  try {
-    // Build query parameters
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
-      _embed: 'true', // Include featured images and author info
-    });
-
-    // Add optional filters
-    if (categories?.length) {
-      params.append('categories', categories.join(','));
-    }
-
-    if (tags?.length) {
-      params.append('tags', tags.join(','));
-    }
-
-    if (search) {
-      params.append('search', search);
-    }
-
-    if (slug) {
-      params.append('slug', slug);
-    }
-
-    // Set content fields based on whether we need the full content
-    if (!includeContent) {
-      params.append('_fields', 'id,date,title,excerpt,slug,featured_media,_embedded');
-    }
-
-    // Fetch data from WordPress API
-    const response = await fetch(`${WORDPRESS_API_BASE}/posts?${params.toString()}`);
-
-    if (!response.ok) {
-      throw {
-        message: `WordPress API error: ${response.statusText}`,
-        status: response.status
-      };
-    }
-
-    // Parse and validate response data
-    const postsData = await response.json();
+  // Check cache first (unless explicitly skipped)
+  if (!skipCache) {
+    const cacheKey = cacheUtils.getCacheKey(options);
+    const cachedResult = cacheUtils.getFromCache(cacheKey);
     
-    // Check if we have an array of posts
-    if (!Array.isArray(postsData)) {
-      throw new Error('Invalid response format from WordPress API');
+    if (cachedResult) {
+      console.log(`[WordPress] Using cached data for page ${page}`);
+      return cachedResult;
     }
+  }
 
-    // Validate each post using zod
-    const validatedPosts = postsData.map(post => {
-      const result = wordpressPostSchema.safeParse(post);
-      
-      if (!result.success) {
-        // Log validation errors but continue with partial data
-        handleValidationError(result.error);
-        
-        // Return a basic valid structure with available data
-        return {
-          id: post.id || 0,
-          date: post.date || new Date().toISOString(),
-          slug: post.slug || 'untitled',
-          title: { rendered: post.title?.rendered || 'Untitled' },
-          content: { rendered: post.content?.rendered || 'Content unavailable' },
-          excerpt: { rendered: post.excerpt?.rendered || 'No excerpt available' }
-        };
+  // If we had a previous fatal error within the last 5 minutes, use fallback immediately
+  const lastErrorObj = cacheUtils.getLastError();
+  const isFatalErrorRecent = lastErrorObj && 
+                            (Date.now() - lastErrorObj.timestamp < 5 * 60 * 1000) && 
+                            lastErrorObj.message.includes('fatal');
+                            
+  if (isFatalErrorRecent) {
+    console.log(`[WordPress] Skipping API call due to recent fatal error: ${lastErrorObj.message}`);
+    return await fallbackToServerAPI(options);
+  }
+  
+  // Implement retry logic
+  let retryCount = 0;
+  let currentError: any = null;
+  
+  while (retryCount <= maxRetries) {
+    try {
+      if (retryCount > 0) {
+        console.log(`[WordPress] Retry attempt ${retryCount}/${maxRetries}`);
       }
       
-      return result.data;
-    });
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        per_page: perPage.toString(),
+      });
+      
+      // Add optional filters
+      if (categories?.length) {
+        params.append('categories', categories.join(','));
+      }
+      
+      if (tags?.length) {
+        params.append('tags', tags.join(','));
+      }
+      
+      if (search) {
+        params.append('search', search);
+      }
+      
+      if (slug) {
+        params.append('slug', slug);
+      }
+      
+      // Set content fields based on whether we need the full content
+      if (!includeContent) {
+        params.append('_fields', 'id,date,title,excerpt,slug,featured_media');
+      }
+      
+      // Construct the API URL
+      const apiUrl = `${WORDPRESS_API_BASE}/posts?${params.toString()}`;
+      console.log(`[WordPress] Request URL: ${apiUrl}`);
+      
+      // Set up timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        // Make the fetch request with timeout
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        // Clear the timeout since request completed
+        clearTimeout(timeoutId);
+        
+        // Check for HTTP errors
+        if (!response.ok) {
+          console.error(`[WordPress] HTTP Error: ${response.status} ${response.statusText}`);
+          throw new Error(`API returned status ${response.status}`);
+        }
+        
+        // Ensure we got JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error(`[WordPress] Wrong content type: ${contentType}`);
+          throw new Error(`API returned non-JSON content type: ${contentType}`);
+        }
+        
+        // Parse the response
+        const responseText = await response.text();
+        
+        // Log the first part of the response for debugging
+        console.log(`[WordPress] Response preview: ${responseText.substring(0, 100)}...`);
+        
+        // Parse JSON with error handling
+        const postsData = safeJsonParse(responseText);
+        
+        // Verify array structure
+        if (!Array.isArray(postsData)) {
+          console.error(`[WordPress] Invalid response format (not an array):`, typeof postsData);
+          throw new Error('API returned non-array response');
+        }
+        
+        console.log(`[WordPress] Successfully fetched ${postsData.length} posts`);
+        
+        // Process and validate each post
+        const validatedPosts = postsData.map(post => {
+          // Use safe parsing to handle validation errors gracefully
+          const result = wordpressPostSchema.safeParse(post);
+          
+          if (!result.success) {
+            // Log validation errors but don't fail
+            console.warn(`[WordPress] Post validation warnings for post ID ${post.id}:`, 
+              result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; '));
+            
+            // Build a valid structure from available data
+            return {
+              id: post.id || Math.floor(Math.random() * 10000),
+              date: post.date || new Date().toISOString(),
+              slug: post.slug || `post-${post.id || Date.now()}`,
+              title: { 
+                rendered: post.title?.rendered || 'Untitled Post' 
+              },
+              content: { 
+                rendered: post.content?.rendered || 'Content unavailable' 
+              },
+              excerpt: { 
+                rendered: post.excerpt?.rendered || 'No excerpt available' 
+              }
+            };
+          }
+          
+          return result.data;
+        });
+        
+        // Construct result object with pagination info
+        const result = {
+          posts: validatedPosts,
+          totalPages: parseInt(response.headers.get('X-WP-TotalPages') || '1'),
+          total: parseInt(response.headers.get('X-WP-Total') || validatedPosts.length.toString())
+        };
+        
+        // Cache successful results
+        const cacheKey = cacheUtils.getCacheKey(options);
+        cacheUtils.saveToCache(cacheKey, result);
+        
+        return result;
+      } catch (fetchError: any) {
+        // Clear timeout if fetch fails
+        clearTimeout(timeoutId);
+        
+        // Handle timeout errors specifically
+        if (fetchError.name === 'AbortError') {
+          console.error(`[WordPress] Request timed out`);
+          throw new Error('API request timed out');
+        }
+        
+        // Re-throw the error for the retry logic
+        throw fetchError;
+      }
+    } catch (error: any) {
+      currentError = error;
+      console.error(`[WordPress] Error attempt ${retryCount}:`, error);
+      
+      // Save error details for future reference
+      cacheUtils.saveError(error);
+      
+      // Increment retry counter
+      retryCount++;
+      
+      // If we have retries left, wait before trying again (exponential backoff)
+      if (retryCount <= maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 8000);
+        console.log(`[WordPress] Waiting ${delay}ms before retry`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  // If we've exhausted retries, try the server API as fallback
+  console.log(`[WordPress] Exhausted ${maxRetries} retries, using fallback`);
+  return await fallbackToServerAPI(options, currentError);
+}
 
-    return {
-      posts: validatedPosts,
-      totalPages: parseInt(response.headers.get('X-WP-TotalPages') || '1'),
-      total: parseInt(response.headers.get('X-WP-Total') || '0')
-    };
-  } catch (error) {
-    // Handle and format the error
-    const formattedError = handleError(error, {
-      category: ErrorCategory.WORDPRESS,
-      showToast: true
-    });
-
-    // Return empty result with error information
+/**
+ * Attempt to fetch posts from the server API as a fallback
+ */
+async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
+  console.log(`[WordPress] Attempting fallback to server API`);
+  
+  try {
+    const { page = 1, perPage = 10 } = options;
+    
+    // Adjust fallback URL based on options
+    let fallbackUrl = `${SERVER_FALLBACK_API}?page=${page}&limit=${perPage}`;
+    
+    // Add slug filter if provided
+    if (options.slug) {
+      fallbackUrl = `${SERVER_FALLBACK_API}/${options.slug}`;
+    }
+    
+    console.log(`[WordPress] Fallback URL: ${fallbackUrl}`);
+    
+    // Fetch from server API
+    const response = await fetch(fallbackUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Server API returned status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Format response in WordPress-compatible format
+    let formattedResult;
+    
+    if (options.slug) {
+      // Single post response
+      const post: any = data;
+      formattedResult = {
+        posts: [{
+          id: post.id,
+          date: post.createdAt,
+          slug: post.slug,
+          title: { rendered: post.title },
+          content: { rendered: post.content },
+          excerpt: { rendered: post.excerpt || post.content.substring(0, 150) + '...' }
+        }],
+        totalPages: 1,
+        total: 1,
+        fromFallback: true
+      };
+    } else {
+      // Multiple posts response
+      const posts = Array.isArray(data.posts) ? data.posts : [];
+      formattedResult = {
+        posts: posts.map((post: any) => ({
+          id: post.id,
+          date: post.createdAt,
+          slug: post.slug,
+          title: { rendered: post.title },
+          content: { rendered: post.content },
+          excerpt: { rendered: post.excerpt || post.content.substring(0, 150) + '...' }
+        })),
+        totalPages: data.hasMore ? page + 1 : page,
+        total: posts.length,
+        fromFallback: true
+      };
+    }
+    
+    console.log(`[WordPress] Fallback successful, retrieved ${formattedResult.posts.length} posts`);
+    return formattedResult;
+  } catch (fallbackError) {
+    // Log both the original and fallback errors
+    console.error('[WordPress] Both primary and fallback fetches failed:');
+    console.error('- Original error:', error);
+    console.error('- Fallback error:', fallbackError);
+    
+    // Format an empty response with error information
     return {
       posts: [],
       totalPages: 0,
       total: 0,
-      error: formattedError
+      error: handleError(error || fallbackError, {
+        category: ErrorCategory.WORDPRESS,
+        severity: ErrorSeverity.ERROR,
+        showToast: true
+      }),
+      fromFallback: true
     };
   }
 }
 
 /**
- * Fetch a single post by slug
+ * Fetch a single post by slug with enhanced error handling
  */
 export async function fetchWordPressPostBySlug(slug: string) {
+  console.log(`[WordPress] Fetching post with slug: ${slug}`);
+  
   try {
-    const result = await fetchWordPressPosts({ slug, perPage: 1 });
+    const result = await fetchWordPressPosts({ 
+      slug, 
+      perPage: 1,
+      maxRetries: 1 // Reduced retries for single post lookups
+    });
     
-    if (result.posts.length === 0) {
+    if (!result.posts || result.posts.length === 0) {
+      console.error(`[WordPress] Post not found: ${slug}`);
       throw new Error(`Post not found with slug: ${slug}`);
     }
     
+    console.log(`[WordPress] Successfully retrieved post: ${slug}`);
     return result.posts[0];
   } catch (error) {
     // Handle and format the error
@@ -193,6 +485,8 @@ export function processWordPressContent(content: string): string {
   
   // Replace WordPress-specific elements with standard HTML
   let processed = content
+    // Remove WordPress block markers
+    .replace(/<!-- wp:[^>]*?-->([\s\S]*?)<!-- \/wp:[^>]*?-->/g, '$1')
     // Fix WordPress captions
     .replace(/\[caption.*?\](.*?)\[\/caption\]/g, '<figure>$1</figure>')
     // Handle WordPress galleries
@@ -257,16 +551,30 @@ export function getReadingTime(content: string): number {
  * Returns true if the API is reachable, false otherwise
  */
 export async function checkWordPressApiStatus(): Promise<boolean> {
+  console.log('[WordPress] Checking API status');
+  
   try {
+    // Use a controller to implement timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     const response = await fetch(`${WORDPRESS_API_BASE}/posts?per_page=1`, {
       method: 'HEAD',
       headers: {
         'Accept': 'application/json'
-      }
+      },
+      signal: controller.signal
     });
     
-    return response.ok;
+    clearTimeout(timeoutId);
+    
+    const isAvailable = response.ok;
+    console.log(`[WordPress] API status check: ${isAvailable ? 'Available' : 'Unavailable'}`);
+    
+    return isAvailable;
   } catch (error) {
+    console.warn('[WordPress] API status check failed:', error);
+    
     handleError(error, {
       category: ErrorCategory.NETWORK,
       silent: true // Don't show toast for status check
@@ -274,4 +582,22 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
     
     return false;
   }
+}
+
+/**
+ * Preload WordPress posts in the background for faster initial page load
+ */
+export function preloadWordPressPosts(): void {
+  // Start a background fetch with low priority
+  setTimeout(() => {
+    console.log('[WordPress] Starting background preload of posts');
+    
+    fetchWordPressPosts({ perPage: 5, skipCache: true })
+      .then(result => {
+        console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
+      })
+      .catch(error => {
+        console.warn('[WordPress] Preload failed:', error);
+      });
+  }, 1000);
 }

@@ -8,7 +8,8 @@ import {
   CookiePreferences,
   CookieCategory,
   isCategoryAllowed,
-  hasConsentChoice
+  hasConsentChoice,
+  getAllCookies
 } from '@/lib/cookie-manager';
 
 interface CookieConsentContextType {
@@ -25,6 +26,9 @@ interface CookieConsentContextType {
   
   // Methods to check status
   isCategoryAllowed: (category: CookieCategory) => boolean;
+  
+  // Browser cookie access
+  allCookies: Record<string, string>;
   
   // UI state methods
   openPreferencesModal: () => void;
@@ -49,6 +53,7 @@ const defaultContextValue: CookieConsentContextType = {
   toggleCategory: () => {},
   updatePreferences: () => {},
   isCategoryAllowed: () => true,
+  allCookies: {},
   openPreferencesModal: () => {},
   closePreferencesModal: () => {},
   isPreferencesModalOpen: false
@@ -172,6 +177,9 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
     setIsPreferencesModalOpen(false);
   };
   
+  // Get the current cookies from the browser
+  const cookies = getAllCookies();
+  
   const value: CookieConsentContextType = {
     consentGiven: hasConsentChoice(),
     showConsentBanner,
@@ -181,6 +189,7 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
     toggleCategory,
     updatePreferences,
     isCategoryAllowed,
+    allCookies: cookies,
     openPreferencesModal,
     closePreferencesModal,
     isPreferencesModalOpen

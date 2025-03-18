@@ -18,6 +18,7 @@ import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
+import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -117,6 +118,9 @@ async function startServer() {
       // Register user data export routes
       registerUserDataExportRoutes(app, storage);
       
+      // Register privacy settings routes
+      registerPrivacySettingsRoutes(app, storage);
+      
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
       
@@ -135,6 +139,9 @@ async function startServer() {
       
       // Register user data export routes
       registerUserDataExportRoutes(app, storage);
+      
+      // Register privacy settings routes
+      registerPrivacySettingsRoutes(app, storage);
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);

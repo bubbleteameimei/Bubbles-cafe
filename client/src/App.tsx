@@ -31,6 +31,8 @@ import ApiLoader from './components/api-loader';
 import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/GlobalLoadingOverlay';
 // Import global loading manager functions
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
+// Import WordPress API preload function for enhanced reliability
+import { preloadWordPressPosts, checkWordPressApiStatus } from './lib/wordpress-api';
 
 
 
@@ -157,6 +159,7 @@ const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settin
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
 const DataExportPage = withSuspense(React.lazy(() => import('./pages/settings/data-export')));
+const CookieManagementPage = withSuspense(React.lazy(() => import('./pages/settings/cookie-management')));
 // Removed offline settings page import
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
@@ -286,6 +289,7 @@ const AppContent = () => {
                 <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
                 <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
                 <ProtectedRoute path="/settings/data-export" component={DataExportPage} />
+                <ProtectedRoute path="/settings/cookie-management" component={CookieManagementPage} />
 
                 <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
                 <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
@@ -331,6 +335,25 @@ const AppContent = () => {
 
 function App() {
   usePerformanceMonitoring();
+
+  // Preload WordPress posts for reliability and faster loading
+  useEffect(() => {
+    // Check WordPress API status
+    checkWordPressApiStatus()
+      .then(isAvailable => {
+        console.log(`[App] WordPress API status: ${isAvailable ? 'Available' : 'Unavailable'}`);
+        
+        if (isAvailable) {
+          // If API is available, start preloading posts
+          preloadWordPressPosts();
+        } else {
+          console.warn('[App] WordPress API is unavailable, skipping preload');
+        }
+      })
+      .catch(error => {
+        console.error('[App] Error checking WordPress API status:', error);
+      });
+  }, []);
 
   // Detect touch capability and add appropriate class to body
   useEffect(() => {

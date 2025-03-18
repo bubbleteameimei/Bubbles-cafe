@@ -4,7 +4,10 @@ import { InsertUserPrivacySettings } from '../../shared/schema';
 
 // Authentication middleware
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session?.user) {
+  // Log authentication debugging info
+  console.log('[Privacy Settings] Auth check - Session:', !!req.session, 'User:', !!req.session?.user);
+  
+  if (!req.session || !req.session.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
