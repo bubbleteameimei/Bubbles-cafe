@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { useGlobalLoadingOverlay } from './GlobalLoadingOverlay';
@@ -33,20 +33,33 @@ export function EnhancedPageTransition({
   const [currentLocation, setCurrentLocation] = useState(location);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const globalLoading = useGlobalLoadingOverlay();
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialRenderRef = useRef(true);
 
   // Handle location changes and trigger transitions
   useEffect(() => {
-    if (location !== currentLocation) {
+    // Skip the initial render to prevent showing loading on first page load
+    if (initialRenderRef.current) {
+      initialRenderRef.current = false;
+      setCurrentLocation(location);
+      return;
+    }
+    
+    if (location !== currentLocation && !isTransitioning) {
+      setIsTransitioning(true);
+      
+      // Show loading screen for page transitions
       if (enableLoadingScreen && globalLoading) {
-        // Show loading screen for page transitions
         globalLoading.setLoadingMessage(loadingMessage);
         globalLoading.showLoadingOverlay();
       }
 
-      setIsTransitioning(true);
-
       // After the animation out, update current location
-      const timeout = setTimeout(() => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      
+      transitionTimeoutRef.current = setTimeout(() => {
         setCurrentLocation(location);
         setIsTransitioning(false);
         
@@ -55,10 +68,15 @@ export function EnhancedPageTransition({
           globalLoading.hideLoadingOverlay();
         }
       }, disableAnimation ? 0 : transitionDuration);
-
-      return () => clearTimeout(timeout);
     }
-  }, [location, currentLocation, transitionDuration, disableAnimation, enableLoadingScreen, globalLoading, loadingMessage]);
+    
+    // Clean up timeout on unmount
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [location, currentLocation, transitionDuration, disableAnimation, enableLoadingScreen, globalLoading, loadingMessage, isTransitioning]);
 
   // Simple render without animations if animations are disabled
   if (disableAnimation) {

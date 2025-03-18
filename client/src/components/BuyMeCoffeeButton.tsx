@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { Coffee, X } from "lucide-react";
+import { Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 export const BuyMeCoffeeButton = () => {
   const [isOpen, setIsOpen] = useState(false);
-
+  
   const handleTip = () => {
     window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
+    setIsOpen(false);
   };
 
   return (
@@ -42,58 +50,37 @@ export const BuyMeCoffeeButton = () => {
         </Button>
       </motion.div>
 
-      {/* Cute Donation Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="donation-title"
-          >
+      {/* Donation Modal - Using the Dialog component */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogTitle id="donation-title" className="text-xl font-semibold text-center">
+            Would you like to support me? ☕💖
+          </DialogTitle>
+          
+          <DialogDescription id="donation-description" className="text-center">
+            Your support means the world! Every coffee keeps my creativity brewing. ✨
+          </DialogDescription>
+          
+          <div className="mt-5">
             <motion.div
-              className="bg-background p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center relative"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-full text-center"
             >
-              {/* Close Button */}
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
-                aria-label="Close donation modal"
-              >
-                <X className="w-6 h-6" />
-                <span className="sr-only">Close</span>
-              </button>
-
-              {/* Cute Message */}
-              <h2 id="donation-title" className="text-xl font-semibold text-foreground mb-3">Would you like to support me? ☕💖</h2>
-              <p className="text-muted-foreground mb-5">
-                Your support means the world! Every coffee keeps my creativity brewing. ✨
-              </p>
-
-              {/* Donate Button */}
-              <motion.button
-                onClick={() => {
-                  handleTip(); // Open Paystack payment page
-                  setIsOpen(false); // Close modal after clicking
-                }}
-                className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-md transition-all duration-300 text-lg font-medium"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                onClick={handleTip}
+                className="px-6 py-3 text-lg font-medium w-full sm:w-auto"
+                size="lg"
                 aria-label="Support with a donation"
               >
                 Yes, I'd love to
-              </motion.button>
+              </Button>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+          
+          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none" />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

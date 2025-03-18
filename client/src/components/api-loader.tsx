@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import AbsoluteLoadingOverlay from './absolute-loading-overlay';
+import LoadingScreen from './LoadingScreen';
 
 interface ApiLoaderProps {
   isLoading: boolean;
@@ -8,8 +8,6 @@ interface ApiLoaderProps {
   minimumLoadTime?: number;
   showDelay?: number;
   debug?: boolean;
-  overlayZIndex?: number;
-  spinnerSize?: number;
 }
 
 /**
@@ -17,20 +15,17 @@ interface ApiLoaderProps {
  * for API requests across the application.
  *
  * This component:
- * 1. Shows a loading overlay while the API request is in progress
+ * 1. Shows the unified LoadingScreen component while API requests are in progress
  * 2. Enforces a minimum loading time to prevent flashes
  * 3. Adds a small delay before showing to avoid flickering for fast requests
  * 4. Can be debugged with console logs
  */
 const ApiLoader: React.FC<ApiLoaderProps> = ({
   isLoading,
-  message = 'Loading...',
   children,
   minimumLoadTime = 500,
   showDelay = 300,
-  debug = false,
-  overlayZIndex = 100,
-  spinnerSize = 40
+  debug = false
 }) => {
   const [showLoader, setShowLoader] = useState(false);
   const loadingStartTime = useRef<number | null>(null);
@@ -73,10 +68,13 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
       const remainingTime = Math.max(0, minimumLoadTime - timeElapsed);
       
       if (remainingTime > 0 && showLoader) {
-        setTimeout(() => {
+        const hideTimer = setTimeout(() => {
           setShowLoader(false);
           loadingStartTime.current = null;
         }, remainingTime);
+        
+        // Save the timer reference for cleanup
+        return () => clearTimeout(hideTimer);
       } else {
         setShowLoader(false);
         loadingStartTime.current = null;
@@ -87,20 +85,32 @@ const ApiLoader: React.FC<ApiLoaderProps> = ({
     return () => {
       if (showTimeoutRef.current) {
         clearTimeout(showTimeoutRef.current);
+        showTimeoutRef.current = null;
       }
+      // Force cleanup of loading state on unmount
+      setShowLoader(false);
+      loadingStartTime.current = null;
     };
   }, [isLoading, minimumLoadTime, showDelay]);
+  
+  // Additional cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setShowLoader(false);
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+        showTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return (
-    <div className="relative">
-      <AbsoluteLoadingOverlay 
-        isLoading={showLoader} 
-        message={message}
-        zIndex={overlayZIndex}
-        spinnerSize={spinnerSize}
-      />
-      {children}
-    </div>
+    <>
+      {showLoader && <LoadingScreen />}
+      <div className="relative">
+        {children}
+      </div>
+    </>
   );
 };
 

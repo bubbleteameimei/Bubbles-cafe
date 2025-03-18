@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import AbsoluteLoadingOverlay from './absolute-loading-overlay';
+import LoadingScreen from './LoadingScreen';
 
 export interface GlobalLoadingContextType {
   isVisible: boolean;
@@ -30,7 +30,7 @@ interface GlobalLoadingOverlayProps {
  * 
  * This component:
  * 1. Creates a context for controlling the loading overlay
- * 2. Renders an AbsoluteLoadingOverlay component
+ * 2. Renders the unified LoadingScreen component
  * 3. Provides functions to show/hide the overlay
  * 4. Can be triggered imperatively from any component
  */
@@ -65,12 +65,17 @@ export function GlobalLoadingOverlay({
       console.log(`[GlobalLoading] Hiding overlay: elapsedTime=${elapsedTime}ms, remainingTime=${remainingTime}ms`);
     }
 
+    // Always remove the loading overlay, even if there's remaining time
+    // This ensures we don't get stuck with a persistent overlay
     if (remainingTime > 0) {
+      // Use a shorter delay to avoid excessive waiting
+      const adjustedDelay = Math.min(remainingTime, 200);
       setTimeout(() => {
         setIsVisible(false);
         setLoadingStartTime(null);
-      }, remainingTime);
+      }, adjustedDelay);
     } else {
+      // Immediately hide
       setIsVisible(false);
       setLoadingStartTime(null);
     }
@@ -98,15 +103,8 @@ export function GlobalLoadingOverlay({
         setLoadingMessage,
       }}
     >
-      {/* The AbsoluteLoadingOverlay will be rendered outside the DOM hierarchy */}
-      <AbsoluteLoadingOverlay 
-        isLoading={isVisible} 
-        message={message}
-        zIndex={9999}
-        disableScroll={true}
-        showSpinner={true}
-        spinnerSize={52}
-      />
+      {/* Use the unified LoadingScreen component */}
+      {isVisible && <LoadingScreen />}
       {children}
     </GlobalLoadingContext.Provider>
   );

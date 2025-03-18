@@ -178,25 +178,65 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
-      },
-      timeout: 10000 // 10 second timeout
+      }
+      // Note: native fetch doesn't support timeout option, AbortController should be used instead
     };
     
-    // Fetch with more detailed logging
-    console.log(`[WordPress Service] Sending request to WordPress API...`);
-    const response = await fetch(url, options);
-    console.log(`[WordPress Service] Received response: ${response.status} ${response.statusText}`);
-
-    // Handle non-OK responses
-    if (!response.ok) {
-      console.error(`[WordPress Service] API Error: ${response.status} ${response.statusText}`);
-      
-      // Log response headers for debugging
-      const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headers[key] = value;
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 10000); // 10 second timeout
+    
+    try {
+      // Fetch with more detailed logging and timeout handling
+      console.log(`[WordPress Service] Sending request to WordPress API...`);
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
       });
-      console.log(`[WordPress Service] Response headers:`, headers);
+      clearTimeout(timeoutId); // Clear timeout if request completes
+      console.log(`[WordPress Service] Received response: ${response.status} ${response.statusText}`);
+      
+      // Return early if the content type is not JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        console.error(`[WordPress Service] Invalid content type: ${contentType}`);
+        throw new Error(`API returned non-JSON content type: ${contentType}`);
+      }
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        console.error(`[WordPress Service] API Error: ${response.status} ${response.statusText}`);
+        
+        // Log response headers for debugging
+        const headers: Record<string, string> = {};
+        response.headers.forEach((value: string, key: string) => {
+          headers[key] = value;
+        });
+        console.log(`[WordPress Service] Response headers:`, headers);
+        
+        throw new Error(`API returned error status: ${response.status}`);
+      }
+
+      // Parse response
+      const posts = await response.json() as WordPressPost[];
+      console.log(`[WordPress Service] Received ${Array.isArray(posts) ? posts.length : 'non-array'} response`);
+
+      // Validate response format
+      if (!Array.isArray(posts)) {
+        console.error('[WordPress Service] Invalid response format (not an array):', typeof posts);
+        throw new Error('API returned non-array response');
+      }
+
+      // Cache successful results to local storage
+      savePostsToLocalStorage(posts);
+      
+      // Return successfully parsed posts
+      return posts;
+    } catch (fetchError) {
+      clearTimeout(timeoutId); // Clear timeout if fetch fails
+      console.error('[WordPress Service] Fetch operation failed:', fetchError);
       
       // Return cached data if available
       const cachedPosts = getPaginatedPostsFromCache(page, 5);
@@ -209,30 +249,6 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       console.log('[WordPress Service] No cached posts available, returning empty array');
       return [];
     }
-
-    // Parse response
-    const posts = await response.json();
-    console.log(`[WordPress Service] Received ${Array.isArray(posts) ? posts.length : 'non-array'} response`);
-
-    // Validate response format
-    if (!Array.isArray(posts)) {
-      console.error('[WordPress Service] Invalid response format (not an array):', typeof posts);
-      
-      // Return cached data as fallback
-      const cachedPosts = getPaginatedPostsFromCache(page, 5);
-      if (cachedPosts.length > 0) {
-        console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts as fallback`);
-        return cachedPosts;
-      }
-      
-      return [];
-    }
-
-    // Cache successful results to local storage
-    savePostsToLocalStorage(posts);
-    
-    // Return successfully parsed posts
-    return posts;
   } catch (error) {
     console.error('[WordPress Service] Fetch error:', error);
     

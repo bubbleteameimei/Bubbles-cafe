@@ -39,7 +39,7 @@ export function CookieConsent() {
         ease: [0.4, 0, 0.2, 1],
         y: { type: "spring", stiffness: 300, damping: 30 }
       }}
-      className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm"
+      className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
@@ -69,8 +69,8 @@ export function CookieConsent() {
           <h2 id="cookie-consent-title" className="text-xl font-bold text-foreground">We use cookies</h2>
           <p id="cookie-consent-description" className="text-sm text-muted-foreground">
             This website uses cookies to enhance your experience. By continuing to use this site, you agree to our{' '}
-            <Link href="/privacy">
-              <a className="underline hover:text-foreground">privacy policy</a>
+            <Link href="/privacy" className="underline hover:text-foreground">
+              privacy policy
             </Link>.
           </p>
         </div>

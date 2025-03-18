@@ -1,12 +1,12 @@
 import React from 'react';
-import ErrorPage from '@/components/errors/ErrorPage';
+import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 
 export default function NotFound404() {
   return (
-    <ErrorPage
+    <SimplifiedErrorPage
       code="404"
-      title="PAGE NOT FOUND"
-      message="You shouldn't be here!"
+      title="Page not found"
+      message="You shouldn't be here"
     />
   );
 }

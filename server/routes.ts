@@ -76,6 +76,15 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Specific limiter for analytics endpoints with higher limits
+const analyticsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 200, // 200 requests per minute
+  message: { message: "Too many analytics requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Add this type definition for post metadata
 interface PostMetadata {
   isCommunityPost?: boolean;
@@ -124,7 +133,20 @@ export function registerRoutes(app: Express): Server {
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
   app.use("/api/register", authLimiter);
-  app.use("/api", apiLimiter);
+  
+  // Use more generous rate limits for analytics endpoints
+  app.use("/api/analytics/vitals", analyticsLimiter);
+  
+  // Apply general API rate limiting (except for paths with their own limiters)
+  app.use("/api", (req, res, next) => {
+    // Skip if the path already has a dedicated rate limiter
+    if (req.path.startsWith('/analytics/vitals') || 
+        req.path.startsWith('/login') || 
+        req.path.startsWith('/register')) {
+      return next();
+    }
+    apiLimiter(req, res, next);
+  });
 
   // Set up session configuration before route registration
   const sessionSettings: session.SessionOptions = {

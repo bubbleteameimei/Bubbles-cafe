@@ -74,21 +74,13 @@ const withSuspense = <P extends Record<string, any>>(
       >
         <React.Suspense 
           fallback={
-            <div className="relative min-h-[300px]">
-              <ApiLoader 
-                isLoading={true}
-                message="Loading page content..."
-                minimumLoadTime={800}
-                debug={true}
-                overlayZIndex={100}
-              >
-                <div className="invisible">
-                  <div className="h-[300px] w-full flex items-center justify-center">
-                    <span className="sr-only">Loading page content...</span>
-                  </div>
-                </div>
-              </ApiLoader>
-            </div>
+            <ApiLoader 
+              isLoading={true}
+              minimumLoadTime={800}
+              debug={true}
+            >
+              <div aria-hidden="true" className="h-[300px] w-full"></div>
+            </ApiLoader>
           }
         >
           {renderSuspendedComponent()}
@@ -360,7 +352,6 @@ function App() {
             <NotificationProvider>
               <LoadingProvider>
                 <GlobalLoadingOverlay
-                  defaultMessage="Loading..."
                   minimumLoadingDuration={800}
                   debugMode={true}
                 >
