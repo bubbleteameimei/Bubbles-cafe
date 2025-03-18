@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, ChevronLeft, ChevronRight, Minus, Plus, Shuffle, Headphones, Volume2, RefreshCcw } from "lucide-react";
+import { Clock, Share2, Minus, Plus, Shuffle, Headphones, Volume2, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
@@ -330,7 +330,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const storyContentStyles = `
   .story-content {
     font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
-    max-width: 70ch;
+    /* Removed max-width constraint for immersive experience */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
@@ -342,6 +342,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     letter-spacing: 0.01em; /* Subtle letter spacing */
     font-kerning: normal; /* Improves kerning pairs */
     font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
+    max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
+    margin-left: auto;
+    margin-right: auto;
   }
   .story-content p + p {
     margin-top: 2em;  /* Double line break effect */
@@ -467,7 +470,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   }
   `;
 
-  // Function to handle going to a random story
+  // Navigation functions
   const goToRandomStory = () => {
     if (posts.length <= 1) return;
     
@@ -477,6 +480,24 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     } while (randomIndex === currentIndex);
     
     setCurrentIndex(randomIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Function to navigate to previous story
+  const goToPreviousStory = () => {
+    if (posts.length <= 1) return;
+    
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : posts.length - 1;
+    setCurrentIndex(newIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Function to navigate to next story
+  const goToNextStory = () => {
+    if (posts.length <= 1) return;
+    
+    const newIndex = (currentIndex + 1) % posts.length;
+    setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -490,55 +511,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         style={{ width: `${readingProgress}%`, transition: 'width 0.2s ease-out' }}
         aria-hidden="true"
       />
-
-      {/* Enhanced Floating Navigation - desktop */}
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-40">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            if (currentIndex > 0) {
-              setCurrentIndex(currentIndex - 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          disabled={currentIndex === 0}
-          className="w-12 h-12 rounded-full bg-background/70 backdrop-blur-md border-border/40 shadow-md hover:bg-background/90 hover:shadow-lg transition-all duration-300 group"
-        >
-          <span className="absolute left-16 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-md border border-border/30 text-sm font-medium opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 shadow-sm pointer-events-none whitespace-nowrap">
-            Previous Story
-          </span>
-          <ChevronLeft className="h-5 w-5 text-primary/90" />
-          <span className="sr-only">Previous Story</span>
-        </Button>
-      </div>
-
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-2 z-40">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            if (currentIndex < posts.length - 1) {
-              setCurrentIndex(currentIndex + 1);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          disabled={currentIndex === posts.length - 1}
-          className="w-12 h-12 rounded-full bg-background/70 backdrop-blur-md border-border/40 shadow-md hover:bg-background/90 hover:shadow-lg transition-all duration-300 group"
-        >
-          <span className="absolute right-16 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-md border border-border/30 text-sm font-medium opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 shadow-sm pointer-events-none whitespace-nowrap">
-            Next Story
-          </span>
-          <ChevronRight className="h-5 w-5 text-primary/90" />
-          <span className="sr-only">Next Story</span>
-        </Button>
-      </div>
       
-      {/* We've removed the mobile floating navigation and replaced it with the top centered navigation */}
-      
-      {/* Fixed bottom toolbar with reading controls */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {/* Main controls toolbar group */}
+      {/* Top toolbar with font size controls */}
+      <div className="fixed top-14 left-0 right-0 z-40 flex items-center justify-center gap-2">
+        {/* Font size control bar */}
         <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
           {/* Font size controls */}
           <div className="flex items-center gap-1">
@@ -581,7 +557,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 aria-label="Listen to narration"
               >
                 <Headphones className="h-4 w-4" />
-                <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
                   Whisper Narration
                 </span>
               </Button>
@@ -657,9 +633,62 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           <div className="w-px h-6 bg-border/50"></div>
           
           {/* Dark/Light mode toggle */}
-          <ThemeToggleButton 
-            className="h-8 w-8 rounded-full hover:bg-background/80" 
-          />
+          {/* Theme toggle button removed */}
+        </div>
+      </div>
+      
+      {/* New bottom navigation bar */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {/* Main navigation bar with story controls */}
+        <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+          {/* Previous story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToPreviousStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Previous story"
+            disabled={posts.length <= 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Previous Story
+            </span>
+          </Button>
+          
+          {/* Random story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToRandomStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Random story"
+            disabled={posts.length <= 1}
+          >
+            <Shuffle className="h-4 w-4" />
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Random Story
+            </span>
+          </Button>
+          
+          {/* Next story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToNextStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Next story"
+            disabled={posts.length <= 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Next Story
+            </span>
+          </Button>
           
           <div className="w-px h-6 bg-border/50"></div>
           
@@ -671,58 +700,24 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             className="h-8 w-8 rounded-full hover:bg-background/80"
           />
         </div>
-        
-        {/* Return to home link */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setLocation('/')}
-          className="h-8 rounded-full bg-background/90 backdrop-blur-md border border-border/50 text-xs px-3 shadow-md"
-        >
-          Return to Home
-        </Button>
       </div>
       
-      {/* Fixed top navigation buttons for better access */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
-        <div className="flex items-center gap-2 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+      {/* Navigation buttons removed as requested */}
+      {/* Full width immersive reading experience */}
+
+      <div className="pt-2 pb-4">
+        {/* Return to Home button - standalone and not fixed, scrolls with content */}
+        <div className="flex justify-end mb-0 px-4 md:px-8 lg:px-12">
           <Button
-            variant="ghost"
-            onClick={() => {
-              if (currentIndex > 0) {
-                setCurrentIndex(currentIndex - 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            disabled={currentIndex === 0}
-            className="group hover:bg-primary/10 transition-all duration-300 relative overflow-hidden pr-5 rounded-full"
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation('/')}
+            className="h-6 rounded-full bg-background/90 backdrop-blur-md border border-border/50 text-xs px-2 shadow-md"
           >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <ChevronLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-            <span className="relative z-10">Previous</span>
-          </Button>
-          
-          <div className="h-5 w-px bg-border/50"></div>
-          
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (currentIndex < posts.length - 1) {
-                setCurrentIndex(currentIndex + 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            disabled={currentIndex === posts.length - 1}
-            className="group hover:bg-primary/10 transition-all duration-300 relative overflow-hidden pl-5 rounded-full"
-          >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-l from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            <span className="relative z-10">Next</span>
-            <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+            Return to Home
           </Button>
         </div>
-      </div>
-
-      <div className="container max-w-3xl mx-auto px-4 py-12">
+      
         <AnimatePresence mode="wait">
           <motion.article
             key={currentPost.id}
@@ -733,45 +728,76 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.4,
               ease: [0.22, 1, 0.36, 1] 
             }}
-            className="prose dark:prose-invert max-w-none bg-background/50 dark:bg-background/70 backdrop-blur-sm p-6 sm:p-8 rounded-xl border border-border/30 shadow-sm"
+            className="prose dark:prose-invert max-w-none px-4 md:px-8 lg:px-12"
           >
-            <div className="flex flex-col items-center mb-10">
+            <div className="flex flex-col items-center mb-4">
               <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-5 tracking-tight leading-tight"
+                className="text-4xl md:text-5xl font-bold text-center mb-2 tracking-tight leading-tight"
                 dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
               />
 
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-2 rounded-full">
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 py-1 rounded-full">
                   <time className="font-medium">{formattedDate}</time>
                   <span className="text-muted-foreground/30">•</span>
                   <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                    <Clock className="h-3.5 w-3.5" />
                     <span>{readingTime}</span>
                   </div>
                 </div>
 
-                {/* Random Story Button */}
-                <div className="flex items-center justify-center mt-4">                  
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-center mt-2 gap-2 w-full">
+                  {/* Previous Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousStory}
+                    className="h-8 px-2 bg-background hover:bg-background/80 w-24"
+                    disabled={posts.length <= 1}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
+                      <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Previous
+                  </Button>
+                  
+                  {/* Random Story Button (smaller without text) */}
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={goToRandomStory}
-                    className="h-9 px-3 rounded-full bg-primary/10 hover:bg-primary/20 border-none text-xs"
+                    className="h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none"
+                    disabled={posts.length <= 1}
+                    aria-label="Random Story"
+                  >
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Next Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextStory}
+                    className="h-8 px-2 bg-background hover:bg-background/80 w-24"
                     disabled={posts.length <= 1}
                   >
-                    <Shuffle className="h-3 w-3 mr-1" />
-                    Random Story
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-1">
+                      <path d="m9 18 6-6-6-6"/>
+                    </svg>
                   </Button>
                 </div>
               </div>
             </div>
 
             <div
-              className="story-content mb-16"
+              className="story-content mb-16 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
               style={{
                 fontSize: `${fontSize}px`,
-                whiteSpace: 'pre-wrap'
+                whiteSpace: 'pre-wrap',
+                lineHeight: '1.7',
+                letterSpacing: '0.01em'
               }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content.rendered)
