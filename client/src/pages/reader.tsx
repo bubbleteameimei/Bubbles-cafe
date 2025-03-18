@@ -512,36 +512,105 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         aria-hidden="true"
       />
       
-      {/* Top toolbar with font size controls */}
-      <div className="fixed top-14 left-0 right-0 z-40 flex items-center justify-center gap-2">
-        {/* Font size control bar */}
+      {/* Top toolbar elements removed */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3">
+        {/* Main navigation bar with story controls */}
         <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
-          {/* Font size controls */}
-          <div className="flex items-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={decreaseFontSize}
-              className="h-8 w-8 rounded-full hover:bg-background/80"
-              aria-label="Decrease font size"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="text-xs font-medium px-1 min-w-[36px] text-center">{fontSize}px</span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={increaseFontSize}
-              className="h-8 w-8 rounded-full hover:bg-background/80"
-              aria-label="Increase font size"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Previous story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToPreviousStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Previous story"
+            disabled={posts.length <= 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Previous Story
+            </span>
+          </Button>
+          
+          {/* Random story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToRandomStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Random story"
+            disabled={posts.length <= 1}
+          >
+            <Shuffle className="h-4 w-4" />
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Random Story
+            </span>
+          </Button>
+          
+          {/* Next story button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goToNextStory}
+            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+            aria-label="Next story"
+            disabled={posts.length <= 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+              Next Story
+            </span>
+          </Button>
           
           <div className="w-px h-6 bg-border/50"></div>
           
-          {/* Listen to Narrator button */}
+          {/* Bookmark button */}
+          <BookmarkButton 
+            postId={currentPost.id} 
+            variant="reader"
+            showText={false}
+            className="h-8 w-8 rounded-full hover:bg-background/80"
+          />
+        </div>
+      </div>
+      
+      {/* Navigation buttons removed as requested */}
+      {/* Full width immersive reading experience */}
+
+      <div className="pt-2 pb-4">
+        {/* Enhanced font size controls with Narration button - scrollable with content */}
+        <div className="flex justify-between items-center mb-0 px-4 md:px-8 lg:px-12 sticky top-3 z-40">
+          {/* Font size controls - matching Return to Home button styling */}
+          <div className="h-9 px-3 bg-background hover:bg-background/80 text-sm shadow-md w-32 rounded-sm border border-input flex items-center justify-between">
+            <button
+              type="button"
+              onClick={decreaseFontSize}
+              disabled={fontSize <= 12}
+              className="h-7 w-7 flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Decrease font size"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            
+            <span className="text-xs font-medium">{fontSize}</span>
+            
+            <button
+              type="button"
+              onClick={increaseFontSize}
+              disabled={fontSize >= 20}
+              className="h-7 w-7 flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Increase font size"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+
+          {/* Narration button */}
+          <div className="flex-grow"></div>
+
           <Dialog 
             open={isNarratorOpen} 
             onOpenChange={(open) => {
@@ -551,14 +620,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           >
             <DialogTrigger asChild>
               <Button
-                variant={isNarratorOpen ? "default" : "ghost"}
+                variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                className="h-9 w-9 mx-2 group relative"
                 aria-label="Listen to narration"
               >
                 <Headphones className="h-4 w-4" />
-                <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                  Whisper Narration
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                  Narration
                 </span>
               </Button>
             </DialogTrigger>
@@ -629,90 +698,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               </ErrorBoundary>
             </DialogContent>
           </Dialog>
-          
-          <div className="w-px h-6 bg-border/50"></div>
-          
-          {/* Dark/Light mode toggle */}
-          {/* Theme toggle button removed */}
-        </div>
-      </div>
-      
-      {/* New bottom navigation bar */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {/* Main navigation bar with story controls */}
-        <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
-          {/* Previous story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToPreviousStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Previous story"
-            disabled={posts.length <= 1}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Previous Story
-            </span>
-          </Button>
-          
-          {/* Random story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToRandomStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Random story"
-            disabled={posts.length <= 1}
-          >
-            <Shuffle className="h-4 w-4" />
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Random Story
-            </span>
-          </Button>
-          
-          {/* Next story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToNextStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Next story"
-            disabled={posts.length <= 1}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Next Story
-            </span>
-          </Button>
-          
-          <div className="w-px h-6 bg-border/50"></div>
-          
-          {/* Bookmark button */}
-          <BookmarkButton 
-            postId={currentPost.id} 
-            variant="reader"
-            showText={false}
-            className="h-8 w-8 rounded-full hover:bg-background/80"
-          />
-        </div>
-      </div>
-      
-      {/* Navigation buttons removed as requested */}
-      {/* Full width immersive reading experience */}
 
-      <div className="pt-2 pb-4">
-        {/* Return to Home button - standalone and not fixed, scrolls with content */}
-        <div className="flex justify-end mb-0 px-4 md:px-8 lg:px-12">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setLocation('/')}
-            className="h-6 rounded-full bg-background/90 backdrop-blur-md border border-border/50 text-xs px-2 shadow-md"
+            className="h-9 px-3 bg-background hover:bg-background/80 text-sm shadow-md w-32 rounded-sm"
           >
             Return to Home
           </Button>
@@ -792,7 +783,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-16 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
+              className="story-content mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
               style={{
                 fontSize: `${fontSize}px`,
                 whiteSpace: 'pre-wrap',
@@ -803,9 +794,53 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 __html: sanitizeHtmlContent(currentPost.content.rendered)
               }}
             />
+            
+            {/* Simple pagination at bottom of story content - extremely compact */}
+            <div className="flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center">
+              <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
+                {/* Previous story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToPreviousStory}
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                  aria-label="Previous story"
+                  disabled={posts.length <= 1}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Previous Story
+                  </span>
+                </Button>
+                
+                {/* Story counter */}
+                <div className="px-2 text-xs text-muted-foreground font-medium">
+                  {currentIndex + 1} of {posts.length}
+                </div>
+                
+                {/* Next story button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={goToNextStory}
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                  aria-label="Next story"
+                  disabled={posts.length <= 1}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                  <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Next Story
+                  </span>
+                </Button>
+              </div>
+            </div>
 
-            <div className="mt-12 pt-10 border-t border-border/50">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="mt-2 pt-3 border-t border-border/50">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="w-full md:w-auto">
                   <LikeDislike postId={currentPost.id} />
                 </div>
