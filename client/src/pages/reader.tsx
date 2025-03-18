@@ -583,29 +583,31 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       <div className="pt-2 pb-4">
         {/* Enhanced font size controls with Narration button - scrollable with content */}
         <div className="flex justify-between items-center mb-0 px-4 md:px-8 lg:px-12 sticky top-3 z-40">
-          {/* Font size controls - matching Return to Home button styling */}
-          <div className="h-9 px-3 bg-background hover:bg-background/80 text-sm shadow-md w-32 rounded-sm border border-input flex items-center justify-between">
-            <button
-              type="button"
+          {/* Font size controls using the standard Button component */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={decreaseFontSize}
               disabled={fontSize <= 12}
-              className="h-7 w-7 flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              className="h-8 px-2 bg-background hover:bg-background/80"
               aria-label="Decrease font size"
             >
-              <Minus className="h-3 w-3" />
-            </button>
+              <Minus className="h-4 w-4 mr-1" />
+              A-
+            </Button>
             
-            <span className="text-xs font-medium">{fontSize}</span>
-            
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={increaseFontSize}
               disabled={fontSize >= 20}
-              className="h-7 w-7 flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              className="h-8 px-2 bg-background hover:bg-background/80"
               aria-label="Increase font size"
             >
-              <Plus className="h-3 w-3" />
-            </button>
+              A+
+              <Plus className="h-4 w-4 ml-1" />
+            </Button>
           </div>
 
           {/* Narration button */}
@@ -703,7 +705,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             variant="outline"
             size="sm"
             onClick={() => setLocation('/')}
-            className="h-9 px-3 bg-background hover:bg-background/80 text-sm shadow-md w-32 rounded-sm"
+            className="h-8 px-2 bg-background hover:bg-background/80 w-32"
           >
             Return to Home
           </Button>
