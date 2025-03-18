@@ -7,6 +7,151 @@
 
 import { z } from 'zod';
 import { ErrorCategory, handleError } from './error-handler';
+import type { ThemeCategory, ThemeInfo } from '@/shared/types';
+
+// Theme categories with detailed information for use in the UI
+export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
+  'PARASITE': {
+    keywords: ['parasite', 'infection', 'host', 'invasion', 'body'],
+    badgeVariant: 'parasite',
+    icon: 'Worm',
+    description: 'Stories featuring parasitic entities that take over hosts',
+    visualEffects: ['wriggling', 'body distortion']
+  },
+  'LOVECRAFTIAN': {
+    keywords: ['cosmic', 'ancient', 'unknowable', 'madness', 'cult'],
+    badgeVariant: 'lovecraftian',
+    icon: 'Skull',
+    description: 'Cosmic horror and incomprehensible ancient entities',
+    visualEffects: ['tentacles', 'fractal patterns']
+  },
+  'PSYCHOLOGICAL': {
+    keywords: ['mind', 'sanity', 'perception', 'reality', 'delusion'],
+    badgeVariant: 'psychological',
+    icon: 'Brain',
+    description: 'Horror that plays with perception and sanity',
+    visualEffects: ['distortion', 'blurring']
+  },
+  'TECHNOLOGICAL': {
+    keywords: ['technology', 'ai', 'machine', 'digital', 'glitch'],
+    badgeVariant: 'technological',
+    icon: 'Cpu',
+    description: 'Horror arising from technology gone wrong',
+    visualEffects: ['glitching', 'data corruption']
+  },
+  'SUICIDAL': {
+    keywords: ['suicide', 'self-harm', 'depression', 'despair', 'end'],
+    badgeVariant: 'suicidal',
+    icon: 'Pill',
+    description: 'Stories dealing with suicidal themes',
+    visualEffects: ['fading', 'monotone']
+  },
+  'BODY_HORROR': {
+    keywords: ['mutation', 'flesh', 'transformation', 'deformity', 'grotesque'],
+    badgeVariant: 'body',
+    icon: 'Dna',
+    description: 'Horror focused on the violation or distortion of the human body',
+    visualEffects: ['flesh warping', 'biological transformations']
+  },
+  'PSYCHOPATH': {
+    keywords: ['killer', 'murderer', 'sadistic', 'torture', 'insane'],
+    badgeVariant: 'psychopath',
+    icon: 'Axe',
+    description: 'Stories featuring psychopathic characters or serial killers',
+    visualEffects: ['blood splatter', 'sharp contrasts']
+  },
+  'SUPERNATURAL': {
+    keywords: ['ghost', 'spirit', 'haunting', 'paranormal', 'entity'],
+    badgeVariant: 'supernatural',
+    icon: 'Ghost',
+    description: 'Horror involving supernatural phenomena',
+    visualEffects: ['transparency', 'floating elements']
+  },
+  'POSSESSION': {
+    keywords: ['demon', 'possession', 'exorcism', 'control', 'entity'],
+    badgeVariant: 'possession',
+    icon: 'Cross',
+    description: 'Horror involving demonic or spiritual possession',
+    visualEffects: ['contortion', 'shadowy figures']
+  },
+  'CANNIBALISM': {
+    keywords: ['eat', 'flesh', 'consume', 'hunger', 'appetite'],
+    badgeVariant: 'cannibalism',
+    icon: 'Knife',
+    description: 'Horror featuring cannibalistic themes',
+    visualEffects: ['visceral imagery', 'red tones']
+  },
+  'STALKING': {
+    keywords: ['stalker', 'watching', 'following', 'observer', 'hunt'],
+    badgeVariant: 'stalking',
+    icon: 'Footprints',
+    description: 'Stories about being watched, followed, or hunted',
+    visualEffects: ['surveillance imagery', 'multiple perspectives']
+  },
+  'DEATH': {
+    keywords: ['dying', 'mortality', 'grave', 'afterlife', 'end'],
+    badgeVariant: 'death',
+    icon: 'CloudRain',
+    description: 'Stories centered on death, mortality, or the afterlife',
+    visualEffects: ['fading', 'desaturation']
+  },
+  'GOTHIC': {
+    keywords: ['Victorian', 'castle', 'mansion', 'aristocrat', 'ancient'],
+    badgeVariant: 'gothic',
+    icon: 'Castle',
+    description: 'Horror with Gothic elements and settings',
+    visualEffects: ['ornate framing', 'archaic styling']
+  },
+  'APOCALYPTIC': {
+    keywords: ['apocalypse', 'end', 'disaster', 'survival', 'wasteland'],
+    badgeVariant: 'apocalyptic',
+    icon: 'Radiation',
+    description: 'Stories set during or after apocalyptic events',
+    visualEffects: ['decay', 'environmental destruction']
+  },
+  'ISOLATION': {
+    keywords: ['alone', 'isolated', 'abandoned', 'solitude', 'trapped'],
+    badgeVariant: 'isolation',
+    icon: 'UserMinus2',
+    description: 'Horror centered on isolation or abandonment',
+    visualEffects: ['empty spaces', 'negative space']
+  },
+  'AQUATIC': {
+    keywords: ['ocean', 'sea', 'underwater', 'drowning', 'depth'],
+    badgeVariant: 'aquatic',
+    icon: 'Anchor',
+    description: 'Horror taking place in or relating to water environments',
+    visualEffects: ['flowing patterns', 'blue tinting']
+  },
+  'VIRAL': {
+    keywords: ['infection', 'virus', 'plague', 'outbreak', 'contagion'],
+    badgeVariant: 'viral',
+    icon: 'AlertTriangle',
+    description: 'Horror involving infectious diseases or viral outbreaks',
+    visualEffects: ['veining patterns', 'organic spread']
+  },
+  'URBAN_LEGEND': {
+    keywords: ['legend', 'myth', 'folklore', 'rumor', 'tale'],
+    badgeVariant: 'urban',
+    icon: 'Building',
+    description: 'Horror based on urban legends and modern folklore',
+    visualEffects: ['distressed film', 'analog glitches']
+  },
+  'TIME_HORROR': {
+    keywords: ['time', 'loop', 'paradox', 'distortion', 'trapped'],
+    badgeVariant: 'time',
+    icon: 'Clock',
+    description: 'Horror involving time distortions, loops, or paradoxes',
+    visualEffects: ['repetition', 'clock imagery']
+  },
+  'DREAMSCAPE': {
+    keywords: ['dream', 'nightmare', 'sleep', 'unconscious', 'surreal'],
+    badgeVariant: 'dreamscape',
+    icon: 'Moon',
+    description: 'Horror taking place in dreams or nightmares',
+    visualEffects: ['floating elements', 'reality distortion']
+  }
+};
 
 // Content validation schema
 export const contentSchema = z.object({
@@ -291,9 +436,78 @@ export function validateContent(data: unknown): {
 }
 
 /**
+ * Extract a clean excerpt from HTML content
+ * @param htmlContent The HTML content to extract from
+ * @param maxLength Maximum length of the excerpt
+ * @returns Clean excerpt text
+ */
+export function getExcerpt(htmlContent: string, maxLength: number = 200): string {
+  try {
+    if (!htmlContent) return '';
+    
+    // Remove HTML tags
+    const text = htmlContent
+      .replace(/<\/?[^>]+(>|$)/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Truncate to max length
+    if (text.length <= maxLength) {
+      return text;
+    }
+    
+    // Find a good breaking point
+    const truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    // Return truncated text with ellipsis
+    return lastSpace > 0 
+      ? truncated.substring(0, lastSpace) + '...'
+      : truncated + '...';
+  } catch (error) {
+    handleError(error, {
+      category: ErrorCategory.VALIDATION,
+      showToast: false
+    });
+    
+    return '';
+  }
+}
+
+/**
  * Calculate text similarity between two content pieces
  * Returns a score between 0 and 1, where 1 means identical
  */
+
+/**
+ * Calculate estimated reading time for content
+ * @param content HTML content to analyze
+ * @param wordsPerMinute Reading speed, defaults to 225 WPM
+ * @returns Estimated reading time in minutes (minimum 1)
+ */
+export function getReadingTime(content: string, wordsPerMinute: number = 225): number {
+  try {
+    if (!content) return 1;
+    
+    // Strip HTML tags for text analysis
+    const plainText = content.replace(/<\/?[^>]+(>|$)/g, '');
+    
+    // Count words
+    const words = plainText.split(/\s+/).filter(word => word.length > 0);
+    
+    // Calculate reading time
+    return Math.max(1, Math.ceil(words.length / wordsPerMinute));
+  } catch (error) {
+    handleError(error, {
+      category: ErrorCategory.VALIDATION,
+      showToast: false
+    });
+    
+    return 1; // Default to 1 minute if calculation fails
+  }
+}
+
 export function calculateContentSimilarity(text1: string, text2: string): number {
   try {
     // Simple implementation using Jaccard similarity

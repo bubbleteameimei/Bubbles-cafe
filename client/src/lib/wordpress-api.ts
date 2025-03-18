@@ -269,7 +269,6 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
   } catch (error) {
     handleError(error, {
       category: ErrorCategory.NETWORK,
-      severity: ErrorSeverity.WARNING,
       silent: true // Don't show toast for status check
     });
     

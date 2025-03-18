@@ -12,7 +12,7 @@
     "wait_for_port": 3000,
     "port": 3000,
     "protocol": "http",
-    "onAfterCompleted": "continue",
+    "onAfterCompleted": "continue", 
     "persistent": true,
     "type": "web",
     "public_address": "https://${REPL_SLUG}.${REPL_OWNER}.repl.co",

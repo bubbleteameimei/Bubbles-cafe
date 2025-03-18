@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight } from "lucide-react";
-import { fetchPosts } from "@/lib/wordpress-api";
+import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import FadeInSection from "../components/transitions/FadeInSection";
@@ -16,7 +16,7 @@ export default function Home() {
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
     queryFn: async () => {
-      return fetchPosts(1, 1);
+      return fetchWordPressPosts({ page: 1, perPage: 1 });
     },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

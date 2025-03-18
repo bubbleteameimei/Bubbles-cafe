@@ -1,0 +1,43 @@
+/* Standardized Switch Component Styles 
+ * These styles create consistent toggle switches throughout the application
+ * Matching the dimensions and behavior of the "Remember me" toggle in auth.css
+ */
+
+/* Ensure consistent size and appearance */
+.standardized-switch {
+  height: 20px !important;
+  width: 40px !important;
+  border-radius: 30px !important;
+  transition: background-color 0.3s ease !important;
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* Thumb styling */
+.standardized-switch-thumb {
+  height: 16px !important;
+  width: 16px !important;
+  top: 2px !important;
+  left: 2px !important;
+  transition: transform 0.3s ease !important;
+  background-color: white !important;
+}
+
+/* Checked state */
+.standardized-switch[data-state="checked"] {
+  background-color: hsl(var(--primary)) !important;
+}
+
+.standardized-switch[data-state="checked"] .standardized-switch-thumb {
+  transform: translateX(20px) !important;
+}
+
+/* Focus and disabled states */
+.standardized-switch:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.standardized-switch[disabled] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}

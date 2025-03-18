@@ -32,6 +32,8 @@ import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/Global
 // Import global loading manager functions
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
 
+
+
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
 import SearchBar from './components/SearchBar';
@@ -40,6 +42,7 @@ import { NotificationIcon } from './components/ui/notification-icon';
 import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
 import ErrorToastProvider from './components/providers/error-toast-provider';
+import NotFoundRouteHandler from './components/NotFoundRouteHandler';
 
 // Create a wrapper for lazy-loaded components that properly handles props
 // This version fixes the component stack issues and improves error handling
@@ -113,7 +116,7 @@ const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
 const SearchPage = withSuspense(React.lazy(() => import('./pages/search')));
-const FeatureShowcasePage = withSuspense(React.lazy(() => import('./pages/feature-showcase')));
+
 
 // Error Pages
 const Error403Page = withSuspense(React.lazy(() => import('./pages/errors/403')));
@@ -258,7 +261,7 @@ const AppContent = () => {
                 <Route path="/toggle-comparison" component={ToggleComparisonPage} />
                 <Route path="/accessibility-test" component={AccessibilityTestPage} />
                 <Route path="/search" component={SearchPage} />
-                <Route path="/features" component={FeatureShowcasePage} />
+
                 <Route path="/test-recommendations" component={TestRecommendationsPage} />
 
                 {/* Legal Routes */}
@@ -302,30 +305,9 @@ const AppContent = () => {
                 <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
                 <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
 
-                {/* 404 Route - Immediate error handling with no delay */}
+                {/* 404 Route - Using a stable component to fix hooks ordering */}
                 <Route>
-                  {(params) => {
-                    // Get navigate function from wouter
-                    const [_, setLocation] = useLocation();
-                    
-                    // Use useEffect for side effects and cleanup
-                    useEffect(() => {
-                      // Immediately hide any global loading indicators
-                      hideGlobalLoading();
-                      
-                      // Redirect instantly to the error page without any timeout
-                      setLocation('/errors/404');
-                      
-                      // Ensure proper cleanup on unmount
-                      return () => {
-                        // Force hide loading screen again on unmount to prevent stuck loading states
-                        hideGlobalLoading();
-                      };
-                    }, [setLocation]);
-                    
-                    // Return an empty fragment (more semantically correct than empty div)
-                    return <></>;
-                  }}
+                  <NotFoundRouteHandler />
                 </Route>
               </Switch>
             </EnhancedPageTransition>
@@ -342,6 +324,8 @@ const AppContent = () => {
     </div>
   );
 };
+
+// The NotFoundRouteHandler component is now imported from './components/NotFoundRouteHandler'
 
 function App() {
   usePerformanceMonitoring();

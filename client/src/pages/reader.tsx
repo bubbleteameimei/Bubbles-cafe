@@ -31,7 +31,7 @@ const CommentSection = lazy(() => import("@/components/blog/comment-section"));
 const AudioNarrator = lazy(() => import("@/components/ui/audio-narrator").then(module => ({ default: module.AudioNarrator })));
 
 // Import the WordPress API functions with error handling
-import { fetchPosts } from "@/lib/wordpress-api";
+import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 // Create a utility function to sanitize HTML content 
 const sanitizeHtmlContent = (html: string): string => {
@@ -112,13 +112,13 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           const response = await fetch(`/api/posts/${routeSlug}`);
           if (!response.ok) throw new Error('Failed to fetch post');
           const post = await response.json();
-          return { posts: [post], hasMore: false };
+          return { posts: [post], totalPages: 1, total: 1 };
         } else {
           // Otherwise fetch all posts
-          const data = await fetchPosts(1, 100);
+          const data = await fetchWordPressPosts({ page: 1, perPage: 100 });
           console.log('[Reader] Posts fetched successfully:', {
             totalPosts: data.posts?.length,
-            hasMore: data.hasMore
+            totalPages: data.totalPages
           });
           return data;
         }

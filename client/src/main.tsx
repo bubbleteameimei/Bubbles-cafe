@@ -1,9 +1,9 @@
+// Import preloader CSS first to ensure it takes effect immediately
+import "./styles/preloader.css";
 import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";
 import "./index.css";
-// Import preloader CSS first to ensure it takes effect immediately
-import "./styles/preloader.css";
 // Import the preloader script
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";

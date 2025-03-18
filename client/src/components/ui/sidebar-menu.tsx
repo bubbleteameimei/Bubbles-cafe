@@ -41,7 +41,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const [errorPagesOpen, setErrorPagesOpen] = React.useState(false);
   const sidebar = useSidebar();
 
   const handleNavigation = React.useCallback((path: string) => {
@@ -166,19 +165,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {/* Feature Showcase */}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/features'}
-                onClick={() => handleNavigation('/features')}
-                tooltip="New Features"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/features')}
-                <Sparkles className="h-4 w-4" />
-                <span>New Features</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+
 
           </SidebarMenu>
         </SidebarGroupContent>
@@ -465,96 +452,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Test Error Pages */}
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
-          Test Error Pages
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <Collapsible open={errorPagesOpen} onOpenChange={setErrorPagesOpen}>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
-                    <div className="flex items-center">
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      <span>Error Pages</span>
-                    </div>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
-                      errorPagesOpen && "rotate-180"
-                    )} />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/403'}
-                        onClick={() => handleNavigation('/errors/403')}
-                        className={submenuItemClass}
-                      >
-                        <Ban className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>403 - Forbidden</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/404'}
-                        onClick={() => handleNavigation('/errors/404')}
-                        className={submenuItemClass}
-                      >
-                        <MoveLeft className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>404 - Not Found</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/429'}
-                        onClick={() => handleNavigation('/errors/429')}
-                        className={submenuItemClass}
-                      >
-                        <Clock className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>429 - Too Many Requests</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/500'}
-                        onClick={() => handleNavigation('/errors/500')}
-                        className={submenuItemClass}
-                      >
-                        <ServerCrash className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>500 - Server Error</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/503'}
-                        onClick={() => handleNavigation('/errors/503')}
-                        className={submenuItemClass}
-                      >
-                        <WifiOff className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>503 - Service Unavailable</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/errors/504'}
-                        onClick={() => handleNavigation('/errors/504')}
-                        className={submenuItemClass}
-                      >
-                        <Clock className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>504 - Gateway Timeout</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+
 
       {/* Support & Legal */}
       <SidebarGroup>
