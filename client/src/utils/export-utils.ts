@@ -1,7 +1,8 @@
 /**
  * Utility functions for exporting user data in various formats
  */
-import { PrivacySettings } from "../types/privacy-settings";
+// Import PrivacySettings from hooks to ensure type consistency
+import { PrivacySettings } from "../hooks/use-privacy-settings";
 import { User } from "../types/user";
 
 /**
@@ -9,7 +10,16 @@ import { User } from "../types/user";
  */
 export interface UserDataExport {
   profile: Partial<User>;
-  privacySettings: PrivacySettings;
+  privacySettings: {
+    profileVisible: boolean;
+    shareReadingHistory: boolean;
+    anonymousCommenting: boolean;
+    twoFactorAuthEnabled: boolean;
+    loginNotifications: boolean;
+    dataRetentionPeriod: number;
+    emailNotifications: boolean;
+    activityTracking: boolean;
+  };
   bookmarks?: any[];
   readingHistory?: any[];
   comments?: any[];
@@ -116,6 +126,25 @@ export function exportAsText(userData: UserDataExport, filename?: string): void 
     const formattedValue = typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : value;
     textContent += `${key}: ${formattedValue}\n`;
   });
+  textContent += "\n";
+  
+  // Add activities section if it exists
+  if (userData.activities && userData.activities.length > 0) {
+    textContent += "ACTIVITY HISTORY\n";
+    textContent += "---------------\n";
+    userData.activities.forEach((activity, index) => {
+      textContent += `Activity ${index + 1}:\n`;
+      try {
+        // Format activity data as indented properties
+        Object.entries(activity).forEach(([key, value]) => {
+          textContent += `  ${key}: ${value}\n`;
+        });
+      } catch (e) {
+        textContent += `  ${JSON.stringify(activity)}\n`;
+      }
+      textContent += "\n";
+    });
+  }
   
   // Create text blob
   const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
@@ -184,8 +213,47 @@ export function generatePrintableHtml(userData: UserDataExport): string {
   });
       
   html += `</table>
-  </div>
+  </div>`;
   
+  // Add activities section if it exists
+  if (userData.activities && userData.activities.length > 0) {
+    html += `
+    <div class="section">
+      <h2>Activity History</h2>
+      <table>
+        <tr><th>#</th><th>Type</th><th>Date</th><th>Details</th></tr>`;
+        
+    userData.activities.forEach((activity, index) => {
+      const activityType = activity.type || activity.action || 'Activity';
+      const activityDate = activity.date || activity.createdAt || activity.timestamp || '';
+      
+      // Create a formatted details string
+      let details = '';
+      try {
+        // Remove common fields from details display
+        const { type, action, date, createdAt, timestamp, ...detailsObj } = activity;
+        details = JSON.stringify(detailsObj, null, 2)
+          .replace(/[{}"]/g, '')  // Remove JSON formatting characters
+          .replace(/,\n/g, '<br>') // Replace newlines with HTML breaks
+          .replace(/: /g, ': ');   // Keep colons for readability
+      } catch (e) {
+        details = 'Activity details not available';
+      }
+      
+      html += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${activityType}</td>
+          <td>${activityDate}</td>
+          <td><pre style="white-space: pre-wrap; font-family: monospace; margin: 0;">${details}</pre></td>
+        </tr>`;
+    });
+    
+    html += `</table>
+    </div>`;
+  }
+  
+  html += `
   <div class="footer">
     <p>This export contains your personal data as stored in our system.</p>
   </div>

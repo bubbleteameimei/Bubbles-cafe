@@ -151,19 +151,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {/* Advanced Search */}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/search'}
-                onClick={() => handleNavigation('/search')}
-                tooltip="Advanced Search"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/search')}
-                <Search className="h-4 w-4" />
-                <span>Search</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
 
 
 

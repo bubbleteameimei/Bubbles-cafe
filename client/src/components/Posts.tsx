@@ -79,24 +79,43 @@ function Posts() {
     );
   }
 
-  // API Unavailable Notice
+  // API Unavailable Notice with Enhanced UI
   if (apiStatus === 'unavailable' && data?.fromFallback) {
     return (
-      <div className="space-y-4">
-        <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 relative">
+      <div className="space-y-6">
+        <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 relative shadow-sm dark:bg-amber-900/30 dark:border-amber-800/50 dark:text-amber-200">
           <div className="flex items-center">
             <WifiOff className="h-5 w-5 mr-2" />
-            <h5 className="font-medium">WordPress API Unavailable</h5>
+            <h5 className="font-medium text-lg">WordPress API Unavailable</h5>
           </div>
           <div className="mt-2 text-sm">
-            Displaying locally stored content while WordPress connection is being restored.
+            <p>Displaying locally stored content while WordPress connection is being restored.</p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span className="text-xs opacity-80">Automatic reconnection in progress</span>
+            </div>
           </div>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Simplified Header with Horror Theme Elements */}
+        <div className="mb-4 py-3 border-b border-muted">
+          <h1 className="text-2xl font-creepster text-center mb-2">Tales from the Archive</h1>
+          <p className="text-sm text-center text-muted-foreground italic">
+            Locally cached stories available for your reading pleasure
+          </p>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {data.posts.map((post: any) => (
-            <Card key={post.id} className="p-4">
-              <h2 className="text-xl font-bold mb-2 line-clamp-2">
+            <Card key={post.id} className="p-4 shadow-md transition-all duration-300 hover:shadow-lg hover:border-primary/30 relative overflow-hidden group">
+              {/* Decorative horror element */}
+              <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+                <div className="absolute rotate-45 bg-muted/20 text-primary/70 font-medium py-1 text-xs px-6 text-center top-3 right-[-20px]">
+                  Archive
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold mb-3 line-clamp-2 group-hover:text-primary/90 transition-colors">
                 <Link href={`/reader/${post.slug}`}>
                   {typeof post.title === 'object' 
                     ? <span dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
@@ -108,11 +127,54 @@ function Posts() {
                   ? <span dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
                   : "No excerpt available"}
               </div>
-              <Link href={`/reader/${post.slug}`}>
-                <Button variant="outline">Read more</Button>
-              </Link>
+              <div className="mt-auto pt-3 border-t border-muted/40">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">
+                    From our archives
+                  </span>
+                  <Link href={`/reader/${post.slug}`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      Read story
+                      <span className="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </Card>
           ))}
+        </div>
+        
+        {/* Reconnection button */}
+        <div className="flex justify-center mt-8 mb-4">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => {
+              toast({
+                title: "Reconnecting...",
+                description: "Attempting to reconnect to WordPress API",
+              });
+              checkWordPressApiStatus().then(isAvailable => {
+                if (isAvailable) {
+                  refetch();
+                  toast({
+                    title: "Connection restored!",
+                    description: "Successfully reconnected to WordPress API",
+                    variant: "default",
+                  });
+                } else {
+                  toast({
+                    title: "Connection failed",
+                    description: "Still unable to connect to WordPress API. Will try again automatically.",
+                    variant: "destructive",
+                  });
+                }
+              });
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Attempt Reconnection
+          </Button>
         </div>
       </div>
     );

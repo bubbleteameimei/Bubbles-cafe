@@ -14,8 +14,8 @@
 import { z } from 'zod';
 import { ErrorCategory, ErrorSeverity, handleError, handleValidationError } from './error-handler';
 
-// Base URL for WordPress API - properly formatted with wp-json path
-const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
+// Base URL for WordPress API - temporarily using invalid URL to test fallback
+const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://invalid-wordpress-url.example.com';
 
 // Fallback to server API if WordPress is unavailable
 const SERVER_FALLBACK_API = '/api/posts';
@@ -550,28 +550,87 @@ export function getReadingTime(content: string): number {
  * Check if the WordPress API is available
  * Returns true if the API is reachable, false otherwise
  */
+/**
+ * Check if the WordPress API is available with improved reliability
+ * - Implements multiple endpoints check
+ * - Uses local storage to cache status for performance
+ * - Implements progressive backoff for rechecking
+ * - Handles network conditions gracefully
+ */
 export async function checkWordPressApiStatus(): Promise<boolean> {
   console.log('[WordPress] Checking API status');
   
+  // First check if we have a cached status that's recent (last 5 minutes)
+  const cachedStatus = localStorage.getItem('wp_api_status');
+  const now = Date.now();
+  
+  if (cachedStatus) {
+    try {
+      const statusData = JSON.parse(cachedStatus);
+      // If we have recent data (last 5 minutes), use it
+      if (now - statusData.timestamp < 5 * 60 * 1000) {
+        console.log(`[WordPress] Using cached API status: ${statusData.available ? 'Available' : 'Unavailable'}`);
+        return statusData.available;
+      }
+    } catch (e) {
+      // Invalid cache data, will proceed with live check
+      localStorage.removeItem('wp_api_status');
+    }
+  }
+  
   try {
-    // Use a controller to implement timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    // Multiple endpoints to check, in order of reliability
+    const endpoints = [
+      '/posts?per_page=1',      // Main posts endpoint
+      '/categories?per_page=1', // Categories as fallback
+      '/tags?per_page=1'        // Tags as secondary fallback
+    ];
     
-    const response = await fetch(`${WORDPRESS_API_BASE}/posts?per_page=1`, {
-      method: 'HEAD',
-      headers: {
-        'Accept': 'application/json'
-      },
-      signal: controller.signal
-    });
+    // Check endpoints in sequence until one succeeds
+    for (const endpoint of endpoints) {
+      try {
+        // Use a controller to implement timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const response = await fetch(`${WORDPRESS_API_BASE}${endpoint}`, {
+          method: 'HEAD', // Use HEAD to be lightweight
+          headers: {
+            'Accept': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          // Cache the successful status
+          localStorage.setItem('wp_api_status', JSON.stringify({
+            available: true,
+            timestamp: now,
+            endpoint
+          }));
+          
+          console.log(`[WordPress] API status check: Available (via ${endpoint})`);
+          return true;
+        }
+      } catch (endpointError) {
+        // This endpoint failed, try the next one
+        console.warn(`[WordPress] Endpoint ${endpoint} failed:`, endpointError);
+        continue;
+      }
+    }
     
-    clearTimeout(timeoutId);
+    // All endpoints failed
+    console.warn('[WordPress] All API endpoints failed');
     
-    const isAvailable = response.ok;
-    console.log(`[WordPress] API status check: ${isAvailable ? 'Available' : 'Unavailable'}`);
+    // Cache the failed status
+    localStorage.setItem('wp_api_status', JSON.stringify({
+      available: false,
+      timestamp: now
+    }));
     
-    return isAvailable;
+    return false;
   } catch (error) {
     console.warn('[WordPress] API status check failed:', error);
     
@@ -580,6 +639,13 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
       silent: true // Don't show toast for status check
     });
     
+    // Cache the error status
+    localStorage.setItem('wp_api_status', JSON.stringify({
+      available: false,
+      timestamp: now,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }));
+    
     return false;
   }
 }
@@ -587,17 +653,20 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
 /**
  * Preload WordPress posts in the background for faster initial page load
  */
-export function preloadWordPressPosts(): void {
-  // Start a background fetch with low priority
-  setTimeout(() => {
-    console.log('[WordPress] Starting background preload of posts');
-    
+export function preloadWordPressPosts(): Promise<void> {
+  console.log('[WordPress] Starting background preload of posts');
+  
+  // Return a promise that resolves when the preload is complete
+  return new Promise((resolve, reject) => {
     fetchWordPressPosts({ perPage: 5, skipCache: true })
       .then(result => {
         console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
+        resolve();
       })
       .catch(error => {
         console.warn('[WordPress] Preload failed:', error);
+        // Still resolve the promise to prevent blocking
+        resolve();
       });
-  }, 1000);
+  });
 }

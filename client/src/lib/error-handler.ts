@@ -28,6 +28,11 @@ export enum ErrorCategory {
   API = 'api',
   VALIDATION = 'validation',
   WORDPRESS = 'wordpress',
+  WORDPRESS_TIMEOUT = 'wordpress_timeout',
+  WORDPRESS_PARSE = 'wordpress_parse',
+  WORDPRESS_CORS = 'wordpress_cors',
+  WORDPRESS_AUTH = 'wordpress_auth',
+  WORDPRESS_RATE_LIMIT = 'wordpress_rate_limit',
   AUTHENTICATION = 'authentication',
   UNKNOWN = 'unknown'
 }
@@ -112,25 +117,98 @@ export function formatError(
 }
 
 /**
- * Handle WordPress API specific errors
+ * Handle WordPress API specific errors with enhanced detection
+ * This specialized handler categorizes WordPress errors for better handling
  */
 export function handleWordPressError(error: unknown): ApplicationError {
-  const formattedError = formatError(error, ErrorCategory.WORDPRESS);
+  let category = ErrorCategory.WORDPRESS;
+  let severity = ErrorSeverity.ERROR;
+  let errorMessage = '';
+  
+  // Determine the specific type of WordPress error
+  if (error instanceof Error) {
+    errorMessage = error.message;
+    
+    // Check for timeout errors
+    if (error.name === 'AbortError' || errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+      category = ErrorCategory.WORDPRESS_TIMEOUT;
+      errorMessage = 'WordPress API request timed out. The server might be overloaded or unavailable.';
+    }
+    
+    // Check for CORS errors
+    else if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
+      category = ErrorCategory.WORDPRESS_CORS;
+      errorMessage = 'WordPress API access restricted by security policies.';
+    }
+    
+    // Check for parse errors
+    else if (error instanceof SyntaxError || 
+             errorMessage.includes('JSON') || 
+             errorMessage.includes('parse')) {
+      category = ErrorCategory.WORDPRESS_PARSE;
+      errorMessage = 'Unable to read WordPress content due to a format error.';
+    }
+    
+    // Check for network connectivity issues
+    else if (errorMessage.includes('network') || 
+             errorMessage.includes('fetch') || 
+             errorMessage.includes('offline')) {
+      category = ErrorCategory.NETWORK;
+      errorMessage = 'Network connection issue while accessing WordPress content.';
+    }
+  } 
+  
+  // Handle response objects with HTTP status codes
+  else if (error && typeof error === 'object') {
+    const wpError = error as Record<string, any>;
+    const status = wpError.status || wpError.statusCode;
+    
+    if (wpError.message) {
+      errorMessage = String(wpError.message);
+    }
+    
+    if (status) {
+      // Authorization issues
+      if (status === 401 || status === 403) {
+        category = ErrorCategory.WORDPRESS_AUTH;
+        errorMessage = 'Authorization issue accessing WordPress content.';
+        severity = ErrorSeverity.ERROR;
+      }
+      
+      // Rate limiting
+      else if (status === 429) {
+        category = ErrorCategory.WORDPRESS_RATE_LIMIT;
+        errorMessage = 'WordPress API rate limit exceeded. Please try again later.';
+        severity = ErrorSeverity.WARNING;
+      }
+      
+      // Server errors
+      else if (status >= 500) {
+        severity = ErrorSeverity.ERROR;
+        errorMessage = 'WordPress server encountered an error. We\'ll try again soon.';
+      }
+    }
+    
+    // Check WordPress error codes for more specific errors
+    if (wpError.code) {
+      // Enhance with WordPress specific error code
+      if (errorMessage.length === 0) {
+        errorMessage = `WordPress error: ${wpError.code}`;
+      }
+    }
+  }
+  
+  // If we couldn't determine a specific error message, use a default
+  if (!errorMessage) {
+    errorMessage = 'Unable to retrieve WordPress content. We\'ll try again soon.';
+  }
+  
+  // Create the formatted error
+  const formattedError = formatError(error, category, severity);
+  formattedError.message = errorMessage;
   
   // Log WordPress errors for debugging
   console.error('WordPress API Error:', formattedError);
-  
-  // Add WordPress-specific details if possible
-  if (error && typeof error === 'object') {
-    const wpError = error as Record<string, any>;
-    
-    if (wpError.code) {
-      formattedError.details = {
-        ...formattedError.details,
-        wordpressCode: wpError.code
-      };
-    }
-  }
   
   return formattedError;
 }
@@ -175,6 +253,7 @@ export function notifyError(error: ApplicationError): void {
 
 /**
  * Get a user-friendly title based on error category
+ * Includes specialized titles for WordPress error subcategories
  */
 function getErrorTitle(category: ErrorCategory): string {
   switch (category) {
@@ -186,6 +265,16 @@ function getErrorTitle(category: ErrorCategory): string {
       return 'Content Error';
     case ErrorCategory.WORDPRESS:
       return 'Story Content Error';
+    case ErrorCategory.WORDPRESS_TIMEOUT:
+      return 'Content Loading Timeout';
+    case ErrorCategory.WORDPRESS_PARSE:
+      return 'Content Format Error';
+    case ErrorCategory.WORDPRESS_CORS:
+      return 'Access Restriction';
+    case ErrorCategory.WORDPRESS_AUTH:
+      return 'Content Access Error';
+    case ErrorCategory.WORDPRESS_RATE_LIMIT:
+      return 'Rate Limit Reached';
     case ErrorCategory.AUTHENTICATION:
       return 'Authentication Error';
     case ErrorCategory.UNKNOWN:

@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
+import '@/styles/eyeball-loader.css';
 
 export default function ErrorFallback() {
   const handleReload = () => {
@@ -12,7 +13,12 @@ export default function ErrorFallback() {
   };
 
   return (
-    <div className="min-h-[50vh] flex items-center justify-center p-4">
+    <div className="min-h-[50vh] flex items-center justify-center p-4 flex-col">
+      {/* Animated eyeball loader */}
+      <div className="flex justify-center mb-6">
+        <span className="loader" aria-hidden="true"></span>
+      </div>
+      
       <Alert variant="destructive" className="max-w-xl">
         <AlertCircle className="h-5 w-5" />
         <AlertTitle>Failed to load component</AlertTitle>

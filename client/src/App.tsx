@@ -32,8 +32,7 @@ import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/Global
 // Import global loading manager functions
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
 // Import WordPress API preload function for enhanced reliability
-import { preloadWordPressPosts, checkWordPressApiStatus } from './lib/wordpress-api';
-
+import { preloadWordPressPosts } from './lib/wordpress-api';
 
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
@@ -117,7 +116,7 @@ const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
 const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
-const SearchPage = withSuspense(React.lazy(() => import('./pages/search')));
+
 
 
 // Error Pages
@@ -264,8 +263,6 @@ const AppContent = () => {
                 <Route path="/switch-test" component={SwitchTestPage} />
                 <Route path="/toggle-comparison" component={ToggleComparisonPage} />
                 <Route path="/accessibility-test" component={AccessibilityTestPage} />
-                <Route path="/search" component={SearchPage} />
-
                 <Route path="/test-recommendations" component={TestRecommendationsPage} />
 
                 {/* Legal Routes */}
@@ -336,22 +333,13 @@ const AppContent = () => {
 function App() {
   usePerformanceMonitoring();
 
-  // Preload WordPress posts for reliability and faster loading
+  // We now use the WordPress API provider for status management
   useEffect(() => {
-    // Check WordPress API status
-    checkWordPressApiStatus()
-      .then(isAvailable => {
-        console.log(`[App] WordPress API status: ${isAvailable ? 'Available' : 'Unavailable'}`);
-        
-        if (isAvailable) {
-          // If API is available, start preloading posts
-          preloadWordPressPosts();
-        } else {
-          console.warn('[App] WordPress API is unavailable, skipping preload');
-        }
-      })
+    // Preload posts if needed
+    preloadWordPressPosts()
       .catch(error => {
-        console.error('[App] Error checking WordPress API status:', error);
+        console.error('[App] Error preloading WordPress posts:', 
+          error instanceof Error ? error.message : 'Unknown error');
       });
   }, []);
 

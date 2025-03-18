@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
 import { getDefaultPrivacySettings, validatePrivacySettings } from '@/utils/privacy-settings-utils';
-// Import for demo settings in development
-import { config } from '@/lib/config';
 
 export interface PrivacySettings {
   // User profile visibility
@@ -44,7 +42,15 @@ export function usePrivacySettings() {
   // Fetch the user's privacy settings when authenticated
   useEffect(() => {
     const fetchSettings = async () => {
+      // If auth is not ready, keep loading
+      if (!isAuthReady) {
+        return;
+      }
+      
+      // If not authenticated, stop loading and use defaults
       if (!isAuthenticated || !user) {
+        console.log('User not authenticated, using default privacy settings');
+        setSettings(getDefaultPrivacySettings());
         setIsLoading(false);
         return;
       }
@@ -55,12 +61,15 @@ export function usePrivacySettings() {
       try {
         console.log('Fetching privacy settings...');
         const response = await fetch('/api/user/privacy-settings', {
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
         });
 
         if (!response.ok) {
           // For development, use demo settings when API fails
-          const isDev = process.env.NODE_ENV === 'development';
+          const isDev = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
           if (isDev) {
             console.log('Using demo privacy settings for development');
             // Demo settings for development
@@ -77,7 +86,7 @@ export function usePrivacySettings() {
             setIsLoading(false);
             return;
           }
-          throw new Error('Failed to fetch privacy settings');
+          throw new Error(`Failed to fetch privacy settings: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();

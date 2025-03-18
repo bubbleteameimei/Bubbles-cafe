@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'wouter';
+import '@/styles/eyeball-loader.css';
 
 interface SimplifiedErrorPageProps {
   statusCode: number;
@@ -25,6 +26,11 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
       <div className="space-y-4">
+        {/* Animated eyeball loader */}
+        <div className="flex justify-center mb-6">
+          <span className="loader" aria-hidden="true"></span>
+        </div>
+        
         <div className="text-9xl font-creepster text-red-600">{statusCode}</div>
         <h1 className="text-4xl font-specialElite tracking-tighter sm:text-5xl">
           {title}

@@ -67,7 +67,7 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
         id: user.id,
         username: user.username,
         email: user.email,
-        displayName: user.displayName || user.username,
+        displayName: user.fullName || user.username, // Use fullName instead of displayName
         bio: user.bio || '',
         createdAt: user.createdAt,
         lastLogin: user.lastLogin || user.createdAt,
@@ -129,11 +129,24 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
       // Process for export - include post titles
       const processedHistory = await Promise.all(
         readingHistory.map(async (item) => {
-          const post = await storage.getPostById(item.postId);
+          // Skip posts with null or undefined IDs
+          const postId = item.postId;
+          let postTitle = 'Unknown Post';
+          
+          if (postId !== null && postId !== undefined) {
+            const post = await storage.getPostById(postId);
+            if (post) {
+              postTitle = post.title;
+            }
+          }
+          
           return {
-            ...item,
-            postTitle: post?.title || 'Unknown Post',
-            readDate: item.lastRead
+            id: item.id,
+            userId: item.userId,
+            postId: item.postId,
+            progress: item.progress,
+            postTitle: postTitle,
+            lastReadAt: item.lastReadAt
           };
         })
       );
@@ -157,13 +170,23 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
       // Process for export - include post titles
       const processedComments = await Promise.all(
         userComments.map(async (comment) => {
-          const post = await storage.getPostById(comment.postId);
+          // Skip posts with null or undefined IDs
+          const postId = comment.postId;
+          let postTitle = 'Unknown Post';
+          
+          if (postId !== null && postId !== undefined) {
+            const post = await storage.getPostById(postId);
+            if (post) {
+              postTitle = post.title;
+            }
+          }
+          
           return {
             id: comment.id,
             content: comment.content,
             createdAt: comment.createdAt,
             postId: comment.postId,
-            postTitle: post?.title || 'Unknown Post',
+            postTitle,
             edited: comment.edited,
             metadata: comment.metadata
           };
@@ -207,15 +230,19 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
       const bookmarks = await storage.getUserBookmarks(userId);
       
       // Format for export
-      const processedBookmarks = bookmarks.map(bookmark => ({
-        id: bookmark.id,
-        postId: bookmark.postId,
-        postTitle: bookmark.post?.title || 'Unknown Post',
-        createdAt: bookmark.createdAt,
-        notes: bookmark.notes || '',
-        tags: bookmark.tags || [],
-        folder: bookmark.folder || 'Default'
-      }));
+      const processedBookmarks = bookmarks.map(bookmark => {
+        const { post, ...bookmarkData } = bookmark;
+        
+        return {
+          id: bookmark.id,
+          postId: bookmark.postId,
+          postTitle: post?.title || 'Unknown Post',
+          createdAt: bookmark.createdAt,
+          notes: bookmark.notes || '',
+          tags: bookmark.tags || [],
+          category: 'Default' // Use category instead of folder which doesn't exist in schema
+        };
+      });
       
       res.json(processedBookmarks);
     } catch (error) {

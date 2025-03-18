@@ -10,10 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, Download, FileBadge, FileJson, FileText, Printer, Loader } from "lucide-react";
 import { ExportFormat } from "../../types/privacy-settings";
+// Import PrivacySettings directly from hooks file to ensure type consistency
+import { PrivacySettings } from "../../hooks/use-privacy-settings";
 import { UserDataExport, exportAsJson, exportAsCsv, exportAsText, printUserData } from "../../utils/export-utils";
 import { useAuth } from "../../hooks/use-auth";
 import { usePrivacySettings } from "../../hooks/use-privacy-settings";
 import { useToast } from "../../hooks/use-toast";
+import { getDefaultPrivacySettings } from "@/utils/privacy-settings-utils";
 
 /**
  * Data Export page component
@@ -168,7 +171,9 @@ export default function DataExportPage() {
           isAdmin: user.isAdmin,
           createdAt: user.createdAt,
         } : {},
-        privacySettings: selectedData.privacySettings ? (privacySettings || {}) : {},
+        privacySettings: selectedData.privacySettings 
+          ? (privacySettings || getDefaultPrivacySettings()) 
+          : getDefaultPrivacySettings(),
         readingHistory: selectedData.readingHistory ? readingHistory || [] : undefined,
         comments: selectedData.comments ? comments || [] : undefined,
         bookmarks: selectedData.bookmarks ? bookmarks || [] : undefined,
