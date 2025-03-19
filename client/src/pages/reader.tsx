@@ -36,6 +36,11 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 // Create a utility function to sanitize HTML content 
 const sanitizeHtmlContent = (html: string): string => {
   try {
+    // Convert markdown-style italics (_text_) to HTML <em> tags
+    // Look for text surrounded by underscores that doesn't have spaces immediately after/before the underscores
+    // This avoids replacing underscores in URLs or other non-italic contexts
+    html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '<em>$1</em>');
+    
     // Create a simple HTML sanitization function
     // This removes potentially harmful scripts and keeps only safe content
     const doc = new DOMParser().parseFromString(html, 'text/html');
