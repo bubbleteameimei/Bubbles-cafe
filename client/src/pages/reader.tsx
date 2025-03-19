@@ -351,14 +351,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   const storyContentStyles = `
   .story-content {
-    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
     /* Removed max-width constraint for immersive experience */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   .story-content p {
-    line-height: 1.8;  /* Adjusted for Newsreader font */
+    line-height: 1.8;  /* Adjusted for Cormorant Garamond font */
     margin-bottom: 1.2em;  /* Improved spacing between paragraphs */
     text-align: justify;
     letter-spacing: 0.01em; /* Subtle letter spacing */
@@ -367,7 +367,15 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
     margin-left: auto;
     margin-right: auto;
-    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+  }
+  .story-content em {
+    font-family: 'Dancing Script', cursive;
+    font-style: normal;
+    font-size: 1.05em;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+    font-weight: 500;
   }
   .story-content p + p {
     margin-top: 2em;  /* Double line break effect */
@@ -388,7 +396,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     .story-content p {
       margin-bottom: 1em;
       line-height: 1.7; /* Slightly tighter on mobile */
-      font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
+      font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
     }
     .story-content p + p {
       margin-top: 1.8em;  /* Slightly reduced on mobile */
@@ -413,7 +421,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     letter-spacing: -0.02em;
     line-height: 1.3;
     position: relative;
-    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
   }
   .story-content h2::before, .story-content h3::before {
     content: "";
@@ -758,7 +766,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content font-newsreader mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
+              className="story-content mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
               style={{
                 fontSize: `${fontSize}px`,
                 whiteSpace: 'pre-wrap',
