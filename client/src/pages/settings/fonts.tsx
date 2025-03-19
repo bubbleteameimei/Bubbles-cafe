@@ -57,7 +57,7 @@ export default function FontSettingsPage() {
               <SelectValue placeholder="Select a font" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newsreader">Newsreader (Body Text)</SelectItem>
+              <SelectItem value="cormorant">Cormorant Garamond (Body Text)</SelectItem>
               <SelectItem value="castoro">Castoro Titling (H1)</SelectItem>
               <SelectItem value="gilda">Gilda Display (H2-H3)</SelectItem>
               <SelectItem value="dancing">Dancing Script (Italics)</SelectItem>
@@ -71,7 +71,7 @@ export default function FontSettingsPage() {
             <div
               style={{ 
                 fontSize: `${fontSize}px`, 
-                fontFamily: fontFamily === 'newsreader' ? "'Newsreader', serif" : 
+                fontFamily: fontFamily === 'cormorant' ? "'Cormorant Garamond', serif" : 
                             fontFamily === 'castoro' ? "'Castoro Titling', serif" :
                             fontFamily === 'gilda' ? "'Gilda Display', serif" : 
                             "'Dancing Script', cursive"
