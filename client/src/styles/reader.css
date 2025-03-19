@@ -95,8 +95,7 @@
 
 /* Italics for emphasized text */
 .story-content em {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
+  font-family: 'Dancing Script', cursive;
   font-size: 1.05em;
 }
 
@@ -121,14 +120,12 @@
   font-size: 3em;
   color: var(--primary);
   opacity: 0.15;
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
+  font-family: 'Dancing Script', cursive;
 }
 
 .story-content blockquote p {
   margin-bottom: 0.8em;
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
+  font-family: 'Dancing Script', cursive;
 }
 
 .story-content blockquote p:last-child {
@@ -277,32 +274,32 @@
     padding: 0 1rem;
     max-width: 95%; /* More space on smaller screens */
   }
-
+  
   .story-content {
     max-width: 100%;
     font-size: 1rem;
     line-height: 1.8; /* Improved line height for mobile */
     letter-spacing: 0.01em; /* Adjusted for mobile */
   }
-
+  
   .story-content p {
     margin-bottom: 1.6em;
     text-align: left; /* Left-aligned for easier mobile reading */
     hyphens: none; /* Disable hyphenation on mobile for clarity */
   }
-
+  
   .story-content h1 {
     font-size: 1.6em;
   }
-
+  
   .story-content h2 {
     font-size: 1.4em;
   }
-
+  
   .story-content h3 {
     font-size: 1.2em;
   }
-
+  
   .navigation-buttons {
     flex-direction: column;
     align-items: center;
@@ -316,7 +313,7 @@
   .story-content {
     max-width: 650px; /* Slightly smaller than desktop */
   }
-
+  
   .story-content {
     line-height: 1.85;
   }
@@ -408,15 +405,15 @@
   .reader-interface {
     padding-bottom: 5rem;
   }
-
+  
   .floating-navigation-inner {
     padding: 0.5rem 0.75rem;
   }
-
+  
   .nav-buttons {
     gap: 0.5rem;
   }
-
+  
   .nav-button {
     padding: 0.4rem 0.5rem;
     font-size: 0.8rem;
@@ -431,12 +428,12 @@
   .floating-navigation {
     display: none;
   }
-
+  
   .story-content {
     font-size: 12pt;
     line-height: 1.5;
   }
-
+  
   .story-content a {
     text-decoration: none;
     color: #000;
