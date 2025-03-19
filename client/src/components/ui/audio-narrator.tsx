@@ -35,6 +35,8 @@ export function AudioNarrator({
   const [highlightedText, setHighlightedText] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speechRate, setSpeechRate] = useState(1.0);
+  const [showControls, setShowControls] = useState(true);
   
   // References
   const speakTimeout = useRef<number | null>(null);
@@ -499,6 +501,34 @@ export function AudioNarrator({
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = vol;
     }
+  };
+  
+  // Handle speech rate change
+  const handleSpeechRateChange = (newRate: number[]) => {
+    const rate = newRate[0];
+    setSpeechRate(rate);
+    
+    // Update utterance rate 
+    if (utteranceRef.current) {
+      // Calculate the base rate from emotional tone settings
+      const baseRate = toneSettings[emotionalTone].rate;
+      // Apply the user's rate adjustment as a multiplier
+      utteranceRef.current.rate = baseRate * rate;
+      
+      // If currently playing, we need to restart with new rate
+      if (isPlaying) {
+        stopNarration();
+        startNarration();
+      }
+    }
+    
+    // Regenerate word timings with new rate
+    generateWordTimings();
+  };
+  
+  // Toggle controls visibility
+  const toggleControlsVisibility = () => {
+    setShowControls(!showControls);
   };
 
   // Toggle mute
