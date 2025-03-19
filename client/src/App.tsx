@@ -172,6 +172,7 @@ const AdminSettingsPage = withSuspense(React.lazy(() => import('./pages/admin/se
 const AdminPostsPage = withSuspense(React.lazy(() => import('./pages/admin/posts')));
 const AdminManagePostsPage = withSuspense(React.lazy(() => import('./pages/admin/manage-posts')));
 const AdminFeedbackPage = withSuspense(React.lazy(() => import('./pages/admin/feedback')));
+const AdminFeedbackManagementPage = withSuspense(React.lazy(() => import('./pages/admin/FeedbackAdmin')));
 const AdminFeedbackReviewPage = withSuspense(React.lazy(() => import('./pages/admin/feedback-review')));
 const AdminBugReportsPage = withSuspense(React.lazy(() => import('./pages/admin/bug-reports')));
 const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages/admin/content-moderation')));
@@ -307,6 +308,7 @@ const AppContent = () => {
                 <ProtectedRoute path="/admin/content-moderation" component={AdminContentModerationPage} requireAdmin />
                 <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
                 <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
+                <ProtectedRoute path="/admin/feedback-management" component={AdminFeedbackManagementPage} requireAdmin />
 
                 {/* 404 Route - Using a stable component to fix hooks ordering */}
                 <Route>

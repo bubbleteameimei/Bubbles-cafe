@@ -1,310 +1,416 @@
-"use client"
-
-import { useState } from 'react';
-import { MoreHorizontal, Check, X, Clock, Tag, MessageCircle, Copy, Bot, AlertCircle, Lightbulb } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent, 
+  CardFooter 
+} from '@/components/ui/card';
+import { 
+  Tabs, 
+  TabsList, 
+  TabsTrigger, 
+  TabsContent 
+} from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { FeedbackCategory, FeedbackStatus } from './FeedbackCategoryFilter';
-import { cn } from '@/lib/utils';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
+  MessageCircle, 
+  Calendar, 
+  User, 
+  Mail, 
+  Clock, 
+  Globe,
+  Monitor, 
+  Smartphone, 
+  Tag, 
+  CornerDownRight,
+  Send,
+  Loader2
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { UserFeedback } from '@shared/schema';
+import { ResponsePreview, ResponseSuggestion } from './ResponsePreview';
+import { apiRequest } from '@/lib/queryClient';
 
-export interface ResponseSuggestion {
-  suggestion: string;
-  confidence: number;
-  category: string;
-  tags?: string[];
-  template?: string;
-  isAutomated: boolean;
+// Additional interfaces
+interface FeedbackMetadata {
+  browser?: {
+    name: string;
+    version: string;
+    userAgent: string;
+  };
+  device?: {
+    type: string;
+    model?: string;
+  };
+  os?: {
+    name: string;
+    version: string;
+  };
+  screen?: {
+    width: number;
+    height: number;
+  };
+  location?: {
+    path: string;
+    referrer?: string;
+  };
+  adminResponse?: {
+    content: string;
+    respondedAt: string;
+    respondedBy: string;
+  };
 }
 
-export interface FeedbackItem {
-  id: number;
-  content: string;
-  type: FeedbackCategory;
-  // rating field removed
-  page: string;
-  category: string;
-  status: FeedbackStatus;
-  createdAt: string;
-  metadata: {
-    browser: string;
-    operatingSystem: string;
-    screenResolution: string;
-    userAgent: string;
-    name?: string;
-    email?: string;
-  };
-  internalNotes?: string;
-  responseSuggestion?: ResponseSuggestion;
-  responseHints?: string[];
+interface FeedbackWithMetadata extends UserFeedback {
+  metadata: FeedbackMetadata;
+  subject: string;
+  email: string | null;
+  contactRequested: boolean;
 }
 
 interface FeedbackDetailsProps {
-  feedback: FeedbackItem;
-  onStatusChange: (id: number, status: FeedbackStatus) => void;
-  onAddNote: (id: number, note: string) => void;
+  feedback: FeedbackWithMetadata;
+  onStatusChange?: (id: number, status: string) => void;
+  onSendResponse?: (id: number, response: string) => void;
+  className?: string;
+  responseSuggestion?: ResponseSuggestion;
+  alternativeSuggestions?: ResponseSuggestion[];
 }
 
-export function FeedbackDetails({ feedback, onStatusChange, onAddNote }: FeedbackDetailsProps) {
-  const [internalNote, setInternalNote] = useState(feedback.internalNotes || '');
-  const [isEditingNote, setIsEditingNote] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const statusColors: Record<FeedbackStatus, string> = {
-    pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-    reviewed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    resolved: 'bg-green-500/10 text-green-500 border-green-500/20',
-    rejected: 'bg-red-500/10 text-red-500 border-red-500/20',
-    all: '' // This won't be used for display
+export function FeedbackDetails({ 
+  feedback, 
+  onStatusChange, 
+  onSendResponse,
+  className = '',
+  responseSuggestion,
+  alternativeSuggestions = []
+}: FeedbackDetailsProps) {
+  const [response, setResponse] = useState(
+    feedback.metadata?.adminResponse?.content || ''
+  );
+  const [status, setStatus] = useState(feedback.status);
+  const [isSending, setIsSending] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<ResponseSuggestion | null>(
+    responseSuggestion || null
+  );
+  
+  // Status color mapping
+  const statusColorMap: Record<string, string> = {
+    pending: 'bg-yellow-500 text-white',
+    inProgress: 'bg-blue-500 text-white',
+    resolved: 'bg-green-500 text-white',
+    closed: 'bg-gray-500 text-white',
+    rejected: 'bg-red-500 text-white',
+    reviewed: 'bg-purple-500 text-white'
   };
 
-  const categoryColors: Record<FeedbackCategory, string> = {
-    bug: 'bg-red-500/10 text-red-500 border-red-500/20',
-    suggestion: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-    praise: 'bg-green-500/10 text-green-500 border-green-500/20',
-    complaint: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-    all: '' // This won't be used for display
+  // Handle status change
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    if (onStatusChange) {
+      onStatusChange(feedback.id, value);
+    }
   };
 
-  const statusIcons = {
-    pending: <Clock className="h-4 w-4" />,
-    reviewed: <Check className="h-4 w-4" />,
-    resolved: <Check className="h-4 w-4" />,
-    rejected: <X className="h-4 w-4" />
+  // Handle response suggestion selection
+  const handleSuggestionSelect = (suggestion: ResponseSuggestion) => {
+    setSelectedSuggestion(suggestion);
+    setResponse(suggestion.suggestion);
   };
 
-  const handleSaveNote = () => {
-    onAddNote(feedback.id, internalNote);
-    setIsEditingNote(false);
-    toast.success('Note saved successfully');
+  // Send response
+  const handleSendResponse = async () => {
+    if (!response.trim()) {
+      toast.error('Please enter a response');
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Call API to send response
+      await apiRequest(`/api/feedback/${feedback.id}/respond`, {
+        method: 'POST',
+        body: JSON.stringify({ response }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      toast.success('Response sent successfully');
+      if (onSendResponse) {
+        onSendResponse(feedback.id, response);
+      }
+    } catch (error) {
+      console.error('Error sending response:', error);
+      toast.error('Failed to send response');
+    } finally {
+      setIsSending(false);
+    }
   };
 
+  // Format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM d, yyyy h:mm a');
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Handle device type icon
+  const getDeviceIcon = () => {
+    const deviceType = feedback.metadata?.device?.type?.toLowerCase() || '';
+    if (deviceType.includes('mobile') || deviceType.includes('phone')) {
+      return <Smartphone className="h-4 w-4 mr-1" />;
+    }
+    return <Monitor className="h-4 w-4 mr-1" />;
   };
 
   return (
-    <div className="border rounded-lg p-4 mb-4 transition-all hover:shadow-sm">
-      <div className="flex justify-between items-start">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={cn("px-2 py-0.5", categoryColors[feedback.type])}>
-              {feedback.type}
-            </Badge>
-            <Badge variant="outline" className={cn("px-2 py-0.5", statusColors[feedback.status])}>
-              {statusIcons[feedback.status as keyof typeof statusIcons]}
-              <span className="ml-1">{feedback.status}</span>
-            </Badge>
-            {/* Rating badge removed */}
-          </div>
-          <h3 className="text-base font-medium">
-            Feedback #{feedback.id}
-            {feedback.metadata.name && <span className="text-muted-foreground font-normal ml-2">from {feedback.metadata.name}</span>}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {feedback.page && <span>Page: {feedback.page} • </span>}
-            Submitted: {formatDate(feedback.createdAt)}
-          </p>
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onStatusChange(feedback.id, 'pending')}>
-              Mark as Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(feedback.id, 'reviewed')}>
-              Mark as Reviewed
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(feedback.id, 'resolved')}>
-              Mark as Resolved
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange(feedback.id, 'rejected')}>
-              Mark as Rejected
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="mt-3">
-        <div className="text-sm mb-2">{feedback.content}</div>
-        
-        <Button 
-          variant="link" 
-          className="px-0 text-xs" 
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? 'Show less' : 'Show more details'}
-        </Button>
-        
-        {isExpanded && (
-          <div className="mt-3 space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <div>
-                <p className="font-medium">Browser:</p>
-                <p>{feedback.metadata.browser}</p>
-              </div>
-              <div>
-                <p className="font-medium">Operating System:</p>
-                <p>{feedback.metadata.operatingSystem}</p>
-              </div>
-              <div>
-                <p className="font-medium">Screen Resolution:</p>
-                <p>{feedback.metadata.screenResolution}</p>
-              </div>
-              <div>
-                <p className="font-medium">Email:</p>
-                <p>{feedback.metadata.email || 'Not provided'}</p>
-              </div>
-            </div>
-            
-            <div className="pt-2 border-t">
-              <p className="font-medium text-xs mb-1 flex items-center">
-                <MessageCircle className="h-3 w-3 mr-1" />
-                Internal Notes:
-              </p>
-              {isEditingNote ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={internalNote}
-                    onChange={(e) => setInternalNote(e.target.value)}
-                    placeholder="Add internal notes about this feedback..."
-                    className="min-h-[100px] text-xs"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setIsEditingNote(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      onClick={handleSaveNote}
-                    >
-                      Save Note
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {internalNote || 'No notes added yet.'}
-                  </p>
-                  <Button 
-                    variant="link" 
-                    className="px-0 text-xs mt-1" 
-                    onClick={() => setIsEditingNote(true)}
-                  >
-                    {internalNote ? 'Edit Note' : 'Add Note'}
-                  </Button>
-                </div>
+    <Card className={`w-full ${className}`}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-xl font-bold">{feedback.subject}</CardTitle>
+            <CardDescription className="flex items-center mt-1">
+              <Calendar className="h-4 w-4 mr-1" />
+              {formatDate(feedback.createdAt)}
+              {feedback.metadata?.location?.path && (
+                <>
+                  <Globe className="h-4 w-4 ml-3 mr-1" />
+                  <span title={feedback.metadata.location.path} className="truncate max-w-[200px]">
+                    {feedback.metadata.location.path}
+                  </span>
+                </>
               )}
+            </CardDescription>
+          </div>
+          <Badge className={statusColorMap[status] || 'bg-gray-500'}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="user-info">User Info</TabsTrigger>
+            <TabsTrigger value="tech-info">Technical Info</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="mt-4 space-y-4">
+            <div className="bg-muted p-4 rounded-md whitespace-pre-wrap">
+              {feedback.content}
             </div>
             
-            <div className="flex items-center space-x-2 pt-2 border-t">
-              <Checkbox id={`mark-resolved-${feedback.id}`} />
-              <label
-                htmlFor={`mark-resolved-${feedback.id}`}
-                className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Mark as addressed in next release
-              </label>
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              <span className="text-sm font-medium">Type:</span>
+              <Badge variant="secondary">
+                {feedback.type}
+              </Badge>
             </div>
             
-            {/* AI Response Suggestion Section */}
-            {feedback.responseSuggestion && (
-              <div className="pt-3 border-t">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-xs flex items-center">
-                    <Bot className="h-3 w-3 mr-1" />
-                    AI Response Suggestion
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-500 border-blue-500/20">
-                      {Math.round(feedback.responseSuggestion.confidence * 100)}% confidence
-                    </Badge>
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => {
-                      if (feedback.responseSuggestion) {
-                        navigator.clipboard.writeText(feedback.responseSuggestion.suggestion);
-                        toast.success('Response suggestion copied to clipboard');
-                      }
-                    }}
-                  >
-                    <Copy className="h-3 w-3" />
-                    <span className="sr-only">Copy suggestion</span>
-                  </Button>
+            {/* Admin Response Section (if exists) */}
+            {feedback.metadata?.adminResponse && (
+              <div className="mt-4 border-t pt-4">
+                <h4 className="text-sm font-medium mb-2 flex items-center">
+                  <CornerDownRight className="h-4 w-4 mr-1" />
+                  Response ({formatDate(feedback.metadata.adminResponse.respondedAt)})
+                </h4>
+                <div className="bg-primary/10 p-3 rounded-md text-sm">
+                  {feedback.metadata.adminResponse.content}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="user-info" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <User className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">User ID:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.userId || 'Anonymous'}
+                  </span>
                 </div>
                 
-                <Card className="p-2 bg-muted/50 text-xs">
-                  <p>{feedback.responseSuggestion?.suggestion}</p>
-                </Card>
+                <div className="flex items-center">
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Email:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.email || 'Not provided'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Submitted:</span>
+                  <span className="ml-2 text-sm">
+                    {formatDate(feedback.createdAt)}
+                  </span>
+                </div>
                 
-                {feedback.responseSuggestion?.tags && feedback.responseSuggestion.tags.length > 0 && (
-                  <div className="mt-1">
-                    <p className="text-[10px] text-muted-foreground flex items-center mb-1">
-                      <Tag className="h-3 w-3 mr-1" />
-                      Tags:
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {feedback.responseSuggestion.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="px-1 py-0 text-[10px]">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Contact Requested:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.contactRequested ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="tech-info" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  {getDeviceIcon()}
+                  <span className="text-sm font-medium">Device:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.metadata?.device?.type || 'Unknown'} 
+                    {feedback.metadata?.device?.model ? ` (${feedback.metadata.device.model})` : ''}
+                  </span>
+                </div>
+                
+                <div className="flex items-center">
+                  <span className="text-sm font-medium ml-6">OS:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.metadata?.os?.name || 'Unknown'} 
+                    {feedback.metadata?.os?.version ? ` ${feedback.metadata.os.version}` : ''}
+                  </span>
+                </div>
+                
+                <div className="flex items-center">
+                  <span className="text-sm font-medium ml-6">Browser:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.metadata?.browser?.name || 'Unknown'} 
+                    {feedback.metadata?.browser?.version ? ` ${feedback.metadata.browser.version}` : ''}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">Screen:</span>
+                  <span className="ml-2 text-sm">
+                    {feedback.metadata?.screen?.width && feedback.metadata?.screen?.height
+                      ? `${feedback.metadata.screen.width} x ${feedback.metadata.screen.height}`
+                      : 'Unknown'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">Referrer:</span>
+                  <span className="ml-2 text-sm truncate max-w-[200px]">
+                    {feedback.metadata?.location?.referrer || 'Direct'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {feedback.metadata?.browser?.userAgent && (
+              <div className="mt-2">
+                <span className="text-xs font-medium">User Agent:</span>
+                <div className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
+                  {feedback.metadata.browser.userAgent}
+                </div>
               </div>
             )}
-            
-            {/* Admin Response Hints */}
-            {feedback.responseHints && feedback.responseHints.length > 0 && (
-              <div className="pt-3 border-t">
-                <p className="font-medium text-xs flex items-center mb-2">
-                  <Lightbulb className="h-3 w-3 mr-1" />
-                  Response Hints
-                </p>
-                <ul className="space-y-1 text-xs text-muted-foreground">
-                  {feedback.responseHints.map((hint, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-primary mr-1">•</span>
-                      <span>{hint}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
+          </TabsContent>
+        </Tabs>
+        
+        {/* Response Suggestions (only visible to admins) */}
+        {(responseSuggestion || alternativeSuggestions.length > 0) && (
+          <div className="mt-6">
+            <ResponsePreview
+              feedbackId={feedback.id}
+              initialSuggestion={responseSuggestion || alternativeSuggestions[0]}
+              alternativeSuggestions={alternativeSuggestions}
+              onSelect={handleSuggestionSelect}
+            />
           </div>
         )}
-      </div>
-    </div>
+        
+        {/* Response Form (only for admins) */}
+        <div className="mt-6 space-y-4">
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium mb-1">
+              Update Status
+            </label>
+            <Select value={status} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="inProgress">In Progress</SelectItem>
+                <SelectItem value="reviewed">Reviewed</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label htmlFor="response" className="block text-sm font-medium mb-1">
+              Response
+            </label>
+            <Textarea
+              id="response"
+              value={response}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setResponse(e.target.value)}
+              placeholder="Type your response here..."
+              className="min-h-[120px]"
+            />
+          </div>
+        </div>
+      </CardContent>
+      
+      <CardFooter className="flex justify-end gap-2">
+        <Button 
+          variant="outline" 
+          onClick={() => setResponse('')}
+          disabled={!response || isSending}
+        >
+          Clear
+        </Button>
+        <Button 
+          onClick={handleSendResponse}
+          disabled={!response || isSending}
+        >
+          {isSending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="h-4 w-4 mr-2" />
+              Send Response
+            </>
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

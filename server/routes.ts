@@ -9,6 +9,7 @@ import compression from 'compression';
 import express from 'express';
 import * as session from 'express-session';
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
+import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { z } from "zod";
 import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
@@ -1675,22 +1676,29 @@ export function registerRoutes(app: Express): Server {
       
       // Use the imported functions from the top of the file
       
-      // Generate automated response suggestion
-      const responseSuggestion = generateResponseSuggestion(feedback);
+      // Generate enhanced response suggestion using new AI utility
+      const enhancedSuggestion = generateEnhancedResponse(feedback);
+      
+      // Generate alternative response suggestions
+      const alternativeSuggestions = generateResponseAlternatives(feedback);
       
       // Get response hints for admin
       const responseHints = getResponseHints(feedback);
       
-      feedbackLogger.info('Feedback retrieved successfully with AI suggestions', { 
+      feedbackLogger.info('Feedback retrieved successfully with enhanced AI suggestions', { 
         id, 
         type: feedback.type,
-        suggestionConfidence: responseSuggestion.confidence
+        enhancedConfidence: enhancedSuggestion.confidence,
+        alternativesCount: alternativeSuggestions.length
       });
       
+      // Return enhanced feedback suggestions along with the original ones
       res.status(200).json({ 
         feedback,
-        responseSuggestion,
-        responseHints
+        responseSuggestion: enhancedSuggestion, // Use the enhanced suggestion as primary
+        alternativeSuggestions, // Include alternatives
+        responseHints, // Include the response hints
+        legacySuggestion: generateResponseSuggestion(feedback) // Include legacy suggestion for backward compatibility
       });
     } catch (error) {
       feedbackLogger.error('Error fetching specific feedback', {
@@ -1699,6 +1707,67 @@ export function registerRoutes(app: Express): Server {
         stack: error instanceof Error ? error.stack : undefined
       });
       res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  // Refresh AI suggestions for feedback (admin only)
+  app.get("/api/feedback/:id/suggestions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Check if user is admin
+      const user = req.user as any;
+      if (!user.isAdmin) {
+        feedbackLogger.warn('Unauthorized access attempt to feedback suggestions', {
+          userId: user?.id,
+          isAdmin: user?.isAdmin,
+          feedbackId: req.params.id
+        });
+        return res.status(403).json({ error: "Unauthorized access" });
+      }
+      
+      // Get feedback ID
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        feedbackLogger.warn('Invalid feedback ID provided for suggestions', { feedbackId: req.params.id });
+        return res.status(400).json({ error: "Invalid feedback ID" });
+      }
+      
+      feedbackLogger.info('Refreshing AI suggestions for feedback', { id });
+      
+      // Get feedback
+      const feedback = await storage.getFeedback(id);
+      
+      if (!feedback) {
+        feedbackLogger.warn('Feedback not found for suggestions', { id });
+        return res.status(404).json({ error: "Feedback not found" });
+      }
+      
+      // Generate fresh suggestions
+      const enhancedSuggestion = generateEnhancedResponse(feedback);
+      const alternativeSuggestions = generateResponseAlternatives(feedback);
+      const responseHints = getResponseHints(feedback);
+      const legacySuggestion = generateResponseSuggestion(feedback);
+      
+      feedbackLogger.info('AI suggestions refreshed successfully', { 
+        id, 
+        type: feedback.type,
+        enhancedConfidence: enhancedSuggestion.confidence,
+        alternativesCount: alternativeSuggestions.length
+      });
+      
+      res.status(200).json({
+        responseSuggestion: enhancedSuggestion,
+        alternativeSuggestions,
+        responseHints,
+        legacySuggestion
+      });
+    } catch (error) {
+      feedbackLogger.error('Error refreshing AI suggestions', {
+        id: req.params.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      res.status(500).json({ error: "Failed to refresh AI suggestions" });
     }
   });
 
