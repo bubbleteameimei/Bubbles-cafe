@@ -29,17 +29,37 @@ export function AudioNarrator({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(() => {
+    // Initialize from local storage if available
+    const savedVolume = localStorage.getItem('narrator-volume');
+    return savedVolume ? parseFloat(savedVolume) : 0.7;
+  });
+  const [isMuted, setIsMuted] = useState(() => {
+    // Initialize from local storage if available
+    const savedMutedState = localStorage.getItem('narrator-is-muted');
+    return savedMutedState ? JSON.parse(savedMutedState) : false;
+  });
   const [isInitialized, setIsInitialized] = useState(false);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [highlightedText, setHighlightedText] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [speechRate, setSpeechRate] = useState(1.0);
-  const [showControls, setShowControls] = useState(false);
-  const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(false);
+  const [speechRate, setSpeechRate] = useState(() => {
+    // Initialize from local storage if available
+    const savedRate = localStorage.getItem('narrator-speech-rate');
+    return savedRate ? parseFloat(savedRate) : 1.0;
+  });
+  const [showControls, setShowControls] = useState(() => {
+    // Initialize from local storage if available
+    const savedShowControls = localStorage.getItem('narrator-show-controls');
+    return savedShowControls ? JSON.parse(savedShowControls) : false;
+  });
+  const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(() => {
+    // Initialize from local storage if available
+    const savedTtsEnabled = localStorage.getItem('narrator-tts-enabled');
+    return savedTtsEnabled ? JSON.parse(savedTtsEnabled) : false;
+  });
   
   // References
   const speakTimeout = useRef<number | null>(null);
@@ -489,6 +509,10 @@ export function AudioNarrator({
   const handleVolumeChange = (newVolume: number[]) => {
     const vol = newVolume[0];
     setVolume(vol);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('narrator-volume', vol.toString());
+    
     if (vol === 0) {
       setIsMuted(true);
     } else {
@@ -511,6 +535,9 @@ export function AudioNarrator({
     const rate = newRate[0];
     setSpeechRate(rate);
     
+    // Save to localStorage for persistence
+    localStorage.setItem('narrator-speech-rate', rate.toString());
+    
     // Update utterance rate 
     if (utteranceRef.current) {
       // Calculate the base rate from emotional tone settings
@@ -531,7 +558,10 @@ export function AudioNarrator({
   
   // Toggle controls visibility
   const toggleControlsVisibility = () => {
-    setShowControls(!showControls);
+    const newState = !showControls;
+    setShowControls(newState);
+    // Save preference to localStorage
+    localStorage.setItem('narrator-show-controls', JSON.stringify(newState));
   };
   
   // Toggle text-to-speech functionality
@@ -540,18 +570,37 @@ export function AudioNarrator({
     if (textToSpeechEnabled) {
       stopNarration();
     }
-    setTextToSpeechEnabled(!textToSpeechEnabled);
+    
+    const newTextToSpeechState = !textToSpeechEnabled;
+    setTextToSpeechEnabled(newTextToSpeechState);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('narrator-tts-enabled', JSON.stringify(newTextToSpeechState));
+    
     // When enabling, show controls. When disabling, hide them
-    setShowControls(!textToSpeechEnabled);
+    const newControlsState = newTextToSpeechState;
+    setShowControls(newControlsState);
+    
+    // Save controls visibility preference to localStorage
+    localStorage.setItem('narrator-show-controls', JSON.stringify(newControlsState));
   };
 
   // Toggle mute
   const toggleMute = () => {
     if (isMuted) {
-      setIsMuted(false);
+      // Unmute
+      const newMutedState = false;
+      setIsMuted(newMutedState);
+      // Save muted state to localStorage
+      localStorage.setItem('narrator-is-muted', JSON.stringify(newMutedState));
+      // Restore volume
       handleVolumeChange([volume || 0.7]);
     } else {
-      setIsMuted(true);
+      // Mute
+      const newMutedState = true;
+      setIsMuted(newMutedState);
+      // Save muted state to localStorage
+      localStorage.setItem('narrator-is-muted', JSON.stringify(newMutedState));
       
       // Store the current volume but set actual volume to 0
       if (utteranceRef.current) {
@@ -730,9 +779,43 @@ export function AudioNarrator({
                 onValueChange={handleVolumeChange}
               />
             </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleControlsVisibility}
+              aria-label={showControls ? "Hide advanced controls" : "Show advanced controls"}
+              className="ml-2"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
+      
+      {/* Advanced controls (speech rate) */}
+      {showControls && (
+        <div className="p-4 border-t">
+          <div className="flex items-center space-x-4">
+            <div className="flex-shrink-0">
+              <span className="text-xs font-medium">Speech Rate</span>
+            </div>
+            <div className="flex-grow">
+              <Slider
+                value={[speechRate]}
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                aria-label="Speech Rate"
+                onValueChange={handleSpeechRateChange}
+              />
+            </div>
+            <div className="flex-shrink-0 w-10 text-right">
+              <span className="text-xs">{speechRate.toFixed(1)}x</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Narration text with highlighting */}
       <div 

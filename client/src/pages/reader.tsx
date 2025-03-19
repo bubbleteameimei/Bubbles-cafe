@@ -73,8 +73,30 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const [readingProgress, setReadingProgress] = useState(0);
   
   // Audio narrator settings
+  const [isTextToSpeechEnabled, setIsTextToSpeechEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('tts-enabled') === 'true';
+    } catch (error) {
+      console.error('[Reader] Error reading TTS settings from localStorage:', error);
+      return false;
+    }
+  });
   const [isNarratorOpen, setIsNarratorOpen] = useState(false);
   const [narratorTone, setNarratorTone] = useState<"neutral" | "creepy" | "suspense" | "terror" | "panic" | "whisper">("whisper");
+  
+  // Listen for changes to text-to-speech enabled setting
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tts-enabled') {
+        setIsTextToSpeechEnabled(e.newValue === 'true');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
@@ -329,14 +351,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   const storyContentStyles = `
   .story-content {
-    font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
     /* Removed max-width constraint for immersive experience */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   .story-content p {
-    line-height: 1.85;  /* Enhanced readability */
+    line-height: 1.8;  /* Adjusted for Newsreader font */
     margin-bottom: 1.2em;  /* Improved spacing between paragraphs */
     text-align: justify;
     letter-spacing: 0.01em; /* Subtle letter spacing */
@@ -345,6 +367,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
     margin-left: auto;
     margin-right: auto;
+    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
   }
   .story-content p + p {
     margin-top: 2em;  /* Double line break effect */
@@ -365,6 +388,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     .story-content p {
       margin-bottom: 1em;
       line-height: 1.7; /* Slightly tighter on mobile */
+      font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
     }
     .story-content p + p {
       margin-top: 1.8em;  /* Slightly reduced on mobile */
@@ -389,6 +413,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     letter-spacing: -0.02em;
     line-height: 1.3;
     position: relative;
+    font-family: 'Newsreader', var(--font-serif, Georgia, 'Times New Roman', serif);
   }
   .story-content h2::before, .story-content h3::before {
     content: "";
@@ -512,70 +537,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         aria-hidden="true"
       />
       
-      {/* Top toolbar elements removed */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3">
-        {/* Main navigation bar with story controls */}
-        <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
-          {/* Previous story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToPreviousStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Previous story"
-            disabled={posts.length <= 1}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Previous Story
-            </span>
-          </Button>
-          
-          {/* Random story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToRandomStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Random story"
-            disabled={posts.length <= 1}
-          >
-            <Shuffle className="h-4 w-4" />
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Random Story
-            </span>
-          </Button>
-          
-          {/* Next story button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToNextStory}
-            className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
-            aria-label="Next story"
-            disabled={posts.length <= 1}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-              Next Story
-            </span>
-          </Button>
-          
-          <div className="w-px h-6 bg-border/50"></div>
-          
-          {/* Bookmark button */}
-          <BookmarkButton 
-            postId={currentPost.id} 
-            variant="reader"
-            showText={false}
-            className="h-8 w-8 rounded-full hover:bg-background/80"
-          />
-        </div>
-      </div>
+      {/* Floating pagination has been removed */}
       
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
@@ -613,93 +575,104 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           {/* Narration button */}
           <div className="flex-grow"></div>
 
-          <Dialog 
-            open={isNarratorOpen} 
-            onOpenChange={(open) => {
-              console.log('[Reader] Narrator dialog state changed:', open);
-              setIsNarratorOpen(open);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 mx-2 group relative"
-                aria-label="Listen to narration"
-              >
-                <Headphones className="h-4 w-4" />
-                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                  Narration
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent 
-              className="sm:max-w-2xl"
-              aria-labelledby="dialog-title-narrator"
-              aria-describedby="dialog-desc-narrator"
+          {/* Integrated BookmarkButton in top controls */}
+          <BookmarkButton 
+            postId={currentPost.id} 
+            variant="reader"
+            showText={false}
+            className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
+          />
+
+          {/* Only show narration button if text-to-speech is enabled */}
+          {isTextToSpeechEnabled && (
+            <Dialog 
+              open={isNarratorOpen} 
+              onOpenChange={(open) => {
+                console.log('[Reader] Narrator dialog state changed:', open);
+                setIsNarratorOpen(open);
+              }}
             >
-              <DialogHeader>
-                <DialogTitle id="dialog-title-narrator">Whisper Narration</DialogTitle>
-                <DialogDescription id="dialog-desc-narrator">
-                  Listen to the story with emotional tone modulation
-                </DialogDescription>
-              </DialogHeader>
-              
-              {/* Emotional tone selector */}
-              <div className="grid grid-cols-3 gap-2 my-4">
-                {["whisper", "creepy", "suspense", "terror", "panic", "neutral"].map((tone) => (
-                  <Button
-                    key={tone}
-                    variant={narratorTone === tone ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setNarratorTone(tone as any)}
-                    className="capitalize"
-                  >
-                    {tone}
-                  </Button>
-                ))}
-              </div>
-              
-              {/* Audio narrator component */}
-              <ErrorBoundary fallback={
-                <div className="p-4 border border-destructive/10 bg-destructive/5 rounded-lg">
-                  <h4 className="font-medium text-destructive mb-2">Narrator Unavailable</h4>
-                  <p className="text-sm text-muted-foreground">
-                    We're having trouble loading the audio narrator. Please try again later.
-                  </p>
-                  <div className="flex items-center gap-2 mt-3">
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 mx-2 group relative"
+                  aria-label="Listen to narration"
+                >
+                  <Headphones className="h-4 w-4" />
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
+                    Narration
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent 
+                className="sm:max-w-2xl"
+                aria-labelledby="dialog-title-narrator"
+                aria-describedby="dialog-desc-narrator"
+              >
+                <DialogHeader>
+                  <DialogTitle id="dialog-title-narrator">Whisper Narration</DialogTitle>
+                  <DialogDescription id="dialog-desc-narrator">
+                    Listen to the story with emotional tone modulation
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {/* Emotional tone selector */}
+                <div className="grid grid-cols-3 gap-2 my-4">
+                  {["whisper", "creepy", "suspense", "terror", "panic", "neutral"].map((tone) => (
                     <Button
-                      variant="outline"
+                      key={tone}
+                      variant={narratorTone === tone ? "default" : "outline"}
                       size="sm"
-                      onClick={() => window.location.reload()}
+                      onClick={() => setNarratorTone(tone as any)}
+                      className="capitalize"
                     >
-                      <RefreshCcw className="h-3 w-3 mr-2" />
-                      Try again
+                      {tone}
                     </Button>
-                  </div>
+                  ))}
                 </div>
-              }>
-                <Suspense fallback={
-                  <div className="w-full p-4 flex items-center justify-center">
-                    <div className="animate-pulse flex space-x-4">
-                      <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
-                      <div className="space-y-3 flex-1">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      </div>
+                
+                {/* Audio narrator component */}
+                <ErrorBoundary fallback={
+                  <div className="p-4 border border-destructive/10 bg-destructive/5 rounded-lg">
+                    <h4 className="font-medium text-destructive mb-2">Narrator Unavailable</h4>
+                    <p className="text-sm text-muted-foreground">
+                      We're having trouble loading the audio narrator. Please try again later.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                      >
+                        <RefreshCcw className="h-3 w-3 mr-2" />
+                        Try again
+                      </Button>
                     </div>
                   </div>
                 }>
-                  <AudioNarrator
-                    content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
-                    title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
-                    emotionalTone={narratorTone}
-                    autoScroll={false}
-                  />
-                </Suspense>
-              </ErrorBoundary>
-            </DialogContent>
-          </Dialog>
+                  <Suspense fallback={
+                    <div className="w-full p-4 flex items-center justify-center">
+                      <div className="animate-pulse flex space-x-4">
+                        <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                        <div className="space-y-3 flex-1">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                      </div>
+                    </div>
+                  }>
+                    <AudioNarrator
+                      content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
+                      title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
+                      emotionalTone={narratorTone}
+                      autoScroll={false}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <Button
             variant="outline"
@@ -785,7 +758,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
+              className="story-content font-newsreader mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
               style={{
                 fontSize: `${fontSize}px`,
                 whiteSpace: 'pre-wrap',
@@ -843,8 +816,16 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
             <div className="mt-2 pt-3 border-t border-border/50">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="w-full md:w-auto">
+                <div className="w-full md:w-auto flex items-center gap-4">
                   <LikeDislike postId={currentPost.id} />
+                  
+                  {/* Add BookmarkButton next to Like/Dislike buttons for easy access */}
+                  <BookmarkButton 
+                    postId={currentPost.id}
+                    variant="default"
+                    showText={true}
+                    className="bg-background/80 hover:bg-background"
+                  />
                 </div>
 
                 <div className="flex flex-col items-center gap-3">
@@ -953,6 +934,18 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
           </motion.article>
         </AnimatePresence>
+
+        {/* Bottom Return to Home button */}
+        <div className="mt-12 mb-8 flex justify-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setLocation('/')}
+            className="px-4 bg-background hover:bg-background/80"
+          >
+            Return to Home
+          </Button>
+        </div>
       </div>
     </div>
   );

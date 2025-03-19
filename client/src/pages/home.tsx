@@ -80,7 +80,7 @@ export default function Home() {
           {/* Content */}
           <div className="relative z-10 flex min-h-screen flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto px-4">
             <FadeInSection style="horror" direction="scale" duration={0.8}>
-              <h1 className="font-decorative text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
+              <h1 className="font-bodoni text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
                 <span>BUBBLE'S</span>
                 <span className="mt-2">CAFE</span>
               </h1>
