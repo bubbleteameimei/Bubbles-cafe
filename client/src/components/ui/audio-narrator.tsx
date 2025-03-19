@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Pause, Play, Volume2, Volume1, VolumeX, SkipForward, SkipBack, RefreshCw } from "lucide-react";
+import { Pause, Play, Volume2, Volume1, VolumeX, SkipForward, SkipBack, RefreshCw, 
+         ChevronUp, ChevronDown, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 interface AudioNarratorProps {
@@ -36,7 +38,8 @@ export function AudioNarrator({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [speechRate, setSpeechRate] = useState(1.0);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false);
+  const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(false);
   
   // References
   const speakTimeout = useRef<number | null>(null);
@@ -529,6 +532,17 @@ export function AudioNarrator({
   // Toggle controls visibility
   const toggleControlsVisibility = () => {
     setShowControls(!showControls);
+  };
+  
+  // Toggle text-to-speech functionality
+  const toggleTextToSpeech = () => {
+    // If turning off, stop any active narration
+    if (textToSpeechEnabled) {
+      stopNarration();
+    }
+    setTextToSpeechEnabled(!textToSpeechEnabled);
+    // When enabling, show controls. When disabling, hide them
+    setShowControls(!textToSpeechEnabled);
   };
 
   // Toggle mute
