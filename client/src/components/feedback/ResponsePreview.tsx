@@ -5,15 +5,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RefreshCw, Check, ThumbsUp, Clipboard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/queryClient';
+import { ResponseSuggestion } from '@/types/feedback';
 
-export interface ResponseSuggestion {
-  suggestion: string;
-  confidence: number;
-  category: string;
-  tags?: string[];
-  template?: string;
-  isAutomated: boolean;
-}
+// Re-export for backward compatibility
+export type { ResponseSuggestion };
 
 interface ResponsePreviewProps {
   feedbackId: number;

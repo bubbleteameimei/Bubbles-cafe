@@ -39,46 +39,12 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { UserFeedback } from '@shared/schema';
-import { ResponsePreview, ResponseSuggestion } from './ResponsePreview';
+import { ResponsePreview } from './ResponsePreview';
 import { apiRequest } from '@/lib/queryClient';
-
-// Additional interfaces
-interface FeedbackMetadata {
-  browser?: {
-    name: string;
-    version: string;
-    userAgent: string;
-  };
-  device?: {
-    type: string;
-    model?: string;
-  };
-  os?: {
-    name: string;
-    version: string;
-  };
-  screen?: {
-    width: number;
-    height: number;
-  };
-  location?: {
-    path: string;
-    referrer?: string;
-  };
-  adminResponse?: {
-    content: string;
-    respondedAt: string;
-    respondedBy: string;
-  };
-}
-
-interface FeedbackWithMetadata extends UserFeedback {
-  metadata: FeedbackMetadata;
-  subject: string;
-  email: string | null;
-  contactRequested: boolean;
-}
+import { 
+  FeedbackWithMetadata, 
+  ResponseSuggestion
+} from '@/types/feedback';
 
 interface FeedbackDetailsProps {
   feedback: FeedbackWithMetadata;
@@ -160,13 +126,14 @@ export function FeedbackDetails({
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
+  // Format date - safely convert to string first to avoid type errors
+  const formatDate = (dateInput: string | Date) => {
     try {
+      const dateString = dateInput instanceof Date ? dateInput.toISOString() : String(dateInput);
       const date = new Date(dateString);
       return format(date, 'MMM d, yyyy h:mm a');
     } catch (e) {
-      return dateString;
+      return String(dateInput);
     }
   };
 

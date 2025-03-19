@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FeedbackDetails } from '@/components/feedback/FeedbackDetails';
-import { ResponseSuggestion } from '@/components/feedback/ResponsePreview';
 import {
   Card,
   CardContent,
@@ -40,49 +39,12 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-// Types for feedback data
-interface FeedbackMetadata {
-  browser?: {
-    name: string;
-    version: string;
-    userAgent: string;
-  };
-  device?: {
-    type: string;
-    model?: string;
-  };
-  os?: {
-    name: string;
-    version: string;
-  };
-  screen?: {
-    width: number;
-    height: number;
-  };
-  location?: {
-    path: string;
-    referrer?: string;
-  };
-  adminResponse?: {
-    content: string;
-    respondedAt: string;
-    respondedBy: string;
-  };
-}
-
-interface FeedbackItem {
-  id: number;
-  userId: number | null;
-  email: string | null;
-  subject: string;
-  content: string;
-  type: string;
-  status: string;
-  priority: string;
-  contactRequested: boolean;
-  createdAt: string;
-  metadata: FeedbackMetadata;
-}
+// Import shared types
+import { 
+  FeedbackItem, 
+  FeedbackItemExtended,
+  ResponseSuggestion
+} from '@/types/feedback';
 
 const FeedbackAdmin = () => {
   const queryClient = useQueryClient();
@@ -403,9 +365,31 @@ const FeedbackAdmin = () => {
           ) : (
             <FeedbackDetails
               feedback={{
-                ...selectedFeedback,
-                ...feedbackDetail?.feedback,
-              }}
+                // Base feedback data
+                id: selectedFeedback.id,
+                content: selectedFeedback.content,
+                status: selectedFeedback.status,
+                createdAt: selectedFeedback.createdAt,
+                subject: selectedFeedback.subject,
+                email: selectedFeedback.email,
+                userId: selectedFeedback.userId,
+                contactRequested: selectedFeedback.contactRequested,
+                
+                // Map UI fields to schema fields
+                type: selectedFeedback.type,
+                category: selectedFeedback.type || 'general',
+                
+                // Include feedback metadata
+                metadata: selectedFeedback.metadata,
+                
+                // Add schema specific fields
+                page: selectedFeedback.metadata?.location?.path || '',
+                browser: selectedFeedback.metadata?.browser?.name || '',
+                operatingSystem: selectedFeedback.metadata?.os?.name || '',
+                screenResolution: selectedFeedback.metadata?.screen ? 
+                  `${selectedFeedback.metadata.screen.width}x${selectedFeedback.metadata.screen.height}` : '',
+                userAgent: selectedFeedback.metadata?.browser?.userAgent || ''
+              } as any}
               onStatusChange={handleStatusChange}
               onSendResponse={handleSendResponse}
               responseSuggestion={feedbackDetail?.responseSuggestion}
