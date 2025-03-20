@@ -1,333 +1,319 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GameSettings, GameSaveData, GameState } from '../types';
+import { X, Save, Upload, Settings as SettingsIcon, LogOut } from 'lucide-react';
+
+// Types
+import { GameState } from '../types';
+
+export interface GameSettings {
+  textSpeed: 'slow' | 'medium' | 'fast';
+  volume: number;
+  darkMode: boolean;
+  showHints: boolean;
+  language: string;
+  autoSave: boolean;
+}
+
+export interface SaveGame {
+  id: string;
+  timestamp: string;
+  name?: string;
+  screenshot?: string;
+  lastScene?: string;
+}
 
 interface GameMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
   onSave: () => void;
   onLoad: (saveId: string) => void;
   onSettingsChange: (settings: Partial<GameSettings>) => void;
   onQuit: () => void;
-  isOpen: boolean;
-  onClose: () => void;
-  savedGames: GameSaveData[];
+  savedGames: SaveGame[];
   currentState: GameState;
   settings: GameSettings;
 }
 
-export const GameMenu: React.FC<GameMenuProps> = ({
+const GameMenu: React.FC<GameMenuProps> = ({
+  isOpen,
+  onClose,
   onSave,
   onLoad,
   onSettingsChange,
   onQuit,
-  isOpen,
-  onClose,
   savedGames,
   currentState,
   settings
 }) => {
-  const [activeTab, setActiveTab] = useState<'save' | 'load' | 'settings'>('save');
+  const [activeTab, setActiveTab] = useState<'save' | 'load' | 'settings'>('settings');
+  const [volume, setVolume] = useState(settings.volume);
+  const [textSpeed, setTextSpeed] = useState(settings.textSpeed);
+  const [darkMode, setDarkMode] = useState(settings.darkMode);
+  const [showHints, setShowHints] = useState(settings.showHints);
+  const [autoSave, setAutoSave] = useState(settings.autoSave);
   
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  if (!isOpen) return null;
+  
+  const handleSave = () => {
+    onSave();
   };
   
-  const formatPlayTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+  const handleLoad = (saveId: string) => {
+    onLoad(saveId);
+    onClose();
   };
-
+  
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    onSettingsChange({ volume: newVolume });
+  };
+  
+  const handleTextSpeedChange = (speed: 'slow' | 'medium' | 'fast') => {
+    setTextSpeed(speed);
+    onSettingsChange({ textSpeed: speed });
+  };
+  
+  const handleDarkModeToggle = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    onSettingsChange({ darkMode: newDarkMode });
+  };
+  
+  const handleHintsToggle = () => {
+    const newShowHints = !showHints;
+    setShowHints(newShowHints);
+    onSettingsChange({ showHints: newShowHints });
+  };
+  
+  const handleAutoSaveToggle = () => {
+    const newAutoSave = !autoSave;
+    setAutoSave(newAutoSave);
+    onSettingsChange({ autoSave: newAutoSave });
+  };
+  
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', duration: 0.4 }}
+        className="relative bg-gray-900 text-white rounded-lg w-full max-w-xl p-6 shadow-xl"
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
         >
-          <motion.div
-            className="w-full max-w-2xl bg-gray-900 rounded-lg overflow-hidden shadow-2xl border border-gray-700"
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.95 }}
+          <X size={24} />
+        </button>
+        
+        <h2 className="text-2xl font-serif mb-6">Game Menu</h2>
+        
+        {/* Tabs */}
+        <div className="flex border-b border-gray-700 mb-6">
+          <button 
+            onClick={() => setActiveTab('save')}
+            className={`py-2 px-4 ${activeTab === 'save' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-400 hover:text-white'}`}
           >
-            {/* Menu Header */}
-            <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-serif text-amber-500">Eden's Hollow</h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-200"
-              >
-                ✕
-              </button>
+            <div className="flex items-center">
+              <Save size={16} className="mr-2" />
+              Save
             </div>
-            
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-700">
-              <button
-                onClick={() => setActiveTab('save')}
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === 'save' 
-                    ? 'bg-gray-800 text-white' 
-                    : 'bg-gray-900 text-gray-400'
-                }`}
-              >
-                Save Game
-              </button>
-              <button
-                onClick={() => setActiveTab('load')}
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === 'load' 
-                    ? 'bg-gray-800 text-white' 
-                    : 'bg-gray-900 text-gray-400'
-                }`}
-              >
-                Load Game
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === 'settings' 
-                    ? 'bg-gray-800 text-white' 
-                    : 'bg-gray-900 text-gray-400'
-                }`}
-              >
-                Settings
-              </button>
+          </button>
+          <button 
+            onClick={() => setActiveTab('load')}
+            className={`py-2 px-4 ${activeTab === 'load' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-400 hover:text-white'}`}
+          >
+            <div className="flex items-center">
+              <Upload size={16} className="mr-2" />
+              Load
             </div>
-            
-            {/* Tab Content */}
-            <div className="p-6">
-              {/* Save Tab */}
-              {activeTab === 'save' && (
-                <div>
-                  <p className="text-gray-300 mb-4">
-                    Save your current progress in Eden's Hollow.
+          </button>
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`py-2 px-4 ${activeTab === 'settings' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-400 hover:text-white'}`}
+          >
+            <div className="flex items-center">
+              <SettingsIcon size={16} className="mr-2" />
+              Settings
+            </div>
+          </button>
+        </div>
+        
+        {/* Tab content */}
+        <div className="mt-4">
+          <AnimatePresence mode="wait">
+            {activeTab === 'save' && (
+              <motion.div
+                key="save"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium mb-2">Save Current Game</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Your current progress in {currentState.currentScene && currentState.currentScene.split('_').join(' ')}
                   </p>
-                  
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-white">Current Game</h3>
-                        <p className="text-sm text-gray-400">Scene: {currentState.currentScene}</p>
-                      </div>
-                      <button
-                        onClick={onSave}
-                        className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-white text-sm rounded-md"
+                  <button 
+                    onClick={handleSave}
+                    className="w-full py-2 px-4 bg-amber-700 hover:bg-amber-600 rounded-md font-medium"
+                  >
+                    Save Game
+                  </button>
+                </div>
+              </motion.div>
+            )}
+            
+            {activeTab === 'load' && (
+              <motion.div
+                key="load"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <h3 className="text-lg font-medium mb-2">Load Game</h3>
+                {savedGames.length === 0 ? (
+                  <p className="text-gray-400 text-sm">No saved games found.</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {savedGames.map(save => (
+                      <div 
+                        key={save.id}
+                        className="flex items-center justify-between bg-gray-800 rounded-md p-3 cursor-pointer hover:bg-gray-700"
+                        onClick={() => handleLoad(save.id)}
                       >
-                        Save Game
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <h3 className="font-medium text-white mt-6 mb-3">Recent Saves</h3>
-                  
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {savedGames.length === 0 ? (
-                      <p className="text-gray-400 text-sm italic">No saved games found.</p>
-                    ) : (
-                      savedGames.map(save => (
-                        <div 
-                          key={save.id} 
-                          className="bg-gray-800 rounded-lg p-3 flex items-center"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <h4 className="font-medium text-white">
-                                {save.gameState.currentScene}
-                              </h4>
-                              <span className="text-xs text-gray-400 ml-2">
-                                {formatTimestamp(save.timestamp)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-400">
-                              Play time: {formatPlayTime(save.playTime)}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => onLoad(save.id)}
-                            className="text-amber-500 hover:text-amber-400 text-sm"
-                          >
-                            Load
-                          </button>
+                        <div>
+                          <p className="font-medium">{save.name || 'Saved Game'}</p>
+                          <p className="text-gray-400 text-xs">{new Date(save.timestamp).toLocaleString()}</p>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Load Tab */}
-              {activeTab === 'load' && (
-                <div>
-                  <p className="text-gray-300 mb-4">
-                    Load a previously saved game.
-                  </p>
-                  
-                  <div className="space-y-3 max-h-72 overflow-y-auto">
-                    {savedGames.length === 0 ? (
-                      <p className="text-gray-400 text-sm italic">No saved games found.</p>
-                    ) : (
-                      savedGames.map(save => (
-                        <div 
-                          key={save.id} 
-                          className="bg-gray-800 rounded-lg p-4 flex items-center"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <h4 className="font-medium text-white">
-                                {save.gameState.currentScene}
-                              </h4>
-                              <span className="text-xs text-gray-400 ml-2">
-                                {formatTimestamp(save.timestamp)}
-                              </span>
+                        <div className="w-16 h-16 bg-gray-900 rounded-md overflow-hidden">
+                          {save.screenshot ? (
+                            <img 
+                              src={save.screenshot} 
+                              alt="Save preview" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-600">
+                              <p className="text-xs">No preview</p>
                             </div>
-                            <div className="mt-1 flex items-center text-xs text-gray-400">
-                              <div className="mr-3">Play time: {formatPlayTime(save.playTime)}</div>
-                              <div>Items: {save.gameState.inventory.length}</div>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => onLoad(save.id)}
-                            className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-white text-sm rounded-md"
-                          >
-                            Load
-                          </button>
+                          )}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Settings Tab */}
-              {activeTab === 'settings' && (
-                <div>
-                  <p className="text-gray-300 mb-4">
-                    Adjust game settings to customize your experience.
-                  </p>
-                  
-                  <div className="space-y-5">
-                    {/* Text Speed */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Text Speed
-                      </label>
-                      <div className="flex space-x-3">
-                        {['slow', 'medium', 'fast'].map((speed) => (
-                          <button
-                            key={speed}
-                            onClick={() => onSettingsChange({ textSpeed: speed as any })}
-                            className={`px-4 py-2 rounded-md ${
-                              settings.textSpeed === speed
-                                ? 'bg-amber-700 text-white'
-                                : 'bg-gray-700 text-gray-300'
-                            }`}
-                          >
-                            {speed.charAt(0).toUpperCase() + speed.slice(1)}
-                          </button>
-                        ))}
                       </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+            
+            {activeTab === 'settings' && (
+              <motion.div
+                key="settings"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <h3 className="text-lg font-medium mb-4">Game Settings</h3>
+                
+                <div className="space-y-6">
+                  {/* Volume */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Volume</label>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Off</span>
+                      <span>Max</span>
                     </div>
-                    
-                    {/* Volume Slider */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Volume: {Math.round(settings.volume * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={settings.volume}
-                        onChange={(e) => onSettingsChange({ volume: parseFloat(e.target.value) })}
-                        className="w-full"
-                      />
-                    </div>
-                    
-                    {/* Dark Mode Toggle */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-300">Dark Mode</span>
-                      <button
-                        onClick={() => onSettingsChange({ darkMode: !settings.darkMode })}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 ${
-                          settings.darkMode ? 'bg-amber-700' : 'bg-gray-700'
-                        }`}
+                  </div>
+                  
+                  {/* Text Speed */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Text Speed</label>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleTextSpeedChange('slow')}
+                        className={`flex-1 py-1 px-2 rounded-md text-sm ${textSpeed === 'slow' ? 'bg-amber-700 text-white' : 'bg-gray-800 text-gray-300'}`}
                       >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            settings.darkMode ? 'translate-x-5' : ''
-                          }`}
-                        />
+                        Slow
+                      </button>
+                      <button 
+                        onClick={() => handleTextSpeedChange('medium')}
+                        className={`flex-1 py-1 px-2 rounded-md text-sm ${textSpeed === 'medium' ? 'bg-amber-700 text-white' : 'bg-gray-800 text-gray-300'}`}
+                      >
+                        Medium
+                      </button>
+                      <button 
+                        onClick={() => handleTextSpeedChange('fast')}
+                        className={`flex-1 py-1 px-2 rounded-md text-sm ${textSpeed === 'fast' ? 'bg-amber-700 text-white' : 'bg-gray-800 text-gray-300'}`}
+                      >
+                        Fast
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Toggles */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Dark Mode</span>
+                      <button 
+                        onClick={handleDarkModeToggle}
+                        className={`w-12 h-6 rounded-full ${darkMode ? 'bg-amber-700' : 'bg-gray-700'} relative transition-colors duration-200`}
+                      >
+                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${darkMode ? 'left-7' : 'left-1'}`}></span>
                       </button>
                     </div>
                     
-                    {/* Show Hints Toggle */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-300">Show Hints</span>
-                      <button
-                        onClick={() => onSettingsChange({ showHints: !settings.showHints })}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 ${
-                          settings.showHints ? 'bg-amber-700' : 'bg-gray-700'
-                        }`}
+                      <span className="text-sm font-medium">Show Hints</span>
+                      <button 
+                        onClick={handleHintsToggle}
+                        className={`w-12 h-6 rounded-full ${showHints ? 'bg-amber-700' : 'bg-gray-700'} relative transition-colors duration-200`}
                       >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            settings.showHints ? 'translate-x-5' : ''
-                          }`}
-                        />
+                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${showHints ? 'left-7' : 'left-1'}`}></span>
                       </button>
                     </div>
                     
-                    {/* Auto Save Toggle */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-300">Auto Save</span>
-                      <button
-                        onClick={() => onSettingsChange({ autoSave: !settings.autoSave })}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 ${
-                          settings.autoSave ? 'bg-amber-700' : 'bg-gray-700'
-                        }`}
+                      <span className="text-sm font-medium">Auto-Save</span>
+                      <button 
+                        onClick={handleAutoSaveToggle}
+                        className={`w-12 h-6 rounded-full ${autoSave ? 'bg-amber-700' : 'bg-gray-700'} relative transition-colors duration-200`}
                       >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            settings.autoSave ? 'translate-x-5' : ''
-                          }`}
-                        />
+                        <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${autoSave ? 'left-7' : 'left-1'}`}></span>
                       </button>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-            
-            {/* Footer Actions */}
-            <div className="bg-gray-800 px-6 py-4 flex justify-between">
-              <button
-                onClick={onQuit}
-                className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white text-sm rounded-md"
-              >
-                Quit Game
-              </button>
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-md"
-              >
-                Resume
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Quit button */}
+        <div className="mt-8 pt-4 border-t border-gray-700">
+          <button 
+            onClick={onQuit}
+            className="text-gray-400 hover:text-white flex items-center"
+          >
+            <LogOut size={16} className="mr-2" />
+            Quit to Main Menu
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 };
 

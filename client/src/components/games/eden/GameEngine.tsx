@@ -621,9 +621,9 @@ export class GameEngine {
   /**
    * Load game from local storage
    */
-  public loadGame(): void {
+  public loadGame(saveId?: string): void {
     try {
-      const saveData = localStorage.getItem('edens_hollow_save');
+      const saveData = localStorage.getItem(saveId ? `edens_hollow_save_${saveId}` : 'edens_hollow_save');
       if (saveData) {
         const { gameState } = JSON.parse(saveData);
         this.updateState(() => gameState);
@@ -635,6 +635,46 @@ export class GameEngine {
       console.error("Error loading game:", error);
       this.addNotification("Failed to load game.", 'danger');
     }
+  }
+  
+  /**
+   * Dismiss a specific notification by ID
+   */
+  public dismissNotification(id: string): void {
+    this.updateState(state => ({
+      ...state,
+      notifications: state.notifications.filter(notification => notification.id !== id)
+    }));
+  }
+  
+  /**
+   * Close the active dialog
+   */
+  public closeDialog(): void {
+    this.updateState(state => ({
+      ...state,
+      activeDialog: undefined,
+      activeCharacter: undefined
+    }));
+  }
+  
+  /**
+   * Close the current puzzle
+   */
+  public closePuzzle(): void {
+    this.updateState(state => ({
+      ...state,
+      currentPuzzle: undefined
+    }));
+  }
+  
+  /**
+   * Update game settings
+   */
+  public updateSettings(settings: any): void {
+    console.log('Updating game settings:', settings);
+    // Handle game setting changes like volume, difficulty, etc.
+    this.addNotification("Settings updated.", 'info');
   }
   
   /**

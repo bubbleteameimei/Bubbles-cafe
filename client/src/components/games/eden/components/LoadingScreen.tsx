@@ -1,78 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 interface LoadingScreenProps {
   isLoading: boolean;
-  progress?: number;
+  progress: number; // 0-100
   message?: string;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({
-  isLoading,
-  progress = 0,
-  message = 'Loading...'
+const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+  isLoading, 
+  progress, 
+  message = 'Loading...' 
 }) => {
-  const [dots, setDots] = useState('.');
-  
-  // Animate the loading dots
-  useEffect(() => {
-    if (!isLoading) return;
-    
-    const interval = setInterval(() => {
-      setDots(prev => {
-        if (prev.length >= 3) return '.';
-        return prev + '.';
-      });
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, [isLoading]);
-
   if (!isLoading) return null;
-
+  
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <div className="w-full max-w-md px-8">
-        {/* Game Title */}
-        <motion.h1
-          className="text-4xl font-serif text-amber-500 text-center mb-12"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          Eden's Hollow
-        </motion.h1>
+    <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center"
+      >
+        <h2 className="text-3xl font-serif mb-8 text-amber-100">Eden's Hollow</h2>
         
-        {/* Loading Indicator */}
-        <div className="mb-4">
-          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-amber-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
+        <div className="relative w-64 h-2 bg-gray-800 rounded-full mb-4 overflow-hidden">
+          <motion.div 
+            initial={{ width: '0%' }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5 }}
+            className="absolute top-0 left-0 h-full bg-amber-500"
+          />
         </div>
         
-        {/* Loading Message */}
-        <div className="text-center text-gray-400">
-          <p>{message}{dots}</p>
-          <p className="mt-1 text-sm">{Math.round(progress)}%</p>
+        <p className="text-amber-200/70 text-sm">{message}</p>
+        
+        <div className="mt-12 opacity-50">
+          <svg className="w-16 h-16 mx-auto animate-pulse" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#E5D0A0" strokeWidth="1.5"/>
+            <path d="M12 9V13" stroke="#E5D0A0" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M12 16.01L12.01 15.9989" stroke="#E5D0A0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
         
-        {/* Gothic Ornament */}
-        <div className="mt-16 text-gray-600 text-center">
-          <div className="text-2xl">☥</div>
-          <div className="text-xs uppercase tracking-widest mt-2">Journey into darkness</div>
+        <div className="absolute bottom-4 right-4 text-xs text-amber-200/30">
+          <p>Press ESC at any time to pause the game</p>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 

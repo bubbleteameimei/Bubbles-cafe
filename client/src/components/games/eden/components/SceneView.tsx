@@ -1,140 +1,150 @@
 import React from 'react';
-import { GameScene } from '../types';
 import { motion } from 'framer-motion';
+import { ChevronRight, Eye, HandMetal } from 'lucide-react';
+import { GameScene } from '../types';
 
 interface SceneViewProps {
   scene: GameScene;
-  onExitClick: (destination: string) => void;
+  onExitClick: (destinationId: string) => void;
+  onActionClick: (actionId: string) => void;
   onCharacterClick: (characterId: string) => void;
   onItemClick: (itemId: string) => void;
-  onActionClick: (action: string) => void;
   onPuzzleClick: (puzzleId: string) => void;
 }
 
-export const SceneView: React.FC<SceneViewProps> = ({
+const SceneView: React.FC<SceneViewProps> = ({
   scene,
   onExitClick,
+  onActionClick,
   onCharacterClick,
   onItemClick,
-  onActionClick,
   onPuzzleClick
 }) => {
+  if (!scene) return <div className="text-red-500">Scene not found</div>;
+  
   return (
-    <div className="h-full flex flex-col">
-      {/* Scene Image */}
-      <div className="relative h-1/3 md:h-2/5 overflow-hidden rounded-lg">
-        <img 
-          src={scene.image} 
-          alt={scene.title} 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/70"></div>
-        <h1 className="absolute bottom-3 left-4 text-2xl font-serif text-white">{scene.title}</h1>
+    <div className="relative h-full w-full">
+      {/* Scene Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ 
+          backgroundImage: `url(${scene.backgroundImage || '/images/scenes/default-scene.jpg'})` 
+        }}
+      >
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
       
-      {/* Scene Description */}
-      <motion.div 
-        className="mt-4 px-4 prose prose-sm max-w-none prose-stone dark:prose-invert"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {scene.description.map((paragraph, i) => (
-          <p key={i} className="my-2">{paragraph}</p>
-        ))}
-      </motion.div>
-      
-      {/* Interactive Elements */}
-      <div className="mt-auto p-4">
-        {/* Characters */}
-        {scene.characters && scene.characters.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">People</h3>
-            <div className="flex flex-wrap gap-2">
-              {scene.characters.map(character => (
-                <button
-                  key={character.id}
-                  onClick={() => onCharacterClick(character.id)}
-                  className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-xs font-medium"
-                >
-                  {character.name}
-                </button>
-              ))}
-            </div>
+      {/* Scene Content */}
+      <div className="relative z-10 h-full flex flex-col p-6">
+        <div className="flex-grow">
+          <h1 className="text-3xl font-serif mb-2 text-amber-100">{scene.title}</h1>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="prose prose-invert prose-amber max-w-prose mb-8"
+          >
+            <p>{scene.description}</p>
+          </motion.div>
+          
+          {/* Interactive Elements */}
+          <div className="mt-8">
+            {/* Characters */}
+            {scene.characters && scene.characters.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-xl font-serif mb-2 text-amber-200">Characters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {scene.characters.map(character => (
+                    <motion.button
+                      key={character.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center px-4 py-2 bg-gray-900/60 rounded-md hover:bg-gray-800/80 text-left"
+                      onClick={() => onCharacterClick(character.id)}
+                    >
+                      <div className="mr-3">
+                        {character.icon || <Eye size={20} className="text-amber-400" />}
+                      </div>
+                      <div>
+                        <div className="font-medium">{character.name}</div>
+                        <div className="text-sm text-gray-300">{character.shortDescription}</div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Items */}
+            {scene.items && scene.items.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-xl font-serif mb-2 text-amber-200">Items</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {scene.items.map(item => (
+                    <motion.button
+                      key={item.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center px-4 py-2 bg-gray-900/60 rounded-md hover:bg-gray-800/80 text-left"
+                      onClick={() => onItemClick(item.id)}
+                    >
+                      <div className="mr-3">
+                        {item.icon || <HandMetal size={20} className="text-amber-400" />}
+                      </div>
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-300">{item.description}</div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Actions */}
+            {scene.actions && scene.actions.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-xl font-serif mb-2 text-amber-200">Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {scene.actions.map(action => (
+                    <motion.button
+                      key={action.action}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center px-4 py-2 bg-gray-900/60 rounded-md hover:bg-gray-800/80 text-left"
+                      onClick={() => onActionClick(action.action)}
+                    >
+                      <div className="font-medium">{action.label}</div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
         
-        {/* Items */}
-        {scene.items && scene.items.filter(item => !item.hidden).length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Items</h3>
-            <div className="flex flex-wrap gap-2">
-              {scene.items.filter(item => !item.hidden).map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => onItemClick(item.id)}
-                  className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-full text-xs font-medium"
-                >
-                  {item.id}
-                </button>
-              ))}
-            </div>
+        {/* Exits/Navigation */}
+        <div className="mt-auto">
+          <h3 className="text-xl font-serif mb-2 text-amber-200">Exits</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {scene.exits.map(exit => (
+              <motion.button
+                key={exit.destination}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center px-4 py-2 bg-gray-800/60 rounded-md hover:bg-gray-700/80 group"
+                onClick={() => onExitClick(exit.destination)}
+              >
+                <div className="mr-3">
+                  <ChevronRight size={20} className="text-amber-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <div className="font-medium">{exit.name}</div>
+              </motion.button>
+            ))}
           </div>
-        )}
-        
-        {/* Actions */}
-        {scene.actions && scene.actions.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Actions</h3>
-            <div className="flex flex-wrap gap-2">
-              {scene.actions.map((action, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onActionClick(action.action)}
-                  className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-xs font-medium"
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Puzzles */}
-        {scene.puzzles && scene.puzzles.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Puzzles</h3>
-            <div className="flex flex-wrap gap-2">
-              {scene.puzzles.map(puzzle => (
-                <button
-                  key={puzzle.id}
-                  onClick={() => onPuzzleClick(puzzle.id)}
-                  className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-xs font-medium"
-                >
-                  {puzzle.type.charAt(0).toUpperCase() + puzzle.type.slice(1)} Puzzle
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Exits */}
-        {scene.exits && scene.exits.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Paths</h3>
-            <div className="flex flex-wrap gap-2">
-              {scene.exits.map((exit, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onExitClick(exit.destination)}
-                  className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-xs font-medium"
-                >
-                  {exit.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

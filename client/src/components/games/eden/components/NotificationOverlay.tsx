@@ -1,68 +1,59 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GameNotification } from '../types';
+import { X } from 'lucide-react';
+
+export interface Notification {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'danger';
+  duration?: number;
+}
 
 interface NotificationOverlayProps {
-  notifications: GameNotification[];
+  notifications: Notification[];
   onDismiss: (id: string) => void;
 }
 
-export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
+const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ 
   notifications,
   onDismiss
 }) => {
-  // Auto-dismiss notifications after their duration
-  useEffect(() => {
-    notifications.forEach(notification => {
-      if (notification.duration) {
-        const timer = setTimeout(() => {
-          onDismiss(notification.id);
-        }, notification.duration);
-        
-        return () => clearTimeout(timer);
-      }
-    });
-  }, [notifications, onDismiss]);
-
-  const getNotificationStyle = (type: GameNotification['type']) => {
+  const getBackgroundColor = (type: string) => {
     switch (type) {
-      case 'success':
-        return 'bg-green-800/80 border-green-600';
-      case 'warning':
-        return 'bg-amber-800/80 border-amber-600';
-      case 'danger':
-        return 'bg-red-800/80 border-red-600';
-      case 'info':
-      default:
-        return 'bg-blue-800/80 border-blue-600';
+      case 'info': return 'bg-blue-800/90';
+      case 'warning': return 'bg-amber-800/90';
+      case 'success': return 'bg-emerald-800/90';
+      case 'danger': return 'bg-red-800/90';
+      default: return 'bg-gray-800/90';
     }
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-xs">
-      <AnimatePresence>
-        {notifications.map((notification) => (
-          <motion.div
-            key={notification.id}
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className={`px-4 py-3 rounded-lg border shadow-md backdrop-blur-sm ${getNotificationStyle(notification.type)}`}
-          >
-            <div className="flex items-start">
-              <div className="flex-1">
-                <p className="text-white text-sm">{notification.message}</p>
+    <div className="fixed top-0 right-0 p-4 z-50 pointer-events-none">
+      <div className="flex flex-col space-y-2 items-end">
+        <AnimatePresence>
+          {notifications.map((notification) => (
+            <motion.div 
+              key={notification.id}
+              initial={{ opacity: 0, y: -20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.8 }}
+              transition={{ duration: 0.2 }}
+              className={`${getBackgroundColor(notification.type)} text-white rounded-md shadow-lg max-w-md p-3 pointer-events-auto`}
+            >
+              <div className="flex justify-between items-start">
+                <p className="text-sm mr-6">{notification.message}</p>
+                <button 
+                  onClick={() => onDismiss(notification.id)}
+                  className="ml-2 text-white/70 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <button
-                onClick={() => onDismiss(notification.id)}
-                className="ml-3 text-white/80 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

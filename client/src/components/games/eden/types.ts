@@ -1,4 +1,6 @@
-// Eden's Hollow Game Types
+/**
+ * Eden's Hollow - Type Definitions
+ */
 
 // Game State
 export interface GameState {
@@ -14,200 +16,34 @@ export interface GameState {
   dialogHistory: DialogHistoryEntry[];
   activeDialog?: string;
   activeCharacter?: string;
-  notifications: GameNotification[];
   currentPuzzle?: string;
   puzzleAttempts?: number;
+  notifications: Notification[];
 }
 
-// Dialog History Entry
+// Dialog history entry
 export interface DialogHistoryEntry {
   character: string;
   text: string;
   timestamp: string;
 }
 
-// Game Notification
-export interface GameNotification {
+// Notification
+export interface Notification {
+  id: string;
   message: string;
   type: 'info' | 'warning' | 'success' | 'danger';
   duration?: number;
+}
+
+// Game Save Data
+export interface GameSaveData {
   id: string;
-}
-
-// Characters
-export interface Character {
-  id: string;
-  name: string;
-  portrait?: string;
-  description: string;
-  dialog: string;
-  requirement: RequirementCheck | null;
-}
-
-// Dialog Data
-export interface DialogData {
-  character: {
-    name: string;
-    portrait: string;
-  };
-  text: string[];
-  responses: DialogResponse[];
-}
-
-export interface DialogResponse {
-  text: string;
-  nextDialog?: string;
-  action?: string;
-  outcome?: DialogOutcome;
-}
-
-export interface DialogOutcome {
-  type: 'item' | 'status' | 'scene' | 'puzzle';
-  value: any;
-  message?: string;
-}
-
-// Inventory Items
-export interface InventoryItem {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  type: 'weapon' | 'artifact' | 'key' | 'consumable' | 'quest';
-  damage?: number;
-  useAction?: 'heal' | 'unlock' | 'activate' | 'read' | 'restore_mana' | 'consume';
-  properties?: string[];
-}
-
-// Scene Data
-export interface GameScene {
-  id: string;
-  title: string;
-  description: string[];
-  image: string;
-  backgroundAudio?: string;
-  exits: Exit[];
-  characters: Character[];
-  items: ItemPlacement[];
-  actions?: SceneAction[];
-  puzzles?: PuzzlePlacement[];
-  discovery?: SceneDiscovery;
-}
-
-// Exit/Transition
-export interface Exit {
-  label: string;
-  destination: string;
-  requirement: RequirementCheck | null;
-}
-
-// Item Placement
-export interface ItemPlacement {
-  id: string;
-  requirement: RequirementCheck | null;
-  hidden: boolean;
-}
-
-// Puzzle Placement
-export interface PuzzlePlacement {
-  id: string;
-  introduction: string;
-  type: 'riddle' | 'pattern' | 'combination' | 'runes' | 'sacrifice';
-}
-
-// Scene Actions
-export interface SceneAction {
-  label: string;
-  action: string;
-  result: string;
-  outcomes: ActionOutcome[];
-}
-
-// Action Outcome
-export interface ActionOutcome {
-  type: 'item' | 'status' | 'health' | 'mana';
-  value: any;
-  message?: string;
-}
-
-// Scene Discovery
-export interface SceneDiscovery {
-  text: string;
-  requires: RequirementCheck | null;
-}
-
-// Puzzle Data
-export interface PuzzleData {
-  id: string;
-  type: 'riddle' | 'pattern' | 'combination' | 'runes' | 'sacrifice';
-  title: string;
-  description: string;
-  data: any;
-  solved: boolean;
-  attempts: number;
-  hint: string;
-}
-
-// Rune Puzzle
-export interface RunePuzzleData {
-  runes: Array<{ symbol: string, meaning: string }>;
-  correctSequence: string[];
-  question: string;
-}
-
-// Pattern Puzzle
-export interface PatternPuzzleData {
-  gridSize: number;
-  correctPattern: number[];
-  description: string;
-  theme: 'blood' | 'spirit' | 'arcane';
-}
-
-// Riddle Puzzle
-export interface RiddlePuzzleData {
-  riddle: string;
-  answer: string;
-  caseSensitive: boolean;
-  alternateAnswers?: string[];
-}
-
-// Combination Puzzle
-export interface CombinationPuzzleData {
-  lockType: 'numerical' | 'color' | 'symbol';
-  combination: string[] | number[];
-  description: string;
-  maxAttempts: number;
-}
-
-// Sacrifice Puzzle
-export interface SacrificePuzzleData {
-  items: Array<{
-    id: string;
-    name: string;
-    type: string;
-    value: number;
-    description: string;
-  }>;
-  targetValue: number;
-  maxSelections: number;
-  description: string;
-}
-
-// Requirement Check
-export type RequirementCheck = 
-  | { item: string }
-  | { status: Record<string, boolean> }
-  | { time: 'dawn' | 'day' | 'dusk' | 'night' }
-  | { puzzle: string }
-  | null;
-
-// Game Audio
-export interface GameAudio {
-  id: string;
-  src: string;
-  type: 'ambient' | 'effect' | 'music';
-  loop: boolean;
-  volume: number;
+  name?: string;
+  timestamp: string;
+  playTime: number;
+  gameState: GameState;
+  screenshot?: string;
 }
 
 // Game Settings
@@ -220,11 +56,183 @@ export interface GameSettings {
   autoSave: boolean;
 }
 
-// Game Save Data
-export interface GameSaveData {
+// Scene
+export interface GameScene {
   id: string;
-  timestamp: string;
-  gameState: GameState;
-  screenshot?: string;
-  playTime: number;
+  title: string;
+  description: string;
+  backgroundImage?: string;
+  ambientSound?: string;
+  exits: Exit[];
+  characters?: Character[];
+  items?: ItemPlacement[];
+  puzzles?: PuzzlePlacement[];
+  actions?: SceneAction[];
+  discovery?: {
+    requires: Requirement;
+    text: string;
+  };
+}
+
+// Exit
+export interface Exit {
+  destination: string;
+  name: string;
+  requirement?: Requirement;
+}
+
+// Requirement
+export interface Requirement {
+  item?: string;
+  status?: Record<string, boolean>;
+  time?: 'dawn' | 'day' | 'dusk' | 'night';
+  puzzle?: string;
+}
+
+// Character
+export interface Character {
+  id: string;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  portrait: string;
+  icon?: React.ReactNode;
+  dialog?: string;
+  requirement?: Requirement;
+}
+
+// Item Placement in scene
+export interface ItemPlacement {
+  id: string;
+  name: string;
+  description: string;
+  icon?: React.ReactNode;
+  requirement?: Requirement;
+  isHidden?: boolean;
+}
+
+// Puzzle placement in scene
+export interface PuzzlePlacement {
+  id: string;
+  introduction: string;
+  requirement?: Requirement;
+}
+
+// Scene Action
+export interface SceneAction {
+  action: string;
+  label: string;
+  result: string;
+  outcomes?: ActionOutcome[];
+  requirement?: Requirement;
+}
+
+// Action Outcome
+export interface ActionOutcome {
+  type: 'item' | 'status' | 'health' | 'mana';
+  value: any;
+  message?: string;
+}
+
+// Dialog Data
+export interface DialogData {
+  id: string;
+  character: {
+    name: string;
+    portrait: string;
+    avatarUrl?: string;
+  };
+  text: string;
+  responses: DialogResponse[];
+}
+
+// Dialog Response
+export interface DialogResponse {
+  text: string;
+  action?: 'continue' | 'leave';
+  nextDialog?: string;
+  outcome?: {
+    type: 'item' | 'status' | 'scene' | 'puzzle';
+    value: any;
+    message?: string;
+  };
+}
+
+// Inventory Item
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  useAction?: 'heal' | 'restore_mana' | 'unlock' | 'activate' | 'read';
+  iconUrl?: string;
+  lore?: string;
+  properties?: Record<string, any>;
+}
+
+// Puzzle Types
+export type PuzzleType = 'riddle' | 'pattern' | 'combination' | 'runes' | 'sacrifice';
+
+// Puzzle Data
+export interface PuzzleData {
+  id: string;
+  title: string;
+  type: PuzzleType;
+  description?: string;
+  hint?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  data: RiddlePuzzleData | PatternPuzzleData | CombinationPuzzleData | RunesPuzzleData | SacrificePuzzleData;
+}
+
+// Riddle Puzzle
+export interface RiddlePuzzleData {
+  question: string;
+  answer: string;
+  alternateAnswers?: string[];
+  maxAttempts?: number;
+}
+
+// Pattern Puzzle
+export interface PatternPuzzleData {
+  description: string;
+  patterns: Array<{
+    symbol?: string;
+    color?: string;
+    image?: string;
+  }>;
+  correctPattern: number[];
+  maxAttempts?: number;
+}
+
+// Combination Puzzle
+export interface CombinationPuzzleData {
+  description: string;
+  digits: number;
+  combination: number[];
+  maxAttempts?: number;
+}
+
+// Runes Puzzle
+export interface RunesPuzzleData {
+  description: string;
+  runes: Array<{
+    id: string;
+    symbol: string;
+  }>;
+  correctSequence: string[];
+  maxAttempts?: number;
+}
+
+// Sacrifice Puzzle
+export interface SacrificePuzzleData {
+  description: string;
+  items: Array<{
+    id: string;
+    name: string;
+    icon?: string;
+    value: number;
+  }>;
+  targetValue: number;
+  maxSelections: number;
+  maxAttempts?: number;
 }
