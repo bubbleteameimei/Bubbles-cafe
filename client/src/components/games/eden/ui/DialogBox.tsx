@@ -1,412 +1,352 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DialogBoxProps, DialogLine } from '../types';
+import { DialogBoxProps, DialogChoice, CurrentDialog } from '../types';
 
 /**
- * DialogBox Component - Displays character dialog with typewriter effect
+ * DialogBox - Displays character dialog with typewriter effect and choices
  */
 const DialogBox: React.FC<DialogBoxProps> = ({
-  dialog,
-  currentIndex,
-  onSelect,
-  onClose
+  currentDialog,
+  isOpen,
+  onClose,
+  onChoiceSelect,
+  autoAdvance = false,
+  typingSpeed = 30
 }) => {
   const [displayedText, setDisplayedText] = useState<string>('');
-  const [isTyping, setIsTyping] = useState<boolean>(true);
-  const [typewriterSpeed, setTypewriterSpeed] = useState<number>(30); // ms per character
-  const currentLine = dialog.lines[currentIndex];
-  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const textContainerRef = useRef<HTMLDivElement>(null);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [textComplete, setTextComplete] = useState<boolean>(false);
+  const typewriterRef = useRef<NodeJS.Timeout | null>(null);
+  const dialogTextRef = useRef<HTMLDivElement>(null);
   
-  // Reset typing state when dialog or index changes
+  // Start typing effect when dialog changes
   useEffect(() => {
-    setIsTyping(true);
-    setDisplayedText('');
-    startTypewriterEffect();
+    if (currentDialog && isOpen) {
+      startTypewriter();
+    }
     
-    // Clean up typing timer when unmounting or changing dialog/index
     return () => {
-      if (typingTimerRef.current) {
-        clearTimeout(typingTimerRef.current);
+      if (typewriterRef.current) {
+        clearTimeout(typewriterRef.current);
       }
     };
-  }, [dialog.id, currentIndex]);
+  }, [currentDialog, isOpen]);
   
-  // Scroll to bottom when text updates
+  // Auto-scroll to bottom of text when it updates
   useEffect(() => {
-    if (textContainerRef.current) {
-      textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight;
+    if (dialogTextRef.current) {
+      dialogTextRef.current.scrollTop = dialogTextRef.current.scrollHeight;
     }
   }, [displayedText]);
   
-  // Typewriter effect
-  const startTypewriterEffect = () => {
-    let index = 0;
-    const fullText = currentLine.text;
+  // Start typewriter effect
+  const startTypewriter = () => {
+    if (!currentDialog) return;
     
-    // Clear any existing timer
-    if (typingTimerRef.current) {
-      clearTimeout(typingTimerRef.current);
-    }
+    setIsTyping(true);
+    setTextComplete(false);
+    setDisplayedText('');
     
-    // Function to add one character at a time
-    const typeNextCharacter = () => {
-      if (index < fullText.length) {
-        setDisplayedText(fullText.substring(0, index + 1));
-        index++;
-        
-        // Adjust speed for punctuation (pause slightly for periods, commas)
-        let delay = typewriterSpeed;
-        const currentChar = fullText[index - 1];
-        if (['.', '!', '?'].includes(currentChar)) {
-          delay = typewriterSpeed * 5;
-        } else if ([',', ';', ':'].includes(currentChar)) {
-          delay = typewriterSpeed * 3;
-        }
-        
-        typingTimerRef.current = setTimeout(typeNextCharacter, delay);
+    let i = 0;
+    const text = currentDialog.text;
+    
+    const type = () => {
+      if (i < text.length) {
+        setDisplayedText(prev => prev + text.charAt(i));
+        i++;
+        typewriterRef.current = setTimeout(type, typingSpeed);
       } else {
         setIsTyping(false);
+        setTextComplete(true);
       }
     };
     
-    // Start typing
-    typingTimerRef.current = setTimeout(typeNextCharacter, 300); // Initial delay before typing starts
+    typewriterRef.current = setTimeout(type, typingSpeed);
   };
   
-  // Skip typewriter effect and show full text
-  const skipTypewriterEffect = () => {
-    if (typingTimerRef.current) {
-      clearTimeout(typingTimerRef.current);
-    }
-    setDisplayedText(currentLine.text);
-    setIsTyping(false);
-  };
-  
-  // Handle clicking on text
-  const handleTextClick = () => {
-    if (isTyping) {
-      skipTypewriterEffect();
-    } else if (!currentLine.responses || currentLine.responses.length === 0) {
-      // If there are no responses, clicking again will advance to the next line
-      if (currentLine.nextIndex !== undefined) {
-        onSelect(-1); // -1 indicates auto-advance
-      } else {
-        onClose();
+  // Complete text immediately on click if still typing
+  const completeText = () => {
+    if (isTyping && currentDialog) {
+      if (typewriterRef.current) {
+        clearTimeout(typewriterRef.current);
       }
+      setDisplayedText(currentDialog.text);
+      setIsTyping(false);
+      setTextComplete(true);
+    } else if (textComplete && !currentDialog?.choices) {
+      // If there are no choices and text is complete, close the dialog box
+      onClose();
     }
   };
   
-  // Get the right character name to display
-  const getCharacterName = () => {
-    return currentLine.speaker || dialog.character;
+  // Handle choice selection
+  const handleChoiceSelect = (choice: DialogChoice) => {
+    onChoiceSelect(choice);
   };
   
-  // Get emotion CSS class
-  const getEmotionClass = () => {
-    if (!currentLine.emotion) return '';
-    return `dialog-emotion-${currentLine.emotion.toLowerCase()}`;
+  // Get speaker display name
+  const getSpeakerName = () => {
+    if (!currentDialog) return '';
+    
+    if (typeof currentDialog.speaker === 'string') {
+      return currentDialog.speaker;
+    } else {
+      return currentDialog.speaker.name;
+    }
   };
+  
+  // Get speaker text color
+  const getSpeakerColor = () => {
+    if (!currentDialog) return '#ffffff';
+    
+    if (typeof currentDialog.speaker === 'object' && currentDialog.speaker.color) {
+      return currentDialog.speaker.color;
+    }
+    
+    return '#ffffff';
+  };
+  
+  if (!isOpen || !currentDialog) return null;
   
   return (
-    <div className="dialog-box-container">
-      <div className="dialog-box">
-        {/* Character portrait */}
-        {dialog.avatar && (
-          <div className={`dialog-avatar ${getEmotionClass()}`}>
-            <img
-              src={dialog.avatar}
-              alt={getCharacterName()}
-              className="avatar-image"
-            />
+    <div className="dialog-overlay">
+      <div className="dialog-container">
+        <div className="dialog-header">
+          <h3 className="dialog-speaker" style={{ color: getSpeakerColor() }}>
+            {getSpeakerName()}
+          </h3>
+          <button 
+            className="dialog-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div 
+          className="dialog-text"
+          ref={dialogTextRef}
+          onClick={completeText}
+        >
+          {displayedText}
+          {isTyping && <span className="typing-cursor">_</span>}
+        </div>
+        
+        {textComplete && currentDialog.choices && currentDialog.choices.length > 0 && (
+          <div className="dialog-choices">
+            {currentDialog.choices.map((choice, index) => (
+              <button
+                key={`choice-${index}`}
+                className={`dialog-choice ${choice.disabled ? 'disabled' : ''}`}
+                onClick={() => !choice.disabled && handleChoiceSelect(choice)}
+                disabled={choice.disabled}
+              >
+                {choice.text}
+              </button>
+            ))}
           </div>
         )}
         
-        {/* Dialog content */}
-        <div className="dialog-content">
-          {/* Character name */}
-          <div className="dialog-name">
-            {getCharacterName()}
-            {currentLine.emotion && (
-              <span className="dialog-emotion">
-                {` (${currentLine.emotion})`}
-              </span>
-            )}
+        {textComplete && (!currentDialog.choices || currentDialog.choices.length === 0) && (
+          <div className="dialog-continue">
+            <button 
+              className="continue-button"
+              onClick={onClose}
+            >
+              {currentDialog.continueText || 'Continue'}
+            </button>
           </div>
-          
-          {/* Text with typewriter effect */}
-          <div
-            ref={textContainerRef}
-            className="dialog-text"
-            onClick={handleTextClick}
-          >
-            {displayedText}
-            {isTyping && <span className="typing-cursor">_</span>}
-          </div>
-          
-          {/* Response options */}
-          {!isTyping && currentLine.responses && currentLine.responses.length > 0 && (
-            <div className="dialog-responses">
-              {currentLine.responses.map((response, index) => (
-                <button
-                  key={index}
-                  className="dialog-response-option"
-                  onClick={() => onSelect(index)}
-                >
-                  {response.text}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        {/* Close button */}
-        <button
-          className="dialog-close"
-          onClick={onClose}
-          aria-label="Close dialog"
-        >
-          ✕
-        </button>
+        )}
       </div>
       
-      {/* Continue indicator */}
-      {!isTyping && (!currentLine.responses || currentLine.responses.length === 0) && (
-        <div className="dialog-continue">
-          Click to continue
-          <div className="dialog-continue-arrow">↓</div>
-        </div>
-      )}
-      
-      <style>
-        {`
-          .dialog-box-container {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 500;
-            pointer-events: none;
+      <style jsx>{`
+        .dialog-overlay {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          padding: 0 20px 20px;
+          z-index: 200;
+          display: flex;
+          justify-content: center;
+          pointer-events: none;
+        }
+        
+        .dialog-container {
+          width: 100%;
+          max-width: 800px;
+          background-color: rgba(20, 20, 30, 0.9);
+          border-radius: 10px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          backdrop-filter: blur(4px);
+          animation: dialog-slide-up 0.3s ease forwards;
+          font-family: 'Times New Roman', serif;
+          color: #e0e0e0;
+          overflow: hidden;
+          pointer-events: auto;
+        }
+        
+        .dialog-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 15px;
+          border-bottom: 1px solid rgba(100, 100, 150, 0.4);
+          background-color: rgba(30, 30, 45, 0.7);
+        }
+        
+        .dialog-speaker {
+          margin: 0;
+          font-size: 18px;
+          font-weight: bold;
+        }
+        
+        .dialog-close {
+          background: none;
+          border: none;
+          color: #a0a0b0;
+          font-size: 16px;
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        
+        .dialog-close:hover {
+          background-color: rgba(80, 80, 100, 0.4);
+          color: #e0e0e0;
+        }
+        
+        .dialog-text {
+          padding: 20px;
+          font-size: 16px;
+          line-height: 1.6;
+          min-height: 100px;
+          max-height: 200px;
+          overflow-y: auto;
+          cursor: pointer;
+          white-space: pre-wrap;
+        }
+        
+        .typing-cursor {
+          display: inline-block;
+          animation: cursor-blink 0.7s infinite;
+          margin-left: 1px;
+        }
+        
+        .dialog-choices {
+          padding: 15px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border-top: 1px solid rgba(100, 100, 150, 0.4);
+          background-color: rgba(30, 30, 45, 0.7);
+        }
+        
+        .dialog-choice {
+          background-color: rgba(60, 60, 80, 0.6);
+          color: #d0d0e0;
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          border-radius: 6px;
+          padding: 10px 15px;
+          text-align: left;
+          font-family: inherit;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .dialog-choice:hover:not(.disabled) {
+          background-color: rgba(80, 80, 110, 0.7);
+          transform: translateY(-2px);
+        }
+        
+        .dialog-choice:active:not(.disabled) {
+          transform: translateY(0);
+        }
+        
+        .dialog-choice.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          text-decoration: line-through;
+        }
+        
+        .dialog-continue {
+          padding: 15px 20px;
+          display: flex;
+          justify-content: center;
+          border-top: 1px solid rgba(100, 100, 150, 0.4);
+          background-color: rgba(30, 30, 45, 0.7);
+        }
+        
+        .continue-button {
+          background-color: rgba(70, 70, 100, 0.6);
+          color: #d0d0e0;
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          border-radius: 6px;
+          padding: 8px 20px;
+          font-family: inherit;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .continue-button:hover {
+          background-color: rgba(90, 90, 120, 0.7);
+        }
+        
+        @keyframes dialog-slide-up {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
           }
-          
-          .dialog-box {
-            width: calc(100% - 40px);
-            max-width: 800px;
-            background-color: rgba(20, 20, 30, 0.85);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(100, 100, 150, 0.4);
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            margin-bottom: 5px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            pointer-events: auto;
-            animation: slideUp 0.3s ease-out;
+          to {
+            transform: translateY(0);
+            opacity: 1;
           }
-          
-          .dialog-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-right: 15px;
-            flex-shrink: 0;
-            border: 2px solid rgba(100, 100, 150, 0.4);
-            background-color: rgba(30, 30, 50, 0.5);
-            transition: all 0.3s ease;
+        }
+        
+        @keyframes cursor-blink {
+          0%, 100% {
+            opacity: 0;
           }
-          
-          .avatar-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+          50% {
+            opacity: 1;
           }
-          
-          .dialog-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .dialog-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ccd6ff;
-            margin-bottom: 8px;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-          }
-          
-          .dialog-emotion {
-            color: #aab3cc;
-            font-style: italic;
-            font-weight: normal;
+        }
+        
+        @media (max-width: 768px) {
+          .dialog-container {
+            max-width: 100%;
           }
           
           .dialog-text {
-            font-size: 16px;
-            line-height: 1.5;
-            color: #ffffff;
-            margin-bottom: 12px;
-            min-height: 50px;
+            font-size: 15px;
+            padding: 15px;
+            min-height: 80px;
             max-height: 150px;
-            overflow-y: auto;
-            cursor: pointer;
-            padding-right: 5px;
-            /* Custom scrollbar */
-            scrollbar-width: thin;
-            scrollbar-color: rgba(100, 100, 150, 0.4) rgba(30, 30, 50, 0.2);
           }
           
-          .dialog-text::-webkit-scrollbar {
-            width: 6px;
+          .dialog-speaker {
+            font-size: 16px;
           }
           
-          .dialog-text::-webkit-scrollbar-track {
-            background: rgba(30, 30, 50, 0.2);
-            border-radius: 3px;
-          }
-          
-          .dialog-text::-webkit-scrollbar-thumb {
-            background: rgba(100, 100, 150, 0.4);
-            border-radius: 3px;
-          }
-          
-          .typing-cursor {
-            display: inline-block;
-            margin-left: 2px;
-            animation: blink 0.7s infinite;
-          }
-          
-          .dialog-responses {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 5px;
-          }
-          
-          .dialog-response-option {
-            background-color: rgba(60, 60, 90, 0.6);
-            border: 1px solid rgba(100, 100, 150, 0.4);
-            color: white;
+          .dialog-choice {
+            font-size: 14px;
             padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
+          }
+          
+          .continue-button {
             font-size: 14px;
+            padding: 6px 16px;
           }
-          
-          .dialog-response-option:hover {
-            background-color: rgba(80, 80, 120, 0.8);
-            border-color: rgba(120, 120, 180, 0.6);
-          }
-          
-          .dialog-response-option:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(120, 120, 180, 0.6);
-          }
-          
-          .dialog-close {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            font-size: 16px;
-            padding: 0 5px;
-            align-self: flex-start;
-            transition: color 0.2s ease;
-          }
-          
-          .dialog-close:hover {
-            color: white;
-          }
-          
-          .dialog-continue {
-            background-color: rgba(30, 30, 40, 0.7);
-            color: #ccd6ff;
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            pointer-events: none;
-            animation: pulse 1.5s infinite;
-          }
-          
-          .dialog-continue-arrow {
-            font-size: 16px;
-            margin-top: 2px;
-          }
-          
-          /* Emotion classes for the avatar */
-          .dialog-emotion-happy .avatar-image {
-            filter: brightness(1.1) saturate(1.1);
-          }
-          
-          .dialog-emotion-sad .avatar-image {
-            filter: brightness(0.9) saturate(0.8);
-          }
-          
-          .dialog-emotion-angry .avatar-image {
-            filter: brightness(1.1) saturate(1.2) hue-rotate(-10deg);
-          }
-          
-          .dialog-emotion-fearful .avatar-image {
-            filter: brightness(0.85) saturate(0.7) hue-rotate(20deg);
-          }
-          
-          .dialog-emotion-surprised .avatar-image {
-            filter: brightness(1.15) contrast(1.1);
-          }
-          
-          /* Animations */
-          @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 0.8; transform: translateY(0); }
-            50% { opacity: 1; transform: translateY(3px); }
-          }
-          
-          @keyframes slideUp {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-          }
-          
-          /* Mobile responsive */
-          @media (max-width: 500px) {
-            .dialog-box {
-              width: calc(100% - 20px);
-              padding: 10px;
-            }
-            
-            .dialog-avatar {
-              width: 60px;
-              height: 60px;
-              margin-right: 10px;
-            }
-            
-            .dialog-name {
-              font-size: 16px;
-            }
-            
-            .dialog-text {
-              font-size: 14px;
-              max-height: 120px;
-            }
-            
-            .dialog-response-option {
-              padding: 6px 10px;
-              font-size: 13px;
-            }
-          }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   );
 };

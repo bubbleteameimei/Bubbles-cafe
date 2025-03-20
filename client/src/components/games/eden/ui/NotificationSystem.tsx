@@ -1,271 +1,292 @@
-import React, { useState, useEffect } from 'react';
-import { NotificationSystemProps, GameNotification } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { NotificationProps, GameNotification } from '../types';
 
 /**
- * NotificationSystem Component - Displays game notifications and alerts
+ * NotificationSystem - Displays game notifications with animation
  */
-const NotificationSystem: React.FC<NotificationSystemProps> = ({
+const NotificationSystem: React.FC<NotificationProps> = ({ 
   notifications,
-  onDismiss,
-  onAction
+  onDismiss
 }) => {
-  const [visibleNotifications, setVisibleNotifications] = useState<GameNotification[]>([]);
-  const [animatingOut, setAnimatingOut] = useState<Record<string, boolean>>({});
+  const notificationRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
   
-  // Update visible notifications when props change
-  useEffect(() => {
-    setVisibleNotifications(notifications);
-  }, [notifications]);
+  // Helper to get notification icon
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return '✓';
+      case 'error':
+        return '✕';
+      case 'warning':
+        return '⚠';
+      case 'info':
+        return 'ℹ';
+      case 'achievement':
+        return '🏆';
+      case 'item':
+        return '📦';
+      case 'quest':
+        return '📜';
+      default:
+        return 'ℹ';
+    }
+  };
   
-  // Setup auto-dismiss timers for notifications
+  // Setup auto-dismiss for notifications with duration
   useEffect(() => {
-    // For each notification with a timeout
-    const timers = notifications
-      .filter(n => n.timeout && n.timeout > 0)
-      .map(notification => {
-        // Set a timer to dismiss this notification after timeout
-        return setTimeout(() => {
-          handleDismiss(notification.id);
-        }, notification.timeout);
-      });
+    const timers: NodeJS.Timeout[] = [];
     
-    // Clear timers on unmount
+    notifications.forEach(notification => {
+      if (notification.autoDismiss && notification.duration) {
+        const timer = setTimeout(() => {
+          onDismiss(notification.id);
+        }, notification.duration);
+        
+        timers.push(timer);
+      }
+    });
+    
     return () => {
       timers.forEach(timer => clearTimeout(timer));
     };
   }, [notifications, onDismiss]);
   
-  // Handle dismissal with animation
-  const handleDismiss = (id: string) => {
-    // Start animation out
-    setAnimatingOut(prev => ({ ...prev, [id]: true }));
+  // Handle notification dismiss
+  const handleDismiss = (notificationId: string) => {
+    // Get the notification element
+    const notificationElement = notificationRefs.current[notificationId];
     
-    // After animation completes, call the actual dismiss handler
-    setTimeout(() => {
-      onDismiss(id);
-    }, 300); // Match the animation duration
-  };
-  
-  // Handle action button click
-  const handleAction = (id: string) => {
-    onAction(id);
-  };
-  
-  // Get class name based on notification type
-  const getNotificationClass = (type: GameNotification['type']) => {
-    switch (type) {
-      case 'warning':
-        return 'notification-warning';
-      case 'danger':
-        return 'notification-danger';
-      case 'discovery':
-        return 'notification-discovery';
-      case 'achievement':
-        return 'notification-achievement';
-      default:
-        return 'notification-info';
-    }
-  };
-  
-  // Get icon based on notification type
-  const getNotificationIcon = (type: GameNotification['type']) => {
-    switch (type) {
-      case 'warning':
-        return '⚠️';
-      case 'danger':
-        return '🔥';
-      case 'discovery':
-        return '🔍';
-      case 'achievement':
-        return '🏆';
-      default:
-        return 'ℹ️';
+    if (notificationElement) {
+      // Add exit animation class
+      notificationElement.classList.add('notification-exit');
+      
+      // Wait for animation to complete before actually removing
+      setTimeout(() => {
+        onDismiss(notificationId);
+      }, 300); // Match the animation duration
+    } else {
+      // If element reference not found, just dismiss
+      onDismiss(notificationId);
     }
   };
   
   return (
-    <div className="notification-system">
-      {visibleNotifications.map(notification => (
+    <div className="notification-container">
+      {notifications.map(notification => (
         <div 
           key={notification.id}
-          className={`notification ${getNotificationClass(notification.type)} ${
-            animatingOut[notification.id] ? 'animate-out' : 'animate-in'
-          }`}
+          ref={el => notificationRefs.current[notification.id] = el}
+          className={`notification notification-${notification.type}`}
         >
-          <div className="notification-icon">
-            {getNotificationIcon(notification.type)}
-          </div>
-          
           <div className="notification-content">
-            <div className="notification-message">
-              {notification.message}
+            <div className="notification-icon">
+              {notification.iconUrl ? (
+                <img 
+                  src={notification.iconUrl} 
+                  alt={notification.type} 
+                  className="notification-custom-icon" 
+                />
+              ) : (
+                <span className="notification-default-icon">
+                  {getNotificationIcon(notification.type)}
+                </span>
+              )}
             </div>
             
-            {notification.action && (
-              <button
-                className="notification-action"
-                onClick={() => handleAction(notification.id)}
-              >
-                {notification.action.label}
-              </button>
-            )}
+            <div className="notification-text">
+              {notification.title && (
+                <div className="notification-title">{notification.title}</div>
+              )}
+              <div className="notification-message">{notification.message}</div>
+            </div>
+            
+            <button 
+              className="notification-close"
+              onClick={() => handleDismiss(notification.id)}
+              aria-label="Close notification"
+            >
+              ✕
+            </button>
           </div>
-          
-          <button 
-            className="notification-dismiss"
-            onClick={() => handleDismiss(notification.id)}
-            aria-label="Dismiss notification"
-          >
-            ✕
-          </button>
         </div>
       ))}
       
-      <style>
-        {`
-          .notification-system {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 900;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 350px;
-            pointer-events: none;
+      <style jsx>{`
+        .notification-container {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          max-width: 350px;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding-right: 5px;
+          pointer-events: none;
+        }
+        
+        .notification {
+          background-color: rgba(30, 30, 40, 0.9);
+          border-radius: 8px;
+          padding: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          animation: notification-enter 0.3s ease forwards;
+          border-left: 4px solid #4a4a5a;
+          pointer-events: auto;
+          backdrop-filter: blur(4px);
+          font-family: 'Times New Roman', serif;
+          color: #e0e0e0;
+          transform-origin: top right;
+        }
+        
+        .notification-exit {
+          animation: notification-exit 0.3s ease forwards;
+        }
+        
+        .notification-success {
+          border-left-color: #66bb6a;
+        }
+        
+        .notification-error {
+          border-left-color: #ef5350;
+        }
+        
+        .notification-warning {
+          border-left-color: #ffa726;
+        }
+        
+        .notification-info {
+          border-left-color: #42a5f5;
+        }
+        
+        .notification-achievement {
+          border-left-color: #ffcc00;
+        }
+        
+        .notification-item {
+          border-left-color: #7e57c2;
+        }
+        
+        .notification-quest {
+          border-left-color: #ab47bc;
+        }
+        
+        .notification-content {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        
+        .notification-icon {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(60, 60, 80, 0.6);
+          flex-shrink: 0;
+        }
+        
+        .notification-default-icon {
+          font-size: 16px;
+          font-weight: bold;
+        }
+        
+        .notification-custom-icon {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border-radius: 50%;
+        }
+        
+        .notification-text {
+          flex: 1;
+        }
+        
+        .notification-title {
+          font-weight: bold;
+          margin-bottom: 4px;
+          font-size: 16px;
+        }
+        
+        .notification-message {
+          font-size: 14px;
+          line-height: 1.4;
+          color: #c8c8d8;
+        }
+        
+        .notification-close {
+          background: none;
+          border: none;
+          color: #a0a0b0;
+          font-size: 14px;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          transition: all 0.2s;
+          margin-top: 2px;
+        }
+        
+        .notification-close:hover {
+          background-color: rgba(120, 120, 140, 0.3);
+          color: #e0e0e0;
+        }
+        
+        @keyframes notification-enter {
+          0% {
+            opacity: 0;
+            transform: translateX(30px) scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        
+        @keyframes notification-exit {
+          0% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(30px) scale(0.9);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .notification-container {
+            top: 10px;
+            right: 10px;
+            max-width: 300px;
           }
           
           .notification {
-            background-color: rgba(30, 30, 40, 0.9);
-            border-left: 4px solid #666;
-            color: white;
-            padding: 12px;
-            border-radius: 4px;
-            display: flex;
-            align-items: flex-start;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
-            pointer-events: auto;
-            transform-origin: top left;
-            transition: all 0.3s ease;
-          }
-          
-          .notification.animate-in {
-            animation: slideIn 0.3s ease forwards;
-          }
-          
-          .notification.animate-out {
-            animation: slideOut 0.3s ease forwards;
-          }
-          
-          .notification-info {
-            border-left-color: #3498db;
-          }
-          
-          .notification-warning {
-            border-left-color: #f39c12;
-          }
-          
-          .notification-danger {
-            border-left-color: #e74c3c;
-          }
-          
-          .notification-discovery {
-            border-left-color: #9b59b6;
-          }
-          
-          .notification-achievement {
-            border-left-color: #2ecc71;
+            padding: 10px;
           }
           
           .notification-icon {
-            margin-right: 10px;
-            font-size: 20px;
+            width: 24px;
+            height: 24px;
           }
           
-          .notification-content {
-            flex: 1;
-            padding-right: 5px;
+          .notification-title {
+            font-size: 14px;
           }
           
           .notification-message {
-            font-size: 14px;
-            margin-bottom: 5px;
-            line-height: 1.4;
-          }
-          
-          .notification-action {
-            background-color: rgba(80, 80, 100, 0.3);
-            border: 1px solid rgba(100, 100, 150, 0.3);
-            color: white;
-            padding: 3px 10px;
             font-size: 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
           }
-          
-          .notification-action:hover {
-            background-color: rgba(100, 100, 120, 0.5);
-          }
-          
-          .notification-dismiss {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            font-size: 14px;
-            padding: 0 5px;
-            transition: color 0.2s ease;
-          }
-          
-          .notification-dismiss:hover {
-            color: white;
-          }
-          
-          @keyframes slideIn {
-            0% {
-              opacity: 0;
-              transform: translateX(-20px);
-            }
-            100% {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-          
-          @keyframes slideOut {
-            0% {
-              opacity: 1;
-              transform: translateX(0);
-            }
-            100% {
-              opacity: 0;
-              transform: translateX(-20px);
-            }
-          }
-          
-          @media (max-width: 500px) {
-            .notification-system {
-              top: 10px;
-              left: 10px;
-              max-width: calc(100% - 20px);
-            }
-            
-            .notification {
-              padding: 8px;
-            }
-            
-            .notification-icon {
-              font-size: 16px;
-            }
-            
-            .notification-message {
-              font-size: 12px;
-            }
-          }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   );
 };

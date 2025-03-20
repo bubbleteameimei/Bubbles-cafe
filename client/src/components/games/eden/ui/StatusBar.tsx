@@ -2,203 +2,219 @@ import React from 'react';
 import { StatusBarProps } from '../types';
 
 /**
- * StatusBar Component - Displays player status indicators (health, mana, sanity)
+ * StatusBar - Displays player's statistics like health, mana, and sanity
  */
 const StatusBar: React.FC<StatusBarProps> = ({
-  health,
-  maxHealth,
-  mana,
-  maxMana,
-  sanity,
-  maxSanity
+  stats,
+  showLabels = true,
+  compact = false
 }) => {
-  // Calculate percentages for the bar visuals
+  const { health, maxHealth, mana, maxMana, sanity, maxSanity } = stats;
+  
+  // Calculate percentages
   const healthPercent = Math.max(0, Math.min(100, (health / maxHealth) * 100));
   const manaPercent = Math.max(0, Math.min(100, (mana / maxMana) * 100));
-  const sanityPercent = sanity && maxSanity ? Math.max(0, Math.min(100, (sanity / maxSanity) * 100)) : 0;
+  const sanityPercent = Math.max(0, Math.min(100, (sanity / maxSanity) * 100));
   
-  // Determine health bar color based on current health
-  const getHealthColor = (): string => {
-    if (healthPercent > 60) return '#3bbb4c'; // Green
-    if (healthPercent > 30) return '#e6b035'; // Yellow
-    return '#bb3b3b'; // Red
+  // Get color based on percentage
+  const getHealthColor = (percent: number) => {
+    if (percent <= 25) return '#e53935'; // Critical - red
+    if (percent <= 50) return '#ff9800'; // Low - orange
+    return '#43a047'; // Good - green
   };
   
-  // Determine sanity bar color based on current sanity
-  const getSanityColor = (): string => {
-    if (!sanity || !maxSanity) return '#6b46c1'; // Default purple
-    if (sanityPercent > 60) return '#6b46c1'; // Purple
-    if (sanityPercent > 30) return '#8246c1'; // Lighter purple
-    return '#a546c1'; // Pink/purple
+  const getManaColor = (percent: number) => {
+    if (percent <= 25) return '#5c6bc0'; // Critical - light blue
+    if (percent <= 50) return '#3949ab'; // Low - medium blue
+    return '#283593'; // Good - deep blue
+  };
+  
+  const getSanityColor = (percent: number) => {
+    if (percent <= 25) return '#9c27b0'; // Critical - dark purple
+    if (percent <= 50) return '#7b1fa2'; // Low - medium purple
+    return '#6a1b9a'; // Good - purple
   };
   
   return (
-    <div className="status-bar">
-      {/* Health Bar */}
-      <div className="status-item">
-        <div className="status-icon health-icon">❤️</div>
+    <div className={`status-bar ${compact ? 'compact' : ''}`}>
+      {/* Health */}
+      <div className="status-section">
+        {showLabels && <span className="status-label">Health</span>}
         <div className="status-bar-container">
           <div 
-            className="status-bar-fill health-bar" 
+            className="status-bar-fill health" 
             style={{ 
               width: `${healthPercent}%`,
-              backgroundColor: getHealthColor() 
+              backgroundColor: getHealthColor(healthPercent)
             }}
-          />
-          <span className="status-text">
-            {health}/{maxHealth}
-          </span>
+          ></div>
+          <span className="status-value">{health}/{maxHealth}</span>
         </div>
       </div>
       
-      {/* Mana Bar */}
-      <div className="status-item">
-        <div className="status-icon mana-icon">🔮</div>
+      {/* Mana */}
+      <div className="status-section">
+        {showLabels && <span className="status-label">Mana</span>}
         <div className="status-bar-container">
           <div 
-            className="status-bar-fill mana-bar" 
-            style={{ width: `${manaPercent}%` }}
-          />
-          <span className="status-text">
-            {mana}/{maxMana}
-          </span>
+            className="status-bar-fill mana" 
+            style={{ 
+              width: `${manaPercent}%`,
+              backgroundColor: getManaColor(manaPercent)
+            }}
+          ></div>
+          <span className="status-value">{mana}/{maxMana}</span>
         </div>
       </div>
       
-      {/* Sanity Bar - only show if provided */}
-      {sanity !== undefined && maxSanity !== undefined && (
-        <div className="status-item">
-          <div className="status-icon sanity-icon">🧠</div>
-          <div className="status-bar-container">
-            <div 
-              className="status-bar-fill sanity-bar" 
-              style={{ 
-                width: `${sanityPercent}%`,
-                backgroundColor: getSanityColor()
-              }}
-            />
-            <span className="status-text">
-              {sanity}/{maxSanity}
-            </span>
-          </div>
+      {/* Sanity */}
+      <div className="status-section">
+        {showLabels && <span className="status-label">Sanity</span>}
+        <div className="status-bar-container">
+          <div 
+            className="status-bar-fill sanity" 
+            style={{ 
+              width: `${sanityPercent}%`,
+              backgroundColor: getSanityColor(sanityPercent)
+            }}
+          ></div>
+          <span className="status-value">{sanity}/{maxSanity}</span>
         </div>
-      )}
+      </div>
       
-      <style>
-        {`
+      <style jsx>{`
+        .status-bar {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 10px;
+          background-color: rgba(20, 20, 30, 0.85);
+          border-radius: 8px;
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          font-family: 'Times New Roman', serif;
+          color: #e0e0e0;
+          width: 100%;
+        }
+        
+        .status-bar.compact {
+          flex-direction: row;
+          gap: 15px;
+          padding: 8px 12px;
+        }
+        
+        .status-section {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        
+        .status-bar.compact .status-section {
+          flex: 1;
+        }
+        
+        .status-label {
+          font-size: 14px;
+          color: #b0b0c0;
+        }
+        
+        .status-bar-container {
+          height: 20px;
+          background-color: rgba(50, 50, 60, 0.6);
+          border-radius: 4px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-bar-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.5s ease, background-color 0.5s ease;
+        }
+        
+        .status-bar-fill.health {
+          background-color: #43a047;
+          box-shadow: 0 0 8px rgba(67, 160, 71, 0.5);
+        }
+        
+        .status-bar-fill.mana {
+          background-color: #283593;
+          box-shadow: 0 0 8px rgba(40, 53, 147, 0.5);
+        }
+        
+        .status-bar-fill.sanity {
+          background-color: #6a1b9a;
+          box-shadow: 0 0 8px rgba(106, 27, 154, 0.5);
+        }
+        
+        .status-value {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          color: #ffffff;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+          pointer-events: none;
+        }
+        
+        /* Special effects for low values */
+        .status-bar-fill.health[style*="width: 25%"], 
+        .status-bar-fill.health[style*="width: 20%"],
+        .status-bar-fill.health[style*="width: 15%"],
+        .status-bar-fill.health[style*="width: 10%"],
+        .status-bar-fill.health[style*="width: 5%"] {
+          animation: pulse 1s infinite alternate;
+        }
+        
+        .status-bar-fill.sanity[style*="width: 25%"], 
+        .status-bar-fill.sanity[style*="width: 20%"],
+        .status-bar-fill.sanity[style*="width: 15%"],
+        .status-bar-fill.sanity[style*="width: 10%"],
+        .status-bar-fill.sanity[style*="width: 5%"] {
+          animation: flicker 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+          from { opacity: 0.7; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes flicker {
+          0%, 100% { opacity: 0.8; }
+          50% { opacity: 1; }
+          75% { opacity: 0.7; }
+        }
+        
+        @media (max-width: 768px) {
           .status-bar {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
+            padding: 8px;
+            gap: 6px;
+          }
+          
+          .status-bar.compact {
+            padding: 6px 10px;
             gap: 10px;
-            z-index: 700;
-            padding: 10px;
-            background-color: rgba(20, 20, 30, 0.7);
-            backdrop-filter: blur(5px);
-            border-radius: 8px;
-            border: 1px solid rgba(100, 100, 150, 0.4);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
           }
           
-          .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .status-icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
+          .status-label {
+            font-size: 12px;
           }
           
           .status-bar-container {
-            height: 20px;
-            width: 150px;
-            background-color: rgba(20, 20, 30, 0.6);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(100, 100, 150, 0.4);
+            height: 16px;
           }
           
-          .status-bar-fill {
-            height: 100%;
-            transition: width 0.5s ease;
+          .status-value {
+            font-size: 10px;
           }
-          
-          .health-bar {
-            background-color: #3bbb4c;
-          }
-          
-          .mana-bar {
-            background-color: #3b5dbb;
-          }
-          
-          .sanity-bar {
-            background-color: #6b46c1;
-          }
-          
-          .status-text {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
-          }
-          
-          /* Animations for damage/healing */
-          @keyframes damage-flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-          }
-          
-          .damage-animation {
-            animation: damage-flash 0.3s ease;
-          }
-          
-          @keyframes healing-glow {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.5); }
-          }
-          
-          .healing-animation {
-            animation: healing-glow 0.5s ease;
-          }
-          
-          /* Mobile responsive */
-          @media (max-width: 500px) {
-            .status-bar {
-              top: 10px;
-              right: 10px;
-              padding: 8px;
-            }
-            
-            .status-icon {
-              font-size: 16px;
-              width: 20px;
-            }
-            
-            .status-bar-container {
-              width: 120px;
-              height: 18px;
-            }
-            
-            .status-text {
-              font-size: 10px;
-            }
-          }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   );
 };
