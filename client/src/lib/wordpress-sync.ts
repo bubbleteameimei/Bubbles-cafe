@@ -113,20 +113,16 @@ export function getLocalWordPressPosts() {
 }
 
 /**
- * Check if local posts are available and recent
+ * Check if local posts are available (without age restriction)
  */
-export function hasRecentLocalPosts(maxAgeHours = 24) {
+export function hasRecentLocalPosts(maxAgeHours = Infinity) {
   try {
     const data = localStorage.getItem(LOCAL_POSTS_KEY);
     if (!data) return false;
     
     const parsedData = JSON.parse(data);
-    const timestamp = parsedData.timestamp;
-    const now = Date.now();
-    const ageMs = now - timestamp;
-    const ageHours = ageMs / (1000 * 60 * 60);
-    
-    return ageHours <= maxAgeHours && Array.isArray(parsedData.posts) && parsedData.posts.length > 0;
+    // Validate array data exists but don't check age - posts persist forever
+    return Array.isArray(parsedData.posts) && parsedData.posts.length > 0;
   } catch (error) {
     return false;
   }

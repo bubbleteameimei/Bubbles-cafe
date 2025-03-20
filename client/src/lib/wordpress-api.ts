@@ -721,16 +721,14 @@ export function checkLocalSyncedPosts() {
       return null;
     }
     
-    // Verify that the posts aren't too old (24 hours max)
+    // Posts persist permanently, but we log the age for informational purposes
     const timestamp = parsedData.timestamp;
     const now = Date.now();
     const ageMs = now - timestamp;
     const ageHours = ageMs / (1000 * 60 * 60);
     
-    if (ageHours > 24) {
-      console.log('[WordPress] Local synced posts are too old, ignoring');
-      return null;
-    }
+    // No timeout - posts will persist indefinitely
+    // Just log how old they are for debugging purposes
     
     console.log(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
     return {
