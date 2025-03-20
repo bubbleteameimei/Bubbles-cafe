@@ -14,6 +14,7 @@ export const gameScenes: Record<string, Scene> = {
         id: 'to_forest_path',
         name: 'Forest Path',
         target: 'forest_path',
+        destination: 'forest_path', // Added destination property to match SceneExit interface
         position: 'north'
       }
     ],
@@ -63,18 +64,21 @@ export const gameScenes: Record<string, Scene> = {
         id: 'to_forest_edge',
         name: 'Back to Forest Edge',
         target: 'forest_edge',
+        destination: 'forest_edge', // Added destination property
         position: 'south'
       },
       {
         id: 'to_abandoned_camp',
         name: 'Abandoned Camp',
         target: 'abandoned_camp',
+        destination: 'abandoned_camp', // Added destination property
         position: 'east'
       },
       {
         id: 'to_hollow_entrance',
         name: 'Path to Village',
         target: 'hollow_entrance',
+        destination: 'hollow_entrance', // Added destination property
         position: 'north'
       }
     ],
@@ -119,6 +123,7 @@ export const gameScenes: Record<string, Scene> = {
         id: 'to_forest_path',
         name: 'Back to Forest Path',
         target: 'forest_path',
+        destination: 'forest_path', // Added destination property
         position: 'west'
       }
     ],
@@ -174,18 +179,21 @@ export const gameScenes: Record<string, Scene> = {
         id: 'to_forest_path',
         name: 'Back to Forest Path',
         target: 'forest_path',
+        destination: 'forest_path', // Added destination property
         position: 'south'
       },
       {
         id: 'to_village_square',
         name: 'Village Square',
         target: 'village_square',
+        destination: 'village_square', // Added destination property
         position: 'north'
       },
       {
         id: 'to_inn',
         name: 'Old Inn',
         target: 'inn_exterior',
+        destination: 'inn_exterior', // Added destination property
         position: 'east'
       }
     ],
@@ -225,24 +233,28 @@ export const gameScenes: Record<string, Scene> = {
         id: 'to_hollow_entrance',
         name: 'Village Entrance',
         target: 'hollow_entrance',
+        destination: 'hollow_entrance', // Added destination property
         position: 'south'
       },
       {
         id: 'to_church',
         name: 'Old Church',
         target: 'church_exterior',
+        destination: 'church_exterior', // Added destination property
         position: 'north'
       },
       {
         id: 'to_town_hall',
         name: 'Town Hall',
         target: 'town_hall_exterior',
+        destination: 'town_hall_exterior', // Added destination property
         position: 'east'
       },
       {
         id: 'to_abandoned_shop',
         name: 'Abandoned Shop',
         target: 'abandoned_shop',
+        destination: 'abandoned_shop', // Added destination property
         position: 'west'
       }
     ],
