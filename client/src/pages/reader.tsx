@@ -710,14 +710,6 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="w-full md:w-auto flex items-center gap-4">
                   <LikeDislike postId={currentPost.id} />
-                  
-                  {/* Add BookmarkButton next to Like/Dislike buttons for easy access */}
-                  <BookmarkButton 
-                    postId={currentPost.id}
-                    variant="default"
-                    showText={true}
-                    className="bg-background/80 hover:bg-background"
-                  />
                 </div>
 
                 <div className="flex flex-col items-center gap-3">

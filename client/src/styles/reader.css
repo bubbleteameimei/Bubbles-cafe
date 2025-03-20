@@ -23,7 +23,7 @@
 
 .story-content p {
   font-family: 'Cormorant Garamond', serif;
-  margin-bottom: 1.8em; /* Increased paragraph spacing */
+  margin-bottom: 0.8em; /* Drastically reduced paragraph spacing */
   text-align: justify;
   text-justify: inter-word;
   hyphens: auto;
@@ -34,7 +34,7 @@
 }
 
 .story-content p + p {
-  margin-top: 1.6em; /* Match About page paragraph spacing */
+  margin-top: 0.6em; /* Drastically reduced spacing between paragraphs */
 }
 
 .story-content h1, 
@@ -283,7 +283,7 @@
   }
   
   .story-content p {
-    margin-bottom: 1.6em;
+    margin-bottom: 0.8em; /* Match the reduced spacing from desktop */
     text-align: left; /* Left-aligned for easier mobile reading */
     hyphens: none; /* Disable hyphenation on mobile for clarity */
   }
