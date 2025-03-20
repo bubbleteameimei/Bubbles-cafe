@@ -1,0 +1,111 @@
+modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+deploymentTarget = "cloudrun"
+build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "npm start"]
+
+[[ports]]
+localPort = 3000
+externalPort = 3002
+
+[[ports]]
+localPort = 3001
+externalPort = 3003
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
+[[ports]]
+localPort = 5002
+externalPort = 3001
+
+[workflows]
+runButton = "Start Dev Server"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Dev"
+author = 39654983
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "dev"
+author = 39775130
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "WordPress Sync"
+author = 40059171
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/run-wp-sync.js"
+
+[[workflows.workflow]]
+name = "WordPress Scheduler"
+author = 40059171
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/sync-scheduler.ts"
+
+[[workflows.workflow]]
+name = "Run Application"
+author = 40099974
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/init-db.ts && npm run dev"
+
+[[workflows.workflow]]
+name = "Run"
+author = 40164664
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx scripts/init-db.ts && npm run dev"
+
+[[workflows.workflow]]
+name = "Start Dev Server"
+author = 40492995
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"

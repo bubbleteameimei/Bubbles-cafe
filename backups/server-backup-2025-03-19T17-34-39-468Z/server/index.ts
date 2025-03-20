@@ -1,0 +1,242 @@
+import express from "express";
+import { createServer } from "http";
+import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes";
+import { db } from "./db";
+import { posts } from "@shared/schema";
+import { count } from "drizzle-orm";
+import { seedDatabase } from "./seed";
+import path from "path";
+import helmet from "helmet";
+import compression from "compression";
+import session from "express-session";
+import { setupAuth } from "./auth";
+import { setupOAuth } from "./oauth";
+import { storage } from "./storage";
+import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
+import { registerUserFeedbackRoutes } from "./routes/user-feedback";
+import { registerRecommendationsRoutes } from "./routes/recommendations";
+import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
+import { registerUserDataExportRoutes } from "./routes/user-data-export";
+import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
+
+const app = express();
+const isDev = process.env.NODE_ENV !== "production";
+const PORT = parseInt(process.env.PORT || "3000", 10);
+const HOST = '0.0.0.0';
+
+// Create server instance outside startServer for proper cleanup
+let server: ReturnType<typeof createServer>;
+
+// Configure basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+
+// Configure session
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: !isDev,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  store: storage.sessionStore
+}));
+
+// Setup authentication
+setupAuth(app);
+setupOAuth(app);
+
+// Add health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Basic security headers
+app.use(helmet({
+  contentSecurityPolicy: isDev ? false : {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    }
+  }
+}));
+
+// Create a server logger
+const serverLogger = createLogger('Server');
+
+async function startServer() {
+  try {
+    serverLogger.info('Starting server', {
+      environment: process.env.NODE_ENV,
+      host: HOST,
+      port: PORT
+    });
+
+    // Check database connection first
+    try {
+      const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+      serverLogger.info('Database connected', { postsCount });
+  
+      if (postsCount === 0) {
+        serverLogger.info('Seeding database...');
+        await seedDatabase();
+        serverLogger.info('Database seeding completed');
+      }
+    } catch (error) {
+      serverLogger.warn('Database table check failed, will attempt to continue', { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      // Continue execution anyway - tables should have been created by our init script
+    }
+
+    // Create server instance
+    server = createServer(app);
+
+    // Setup routes based on environment
+    if (isDev) {
+      serverLogger.info('Setting up development environment');
+      
+      // Add global request logging in development
+      app.use(requestLogger);
+      
+      // Register main routes
+      registerRoutes(app);
+      
+      // Register user feedback routes
+      registerUserFeedbackRoutes(app, storage);
+      
+      // Register recommendation routes
+      registerRecommendationsRoutes(app, storage);
+      
+      // Register user data export routes
+      registerUserDataExportRoutes(app, storage);
+      
+      // Register privacy settings routes
+      registerPrivacySettingsRoutes(app, storage);
+      
+      // We've moved the post recommendations endpoint to main routes.ts
+      // registerPostRecommendationsRoutes(app);
+      
+      await setupVite(app, server);
+    } else {
+      serverLogger.info('Setting up production environment');
+      
+      // Register main routes
+      registerRoutes(app);
+      
+      // Register user feedback routes
+      registerUserFeedbackRoutes(app, storage);
+      
+      // Register recommendation routes
+      registerRecommendationsRoutes(app, storage);
+      
+      // Register user data export routes
+      registerUserDataExportRoutes(app, storage);
+      
+      // Register privacy settings routes
+      registerPrivacySettingsRoutes(app, storage);
+      
+      // We've moved the post recommendations endpoint to main routes.ts
+      // registerPostRecommendationsRoutes(app);
+      
+      serveStatic(app);
+    }
+
+    // Start listening with enhanced error handling and port notification
+    return new Promise<void>((resolve, reject) => {
+      const startTime = Date.now();
+      
+      // Log that we're about to start listening
+      console.log(`Attempting to start server on http://${HOST}:${PORT}...`);
+      
+      server.listen(PORT, HOST, () => {
+        const bootDuration = Date.now() - startTime;
+        console.log(`✅ Server started successfully on http://${HOST}:${PORT} in ${bootDuration}ms`);
+        serverLogger.info('Server started successfully', { 
+          url: `http://${HOST}:${PORT}`,
+          bootTime: `${bootDuration}ms`
+        });
+
+        // Send port readiness signal
+        if (process.send) {
+          process.send({
+            port: PORT,
+            wait_for_port: true,
+            ready: true
+          });
+          console.log('Sent port readiness signal to process');
+          serverLogger.debug('Sent port readiness signal');
+        }
+
+        resolve();
+      });
+
+      server.on('error', (error: Error & { code?: string }) => {
+        if (error.code === 'EADDRINUSE') {
+          serverLogger.error('Port already in use', { port: PORT });
+        } else {
+          serverLogger.error('Server error', { 
+            error: error.message,
+            code: error.code,
+            stack: error.stack 
+          });
+        }
+        reject(error);
+      });
+    });
+  } catch (error) {
+    serverLogger.error('Critical startup error', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer().catch(error => {
+  serverLogger.error('Critical startup error', {
+    error: error instanceof Error ? error.message : 'Unknown error',
+    stack: error instanceof Error ? error.stack : undefined
+  });
+  process.exit(1);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  serverLogger.info('SIGTERM received, initiating graceful shutdown');
+  server?.close(() => {
+    serverLogger.info('Server closed successfully');
+    process.exit(0);
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  serverLogger.error('Uncaught exception', {
+    error: error.message,
+    stack: error.stack
+  });
+  
+  // Give time for the error to be logged before exiting
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (reason, promise) => {
+  serverLogger.error('Unhandled promise rejection', {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined
+  });
+});
+
+export default app;
