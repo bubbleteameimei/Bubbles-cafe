@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PuzzleInterfaceProps, PuzzleType, Puzzle } from '../types';
 
 /**
@@ -9,7 +9,7 @@ import { PuzzleInterfaceProps, PuzzleType, Puzzle } from '../types';
  * - choice: Player must select the correct option from choices
  * - item-placement: Player must place items in correct positions
  */
-const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
+const PuzzleInterface = ({
   puzzle,
   onSolve,
   onClose,
@@ -17,6 +17,7 @@ const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
   isOpen = true,
   attempts = 0,
   maxAttempts = 3
+}: PuzzleInterfaceProps
 }) => {
   // State for different puzzle inputs
   const [sequenceInput, setSequenceInput] = useState<string[]>([]);
@@ -136,7 +137,7 @@ const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
       if (sequenceInput.length !== puzzle.solution.length) return false;
       
       return sequenceInput.every((item, index) => 
-        item === puzzle.solution[index]
+        item === (puzzle.solution as string[])[index]
       );
     }
     
@@ -172,11 +173,12 @@ const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
   
   // Check solution for item placement puzzles
   const isItemPlacementCorrect = () => {
-    if (!puzzle.solution || !Array.isArray(puzzle.solution)) return false;
+    // Ensure solution exists and is a record/object
+    if (!puzzle.solution || typeof puzzle.solution !== 'object' || Array.isArray(puzzle.solution)) return false;
     
     // Check if all required placements are correct
-    for (const [itemId, expectedPosition] of Object.entries(puzzle.solution)) {
-      if (itemPlacements[itemId] !== expectedPosition) {
+    for (const [itemId, expectedPosition] of Object.entries(puzzle.solution as Record<string, number>)) {
+      if (itemPlacements[itemId] !== Number(expectedPosition)) {
         return false;
       }
     }
@@ -196,7 +198,7 @@ const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
   };
   
   // Handle code input change
-  const handleCodeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCodeInputChange = (e: { target: { value: string } }) => {
     setCodeInput(e.target.value);
   };
   

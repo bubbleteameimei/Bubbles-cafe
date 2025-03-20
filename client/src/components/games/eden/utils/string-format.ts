@@ -11,10 +11,10 @@
  */
 export function formatDialogText(text: string): string {
   // Replace straight apostrophes and quotes with typographically correct ones
+  // Use standard quotes for compatibility
   return text
-    .replace(/'/g, ''') // Replace straight single quote with curly single quote
-    .replace(/"/g, '"') // Replace straight double quote with opening curly double quote
-    .replace(/"/g, '"'); // Replace straight double quote with closing curly double quote
+    .replace(/'/g, '\'') // Replace straight single quote with escaped single quote
+    .replace(/"/g, '\"'); // Replace straight double quote with escaped double quote
 }
 
 /**

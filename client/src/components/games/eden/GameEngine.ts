@@ -1,5 +1,6 @@
 import { 
   GameState, 
+  PlayerState,
   Scene, 
   Dialog, 
   InventoryItem,
@@ -7,7 +8,9 @@ import {
   GameEffect,
   GameAction,
   SaveData,
-  GameEngineConfig
+  GameEngineConfig,
+  DialogEffect,
+  ActionType
 } from './types';
 
 /**
@@ -627,7 +630,22 @@ class GameEngine {
     if (!this.gameState.player) return;
     
     const currentValue = this.gameState.player[stat];
-    const maxValue = this.gameState.player[`max${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
+    let maxValue: number;
+    
+    // Direct access to the max values
+    switch (stat) {
+      case 'health':
+        maxValue = this.gameState.player.maxHealth;
+        break;
+      case 'mana':
+        maxValue = this.gameState.player.maxMana;
+        break;
+      case 'sanity':
+        maxValue = this.gameState.player.maxSanity;
+        break;
+      default:
+        maxValue = 100; // Default fallback
+    }
     
     if (absolute) {
       // Set absolute value, clamped to max
@@ -662,6 +680,7 @@ class GameEngine {
     
     // Auto-save if enabled
     if (this.config.enableAutoSave && 
+        this.config.saveInterval && 
         this.gameState.gameTime % (this.config.saveInterval * 60) < minutes) {
       this.autoSave();
     }
