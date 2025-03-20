@@ -1,276 +1,387 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogResponse } from '../types';
+import { Dialog, DialogCharacter, DialogResponse, DialogSegment } from '../types';
 
 interface DialogBoxProps {
   dialog: Dialog;
-  onDialogEnd: () => void;
-  onResponseSelect: (responseId: string) => void;
-  isOpen: boolean;
+  currentSegmentIndex: number;
+  onResponseSelect: (response: DialogResponse) => void;
+  onDialogClose?: () => void;
 }
 
 /**
- * Displays character dialog with typed text effect and response options
+ * Displays character dialog with typewriter text effect and response options
  */
 const DialogBox: React.FC<DialogBoxProps> = ({
   dialog,
-  onDialogEnd,
+  currentSegmentIndex,
   onResponseSelect,
-  isOpen
+  onDialogClose,
 }) => {
-  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [showResponses, setShowResponses] = useState(false);
-  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const typeSpeed = 30; // milliseconds per character
+  const [text, setText] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(true);
+  const [displayResponses, setDisplayResponses] = useState<boolean>(false);
+  const [typingSpeed, setTypingSpeed] = useState<number>(30); // ms per character
+  const dialogContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   
+  // Get the current dialog segment
   const currentSegment = dialog.content[currentSegmentIndex];
   
-  // Handle dialog animation
+  // Reset text when dialog segment changes
   useEffect(() => {
-    if (!isOpen) return;
+    setText('');
+    setIsTyping(true);
+    setDisplayResponses(false);
+  }, [currentSegmentIndex, dialog.id]);
+  
+  // Typewriter effect
+  useEffect(() => {
+    if (!currentSegment || !isTyping) return;
     
-    if (currentSegment) {
-      // Reset states when moving to a new segment
-      setDisplayedText('');
-      setIsTyping(true);
-      setShowResponses(false);
-      
-      // Animate the text typing effect
-      let i = 0;
-      const text = currentSegment.text;
-      
-      typingIntervalRef.current = setInterval(() => {
-        setDisplayedText(text.substring(0, i + 1));
-        i++;
+    let currentText = '';
+    let index = 0;
+    const content = currentSegment.text;
+    
+    // Function to type character by character
+    const typeText = () => {
+      if (index < content.length) {
+        currentText += content.charAt(index);
+        setText(currentText);
+        index++;
         
-        if (i >= text.length) {
-          // Typing complete
-          clearInterval(typingIntervalRef.current as NodeJS.Timeout);
-          setIsTyping(false);
-          
-          // Show response options after typing completes
-          if (currentSegment.responses && currentSegment.responses.length > 0) {
-            setTimeout(() => {
-              setShowResponses(true);
-            }, 500);
-          }
+        // Variable typing speed based on punctuation
+        let currentSpeed = typingSpeed;
+        const currentChar = content.charAt(index - 1);
+        if (['.', '!', '?', ',', ';', ':'].includes(currentChar)) {
+          // Pause longer at punctuation
+          currentSpeed = currentChar === '.' || currentChar === '!' || currentChar === '?' 
+            ? typingSpeed * 8  // Longer pause at end of sentences
+            : typingSpeed * 3; // Medium pause at commas, etc.
         }
-      }, typeSpeed);
-      
-      // Clear interval on unmount
-      return () => {
-        if (typingIntervalRef.current) {
-          clearInterval(typingIntervalRef.current);
-        }
-      };
-    }
-  }, [currentSegmentIndex, isOpen, currentSegment]);
+        
+        typingTimeout = setTimeout(typeText, currentSpeed);
+      } else {
+        // Typing finished
+        setIsTyping(false);
+        setDisplayResponses(true);
+      }
+    };
+    
+    // Start typing
+    let typingTimeout = setTimeout(typeText, typingSpeed);
+    
+    // Clean up on unmount or when dialog changes
+    return () => {
+      clearTimeout(typingTimeout);
+    };
+  }, [currentSegment, currentSegmentIndex, isTyping, typingSpeed, dialog.id]);
   
-  // Handle next segment or dialog end
-  const handleContinue = () => {
+  // Complete the text immediately when clicking during typing
+  const handleClick = () => {
     if (isTyping) {
-      // Skip typing animation and show full text immediately
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
-      
-      setDisplayedText(currentSegment.text);
+      setText(currentSegment.text);
       setIsTyping(false);
-      
-      if (currentSegment.responses && currentSegment.responses.length > 0) {
-        setShowResponses(true);
-      }
-      
-      return;
+      setDisplayResponses(true);
+    }
+  };
+  
+  // Handle dialog response selection
+  const handleResponseSelect = (response: DialogResponse) => {
+    onResponseSelect(response);
+  };
+  
+  // Determine if we need to show close button (end of dialog)
+  const isLastSegment = dialog.content.length - 1 === currentSegmentIndex;
+  const noResponses = !currentSegment?.responses || currentSegment.responses.length === 0;
+  const showCloseButton = isLastSegment && noResponses;
+  
+  // Helper function to get character avatar or default
+  const getCharacterAvatar = () => {
+    // If dialog.character is an object with avatarImage
+    if (typeof dialog.character === 'object' && dialog.character.avatarImage) {
+      return dialog.character.avatarImage;
     }
     
-    // Move to next segment if available
-    if (currentSegmentIndex < dialog.content.length - 1) {
-      setCurrentSegmentIndex(prev => prev + 1);
-    } else {
-      // End of dialog
-      onDialogEnd();
+    // Default placeholder avatar
+    return 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20fill%3D%22%23DDD%22%20d%3D%22M16%200C7.163%200%200%207.163%200%2016s7.163%2016%2016%2016%2016-7.163%2016-16S24.837%200%2016%200zm0%2030c-7.732%200-14-6.268-14-14S8.268%202%2016%202s14%206.268%2014%2014-6.268%2014-14%2014zm1-23a3%203%200%2010-6%200%203%203%200%2006%200zm7%2015c0-4.971-4.029-9-9-9s-9%204.029-9%209h18z%22%2F%3E%3C%2Fsvg%3E';
+  };
+  
+  // Get character name
+  const getCharacterName = () => {
+    // If dialog.character is an object with name property
+    if (typeof dialog.character === 'object' && dialog.character.name) {
+      return dialog.character.name;
     }
+    
+    // If character is just a string
+    if (typeof dialog.character === 'string') {
+      return dialog.character;
+    }
+    
+    // Default if none specified
+    return currentSegment.speaker || 'Unknown';
   };
   
-  // Handle response selection
-  const handleResponseSelect = (responseId: string) => {
-    onResponseSelect(responseId);
+  // Get character name color for styling
+  const getNameColor = () => {
+    // If dialog.character is an object with nameColor
+    if (typeof dialog.character === 'object' && dialog.character.nameColor) {
+      return dialog.character.nameColor;
+    }
+    
+    // Default color
+    return '#e0d0ff';
   };
-  
-  // Don't render if dialog is closed
-  if (!isOpen) {
-    return null;
-  }
   
   return (
-    <div className="dialog-box-container" style={{
-      position: 'absolute',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '80%',
-      maxWidth: '800px',
-      backgroundColor: 'rgba(10, 15, 25, 0.85)',
-      borderRadius: '10px',
-      padding: '20px',
-      color: '#fff',
-      boxShadow: '0 5px 30px rgba(0, 0, 0, 0.6)',
-      backdropFilter: 'blur(8px)',
-      border: '1px solid rgba(80, 100, 140, 0.3)',
-      zIndex: 100,
-      animation: 'fadeIn 0.3s ease-out'
-    }}>
-      {/* Character portrait and name */}
-      <div className="dialog-header" style={{
+    <div
+      ref={dialogContainerRef}
+      className="dialog-box-container"
+      style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '90%',
+        maxWidth: '800px',
+        backgroundColor: 'rgba(20, 15, 30, 0.92)',
+        backdropFilter: 'blur(4px)',
+        borderRadius: '10px',
+        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.5)',
+        padding: '15px',
+        color: '#e0e0e8',
+        fontFamily: 'serif',
         display: 'flex',
-        alignItems: 'center',
-        marginBottom: '15px'
-      }}>
-        {dialog.character && dialog.character.portrait && (
-          <div className="character-portrait" style={{
-            width: '60px',
-            height: '60px',
-            backgroundColor: 'rgba(40, 60, 100, 0.5)',
-            borderRadius: '50%',
-            marginRight: '15px',
-            backgroundImage: dialog.character.portrait ? `url(${dialog.character.portrait})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            border: '2px solid rgba(80, 120, 180, 0.7)',
-            boxShadow: '0 0 15px rgba(60, 100, 180, 0.3)',
-            flexShrink: 0
-          }} />
-        )}
-        
-        <div className="character-name" style={{
-          fontSize: '20px',
-          fontWeight: 'bold',
-          color: '#d0e0ff',
-          textShadow: '0 0 10px rgba(100, 150, 255, 0.5)'
-        }}>
-          {currentSegment.speaker || dialog.character?.name || 'Unknown'}
-        </div>
-      </div>
-      
-      {/* Dialog text */}
-      <div className="dialog-text" style={{
-        fontSize: '16px',
-        lineHeight: 1.6,
-        marginBottom: '20px',
-        minHeight: '80px'
-      }}>
-        {displayedText}
-        
-        {/* Typing indicator */}
-        {isTyping && (
-          <span className="typing-indicator" style={{
-            display: 'inline-block',
-            width: '8px',
-            height: '16px',
-            backgroundColor: '#fff',
-            marginLeft: '2px',
-            animation: 'blink 0.7s infinite'
-          }} />
-        )}
-      </div>
-      
-      {/* Response options */}
-      {showResponses && currentSegment.responses && currentSegment.responses.length > 0 ? (
-        <div className="dialog-responses" style={{
+        flexDirection: 'column',
+        zIndex: 100,
+        border: '1px solid rgba(120, 100, 180, 0.5)',
+        maxHeight: '40vh',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Dialog Header */}
+      <div
+        className="dialog-header"
+        style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: '10px'
-        }}>
-          {currentSegment.responses.map((response: DialogResponse) => (
+          alignItems: 'center',
+          marginBottom: '10px',
+          borderBottom: '1px solid rgba(120, 100, 180, 0.3)',
+          paddingBottom: '10px'
+        }}
+      >
+        {/* Character Avatar */}
+        <div
+          className="dialog-avatar"
+          style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(60, 50, 90, 0.5)',
+            marginRight: '15px',
+            overflow: 'hidden',
+            flexShrink: 0,
+            border: '2px solid rgba(120, 100, 180, 0.6)',
+            backgroundImage: `url(${getCharacterAvatar()})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
+        
+        {/* Character Name */}
+        <h3
+          style={{
+            margin: 0,
+            color: getNameColor(),
+            fontSize: '1.3rem',
+            fontWeight: 'bold',
+            textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          {getCharacterName()}
+        </h3>
+        
+        {/* Close Button */}
+        {onDialogClose && (
+          <button
+            onClick={onDialogClose}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: 'rgba(200, 180, 255, 0.8)',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              padding: '5px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '30px',
+              height: '30px',
+              borderRadius: '4px',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(120, 100, 180, 0.3)';
+              e.currentTarget.style.color = 'rgba(220, 210, 255, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'rgba(200, 180, 255, 0.8)';
+            }}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      
+      {/* Dialog Content */}
+      <div
+        ref={contentRef}
+        className="dialog-content"
+        onClick={handleClick}
+        style={{
+          fontSize: '1.1rem',
+          lineHeight: '1.5',
+          marginBottom: '15px',
+          padding: '0 5px',
+          color: '#e8e8f0',
+          cursor: isTyping ? 'pointer' : 'default',
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+        }}
+      >
+        {text}
+        {isTyping && (
+          <span
+            className="typing-indicator"
+            style={{
+              display: 'inline-block',
+              width: '0.7em',
+              height: '1.1em',
+              backgroundColor: 'rgba(220, 210, 255, 0.8)',
+              marginLeft: '2px',
+              verticalAlign: 'middle',
+              animation: 'blink 0.8s infinite'
+            }}
+          />
+        )}
+      </div>
+      
+      {/* Response Options */}
+      {displayResponses && currentSegment.responses && currentSegment.responses.length > 0 && (
+        <div
+          className="dialog-responses"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            borderTop: '1px solid rgba(120, 100, 180, 0.3)',
+            paddingTop: '12px',
+            maxHeight: '40%',
+            overflowY: 'auto'
+          }}
+        >
+          {currentSegment.responses.map((response, index) => (
             <button
-              key={response.id}
-              onClick={() => handleResponseSelect(response.id)}
+              key={index}
+              onClick={() => handleResponseSelect({ ...response, id: `response-${index}` })}
               style={{
-                backgroundColor: 'rgba(40, 60, 100, 0.5)',
-                border: '1px solid rgba(80, 120, 180, 0.5)',
-                borderRadius: '5px',
+                backgroundColor: 'rgba(60, 50, 90, 0.5)',
+                border: '1px solid rgba(120, 100, 180, 0.5)',
+                borderRadius: '8px',
                 padding: '10px 15px',
                 textAlign: 'left',
-                color: '#fff',
-                fontSize: '14px',
+                color: '#d0c0ff',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                ':hover': {
-                  backgroundColor: 'rgba(60, 80, 130, 0.7)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 2px 10px rgba(0, 0, 50, 0.3)'
-                }
+                transition: 'all 0.2s ease',
+                fontSize: '1rem',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(80, 60, 120, 0.6)';
+                e.currentTarget.style.borderColor = 'rgba(140, 120, 200, 0.6)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(60, 50, 90, 0.5)';
+                e.currentTarget.style.borderColor = 'rgba(120, 100, 180, 0.5)';
               }}
             >
-              {response.text}
+              <span style={{ marginRight: '10px' }}>{index + 1}.</span>
+              <span style={{ flex: 1 }}>{response.text}</span>
             </button>
           ))}
         </div>
-      ) : (
-        // Continue button when no responses are available
-        !isTyping && (
-          <div className="dialog-continue" style={{
-            display: 'flex',
-            justifyContent: 'flex-end'
-          }}>
-            <button
-              onClick={handleContinue}
-              style={{
-                backgroundColor: 'rgba(60, 90, 150, 0.6)',
-                border: '1px solid rgba(100, 150, 200, 0.7)',
-                borderRadius: '5px',
-                padding: '8px 15px',
-                color: '#fff',
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}
-            >
-              Continue
-              <span style={{ fontSize: '18px' }}>→</span>
-            </button>
-          </div>
-        )
       )}
       
-      {/* Typing in progress - show skip button */}
-      {isTyping && (
-        <div className="dialog-skip" style={{
-          display: 'flex',
-          justifyContent: 'flex-end'
-        }}>
+      {/* Show close/continue button if at end of dialog with no responses */}
+      {showCloseButton && displayResponses && onDialogClose && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: '10px',
+            borderTop: '1px solid rgba(120, 100, 180, 0.3)',
+            paddingTop: '12px'
+          }}
+        >
           <button
-            onClick={handleContinue}
+            onClick={onDialogClose}
             style={{
-              backgroundColor: 'rgba(40, 50, 80, 0.5)',
-              border: '1px solid rgba(80, 100, 150, 0.5)',
-              borderRadius: '5px',
-              padding: '6px 12px',
-              color: '#aaa',
-              fontSize: '14px',
-              cursor: 'pointer'
+              backgroundColor: 'rgba(80, 60, 120, 0.6)',
+              color: '#d0c0ff',
+              border: 'none',
+              padding: '8px 20px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(100, 80, 140, 0.7)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(80, 60, 120, 0.6)';
             }}
           >
-            Skip
+            End Conversation
           </button>
         </div>
       )}
       
+      {/* CSS animations */}
       <style>
         {`
           @keyframes blink {
-            0%, 100% { opacity: 0; }
-            50% { opacity: 1; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
           }
           
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          .dialog-content::-webkit-scrollbar,
+          .dialog-responses::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+          
+          .dialog-content::-webkit-scrollbar-track,
+          .dialog-responses::-webkit-scrollbar-track {
+            background: rgba(60, 40, 80, 0.1);
+            border-radius: 4px;
+          }
+          
+          .dialog-content::-webkit-scrollbar-thumb,
+          .dialog-responses::-webkit-scrollbar-thumb {
+            background: rgba(120, 100, 180, 0.4);
+            border-radius: 4px;
+          }
+          
+          .dialog-content::-webkit-scrollbar-thumb:hover,
+          .dialog-responses::-webkit-scrollbar-thumb:hover {
+            background: rgba(140, 120, 200, 0.5);
           }
         `}
       </style>

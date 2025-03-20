@@ -1,332 +1,604 @@
-import React, { useState, useEffect } from 'react';
-import { Scene, SceneHotspot, NavigationDirection } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Scene, SceneFeature, SceneExit, SceneAction } from '../types';
 
 interface SceneViewProps {
   scene: Scene;
-  onInteract: (hotspotId: string) => void;
-  onNavigate: (direction: NavigationDirection) => void;
-  onExamine: (hotspotId: string) => void;
+  onFeatureInteract: (featureId: string) => void;
+  onExitSelect: (exit: SceneExit) => void;
+  playerStatus?: Record<string, any>;
+  inventory?: string[];
 }
 
 /**
- * Displays the current scene with interactive hotspots and navigation controls
+ * Renders a game scene with interactive features, exits, and ambient effects
  */
 const SceneView: React.FC<SceneViewProps> = ({
   scene,
-  onInteract,
-  onNavigate,
-  onExamine
+  onFeatureInteract,
+  onExitSelect,
+  playerStatus = {},
+  inventory = [],
 }) => {
-  const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
-  const [hotspotVisibility, setHotspotVisibility] = useState<{[key: string]: boolean}>({});
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [hoveredExit, setHoveredExit] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   
-  // Set up hotspot visibility based on scene data
+  // Handle audio effects
   useEffect(() => {
-    if (scene && scene.hotspots) {
-      const visibility: {[key: string]: boolean} = {};
-      scene.hotspots.forEach(hotspot => {
-        visibility[hotspot.id] = !hotspot.hidden;
-      });
-      setHotspotVisibility(visibility);
+    if (!scene) return;
+    
+    // Setup ambient audio if provided
+    let ambientAudio: HTMLAudioElement | null = null;
+    
+    if (scene.audio?.ambient) {
+      ambientAudio = new Audio(scene.audio.ambient);
+      ambientAudio.loop = true;
+      ambientAudio.volume = scene.audio.ambientVolume || 0.3;
+      
+      // Delay ambient audio slightly for better experience
+      setTimeout(() => {
+        ambientAudio?.play().catch(err => {
+          console.log('Audio playback prevented by browser', err);
+        });
+      }, 300);
     }
+    
+    // Play entrance sound if provided
+    if (scene.audio?.entrance) {
+      const entranceSound = new Audio(scene.audio.entrance);
+      entranceSound.volume = scene.audio.entranceVolume || 0.5;
+      entranceSound.play().catch(err => {
+        console.log('Audio playback prevented by browser', err);
+      });
+    }
+    
+    // Clean up audio on component unmount
+    return () => {
+      if (ambientAudio) {
+        ambientAudio.pause();
+        ambientAudio = null;
+      }
+    };
   }, [scene]);
   
-  // Handle hotspot interaction
-  const handleHotspotClick = (hotspotId: string, action: 'interact' | 'examine') => {
-    if (action === 'interact') {
-      onInteract(hotspotId);
-    } else {
-      onExamine(hotspotId);
+  // Update container size on mount and resize
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight
+        });
+      }
+    };
+    
+    // Initial size
+    updateSize();
+    
+    // Add resize listener
+    window.addEventListener('resize', updateSize);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
+  
+  // Play sound effect for feature interaction
+  const playInteractionSound = (featureId: string) => {
+    const feature = scene.features.find(f => f.id === featureId);
+    if (feature && scene.audio?.interactions?.[featureId]) {
+      const sound = new Audio(scene.audio.interactions[featureId]);
+      sound.volume = scene.audio?.interactionVolume || 0.5;
+      sound.play().catch(err => {
+        console.log('Audio playback prevented by browser', err);
+      });
+    } else if (scene.audio?.defaultInteraction) {
+      // Play default interaction sound
+      const sound = new Audio(scene.audio.defaultInteraction);
+      sound.volume = scene.audio?.interactionVolume || 0.5;
+      sound.play().catch(err => {
+        console.log('Audio playback prevented by browser', err);
+      });
     }
   };
   
-  // Handle scene navigation
-  const handleNavigation = (direction: NavigationDirection) => {
-    onNavigate(direction);
+  // Check if a feature or exit is available based on requirements
+  const isInteractable = (
+    item: { requiredItems?: string[]; requiredStatus?: Record<string, boolean> }
+  ): boolean => {
+    // Check required items
+    if (item.requiredItems && item.requiredItems.length > 0) {
+      const hasAllItems = item.requiredItems.every(itemId => inventory.includes(itemId));
+      if (!hasAllItems) return false;
+    }
+    
+    // Check required status
+    if (item.requiredStatus && Object.keys(item.requiredStatus).length > 0) {
+      const hasAllStatus = Object.entries(item.requiredStatus).every(
+        ([key, value]) => playerStatus[key] === value
+      );
+      if (!hasAllStatus) return false;
+    }
+    
+    return true;
   };
   
-  // Find a hotspot by ID
-  const getHotspot = (id: string): SceneHotspot | undefined => {
-    return scene.hotspots?.find(hotspot => hotspot.id === id);
-  };
-  
-  // Generate nav buttons based on available directions
-  const renderNavigationButtons = () => {
-    const directions: NavigationDirection[] = ['forward', 'back', 'left', 'right', 'up', 'down'];
+  // Handle scene effects (particles, overlays, etc.)
+  const renderSceneEffects = () => {
+    if (!scene.effects) return null;
     
     return (
-      <div className="navigation-controls" style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: '10px',
-        padding: '5px',
-        borderRadius: '8px',
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(5px)',
-        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-        zIndex: 10
-      }}>
-        {directions.map(direction => {
-          const isAvailable = scene.exits && scene.exits.includes(direction);
-          
-          return isAvailable ? (
-            <button
-              key={direction}
-              onClick={() => handleNavigation(direction)}
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(40, 40, 60, 0.8)',
-                border: '1px solid rgba(80, 100, 150, 0.5)',
-                color: '#fff',
-                fontSize: '18px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.3)'
-              }}
-              title={`Go ${direction}`}
-            >
-              {getDirectionIcon(direction)}
-            </button>
-          ) : null;
-        })}
-      </div>
+      <>
+        {/* Fog/mist effect */}
+        {scene.effects.fog && (
+          <div
+            className="scene-fog"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              opacity: scene.effects.fogIntensity || 0.5,
+              background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, ${scene.effects.fogColor || 'rgba(255,255,255,0.2)'} ${scene.effects.fogHeight || '70%'})`,
+              zIndex: 3
+            }}
+          />
+        )}
+        
+        {/* Rain effect */}
+        {scene.effects.rain && (
+          <div
+            className="scene-rain"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              opacity: scene.effects.rainIntensity || 0.7,
+              backgroundImage: 'url(/assets/effects/rain.png)',
+              backgroundRepeat: 'repeat',
+              animation: 'rainFall 0.5s linear infinite',
+              zIndex: 4
+            }}
+          />
+        )}
+        
+        {/* Color overlay */}
+        {scene.effects.colorOverlay && (
+          <div
+            className="scene-color-overlay"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              opacity: scene.effects.colorIntensity || 0.2,
+              backgroundColor: scene.effects.colorOverlay,
+              mixBlendMode: scene.effects.blendMode || 'multiply',
+              zIndex: 2
+            }}
+          />
+        )}
+        
+        {/* Vignette */}
+        {scene.effects.vignette && (
+          <div
+            className="scene-vignette"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              boxShadow: `inset 0 0 ${scene.effects.vignetteSize || '100px'} ${scene.effects.vignetteColor || 'rgba(0,0,0,0.8)'}`,
+              zIndex: 5
+            }}
+          />
+        )}
+      </>
     );
   };
   
-  // Get icon for direction buttons
-  const getDirectionIcon = (direction: NavigationDirection): string => {
-    switch (direction) {
-      case 'forward': return '↑';
-      case 'back': return '↓';
-      case 'left': return '←';
-      case 'right': return '→';
-      case 'up': return '⤴';
-      case 'down': return '⤵';
-      default: return '•';
-    }
+  // Handle feature interaction
+  const handleFeatureClick = (featureId: string) => {
+    const feature = scene.features.find(f => f.id === featureId);
+    if (!feature || !isInteractable(feature)) return;
+    
+    // Play interaction sound
+    playInteractionSound(featureId);
+    
+    // Set active feature briefly for visual feedback
+    setActiveFeature(featureId);
+    setTimeout(() => {
+      setActiveFeature(null);
+    }, 300);
+    
+    // Call parent handler
+    onFeatureInteract(featureId);
   };
   
-  if (!scene) {
-    return <div>Loading scene...</div>;
-  }
+  // Handle exit selection
+  const handleExitClick = (exit: SceneExit) => {
+    if (!isInteractable(exit)) return;
+    
+    // Play exit sound if provided
+    if (scene.audio?.exits?.[exit.id]) {
+      const sound = new Audio(scene.audio.exits[exit.id]);
+      sound.volume = scene.audio?.exitVolume || 0.5;
+      sound.play().catch(err => {
+        console.log('Audio playback prevented by browser', err);
+      });
+    }
+    
+    // Set transition state
+    setIsTransitioning(true);
+    
+    // Call parent handler after a brief delay
+    setTimeout(() => {
+      onExitSelect(exit);
+      setIsTransitioning(false);
+    }, 500);
+  };
   
-  return (
-    <div className="scene-container" style={{
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-      backgroundColor: '#121218',
-      backgroundImage: scene.backgroundImage ? `url(${scene.backgroundImage})` : 'none',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      overflow: 'hidden'
-    }}>
-      {/* Darkening overlay for better contrast */}
-      <div className="scene-overlay" style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-        zIndex: 1
-      }} />
+  // Render scene exits (doors, paths, etc.)
+  const renderExits = () => {
+    if (!scene.exits || scene.exits.length === 0) return null;
+    
+    return scene.exits.map(exit => {
+      // Skip hidden exits
+      if (exit.isHidden) return null;
       
-      {/* Scene title */}
-      <div className="scene-title" style={{
-        position: 'absolute',
-        top: '15px',
-        left: '20px',
-        color: '#fff',
-        fontSize: '24px',
-        fontWeight: 'bold',
-        textShadow: '0 2px 10px rgba(0, 0, 0, 0.7)',
-        zIndex: 10
-      }}>
-        {scene.title}
-      </div>
+      // Check if exit is interactable
+      const canUseExit = isInteractable(exit);
       
-      {/* Scene description */}
-      <div className="scene-description" style={{
-        position: 'absolute',
-        top: '60px',
-        left: '20px',
-        maxWidth: '60%',
-        padding: '15px',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        borderRadius: '8px',
-        color: '#ddd',
-        fontSize: '16px',
-        lineHeight: 1.6,
-        zIndex: 10,
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(5px)'
-      }}>
-        {scene.description}
-      </div>
+      // Default dimensions
+      const exitWidth = exit.width || 80;
+      const exitHeight = exit.height || 80;
       
-      {/* Hotspots */}
-      {scene.hotspots && scene.hotspots.map((hotspot) => (
-        hotspotVisibility[hotspot.id] && (
-          <div
-            key={hotspot.id}
-            className={`scene-hotspot ${hoveredHotspot === hotspot.id ? 'hovered' : ''}`}
-            style={{
-              position: 'absolute',
-              top: `${hotspot.position.y}%`,
-              left: `${hotspot.position.x}%`,
-              transform: 'translate(-50%, -50%)',
-              width: `${hotspot.size || 40}px`,
-              height: `${hotspot.size || 40}px`,
-              borderRadius: '50%',
-              backgroundColor: hoveredHotspot === hotspot.id 
-                ? 'rgba(100, 150, 255, 0.3)' 
-                : 'rgba(255, 255, 255, 0.1)',
-              border: hoveredHotspot === hotspot.id 
-                ? '2px solid rgba(150, 200, 255, 0.8)' 
-                : '1px solid rgba(255, 255, 255, 0.3)',
-              cursor: 'pointer',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 5,
-              boxShadow: hoveredHotspot === hotspot.id 
-                ? '0 0 15px rgba(100, 150, 255, 0.5)' 
-                : 'none',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={() => setHoveredHotspot(hotspot.id)}
-            onMouseLeave={() => setHoveredHotspot(null)}
-          >
-            <div className="hotspot-icon" style={{
-              fontSize: '18px',
-              color: 'rgba(255, 255, 255, 0.8)',
-              textShadow: '0 0 5px rgba(0, 0, 0, 0.5)'
-            }}>
-              {getHotspotIcon(hotspot.type)}
-            </div>
-            
-            {/* Hotspot tooltip */}
-            {hoveredHotspot === hotspot.id && (
-              <div className="hotspot-tooltip" style={{
+      return (
+        <div
+          key={exit.id}
+          className={`scene-exit ${hoveredExit === exit.id ? 'hovered' : ''} ${canUseExit ? 'available' : 'unavailable'}`}
+          style={{
+            position: 'absolute',
+            top: typeof exit.position === 'string' ? exit.position : exit.position.top,
+            left: typeof exit.position === 'string' ? '50%' : exit.position.left,
+            right: typeof exit.position === 'string' ? undefined : exit.position.right, 
+            bottom: typeof exit.position === 'string' ? undefined : exit.position.bottom,
+            transform: typeof exit.position === 'string' ? 'translateX(-50%)' : undefined,
+            width: `${exitWidth}px`,
+            height: `${exitHeight}px`,
+            cursor: canUseExit ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: canUseExit ? 1 : 0.6,
+            transition: 'all 0.3s ease',
+            zIndex: 10
+          }}
+          onClick={() => canUseExit && handleExitClick(exit)}
+          onMouseEnter={() => setHoveredExit(exit.id)}
+          onMouseLeave={() => setHoveredExit(null)}
+          title={exit.name}
+        >
+          {/* Exit Icon */}
+          {exit.icon && (
+            <div 
+              className="exit-icon"
+              style={{
+                width: '100%',
+                height: '100%',
+                backgroundImage: `url(${exit.icon})`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
+            />
+          )}
+          
+          {/* Exit Tooltip */}
+          {hoveredExit === exit.id && (
+            <div
+              className="exit-tooltip"
+              style={{
                 position: 'absolute',
                 bottom: '100%',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                marginBottom: '10px',
-                padding: '8px 12px',
-                backgroundColor: 'rgba(20, 30, 50, 0.9)',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
                 color: '#fff',
+                padding: '5px 10px',
                 borderRadius: '5px',
-                fontSize: '14px',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-                zIndex: 10,
-                textAlign: 'center',
-                backdropFilter: 'blur(5px)',
-                border: '1px solid rgba(100, 150, 200, 0.3)'
-              }}>
-                <div className="tooltip-title" style={{
-                  fontWeight: 'bold',
-                  marginBottom: '5px'
-                }}>
-                  {hotspot.name}
-                </div>
-                <div className="tooltip-actions" style={{
-                  display: 'flex',
-                  gap: '10px',
-                  marginTop: '5px'
-                }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleHotspotClick(hotspot.id, 'interact');
-                    }}
-                    style={{
-                      padding: '3px 8px',
-                      backgroundColor: 'rgba(70, 100, 150, 0.7)',
-                      border: '1px solid rgba(100, 130, 180, 0.5)',
-                      borderRadius: '3px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Interact
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleHotspotClick(hotspot.id, 'examine');
-                    }}
-                    style={{
-                      padding: '3px 8px',
-                      backgroundColor: 'rgba(70, 120, 70, 0.7)',
-                      border: '1px solid rgba(100, 150, 100, 0.5)',
-                      borderRadius: '3px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Examine
-                  </button>
-                </div>
-                <div className="tooltip-arrow" style={{
-                  position: 'absolute',
-                  bottom: '-5px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '0',
-                  height: '0',
-                  borderLeft: '5px solid transparent',
-                  borderRight: '5px solid transparent',
-                  borderTop: '5px solid rgba(20, 30, 50, 0.9)'
-                }} />
-              </div>
-            )}
-          </div>
-        )
-      ))}
+                fontFamily: 'serif',
+                fontSize: '0.9rem',
+                pointerEvents: 'none',
+                zIndex: 11
+              }}
+            >
+              {exit.name} {!canUseExit && exit.requiredItems?.length ? '(Need item)' : ''}
+              {!canUseExit && exit.requiredStatus ? `(Need to ${exit.targetScene})` : ''}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+  
+  // Render interactive features
+  const renderFeatures = () => {
+    if (!scene.features || scene.features.length === 0) return null;
+    
+    return scene.features.map(feature => {
+      // Skip hidden features
+      if (feature.isHidden) return null;
       
-      {/* Navigation controls */}
-      {renderNavigationButtons()}
+      // Check if feature is interactable
+      const canInteract = isInteractable(feature);
+      
+      // Default dimensions
+      const featureWidth = feature.width || 60;
+      const featureHeight = feature.height || 60;
+      const featureShape = feature.shape || 'circle';
+      
+      // Determine hover effect style
+      const highlightStyle = feature.highlight || {
+        border: '2px solid rgba(255, 255, 255, 0.7)',
+        boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)'
+      };
+      
+      return (
+        <div
+          key={feature.id}
+          className={`scene-feature ${activeFeature === feature.id ? 'active' : ''} ${canInteract ? 'interactable' : 'locked'}`}
+          style={{
+            position: 'absolute',
+            top: typeof feature.position === 'string' ? feature.position : feature.position.top,
+            left: typeof feature.position === 'string' ? '50%' : feature.position.left,
+            right: typeof feature.position === 'string' ? undefined : feature.position.right,
+            bottom: typeof feature.position === 'string' ? undefined : feature.position.bottom,
+            transform: typeof feature.position === 'string' ? 'translateX(-50%)' : undefined,
+            width: `${featureWidth}px`,
+            height: `${featureHeight}px`,
+            borderRadius: featureShape === 'circle' ? '50%' : featureShape === 'rounded' ? '12px' : '0',
+            cursor: canInteract ? 'pointer' : 'not-allowed',
+            opacity: canInteract ? (feature.glow ? 1 : 0.001) : 0.001, // Nearly invisible until hovered
+            transition: 'all 0.3s ease',
+            zIndex: 20,
+            ...(activeFeature === feature.id ? highlightStyle : {})
+          }}
+          onClick={() => canInteract && handleFeatureClick(feature.id)}
+          onMouseEnter={() => {
+            if (canInteract) {
+              // Apply hover effect
+              if (containerRef.current) {
+                const element = containerRef.current.querySelector(`.scene-feature[data-id="${feature.id}"]`);
+                if (element) {
+                  element.classList.add('hovered');
+                }
+              }
+            }
+          }}
+          onMouseLeave={() => {
+            // Remove hover effect
+            if (containerRef.current) {
+              const element = containerRef.current.querySelector(`.scene-feature[data-id="${feature.id}"]`);
+              if (element) {
+                element.classList.remove('hovered');
+              }
+            }
+          }}
+          data-id={feature.id}
+        >
+          {/* Feature Icon (if present) */}
+          {feature.icon && (
+            <div 
+              className="feature-icon"
+              style={{
+                width: '100%',
+                height: '100%',
+                backgroundImage: `url(${feature.icon})`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                opacity: canInteract ? 1 : 0.5
+              }}
+            />
+          )}
+          
+          {/* Feature Prompt - visible on hover */}
+          {feature.prompt && (
+            <div
+              className="feature-prompt"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: '#fff',
+                padding: '5px 10px',
+                borderRadius: '5px',
+                whiteSpace: 'nowrap',
+                fontFamily: 'serif',
+                fontSize: '0.9rem',
+                opacity: 0,
+                pointerEvents: 'none',
+                transition: 'opacity 0.2s ease',
+                zIndex: 21
+              }}
+            >
+              {feature.prompt}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+  
+  // Render lighting effects (if present)
+  const renderLightingEffects = () => {
+    if (!scene.effects?.lighting) return null;
+    
+    return scene.effects.lighting.map((light, index) => (
+      <div
+        key={`light-${index}`}
+        style={{
+          position: 'absolute',
+          top: light.position.top || '50%',
+          left: light.position.left || '50%',
+          transform: 'translate(-50%, -50%)',
+          width: light.size || '150px',
+          height: light.size || '150px',
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${light.color || 'rgba(255, 220, 150, 0.8)'} 0%, transparent 70%)`,
+          opacity: light.intensity || 0.7,
+          pointerEvents: 'none',
+          zIndex: 2,
+          animation: light.flicker ? 'lightFlicker 3s infinite alternate' : 'none'
+        }}
+      />
+    ));
+  };
+  
+  // Render particle effects (if present)
+  const renderParticleEffects = () => {
+    if (!scene.effects?.particles) return null;
+    
+    return scene.effects.particles.map((particle, index) => (
+      <div
+        key={`particle-${index}`}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `url(${particle.texture})`,
+          backgroundRepeat: 'repeat',
+          opacity: particle.opacity || 0.5,
+          animation: `${particle.animation} ${particle.duration || '20s'} linear infinite`,
+          pointerEvents: 'none',
+          zIndex: 3
+        }}
+      />
+    ));
+  };
+  
+  // Render ambient weather effects (if present)
+  const renderWeatherEffects = () => {
+    if (!scene.effects?.weather) return null;
+    
+    return (
+      <div
+        className={`weather-effect ${scene.effects.weather}`}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          zIndex: 4
+        }}
+      />
+    );
+  };
+  
+  return (
+    <div
+      ref={containerRef}
+      className={`scene-view ${scene.id} ${isTransitioning ? 'transitioning' : ''}`}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        backgroundImage: `url(${scene.backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: isTransitioning ? 'opacity 0.5s ease' : 'none',
+        opacity: isTransitioning ? 0 : 1
+      }}
+    >
+      {/* Scene effects layer */}
+      {renderSceneEffects()}
+      
+      {/* Lighting effects */}
+      {renderLightingEffects()}
+      
+      {/* Particle effects */}
+      {renderParticleEffects()}
+      
+      {/* Weather effects */}
+      {renderWeatherEffects()}
+      
+      {/* Interactive features */}
+      {renderFeatures()}
+      
+      {/* Scene exits */}
+      {renderExits()}
+      
+      {/* Animation styles */}
+      <style>
+        {`
+          @keyframes lightFlicker {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 0.5; }
+            75% { opacity: 0.6; }
+          }
+          
+          @keyframes rainFall {
+            from { background-position: 0 0; }
+            to { background-position: 0 100%; }
+          }
+          
+          .scene-feature.hovered .feature-prompt {
+            opacity: 1;
+          }
+          
+          .scene-feature.active {
+            animation: pulse 0.3s ease;
+          }
+          
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+          }
+          
+          .weather-effect.rain {
+            background: url('/assets/effects/rain.png') repeat;
+            animation: rainFall 0.5s linear infinite;
+          }
+          
+          .weather-effect.snow {
+            background: url('/assets/effects/snow.png') repeat;
+            animation: snowFall 10s linear infinite;
+          }
+          
+          .weather-effect.fog {
+            background: linear-gradient(to bottom, transparent, rgba(200, 200, 220, 0.3));
+          }
+          
+          @keyframes snowFall {
+            from { background-position: 0 0; }
+            to { background-position: 100px 1000px; }
+          }
+        `}
+      </style>
     </div>
   );
-};
-
-// Helper function to get an icon based on hotspot type
-const getHotspotIcon = (type: string): string => {
-  switch (type) {
-    case 'item':
-      return '📦';
-    case 'door':
-      return '🚪';
-    case 'character':
-      return '👤';
-    case 'puzzle':
-      return '🧩';
-    case 'object':
-      return '🔍';
-    case 'secret':
-      return '✨';
-    case 'danger':
-      return '⚠️';
-    case 'note':
-      return '📝';
-    case 'key':
-      return '🔑';
-    default:
-      return '•';
-  }
 };
 
 export default SceneView;
