@@ -44,9 +44,16 @@ export interface SceneExit {
   id: string;
   name: string;
   target: string;
+  destination: string; // Used by GameEngine.tsx
   position: string;
   requiresItem?: string;
   requiresStatus?: string;
+  requirement?: {
+    item?: string;
+    status?: Record<string, boolean>;
+    time?: string;
+    puzzle?: string;
+  };
 }
 
 export interface SceneAction {
@@ -96,7 +103,9 @@ export interface Item {
   type?: string;
   canUse?: boolean;
   useEffect?: OutcomeEffect;
+  useAction?: 'heal' | 'restore_mana' | 'unlock' | 'activate' | 'read' | string;
   quantity?: number;
+  title?: string; // For consistency with puzzle.title used in GameEngine
 }
 
 export interface ItemPlacement {
@@ -106,6 +115,12 @@ export interface ItemPlacement {
   position: string;
   isHidden: boolean;
   requiresStatus?: string;
+  requirement?: {
+    item?: string;
+    status?: Record<string, boolean>;
+    time?: string;
+    puzzle?: string;
+  };
 }
 
 // Dialog Types
@@ -135,6 +150,7 @@ export interface Puzzle {
   solved: boolean;
   onSolve?: OutcomeEffect;
   onFail?: OutcomeEffect;
+  title?: string; // Used in GameEngine.tsx
 }
 
 export interface PuzzleReference {
@@ -144,6 +160,7 @@ export interface PuzzleReference {
   position: string;
   requiresItem?: string;
   requiresStatus?: string;
+  introduction?: string; // Text shown when a puzzle is first encountered
 }
 
 export type PuzzleType = 'riddle' | 'pattern' | 'combination' | 'runes' | 'sacrifice';
