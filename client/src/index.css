@@ -379,13 +379,25 @@ h4, h5, h6,
 
 /* Story content */
 .story-content p {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-align: justify;
   hyphens: auto;
+  line-height: 1.8;
 }
 
 .story-content p + p {
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Fix paragraph spacing issues from WordPress content */
+.story-content p:empty {
+  display: none;
+}
+
+.story-content br + br {
+  display: block;
+  content: "";
+  margin-top: 1.5em;
 }
 
 
@@ -739,10 +751,13 @@ input[type="reset"],
     font-size: calc(1rem + 0.2vw);
   }
   .story-content p {
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
   }
   .story-content p + p {
-    margin-top: 0.25rem;
+    margin-top: 1rem;
+  }
+  .story-content p:empty {
+    display: none;
   }
   .story-content blockquote {
     margin: 0.75rem 0;

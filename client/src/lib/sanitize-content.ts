@@ -1,4 +1,7 @@
-import { WordPressContent } from "./content-analysis";
+// Define a simple interface for WordPress content structure
+interface RenderedContent {
+  rendered: string;
+}
 
 /**
  * Sanitizes HTML content from WordPress, with special handling for italics and other formatting
@@ -6,7 +9,7 @@ import { WordPressContent } from "./content-analysis";
  * @param content Raw WordPress content or string content
  * @returns Sanitized HTML with preserved essential formatting
  */
-export const sanitizeHtmlContent = (content: string | WordPressContent | unknown): string => {
+export const sanitizeHtmlContent = (content: string | RenderedContent | unknown): string => {
   if (!content) return '';
   
   // Process content based on type
@@ -16,7 +19,7 @@ export const sanitizeHtmlContent = (content: string | WordPressContent | unknown
     htmlContent = content;
   } else if (typeof content === 'object' && content !== null) {
     // Handle WordPress content format
-    const wpContent = content as WordPressContent;
+    const wpContent = content as RenderedContent;
     if (wpContent.rendered && typeof wpContent.rendered === 'string') {
       htmlContent = wpContent.rendered;
     } else {
@@ -91,6 +94,9 @@ const normalizeParagraphs = (html: string): string => {
   // Replace consecutive <br> tags with paragraphs
   html = html.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p>');
   
+  // Remove empty paragraphs that can cause spacing issues
+  html = html.replace(/<p>\s*<\/p>/gi, '');
+  
   // Ensure content starts with a paragraph if it doesn't have one
   if (!html.trim().startsWith('<p>')) {
     html = '<p>' + html;
@@ -100,6 +106,13 @@ const normalizeParagraphs = (html: string): string => {
   if (!html.trim().endsWith('</p>')) {
     html = html + '</p>';
   }
+  
+  // Fix paragraph spacing - sometimes WordPress inserts excessive space between paragraphs
+  html = html.replace(/<\/p>\s*<p>/gi, '</p><p>');
+  
+  // Fix nested paragraphs which can cause layout issues
+  html = html.replace(/<p>\s*<p>/gi, '<p>');
+  html = html.replace(/<\/p>\s*<\/p>/gi, '</p>');
   
   return html;
 };

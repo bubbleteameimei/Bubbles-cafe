@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge"; 
+import { 
+  Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
+  Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Bug, Worm
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
-import { getReadingTime } from "@/lib/content-analysis";
+import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
+import type { ThemeCategory } from "@/shared/types";
 // Import social icons lazily to avoid loading them initially
 const FaTwitter = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaTwitter })));
 const FaWordpress = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaWordpress })));
@@ -40,12 +46,22 @@ const sanitizeHtmlContent = (html: string): string => {
     // This avoids replacing underscores in URLs or other non-italic contexts
     html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '<em>$1</em>');
     
+    // Ensure proper paragraph spacing by adding an additional class to paragraphs
+    // This helps preserve spacing even when content is sanitized
+    html = html.replace(/<p>/g, '<p class="story-paragraph">');
+    
+    // Fix specific spacing issues by ensuring paragraphs are properly separated
+    // Replace multiple consecutive line breaks with proper paragraph tags
+    html = html.replace(/(\r?\n){2,}/g, '</p><p class="story-paragraph">');
+    
     // Create a simple HTML sanitization function
     // This removes potentially harmful scripts and keeps only safe content
     const doc = new DOMParser().parseFromString(html, 'text/html');
+    
     // Remove script tags
     const scripts = doc.querySelectorAll('script');
     scripts.forEach(script => script.remove());
+    
     // Get the sanitized content
     return doc.body.innerHTML;
   } catch (error) {
@@ -278,7 +294,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   }
 
   const formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
-  const readingTime = getReadingTime(currentPost.content.rendered);
+  
+  // Detect themes from content for categorization
+  const detectedThemes = detectThemes(currentPost.content.rendered);
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
@@ -335,9 +353,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
   }
-  .story-content p {
-    line-height: 1.6;  /* Consistent with About page */
-    margin-bottom: 1.2em;  /* Improved spacing between paragraphs */
+  .story-content p, .story-content .story-paragraph {
+    line-height: 1.7;  /* Improved line height for readability */
+    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
     text-align: justify;
     letter-spacing: 0.01em; /* Subtle letter spacing */
     font-kerning: normal; /* Improves kerning pairs */
@@ -351,26 +369,30 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
     font-size: 1em;
-    line-height: 1.6;
+    line-height: 1.7;
     letter-spacing: 0.01em;
     font-weight: 500;
   }
+  /* Add clear paragraph separation as per user request */
   .story-content p + p {
-    margin-top: 2em;  /* Double line break effect */
+    margin-top: 0; /* No additional top margin as we have sufficient bottom margin */
     text-indent: 0; /* No indent to maintain modern style */
   }
-  /* Removed first letter styling to make all text equal size */
+  /* Ensure all paragraphs have equal styling */
   .story-content p:first-of-type {
     font-size: 1em; /* Same size as other paragraphs */
   }
+  /* Break words properly for better readability */
+  .story-content p {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
   @media (max-width: 768px) {
-    .story-content p {
-      margin-bottom: 1em;
-      line-height: 1.7; /* Slightly tighter on mobile */
+    .story-content p, .story-content .story-paragraph {
+      margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
+      line-height: 1.75; /* Slightly increased on mobile for readability */
       font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
-    }
-    .story-content p + p {
-      margin-top: 1.8em;  /* Slightly reduced on mobile */
     }
   }
   .story-content img {
@@ -597,13 +619,53 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               />
 
               <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 py-1 rounded-full">
-                  <time className="font-medium">{formattedDate}</time>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-2 rounded-full shadow-sm border border-primary/10">
+                  {/* Story theme icon - show primary theme if available, otherwise default to generic */}
+                  {detectedThemes.length > 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      {(() => {
+                        // Get the primary theme (first one as it's sorted by relevance)
+                        const primaryTheme = detectedThemes[0];
+                        const themeInfo = THEME_CATEGORIES[primaryTheme];
+                        const ThemeIcon = (() => {
+                          switch(themeInfo.icon) {
+                            case 'Skull': return Skull;
+                            case 'Brain': return Brain;
+                            case 'Pill': return Pill;
+                            case 'Cpu': return Cpu;
+                            case 'Dna': return Dna;
+                            case 'Ghost': return Ghost;
+                            case 'Cross': return Cross;
+                            case 'Car': return ChevronRight; // Temporary fallback for Car icon
+                            case 'Footprints': return Footprints;
+                            case 'CloudRain': return CloudRain;
+                            case 'Castle': return Castle;
+                            case 'Utensils': return BookOpen; // Temporary fallback for Utensils icon
+                            case 'Bug': return Bug;
+                            case 'Knife': return Moon; // Temporary fallback for Knife icon
+                            case 'Scan': return Cpu; // Temporary fallback for Scan icon
+                            case 'AlertTriangle': return AlertTriangle;
+                            case 'Copy': return RefreshCcw; // Temporary fallback for Copy icon
+                            default: return Bug;
+                          }
+                        })();
+                        
+                        return (
+                          <>
+                            <ThemeIcon className="h-3.5 w-3.5 text-primary/80" />
+                            <span className="font-medium text-primary/80 whitespace-nowrap">{primaryTheme}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5 text-primary/80" />
+                      <span className="font-medium text-primary/80">Fiction</span>
+                    </div>
+                  )}
                   <span className="text-muted-foreground/30">•</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>{readingTime}</span>
-                  </div>
+                  <time className="font-medium whitespace-nowrap">{formattedDate}</time>
                 </div>
 
                 {/* Navigation Buttons */}
@@ -707,13 +769,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div className="mt-2 pt-3 border-t border-border/50">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="w-full md:w-auto flex items-center gap-4">
-                  <LikeDislike postId={currentPost.id} />
+              <div className="flex flex-col items-center justify-center gap-6">
+                {/* Centered Like/Dislike buttons */}
+                <div className="flex justify-center w-full">
+                  <LikeDislike postId={currentPost.id} className="mx-auto" />
                 </div>
 
                 <div className="flex flex-col items-center gap-3">
-                  <p className="text-sm text-muted-foreground font-medium">Share this story 。Follow me for more!</p>
+                  <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
                   <div className="flex items-center gap-3">
                     {/* Native Share Button */}
                     <Button

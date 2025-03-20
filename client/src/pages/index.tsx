@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 // Removed LoadingScreen import
-import { ArrowRight, ChevronRight, Clock, Calendar, BookOpen, Search, Filter, Book, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronRight, Calendar, BookOpen, Search, Filter, Book, Loader2 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { FloatingPagination } from "@/components/ui/floating-pagination";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { getReadingTime, getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
+import { getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface WordPressResponse {
@@ -349,7 +349,7 @@ export default function IndexView() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {currentPosts.map((post, index) => {
-              const readingTime = getReadingTime(post.content);
+              // Reading time display removed
               const excerpt = getExcerpt(post.content);
               const globalIndex = startIndex + index; // Calculate the global index for navigation
               const metadata = post.metadata || {};
