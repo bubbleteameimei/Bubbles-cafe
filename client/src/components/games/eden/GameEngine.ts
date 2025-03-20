@@ -1115,7 +1115,7 @@ class GameEngine {
       
       if (autoSave) {
         // Update existing auto-save
-        await fetch(`/api/game/saves/${autoSave.saveId}`, {
+        const response = await fetch(`/api/game/saves/${autoSave.saveId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -1125,9 +1125,19 @@ class GameEngine {
             playtime: saveData.playTime
           })
         });
+        
+        // Silently handle auth errors
+        if (response.status === 401) {
+          console.log('Auto-save skipped: User not authenticated');
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error(`Auto-save update failed: ${response.status}`);
+        }
       } else {
         // Create a new auto-save
-        await fetch('/api/game/saves', {
+        const response = await fetch('/api/game/saves', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1139,6 +1149,16 @@ class GameEngine {
             saveId: `autosave-${Date.now()}`
           })
         });
+        
+        // Silently handle auth errors
+        if (response.status === 401) {
+          console.log('Auto-save skipped: User not authenticated');
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error(`Auto-save creation failed: ${response.status}`);
+        }
       }
       
       console.log('Auto-saving game:', saveName);
@@ -1204,6 +1224,12 @@ class GameEngine {
         })
       });
       
+      // Handle auth errors separately
+      if (response.status === 401) {
+        console.log('User not authenticated for saving game');
+        throw new Error('Unauthorized: Login required to save game');
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to save game: ${response.status}`);
       }
@@ -1259,6 +1285,12 @@ class GameEngine {
       const response = await fetch(`/api/game/saves/${saveId}`, {
         method: 'DELETE'
       });
+      
+      // Handle auth errors separately
+      if (response.status === 401) {
+        console.log('User not authenticated for deleting game save');
+        throw new Error('Unauthorized: Login required to delete game save');
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to delete save: ${response.status}`);
