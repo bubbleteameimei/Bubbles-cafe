@@ -58,7 +58,7 @@ export const comments = pgTable("comments", {
   approved: boolean("approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
-  metadata: json("metadata").$type<CommentMetadata>().default({}).notNull(),
+  metadata: json("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => {
   return {
@@ -640,4 +640,359 @@ export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySet
   updatedAt: true 
 });
 export type InsertUserPrivacySettings = z.infer<typeof insertUserPrivacySettingsSchema>;
+
+// ==========================================
+// Eden's Hollow Game - Database Schema
+// ==========================================
+
+// Define Zod schemas for game entities
+export const gameEffectSchema = z.object({
+  type: z.enum(['health', 'mana', 'sanity', 'flag', 'item', 'dialog', 'scene', 'time']),
+  value: z.union([z.number(), z.string(), z.boolean()]),
+  duration: z.number().optional(),
+  icon: z.string().optional(),
+  description: z.string().optional()
+});
+
+export const dialogChoiceSchema = z.object({
+  text: z.string(),
+  nextDialog: z.string().optional(),
+  effects: z.array(z.object({
+    type: z.string(),
+    value: z.any().optional(),
+    target: z.string().optional()
+  })).optional(),
+  requireItem: z.string().optional(),
+  requireFlag: z.string().optional(),
+  disabled: z.boolean().optional()
+});
+
+export const dialogSchema = z.object({
+  id: z.string(),
+  type: z.enum(['conversation', 'monologue', 'narration', 'thought']),
+  text: z.string(),
+  choices: z.array(dialogChoiceSchema).optional(),
+  character: z.string().optional(),
+  characterImage: z.string().optional(),
+  nextDialog: z.string().optional(),
+  endEffects: z.array(gameEffectSchema).optional(),
+  position: z.enum(['top', 'middle', 'bottom']).optional(),
+  requireFlags: z.record(z.union([z.boolean(), z.number(), z.string()])).optional(),
+  requireItems: z.array(z.string()).optional(),
+  oneTime: z.boolean().optional(),
+  content: z.string().optional() // Legacy support
+});
+
+export const hotspotSchema = z.object({
+  id: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  shape: z.enum(['rectangle', 'circle']).optional(),
+  tooltip: z.string().optional(),
+  description: z.string().optional(),
+  dialogId: z.string().optional(),
+  puzzleId: z.string().optional(),
+  visible: z.boolean().optional(),
+  requiresItem: z.string().optional(),
+  requiresFlag: z.string().optional(),
+  interactionEffects: z.array(gameEffectSchema).optional()
+});
+
+export const exitSchema = z.object({
+  id: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  targetScene: z.string(),
+  locked: z.boolean().optional(),
+  lockType: z.enum(['item', 'flag', 'puzzle']).optional(),
+  requiredItem: z.string().optional(),
+  requiredFlag: z.string().optional(),
+  tooltip: z.string().optional(),
+  lockedTooltip: z.string().optional(),
+  lockedMessage: z.string().optional(),
+  icon: z.string().optional(),
+  name: z.string().optional()
+});
+
+export const sceneItemSchema = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  tooltip: z.string().optional(),
+  visualCue: z.boolean().optional(),
+  condition: z.string().optional(),
+  icon: z.string().optional()
+});
+
+export const sceneSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  backgroundImage: z.string().optional(),
+  lighting: z.enum(['bright', 'dim', 'dark', 'eerie']).optional(),
+  type: z.enum(['exterior', 'interior', 'underground']).optional(),
+  hotspots: z.array(hotspotSchema).optional(),
+  exits: z.array(exitSchema).optional(),
+  items: z.array(sceneItemSchema).optional(),
+  entryDialog: z.string().optional(),
+  hints: z.array(z.string()).optional(),
+  transition: z.object({
+    type: z.enum(['fade', 'slide', 'dissolve']),
+    duration: z.number(),
+    sound: z.string().optional()
+  }).optional(),
+  overlayEffect: z.string().optional(),
+  playerEffects: z.array(gameEffectSchema).optional(),
+  environmentEffectsOverTime: z.array(gameEffectSchema).optional(),
+  minimapPosition: z.object({ x: z.number(), y: z.number() }).optional()
+});
+
+export const inventoryItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  type: z.enum(['key', 'tool', 'document', 'consumable', 'quest', 'misc']).optional(),
+  imageUrl: z.string().optional(),
+  quantity: z.number().optional(),
+  stackable: z.boolean().optional(),
+  usable: z.boolean().optional(),
+  combinable: z.boolean().optional(),
+  canCombineWith: z.array(z.string()).optional(),
+  effects: z.array(gameEffectSchema).optional(),
+  useDialog: z.string().optional(),
+  useEffects: z.array(gameEffectSchema).optional(),
+  pickupDialog: z.string().optional(),
+  discoveredAt: z.number().optional(),
+  properties: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  lore: z.string().optional(),
+  consumable: z.boolean().optional()
+});
+
+export const puzzleSchema = z.object({
+  id: z.string(),
+  type: z.enum(['sequence', 'code', 'choice', 'item-placement']),
+  solution: z.union([
+    z.string(), 
+    z.array(z.string()), 
+    z.number(), 
+    z.record(z.string(), z.number())
+  ]),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  attempts: z.number().optional(),
+  maxAttempts: z.number().optional(),
+  hints: z.array(z.string()).optional(),
+  solveEffects: z.array(gameEffectSchema).optional(),
+  completionDialog: z.string().optional(),
+  items: z.array(z.string()).optional(),
+  inputType: z.string().optional(),
+  placeholder: z.string().optional(),
+  choices: z.array(z.string()).optional(),
+  positions: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  successMessage: z.string().optional(),
+  failureMessage: z.string().optional(),
+  hint: z.string().optional()
+});
+
+export const gameNotificationSchema = z.object({
+  id: z.string(),
+  type: z.enum(['info', 'success', 'warning', 'error']),
+  message: z.string(),
+  title: z.string().optional(),
+  duration: z.number().optional(),
+  timestamp: z.number().optional(),
+  details: z.string().optional(),
+  customClass: z.string().optional()
+});
+
+export const playerStateSchema = z.object({
+  health: z.number(),
+  maxHealth: z.number(),
+  mana: z.number(),
+  maxMana: z.number(),
+  sanity: z.number(),
+  maxSanity: z.number(),
+  level: z.number(),
+  experience: z.number()
+});
+
+export const gameStateSchema = z.object({
+  player: playerStateSchema,
+  inventory: z.array(inventoryItemSchema),
+  currentScene: z.string(),
+  visitedScenes: z.array(z.string()),
+  flags: z.record(z.union([z.boolean(), z.number(), z.string()])),
+  gameTime: z.number(),
+  activeEffects: z.array(gameEffectSchema),
+  isGameOver: z.boolean(),
+  gameOverReason: z.string().optional(),
+  currentDialog: dialogSchema.optional(),
+  currentPuzzle: puzzleSchema.optional(),
+  hintsDisabled: z.boolean()
+});
+
+export const saveGameSchema = z.object({
+  id: z.string(),
+  userId: z.number().optional(),
+  name: z.string(),
+  gameState: z.any(), // Will store serialized GameState
+  screenshot: z.string().optional(),
+  playtime: z.number(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+});
+
+// Game-related database tables
+
+// Game Scenes table
+export const gameScenes = pgTable("game_scenes", {
+  id: serial("id").primaryKey(),
+  sceneId: text("scene_id").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  backgroundImage: text("background_image"),
+  type: text("type"),
+  data: json("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Items table
+export const gameItems = pgTable("game_items", {
+  id: serial("id").primaryKey(),
+  itemId: text("item_id").notNull().unique(),
+  name: text("name").notNull(),
+  type: text("type"),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  data: json("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Dialogs table
+export const gameDialogs = pgTable("game_dialogs", {
+  id: serial("id").primaryKey(),
+  dialogId: text("dialog_id").notNull().unique(),
+  type: text("type").notNull(),
+  characterId: text("character_id"),
+  data: json("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Puzzles table
+export const gamePuzzles = pgTable("game_puzzles", {
+  id: serial("id").primaryKey(),
+  puzzleId: text("puzzle_id").notNull().unique(),
+  type: text("type").notNull(),
+  difficulty: text("difficulty").notNull(),
+  data: json("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Save Data table
+export const gameSaves = pgTable("game_saves", {
+  id: serial("id").primaryKey(),
+  saveId: text("save_id").notNull().unique(),
+  userId: integer("user_id").references(() => users.id),
+  name: text("name").notNull(),
+  screenshot: text("screenshot"),
+  gameState: json("game_state").notNull(),
+  playtime: integer("playtime").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Progress table
+export const gameProgress = pgTable("game_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentSceneId: text("current_scene_id"),
+  visitedScenes: text("visited_scenes").array(),
+  inventory: json("inventory").default([]),
+  flags: json("flags").default({}),
+  gameTime: integer("game_time").default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Game Stats table
+export const gameStats = pgTable("game_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  totalPlaytime: integer("total_playtime").default(0),
+  gamesStarted: integer("games_started").default(0),
+  gamesCompleted: integer("games_completed").default(0),
+  puzzlesSolved: integer("puzzles_solved").default(0),
+  itemsCollected: integer("items_collected").default(0),
+  areasDiscovered: integer("areas_discovered").default(0),
+  achievements: json("achievements").default([]),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Create schema for game components
+export const insertGameSceneSchema = createInsertSchema(gameScenes, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined
+});
+
+export const insertGameItemSchema = createInsertSchema(gameItems, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined
+});
+
+export const insertGameDialogSchema = createInsertSchema(gameDialogs, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined
+});
+
+export const insertGamePuzzleSchema = createInsertSchema(gamePuzzles, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined
+});
+
+export const insertGameSaveSchema = createInsertSchema(gameSaves, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined
+});
+
+export const insertGameProgressSchema = createInsertSchema(gameProgress, {
+  id: undefined,
+  updatedAt: undefined
+});
+
+export const insertGameStatsSchema = createInsertSchema(gameStats, {
+  id: undefined,
+  updatedAt: undefined
+});
+
+export type InsertGameScene = z.infer<typeof insertGameSceneSchema>;
+export type InsertGameItem = z.infer<typeof insertGameItemSchema>;
+export type InsertGameDialog = z.infer<typeof insertGameDialogSchema>;
+export type InsertGamePuzzle = z.infer<typeof insertGamePuzzleSchema>;
+export type InsertGameSave = z.infer<typeof insertGameSaveSchema>;
+export type InsertGameProgress = z.infer<typeof insertGameProgressSchema>;
+export type InsertGameStats = z.infer<typeof insertGameStatsSchema>;
+
+export type GameSceneRecord = typeof gameScenes.$inferSelect;
+export type GameItemRecord = typeof gameItems.$inferSelect;
+export type GameDialogRecord = typeof gameDialogs.$inferSelect;
+export type GamePuzzleRecord = typeof gamePuzzles.$inferSelect;
+export type GameSaveRecord = typeof gameSaves.$inferSelect;
+export type GameProgressRecord = typeof gameProgress.$inferSelect;
+export type GameStatsRecord = typeof gameStats.$inferSelect;
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
