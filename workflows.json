@@ -3,7 +3,7 @@
     "command": "npm run dev",
     "environment": {
       "NODE_ENV": "development",
-      "PORT": "3000",
+      "PORT": "3001",
       "HOST": "0.0.0.0",
       "SESSION_SECRET": "dev_secret_key",
       "VITE_DEBUG_ENABLED": "true",
