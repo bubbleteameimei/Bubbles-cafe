@@ -1,226 +1,159 @@
-import { Puzzle, GameState } from '../types';
-import { GameEngine } from '../GameEngine';
+import { Puzzle } from '../types';
 
 /**
- * Puzzles in Eden's Hollow
- * These are interactive challenges the player must solve
+ * Game puzzles to be solved
  */
 export const gamePuzzles: Record<string, Puzzle> = {
-  // Altar puzzle in the church
   altar_puzzle: {
     id: 'altar_puzzle',
     name: 'Altar Symbols',
-    type: 'pattern',
-    instruction: 'Arrange the symbols in the correct order according to the inscription: "As the heavens move, life grows beneath their light. What begins in darkness reaches toward the sky."',
-    options: ['Moon', 'Star', 'Sun', 'Tree', 'Flame'],
-    maxAttempts: 3,
-    checkSolution: (solution: string[], gameState: GameState) => {
-      // The correct order: Moon, Star, Sun (heavenly bodies), then Tree, Flame (life growing)
-      const correctOrder = ['Moon', 'Star', 'Sun', 'Tree', 'Flame'];
-      
-      if (solution.length !== correctOrder.length) {
-        return false;
+    type: 'order',
+    description: 'Arrange the symbols in the correct order according to the ritual.',
+    hints: [
+      'The ancient text mentions "as the day progresses"...',
+      'The symbols represent celestial bodies and natural elements.',
+      'Moon begins the night, and flame marks its end.'
+    ],
+    solution: [1, 3, 5, 2, 4], // Moon, Star, Sun, Tree, Flame
+    items: [
+      { id: 1, name: 'Moon' },
+      { id: 2, name: 'Tree' },
+      { id: 3, name: 'Star' },
+      { id: 4, name: 'Flame' },
+      { id: 5, name: 'Sun' }
+    ],
+    initialState: [2, 4, 1, 5, 3],
+    maxAttempts: 5,
+    reward: {
+      status: { altar_solved: true },
+      notification: {
+        id: 'altar-solved',
+        message: 'The symbols align correctly. The wall behind the altar slowly opens, revealing a hidden passage.',
+        type: 'discovery'
       }
-      
-      // Check if the arrays match
-      for (let i = 0; i < correctOrder.length; i++) {
-        if (solution[i] !== correctOrder[i]) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('As you press the symbols in sequence, you hear a click from beneath the altar.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, altar_puzzle_solved: true }
-      });
-    },
-    onFail: (engine: GameEngine) => {
-      engine.addNotification('The symbols reset themselves. Perhaps there\'s a clue somewhere in the church.', 'warning');
     }
   },
   
-  // Clock tower puzzle
   clock_puzzle: {
     id: 'clock_puzzle',
-    name: 'Church Clock',
+    name: 'Clock Tower Mechanism',
     type: 'combination',
-    instruction: 'Set the four dials to the correct time. The pocket watch and the inscription might hold a clue.',
-    maxAttempts: 5,
-    checkSolution: (solution: string, gameState: GameState) => {
-      // The correct solution is 3:17, the time shown on the pocket watch
-      return solution === '317' || solution === '3:17';
+    description: 'Set the clock to the correct time to restart the mechanism.',
+    hints: [
+      'The time is frozen for a reason...',
+      'Check historical records for significant events.',
+      'The journal mentions a terrible event at a specific time.'
+    ],
+    solution: {
+      hour: '3',
+      minute: '17',
+      second: '42'
     },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('The clock mechanism begins to turn. The hands rotate to 3:17 and lock in place. A section of the wall slides open.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, clock_tower_activated: true }
-      });
-    },
-    onFail: (engine: GameEngine) => {
-      engine.addNotification('The dials turn but nothing happens. There must be a specific time that\'s significant.', 'warning');
-    }
-  },
-  
-  // Bookshelf puzzle in the town hall
-  bookshelf_puzzle: {
-    id: 'bookshelf_puzzle',
-    name: 'Hidden Library',
-    type: 'pattern',
-    instruction: 'Arrange the books in the correct order according to the librarian\'s notes: "When arranged correctly, they tell the village\'s true history."',
-    options: ['Village Founding', 'The Great Harvest', 'The Blackwood Family', 'Ancient Rituals', 'The Children\'s Fate'],
-    maxAttempts: 4,
-    checkSolution: (solution: string[], gameState: GameState) => {
-      // The correct order tells the story chronologically
-      const correctOrder = [
-        'Village Founding',
-        'The Blackwood Family',
-        'Ancient Rituals',
-        'The Children\'s Fate',
-        'The Great Harvest'
-      ];
-      
-      if (solution.length !== correctOrder.length) {
-        return false;
-      }
-      
-      // Check if the arrays match
-      for (let i = 0; i < correctOrder.length; i++) {
-        if (solution[i] !== correctOrder[i]) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('As you place the last book, the entire bookshelf shudders and slides to the side, revealing a hidden room.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, bookshelf_puzzle_solved: true }
-      });
-    }
-  },
-  
-  // Ritual circle puzzle
-  ritual_circle: {
-    id: 'ritual_circle',
-    name: 'The Binding Circle',
-    type: 'custom',
-    instruction: 'Complete the ritual by placing the correct items on each pedestal and speaking the ritual words.',
-    maxAttempts: 1, // Only one attempt allowed - high stakes!
-    checkSolution: (solution: any, gameState: GameState) => {
-      // This puzzle would be more complex in a full implementation
-      // For now, we'll just check if the player has collected all the necessary items
-      const requiredItems = [
-        'strange_amulet',
-        'church_candle',
-        'ritual_dagger',
-        'music_box',
-        'pastor_diary'
-      ];
-      
-      // Check if player has all required items
-      for (const item of requiredItems) {
-        if (!gameState.inventory.includes(item)) {
-          return false;
-        }
-      }
-      
-      // Also require the player to have learned the ritual words
-      return gameState.status.learned_ritual === true;
-    },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('As you complete the ritual, the ground begins to shake. Five spectral children appear around the circle, then fade away. You sense their gratitude - they have been freed.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, ritual_completed: true, game_completed: true }
-      });
-    },
-    onFail: (engine: GameEngine) => {
-      engine.addNotification('The ritual fails. You sense that you\'re missing something important - either items for the pedestals or the knowledge of how to perform the ritual properly.', 'error');
-    }
-  },
-  
-  // Music box puzzle to appease the ghost children
-  music_box_puzzle: {
-    id: 'music_box_puzzle',
-    name: 'Ghostly Lullaby',
-    type: 'memory',
-    instruction: 'Play the correct lullaby sequence on the music box to calm the spectral children.',
-    options: ['Soft Note', 'Medium Note', 'Loud Note'],
-    maxAttempts: 5,
-    checkSolution: (solution: string[], gameState: GameState) => {
-      // The correct sequence mimics the children's song heard in the church
-      const correctSequence = [
-        'Soft Note',
-        'Medium Note',
-        'Soft Note',
-        'Loud Note',
-        'Medium Note',
-        'Soft Note'
-      ];
-      
-      if (solution.length !== correctSequence.length) {
-        return false;
-      }
-      
-      // Check if the arrays match
-      for (let i = 0; i < correctSequence.length; i++) {
-        if (solution[i] !== correctSequence[i]) {
-          return false;
-        }
-      }
-      
-      return true;
-    },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('The ghostly children appear around you, humming along with the lullaby. They seem calmer now, and one points toward the church crypt.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, ghost_children_appeased: true }
-      });
-    }
-  },
-  
-  // Crypt door riddle
-  crypt_riddle: {
-    id: 'crypt_riddle',
-    name: 'Crypt Door Riddle',
-    type: 'riddle',
-    instruction: 'Solve the riddle inscribed on the crypt door: "I am always hungry, I must always be fed. The finger I touch, will soon turn red."',
+    inputs: [
+      { id: 'hour', label: 'Hour' },
+      { id: 'minute', label: 'Minute' },
+      { id: 'second', label: 'Second' }
+    ],
     maxAttempts: 3,
-    checkSolution: (solution: string, gameState: GameState) => {
-      // The answer to the riddle is "fire"
-      const answer = solution.trim().toLowerCase();
-      return answer === 'fire' || answer === 'flame';
-    },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('As you speak the answer, the crypt door creaks open, revealing a stone staircase descending into darkness.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, crypt_riddle_solved: true }
-      });
-    },
-    onFail: (engine: GameEngine) => {
-      engine.addNotification('Nothing happens. The door remains firmly shut.', 'warning');
+    reward: {
+      status: { clock_fixed: true },
+      item: 'clockwork_gear',
+      notification: {
+        id: 'clock-fixed',
+        message: 'The clock mechanism whirs to life! As the hands move, a small compartment opens, revealing a clockwork gear.',
+        type: 'discovery'
+      }
     }
   },
   
-  // Innkeeper's cellar lock combination
-  cellar_lock: {
-    id: 'cellar_lock',
-    name: 'Cellar Padlock',
+  mirror_puzzle: {
+    id: 'mirror_puzzle',
+    name: 'Reflection of Truth',
+    type: 'selection',
+    description: 'The silver mirror shows ghostly reflections. Choose the one that speaks the truth.',
+    hints: [
+      'The youngest always tells the truth...',
+      'Compare what you know about the village history.',
+      'The children in the photograph might provide a clue.'
+    ],
+    solution: 'child',
+    options: [
+      { id: 'elder', label: 'Elderly Man', value: 'elder' },
+      { id: 'woman', label: 'Young Woman', value: 'woman' },
+      { id: 'child', label: 'Small Child', value: 'child' },
+      { id: 'priest', label: 'Village Priest', value: 'priest' }
+    ],
+    maxAttempts: 1,
+    reward: {
+      status: { truth_revealed: true },
+      notification: {
+        id: 'truth-revealed',
+        message: 'The child's reflection speaks: "The ritual was never completed. We remain between worlds, forever at dusk."',
+        type: 'discovery'
+      }
+    }
+  },
+  
+  door_code_puzzle: {
+    id: 'door_code_puzzle',
+    name: 'Locked Cellar Door',
     type: 'combination',
-    instruction: 'Enter the three-digit combination for the padlock. The innkeeper mentioned "the year it all changed" might be the key.',
-    maxAttempts: 5,
-    checkSolution: (solution: string, gameState: GameState) => {
-      // The correct combination is 891 - from 1891, the year mentioned throughout the game
-      return solution === '891' || solution === '1891';
+    description: 'The cellar door has a combination lock with 4 digits.',
+    hints: [
+      'Look for dates around the church...',
+      'The gravestones might hold the answer.',
+      'The year the children died might be significant.'
+    ],
+    solution: {
+      digit1: '1',
+      digit2: '8',
+      digit3: '9',
+      digit4: '1'
     },
-    onSolve: (engine: GameEngine) => {
-      engine.addNotification('The padlock clicks open. You can now access the inn\'s cellar.', 'success');
-      engine.updateState({
-        status: { ...engine.debugState().status, cellar_unlocked: true }
-      });
+    inputs: [
+      { id: 'digit1', label: '1st Digit' },
+      { id: 'digit2', label: '2nd Digit' },
+      { id: 'digit3', label: '3rd Digit' },
+      { id: 'digit4', label: '4th Digit' }
+    ],
+    maxAttempts: 5,
+    reward: {
+      status: { cellar_unlocked: true },
+      notification: {
+        id: 'cellar-unlocked',
+        message: 'The lock mechanism clicks and the heavy cellar door creaks open.',
+        type: 'success'
+      }
+    }
+  },
+  
+  ritual_puzzle: {
+    id: 'ritual_puzzle',
+    name: 'Complete the Ritual',
+    type: 'order',
+    description: 'Place the ritual items in the correct positions to complete the interrupted ceremony.',
+    hints: [
+      'The journal describes the proper arrangement...',
+      'The five positions match the five children.',
+      'Each element corresponds to a specific child.'
+    ],
+    solution: [1, 3, 5, 2, 4], // Candle, Amulet, Mirror, Herb, Journal
+    items: [
+      { id: 1, name: 'Ritual Candle' },
+      { id: 2, name: 'Healing Herb' },
+      { id: 3, name: 'Strange Amulet' },
+      { id: 4, name: 'Ancient Journal' },
+      { id: 5, name: 'Silver Mirror' }
+    ],
+    initialState: [5, 1, 4, 2, 3],
+    maxAttempts: 1,
+    reward: {
+      status: { ritual_completed: true },
+      notification: {
+        id: 'ritual-completed',
+        message: 'As you place the final item, the ghostly figures of five children appear. "Thank you for setting us free," they whisper as they fade away. The eternal dusk lifts, and sunlight begins to stream into Eden's Hollow.',
+        type: 'discovery'
+      }
     }
   }
 };

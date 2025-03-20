@@ -1,202 +1,193 @@
-import { GameEngine } from './GameEngine';
+// Game data types for Eden's Hollow
 
-/**
- * Game state for Eden's Hollow
- * Contains all dynamic game data
- */
-export interface GameState {
-  currentScene: string;
-  inventory: string[];
-  health: number;
-  mana: number;
-  status: {
-    [key: string]: any;
-  };
-  notifications: Notification[];
-  visitedScenes: string[];
-  activeDialog?: string;
-  dialogIndex?: number;
-  currentPuzzle?: string;
-  puzzleAttempts: number;
-}
+// Scene Types
+export type NavigationDirection = 'left' | 'right' | 'forward' | 'back' | 'up' | 'down' | 'none' | 
+                                 'north' | 'south' | 'east' | 'west';
 
-/**
- * Game scene
- * Represents a location in the game
- */
-export interface Scene {
+export interface SceneExit {
   id: string;
-  title: string;
-  description: string;
-  backgroundImage: string;
-  time: 'dawn' | 'day' | 'dusk' | 'night';
-  ambientSound?: string;
-  exits: Exit[];
-  items?: SceneItem[];
-  characters?: Character[];
-  actions?: Action[];
-  puzzles?: PuzzleInstance[];
-}
-
-/**
- * Exit from one scene to another
- */
-export interface Exit {
-  id: string;
-  name: string;
-  target: string;
-  destination: string;
-  position: 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
+  targetScene: string;
+  direction: NavigationDirection;
+  label: string;
   isLocked?: boolean;
   requiredItem?: string;
-  requiredStatus?: {
-    [key: string]: any;
-  };
+  requiredEvent?: string;
 }
 
-/**
- * Item instance in a scene
- */
-export interface SceneItem {
+export interface SceneHotspot {
   id: string;
-  name: string;
-  position: string;
-  isHidden: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  tooltip: string;
+  type: 'item' | 'character' | 'action' | 'secret';
+  targetId: string;
   requiredItem?: string;
-  requiredStatus?: {
-    [key: string]: any;
-  };
+  triggersEvent?: string;
 }
 
-/**
- * Character in a scene
- */
-export interface Character {
+export interface SceneEvent {
+  id: string;
+  type: 'dialog' | 'puzzle' | 'item' | 'notification' | 'transition' | 'ending';
+  targetId: string;
+  condition?: {
+    type: 'item' | 'event' | 'status';
+    value: string;
+  };
+  triggersOnEnter?: boolean;
+}
+
+export interface Scene {
   id: string;
   name: string;
-  image: string;
-  position: string;
-  dialog: string;
-  isInteractive: boolean;
-  requiredStatus?: {
-    [key: string]: any;
-  };
+  description: string;
+  backgroundImage: string;
+  ambientSound?: string;
+  exits: SceneExit[];
+  events: SceneEvent[];
+  hotspots: SceneHotspot[];
+  isSecret?: boolean;
+  isEndingScene?: boolean;
+  fogEffect?: boolean;
 }
 
-/**
- * Interactive action in a scene
- */
-export interface Action {
-  id: string;
-  name: string;
-  outcome: ActionOutcome;
-  requiredItem?: string;
-  requiredStatus?: {
-    [key: string]: any;
-  };
+// Item Types
+export type ItemCategory = 'key' | 'tool' | 'consumable' | 'quest' | 'lore';
+
+export interface ItemEffect {
+  type: 'health' | 'mana' | 'status';
+  value: number | string;
+  duration?: number;
 }
 
-/**
- * Outcome of an action
- */
-export interface ActionOutcome {
-  addItem?: string;
-  notification?: {
-    id: string;
-    message: string;
-    type: 'info' | 'success' | 'warning' | 'error';
-  };
-  status?: {
-    [key: string]: any;
-  };
-  dialog?: string;
-  puzzle?: string;
-}
-
-/**
- * Game notification
- */
-export interface Notification {
-  id: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-}
-
-/**
- * Inventory item
- */
 export interface Item {
   id: string;
   name: string;
   description: string;
-  image?: string;
-  isConsumable: boolean;
-  isUsable: boolean;
-  useEffect?: {
-    health?: number;
-    mana?: number;
-    status?: {
-      [key: string]: any;
-    };
-    message?: string;
-  };
+  image: string;
+  category: ItemCategory;
+  useableOn?: string[];
+  effects?: ItemEffect[];
+  isQuestItem?: boolean;
+  isConsumable?: boolean;
+  destroyOnUse?: boolean;
+  quantity?: number;
 }
 
-/**
- * Dialog with characters
- */
-export interface Dialog {
+// Dialog Types
+export interface DialogResponse {
   id: string;
-  content: DialogContent[];
-  onEnd?: (engine: GameEngine) => void;
+  text: string;
+  outcome?: {
+    type: 'item' | 'event' | 'status' | 'scene';
+    value: string;
+  };
+  leadsTo?: number;
 }
 
-/**
- * Single dialog part
- */
-export interface DialogContent {
+export interface DialogSegment {
   speaker: string;
   text: string;
   responses?: DialogResponse[];
+  nextIndex?: number;
 }
 
-/**
- * Dialog response option
- */
-export interface DialogResponse {
-  text: string;
-  nextDialog: string;
-  requiredItem?: string;
-  requiredStatus?: {
-    [key: string]: any;
-  };
-}
-
-/**
- * Puzzle instance in a scene
- */
-export interface PuzzleInstance {
+export interface DialogCharacter {
   id: string;
   name: string;
-  position: string;
-  isLocked: boolean;
-  requiredItem?: string;
-  requiredStatus?: {
-    [key: string]: any;
-  };
+  portrait: string;
+  description?: string;
 }
 
-/**
- * Game puzzle
- */
+export interface Dialog {
+  id: string;
+  character: DialogCharacter | string;
+  content: DialogSegment[];
+}
+
+// Puzzle Types
+export type PuzzleType = 'sequence' | 'combination' | 'matching' | 'riddle' | 'pattern' | 'order' | 'selection';
+
+export interface PuzzleInput {
+  id: string;
+  type: 'button' | 'toggle' | 'slider' | 'text' | 'draggable';
+  label: string;
+  value?: string | number;
+}
+
 export interface Puzzle {
   id: string;
   name: string;
-  type: 'combination' | 'pattern' | 'riddle' | 'memory' | 'custom';
-  instruction: string;
-  options?: string[];
-  maxAttempts?: number;
-  checkSolution: (solution: any, gameState: GameState) => boolean;
-  onSolve?: (engine: GameEngine) => void;
-  onFail?: (engine: GameEngine) => void;
+  type: PuzzleType;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  solution: string[] | Record<string, string>;
+  hint: string;
+  hints?: string[];
+  maxAttempts: number;
+  timeLimit?: number;
+  inputs?: PuzzleInput[];
+  initialState?: any;
+  items?: string[];
+  options?: any[];
+  reward?: {
+    type: 'item' | 'scene' | 'event';
+    value: string;
+  };
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  type: 'info' | 'achievement' | 'warning' | 'danger' | 'discovery' | 'hint' | 'quest' | 'item';
+  message: string;
+  title?: string;
+  timeout?: number;
+}
+
+// Game State
+export interface Inventory {
+  items: Item[];
+  activeItemId?: string;
+}
+
+export interface GameState {
+  currentSceneId: string;
+  inventory: Inventory;
+  visitedScenes: string[];
+  unlockedScenes: string[];
+  triggeredEvents: string[];
+  activeDialogId?: string;
+  notifications: Notification[];
+  health: number;
+  mana: number;
+  stats: {
+    puzzlesSolved: number;
+    itemsFound: number;
+    secretsDiscovered: number;
+  };
+  status: string[];
+  puzzleAttempts: Record<string, number>;
+  currentPuzzle?: {
+    id: string;
+    progress: any;
+    attempts: number;
+  };
+}
+
+// Game Engine Options
+export interface GameOptions {
+  startingSceneId: string;
+  startingHealth: number;
+  startingMana: number;
+  autosave: boolean;
+  difficulty: 'easy' | 'normal' | 'hard';
+}
+
+// Save Game Data
+export interface SaveGameData {
+  saveDate: string;
+  gameState: GameState;
+  screenshotUrl?: string;
 }
