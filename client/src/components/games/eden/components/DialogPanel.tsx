@@ -1,152 +1,192 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight } from 'lucide-react';
-import { DialogData, DialogResponse } from '../types';
+import { X, ChevronRight, User, MessageSquare } from 'lucide-react';
+import { Dialog, DialogResponse } from '../types';
+import '../styles/dialog.css';
 
 interface DialogPanelProps {
-  dialog: DialogData;
+  dialog: Dialog;
   onResponseSelect: (response: DialogResponse) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const DialogPanel: React.FC<DialogPanelProps> = ({
-  dialog,
-  onResponseSelect,
-  isOpen,
-  onClose
-}) => {
-  const [showingText, setShowingText] = useState('');
-  const [textDisplayed, setTextDisplayed] = useState(false);
-  const [textSpeed] = useState(30); // ms per character
+export default function DialogPanel({ dialog, onResponseSelect, isOpen, onClose }: DialogPanelProps) {
+  const [currentText, setCurrentText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [textComplete, setTextComplete] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<DialogResponse | null>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   
+  // Typewriter effect for the dialog text
   useEffect(() => {
-    if (!isOpen || !dialog || !dialog.text) return;
+    if (!isOpen || !dialog) return;
     
-    // Reset for new dialog
-    setShowingText('');
-    setTextDisplayed(false);
+    let text = dialog.text || '';
+    let currentIndex = 0;
+    setCurrentText('');
+    setIsTyping(true);
+    setTextComplete(false);
     
-    // Gradually display text for typewriter effect
-    let currentText = '';
-    const fullText = dialog.text;
-    let charIndex = 0;
-    
-    const intervalId = setInterval(() => {
-      if (charIndex < fullText.length) {
-        currentText += fullText.charAt(charIndex);
-        setShowingText(currentText);
-        charIndex++;
+    const interval = setInterval(() => {
+      if (currentIndex < text.length) {
+        setCurrentText(prev => prev + text[currentIndex]);
+        currentIndex++;
       } else {
-        clearInterval(intervalId);
-        setTextDisplayed(true);
+        setIsTyping(false);
+        setTextComplete(true);
+        clearInterval(interval);
       }
-    }, textSpeed);
+    }, 30); // Typing speed
     
-    return () => clearInterval(intervalId);
-  }, [dialog, isOpen, textSpeed]);
+    return () => clearInterval(interval);
+  }, [dialog, isOpen]);
   
-  // Skip to full text on click
-  const handleTextClick = () => {
-    if (!textDisplayed && dialog) {
-      setShowingText(dialog.text);
-      setTextDisplayed(true);
+  // Scroll to bottom of text as it's typed
+  useEffect(() => {
+    if (textRef.current) {
+      textRef.current.scrollTop = textRef.current.scrollHeight;
     }
+  }, [currentText]);
+  
+  // Complete the text immediately if user clicks during typing
+  const handleTextClick = () => {
+    if (isTyping) {
+      setCurrentText(dialog.text || '');
+      setIsTyping(false);
+      setTextComplete(true);
+    }
+  };
+  
+  // Handle response selection
+  const handleResponseSelect = (response: DialogResponse) => {
+    setSelectedResponse(response);
+    // Short delay before proceeding with selected response
+    setTimeout(() => {
+      onResponseSelect(response);
+      setSelectedResponse(null);
+    }, 500);
   };
   
   if (!isOpen || !dialog) return null;
   
   return (
-    <motion.div 
-      className="fixed inset-x-0 bottom-0 z-30 pointer-events-auto"
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 100, opacity: 0 }}
-      transition={{ type: 'spring', damping: 30 }}
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 50 }}
+      transition={{ duration: 0.3 }}
+      className="dialog-panel fixed bottom-0 left-0 w-full h-1/3 md:h-1/4 bg-gray-900/95 backdrop-blur-sm border-t border-gray-800 shadow-2xl z-20"
     >
-      <div className="mx-auto max-w-4xl bg-gray-900/90 backdrop-blur-sm border border-gray-800 rounded-t-lg overflow-hidden shadow-xl">
-        <div className="flex p-4 items-start">
-          {/* Character Avatar */}
-          <div className="flex-shrink-0 mr-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800 border-2 border-amber-700">
-              {dialog.character?.avatarUrl ? (
+      <div className="absolute top-0 right-0 p-2">
+        <button
+          onClick={onClose}
+          className="p-1 bg-gray-800 rounded-full text-gray-400 hover:text-white transition-colors"
+          aria-label="Close dialog"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="flex h-full p-4">
+        {/* Speaker Portrait */}
+        {dialog.speaker && (
+          <div className="hidden md:block flex-shrink-0 mr-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-700">
+              {dialog.speakerImage ? (
                 <img 
-                  src={dialog.character.avatarUrl} 
-                  alt={dialog.character.name} 
+                  src={dialog.speakerImage} 
+                  alt={dialog.speaker} 
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-amber-500 font-serif text-xl">
-                  {dialog.character?.name?.charAt(0) || '?'}
+                <div className="w-full h-full bg-gray-800 flex items-center justify-center text-gray-300">
+                  <User size={24} />
                 </div>
               )}
             </div>
+            <div className="text-center mt-1">
+              <span className="text-xs text-gray-300">{dialog.speaker}</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Dialog Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Speaker Name (Mobile) */}
+          {dialog.speaker && (
+            <div className="md:hidden mb-2 flex items-center">
+              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-700 mr-2">
+                {dialog.speakerImage ? (
+                  <img 
+                    src={dialog.speakerImage} 
+                    alt={dialog.speaker} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-800 flex items-center justify-center text-gray-300">
+                    <User size={16} />
+                  </div>
+                )}
+              </div>
+              <span className="text-sm text-gray-300">{dialog.speaker}</span>
+            </div>
+          )}
+          
+          {/* Dialog Text */}
+          <div 
+            ref={textRef}
+            onClick={handleTextClick}
+            className="dialog-text flex-1 overflow-y-auto text-white mb-4 p-2 rounded bg-gray-800/50"
+          >
+            <p className="whitespace-pre-line">{currentText}</p>
+            {isTyping && <span className="typing-cursor">_</span>}
           </div>
           
-          {/* Dialog Content */}
-          <div className="flex-1">
-            {/* Character Name */}
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-serif text-amber-300">
-                {dialog.character?.name || 'Unknown'}
-              </h3>
-              
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Dialog Text */}
-            <div 
-              className="prose prose-sm prose-invert prose-amber mb-4 min-h-[60px]"
-              onClick={handleTextClick}
-            >
-              <p>{showingText}<span className={`cursor ${textDisplayed ? 'hidden' : 'inline-block'}`}>|</span></p>
-            </div>
-            
-            {/* Response Options */}
-            <AnimatePresence>
-              {textDisplayed && dialog.responses && (
-                <motion.div
-                  className="space-y-2 mt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
+          {/* Dialog Responses */}
+          {textComplete && dialog.responses && (
+            <div className="mt-auto">
+              <AnimatePresence>
+                <div className="flex flex-col space-y-2">
                   {dialog.responses.map((response, index) => (
                     <motion.button
                       key={index}
-                      className="w-full text-left p-3 bg-gray-800/80 hover:bg-gray-700/80 rounded-md flex items-center group"
-                      onClick={() => onResponseSelect(response)}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleResponseSelect(response)}
+                      className={`text-left p-2 px-3 rounded-lg flex items-center transition-colors ${
+                        selectedResponse === response 
+                          ? 'bg-purple-600 text-white' 
+                          : 'bg-gray-800 hover:bg-gray-700 text-gray-100'
+                      }`}
+                      disabled={selectedResponse !== null}
                     >
-                      <ChevronRight className="text-amber-400 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" size={16} />
+                      <MessageSquare size={16} className="mr-2 flex-shrink-0" />
                       <span>{response.text}</span>
+                      <ChevronRight size={16} className="ml-auto flex-shrink-0" />
                     </motion.button>
                   ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                </div>
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
       
+      {/* Custom Dialog Animation CSS */}
       <style jsx>{`
-        .cursor {
-          animation: blink 1s step-start infinite;
+        .typing-cursor {
+          display: inline-block;
+          animation: blink 0.7s infinite;
         }
         
         @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+          0% { opacity: 0; }
+          50% { opacity: 1; }
+          100% { opacity: 0; }
         }
       `}</style>
     </motion.div>
   );
-};
-
-export default DialogPanel;
+}

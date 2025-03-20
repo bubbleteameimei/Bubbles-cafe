@@ -1,197 +1,120 @@
-import { InventoryItem } from '../types';
+import { Item } from '../types';
 
-export const gameItems: Record<string, InventoryItem> = {
-  // Ancient Amulet
-  ancient_amulet: {
-    id: 'ancient_amulet',
-    name: 'Ancient Amulet',
-    description: 'A silver amulet adorned with strange symbols. It pulses with a faint blue light and feels unnaturally cold to the touch.',
-    icon: 'amulet',
-    type: 'artifact',
-    properties: [
-      'Protects against minor magical attacks',
-      'Glows brighter in the presence of spirits',
-      'Cannot be removed once worn until certain conditions are met'
-    ]
-  },
-  
-  // Ritual Dagger
-  ritual_dagger: {
-    id: 'ritual_dagger',
-    name: 'Ritual Dagger',
-    description: 'A ceremonial blade with runes etched into its black iron surface. The edge remains impossibly sharp despite its apparent age.',
-    icon: 'dagger',
-    type: 'weapon',
-    useAction: 'activate',
-    damage: 15,
-    properties: [
-      'Deals extra damage to spectral entities',
-      'Can draw blood safely for ritual purposes',
-      'Blade absorbs blood, leaving no traces'
-    ]
-  },
-  
-  // Castle Key
-  castle_key: {
-    id: 'castle_key',
-    name: 'Guardian\'s Key',
-    description: 'A heavy iron key forged in the shape of a twisted flame. It radiates heat when near the locks it opens.',
-    icon: 'key',
+// Game items collection
+export const gameItems: Record<string, Item> = {
+  rusty_key: {
+    id: 'rusty_key',
+    name: 'Rusty Key',
+    description: 'An old, rusty key. It might unlock something nearby.',
+    image: '/images/eden/items/rusty_key.png',
     type: 'key',
-    useAction: 'unlock',
-    properties: [
-      'Opens sealed doors within Shadowspire Castle',
-      'Grows warmer as you approach a compatible lock',
-      'Sometimes whispers warnings in an ancient tongue'
-    ]
+    canUse: true,
+    useEffect: {
+      notification: {
+        id: 'use_key',
+        message: 'You need to find the right lock for this key.',
+        type: 'info'
+      }
+    }
   },
   
-  // Healing Potion
-  healing_potion: {
-    id: 'healing_potion',
-    name: 'Crimson Elixir',
-    description: 'A small vial of vibrant red liquid. The contents swirl with an inner light and smell faintly of cinnamon.',
-    icon: 'potion',
-    type: 'consumable',
-    useAction: 'heal',
-    properties: [
-      'Restores 25 health points when consumed',
-      'Creates a warming sensation throughout the body',
-      'Side effect: Temporarily heightens awareness of supernatural entities'
-    ]
+  old_journal: {
+    id: 'old_journal',
+    name: 'Weathered Journal',
+    description: 'A worn leather journal filled with hurried handwriting. Many pages are torn or stained.',
+    image: '/images/eden/items/journal.png',
+    type: 'document',
+    canUse: true,
+    useEffect: {
+      dialog: 'journal_entry_1'
+    }
   },
   
-  // Mana Potion
-  mana_potion: {
-    id: 'mana_potion',
-    name: 'Azure Essence',
-    description: 'A glass vial containing shimmering blue liquid that seems to move with a mind of its own.',
-    icon: 'potion',
-    type: 'consumable',
-    useAction: 'restore_mana',
-    properties: [
-      'Restores 25 mana points when consumed',
-      'Enhances magical abilities for a short time',
-      'Side effect: Creates a brief feeling of dissociation from the physical world'
-    ]
-  },
-  
-  // Ghostlight Lantern
-  ghostlight_lantern: {
-    id: 'ghostlight_lantern',
-    name: 'Ghostlight Lantern',
-    description: 'An ornate brass lantern that emits a pale blue flame requiring no fuel. The light reveals entities usually invisible to the human eye.',
-    icon: 'lantern',
+  strange_amulet: {
+    id: 'strange_amulet',
+    name: 'Strange Amulet',
+    description: 'A peculiar amulet with shifting symbols that seem to change when not directly observed.',
+    image: '/images/eden/items/amulet.png',
     type: 'artifact',
-    useAction: 'activate',
-    properties: [
-      'Reveals hidden spirits and messages',
-      'Light cannot be seen by most supernatural entities',
-      'Flame brightens in areas of strong magical energy'
-    ]
+    canUse: true
   },
   
-  // Ancient Tome
-  ancient_tome: {
-    id: 'ancient_tome',
-    name: 'Codex of Binding',
-    description: 'A weathered leather-bound book with pages of thin metal rather than paper. The text shifts and changes when not observed directly.',
-    icon: 'book',
+  lantern: {
+    id: 'lantern',
+    name: 'Oil Lantern',
+    description: 'A brass oil lantern that casts a warm, flickering light. It helps illuminate dark areas.',
+    image: '/images/eden/items/lantern.png',
+    type: 'tool',
+    canUse: true,
+    useEffect: {
+      status: { 'has_light': true },
+      notification: {
+        id: 'lantern_lit',
+        message: 'You light the lantern, illuminating the darkness around you.',
+        type: 'success'
+      }
+    }
+  },
+  
+  herb_pouch: {
+    id: 'herb_pouch',
+    name: 'Herb Pouch',
+    description: 'A small leather pouch containing medicinal herbs with a strong, pleasant aroma.',
+    image: '/images/eden/items/herbs.png',
+    type: 'consumable',
+    canUse: true,
+    useEffect: {
+      heal: 20,
+      notification: {
+        id: 'used_herbs',
+        message: 'You apply the herbs to your wounds, feeling a soothing relief.',
+        type: 'success'
+      }
+    }
+  },
+  
+  old_photograph: {
+    id: 'old_photograph',
+    name: 'Faded Photograph',
+    description: 'A black and white photograph showing a family standing in front of a large house. The edges are burned.',
+    image: '/images/eden/items/photograph.png',
+    type: 'document',
+    canUse: true
+  },
+  
+  strange_coin: {
+    id: 'strange_coin',
+    name: 'Strange Coin',
+    description: 'A coin made of an unknown metal with unusual markings. It feels unnaturally cold to the touch.',
+    image: '/images/eden/items/coin.png',
     type: 'artifact',
-    useAction: 'read',
-    properties: [
-      'Contains instructions for the Ritual of Binding',
-      'Reading causes minor psychic damage',
-      'Pages reveal different content depending on the reader\'s intent'
-    ]
+    canUse: false
   },
   
-  // Skeleton Key
-  skeleton_key: {
-    id: 'skeleton_key',
-    name: 'Bonecrafted Key',
-    description: 'A key crafted from human bone, polished to an ivory sheen. It feels unnaturally warm and sometimes twitches like a living thing.',
-    icon: 'key',
+  ancient_rune: {
+    id: 'ancient_rune',
+    name: 'Ancient Rune Stone',
+    description: 'A small stone tablet etched with mysterious symbols that glow faintly in the dark.',
+    image: '/images/eden/items/rune.png',
+    type: 'artifact',
+    canUse: true
+  },
+  
+  broken_doll: {
+    id: 'broken_doll',
+    name: 'Broken Porcelain Doll',
+    description: 'A child\'s doll with a cracked porcelain face. Its glass eyes seem to follow you.',
+    image: '/images/eden/items/doll.png',
+    type: 'artifact',
+    canUse: false
+  },
+  
+  small_key: {
+    id: 'small_key',
+    name: 'Small Brass Key',
+    description: 'A small, ornate brass key that might open a box or cabinet.',
+    image: '/images/eden/items/small_key.png',
     type: 'key',
-    useAction: 'unlock',
-    properties: [
-      'Can open any lock in the crypt areas',
-      'Occasionally whispers secrets about nearby dangers',
-      'Slowly drains life force from the holder'
-    ]
-  },
-  
-  // Crystal Heart
-  crystal_heart: {
-    id: 'crystal_heart',
-    name: 'Crystal Heart',
-    description: 'A heart-shaped crystal that pulses with an inner light. Despite its solid form, it beats like a living heart, growing warmer with each pulse.',
-    icon: 'artifact',
-    type: 'artifact',
-    useAction: 'activate',
-    properties: [
-      'Key component in the Ritual of Binding',
-      'Resonates with other magical artifacts',
-      'Connected to the villagers\' curse'
-    ]
-  },
-  
-  // Spirit Essence
-  spirit_essence: {
-    id: 'spirit_essence',
-    name: 'Captured Essence',
-    description: 'A small glass vial containing swirling mist that occasionally forms into fleeting faces. It feels cold and whispers can be heard emanating from it.',
-    icon: 'potion',
-    type: 'consumable',
-    useAction: 'consume',
-    properties: [
-      'Temporarily allows communication with spirits',
-      'Key ingredient in advanced rituals',
-      'Fragile - will shatter if dropped'
-    ]
-  },
-  
-  // Obsidian Shard
-  obsidian_shard: {
-    id: 'obsidian_shard',
-    name: 'Void Fragment',
-    description: 'A jagged piece of obsidian that seems to absorb light rather than reflect it. Staring into it for too long causes unsettling visions.',
-    icon: 'artifact',
-    type: 'artifact',
-    properties: [
-      'Absorbs magical energy directed at the holder',
-      'Edge is sharp enough to cut through even spiritual entities',
-      'Grows heavier with each ritual it witnesses'
-    ]
-  },
-  
-  // Arcane Map
-  arcane_map: {
-    id: 'arcane_map',
-    name: 'Shifting Map',
-    description: 'A map of Eden\'s Hollow drawn on parchment with ink that moves and changes. It shows the current layout of the realm, which seems to shift over time.',
-    icon: 'book',
-    type: 'artifact',
-    useAction: 'read',
-    properties: [
-      'Reveals hidden locations not visible on normal maps',
-      'Updates itself to reflect changes in the environment',
-      'Marks the location of powerful magical artifacts'
-    ]
-  },
-  
-  // Soul Cage
-  soul_cage: {
-    id: 'soul_cage',
-    name: 'Soul Cage',
-    description: 'A small iron cage with bars twisted into complex patterns. Despite its solid appearance, spiritual entities can be trapped within it.',
-    icon: 'artifact',
-    type: 'artifact',
-    useAction: 'activate',
-    properties: [
-      'Can trap and contain minor spirits',
-      'Bound spirits may offer information or services',
-      'Gradually damages the spirit contained within'
-    ]
+    canUse: true
   }
 };

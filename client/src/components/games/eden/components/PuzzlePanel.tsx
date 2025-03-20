@@ -1,329 +1,413 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, HelpCircle, AlertTriangle } from 'lucide-react';
-import { PuzzleData } from '../types';
+import { X, Search, Check, AlertCircle } from 'lucide-react';
+import { Puzzle, PuzzleType, RiddlePuzzleData, PatternPuzzleData, CombinationPuzzleData, RunesPuzzleData, SacrificePuzzleData } from '../types';
 
 interface PuzzlePanelProps {
-  puzzle: PuzzleData;
+  puzzle: Puzzle;
   onSolve: (puzzleId: string, solution: any) => void;
   onClose: () => void;
   isOpen: boolean;
   attempts: number;
 }
 
-const PuzzlePanel: React.FC<PuzzlePanelProps> = ({
-  puzzle,
-  onSolve,
-  onClose,
-  isOpen,
-  attempts
-}) => {
+export default function PuzzlePanel({ puzzle, onSolve, onClose, isOpen, attempts }: PuzzlePanelProps) {
   const [solution, setSolution] = useState<any>(null);
-  const [showHint, setShowHint] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<boolean>(false);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [patternSelection, setPatternSelection] = useState<number[]>([]);
+  const [digitInput, setDigitInput] = useState<string[]>([]);
+  const [runeSelection, setRuneSelection] = useState<string[]>([]);
   
-  if (!isOpen || !puzzle) return null;
+  // Reset solution state when puzzle changes
+  useEffect(() => {
+    setSolution(null);
+    setError(null);
+    setHint(false);
+    setSelectedItems([]);
+    setPatternSelection([]);
+    setDigitInput(Array(puzzle.data.type === 'combination' ? (puzzle.data as CombinationPuzzleData).digits?.length || 4 : 0).fill(''));
+    setRuneSelection([]);
+  }, [puzzle]);
   
-  const handleSubmit = () => {
-    onSolve(puzzle.id, solution);
-  };
+  if (!isOpen) return null;
   
-  // Different puzzle types have different solution UIs
-  const renderPuzzleContent = () => {
-    switch (puzzle.type) {
+  // Render appropriate puzzle interface based on type
+  const renderPuzzleInterface = () => {
+    switch (puzzle.data.type) {
       case 'riddle':
-        return (
-          <div>
-            <p className="text-lg mb-6">{puzzle.data.question}</p>
-            <div className="mb-6">
-              <label className="block text-sm text-gray-400 mb-2">Your Answer:</label>
-              <input
-                type="text"
-                value={solution || ''}
-                onChange={(e) => setSolution(e.target.value)}
-                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"
-                placeholder="Enter your answer..."
-              />
-            </div>
-          </div>
-        );
-        
+        return renderRiddlePuzzle(puzzle.data as RiddlePuzzleData);
       case 'pattern':
-        // Pattern selection puzzle (e.g., selecting symbols in correct order)
-        return (
-          <div>
-            <p className="mb-6">{puzzle.data.description}</p>
-            
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {puzzle.data.patterns.map((pattern, index) => (
-                <button
-                  key={index}
-                  className={`w-full aspect-square bg-gray-800 rounded-md flex items-center justify-center border-2 ${
-                    (solution || []).includes(index) ? 'border-amber-500' : 'border-transparent'
-                  }`}
-                  onClick={() => {
-                    const currentSolution = [...(solution || [])];
-                    const patternIndex = currentSolution.indexOf(index);
-                    
-                    if (patternIndex >= 0) {
-                      // Remove if already selected
-                      currentSolution.splice(patternIndex, 1);
-                    } else {
-                      // Add to selection
-                      currentSolution.push(index);
-                    }
-                    
-                    setSolution(currentSolution);
-                  }}
-                >
-                  {pattern.symbol ? (
-                    <span className="text-2xl">{pattern.symbol}</span>
-                  ) : (
-                    <div 
-                      className="w-3/4 h-3/4 rounded"
-                      style={{ 
-                        backgroundColor: pattern.color || 'gray',
-                        backgroundImage: pattern.image ? `url(${pattern.image})` : 'none',
-                        backgroundSize: 'contain',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
-                      }}
-                    ></div>
-                  )}
-                </button>
-              ))}
-            </div>
-            
-            {solution && solution.length > 0 && (
-              <div className="flex items-center space-x-2 mb-6">
-                <span className="text-sm text-gray-400">Selected order:</span>
-                <div className="flex space-x-1">
-                  {solution.map((index: number, i: number) => (
-                    <span key={i} className="w-6 h-6 flex items-center justify-center bg-gray-800 rounded-full text-xs">
-                      {index + 1}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-        
+        return renderPatternPuzzle(puzzle.data as PatternPuzzleData);
       case 'combination':
-        // Combination lock puzzle
-        return (
-          <div>
-            <p className="mb-6">{puzzle.data.description}</p>
-            
-            <div className="flex justify-center space-x-4 mb-6">
-              {Array.from({ length: puzzle.data.digits }).map((_, index) => (
-                <div key={index} className="text-center">
-                  <button
-                    className="w-12 h-8 bg-gray-800 hover:bg-gray-700 rounded-t-md"
-                    onClick={() => {
-                      const newSolution = [...(solution || Array(puzzle.data.digits).fill(0))];
-                      newSolution[index] = (newSolution[index] + 1) % 10;
-                      setSolution(newSolution);
-                    }}
-                  >
-                    <span>▲</span>
-                  </button>
-                  
-                  <div className="w-12 h-12 bg-gray-900 border border-gray-700 flex items-center justify-center text-2xl font-mono">
-                    {solution ? solution[index] : 0}
-                  </div>
-                  
-                  <button
-                    className="w-12 h-8 bg-gray-800 hover:bg-gray-700 rounded-b-md"
-                    onClick={() => {
-                      const newSolution = [...(solution || Array(puzzle.data.digits).fill(0))];
-                      newSolution[index] = (newSolution[index] + 9) % 10; // +9 is equivalent to -1 with modulo 10
-                      setSolution(newSolution);
-                    }}
-                  >
-                    <span>▼</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-        
+        return renderCombinationPuzzle(puzzle.data as CombinationPuzzleData);
       case 'runes':
-        // Rune selection puzzle
-        return (
-          <div>
-            <p className="mb-6">{puzzle.data.description}</p>
-            
-            <div className="grid grid-cols-4 gap-3 mb-6">
-              {puzzle.data.runes.map((rune, index) => (
-                <button
-                  key={index}
-                  className={`w-full aspect-square bg-gray-800 rounded-md flex items-center justify-center border-2 text-3xl font-runes ${
-                    (solution || []).includes(rune.id) ? 'border-amber-500' : 'border-transparent'
-                  }`}
-                  onClick={() => {
-                    const currentSolution = [...(solution || [])];
-                    const runeIndex = currentSolution.indexOf(rune.id);
-                    
-                    if (runeIndex >= 0) {
-                      // Remove if already selected
-                      currentSolution.splice(runeIndex, 1);
-                    } else {
-                      // Add to selection
-                      currentSolution.push(rune.id);
-                    }
-                    
-                    setSolution(currentSolution);
-                  }}
-                >
-                  {rune.symbol}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-        
+        return renderRunesPuzzle(puzzle.data as RunesPuzzleData);
       case 'sacrifice':
-        // Sacrifice puzzle (selecting items to sacrifice)
-        return (
-          <div>
-            <p className="mb-6">{puzzle.data.description}</p>
-            
-            <div className="text-center mb-2">
-              <span className="text-amber-300 text-lg">Target Value: {puzzle.data.targetValue}</span>
-              <div className="text-xs text-gray-400">Select up to {puzzle.data.maxSelections} items</div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {puzzle.data.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`w-full p-3 bg-gray-800 rounded-md flex flex-col items-center text-center border ${
-                    (solution || []).includes(item.id) ? 'border-amber-500' : 'border-transparent'
-                  }`}
-                  onClick={() => {
-                    const currentSolution = [...(solution || [])];
-                    const itemIndex = currentSolution.indexOf(item.id);
-                    
-                    if (itemIndex >= 0) {
-                      // Remove if already selected
-                      currentSolution.splice(itemIndex, 1);
-                    } else if (currentSolution.length < puzzle.data.maxSelections) {
-                      // Add if under max selections
-                      currentSolution.push(item.id);
-                    }
-                    
-                    setSolution(currentSolution);
-                  }}
-                  disabled={(solution || []).length >= puzzle.data.maxSelections && !(solution || []).includes(item.id)}
-                >
-                  <div className="text-xl mb-2">{item.icon || '🔮'}</div>
-                  <div className="font-medium text-sm">{item.name}</div>
-                  <div className="text-amber-300 text-xs mt-1">Value: {item.value}</div>
-                </button>
-              ))}
-            </div>
-            
-            {solution && solution.length > 0 && (
-              <div className="text-center p-2 bg-gray-800 rounded-md mb-4">
-                <div className="text-sm">
-                  Total Value: <span className="text-amber-300 font-medium">
-                    {puzzle.data.items
-                      .filter(item => solution.includes(item.id))
-                      .reduce((sum, item) => sum + item.value, 0)}
-                  </span> / {puzzle.data.targetValue}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-        
+        return renderSacrificePuzzle(puzzle.data as SacrificePuzzleData);
       default:
         return (
-          <div className="text-gray-400 text-center py-10">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-2 text-amber-400" />
-            <p>Unknown puzzle type. This puzzle cannot be displayed.</p>
+          <div className="text-white text-center p-4">
+            <AlertCircle className="mx-auto mb-2 text-yellow-400" size={24} />
+            <p>Unknown puzzle type.</p>
           </div>
         );
     }
   };
   
-  return (
-    <motion.div 
-      className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div 
-        className="relative bg-gray-900 text-white rounded-lg w-full max-w-2xl overflow-hidden flex flex-col"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-        transition={{ type: 'spring', damping: 20 }}
-      >
-        <div className="border-b border-gray-800 p-4 flex justify-between items-center">
-          <h2 className="text-xl font-serif text-amber-200">{puzzle.title}</h2>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setShowHint(!showHint)}
-              className="text-gray-400 hover:text-amber-300"
-              aria-label="Show hint"
+  // Render a riddle puzzle
+  const renderRiddlePuzzle = (data: RiddlePuzzleData) => {
+    return (
+      <div className="p-4">
+        <h3 className="text-xl text-white mb-4">{data.question}</h3>
+        
+        <div className="bg-gray-800 p-4 rounded-lg mb-6">
+          <p className="text-gray-300 italic">{puzzle.description}</p>
+        </div>
+        
+        <div className="mb-4">
+          <input
+            type="text"
+            className="w-full p-3 bg-gray-800 text-white rounded-md border border-gray-700 focus:border-purple-500 focus:outline-none"
+            placeholder="Enter your answer..."
+            value={solution || ''}
+            onChange={(e) => {
+              setSolution(e.target.value);
+              setError(null);
+            }}
+          />
+        </div>
+        
+        {hint && data.hint && (
+          <div className="bg-gray-800/80 p-3 rounded-md mb-4 text-gray-300 text-sm">
+            <p><span className="text-yellow-400 font-semibold">Hint:</span> {data.hint}</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/30 text-red-300 p-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render a pattern-matching puzzle
+  const renderPatternPuzzle = (data: PatternPuzzleData) => {
+    return (
+      <div className="p-4">
+        <p className="text-gray-300 mb-4">{data.description}</p>
+        
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          {data.patterns.map((pattern, index) => (
+            <button
+              key={index}
+              className={`aspect-square bg-gray-800 rounded-md flex items-center justify-center transition-all ${
+                patternSelection.includes(index) ? 'ring-2 ring-purple-500 bg-gray-700' : ''
+              }`}
+              onClick={() => {
+                const newSelection = patternSelection.includes(index)
+                  ? patternSelection.filter(i => i !== index)
+                  : [...patternSelection, index];
+                setPatternSelection(newSelection);
+                setSolution(newSelection);
+                setError(null);
+              }}
             >
-              <HelpCircle size={20} />
+              {pattern.image ? (
+                <img src={pattern.image} alt={`Pattern ${index + 1}`} className="w-full h-full object-contain p-2" />
+              ) : (
+                <div className="text-lg text-white">{pattern.symbol || `#${index + 1}`}</div>
+              )}
             </button>
-            <button 
-              onClick={onClose}
-              className="text-gray-400 hover:text-white"
-              aria-label="Close puzzle"
+          ))}
+        </div>
+        
+        {hint && data.hint && (
+          <div className="bg-gray-800/80 p-3 rounded-md mb-4 text-gray-300 text-sm">
+            <p><span className="text-yellow-400 font-semibold">Hint:</span> {data.hint}</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/30 text-red-300 p-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render a combination lock puzzle
+  const renderCombinationPuzzle = (data: CombinationPuzzleData) => {
+    return (
+      <div className="p-4">
+        <p className="text-gray-300 mb-4">{data.description}</p>
+        
+        <div className="flex justify-center space-x-2 mb-6">
+          {data.digits && data.digits.map((digitOptions, digitIndex) => (
+            <div key={digitIndex} className="relative">
+              <select
+                className="appearance-none bg-gray-800 text-white text-2xl text-center w-12 h-16 rounded border border-gray-700 focus:border-purple-500 focus:outline-none"
+                value={digitInput[digitIndex] || ''}
+                onChange={(e) => {
+                  const newDigits = [...digitInput];
+                  newDigits[digitIndex] = e.target.value;
+                  setDigitInput(newDigits);
+                  setSolution(newDigits.join(''));
+                  setError(null);
+                }}
+              >
+                <option value="">-</option>
+                {digitOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <div className="absolute -bottom-1 left-0 w-full flex justify-center">
+                <button
+                  className="bg-gray-900 text-gray-400 hover:text-white rounded-full p-1 text-xs"
+                  onClick={() => {
+                    const currentIndex = digitOptions.indexOf(digitInput[digitIndex]);
+                    const nextValue = digitOptions[(currentIndex + 1) % digitOptions.length] || digitOptions[0];
+                    const newDigits = [...digitInput];
+                    newDigits[digitIndex] = nextValue;
+                    setDigitInput(newDigits);
+                    setSolution(newDigits.join(''));
+                    setError(null);
+                  }}
+                >
+                  ▲
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {hint && data.hint && (
+          <div className="bg-gray-800/80 p-3 rounded-md mb-4 text-gray-300 text-sm">
+            <p><span className="text-yellow-400 font-semibold">Hint:</span> {data.hint}</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/30 text-red-300 p-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render a runes puzzle
+  const renderRunesPuzzle = (data: RunesPuzzleData) => {
+    return (
+      <div className="p-4">
+        <p className="text-gray-300 mb-4">{data.description}</p>
+        
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          {data.runes.map((rune, index) => (
+            <button
+              key={index}
+              className={`aspect-square bg-gray-800 rounded-md p-2 flex items-center justify-center transition-all ${
+                runeSelection.includes(rune.id) ? 'ring-2 ring-purple-500 bg-gray-700' : ''
+              }`}
+              onClick={() => {
+                const newSelection = runeSelection.includes(rune.id)
+                  ? runeSelection.filter(id => id !== rune.id)
+                  : [...runeSelection, rune.id];
+                setRuneSelection(newSelection);
+                setSolution(newSelection);
+                setError(null);
+              }}
             >
-              <X size={20} />
+              {rune.image ? (
+                <img src={rune.image} alt={rune.name} className="w-full h-full object-contain" />
+              ) : (
+                <div className="text-xl text-white">{rune.symbol || rune.name}</div>
+              )}
             </button>
+          ))}
+        </div>
+        
+        <div className="bg-gray-800 p-3 rounded-md mb-4">
+          <p className="text-gray-300 text-sm">Selected sequence: {runeSelection.length > 0 
+            ? runeSelection.map(id => data.runes.find(r => r.id === id)?.name || id).join(' → ') 
+            : 'None'}
+          </p>
+        </div>
+        
+        {hint && data.hint && (
+          <div className="bg-gray-800/80 p-3 rounded-md mb-4 text-gray-300 text-sm">
+            <p><span className="text-yellow-400 font-semibold">Hint:</span> {data.hint}</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/30 text-red-300 p-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render a sacrifice puzzle
+  const renderSacrificePuzzle = (data: SacrificePuzzleData) => {
+    return (
+      <div className="p-4">
+        <p className="text-gray-300 mb-4">{data.description}</p>
+        
+        <div className="mb-2 flex justify-between items-center">
+          <span className="text-white text-sm">Target Value: {data.targetValue}</span>
+          <span className="text-white text-sm">Max Selections: {data.maxSelections}</span>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {data.items.map((item) => (
+            <button
+              key={item.id}
+              className={`p-2 bg-gray-800 rounded-md flex flex-col items-center transition-all ${
+                selectedItems.includes(item.id) 
+                  ? 'ring-2 ring-purple-500 bg-gray-700' 
+                  : 'hover:bg-gray-700/70'
+              }`}
+              onClick={() => {
+                if (selectedItems.includes(item.id)) {
+                  // Remove item if already selected
+                  const newSelection = selectedItems.filter(i => i !== item.id);
+                  setSelectedItems(newSelection);
+                  setSolution(newSelection);
+                } else if (selectedItems.length < data.maxSelections) {
+                  // Add item if under max selections
+                  const newSelection = [...selectedItems, item.id];
+                  setSelectedItems(newSelection);
+                  setSolution(newSelection);
+                } else {
+                  // Show error if max selections reached
+                  setError(`You can only select up to ${data.maxSelections} items.`);
+                  setTimeout(() => setError(null), 2000);
+                  return;
+                }
+                setError(null);
+              }}
+            >
+              <div className="w-12 h-12 bg-gray-900 rounded overflow-hidden mb-1">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
+                    {item.value}
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-white">{item.name}</span>
+              <span className="text-xs text-purple-300 mt-1">Value: {item.value}</span>
+            </button>
+          ))}
+        </div>
+        
+        <div className="bg-gray-800 p-3 rounded-md mb-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-300 text-sm">
+              Selected: {selectedItems.length}/{data.maxSelections}
+            </span>
+            <span className="text-white text-sm font-semibold">
+              Total Value: {selectedItems.length > 0 
+                ? data.items.filter(item => selectedItems.includes(item.id))
+                    .reduce((sum, item) => sum + item.value, 0) 
+                : 0} / {data.targetValue}
+            </span>
           </div>
         </div>
         
-        <div className="p-6">
-          {renderPuzzleContent()}
-          
-          <AnimatePresence>
-            {showHint && puzzle.hint && (
-              <motion.div 
-                className="bg-amber-900/30 border border-amber-800/50 rounded-md p-3 mb-6"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+        {hint && data.hint && (
+          <div className="bg-gray-800/80 p-3 rounded-md mb-4 text-gray-300 text-sm">
+            <p><span className="text-yellow-400 font-semibold">Hint:</span> {data.hint}</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-900/30 text-red-300 p-2 rounded-md mb-4 text-sm">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Main component render
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 flex items-center justify-center"
+          onClick={() => onClose()}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', duration: 0.4 }}
+            className="bg-gray-900 rounded-lg shadow-2xl overflow-hidden max-w-md w-11/12 mx-4"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the panel
+          >
+            {/* Puzzle Header */}
+            <div className="bg-gray-800 p-4 flex justify-between items-center border-b border-gray-700">
+              <h2 className="text-xl text-white font-semibold">{puzzle.name}</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close puzzle"
               >
-                <div className="text-xs uppercase text-amber-300 mb-1">Hint</div>
-                <p className="text-sm text-amber-100">{puzzle.hint}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-400">
-              {puzzle.data.maxAttempts ? (
-                <span>Attempts: {attempts} / {puzzle.data.maxAttempts}</span>
-              ) : (
-                <span>Attempts: {attempts}</span>
-              )}
+                <X size={20} />
+              </button>
             </div>
             
-            <button
-              onClick={handleSubmit}
-              disabled={!solution}
-              className={`px-6 py-2 rounded-md font-medium ${
-                solution 
-                  ? 'bg-amber-700 hover:bg-amber-600' 
-                  : 'bg-gray-700 cursor-not-allowed'
-              }`}
-            >
-              Submit
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+            {/* Puzzle Content */}
+            <div className="max-h-[60vh] overflow-y-auto">
+              {renderPuzzleInterface()}
+            </div>
+            
+            {/* Puzzle Footer */}
+            <div className="bg-gray-800 p-4 flex justify-between items-center border-t border-gray-700">
+              <div>
+                <button
+                  onClick={() => setHint(true)}
+                  className="text-yellow-400 hover:text-yellow-300 text-sm flex items-center transition-colors"
+                  disabled={hint}
+                >
+                  <Search size={16} className="mr-1" />
+                  {hint ? 'Hint shown' : 'Get hint'}
+                </button>
+                <span className="text-gray-500 text-xs ml-3">
+                  Attempts: {attempts}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => {
+                  if (!solution) {
+                    setError('You need to provide a solution first.');
+                    return;
+                  }
+                  onSolve(puzzle.id, solution);
+                }}
+                className="bg-purple-700 hover:bg-purple-600 text-white px-4 py-2 rounded-md transition-colors flex items-center"
+                disabled={!solution}
+              >
+                <Check size={16} className="mr-2" />
+                Submit
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
-};
-
-export default PuzzlePanel;
+}
