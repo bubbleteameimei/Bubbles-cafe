@@ -1,215 +1,189 @@
-import { PuzzleData } from '../types';
+import { Puzzle } from '../types';
 
-export const gamePuzzles: Record<string, PuzzleData> = {
-  // Ancient Runes puzzle
-  ancient_runes: {
-    id: 'ancient_runes',
-    type: 'runes',
-    title: 'Ancient Runes',
-    description: 'Decipher the correct sequence of runes to unlock ancient knowledge.',
-    data: {
-      runes: [
-        { symbol: 'ᚠ', meaning: 'Wealth' },
-        { symbol: 'ᚢ', meaning: 'Strength' },
-        { symbol: 'ᚦ', meaning: 'Giant' },
-        { symbol: 'ᚨ', meaning: 'Deity' },
-        { symbol: 'ᚱ', meaning: 'Journey' },
-        { symbol: 'ᚲ', meaning: 'Torch' },
-        { symbol: 'ᚷ', meaning: 'Gift' },
-        { symbol: 'ᚹ', meaning: 'Joy' },
-        { symbol: 'ᚺ', meaning: 'Hail' }
-      ],
-      correctSequence: ['ᚱ', 'ᚦ', 'ᚲ', 'ᚨ'],
-      question: 'The stone whispers: "To journey beyond the giants, carry the torch to the gods."'
-    },
-    solved: false,
-    attempts: 0,
-    hint: 'Look for the runes whose meanings match the stone\'s message, in the same order.'
-  },
-  
-  // Guardian's riddle
-  guardian_riddle: {
-    id: 'guardian_riddle',
-    type: 'riddle',
-    title: 'Guardian\'s Riddle',
-    description: 'Answer the castle guardian\'s ancient riddle to gain entry.',
-    data: {
-      riddle: 'I have no life, yet I can die. I have no lungs, yet I must breathe. I have no mouth, yet I can devour all things. What am I?',
-      answer: 'fire',
-      caseSensitive: false,
-      alternateAnswers: ['a fire', 'the fire', 'flame', 'flames']
-    },
-    solved: false,
-    attempts: 0,
-    hint: 'Think of something that consumes, requires air, and can be extinguished.'
-  },
-  
-  // Blood lock pattern
-  blood_lock: {
-    id: 'blood_lock',
+// Game puzzles collection
+export const gamePuzzles: Record<string, Puzzle> = {
+  tree_symbols: {
+    id: 'tree_symbols',
+    name: 'Strange Tree Symbols',
+    description: 'Strange symbols have been carved into several trees. They seem to form some kind of pattern.',
     type: 'pattern',
-    title: 'Blood Lock',
-    description: 'Trace the pattern of the ancient bloodline to unlock the sealed chamber.',
     data: {
-      gridSize: 9,
-      correctPattern: [0, 4, 8, 5, 2, 1, 0],
-      description: 'The door is marked with a strange pattern. Seven points connected in an unbroken line - the seal of the ancient bloodline.',
-      theme: 'blood'
+      type: 'pattern',
+      description: 'Select the symbols in the correct sequence to decode their meaning.',
+      patterns: [
+        { symbol: '⦵', image: '/images/eden/puzzles/symbol1.png' },
+        { symbol: '⧖', image: '/images/eden/puzzles/symbol2.png' },
+        { symbol: '⧗', image: '/images/eden/puzzles/symbol3.png' },
+        { symbol: '⧉', image: '/images/eden/puzzles/symbol4.png' },
+        { symbol: '⧊', image: '/images/eden/puzzles/symbol5.png' },
+        { symbol: '⧋', image: '/images/eden/puzzles/symbol6.png' }
+      ],
+      correctPattern: [0, 2, 5, 1],
+      hint: 'Look for the symbols that appear more worn than others. They might have been touched more frequently.'
     },
-    solved: false,
     attempts: 0,
-    hint: 'Look for the pattern that forms the shape of a seven-pointed star, starting and ending at the same point.'
+    solved: false,
+    onSolve: {
+      status: { 'symbols_solved': true },
+      notification: {
+        id: 'symbols_solved',
+        message: 'You've deciphered the symbols! They seem to be an ancient warning about the village ahead.',
+        type: 'success'
+      }
+    },
+    onFail: {
+      notification: {
+        id: 'symbols_failed',
+        message: 'That doesn't seem right. The symbols remain mysterious.',
+        type: 'error'
+      }
+    }
   },
   
-  // Celestial alignment puzzle
-  celestial_alignment: {
-    id: 'celestial_alignment',
+  fountain_puzzle: {
+    id: 'fountain_puzzle',
+    name: 'Mysterious Fountain',
+    description: 'The old fountain has strange symbols carved around its rim. The water is still, reflecting the night sky.',
     type: 'combination',
-    title: 'Celestial Alignment',
-    description: 'Align the celestial bodies in their proper sequence to unlock the observatory.',
     data: {
-      lockType: 'color',
-      combination: ['blue', 'red', 'purple', 'green', 'yellow'],
-      description: 'The ancient mechanism requires the five celestial bodies to be aligned in their proper order from the morning star to the wanderer.',
-      maxAttempts: 5
+      type: 'combination',
+      description: 'Rotate the dials to match the sequence suggested by the symbols around the fountain.',
+      digits: [
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+      ],
+      combination: '3749',
+      hint: 'The phases of the moon depicted on the fountain might suggest a sequence.'
     },
-    solved: false,
     attempts: 0,
-    hint: 'The morning star is blue, followed by the crimson eye, the purple monarch, the green shepherd, and finally the yellow wanderer.'
+    solved: false,
+    onSolve: {
+      status: { 'fountain_solved': true },
+      notification: {
+        id: 'fountain_solved',
+        message: 'The water in the fountain begins to bubble and swirl. Something gleams at the bottom.',
+        type: 'success'
+      }
+    },
+    onFail: {
+      notification: {
+        id: 'fountain_failed',
+        message: 'Nothing happens. The water remains still and murky.',
+        type: 'error'
+      }
+    }
   },
   
-  // Ritual sacrifice
-  ritual_sacrifice: {
-    id: 'ritual_sacrifice',
+  locked_box: {
+    id: 'locked_box',
+    name: 'Ornate Wooden Box',
+    description: 'A finely crafted wooden box with intricate carvings. It has a complex locking mechanism.',
+    type: 'riddle',
+    data: {
+      type: 'riddle',
+      question: 'I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?',
+      answer: 'echo',
+      alternateAnswers: ['an echo', 'the echo'],
+      hint: 'Think about sounds that return to you in certain environments.'
+    },
+    attempts: 0,
+    solved: false,
+    onSolve: {
+      item: 'small_key',
+      notification: {
+        id: 'box_solved',
+        message: 'The box springs open! Inside, you find a small brass key.',
+        type: 'success'
+      }
+    },
+    onFail: {
+      notification: {
+        id: 'box_failed',
+        message: 'The box remains locked. Perhaps there's another answer.',
+        type: 'error'
+      }
+    }
+  },
+  
+  ancient_altar: {
+    id: 'ancient_altar',
+    name: 'Ancient Stone Altar',
+    description: 'A weathered stone altar with strange markings and several shallow depressions on its surface.',
     type: 'sacrifice',
-    title: 'Ritual of Binding',
-    description: 'Complete the ancient ritual by offering the correct sacrifices.',
     data: {
+      type: 'sacrifice',
+      description: 'Place items on the altar that match the ritualistic symbols. The combined value must be precise.',
       items: [
-        {
-          id: 'ritual_dagger',
-          name: 'Ritual Dagger',
-          type: 'blood',
-          value: 3,
-          description: 'A ceremonial dagger with a blade of black iron. It thirsts for blood.'
-        },
-        {
-          id: 'childhood_memory',
-          name: 'Childhood Memory',
-          type: 'memory',
-          value: 5,
-          description: 'A cherished recollection of innocent days. The ritual would consume it forever.'
-        },
-        {
-          id: 'lovers_locket',
-          name: 'Lover\'s Locket',
-          type: 'soul',
-          value: 7,
-          description: 'A silver locket containing a lock of hair from someone beloved.'
-        },
-        {
-          id: 'golden_ring',
-          name: 'Golden Ring',
-          type: 'treasure',
-          value: 2,
-          description: 'A simple band of gold, worn smooth by years of wear.'
-        },
-        {
-          id: 'life_essence',
-          name: 'Life Essence',
-          type: 'life',
-          value: 10,
-          description: 'Your own vital energy. Sacrificing this would leave you weakened.'
-        },
-        {
-          id: 'forgotten_song',
-          name: 'Forgotten Song',
-          type: 'memory',
-          value: 4,
-          description: 'A melody that has been passed down for generations in your family.'
-        },
-        {
-          id: 'crystal_heart',
-          name: 'Crystal Heart',
-          type: 'soul',
-          value: 8,
-          description: 'A pulsing crystal organ, still somehow beating with ethereal energy.'
-        }
+        { id: 'candle', name: 'Black Candle', value: 3, image: '/images/eden/puzzles/candle.png' },
+        { id: 'herb', name: 'Dried Herbs', value: 2, image: '/images/eden/puzzles/herbs.png' },
+        { id: 'bone', name: 'Small Bone', value: 4, image: '/images/eden/puzzles/bone.png' },
+        { id: 'feather', name: 'Raven Feather', value: 1, image: '/images/eden/puzzles/feather.png' },
+        { id: 'crystal', name: 'Dark Crystal', value: 5, image: '/images/eden/puzzles/crystal.png' },
+        { id: 'coin', name: 'Ancient Coin', value: 3, image: '/images/eden/puzzles/coin.png' }
       ],
-      targetValue: 15,
+      targetValue: 13,
       maxSelections: 3,
-      description: 'The ritual requires sacrifices with a combined power of 15. Choose wisely - some combinations may have unexpected consequences.'
+      hint: 'The symbols around the altar depict offerings to ancient spirits. Choose items that would please them.'
     },
-    solved: false,
     attempts: 0,
-    hint: 'The most potent combination may not be the most obvious. Consider how different types of sacrifice might complement each other.'
+    solved: false,
+    onSolve: {
+      status: { 'altar_activated': true },
+      notification: {
+        id: 'altar_solved',
+        message: 'The items sink into the altar and disappear. A low rumbling sound emerges from beneath the ground.',
+        type: 'success'
+      }
+    },
+    onFail: {
+      notification: {
+        id: 'altar_failed',
+        message: 'The items remain on the altar. Nothing happens.',
+        type: 'warning'
+      }
+    }
   },
   
-  // Library combination lock
-  library_lock: {
-    id: 'library_lock',
-    type: 'combination',
-    title: 'Keeper\'s Lock',
-    description: 'The ancient library\'s secret chamber is secured with a complex numerical lock.',
+  mysterious_door: {
+    id: 'mysterious_door',
+    name: 'Mysterious Stone Door',
+    description: 'A heavy stone door covered in ancient runes. There is no visible handle or mechanism.',
+    type: 'runes',
     data: {
-      lockType: 'numerical',
-      combination: [7, 3, 9, 1],
-      description: 'The lock requires a specific sequence of numbers. Perhaps clues lie in the texts scattered throughout the library?',
-      maxAttempts: 0
+      type: 'runes',
+      description: 'Activate the correct sequence of runes to unlock the door.',
+      runes: [
+        { id: 'protection', symbol: '᛭', name: 'Protection', image: '/images/eden/puzzles/rune1.png' },
+        { id: 'journey', symbol: '᛫', name: 'Journey', image: '/images/eden/puzzles/rune2.png' },
+        { id: 'knowledge', symbol: '᛬', name: 'Knowledge', image: '/images/eden/puzzles/rune3.png' },
+        { id: 'darkness', symbol: '᛭', name: 'Darkness', image: '/images/eden/puzzles/rune4.png' },
+        { id: 'gateway', symbol: 'ᛮ', name: 'Gateway', image: '/images/eden/puzzles/rune5.png' },
+        { id: 'sacrifice', symbol: 'ᛯ', name: 'Sacrifice', image: '/images/eden/puzzles/rune6.png' },
+        { id: 'binding', symbol: 'ᛰ', name: 'Binding', image: '/images/eden/puzzles/rune7.png' },
+        { id: 'revelation', symbol: 'ᛱ', name: 'Revelation', image: '/images/eden/puzzles/rune8.png' }
+      ],
+      correctSequence: ['journey', 'darkness', 'gateway', 'revelation'],
+      hint: 'The journal you found might contain clues about the correct sequence.'
     },
-    solved: false,
     attempts: 0,
-    hint: 'Look for dates or significant numbers mentioned in the tomes you\'ve discovered throughout your journey.'
-  },
-  
-  // Spirit binding puzzle
-  spirit_binding: {
-    id: 'spirit_binding',
-    type: 'pattern',
-    title: 'Spirit Binding',
-    description: 'Trace the correct pattern to bind the restless spirit to your service.',
-    data: {
-      gridSize: 9,
-      correctPattern: [4, 1, 2, 5, 8, 7, 6, 3, 0],
-      description: 'The spirit realm can be accessed through the correct sequence of gestures, binding a spirit to assist you.',
-      theme: 'spirit'
+    solved: false,
+    onSolve: {
+      status: { 'door_opened': true },
+      notification: {
+        id: 'door_solved',
+        message: 'The runes glow with an eerie light, and the stone door slowly grinds open.',
+        type: 'success'
+      }
     },
-    solved: false,
-    attempts: 0,
-    hint: 'The pattern forms a spiral, starting from the center and moving outward in a clockwise direction.'
-  },
-  
-  // Nature's cipher
-  nature_cipher: {
-    id: 'nature_cipher',
-    type: 'riddle',
-    title: 'Nature\'s Cipher',
-    description: 'Solve the ancient druid\'s riddle to gain the forest\'s blessing.',
-    data: {
-      riddle: 'I drink the blood of the earth and stretch my arms to the sky, yet never move from where I stand. Centuries may pass, kingdoms may fall, but I remain. What am I?',
-      answer: 'tree',
-      caseSensitive: false,
-      alternateAnswers: ['a tree', 'the tree', 'trees']
-    },
-    solved: false,
-    attempts: 0,
-    hint: 'I am rooted in place, living for hundreds of years, drawing sustenance from the soil beneath me.'
-  },
-  
-  // Moon phase lock
-  moon_phase_lock: {
-    id: 'moon_phase_lock',
-    type: 'pattern',
-    title: 'Lunar Sequence',
-    description: 'Arrange the phases of the moon in their correct order to unlock the celestial chamber.',
-    data: {
-      gridSize: 8,
-      correctPattern: [0, 1, 2, 3, 7, 6, 5, 4],
-      description: 'The eight phases of the moon must be selected in their proper sequence, from new moon to waning crescent.',
-      theme: 'arcane'
-    },
-    solved: false,
-    attempts: 0,
-    hint: 'Begin with the new moon (complete darkness), progress through waxing phases to full moon, then through waning phases back toward darkness.'
+    onFail: {
+      notification: {
+        id: 'door_failed',
+        message: 'The runes flicker briefly, but nothing happens. The door remains closed.',
+        type: 'error'
+      },
+      damage: 5
+    }
   }
 };

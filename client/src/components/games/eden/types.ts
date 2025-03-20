@@ -13,7 +13,15 @@ export interface GameState {
   activeDialog?: string;
   currentPuzzle?: string;
   puzzleAttempts?: number;
+  previousScene?: string;
+  activeCharacter?: string;
 }
+
+// These types alias the main types for compatibility with the GameEngine.tsx
+export type GameScene = Scene;
+export type PuzzleData = Puzzle;
+export type DialogData = Dialog;
+export type InventoryItem = Item;
 
 // Game Scene Types
 export interface Scene {
@@ -200,7 +208,7 @@ export interface Notification {
   id: string;
   message: string;
   title?: string;
-  type: 'info' | 'success' | 'error' | 'warning';
+  type: 'info' | 'success' | 'error' | 'warning' | 'danger';
   duration?: number;
   action?: {
     label: string;
