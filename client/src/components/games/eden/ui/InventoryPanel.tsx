@@ -2,436 +2,563 @@ import React, { useState, useEffect } from 'react';
 import { InventoryPanelProps, InventoryItem } from '../types';
 
 /**
- * InventoryPanel - Displays and manages player's inventory with item categories
+ * InventoryPanel - Displays and manages player inventory items
  */
 const InventoryPanel: React.FC<InventoryPanelProps> = ({
-  items,
-  isOpen,
-  onClose,
-  onItemSelect,
+  inventory = [],
+  onItemUse,
+  onItemInspect,
   onItemCombine,
-  onItemExamine,
-  selectedItemId
+  onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [examineMode, setExamineMode] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [combineMode, setCombineMode] = useState<boolean>(false);
+  const [combineSource, setCombineSource] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<string | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number, y: number } | null>(null);
+  const [contextMenuItemId, setContextMenuItemId] = useState<string | null>(null);
+  const [sortMethod, setSortMethod] = useState<'name' | 'type' | 'recent'>('type');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Group items by category
-  const itemCategories = {
-    all: items,
-    quest: items.filter(item => item.category === 'quest'),
-    key: items.filter(item => item.category === 'key'),
-    tool: items.filter(item => item.category === 'tool' || item.category === 'weapon'),
-    document: items.filter(item => item.category === 'document'),
-    consumable: items.filter(item => item.category === 'consumable'),
-    artifact: items.filter(item => item.category === 'artifact' || item.category === 'container')
-  };
-  
-  // Current category items
-  const currentItems = itemCategories[activeTab as keyof typeof itemCategories] || itemCategories.all;
-  
-  // Update selected item when selectedItemId prop changes
+  // Handle escape key press to close context menu or exit combine mode
   useEffect(() => {
-    if (selectedItemId) {
-      const item = items.find(i => i.id === selectedItemId) || null;
-      setSelectedItem(item);
-    } else {
-      setSelectedItem(null);
-    }
-  }, [selectedItemId, items]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (contextMenuPosition) {
+          setContextMenuPosition(null);
+          setContextMenuItemId(null);
+        } else if (combineMode) {
+          setCombineMode(false);
+          setCombineSource(null);
+        } else if (detailItem) {
+          setDetailItem(null);
+        } else {
+          handleClose();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [contextMenuPosition, combineMode, detailItem]);
   
-  // Handle tab change
-  const handleTabChange = (tabName: string) => {
-    setActiveTab(tabName);
+  // Handle clicks outside of context menu to close it
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenuPosition) {
+        setContextMenuPosition(null);
+        setContextMenuItemId(null);
+      }
+    };
+    
+    window.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      window.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenuPosition]);
+  
+  // Close the inventory panel
+  const handleClose = () => {
+    setIsOpen(false);
+    setTimeout(() => {
+      if (onClose) onClose();
+    }, 300);
   };
   
   // Handle item click
-  const handleItemClick = (item: InventoryItem) => {
-    if (combineMode && selectedItem && selectedItem.id !== item.id) {
-      // If in combine mode and different item is clicked
-      if (onItemCombine) {
-        onItemCombine(selectedItem.id, item.id);
+  const handleItemClick = (itemId: string) => {
+    if (combineMode) {
+      if (combineSource !== itemId) {
+        handleItemCombine(combineSource!, itemId);
       }
-      setCombineMode(false);
-      setSelectedItem(null);
     } else {
-      // Regular item selection
-      setSelectedItem(item);
-      
-      if (onItemSelect) {
-        onItemSelect(item.id);
-      }
+      setSelectedItem(selectedItem === itemId ? null : itemId);
     }
   };
   
-  // Handle use/select button click
-  const handleUseClick = () => {
-    if (selectedItem && onItemSelect) {
-      onItemSelect(selectedItem.id);
-      setExamineMode(false);
-      onClose();
+  // Open context menu for an item
+  const handleItemRightClick = (itemId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuItemId(itemId);
+  };
+  
+  // Handle item use action
+  const handleItemUse = (itemId: string) => {
+    setContextMenuPosition(null);
+    setContextMenuItemId(null);
+    if (onItemUse) {
+      onItemUse(itemId);
     }
   };
   
-  // Handle examine button click
-  const handleExamineClick = () => {
-    if (selectedItem && onItemExamine) {
-      onItemExamine(selectedItem.id);
-      setExamineMode(true);
+  // Handle item inspect action
+  const handleItemInspect = (itemId: string) => {
+    setContextMenuPosition(null);
+    setContextMenuItemId(null);
+    setDetailItem(itemId);
+    if (onItemInspect) {
+      onItemInspect(itemId);
     }
   };
   
-  // Handle combine button click
-  const handleCombineClick = () => {
+  // Enter combine mode with a selected item
+  const handleStartCombine = (itemId: string) => {
+    setContextMenuPosition(null);
+    setContextMenuItemId(null);
     setCombineMode(true);
+    setCombineSource(itemId);
   };
   
-  // Get category icon
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'quest':
-        return '📜';
-      case 'key':
-        return '🔑';
-      case 'tool':
-      case 'weapon':
-        return '🔨';
-      case 'document':
-        return '📄';
-      case 'consumable':
-        return '🧪';
-      case 'artifact':
-      case 'container':
-        return '💎';
+  // Combine two items
+  const handleItemCombine = (sourceId: string, targetId: string) => {
+    setCombineMode(false);
+    setCombineSource(null);
+    if (onItemCombine) {
+      onItemCombine(sourceId, targetId);
+    }
+  };
+  
+  // Cancel combine mode
+  const handleCancelCombine = () => {
+    setCombineMode(false);
+    setCombineSource(null);
+  };
+  
+  // Close item detail view
+  const handleCloseDetail = () => {
+    setDetailItem(null);
+  };
+  
+  // Filter items based on search query
+  const filteredItems = inventory.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.type && item.type.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
+  // Sort items based on selected sort method
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    switch (sortMethod) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'type':
+        return (a.type || '').localeCompare(b.type || '');
+      case 'recent':
+        // Assuming items have a discoveredAt property
+        return (b.discoveredAt || 0) - (a.discoveredAt || 0);
       default:
-        return '📦';
+        return 0;
     }
+  });
+  
+  // Find item by ID
+  const getItemById = (id: string): InventoryItem | undefined => {
+    return inventory.find(item => item.id === id);
   };
   
-  // Get category label
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'quest': return 'Quest Items';
-      case 'key': return 'Keys';
-      case 'tool': return 'Tools & Weapons';
-      case 'document': return 'Documents';
-      case 'consumable': return 'Consumables';
-      case 'artifact': return 'Artifacts';
-      case 'all': return 'All Items';
-      default: return category;
-    }
-  };
-  
-  // Check if item is combinable
-  const isItemCombinable = (item: InventoryItem) => {
-    return item.combinable && item.combinableWith && item.combinableWith.length > 0;
-  };
-  
-  if (!isOpen) return null;
-  
-  return (
-    <div className="inventory-overlay">
-      <div className="inventory-container">
-        <div className="inventory-header">
-          <h2>Inventory</h2>
-          <button 
-            className="close-button"
-            onClick={onClose}
-            aria-label="Close inventory"
-          >
-            ✕
-          </button>
-        </div>
-        
-        <div className="inventory-tabs">
-          {Object.keys(itemCategories).map(category => (
-            <button
-              key={category}
-              className={`inventory-tab ${activeTab === category ? 'active' : ''}`}
-              onClick={() => handleTabChange(category)}
-              disabled={itemCategories[category as keyof typeof itemCategories].length === 0}
-            >
-              <span className="tab-icon">{getCategoryIcon(category)}</span>
-              <span className="tab-label">{getCategoryLabel(category)}</span>
-              <span className="tab-count">{itemCategories[category as keyof typeof itemCategories].length}</span>
-            </button>
-          ))}
-        </div>
-        
-        <div className="inventory-content">
-          <div className="items-grid">
-            {currentItems.length === 0 ? (
-              <div className="empty-category">No items in this category</div>
-            ) : (
-              currentItems.map(item => (
-                <div
-                  key={item.id}
-                  className={`inventory-item ${selectedItem?.id === item.id ? 'selected' : ''} ${combineMode && selectedItem?.id !== item.id ? 'combinable' : ''}`}
-                  onClick={() => handleItemClick(item)}
-                >
-                  <div className="item-icon">
-                    {item.iconUrl ? (
-                      <img src={item.iconUrl} alt={item.name} />
-                    ) : (
-                      getCategoryIcon(item.category || 'default')
-                    )}
-                  </div>
-                  <div className="item-name">{item.name}</div>
-                </div>
-              ))
-            )}
+  // Render the current detail item
+  const renderDetailView = () => {
+    const item = detailItem ? getItemById(detailItem) : null;
+    
+    if (!item) return null;
+    
+    return (
+      <div className="inventory-detail-overlay">
+        <div className="inventory-detail">
+          <div className="detail-header">
+            <h3>{item.name}</h3>
+            <button className="close-button" onClick={handleCloseDetail}>×</button>
           </div>
           
-          {selectedItem && (
-            <div className="item-details">
-              <div className="item-image">
-                {selectedItem.detailImageUrl ? (
-                  <img src={selectedItem.detailImageUrl} alt={selectedItem.name} />
-                ) : selectedItem.iconUrl ? (
-                  <img src={selectedItem.iconUrl} alt={selectedItem.name} className="item-icon-large" />
-                ) : (
-                  <div className="item-icon-placeholder">
-                    {getCategoryIcon(selectedItem.category || 'default')}
-                  </div>
-                )}
-              </div>
+          <div className="detail-content">
+            <div className="detail-image">
+              {item.imageUrl ? (
+                <img src={item.imageUrl} alt={item.name} />
+              ) : (
+                <div className="placeholder-image">{item.name.charAt(0)}</div>
+              )}
+            </div>
+            
+            <div className="detail-info">
+              <p className="detail-description">{item.description}</p>
               
-              <h3 className="item-title">{selectedItem.name}</h3>
-              
-              <div className="item-description">
-                {selectedItem.description}
-              </div>
-              
-              {selectedItem.notes && (
-                <div className="item-notes">
-                  <h4>Notes:</h4>
-                  <p>{selectedItem.notes}</p>
+              {item.properties && Object.keys(item.properties).length > 0 && (
+                <div className="detail-properties">
+                  <h4>Properties:</h4>
+                  <ul>
+                    {Object.entries(item.properties).map(([key, value]) => (
+                      <li key={key}>
+                        <span className="property-name">{key}:</span> {value}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               
-              <div className="item-actions">
+              <div className="detail-actions">
                 <button 
-                  className="item-action use"
-                  onClick={handleUseClick}
+                  className="action-button"
+                  onClick={() => handleItemUse(item.id)}
                 >
                   Use
                 </button>
                 
-                {onItemExamine && (
-                  <button 
-                    className="item-action examine"
-                    onClick={handleExamineClick}
-                  >
-                    Examine
-                  </button>
-                )}
-                
-                {isItemCombinable(selectedItem) && (
-                  <button 
-                    className={`item-action combine ${combineMode ? 'active' : ''}`}
-                    onClick={handleCombineClick}
-                  >
-                    Combine
-                  </button>
-                )}
+                <button 
+                  className="action-button"
+                  onClick={() => handleStartCombine(item.id)}
+                >
+                  Combine
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render the inventory panel content
+  return (
+    <div className={`inventory-overlay ${isOpen ? 'inventory-visible' : 'inventory-hidden'}`}>
+      <div className="inventory-panel">
+        <div className="inventory-header">
+          <h2>Inventory {inventory.length > 0 ? `(${inventory.length})` : ''}</h2>
+          
+          <div className="inventory-controls">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              {searchQuery && (
+                <button 
+                  className="clear-search" 
+                  onClick={() => setSearchQuery('')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            <div className="sort-controls">
+              <label>Sort:</label>
+              <select 
+                value={sortMethod} 
+                onChange={(e) => setSortMethod(e.target.value as 'name' | 'type' | 'recent')}
+                className="sort-select"
+              >
+                <option value="type">Type</option>
+                <option value="name">Name</option>
+                <option value="recent">Recent</option>
+              </select>
+            </div>
+            
+            <button className="close-button" onClick={handleClose}>×</button>
+          </div>
+        </div>
+        
+        {combineMode && (
+          <div className="combine-mode-notice">
+            <p>Select an item to combine with {getItemById(combineSource!)?.name}</p>
+            <button className="cancel-button" onClick={handleCancelCombine}>Cancel</button>
+          </div>
+        )}
+        
+        <div className="inventory-content">
+          {sortedItems.length === 0 ? (
+            searchQuery ? (
+              <div className="empty-inventory">No items match your search.</div>
+            ) : (
+              <div className="empty-inventory">Your inventory is empty.</div>
+            )
+          ) : (
+            <div className="inventory-grid">
+              {sortedItems.map((item) => (
+                <div 
+                  key={item.id}
+                  className={`inventory-item ${selectedItem === item.id ? 'selected' : ''} ${combineMode && combineSource === item.id ? 'combine-source' : ''}`}
+                  onClick={() => handleItemClick(item.id)}
+                  onContextMenu={(e) => handleItemRightClick(item.id, e)}
+                >
+                  <div className="item-icon">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} />
+                    ) : (
+                      <div className="icon-placeholder">{item.name.charAt(0)}</div>
+                    )}
+                  </div>
+                  <div className="item-details">
+                    <div className="item-name">{item.name}</div>
+                    <div className="item-type">{item.type || 'Misc'}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
         
-        {combineMode && selectedItem && (
-          <div className="combine-instructions">
-            Select another item to combine with {selectedItem.name}
+        {/* Item actions for selected item */}
+        {selectedItem && !combineMode && (
+          <div className="item-actions">
+            <button 
+              className="action-button"
+              onClick={() => handleItemUse(selectedItem)}
+            >
+              Use
+            </button>
+            
+            <button 
+              className="action-button"
+              onClick={() => handleItemInspect(selectedItem)}
+            >
+              Inspect
+            </button>
+            
+            <button 
+              className="action-button"
+              onClick={() => handleStartCombine(selectedItem)}
+            >
+              Combine
+            </button>
           </div>
         )}
       </div>
+      
+      {/* Context menu */}
+      {contextMenuPosition && contextMenuItemId && (
+        <div 
+          className="context-menu"
+          style={{
+            left: `${contextMenuPosition.x}px`,
+            top: `${contextMenuPosition.y}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="context-menu-item"
+            onClick={() => handleItemUse(contextMenuItemId)}
+          >
+            Use
+          </div>
+          <div 
+            className="context-menu-item"
+            onClick={() => handleItemInspect(contextMenuItemId)}
+          >
+            Inspect
+          </div>
+          <div 
+            className="context-menu-item"
+            onClick={() => handleStartCombine(contextMenuItemId)}
+          >
+            Combine with...
+          </div>
+        </div>
+      )}
+      
+      {/* Detail view */}
+      {detailItem && renderDetailView()}
       
       <style jsx>{`
         .inventory-overlay {
           position: fixed;
           top: 0;
           left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.7);
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index: 300;
-          padding: 20px;
-          animation: fadeIn 0.3s ease;
+          z-index: 100;
+          transition: opacity 0.3s ease;
         }
         
-        .inventory-container {
-          width: 100%;
-          max-width: 900px;
-          max-height: 80vh;
-          background-color: rgba(30, 30, 40, 0.95);
-          border-radius: 10px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
-          border: 1px solid rgba(100, 100, 150, 0.4);
+        .inventory-hidden {
+          opacity: 0;
+        }
+        
+        .inventory-visible {
+          opacity: 1;
+        }
+        
+        .inventory-panel {
+          background-color: rgba(20, 20, 30, 0.95);
+          border: 2px solid rgba(100, 100, 150, 0.6);
+          border-radius: 8px;
+          width: 90%;
+          max-width: 800px;
+          height: 80%;
+          max-height: 600px;
           display: flex;
           flex-direction: column;
-          font-family: 'Times New Roman', serif;
           color: #e0e0e0;
-          overflow: hidden;
-          position: relative;
-          animation: slideUp 0.3s ease;
+          font-family: 'Times New Roman', serif;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
         }
         
         .inventory-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          background-color: rgba(40, 40, 60, 0.8);
           padding: 15px 20px;
           border-bottom: 1px solid rgba(100, 100, 150, 0.4);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
         
         .inventory-header h2 {
           margin: 0;
-          font-size: 22px;
-          color: #d0d0e0;
+          font-size: 20px;
+          color: #d0d0f0;
+        }
+        
+        .inventory-controls {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        
+        .search-container {
+          position: relative;
+          flex: 1;
+        }
+        
+        .search-input {
+          width: 100%;
+          padding: 8px 30px 8px 10px;
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          background-color: rgba(30, 30, 50, 0.7);
+          color: #e0e0e0;
+        }
+        
+        .clear-search {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #a0a0c0;
+          font-size: 16px;
+          cursor: pointer;
+          padding: 0 5px;
+        }
+        
+        .sort-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+        }
+        
+        .sort-select {
+          padding: 6px 8px;
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          background-color: rgba(30, 30, 50, 0.7);
+          color: #e0e0e0;
         }
         
         .close-button {
           background: none;
           border: none;
-          color: #a0a0b0;
-          font-size: 18px;
+          color: #a0a0c0;
+          font-size: 24px;
           cursor: pointer;
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
+          line-height: 1;
+          padding: 0 5px;
         }
         
         .close-button:hover {
-          background-color: rgba(80, 80, 100, 0.4);
-          color: #e0e0e0;
+          color: #ffffff;
         }
         
-        .inventory-tabs {
+        .combine-mode-notice {
+          padding: 10px 20px;
+          background-color: rgba(50, 50, 80, 0.7);
           display: flex;
-          padding: 0 10px;
-          border-bottom: 1px solid rgba(100, 100, 150, 0.4);
-          overflow-x: auto;
-          scrollbar-width: thin;
-        }
-        
-        .inventory-tab {
-          background: none;
-          border: none;
-          color: #a0a0b0;
-          padding: 10px 15px;
-          font-size: 14px;
-          cursor: pointer;
-          position: relative;
-          border-bottom: 2px solid transparent;
-          white-space: nowrap;
-          transition: all 0.2s;
-          display: flex;
+          justify-content: space-between;
           align-items: center;
-          gap: 6px;
         }
         
-        .inventory-tab.active {
+        .cancel-button {
+          padding: 5px 10px;
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          background-color: rgba(80, 30, 30, 0.7);
           color: #e0e0e0;
-          border-bottom-color: #7e57c2;
-        }
-        
-        .inventory-tab:hover:not(.active):not(:disabled) {
-          color: #d0d0e0;
-          background-color: rgba(80, 80, 100, 0.2);
-        }
-        
-        .inventory-tab:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-        
-        .tab-icon {
-          font-size: 16px;
-        }
-        
-        .tab-count {
-          background-color: rgba(80, 80, 100, 0.4);
-          font-size: 11px;
-          padding: 1px 6px;
-          border-radius: 10px;
-          margin-left: 4px;
+          cursor: pointer;
         }
         
         .inventory-content {
-          display: flex;
           flex: 1;
-          overflow: hidden;
-          max-height: calc(80vh - 110px);
-        }
-        
-        .items-grid {
-          flex: 1;
-          padding: 15px;
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-          gap: 10px;
           overflow-y: auto;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(100, 100, 150, 0.4) rgba(30, 30, 40, 0.5);
-          max-height: 100%;
+          padding: 15px;
         }
         
-        .empty-category {
-          grid-column: 1 / -1;
-          padding: 20px;
-          text-align: center;
-          color: #a0a0b0;
+        .empty-inventory {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%;
+          color: #909090;
           font-style: italic;
+        }
+        
+        .inventory-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 15px;
         }
         
         .inventory-item {
           border: 1px solid rgba(100, 100, 150, 0.4);
           border-radius: 6px;
           padding: 10px;
+          background-color: rgba(40, 40, 60, 0.7);
+          cursor: pointer;
+          transition: all 0.2s ease;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 5px;
-          cursor: pointer;
-          transition: all 0.2s;
-          background-color: rgba(50, 50, 70, 0.5);
+          gap: 10px;
+        }
+        
+        .inventory-item:hover {
+          background-color: rgba(60, 60, 90, 0.8);
+          transform: translateY(-2px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
         .inventory-item.selected {
-          background-color: rgba(70, 70, 100, 0.6);
-          border-color: #7e57c2;
-          box-shadow: 0 0 5px rgba(126, 87, 194, 0.4);
+          border-color: #d0d0f0;
+          background-color: rgba(80, 80, 120, 0.7);
         }
         
-        .inventory-item.combinable {
-          background-color: rgba(60, 80, 60, 0.5);
-          border-color: rgba(100, 180, 100, 0.6);
-        }
-        
-        .inventory-item:hover:not(.selected) {
-          background-color: rgba(60, 60, 80, 0.7);
-          transform: translateY(-2px);
+        .inventory-item.combine-source {
+          border-color: #f0d0a0;
+          background-color: rgba(120, 100, 80, 0.7);
         }
         
         .item-icon {
-          width: 40px;
-          height: 40px;
+          width: 60px;
+          height: 60px;
           display: flex;
-          align-items: center;
           justify-content: center;
-          font-size: 28px;
-          background-color: rgba(40, 40, 50, 0.7);
-          border-radius: 6px;
-          padding: 5px;
+          align-items: center;
+          border-radius: 4px;
+          overflow: hidden;
+          background-color: rgba(30, 30, 40, 0.7);
         }
         
         .item-icon img {
@@ -440,186 +567,221 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({
           object-fit: contain;
         }
         
-        .item-name {
-          font-size: 12px;
-          text-align: center;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          max-width: 100%;
-          word-break: break-word;
+        .icon-placeholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: rgba(60, 60, 90, 0.5);
+          font-size: 24px;
+          font-weight: bold;
+          color: #b0b0d0;
         }
         
         .item-details {
-          width: 300px;
-          padding: 15px;
-          border-left: 1px solid rgba(100, 100, 150, 0.4);
-          display: flex;
-          flex-direction: column;
-          overflow-y: auto;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(100, 100, 150, 0.4) rgba(30, 30, 40, 0.5);
-          background-color: rgba(40, 40, 60, 0.6);
-        }
-        
-        .item-image {
-          width: 100%;
-          height: 180px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: rgba(20, 20, 30, 0.7);
-          border-radius: 8px;
-          margin-bottom: 15px;
-          overflow: hidden;
-        }
-        
-        .item-image img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-        }
-        
-        .item-icon-large {
-          width: 80px;
-          height: 80px;
-        }
-        
-        .item-icon-placeholder {
-          font-size: 60px;
-          color: #a0a0b0;
-          opacity: 0.7;
-        }
-        
-        .item-title {
-          margin: 0 0 10px 0;
-          font-size: 18px;
-          color: #d0d0e0;
           text-align: center;
+          width: 100%;
         }
         
-        .item-description {
+        .item-name {
           font-size: 14px;
-          line-height: 1.5;
-          margin-bottom: 15px;
-          color: #b0b0c0;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         
-        .item-notes {
-          background-color: rgba(60, 60, 80, 0.5);
-          padding: 10px;
-          border-radius: 6px;
-          font-size: 13px;
-          margin-bottom: 15px;
-          border-left: 3px solid #7e57c2;
-        }
-        
-        .item-notes h4 {
-          margin: 0 0 5px 0;
-          font-size: 14px;
-          color: #c0c0d0;
-        }
-        
-        .item-notes p {
-          margin: 0;
-          color: #b0b0c0;
-          font-style: italic;
+        .item-type {
+          font-size: 12px;
+          color: #a0a0c0;
         }
         
         .item-actions {
           display: flex;
+          justify-content: center;
           gap: 10px;
-          margin-top: auto;
-          padding-top: 15px;
-        }
-        
-        .item-action {
-          flex: 1;
-          padding: 8px 10px;
-          border: 1px solid rgba(100, 100, 150, 0.4);
-          border-radius: 6px;
-          background-color: rgba(50, 50, 70, 0.6);
-          color: #d0d0e0;
-          font-family: inherit;
-          font-size: 14px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .item-action:hover {
-          background-color: rgba(70, 70, 100, 0.7);
-        }
-        
-        .item-action.use:hover {
-          background-color: rgba(60, 80, 60, 0.7);
-          border-color: rgba(100, 180, 100, 0.6);
-        }
-        
-        .item-action.examine:hover {
-          background-color: rgba(60, 60, 90, 0.7);
-          border-color: rgba(100, 150, 180, 0.6);
-        }
-        
-        .item-action.combine {
-          background-color: rgba(60, 60, 80, 0.6);
-        }
-        
-        .item-action.combine:hover, .item-action.combine.active {
-          background-color: rgba(80, 60, 90, 0.7);
-          border-color: rgba(180, 100, 180, 0.6);
-        }
-        
-        .combine-instructions {
-          background-color: rgba(60, 50, 70, 0.8);
-          color: #d0d0e0;
-          text-align: center;
-          padding: 10px;
-          font-size: 14px;
+          padding: 15px;
           border-top: 1px solid rgba(100, 100, 150, 0.4);
         }
         
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        .action-button {
+          padding: 8px 16px;
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          background-color: rgba(50, 50, 80, 0.7);
+          color: #e0e0e0;
+          cursor: pointer;
+          transition: all 0.2s ease;
         }
         
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        .action-button:hover {
+          background-color: rgba(70, 70, 110, 0.8);
         }
         
-        @media (max-width: 768px) {
-          .inventory-container {
-            max-width: 100%;
-            max-height: 90vh;
+        .context-menu {
+          position: fixed;
+          background-color: rgba(30, 30, 40, 0.95);
+          border: 1px solid rgba(100, 100, 150, 0.6);
+          border-radius: 4px;
+          padding: 5px;
+          z-index: 110;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .context-menu-item {
+          padding: 8px 12px;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        
+        .context-menu-item:hover {
+          background-color: rgba(60, 60, 90, 0.8);
+        }
+        
+        .inventory-detail-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 110;
+        }
+        
+        .inventory-detail {
+          background-color: rgba(30, 30, 40, 0.95);
+          border: 2px solid rgba(100, 100, 150, 0.6);
+          border-radius: 8px;
+          width: 90%;
+          max-width: 600px;
+          max-height: 80%;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        
+        .detail-header {
+          background-color: rgba(40, 40, 60, 0.8);
+          padding: 12px 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid rgba(100, 100, 150, 0.4);
+        }
+        
+        .detail-header h3 {
+          margin: 0;
+          font-size: 18px;
+          color: #d0d0f0;
+        }
+        
+        .detail-content {
+          display: flex;
+          padding: 20px;
+          gap: 20px;
+          overflow-y: auto;
+        }
+        
+        .detail-image {
+          width: 120px;
+          height: 120px;
+          flex-shrink: 0;
+          border-radius: 6px;
+          overflow: hidden;
+          background-color: rgba(40, 40, 60, 0.7);
+        }
+        
+        .detail-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        
+        .placeholder-image {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: rgba(60, 60, 90, 0.5);
+          font-size: 40px;
+          font-weight: bold;
+          color: #b0b0d0;
+        }
+        
+        .detail-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+        
+        .detail-description {
+          font-size: 15px;
+          line-height: 1.5;
+          margin: 0;
+          color: #d0d0d0;
+        }
+        
+        .detail-properties {
+          border-top: 1px solid rgba(100, 100, 150, 0.3);
+          padding-top: 10px;
+        }
+        
+        .detail-properties h4 {
+          margin: 0 0 8px 0;
+          font-size: 16px;
+          color: #c0c0e0;
+        }
+        
+        .detail-properties ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        
+        .detail-properties li {
+          margin-bottom: 5px;
+        }
+        
+        .property-name {
+          color: #a0a0c0;
+        }
+        
+        .detail-actions {
+          display: flex;
+          gap: 10px;
+          margin-top: auto;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+          .inventory-panel {
+            width: 95%;
+            height: 90%;
           }
           
-          .inventory-content {
+          .inventory-grid {
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+          }
+          
+          .inventory-detail {
+            width: 95%;
+          }
+          
+          .detail-content {
             flex-direction: column;
-            max-height: calc(90vh - 130px);
+            align-items: center;
           }
           
-          .items-grid {
-            max-height: 40vh;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-          }
-          
-          .item-details {
-            width: 100%;
-            border-left: none;
-            border-top: 1px solid rgba(100, 100, 150, 0.4);
-            max-height: 40vh;
-          }
-          
-          .item-image {
-            height: 140px;
-          }
-          
-          .inventory-tab {
-            padding: 8px 12px;
-            font-size: 13px;
+          .detail-image {
+            width: 100px;
+            height: 100px;
           }
         }
       `}</style>

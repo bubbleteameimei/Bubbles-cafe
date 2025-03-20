@@ -2,204 +2,207 @@ import React from 'react';
 import { StatusBarProps } from '../types';
 
 /**
- * StatusBar - Displays player's statistics like health, mana, and sanity
+ * StatusBar - Displays player stats like health and mana
  */
 const StatusBar: React.FC<StatusBarProps> = ({
-  stats,
+  health = 100,
+  maxHealth = 100,
+  mana = 100,
+  maxMana = 100,
+  sanity = 100,
+  maxSanity = 100,
   showLabels = true,
   compact = false
 }) => {
-  const { health, maxHealth, mana, maxMana, sanity, maxSanity } = stats;
+  // Calculate percentages for visual representation
+  const healthPercentage = Math.max(0, Math.min(100, (health / maxHealth) * 100));
+  const manaPercentage = Math.max(0, Math.min(100, (mana / maxMana) * 100));
+  const sanityPercentage = Math.max(0, Math.min(100, (sanity / maxSanity) * 100));
   
-  // Calculate percentages
-  const healthPercent = Math.max(0, Math.min(100, (health / maxHealth) * 100));
-  const manaPercent = Math.max(0, Math.min(100, (mana / maxMana) * 100));
-  const sanityPercent = Math.max(0, Math.min(100, (sanity / maxSanity) * 100));
-  
-  // Get color based on percentage
-  const getHealthColor = (percent: number) => {
-    if (percent <= 25) return '#e53935'; // Critical - red
-    if (percent <= 50) return '#ff9800'; // Low - orange
-    return '#43a047'; // Good - green
+  // Get color classes based on status values
+  const getHealthColorClass = () => {
+    if (healthPercentage > 60) return 'status-good';
+    if (healthPercentage > 30) return 'status-warning';
+    return 'status-danger';
   };
   
-  const getManaColor = (percent: number) => {
-    if (percent <= 25) return '#5c6bc0'; // Critical - light blue
-    if (percent <= 50) return '#3949ab'; // Low - medium blue
-    return '#283593'; // Good - deep blue
+  const getManaColorClass = () => {
+    if (manaPercentage > 60) return 'status-good-mana';
+    if (manaPercentage > 30) return 'status-warning-mana';
+    return 'status-danger-mana';
   };
   
-  const getSanityColor = (percent: number) => {
-    if (percent <= 25) return '#9c27b0'; // Critical - dark purple
-    if (percent <= 50) return '#7b1fa2'; // Low - medium purple
-    return '#6a1b9a'; // Good - purple
+  const getSanityColorClass = () => {
+    if (sanityPercentage > 60) return 'status-good-sanity';
+    if (sanityPercentage > 30) return 'status-warning-sanity';
+    return 'status-danger-sanity';
   };
   
   return (
-    <div className={`status-bar ${compact ? 'compact' : ''}`}>
-      {/* Health */}
-      <div className="status-section">
-        {showLabels && <span className="status-label">Health</span>}
+    <div className={`status-bar ${compact ? 'status-bar-compact' : ''}`}>
+      {/* Health Bar */}
+      <div className="status-item">
+        {showLabels && <div className="status-label">Health</div>}
         <div className="status-bar-container">
           <div 
-            className="status-bar-fill health" 
-            style={{ 
-              width: `${healthPercent}%`,
-              backgroundColor: getHealthColor(healthPercent)
-            }}
+            className={`status-bar-fill ${getHealthColorClass()}`}
+            style={{ width: `${healthPercentage}%` }}
           ></div>
-          <span className="status-value">{health}/{maxHealth}</span>
+          <div className="status-value">{Math.floor(health)}/{maxHealth}</div>
         </div>
       </div>
       
-      {/* Mana */}
-      <div className="status-section">
-        {showLabels && <span className="status-label">Mana</span>}
+      {/* Mana Bar */}
+      <div className="status-item">
+        {showLabels && <div className="status-label">Mana</div>}
         <div className="status-bar-container">
           <div 
-            className="status-bar-fill mana" 
-            style={{ 
-              width: `${manaPercent}%`,
-              backgroundColor: getManaColor(manaPercent)
-            }}
+            className={`status-bar-fill ${getManaColorClass()}`}
+            style={{ width: `${manaPercentage}%` }}
           ></div>
-          <span className="status-value">{mana}/{maxMana}</span>
+          <div className="status-value">{Math.floor(mana)}/{maxMana}</div>
         </div>
       </div>
       
-      {/* Sanity */}
-      <div className="status-section">
-        {showLabels && <span className="status-label">Sanity</span>}
+      {/* Sanity Bar */}
+      <div className="status-item">
+        {showLabels && <div className="status-label">Sanity</div>}
         <div className="status-bar-container">
           <div 
-            className="status-bar-fill sanity" 
-            style={{ 
-              width: `${sanityPercent}%`,
-              backgroundColor: getSanityColor(sanityPercent)
-            }}
+            className={`status-bar-fill ${getSanityColorClass()}`}
+            style={{ width: `${sanityPercentage}%` }}
           ></div>
-          <span className="status-value">{sanity}/{maxSanity}</span>
+          <div className="status-value">{Math.floor(sanity)}/{maxSanity}</div>
         </div>
       </div>
       
       <style jsx>{`
         .status-bar {
           display: flex;
-          flex-direction: column;
-          gap: 8px;
-          padding: 10px;
+          gap: 15px;
           background-color: rgba(20, 20, 30, 0.85);
-          border-radius: 8px;
           border: 1px solid rgba(100, 100, 150, 0.4);
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          border-radius: 6px;
+          padding: 10px 15px;
           font-family: 'Times New Roman', serif;
           color: #e0e0e0;
           width: 100%;
         }
         
-        .status-bar.compact {
-          flex-direction: row;
-          gap: 15px;
-          padding: 8px 12px;
+        .status-bar-compact {
+          padding: 6px 10px;
+          gap: 8px;
         }
         
-        .status-section {
+        .status-item {
+          flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 4px;
-        }
-        
-        .status-bar.compact .status-section {
-          flex: 1;
+          gap: 3px;
         }
         
         .status-label {
           font-size: 14px;
           color: #b0b0c0;
+          margin-bottom: 2px;
+        }
+        
+        .status-bar-compact .status-label {
+          font-size: 12px;
+          margin-bottom: 1px;
         }
         
         .status-bar-container {
-          height: 20px;
-          background-color: rgba(50, 50, 60, 0.6);
-          border-radius: 4px;
           position: relative;
+          height: 20px;
+          background-color: rgba(40, 40, 50, 0.7);
+          border: 1px solid rgba(80, 80, 110, 0.4);
+          border-radius: 3px;
           overflow: hidden;
-          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-bar-compact .status-bar-container {
+          height: 16px;
         }
         
         .status-bar-fill {
           height: 100%;
-          border-radius: 3px;
-          transition: width 0.5s ease, background-color 0.5s ease;
+          transition: width 0.5s ease-out;
         }
         
-        .status-bar-fill.health {
-          background-color: #43a047;
-          box-shadow: 0 0 8px rgba(67, 160, 71, 0.5);
+        /* Health status colors */
+        .status-good {
+          background: linear-gradient(to bottom, #4caf50, #388e3c);
         }
         
-        .status-bar-fill.mana {
-          background-color: #283593;
-          box-shadow: 0 0 8px rgba(40, 53, 147, 0.5);
+        .status-warning {
+          background: linear-gradient(to bottom, #ffc107, #ffa000);
         }
         
-        .status-bar-fill.sanity {
-          background-color: #6a1b9a;
-          box-shadow: 0 0 8px rgba(106, 27, 154, 0.5);
+        .status-danger {
+          background: linear-gradient(to bottom, #f44336, #d32f2f);
+        }
+        
+        /* Mana status colors */
+        .status-good-mana {
+          background: linear-gradient(to bottom, #2196f3, #1976d2);
+        }
+        
+        .status-warning-mana {
+          background: linear-gradient(to bottom, #03a9f4, #0288d1);
+        }
+        
+        .status-danger-mana {
+          background: linear-gradient(to bottom, #80deea, #4dd0e1);
+        }
+        
+        /* Sanity status colors */
+        .status-good-sanity {
+          background: linear-gradient(to bottom, #9c27b0, #7b1fa2);
+        }
+        
+        .status-warning-sanity {
+          background: linear-gradient(to bottom, #ba68c8, #ab47bc);
+        }
+        
+        .status-danger-sanity {
+          background: linear-gradient(to bottom, #ff9e80, #ff6e40);
         }
         
         .status-value {
           position: absolute;
           top: 0;
           left: 0;
-          width: 100%;
-          height: 100%;
+          right: 0;
+          bottom: 0;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 12px;
           color: #ffffff;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-          pointer-events: none;
+          text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.9);
         }
         
-        /* Special effects for low values */
-        .status-bar-fill.health[style*="width: 25%"], 
-        .status-bar-fill.health[style*="width: 20%"],
-        .status-bar-fill.health[style*="width: 15%"],
-        .status-bar-fill.health[style*="width: 10%"],
-        .status-bar-fill.health[style*="width: 5%"] {
-          animation: pulse 1s infinite alternate;
+        .status-bar-compact .status-value {
+          font-size: 10px;
         }
         
-        .status-bar-fill.sanity[style*="width: 25%"], 
-        .status-bar-fill.sanity[style*="width: 20%"],
-        .status-bar-fill.sanity[style*="width: 15%"],
-        .status-bar-fill.sanity[style*="width: 10%"],
-        .status-bar-fill.sanity[style*="width: 5%"] {
-          animation: flicker 1.5s infinite alternate;
-        }
-        
+        /* Animation for critical status */
         @keyframes pulse {
-          from { opacity: 0.7; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes flicker {
-          0%, 100% { opacity: 0.8; }
+          0% { opacity: 0.8; }
           50% { opacity: 1; }
-          75% { opacity: 0.7; }
+          100% { opacity: 0.8; }
         }
         
-        @media (max-width: 768px) {
+        .status-danger, .status-danger-mana, .status-danger-sanity {
+          animation: pulse 1.5s infinite;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
           .status-bar {
-            padding: 8px;
+            padding: 8px 10px;
             gap: 6px;
-          }
-          
-          .status-bar.compact {
-            padding: 6px 10px;
-            gap: 10px;
           }
           
           .status-label {
@@ -212,6 +215,22 @@ const StatusBar: React.FC<StatusBarProps> = ({
           
           .status-value {
             font-size: 10px;
+          }
+          
+          .status-bar-compact {
+            padding: 5px 8px;
+          }
+          
+          .status-bar-compact .status-label {
+            font-size: 10px;
+          }
+          
+          .status-bar-compact .status-bar-container {
+            height: 14px;
+          }
+          
+          .status-bar-compact .status-value {
+            font-size: 9px;
           }
         }
       `}</style>

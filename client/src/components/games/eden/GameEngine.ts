@@ -1,811 +1,918 @@
 import { 
   GameState, 
   Scene, 
-  InventoryItem, 
   Dialog, 
+  InventoryItem,
   Puzzle,
+  GameEffect,
   GameAction,
   SaveData,
-  PlayerStats
+  GameEngineConfig
 } from './types';
 
 /**
- * GameEngine - Core game logic that manages state transitions and game mechanics
+ * GameEngine - Core engine that manages game state and game logic
+ * 
+ * This is a simplified version that will be expanded with more functionality
+ * including scene management, dialog system, inventory management, puzzle solving,
+ * save/load functionality, and more.
  */
 class GameEngine {
   private gameState: GameState;
-  private scenes: Record<string, Scene>;
-  private dialogs: Record<string, Dialog>;
-  private items: Record<string, InventoryItem>;
-  private puzzles: Record<string, Puzzle>;
-  private saveKey: string = 'eden_hollow_save';
-  private listeners: Set<(state: GameState) => void>;
+  private config: GameEngineConfig;
+  private sceneData: Record<string, Scene> = {};
+  private dialogData: Record<string, Dialog> = {};
+  private itemData: Record<string, InventoryItem> = {};
+  private puzzleData: Record<string, Puzzle> = {};
+  private saveSlots: SaveData[] = [];
+  private isInitialized: boolean = false;
   
-  constructor(
-    scenes: Record<string, Scene>,
-    dialogs: Record<string, Dialog>,
-    items: Record<string, InventoryItem>,
-    puzzles: Record<string, Puzzle>
-  ) {
-    this.scenes = scenes;
-    this.dialogs = dialogs;
-    this.items = items;
-    this.puzzles = puzzles;
-    this.listeners = new Set();
-    
-    // Initialize with default state or load saved state
-    this.gameState = this.loadGame() || this.getInitialState();
-  }
+  // Event callbacks
+  private onStateChangeCallbacks: ((state: GameState) => void)[] = [];
+  private onSceneChangeCallbacks: ((sceneId: string) => void)[] = [];
+  private onDialogStartCallbacks: ((dialog: Dialog) => void)[] = [];
+  private onDialogEndCallbacks: ((dialogId: string) => void)[] = [];
+  private onItemAddedCallbacks: ((item: InventoryItem) => void)[] = [];
+  private onPuzzleStartCallbacks: ((puzzle: Puzzle) => void)[] = [];
+  private onGameOverCallbacks: ((reason: string) => void)[] = [];
   
-  /**
-   * Create a default initial game state
-   */
-  private getInitialState(): GameState {
-    return {
-      currentSceneId: 'village_entrance',
-      visitedScenes: ['village_entrance'],
-      inventory: [],
-      currentDialog: null,
-      activeEffects: [],
-      flags: {
-        hasEncounteredTownspeople: false,
-        hasInvestigatedChurch: false,
-        hasFoundAbandondedHouse: false,
-        hasMetStorekeeper: false,
-        hasDiscoveredSecret: false,
-      },
-      activePuzzleId: null,
+  constructor() {
+    // Initialize with default state
+    this.gameState = {
       player: {
         health: 100,
         maxHealth: 100,
-        mana: 50,
-        maxMana: 50,
+        mana: 100,
+        maxMana: 100,
         sanity: 100,
-        maxSanity: 100
+        maxSanity: 100,
+        level: 1,
+        experience: 0
       },
-      gameTime: 0, // Time in minutes (in-game time)
-      timeLastPlayed: Date.now()
-    };
-  }
-  
-  /**
-   * Subscribe to state changes
-   */
-  subscribe(callback: (state: GameState) => void): () => void {
-    this.listeners.add(callback);
-    return () => {
-      this.listeners.delete(callback);
-    };
-  }
-  
-  /**
-   * Notify all subscribers about state changes
-   */
-  private notifyListeners(): void {
-    this.listeners.forEach(callback => callback({ ...this.gameState }));
-  }
-  
-  /**
-   * Save the current game state to local storage
-   */
-  saveGame(): void {
-    const saveData: SaveData = {
-      gameState: this.gameState,
-      savedAt: Date.now()
+      inventory: [],
+      currentScene: '',
+      visitedScenes: [],
+      flags: {},
+      gameTime: 0,
+      activeEffects: [],
+      isGameOver: false,
+      hintsDisabled: false
     };
     
-    localStorage.setItem(this.saveKey, JSON.stringify(saveData));
+    // Default config
+    this.config = {
+      initialScene: 'village_entrance',
+      showIntro: true,
+      enableHints: true,
+      enableAutoSave: true,
+      saveInterval: 5, // minutes
+      debugMode: false,
+      difficultyLevel: 'normal'
+    };
   }
   
   /**
-   * Load game state from local storage
+   * Initialize the game engine with configuration and data
    */
-  loadGame(): GameState | null {
-    const saveDataString = localStorage.getItem(this.saveKey);
-    if (!saveDataString) return null;
-    
-    try {
-      const saveData: SaveData = JSON.parse(saveDataString);
-      return saveData.gameState;
-    } catch (error) {
-      console.error("Failed to load save data:", error);
-      return null;
+  async initialize(config?: Partial<GameEngineConfig>): Promise<void> {
+    if (this.isInitialized) {
+      console.warn('GameEngine is already initialized');
+      return;
     }
+    
+    // Merge provided config with defaults
+    this.config = { ...this.config, ...config };
+    
+    // In a real implementation, we would load scene, dialog, item, and puzzle data here
+    // For now, we'll just set the initial scene
+    this.gameState.currentScene = this.config.initialScene;
+    this.gameState.visitedScenes = [this.config.initialScene];
+    
+    this.isInitialized = true;
+    
+    // Notify all callbacks about state change
+    this.notifyStateChange();
   }
   
   /**
-   * Delete save data from local storage
+   * Start a new game
    */
-  deleteSave(): void {
-    localStorage.removeItem(this.saveKey);
-    this.gameState = this.getInitialState();
-    this.notifyListeners();
+  startNewGame(): void {
+    if (!this.isInitialized) {
+      console.error('GameEngine must be initialized before starting a new game');
+      return;
+    }
+    
+    // Reset game state
+    this.gameState = {
+      player: {
+        health: 100,
+        maxHealth: 100,
+        mana: 100,
+        maxMana: 100,
+        sanity: 100,
+        maxSanity: 100,
+        level: 1,
+        experience: 0
+      },
+      inventory: [],
+      currentScene: this.config.initialScene,
+      visitedScenes: [this.config.initialScene],
+      flags: {},
+      gameTime: 0,
+      activeEffects: [],
+      isGameOver: false,
+      hintsDisabled: !this.config.enableHints
+    };
+    
+    // Trigger onStateChange event
+    this.notifyStateChange();
+    
+    // Trigger onSceneChange event
+    this.notifySceneChange(this.gameState.currentScene);
+    
+    // Check for entry dialog in the initial scene
+    this.checkSceneEntryDialog();
   }
   
   /**
-   * Get current game state
+   * Get the current game state
    */
   getState(): GameState {
     return { ...this.gameState };
   }
   
   /**
-   * Get current scene
+   * Get the current scene
    */
-  getCurrentScene(): Scene {
-    return this.scenes[this.gameState.currentSceneId];
+  getCurrentScene(): Scene | null {
+    if (!this.gameState.currentScene) return null;
+    return this.sceneData[this.gameState.currentScene] || null;
   }
   
   /**
-   * Navigate to a new scene
+   * Change to a different scene
    */
-  navigateToScene(sceneId: string): void {
-    if (!this.scenes[sceneId]) {
-      console.error(`Scene ${sceneId} does not exist`);
+  changeScene(sceneId: string): void {
+    if (!this.sceneData[sceneId]) {
+      console.error(`Scene ${sceneId} not found`);
       return;
     }
     
-    // Update state
-    this.gameState.currentSceneId = sceneId;
+    // Update scene in game state
+    this.gameState.currentScene = sceneId;
     
     // Add to visited scenes if not already visited
     if (!this.gameState.visitedScenes.includes(sceneId)) {
       this.gameState.visitedScenes.push(sceneId);
     }
     
-    // Handle scene-specific logic
-    this.handleSceneEntry(sceneId);
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifySceneChange(sceneId);
     
-    // Notify listeners about the state change
-    this.notifyListeners();
-    this.saveGame();
+    // Check for entry dialog in the new scene
+    this.checkSceneEntryDialog();
+    
+    // Apply any environment effects from the scene
+    this.applySceneEnvironmentEffects();
   }
   
   /**
-   * Handle logic when entering a new scene
+   * Check if the current scene has an entry dialog and trigger it
    */
-  private handleSceneEntry(sceneId: string): void {
-    const scene = this.scenes[sceneId];
+  private checkSceneEntryDialog(): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene) return;
     
-    // Add ambient effects if there are any
-    if (scene.environment && scene.environment.ambientEffect) {
-      const newEffect = {
-        id: `ambient_${sceneId}`,
-        type: scene.environment.ambientEffect,
-        duration: 0 // Permanent while in scene
-      };
-      
-      // Don't add duplicate effects
-      if (!this.gameState.activeEffects.some(e => e.id === newEffect.id)) {
-        this.gameState.activeEffects.push(newEffect);
-      }
-    }
-    
-    // Trigger entry dialog if available and conditions are met
-    if (scene.entryDialog) {
-      const dialogId = scene.entryDialog;
-      // Check if dialog should be displayed
-      if (this.shouldTriggerDialog(dialogId)) {
-        this.startDialog(dialogId);
-      }
-    }
-    
-    // Apply scene effects on player stats if any
-    if (scene.playerEffects) {
-      if (scene.playerEffects.healthChange) {
-        this.updatePlayerStat('health', scene.playerEffects.healthChange);
-      }
-      
-      if (scene.playerEffects.manaChange) {
-        this.updatePlayerStat('mana', scene.playerEffects.manaChange);
-      }
-      
-      if (scene.playerEffects.sanityChange) {
-        this.updatePlayerStat('sanity', scene.playerEffects.sanityChange);
+    if (currentScene.entryDialog) {
+      const dialog = this.dialogData[currentScene.entryDialog];
+      if (dialog) {
+        this.startDialog(currentScene.entryDialog);
       }
     }
   }
   
   /**
-   * Update a player stat with validation
+   * Apply environment effects from the current scene
    */
-  updatePlayerStat(
-    statName: keyof PlayerStats, 
-    value: number, 
-    isAbsolute: boolean = false
-  ): void {
-    const player = this.gameState.player;
+  private applySceneEnvironmentEffects(): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene) return;
     
-    // Get the current and max values
-    const current = player[statName] as number;
-    const maxKey = `max${statName.charAt(0).toUpperCase() + statName.slice(1)}` as keyof PlayerStats;
-    const max = player[maxKey] as number;
-    
-    // Calculate new value
-    let newValue: number;
-    if (isAbsolute) {
-      newValue = value;
-    } else {
-      newValue = current + value;
+    // Apply immediate player effects if any
+    if (currentScene.playerEffects) {
+      currentScene.playerEffects.forEach(effect => {
+        this.applyEffect(effect);
+      });
     }
-    
-    // Clamp value between 0 and max
-    newValue = Math.max(0, Math.min(newValue, max));
-    
-    // Update the stat
-    player[statName] = newValue;
-    
-    // If health reaches 0, handle player death
-    if (statName === 'health' && newValue <= 0) {
-      this.handlePlayerDeath();
-    }
-    
-    // If sanity reaches 0, handle sanity loss
-    if (statName === 'sanity' && newValue <= 0) {
-      this.handleSanityLoss();
-    }
-    
-    this.notifyListeners();
   }
   
   /**
-   * Handle player death
+   * Apply time-based environmental effects
    */
-  private handlePlayerDeath(): void {
-    // Set game over state flag
-    this.gameState.isGameOver = true;
-    this.gameState.gameOverReason = 'death';
+  private applyEnvironmentalEffectsOverTime(): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene || !currentScene.environmentEffectsOverTime) return;
     
-    // You could also navigate to a death scene
-    this.startDialog('game_over_death');
-    
-    this.notifyListeners();
+    currentScene.environmentEffectsOverTime.forEach(effect => {
+      this.applyEffect(effect);
+    });
   }
   
   /**
-   * Handle complete loss of sanity
+   * Update active effects, removing expired ones
    */
-  private handleSanityLoss(): void {
-    // Set game over state flag
-    this.gameState.isGameOver = true;
-    this.gameState.gameOverReason = 'insanity';
+  private updateActiveEffects(): void {
+    if (!this.gameState.activeEffects.length) return;
     
-    // Navigate to insanity scene or dialog
-    this.startDialog('game_over_insanity');
-    
-    this.notifyListeners();
+    this.gameState.activeEffects = this.gameState.activeEffects.filter(effect => {
+      // If no duration or duration is <= 0, it's permanent
+      if (!effect.duration || effect.duration <= 0) return true;
+      
+      // Check if effect has expired
+      const timeRemaining = effect.duration - this.gameState.gameTime;
+      return timeRemaining > 0;
+    });
   }
   
   /**
-   * Add an item to the player's inventory
-   */
-  addItemToInventory(itemId: string): boolean {
-    // Check if item exists
-    if (!this.items[itemId]) {
-      console.error(`Item ${itemId} does not exist`);
-      return false;
-    }
-    
-    // Check if inventory already has this item
-    if (this.gameState.inventory.some(item => item.id === itemId)) {
-      return false;
-    }
-    
-    // Add item to inventory
-    this.gameState.inventory.push({ ...this.items[itemId] });
-    
-    // Trigger any effects from picking up the item
-    this.handleItemPickup(itemId);
-    
-    this.notifyListeners();
-    this.saveGame();
-    return true;
-  }
-  
-  /**
-   * Remove an item from inventory
-   */
-  removeItemFromInventory(itemId: string): boolean {
-    const initialLength = this.gameState.inventory.length;
-    
-    this.gameState.inventory = this.gameState.inventory.filter(
-      item => item.id !== itemId
-    );
-    
-    const removed = initialLength > this.gameState.inventory.length;
-    
-    if (removed) {
-      this.notifyListeners();
-      this.saveGame();
-    }
-    
-    return removed;
-  }
-  
-  /**
-   * Handle special effects when picking up an item
-   */
-  private handleItemPickup(itemId: string): void {
-    const item = this.items[itemId];
-    
-    // Add item effects if they exist
-    if (item.effects) {
-      if (item.effects.healthChange) {
-        this.updatePlayerStat('health', item.effects.healthChange);
-      }
-      
-      if (item.effects.manaChange) {
-        this.updatePlayerStat('mana', item.effects.manaChange);
-      }
-      
-      if (item.effects.sanityChange) {
-        this.updatePlayerStat('sanity', item.effects.sanityChange);
-      }
-      
-      if (item.effects.addFlags) {
-        item.effects.addFlags.forEach(flag => {
-          this.gameState.flags[flag] = true;
-        });
-      }
-    }
-    
-    // Start the item pickup dialog if it exists
-    if (item.pickupDialog) {
-      this.startDialog(item.pickupDialog);
-    }
-  }
-  
-  /**
-   * Use an item from inventory
-   */
-  useItem(itemId: string): boolean {
-    // Check if player has the item
-    const itemIndex = this.gameState.inventory.findIndex(
-      item => item.id === itemId
-    );
-    
-    if (itemIndex === -1) {
-      console.error(`Item ${itemId} not in inventory`);
-      return false;
-    }
-    
-    const item = this.gameState.inventory[itemIndex];
-    
-    // Handle item use effects
-    if (item.useEffects) {
-      if (item.useEffects.healthChange) {
-        this.updatePlayerStat('health', item.useEffects.healthChange);
-      }
-      
-      if (item.useEffects.manaChange) {
-        this.updatePlayerStat('mana', item.useEffects.manaChange);
-      }
-      
-      if (item.useEffects.sanityChange) {
-        this.updatePlayerStat('sanity', item.useEffects.sanityChange);
-      }
-      
-      if (item.useEffects.addFlags) {
-        item.useEffects.addFlags.forEach(flag => {
-          this.gameState.flags[flag] = true;
-        });
-      }
-      
-      if (item.useEffects.removeFlags) {
-        item.useEffects.removeFlags.forEach(flag => {
-          this.gameState.flags[flag] = false;
-        });
-      }
-    }
-    
-    // Start dialog if one exists for this item
-    if (item.useDialog) {
-      this.startDialog(item.useDialog);
-    }
-    
-    // Remove consumable items
-    if (item.consumable) {
-      this.gameState.inventory.splice(itemIndex, 1);
-    }
-    
-    this.notifyListeners();
-    this.saveGame();
-    return true;
-  }
-  
-  /**
-   * Check if player has a specific item
-   */
-  hasItem(itemId: string): boolean {
-    return this.gameState.inventory.some(item => item.id === itemId);
-  }
-  
-  /**
-   * Start a dialog sequence
+   * Start a dialog by ID
    */
   startDialog(dialogId: string): void {
-    // Check if dialog exists
-    if (!this.dialogs[dialogId]) {
-      console.error(`Dialog ${dialogId} does not exist`);
+    const dialog = this.dialogData[dialogId];
+    if (!dialog) {
+      console.error(`Dialog ${dialogId} not found`);
       return;
     }
     
-    // Set current dialog
-    this.gameState.currentDialog = {
-      ...this.dialogs[dialogId],
-      currentNodeIndex: 0
-    };
+    // Check if dialog has requirements
+    if (dialog.requireFlags) {
+      // Check if all required flags match
+      const allFlagsMatch = Object.entries(dialog.requireFlags).every(
+        ([flag, value]) => this.gameState.flags[flag] === value
+      );
+      
+      if (!allFlagsMatch) return;
+    }
     
-    this.notifyListeners();
-  }
-  
-  /**
-   * Advance dialog to next node or handle dialog choice
-   */
-  advanceDialog(choiceIndex?: number): void {
-    if (!this.gameState.currentDialog) {
+    // Check if dialog requires items
+    if (dialog.requireItems) {
+      const hasAllItems = dialog.requireItems.every(itemId => 
+        this.gameState.inventory.some(item => item.id === itemId)
+      );
+      
+      if (!hasAllItems) return;
+    }
+    
+    // Check if one-time dialog has already been shown
+    if (dialog.oneTime && this.gameState.flags[`dialog_shown_${dialogId}`]) {
       return;
     }
     
-    const dialog = this.gameState.currentDialog;
+    // Set current dialog in game state
+    this.gameState.currentDialog = dialog;
     
-    // If dialog has choices and a choice was selected
-    if (dialog.choices && choiceIndex !== undefined) {
-      const choice = dialog.choices[choiceIndex];
-      
-      // Handle choice effects
-      if (choice.effects) {
-        this.processGameActions(choice.effects);
-      }
-      
-      // If choice leads to another dialog
-      if (choice.nextDialogId) {
-        this.startDialog(choice.nextDialogId);
-        return;
-      }
-      
-      // If choice ends the dialog
-      this.endDialog();
-      return;
+    // Mark one-time dialog as shown
+    if (dialog.oneTime) {
+      this.gameState.flags[`dialog_shown_${dialogId}`] = true;
     }
     
-    // No choices, just advance to next node if it exists
-    const currentNodeIndex = dialog.currentNodeIndex || 0;
-    
-    if (dialog.nodes && currentNodeIndex < dialog.nodes.length - 1) {
-      dialog.currentNodeIndex = currentNodeIndex + 1;
-    } else {
-      // If there's a next dialog
-      if (dialog.nextDialogId) {
-        this.startDialog(dialog.nextDialogId);
-        return;
-      }
-      
-      // End dialog since there's nothing more
-      this.endDialog();
-    }
-    
-    this.notifyListeners();
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifyDialogStart(dialog);
   }
   
   /**
    * End the current dialog
    */
   endDialog(): void {
-    if (!this.gameState.currentDialog) {
-      return;
-    }
+    if (!this.gameState.currentDialog) return;
     
-    // Process end dialog effects if any
     const dialogId = this.gameState.currentDialog.id;
-    const dialog = this.dialogs[dialogId];
     
-    if (dialog.endEffects) {
-      this.processGameActions(dialog.endEffects);
+    // Apply end effects if any
+    if (this.gameState.currentDialog.endEffects) {
+      this.gameState.currentDialog.endEffects.forEach(effect => {
+        this.applyEffect(effect);
+      });
     }
     
     // Clear current dialog
-    this.gameState.currentDialog = null;
+    const previousDialog = this.gameState.currentDialog;
+    this.gameState.currentDialog = undefined;
     
-    this.notifyListeners();
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifyDialogEnd(dialogId);
+    
+    // Check if there's a next dialog to show
+    if (previousDialog.nextDialog) {
+      this.startDialog(previousDialog.nextDialog);
+    }
   }
   
   /**
-   * Check if a dialog should be triggered
+   * Select a dialog choice
    */
-  private shouldTriggerDialog(dialogId: string): boolean {
-    const dialog = this.dialogs[dialogId];
-    
-    if (!dialog) return false;
-    
-    // If dialog has requireFlags condition, check if all flags are set
-    if (dialog.requireFlags) {
-      for (const flag of dialog.requireFlags) {
-        if (!this.gameState.flags[flag]) {
-          return false;
-        }
-      }
-    }
-    
-    // If dialog has requireItems condition, check if player has all items
-    if (dialog.requireItems) {
-      for (const itemId of dialog.requireItems) {
-        if (!this.hasItem(itemId)) {
-          return false;
-        }
-      }
-    }
-    
-    // If one-time dialog and has been shown already
-    if (dialog.oneTime && this.gameState.flags[`dialog_shown_${dialogId}`]) {
-      return false;
-    }
-    
-    return true;
-  }
-  
-  /**
-   * Start a puzzle challenge
-   */
-  startPuzzle(puzzleId: string): void {
-    // Check if puzzle exists
-    if (!this.puzzles[puzzleId]) {
-      console.error(`Puzzle ${puzzleId} does not exist`);
+  selectDialogChoice(choiceIndex: number): void {
+    if (!this.gameState.currentDialog || !this.gameState.currentDialog.choices) {
       return;
     }
     
-    // Set active puzzle
-    this.gameState.activePuzzleId = puzzleId;
+    const choices = this.gameState.currentDialog.choices;
+    if (choiceIndex < 0 || choiceIndex >= choices.length) {
+      console.error(`Invalid choice index: ${choiceIndex}`);
+      return;
+    }
     
-    this.notifyListeners();
+    const choice = choices[choiceIndex];
+    
+    // Apply choice effects if any
+    if (choice.effects) {
+      choice.effects.forEach(effect => {
+        this.applyGameEffect(effect);
+      });
+    }
+    
+    // End current dialog
+    this.endDialog();
+    
+    // Start next dialog if specified
+    if (choice.nextDialog) {
+      this.startDialog(choice.nextDialog);
+    }
+  }
+  
+  /**
+   * Start a puzzle
+   */
+  startPuzzle(puzzleId: string): void {
+    const puzzle = this.puzzleData[puzzleId];
+    if (!puzzle) {
+      console.error(`Puzzle ${puzzleId} not found`);
+      return;
+    }
+    
+    // Set current puzzle in game state
+    this.gameState.currentPuzzle = puzzle;
+    
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifyPuzzleStart(puzzle);
   }
   
   /**
    * Solve the current puzzle
    */
   solvePuzzle(): void {
-    if (!this.gameState.activePuzzleId) {
-      return;
-    }
+    if (!this.gameState.currentPuzzle) return;
     
-    const puzzleId = this.gameState.activePuzzleId;
-    const puzzle = this.puzzles[puzzleId];
-    
-    // Process any effects from solving the puzzle
-    if (puzzle.solveEffects) {
-      this.processGameActions(puzzle.solveEffects);
+    // Apply solve effects if any
+    if (this.gameState.currentPuzzle.solveEffects) {
+      this.gameState.currentPuzzle.solveEffects.forEach(effect => {
+        this.applyEffect(effect);
+      });
     }
     
     // Mark puzzle as solved
-    this.gameState.flags[`puzzle_solved_${puzzleId}`] = true;
+    this.gameState.flags[`puzzle_solved_${this.gameState.currentPuzzle.id}`] = true;
     
-    // Clear active puzzle
-    this.gameState.activePuzzleId = null;
+    // Show completion dialog if specified
+    const puzzleId = this.gameState.currentPuzzle.id;
+    const completionDialogId = this.gameState.currentPuzzle.completionDialog;
     
-    // Start completion dialog if exists
-    if (puzzle.completionDialog) {
-      this.startDialog(puzzle.completionDialog);
+    // Clear current puzzle
+    this.gameState.currentPuzzle = undefined;
+    
+    // Notify callbacks
+    this.notifyStateChange();
+    
+    // Start completion dialog if specified
+    if (completionDialogId) {
+      this.startDialog(completionDialogId);
     }
-    
-    this.notifyListeners();
-    this.saveGame();
   }
   
   /**
-   * Cancel the current puzzle without solving
+   * Apply a game action
    */
-  cancelPuzzle(): void {
-    if (!this.gameState.activePuzzleId) {
-      return;
-    }
-    
-    // Clear active puzzle
-    this.gameState.activePuzzleId = null;
-    
-    this.notifyListeners();
-  }
-  
-  /**
-   * Process a list of game actions (effects)
-   */
-  processGameActions(actions: GameAction[]): void {
-    for (const action of actions) {
-      switch (action.type) {
-        case 'setFlag':
-          this.gameState.flags[action.flag] = action.value;
-          break;
-          
-        case 'giveItem':
-          this.addItemToInventory(action.itemId);
-          break;
-          
-        case 'removeItem':
-          this.removeItemFromInventory(action.itemId);
-          break;
-          
-        case 'startDialog':
+  applyAction(action: GameAction): void {
+    switch (action.type) {
+      case 'setFlag':
+        if (action.flag !== undefined) {
+          this.gameState.flags[action.flag] = action.value !== undefined ? action.value : true;
+        }
+        break;
+        
+      case 'giveItem':
+        if (action.itemId) {
+          this.addInventoryItem(action.itemId);
+        }
+        break;
+        
+      case 'removeItem':
+        if (action.itemId) {
+          this.removeInventoryItem(action.itemId);
+        }
+        break;
+        
+      case 'showDialog':
+        if (action.dialogId) {
           this.startDialog(action.dialogId);
-          break;
-          
-        case 'changeScene':
-          this.navigateToScene(action.sceneId);
-          break;
-          
-        case 'modifyPlayerStat':
-          this.updatePlayerStat(
-            action.stat, 
-            action.value, 
-            action.absolute
-          );
-          break;
-          
-        case 'startPuzzle':
+        }
+        break;
+        
+      case 'changeScene':
+        if (action.sceneId) {
+          this.changeScene(action.sceneId);
+        }
+        break;
+        
+      case 'modifyStat':
+        if (action.stat && action.value !== undefined) {
+          this.modifyPlayerStat(action.stat, action.value, action.absolute || false);
+        }
+        break;
+        
+      case 'showPuzzle':
+        if (action.puzzleId) {
           this.startPuzzle(action.puzzleId);
+        }
+        break;
+        
+      case 'advanceTime':
+        if (action.minutes !== undefined) {
+          this.advanceTime(action.minutes);
+        }
+        break;
+    }
+    
+    // Notify callbacks
+    this.notifyStateChange();
+  }
+  
+  /**
+   * Apply a dialog effect (simplified version of a game action)
+   */
+  private applyGameEffect(effect: DialogEffect): void {
+    // For simplicity, map dialog effects to game actions
+    const action: Partial<GameAction> = {
+      type: effect.type as ActionType
+    };
+    
+    if (effect.value !== undefined) {
+      action.value = effect.value;
+    }
+    
+    if (effect.target !== undefined) {
+      switch (effect.type) {
+        case 'setFlag':
+          action.flag = effect.target;
           break;
-          
-        case 'advanceTime':
-          this.gameState.gameTime += action.minutes;
+        case 'giveItem':
+        case 'removeItem':
+          action.itemId = effect.target;
           break;
-          
-        default:
-          console.error(`Unknown action type: ${(action as any).type}`);
+        case 'showDialog':
+          action.dialogId = effect.target;
           break;
+        case 'changeScene':
+          action.sceneId = effect.target;
+          break;
+        case 'modifyStat':
+          action.stat = effect.target as 'health' | 'mana' | 'sanity';
+          break;
+        case 'showPuzzle':
+          action.puzzleId = effect.target;
+          break;
+      }
+    }
+    
+    // Apply the action
+    this.applyAction(action as GameAction);
+  }
+  
+  /**
+   * Apply a game effect
+   */
+  private applyEffect(effect: GameEffect): void {
+    switch (effect.type) {
+      case 'health':
+        this.modifyPlayerStat('health', effect.value as number);
+        break;
+        
+      case 'mana':
+        this.modifyPlayerStat('mana', effect.value as number);
+        break;
+        
+      case 'sanity':
+        this.modifyPlayerStat('sanity', effect.value as number);
+        break;
+        
+      case 'flag':
+        if (typeof effect.value === 'string') {
+          const [flag, value] = effect.value.split(':');
+          this.gameState.flags[flag] = value === 'true' ? true : 
+                                      value === 'false' ? false : 
+                                      !isNaN(Number(value)) ? Number(value) : value;
+        }
+        break;
+        
+      case 'item':
+        if (typeof effect.value === 'string') {
+          // Format can be "add:itemId" or "remove:itemId"
+          const [action, itemId] = effect.value.split(':');
+          if (action === 'add') {
+            this.addInventoryItem(itemId);
+          } else if (action === 'remove') {
+            this.removeInventoryItem(itemId);
+          }
+        }
+        break;
+        
+      case 'dialog':
+        if (typeof effect.value === 'string') {
+          this.startDialog(effect.value);
+        }
+        break;
+        
+      case 'scene':
+        if (typeof effect.value === 'string') {
+          this.changeScene(effect.value);
+        }
+        break;
+        
+      case 'time':
+        if (typeof effect.value === 'number') {
+          this.advanceTime(effect.value);
+        }
+        break;
+    }
+    
+    // If effect has a duration, add it to active effects
+    if (effect.duration) {
+      // Add effect to active effects if not already there
+      if (!this.gameState.activeEffects.some(e => 
+        e.type === effect.type && e.value === effect.value
+      )) {
+        this.gameState.activeEffects.push({
+          ...effect,
+          duration: this.gameState.gameTime + effect.duration
+        });
       }
     }
   }
   
   /**
-   * Interact with a hotspot in the current scene
+   * Add an item to the player's inventory
    */
-  interactWithHotspot(hotspotId: string): void {
-    const scene = this.scenes[this.gameState.currentSceneId];
-    
-    if (!scene.hotspots) {
+  addInventoryItem(itemId: string): void {
+    const item = this.itemData[itemId];
+    if (!item) {
+      console.error(`Item ${itemId} not found`);
       return;
     }
     
-    const hotspot = scene.hotspots.find(h => h.id === hotspotId);
-    
-    if (!hotspot) {
-      console.error(`Hotspot ${hotspotId} not found in scene ${scene.id}`);
-      return;
+    // Check if item is stackable and already in inventory
+    if (item.stackable) {
+      const existingItem = this.gameState.inventory.find(i => i.id === itemId);
+      if (existingItem) {
+        existingItem.quantity = (existingItem.quantity || 1) + 1;
+      } else {
+        this.gameState.inventory.push({
+          ...item,
+          quantity: 1,
+          discoveredAt: this.gameState.gameTime
+        });
+      }
+    } else {
+      // Add new item to inventory
+      this.gameState.inventory.push({
+        ...item,
+        discoveredAt: this.gameState.gameTime
+      });
     }
     
-    // Process interaction effects
-    if (hotspot.interactionEffects) {
-      this.processGameActions(hotspot.interactionEffects);
-    }
-    
-    this.notifyListeners();
-    this.saveGame();
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifyItemAdded(item);
   }
   
   /**
-   * Get active puzzle if any
+   * Remove an item from the player's inventory
    */
-  getActivePuzzle(): Puzzle | null {
-    if (!this.gameState.activePuzzleId) {
+  removeInventoryItem(itemId: string): void {
+    const itemIndex = this.gameState.inventory.findIndex(i => i.id === itemId);
+    if (itemIndex === -1) return;
+    
+    const item = this.gameState.inventory[itemIndex];
+    
+    // If stackable and quantity > 1, just reduce quantity
+    if (item.stackable && item.quantity && item.quantity > 1) {
+      item.quantity--;
+    } else {
+      // Remove item from inventory
+      this.gameState.inventory.splice(itemIndex, 1);
+    }
+    
+    // Notify callbacks
+    this.notifyStateChange();
+  }
+  
+  /**
+   * Modify a player stat
+   */
+  private modifyPlayerStat(stat: 'health' | 'mana' | 'sanity', value: number, absolute = false): void {
+    if (!this.gameState.player) return;
+    
+    const currentValue = this.gameState.player[stat];
+    const maxValue = this.gameState.player[`max${stat.charAt(0).toUpperCase() + stat.slice(1)}`];
+    
+    if (absolute) {
+      // Set absolute value, clamped to max
+      this.gameState.player[stat] = Math.min(value, maxValue);
+    } else {
+      // Add value (can be negative), clamped between 0 and max
+      this.gameState.player[stat] = Math.max(0, Math.min(currentValue + value, maxValue));
+    }
+    
+    // Check for game over if health reaches 0
+    if (stat === 'health' && this.gameState.player.health <= 0) {
+      this.gameOver('You have died.');
+    }
+    
+    // Check for game over if sanity reaches 0
+    if (stat === 'sanity' && this.gameState.player.sanity <= 0) {
+      this.gameOver('You have lost your mind to the darkness.');
+    }
+  }
+  
+  /**
+   * Advance game time
+   */
+  advanceTime(minutes: number): void {
+    this.gameState.gameTime += minutes;
+    
+    // Apply environmental effects over time
+    this.applyEnvironmentalEffectsOverTime();
+    
+    // Update active effects, removing expired ones
+    this.updateActiveEffects();
+    
+    // Auto-save if enabled
+    if (this.config.enableAutoSave && 
+        this.gameState.gameTime % (this.config.saveInterval * 60) < minutes) {
+      this.autoSave();
+    }
+  }
+  
+  /**
+   * Game over
+   */
+  gameOver(reason: string): void {
+    this.gameState.isGameOver = true;
+    this.gameState.gameOverReason = reason;
+    
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifyGameOver(reason);
+  }
+  
+  /**
+   * Interact with a hotspot
+   */
+  interactWithHotspot(hotspotId: string): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene || !currentScene.hotspots) return;
+    
+    const hotspot = currentScene.hotspots.find(h => h.id === hotspotId);
+    if (!hotspot) return;
+    
+    // Apply interaction effects if any
+    if (hotspot.interactionEffects) {
+      hotspot.interactionEffects.forEach(effect => {
+        this.applyEffect(effect);
+      });
+    }
+    
+    // Start dialog if specified
+    if (hotspot.dialogId) {
+      this.startDialog(hotspot.dialogId);
+    }
+    
+    // Start puzzle if specified
+    if (hotspot.puzzleId) {
+      this.startPuzzle(hotspot.puzzleId);
+    }
+  }
+  
+  /**
+   * Get a hint for the current scene
+   */
+  getSceneHint(): string | null {
+    if (this.gameState.hintsDisabled) return null;
+    
+    const currentScene = this.getCurrentScene();
+    if (!currentScene || !currentScene.hints || currentScene.hints.length === 0) {
       return null;
     }
     
-    return this.puzzles[this.gameState.activePuzzleId];
+    // For simplicity, return a random hint
+    const randomIndex = Math.floor(Math.random() * currentScene.hints.length);
+    return currentScene.hints[randomIndex];
   }
   
   /**
-   * Check if game should show a hint
+   * Auto-save the game
    */
-  shouldShowHint(): boolean {
-    // Check various conditions to determine if a hint should be shown
+  private autoSave(): void {
+    if (!this.config.enableAutoSave) return;
     
-    // For example, if player has been stuck in the same scene for a while
-    const minutesInScene = 5; // You'd calculate this based on actual play time
+    const saveData: SaveData = {
+      gameState: this.getState(),
+      saveDate: new Date().toISOString(),
+      playTime: this.gameState.gameTime,
+      version: '1.0.0' // Game version
+    };
     
-    return minutesInScene > 10 && !this.gameState.hintsDisabled;
+    // In a real implementation, we would save to localStorage or a server
+    console.log('Auto-saving game:', saveData);
   }
   
   /**
-   * Get appropriate hint for the current situation
+   * Save the game to a slot
    */
-  getCurrentHint(): string | null {
-    // Current scene
-    const scene = this.scenes[this.gameState.currentSceneId];
+  saveGame(slotIndex: number): void {
+    const saveData: SaveData = {
+      gameState: this.getState(),
+      saveDate: new Date().toISOString(),
+      playTime: this.gameState.gameTime,
+      version: '1.0.0' // Game version
+    };
     
-    // If scene has hints, return one
-    if (scene.hints && scene.hints.length > 0) {
-      // Return a hint based on game state
-      return scene.hints[0];
+    // In a real implementation, we would save to localStorage or a server
+    this.saveSlots[slotIndex] = saveData;
+    console.log(`Game saved to slot ${slotIndex}:`, saveData);
+  }
+  
+  /**
+   * Load the game from a slot
+   */
+  loadGame(slotIndex: number): boolean {
+    const saveData = this.saveSlots[slotIndex];
+    if (!saveData) {
+      console.error(`No save data found in slot ${slotIndex}`);
+      return false;
     }
     
-    // Active puzzle hints
-    if (this.gameState.activePuzzleId) {
-      const puzzle = this.puzzles[this.gameState.activePuzzleId];
-      if (puzzle.hints && puzzle.hints.length > 0) {
-        return puzzle.hints[0];
-      }
-    }
+    // Restore game state
+    this.gameState = saveData.gameState;
     
-    return null;
+    // Notify callbacks
+    this.notifyStateChange();
+    this.notifySceneChange(this.gameState.currentScene);
+    
+    console.log(`Game loaded from slot ${slotIndex}:`, saveData);
+    return true;
   }
   
   /**
-   * Get current game progress percentage
+   * Subscribe to state change events
    */
-  getGameProgress(): number {
-    // This would vary based on how you define progress
-    // Example: based on visited scenes or completed puzzles
-    
-    // Using visited scenes as a simple metric
-    const totalScenes = Object.keys(this.scenes).length;
-    const visitedScenes = this.gameState.visitedScenes.length;
-    
-    return Math.min(100, Math.round((visitedScenes / totalScenes) * 100));
+  onStateChange(callback: (state: GameState) => void): () => void {
+    this.onStateChangeCallbacks.push(callback);
+    return () => {
+      this.onStateChangeCallbacks = this.onStateChangeCallbacks.filter(cb => cb !== callback);
+    };
   }
   
   /**
-   * Update game time and effects that happen over time
+   * Subscribe to scene change events
    */
-  update(elapsedMs: number): void {
-    // Convert real-time to game-time (e.g., 1 real second = 1 game minute)
-    const elapsedGameMinutes = elapsedMs / 1000;
-    
-    // Update game time
-    this.gameState.gameTime += elapsedGameMinutes;
-    
-    // Process time-based effects
-    this.processTimeEffects(elapsedGameMinutes);
-    
-    // Update active effects durations and remove expired ones
-    this.updateActiveEffects(elapsedGameMinutes);
-    
-    this.notifyListeners();
+  onSceneChange(callback: (sceneId: string) => void): () => void {
+    this.onSceneChangeCallbacks.push(callback);
+    return () => {
+      this.onSceneChangeCallbacks = this.onSceneChangeCallbacks.filter(cb => cb !== callback);
+    };
   }
   
   /**
-   * Process effects that happen over time
+   * Subscribe to dialog start events
    */
-  private processTimeEffects(elapsedMinutes: number): void {
-    // Example: Sanity drain in spooky areas
-    const scene = this.scenes[this.gameState.currentSceneId];
-    
-    if (scene.environmentEffectsOverTime) {
-      if (scene.environmentEffectsOverTime.sanityDrainPerMinute) {
-        const drain = scene.environmentEffectsOverTime.sanityDrainPerMinute * elapsedMinutes;
-        this.updatePlayerStat('sanity', -drain);
-      }
-      
-      if (scene.environmentEffectsOverTime.healthDrainPerMinute) {
-        const drain = scene.environmentEffectsOverTime.healthDrainPerMinute * elapsedMinutes;
-        this.updatePlayerStat('health', -drain);
-      }
-      
-      if (scene.environmentEffectsOverTime.manaRegenPerMinute) {
-        const regen = scene.environmentEffectsOverTime.manaRegenPerMinute * elapsedMinutes;
-        this.updatePlayerStat('mana', regen);
-      }
-    }
+  onDialogStart(callback: (dialog: Dialog) => void): () => void {
+    this.onDialogStartCallbacks.push(callback);
+    return () => {
+      this.onDialogStartCallbacks = this.onDialogStartCallbacks.filter(cb => cb !== callback);
+    };
   }
   
   /**
-   * Update active effects durations and remove expired ones
+   * Subscribe to dialog end events
    */
-  private updateActiveEffects(elapsedMinutes: number): void {
-    const newActiveEffects = this.gameState.activeEffects.filter(effect => {
-      // Skip permanent effects (duration = 0)
-      if (effect.duration === 0) return true;
-      
-      // Decrease duration and filter out expired effects
-      const newDuration = effect.duration - elapsedMinutes;
-      
-      if (newDuration <= 0) {
-        return false;
-      }
-      
-      effect.duration = newDuration;
-      return true;
+  onDialogEnd(callback: (dialogId: string) => void): () => void {
+    this.onDialogEndCallbacks.push(callback);
+    return () => {
+      this.onDialogEndCallbacks = this.onDialogEndCallbacks.filter(cb => cb !== callback);
+    };
+  }
+  
+  /**
+   * Subscribe to item added events
+   */
+  onItemAdded(callback: (item: InventoryItem) => void): () => void {
+    this.onItemAddedCallbacks.push(callback);
+    return () => {
+      this.onItemAddedCallbacks = this.onItemAddedCallbacks.filter(cb => cb !== callback);
+    };
+  }
+  
+  /**
+   * Subscribe to puzzle start events
+   */
+  onPuzzleStart(callback: (puzzle: Puzzle) => void): () => void {
+    this.onPuzzleStartCallbacks.push(callback);
+    return () => {
+      this.onPuzzleStartCallbacks = this.onPuzzleStartCallbacks.filter(cb => cb !== callback);
+    };
+  }
+  
+  /**
+   * Subscribe to game over events
+   */
+  onGameOver(callback: (reason: string) => void): () => void {
+    this.onGameOverCallbacks.push(callback);
+    return () => {
+      this.onGameOverCallbacks = this.onGameOverCallbacks.filter(cb => cb !== callback);
+    };
+  }
+  
+  /**
+   * Notify all state change callbacks
+   */
+  private notifyStateChange(): void {
+    this.onStateChangeCallbacks.forEach(callback => {
+      callback(this.getState());
     });
-    
-    this.gameState.activeEffects = newActiveEffects;
+  }
+  
+  /**
+   * Notify all scene change callbacks
+   */
+  private notifySceneChange(sceneId: string): void {
+    this.onSceneChangeCallbacks.forEach(callback => {
+      callback(sceneId);
+    });
+  }
+  
+  /**
+   * Notify all dialog start callbacks
+   */
+  private notifyDialogStart(dialog: Dialog): void {
+    this.onDialogStartCallbacks.forEach(callback => {
+      callback(dialog);
+    });
+  }
+  
+  /**
+   * Notify all dialog end callbacks
+   */
+  private notifyDialogEnd(dialogId: string): void {
+    this.onDialogEndCallbacks.forEach(callback => {
+      callback(dialogId);
+    });
+  }
+  
+  /**
+   * Notify all item added callbacks
+   */
+  private notifyItemAdded(item: InventoryItem): void {
+    this.onItemAddedCallbacks.forEach(callback => {
+      callback(item);
+    });
+  }
+  
+  /**
+   * Notify all puzzle start callbacks
+   */
+  private notifyPuzzleStart(puzzle: Puzzle): void {
+    this.onPuzzleStartCallbacks.forEach(callback => {
+      callback(puzzle);
+    });
+  }
+  
+  /**
+   * Notify all game over callbacks
+   */
+  private notifyGameOver(reason: string): void {
+    this.onGameOverCallbacks.forEach(callback => {
+      callback(reason);
+    });
   }
 }
 
+// Create and export a singleton instance
+export const gameEngine = new GameEngine();
+
+// For convenience, also export the class
 export default GameEngine;

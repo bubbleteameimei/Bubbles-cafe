@@ -1,453 +1,451 @@
 import React, { useState, useEffect } from 'react';
-import { SceneViewProps, Scene, Hotspot, Exit, SceneItem, SceneEffect } from '../types';
+import { SceneViewProps, Scene, Hotspot, SceneItem, Exit } from '../types';
 
 /**
- * SceneView - Displays the game scene with interactive elements
+ * SceneView - Displays and manages interactive game scenes
  */
 const SceneView: React.FC<SceneViewProps> = ({
   scene,
-  onHotspotClick,
-  onExitClick,
-  onItemClick,
-  activeInventoryItem,
-  lighting,
-  fogAmount,
-  effectFilters
+  onHotspotInteract,
+  onExitSelect,
+  onItemTake,
+  visitedExits = [],
+  inventoryItems = []
 }) => {
-  const [hoveredHotspot, setHoveredHotspot] = useState<string | null>(null);
-  const [hoveredExit, setHoveredExit] = useState<string | null>(null);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  const [hoverHotspotId, setHoverHotspotId] = useState<string | null>(null);
+  const [hoverExitId, setHoverExitId] = useState<string | null>(null);
+  const [hoverItemId, setHoverItemId] = useState<string | null>(null);
+  const [transitionState, setTransitionState] = useState<'in' | 'visible' | 'out'>('in');
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipText, setTooltipText] = useState('');
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  // Reset hover states when scene changes
+  // Handle scene transitions
   useEffect(() => {
-    setHoveredHotspot(null);
-    setHoveredExit(null);
-    setHoveredItem(null);
-    setIsLoading(true);
-    setImageLoaded(false);
+    // Initial transition in
+    setTransitionState('in');
+    const timer = setTimeout(() => {
+      setTransitionState('visible');
+    }, 500);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, [scene.id]);
   
-  // Handle hotspot click
-  const handleHotspotClick = (hotspot: Hotspot) => {
-    if (activeInventoryItem) {
-      // Handle using inventory item on hotspot
-      // This is handled by the parent component via onHotspotClick
+  // Check if an exit is locked
+  const isExitLocked = (exit: Exit): boolean => {
+    // If exit has no lock, it's always unlocked
+    if (!exit.locked) return false;
+    
+    // If exit requires an item that's not in inventory, it's locked
+    if (exit.lockType === 'item' && exit.requiredItem) {
+      return !inventoryItems.some(item => item.id === exit.requiredItem);
     }
-    onHotspotClick(hotspot.id);
+    
+    // If exit requires a flag that's not set, it's locked
+    if (exit.lockType === 'flag' && exit.requiredFlag) {
+      // This would need to check against game state flags
+      // For demo purposes, assume flags would be checked in the parent component
+      return true;
+    }
+    
+    return exit.locked;
   };
   
   // Handle exit click
-  const handleExitClick = (exit: Exit) => {
-    if (activeInventoryItem) {
-      // Handle using inventory item on exit (e.g. using key on locked door)
-      // This is handled by the parent component via onExitClick
-    }
-    onExitClick(exit.id);
-  };
-  
-  // Handle scene item click
-  const handleItemClick = (item: SceneItem) => {
-    onItemClick(item.id);
-  };
-  
-  // Handle background image load
-  const handleImageLoaded = () => {
-    setImageLoaded(true);
-    setIsLoading(false);
-  };
-  
-  // Get tooltip text for scene item
-  const getItemTooltip = (item: SceneItem) => {
-    if (activeInventoryItem) {
-      return item.iconUrl ? `Use ${activeInventoryItem} on item` : 'Examine';
-    } else {
-      return item.tooltip || 'Take item';
-    }
-  };
-  
-  // Get tooltip text for hotspot
-  const getHotspotTooltip = (hotspot: Hotspot) => {
-    if (activeInventoryItem) {
-      return `Use ${activeInventoryItem} on ${hotspot.name || 'this'}`;
-    } else {
-      return hotspot.tooltip || (hotspot.type === 'inspect' ? 'Examine' : 'Interact');
-    }
-  };
-  
-  // Get tooltip text for exit
-  const getExitTooltip = (exit: Exit) => {
-    if (activeInventoryItem && exit.lockState === 'locked') {
-      return `Use ${activeInventoryItem} on ${exit.type}`;
-    } else if (exit.lockState === 'locked') {
-      return exit.tooltip || 'Locked';
-    } else if (exit.lockState === 'sealed') {
-      return exit.tooltip || 'Sealed';
-    } else {
-      return exit.tooltip || `Go to ${exit.type}`;
-    }
-  };
-  
-  // Get hotspot interaction cursor style
-  const getHotspotCursorStyle = (hotspot: Hotspot) => {
-    if (activeInventoryItem) {
-      return 'cursor-use';
-    } else {
-      switch (hotspot.type) {
-        case 'inspect':
-          return 'cursor-inspect';
-        case 'interact':
-          return 'cursor-interact';
-        case 'dialog':
-          return 'cursor-talk';
-        case 'puzzle':
-          return 'cursor-puzzle';
-        default:
-          return 'cursor-interact';
+  const handleExitClick = (exitId: string, exit: Exit) => {
+    if (isExitLocked(exit)) {
+      // Show locked message if available
+      if (exit.lockedMessage) {
+        // Would typically show this via the notification system
+        alert(exit.lockedMessage);
       }
+      return;
+    }
+    
+    // Begin transition out
+    setTransitionState('out');
+    
+    // Delay the actual navigation to allow for transition animation
+    setTimeout(() => {
+      if (onExitSelect) {
+        onExitSelect(exitId);
+      }
+    }, scene.transition?.duration || 500);
+  };
+  
+  // Handle hotspot click
+  const handleHotspotClick = (hotspotId: string) => {
+    if (onHotspotInteract) {
+      onHotspotInteract(hotspotId);
     }
   };
   
-  // Get exit cursor style
-  const getExitCursorStyle = (exit: Exit) => {
-    if (activeInventoryItem && exit.lockState === 'locked') {
-      return 'cursor-use';
-    } else if (exit.lockState === 'locked') {
-      return 'cursor-locked';
-    } else if (exit.lockState === 'unlockable') {
-      return 'cursor-key';
-    } else if (exit.lockState === 'sealed') {
-      return 'cursor-sealed';
-    } else {
-      return 'cursor-exit';
+  // Handle item click
+  const handleItemClick = (itemId: string) => {
+    if (onItemTake) {
+      onItemTake(itemId);
+    }
+  };
+  
+  // Handle mouse movement for tooltips
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
+  
+  // Get transition class based on current state and scene settings
+  const getTransitionClass = () => {
+    const transitionType = scene.transition?.type || 'fade';
+    
+    switch (transitionState) {
+      case 'in':
+        return `scene-transition-${transitionType}-in`;
+      case 'out':
+        return `scene-transition-${transitionType}-out`;
+      default:
+        return '';
     }
   };
   
   return (
-    <div className="scene-container">
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="scene-loading">
-          <div className="scene-loading-spinner"></div>
-          <div className="scene-loading-text">Loading scene...</div>
-        </div>
-      )}
-      
-      {/* Scene background */}
-      <div 
-        className={`scene-background ${imageLoaded ? 'scene-loaded' : 'scene-loading'} lighting-${lighting || 'normal'}`}
-        style={{ 
-          backgroundImage: `url('${scene.backgroundUrl}')`,
-          filter: `blur(${scene.blurAmount || 0}px)`
-        }}
-      >
-        <img 
-          src={scene.backgroundUrl} 
-          alt={scene.name} 
-          className="scene-preload-image" 
-          onLoad={handleImageLoaded}
-        />
+    <div 
+      className={`scene-container ${getTransitionClass()}`}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Scene Background */}
+      <div className="scene-background">
+        {scene.backgroundImage ? (
+          <img 
+            src={scene.backgroundImage}
+            alt={scene.name || 'Scene'} 
+            className="scene-image"
+          />
+        ) : (
+          <div className="scene-placeholder" />
+        )}
       </div>
       
-      {/* Fog overlay */}
-      {(fogAmount > 0 || lighting === 'dark' || lighting === 'eerie') && (
-        <div 
-          className={`scene-fog lighting-${lighting || 'normal'}`}
-          style={{ opacity: fogAmount / 10 }}
-        ></div>
-      )}
-      
-      {/* Scene overlay (optional) */}
-      {scene.overlayUrl && (
-        <div 
-          className="scene-overlay"
-          style={{ backgroundImage: `url('${scene.overlayUrl}')` }}
-        ></div>
-      )}
-      
-      {/* Ambient effects */}
-      {scene.ambientEffects && scene.ambientEffects.length > 0 && (
-        scene.ambientEffects.map((effect, index) => (
-          <div 
-            key={`effect-${index}`}
-            className={`ambient-effect effect-${effect.type}`}
-            style={{
-              opacity: effect.intensity / 10,
-              backgroundColor: effect.color
-            }}
-          ></div>
-        ))
+      {/* Scene Overlay Effects */}
+      {scene.overlayEffect && (
+        <div className={`scene-overlay scene-overlay-${scene.overlayEffect}`} />
       )}
       
       {/* Hotspots */}
-      {scene.hotspots.map((hotspot) => (
-        <div
-          key={hotspot.id}
-          className={`scene-hotspot ${getHotspotCursorStyle(hotspot)} ${hoveredHotspot === hotspot.id ? 'hovered' : ''} ${activeInventoryItem ? 'with-item' : ''}`}
-          style={{
-            left: `${hotspot.x}%`,
-            top: `${hotspot.y}%`,
-            width: `${hotspot.width}%`,
-            height: `${hotspot.height}%`
-          }}
-          onClick={() => handleHotspotClick(hotspot)}
-          onMouseEnter={() => setHoveredHotspot(hotspot.id)}
-          onMouseLeave={() => setHoveredHotspot(null)}
-          data-tooltip={getHotspotTooltip(hotspot)}
-        ></div>
-      ))}
+      <div className="hotspots-container">
+        {scene.hotspots?.map(hotspot => (
+          <div
+            key={hotspot.id}
+            className={`hotspot ${hoverHotspotId === hotspot.id ? 'hotspot-hover' : ''}`}
+            style={{
+              left: `${hotspot.x}%`,
+              top: `${hotspot.y}%`,
+              width: `${hotspot.width}%`,
+              height: `${hotspot.height}%`,
+              borderRadius: hotspot.shape === 'circle' ? '50%' : '0'
+            }}
+            onClick={() => handleHotspotClick(hotspot.id)}
+            onMouseEnter={() => {
+              setHoverHotspotId(hotspot.id);
+              setShowTooltip(true);
+              setTooltipText(hotspot.tooltip || 'Examine');
+            }}
+            onMouseLeave={() => {
+              setHoverHotspotId(null);
+              setShowTooltip(false);
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Scene Items */}
+      <div className="items-container">
+        {scene.items?.map(item => (
+          <div
+            key={item.id}
+            className={`scene-item ${hoverItemId === item.id ? 'scene-item-hover' : ''}`}
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+              width: `${item.width}%`,
+              height: `${item.height}%`
+            }}
+            onClick={() => handleItemClick(item.id)}
+            onMouseEnter={() => {
+              setHoverItemId(item.id);
+              setShowTooltip(true);
+              setTooltipText(item.tooltip || (item.icon ? `Take ${item.icon}` : 'Take item'));
+            }}
+            onMouseLeave={() => {
+              setHoverItemId(null);
+              setShowTooltip(false);
+            }}
+          >
+            {item.visualCue && (
+              <div className="item-visual-cue" />
+            )}
+          </div>
+        ))}
+      </div>
       
       {/* Exits */}
-      {scene.exits.map((exit) => (
-        <div
-          key={exit.id}
-          className={`scene-exit ${getExitCursorStyle(exit)} ${hoveredExit === exit.id ? 'hovered' : ''} ${activeInventoryItem ? 'with-item' : ''}`}
-          style={{
-            left: `${exit.x}%`,
-            top: `${exit.y}%`,
-            width: `${exit.width}%`,
-            height: `${exit.height}%`
-          }}
-          onClick={() => handleExitClick(exit)}
-          onMouseEnter={() => setHoveredExit(exit.id)}
-          onMouseLeave={() => setHoveredExit(null)}
-          data-tooltip={getExitTooltip(exit)}
-        ></div>
-      ))}
+      <div className="exits-container">
+        {scene.exits?.map(exit => (
+          <div
+            key={exit.id}
+            className={`scene-exit ${
+              hoverExitId === exit.id ? 'scene-exit-hover' : ''
+            } ${
+              isExitLocked(exit) ? 'scene-exit-locked' : ''
+            } ${
+              visitedExits.includes(exit.id) ? 'scene-exit-visited' : ''
+            }`}
+            style={{
+              left: `${exit.x}%`,
+              top: `${exit.y}%`,
+              width: `${exit.width}%`,
+              height: `${exit.height}%`
+            }}
+            onClick={() => handleExitClick(exit.id, exit)}
+            onMouseEnter={() => {
+              setHoverExitId(exit.id);
+              setShowTooltip(true);
+              setTooltipText(
+                isExitLocked(exit) 
+                  ? (exit.lockedTooltip || 'Locked')
+                  : (exit.tooltip || 'Go here')
+              );
+            }}
+            onMouseLeave={() => {
+              setHoverExitId(null);
+              setShowTooltip(false);
+            }}
+          >
+            {exit.icon && <div className="exit-icon">{exit.icon}</div>}
+          </div>
+        ))}
+      </div>
       
-      {/* Scene items */}
-      {scene.items.map((item) => (
-        <div
-          key={item.id}
-          className={`scene-item ${hoveredItem === item.id ? 'hovered' : ''} ${activeInventoryItem ? 'with-item' : ''}`}
-          style={{
-            left: `${item.x}%`,
-            top: `${item.y}%`,
-            width: `${item.width}%`,
-            height: `${item.height}%`,
-            backgroundImage: item.iconUrl ? `url(${item.iconUrl})` : 'none'
-          }}
-          onClick={() => handleItemClick(item)}
-          onMouseEnter={() => setHoveredItem(item.id)}
-          onMouseLeave={() => setHoveredItem(null)}
-          data-tooltip={getItemTooltip(item)}
-        ></div>
-      ))}
-      
-      {/* Scene foreground (optional) */}
-      {scene.foregroundUrl && (
+      {/* Tooltip */}
+      {showTooltip && (
         <div 
-          className="scene-foreground"
-          style={{ backgroundImage: `url('${scene.foregroundUrl}')` }}
-        ></div>
+          className="scene-tooltip"
+          style={{
+            left: tooltipPosition.x + 15,
+            top: tooltipPosition.y + 15
+          }}
+        >
+          {tooltipText}
+        </div>
       )}
       
-      <style jsx>{`
+      <style>{`
         .scene-container {
           position: relative;
           width: 100%;
-          height: 100vh;
+          height: 100%;
           overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: default;
+          background-color: #000;
         }
         
-        .scene-loading {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.8);
-          z-index: 50;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: #e0e0e0;
-          font-family: 'Times New Roman', serif;
-        }
-        
-        .scene-loading-spinner {
-          width: 50px;
-          height: 50px;
-          border: 4px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: #e0e0e0;
-          animation: spin 1s ease-in-out infinite;
-          margin-bottom: 15px;
-        }
-        
-        .scene-loading-text {
-          font-size: 18px;
-          letter-spacing: 1px;
-        }
-        
+        /* Scene background */
         .scene-background {
-          position: absolute;
-          top: 0;
-          left: 0;
+          position: relative;
           width: 100%;
           height: 100%;
-          background-size: cover;
-          background-position: center;
-          transition: filter 0.5s ease;
+          overflow: hidden;
         }
         
-        .scene-loading {
-          opacity: 1;
-          transition: opacity 0.3s ease;
-        }
-        
-        .scene-loaded {
-          opacity: 1;
-          animation: fadeIn 0.5s ease;
-        }
-        
-        .scene-preload-image {
-          display: none;
-        }
-        
-        .scene-fog {
-          position: absolute;
-          top: 0;
-          left: 0;
+        .scene-image {
           width: 100%;
           height: 100%;
-          background-color: rgba(20, 20, 30, 0.5);
-          mix-blend-mode: multiply;
-          z-index: 10;
-          pointer-events: none;
+          object-fit: cover;
         }
         
+        .scene-placeholder {
+          width: 100%;
+          height: 100%;
+          background-color: #111;
+        }
+        
+        /* Scene overlay effects */
         .scene-overlay {
           position: absolute;
           top: 0;
           left: 0;
-          width: 100%;
-          height: 100%;
-          background-size: cover;
-          background-position: center;
-          z-index: 20;
+          right: 0;
+          bottom: 0;
           pointer-events: none;
         }
         
-        .scene-foreground {
+        .scene-overlay-fog {
+          background-image: url('/assets/fog-overlay.png');
+          opacity: 0.5;
+          animation: fog-movement 60s infinite alternate;
+        }
+        
+        .scene-overlay-dark {
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .scene-overlay-eerie {
+          background: radial-gradient(circle at center, rgba(20, 0, 40, 0.3) 0%, rgba(10, 0, 20, 0.7) 100%);
+          mix-blend-mode: multiply;
+        }
+        
+        @keyframes fog-movement {
+          0% { background-position: 0% 0%; }
+          100% { background-position: 100% 100%; }
+        }
+        
+        /* Hotspots */
+        .hotspots-container {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background-size: cover;
-          background-position: center;
-          z-index: 40;
           pointer-events: none;
         }
         
-        .ambient-effect {
+        .hotspot {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 15;
-          pointer-events: none;
-        }
-        
-        .effect-fog {
-          background-color: rgba(40, 40, 50, 0.6);
-          animation: fogMove 120s infinite ease-in-out;
-        }
-        
-        .effect-rain {
-          background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(200, 200, 220, 0.3) 100%);
-          animation: rainFall 1.5s infinite linear;
-        }
-        
-        .effect-snow {
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 2px) 0 0;
-          background-size: 10px 10px;
-          animation: snowFall 10s infinite linear;
-        }
-        
-        .effect-sparks {
-          background-image: radial-gradient(circle, rgba(255, 180, 50, 0.7) 1px, transparent 2px);
-          background-size: 100px 100px;
-          animation: sparkle 3s infinite ease-in-out;
-        }
-        
-        .effect-dust {
-          background-image: radial-gradient(circle, rgba(200, 180, 120, 0.3) 1px, transparent 2px);
-          background-size: 50px 50px;
-          animation: dustMove 30s infinite linear;
-        }
-        
-        .effect-lightning {
-          background-color: rgba(200, 220, 255, 0);
-          animation: lightning 10s infinite ease-out;
-        }
-        
-        .scene-hotspot, .scene-exit, .scene-item {
-          position: absolute;
-          z-index: 30;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
           cursor: pointer;
+          border: 1px solid rgba(255, 255, 255, 0);
+          background-color: rgba(255, 255, 255, 0);
+          transition: all 0.2s ease;
+          pointer-events: auto;
         }
         
-        .scene-hotspot.hovered, .scene-exit.hovered, .scene-item.hovered {
-          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        .hotspot-hover {
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          background-color: rgba(255, 255, 255, 0.1);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
         }
         
-        .scene-hotspot.hovered::after, .scene-exit.hovered::after, .scene-item.hovered::after {
-          content: attr(data-tooltip);
+        /* Scene items */
+        .items-container {
           position: absolute;
-          bottom: calc(100% + 8px);
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: rgba(10, 10, 20, 0.9);
-          color: #e0e0e0;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 14px;
-          white-space: nowrap;
-          z-index: 100;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           pointer-events: none;
-          font-family: 'Times New Roman', serif;
         }
         
         .scene-item {
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
+          position: absolute;
+          cursor: pointer;
+          border: 1px solid rgba(255, 255, 255, 0);
+          background-color: rgba(255, 255, 255, 0);
+          transition: all 0.2s ease;
+          pointer-events: auto;
         }
         
-        .cursor-inspect { cursor: url('/assets/cursors/inspect.png'), help; }
-        .cursor-interact { cursor: url('/assets/cursors/interact.png'), pointer; }
-        .cursor-talk { cursor: url('/assets/cursors/talk.png'), pointer; }
-        .cursor-puzzle { cursor: url('/assets/cursors/puzzle.png'), pointer; }
-        .cursor-exit { cursor: url('/assets/cursors/exit.png'), pointer; }
-        .cursor-locked { cursor: url('/assets/cursors/locked.png'), not-allowed; }
-        .cursor-sealed { cursor: url('/assets/cursors/sealed.png'), not-allowed; }
-        .cursor-key { cursor: url('/assets/cursors/key.png'), pointer; }
-        .cursor-use { cursor: url('/assets/cursors/use.png'), pointer; }
-        
-        .lighting-bright {
-          filter: brightness(1.2) contrast(1.1);
+        .scene-item-hover {
+          border: 1px solid rgba(255, 255, 100, 0.3);
+          background-color: rgba(255, 255, 100, 0.1);
+          box-shadow: 0 0 15px rgba(255, 255, 100, 0.3);
         }
         
-        .lighting-dim {
-          filter: brightness(0.8) contrast(1.1) saturate(0.9);
+        .item-visual-cue {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: rgba(255, 255, 0, 0.5);
+          border-radius: 50%;
+          animation: pulse 2s infinite;
         }
         
-        .lighting-dark {
-          filter: brightness(0.5) contrast(1.2) saturate(0.8);
+        @keyframes pulse {
+          0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
+          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+          100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
         }
         
-        .lighting-eerie {
-          filter: brightness(0.7) contrast(1.2) saturate(0.7) hue-rotate(10deg);
+        /* Exits */
+        .exits-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+        
+        .scene-exit {
+          position: absolute;
+          cursor: pointer;
+          border: 1px solid rgba(255, 255, 255, 0);
+          background-color: rgba(255, 255, 255, 0);
+          transition: all 0.2s ease;
+          pointer-events: auto;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        .scene-exit-hover {
+          border: 1px solid rgba(100, 200, 255, 0.3);
+          background-color: rgba(100, 200, 255, 0.1);
+          box-shadow: 0 0 15px rgba(100, 200, 255, 0.3);
+        }
+        
+        .scene-exit-locked {
+          cursor: not-allowed;
+        }
+        
+        .scene-exit-locked.scene-exit-hover {
+          border: 1px solid rgba(255, 100, 100, 0.3);
+          background-color: rgba(255, 100, 100, 0.1);
+          box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
+        }
+        
+        .scene-exit-visited {
+          border: 1px solid rgba(100, 255, 100, 0.1);
+        }
+        
+        .exit-icon {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 24px;
+        }
+        
+        /* Tooltip */
+        .scene-tooltip {
+          position: fixed;
+          background-color: rgba(0, 0, 0, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 14px;
+          pointer-events: none;
+          z-index: 1000;
+          max-width: 200px;
+          white-space: nowrap;
+        }
+        
+        /* Transitions */
+        .scene-transition-fade-in {
+          animation: fadeIn 0.5s forwards;
+        }
+        
+        .scene-transition-fade-out {
+          animation: fadeOut 0.5s forwards;
+        }
+        
+        .scene-transition-slide-in {
+          animation: slideIn 0.5s forwards;
+        }
+        
+        .scene-transition-slide-out {
+          animation: slideOut 0.5s forwards;
         }
         
         @keyframes fadeIn {
@@ -455,60 +453,19 @@ const SceneView: React.FC<SceneViewProps> = ({
           to { opacity: 1; }
         }
         
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
         
-        @keyframes fogMove {
-          0% { opacity: 0.5; transform: translateX(-10%) translateY(0); }
-          50% { opacity: 0.7; transform: translateX(10%) translateY(0); }
-          100% { opacity: 0.5; transform: translateX(-10%) translateY(0); }
+        @keyframes slideIn {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
         }
         
-        @keyframes rainFall {
-          from { background-position: 0 0; }
-          to { background-position: 0 100%; }
-        }
-        
-        @keyframes snowFall {
-          from { background-position: 0 0; }
-          to { background-position: 10px 100%; }
-        }
-        
-        @keyframes sparkle {
-          0% { opacity: 0.2; }
-          50% { opacity: 0.5; }
-          100% { opacity: 0.2; }
-        }
-        
-        @keyframes dustMove {
-          from { background-position: 0 0; }
-          to { background-position: 100px 100px; }
-        }
-        
-        @keyframes lightning {
-          0% { background-color: rgba(200, 220, 255, 0); }
-          2% { background-color: rgba(200, 220, 255, 0.8); }
-          3% { background-color: rgba(200, 220, 255, 0); }
-          6% { background-color: rgba(200, 220, 255, 0.4); }
-          8% { background-color: rgba(200, 220, 255, 0); }
-          100% { background-color: rgba(200, 220, 255, 0); }
-        }
-        
-        @media (max-width: 768px) {
-          .scene-hotspot.hovered::after, .scene-exit.hovered::after, .scene-item.hovered::after {
-            font-size: 12px;
-            padding: 3px 6px;
-          }
-          
-          .scene-loading-spinner {
-            width: 40px;
-            height: 40px;
-          }
-          
-          .scene-loading-text {
-            font-size: 16px;
-          }
+        @keyframes slideOut {
+          from { transform: translateX(0); }
+          to { transform: translateX(100%); }
         }
       `}</style>
     </div>

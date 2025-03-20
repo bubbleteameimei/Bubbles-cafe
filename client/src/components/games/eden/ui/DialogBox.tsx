@@ -1,349 +1,393 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DialogBoxProps, DialogChoice, CurrentDialog } from '../types';
+import { DialogBoxProps, DialogChoice } from '../types';
 
 /**
- * DialogBox - Displays character dialog with typewriter effect and choices
+ * DialogBox - Displays dialog text with typewriter effect and choices
  */
 const DialogBox: React.FC<DialogBoxProps> = ({
-  currentDialog,
-  isOpen,
+  text = '',
+  choices = [],
   onClose,
   onChoiceSelect,
-  autoAdvance = false,
-  typingSpeed = 30
+  typewriterSpeed = 30,
+  showCloseButton = true,
+  characterName,
+  characterImage,
+  position = 'bottom'
 }) => {
   const [displayedText, setDisplayedText] = useState<string>('');
-  const [isTyping, setIsTyping] = useState<boolean>(false);
-  const [textComplete, setTextComplete] = useState<boolean>(false);
+  const [isTyping, setIsTyping] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
   const typewriterRef = useRef<NodeJS.Timeout | null>(null);
-  const dialogTextRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   
-  // Start typing effect when dialog changes
+  // Start typewriter effect when text changes
   useEffect(() => {
-    if (currentDialog && isOpen) {
-      startTypewriter();
+    setIsTyping(true);
+    setDisplayedText('');
+    
+    if (typewriterRef.current) {
+      clearTimeout(typewriterRef.current);
     }
+    
+    // Typewriter effect
+    const typeWriter = (currentIndex: number) => {
+      if (currentIndex < text.length) {
+        setDisplayedText(prev => prev + text.charAt(currentIndex));
+        typewriterRef.current = setTimeout(() => {
+          typeWriter(currentIndex + 1);
+        }, typewriterSpeed);
+      } else {
+        setIsTyping(false);
+      }
+    };
+    
+    // Start typing
+    typeWriter(0);
     
     return () => {
       if (typewriterRef.current) {
         clearTimeout(typewriterRef.current);
       }
     };
-  }, [currentDialog, isOpen]);
+  }, [text, typewriterSpeed]);
   
-  // Auto-scroll to bottom of text when it updates
+  // Add keydown listener for space to complete typing
   useEffect(() => {
-    if (dialogTextRef.current) {
-      dialogTextRef.current.scrollTop = dialogTextRef.current.scrollHeight;
-    }
-  }, [displayedText]);
-  
-  // Start typewriter effect
-  const startTypewriter = () => {
-    if (!currentDialog) return;
-    
-    setIsTyping(true);
-    setTextComplete(false);
-    setDisplayedText('');
-    
-    let i = 0;
-    const text = currentDialog.text;
-    
-    const type = () => {
-      if (i < text.length) {
-        setDisplayedText(prev => prev + text.charAt(i));
-        i++;
-        typewriterRef.current = setTimeout(type, typingSpeed);
-      } else {
-        setIsTyping(false);
-        setTextComplete(true);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        if (isTyping) {
+          // Complete typing immediately
+          setDisplayedText(text);
+          setIsTyping(false);
+          if (typewriterRef.current) {
+            clearTimeout(typewriterRef.current);
+          }
+        } else if (choices.length === 0 && showCloseButton) {
+          // Close dialog if no choices and not typing
+          handleClose();
+        }
+      } else if (e.key === 'Escape') {
+        // Close dialog
+        handleClose();
       }
     };
     
-    typewriterRef.current = setTimeout(type, typingSpeed);
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isTyping, choices.length, text, showCloseButton]);
   
-  // Complete text immediately on click if still typing
-  const completeText = () => {
-    if (isTyping && currentDialog) {
-      if (typewriterRef.current) {
-        clearTimeout(typewriterRef.current);
-      }
-      setDisplayedText(currentDialog.text);
-      setIsTyping(false);
-      setTextComplete(true);
-    } else if (textComplete && !currentDialog?.choices) {
-      // If there are no choices and text is complete, close the dialog box
-      onClose();
-    }
+  // Handle dialog close
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      if (onClose) onClose();
+    }, 300);
   };
   
   // Handle choice selection
   const handleChoiceSelect = (choice: DialogChoice) => {
-    onChoiceSelect(choice);
-  };
-  
-  // Get speaker display name
-  const getSpeakerName = () => {
-    if (!currentDialog) return '';
-    
-    if (typeof currentDialog.speaker === 'string') {
-      return currentDialog.speaker;
-    } else {
-      return currentDialog.speaker.name;
+    if (onChoiceSelect) {
+      onChoiceSelect(choice);
     }
   };
   
-  // Get speaker text color
-  const getSpeakerColor = () => {
-    if (!currentDialog) return '#ffffff';
-    
-    if (typeof currentDialog.speaker === 'object' && currentDialog.speaker.color) {
-      return currentDialog.speaker.color;
+  // Get position-specific class
+  const getPositionClass = () => {
+    switch (position) {
+      case 'top':
+        return 'dialog-position-top';
+      case 'middle':
+        return 'dialog-position-middle';
+      case 'bottom':
+      default:
+        return 'dialog-position-bottom';
     }
-    
-    return '#ffffff';
   };
   
-  if (!isOpen || !currentDialog) return null;
+  // Check if text has fully typed out
+  const isFullyTyped = displayedText.length === text.length;
   
   return (
-    <div className="dialog-overlay">
-      <div className="dialog-container">
-        <div className="dialog-header">
-          <h3 className="dialog-speaker" style={{ color: getSpeakerColor() }}>
-            {getSpeakerName()}
-          </h3>
-          <button 
-            className="dialog-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
+    <div className={`dialog-overlay ${isVisible ? 'dialog-visible' : 'dialog-hidden'}`}>
+      <div 
+        ref={dialogRef}
+        className={`dialog-box ${getPositionClass()} ${characterImage ? 'with-character' : ''}`}
+      >
+        {/* Character portrait */}
+        {characterImage && (
+          <div className="character-portrait">
+            <img src={characterImage} alt={characterName || 'Character'} />
+            {characterName && <div className="character-name">{characterName}</div>}
+          </div>
+        )}
         
-        <div 
-          className="dialog-text"
-          ref={dialogTextRef}
-          onClick={completeText}
-        >
-          {displayedText}
-          {isTyping && <span className="typing-cursor">_</span>}
-        </div>
-        
-        {textComplete && currentDialog.choices && currentDialog.choices.length > 0 && (
-          <div className="dialog-choices">
-            {currentDialog.choices.map((choice, index) => (
-              <button
-                key={`choice-${index}`}
-                className={`dialog-choice ${choice.disabled ? 'disabled' : ''}`}
-                onClick={() => !choice.disabled && handleChoiceSelect(choice)}
-                disabled={choice.disabled}
-              >
-                {choice.text}
+        <div className="dialog-content">
+          {/* Dialog text with typewriter effect */}
+          <div className="dialog-text">
+            {displayedText}
+            {isTyping && <span className="typing-cursor">|</span>}
+          </div>
+          
+          {/* Dialog choices */}
+          {isFullyTyped && choices.length > 0 && (
+            <div className="dialog-choices">
+              {choices.map((choice, index) => (
+                <button 
+                  key={index}
+                  className="dialog-choice"
+                  onClick={() => handleChoiceSelect(choice)}
+                  disabled={choice.disabled}
+                >
+                  {choice.text}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Continue/close indicator */}
+          {isFullyTyped && choices.length === 0 && showCloseButton && (
+            <div className="dialog-continue">
+              <button className="continue-button" onClick={handleClose}>
+                Continue
               </button>
-            ))}
-          </div>
-        )}
-        
-        {textComplete && (!currentDialog.choices || currentDialog.choices.length === 0) && (
-          <div className="dialog-continue">
-            <button 
-              className="continue-button"
-              onClick={onClose}
-            >
-              {currentDialog.continueText || 'Continue'}
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+          
+          {/* Skip typing indicator */}
+          {isTyping && (
+            <div className="dialog-skip-indicator">
+              Press Space to skip
+            </div>
+          )}
+        </div>
       </div>
       
-      <style jsx>{`
+      <style>{`
         .dialog-overlay {
           position: fixed;
-          bottom: 0;
+          top: 0;
           left: 0;
-          width: 100%;
-          padding: 0 20px 20px;
-          z-index: 200;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
           display: flex;
           justify-content: center;
+          align-items: center;
+          z-index: 100;
+          transition: opacity 0.3s ease;
+        }
+        
+        .dialog-hidden {
+          opacity: 0;
           pointer-events: none;
         }
         
-        .dialog-container {
-          width: 100%;
+        .dialog-visible {
+          opacity: 1;
+        }
+        
+        .dialog-box {
+          background-color: rgba(20, 20, 30, 0.95);
+          border: 2px solid rgba(100, 100, 150, 0.6);
+          border-radius: 8px;
+          width: 90%;
           max-width: 800px;
-          background-color: rgba(20, 20, 30, 0.9);
-          border-radius: 10px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-          border: 1px solid rgba(100, 100, 150, 0.4);
-          backdrop-filter: blur(4px);
-          animation: dialog-slide-up 0.3s ease forwards;
+          display: flex;
+          position: absolute;
+          color: #e0e0e0;
           font-family: 'Times New Roman', serif;
-          color: #e0e0e0;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+          transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .dialog-box.with-character {
+          padding-left: 120px;
+        }
+        
+        .dialog-position-top {
+          top: 40px;
+        }
+        
+        .dialog-position-middle {
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        
+        .dialog-position-bottom {
+          bottom: 40px;
+        }
+        
+        .character-portrait {
+          position: absolute;
+          left: -20px;
+          bottom: -20px;
+          width: 130px;
+          height: 180px;
           overflow: hidden;
-          pointer-events: auto;
+          border-radius: 8px;
+          border: 2px solid rgba(100, 100, 150, 0.6);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
         
-        .dialog-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 15px;
-          border-bottom: 1px solid rgba(100, 100, 150, 0.4);
-          background-color: rgba(30, 30, 45, 0.7);
+        .character-portrait img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
         
-        .dialog-speaker {
-          margin: 0;
-          font-size: 18px;
+        .character-name {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background-color: rgba(20, 20, 30, 0.9);
+          padding: 5px;
+          text-align: center;
           font-weight: bold;
+          color: #c0c0e0;
+          font-size: 14px;
         }
         
-        .dialog-close {
-          background: none;
-          border: none;
-          color: #a0a0b0;
-          font-size: 16px;
-          cursor: pointer;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
+        .dialog-content {
+          flex: 1;
+          padding: 20px;
           display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-        
-        .dialog-close:hover {
-          background-color: rgba(80, 80, 100, 0.4);
-          color: #e0e0e0;
+          flex-direction: column;
+          gap: 15px;
         }
         
         .dialog-text {
-          padding: 20px;
           font-size: 16px;
           line-height: 1.6;
-          min-height: 100px;
-          max-height: 200px;
-          overflow-y: auto;
-          cursor: pointer;
+          min-height: 80px;
           white-space: pre-wrap;
         }
         
         .typing-cursor {
           display: inline-block;
-          animation: cursor-blink 0.7s infinite;
-          margin-left: 1px;
+          animation: blink 0.7s infinite;
+          margin-left: 2px;
+        }
+        
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
         
         .dialog-choices {
-          padding: 15px 20px;
           display: flex;
           flex-direction: column;
           gap: 8px;
-          border-top: 1px solid rgba(100, 100, 150, 0.4);
-          background-color: rgba(30, 30, 45, 0.7);
+          margin-top: 10px;
         }
         
         .dialog-choice {
-          background-color: rgba(60, 60, 80, 0.6);
-          color: #d0d0e0;
-          border: 1px solid rgba(100, 100, 150, 0.4);
-          border-radius: 6px;
-          padding: 10px 15px;
+          background-color: rgba(40, 40, 60, 0.8);
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          padding: 8px 15px;
           text-align: left;
-          font-family: inherit;
-          font-size: 15px;
+          color: #e0e0e0;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
         }
         
-        .dialog-choice:hover:not(.disabled) {
-          background-color: rgba(80, 80, 110, 0.7);
-          transform: translateY(-2px);
+        .dialog-choice:hover {
+          background-color: rgba(60, 60, 90, 0.8);
+          transform: translateX(5px);
         }
         
-        .dialog-choice:active:not(.disabled) {
-          transform: translateY(0);
-        }
-        
-        .dialog-choice.disabled {
+        .dialog-choice:disabled {
           opacity: 0.5;
           cursor: not-allowed;
-          text-decoration: line-through;
+          background-color: rgba(30, 30, 40, 0.8);
+        }
+        
+        .dialog-choice:disabled:hover {
+          transform: none;
         }
         
         .dialog-continue {
-          padding: 15px 20px;
           display: flex;
-          justify-content: center;
-          border-top: 1px solid rgba(100, 100, 150, 0.4);
-          background-color: rgba(30, 30, 45, 0.7);
+          justify-content: flex-end;
+          margin-top: 10px;
         }
         
         .continue-button {
-          background-color: rgba(70, 70, 100, 0.6);
-          color: #d0d0e0;
-          border: 1px solid rgba(100, 100, 150, 0.4);
-          border-radius: 6px;
-          padding: 8px 20px;
-          font-family: inherit;
-          font-size: 15px;
+          background-color: rgba(40, 50, 70, 0.8);
+          border: 1px solid rgba(100, 100, 150, 0.5);
+          border-radius: 4px;
+          padding: 6px 12px;
+          color: #e0e0e0;
           cursor: pointer;
-          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 5px;
         }
         
         .continue-button:hover {
-          background-color: rgba(90, 90, 120, 0.7);
+          background-color: rgba(60, 70, 100, 0.8);
         }
         
-        @keyframes dialog-slide-up {
-          from {
-            transform: translateY(20px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
+        .continue-button:after {
+          content: "▶";
+          font-size: 10px;
         }
         
-        @keyframes cursor-blink {
-          0%, 100% {
-            opacity: 0;
-          }
-          50% {
-            opacity: 1;
-          }
+        .dialog-skip-indicator {
+          position: absolute;
+          bottom: 5px;
+          right: 10px;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.5);
+          font-style: italic;
         }
         
-        @media (max-width: 768px) {
-          .dialog-container {
-            max-width: 100%;
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+          .dialog-box {
+            width: 95%;
+            max-height: 60vh;
+            overflow-y: auto;
+          }
+          
+          .dialog-content {
+            padding: 15px;
+          }
+          
+          .dialog-box.with-character {
+            padding-left: 0;
+            padding-top: 70px;
+          }
+          
+          .character-portrait {
+            left: 50%;
+            transform: translateX(-50%);
+            top: -50px;
+            bottom: auto;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+          }
+          
+          .character-name {
+            position: absolute;
+            top: 105px;
+            bottom: auto;
+            background: none;
+            font-size: 14px;
           }
           
           .dialog-text {
-            font-size: 15px;
-            padding: 15px;
-            min-height: 80px;
-            max-height: 150px;
-          }
-          
-          .dialog-speaker {
-            font-size: 16px;
-          }
-          
-          .dialog-choice {
             font-size: 14px;
-            padding: 8px 12px;
           }
           
-          .continue-button {
-            font-size: 14px;
-            padding: 6px 16px;
+          .dialog-position-top {
+            top: 70px;
           }
         }
       `}</style>

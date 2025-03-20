@@ -1,514 +1,673 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { EdenGameProps, GameState } from './types';
-import GameEngine from './GameEngine';
+import React, { useState, useEffect, useCallback } from 'react';
 import SceneView from './ui/SceneView';
 import DialogBox from './ui/DialogBox';
 import InventoryPanel from './ui/InventoryPanel';
 import StatusBar from './ui/StatusBar';
-import PuzzleInterface from './ui/PuzzleInterface';
 import NotificationSystem from './ui/NotificationSystem';
+import PuzzleInterface from './ui/PuzzleInterface';
+import { 
+  EdenGameProps, 
+  GameState, 
+  Scene, 
+  Dialog, 
+  DialogChoice, 
+  Hotspot, 
+  Exit, 
+  SceneItem, 
+  InventoryItem, 
+  Puzzle, 
+  GameNotification 
+} from './types';
 
-// Import game data
-import scenes from './data/scenes';
-import dialogs from './data/dialogs';
-import items from './data/items';
-import puzzles from './data/puzzles';
+// Import GameEngine instance
+// import { gameEngine } from './GameEngine';
 
 /**
- * EdenGame - Main game component that integrates all game elements
+ * EdenGame - Main game component that integrates all UI components with the game engine
  */
 const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
-  // Initialize game engine
-  const gameEngine = useRef<GameEngine>(new GameEngine(scenes, dialogs, items, puzzles));
-  
   // Game state
-  const [gameState, setGameState] = useState<GameState>(gameEngine.current.getState());
+  const [gameState, setGameState] = useState<GameState>({
+    player: {
+      health: 100,
+      maxHealth: 100,
+      mana: 80,
+      maxMana: 100,
+      sanity: 90,
+      maxSanity: 100,
+      level: 1,
+      experience: 0
+    },
+    inventory: [],
+    currentScene: 'village_entrance',
+    visitedScenes: ['village_entrance'],
+    flags: {},
+    gameTime: 0,
+    activeEffects: [],
+    isGameOver: false,
+    hintsDisabled: false
+  });
+  
+  // UI state
   const [showInventory, setShowInventory] = useState<boolean>(false);
-  const [showGameMenu, setShowGameMenu] = useState<boolean>(false);
-  const [activeNotification, setActiveNotification] = useState<{ message: string; type: string } | null>(null);
-  const [lastFrameTime, setLastFrameTime] = useState<number>(Date.now());
+  const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<GameNotification[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   
-  // Game loop animation frame reference
-  const animationFrameRef = useRef<number | null>(null);
+  // Temporary mock scene data (in a real game, this would come from the game engine)
+  const [currentScene, setCurrentScene] = useState<Scene>({
+    id: 'village_entrance',
+    name: 'Village Entrance',
+    description: 'The fog-shrouded entrance to Eden\'s Hollow. Ancient stone pillars mark the boundary.',
+    backgroundImage: '/assets/scenes/village-entrance.jpg',
+    lighting: 'dim',
+    hotspots: [
+      {
+        id: 'village_sign',
+        x: 65,
+        y: 35,
+        width: 10,
+        height: 15,
+        tooltip: 'Read Sign',
+        description: 'A weathered wooden sign with faded lettering. "Eden\'s Hollow - Where Peace Finds You"',
+        dialogId: 'read_village_sign'
+      },
+      {
+        id: 'strange_statue',
+        x: 30,
+        y: 40,
+        width: 8,
+        height: 20,
+        tooltip: 'Examine Statue',
+        description: 'A moss-covered statue of a robed figure with its face worn away by time.'
+      }
+    ],
+    exits: [
+      {
+        id: 'to_village_square',
+        x: 45,
+        y: 50,
+        width: 15,
+        height: 15,
+        targetScene: 'village_square',
+        tooltip: 'Enter Village'
+      },
+      {
+        id: 'to_forest_path',
+        x: 10,
+        y: 60,
+        width: 15,
+        height: 10,
+        targetScene: 'forest_path',
+        tooltip: 'Forest Path',
+        locked: true,
+        lockType: 'item',
+        requiredItem: 'old_key',
+        lockedMessage: 'The gate to the forest path is locked with a heavy iron padlock.'
+      }
+    ],
+    items: [
+      {
+        id: 'entrance_coin',
+        itemId: 'ancient_coin',
+        x: 75,
+        y: 75,
+        width: 5,
+        height: 5,
+        tooltip: 'Take Ancient Coin',
+        visualCue: true
+      }
+    ],
+    entryDialog: 'village_entrance_first_visit'
+  });
   
-  // Set up game loop and event listeners
+  // Dialog state
+  const [currentDialog, setCurrentDialog] = useState<Dialog | null>(null);
+  
+  // Puzzle state
+  const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle | null>(null);
+  
+  // Load mock data
   useEffect(() => {
-    // Subscribe to game state changes
-    const unsubscribe = gameEngine.current.subscribe(newState => {
-      setGameState(newState);
+    // In a real game, this would be loaded from data files
+    setLoading(false);
+    
+    // Show welcome notification
+    addNotification({
+      id: 'welcome',
+      type: 'info',
+      title: 'Welcome to Eden\'s Hollow',
+      message: 'Explore the village, find items, and uncover its dark secrets.',
+      duration: 8000
     });
     
-    // Set up game loop
-    const gameLoop = () => {
-      const currentTime = Date.now();
-      const deltaTime = currentTime - lastFrameTime;
-      
-      // Update game state (run game logic)
-      gameEngine.current.update(deltaTime);
-      
-      // Save current time for next frame calculation
-      setLastFrameTime(currentTime);
-      
-      // Request next frame
-      animationFrameRef.current = requestAnimationFrame(gameLoop);
-    };
-    
-    // Start game loop
-    animationFrameRef.current = requestAnimationFrame(gameLoop);
-    
-    // Handle escape key press for inventory/menu toggling
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showGameMenu) {
-          setShowGameMenu(false);
-        } else if (showInventory) {
-          setShowInventory(false);
-        } else if (!gameState.currentDialog && !gameState.activePuzzleId) {
-          setShowGameMenu(true);
-        }
-      } else if (e.key === 'i' || e.key === 'I') {
-        if (!gameState.currentDialog && !gameState.activePuzzleId && !showGameMenu) {
-          setShowInventory(prev => !prev);
-        }
-      }
-    };
-    
-    // Add keyboard event listener
-    window.addEventListener('keydown', handleKeyPress);
-    
-    // Clean up on unmount
-    return () => {
-      unsubscribe();
-      window.removeEventListener('keydown', handleKeyPress);
-      
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [lastFrameTime, showInventory, showGameMenu, gameState.currentDialog, gameState.activePuzzleId]);
-  
-  // Save game state before user exits or closes window
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      gameEngine.current.saveGame();
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    // Simulate entry dialog after slight delay
+    setTimeout(() => {
+      // In a real game, this would come from the game engine based on scene
+      setCurrentDialog({
+        id: 'village_entrance_first_visit',
+        type: 'narration',
+        text: 'The fog hangs thick as you approach the entrance to Eden\'s Hollow. The air is unnaturally still, and the silence is broken only by the occasional distant crow. Something about this place feels... wrong.',
+        choices: []
+      });
+    }, 1000);
   }, []);
   
-  // Handle hotspot interaction in scene
-  const handleHotspotInteract = (hotspotId: string) => {
-    gameEngine.current.interactWithHotspot(hotspotId);
-  };
+  // --- Game Logic Functions ---
   
-  // Handle exit selection in scene
-  const handleExitSelect = (exitId: string) => {
-    const scene = gameEngine.current.getCurrentScene();
-    const exit = scene.exits?.find(e => e.id === exitId);
+  // Handle hotspot interaction
+  const handleHotspotInteract = useCallback((hotspotId: string) => {
+    // Find the hotspot in the current scene
+    const hotspot = currentScene.hotspots?.find(h => h.id === hotspotId);
     
-    if (exit && !exit.locked) {
-      gameEngine.current.navigateToScene(exit.targetSceneId);
-    } else if (exit?.locked && exit.lockedMessage) {
-      showNotification(exit.lockedMessage, 'warning');
+    if (!hotspot) return;
+    
+    if (hotspot.dialogId) {
+      // In a real game, this would fetch the dialog from the game engine
+      // For now, show a mock dialog
+      setCurrentDialog({
+        id: hotspot.dialogId,
+        type: 'narration',
+        text: hotspot.description || 'You examine the object closely.',
+        choices: []
+      });
+    } else if (hotspot.description) {
+      // Show a notification with the description
+      addNotification({
+        id: `hotspot_${hotspotId}`,
+        type: 'info',
+        message: hotspot.description,
+        duration: 5000
+      });
     }
-  };
+  }, [currentScene]);
   
-  // Handle item collection in scene
-  const handleItemTake = (itemId: string) => {
-    const scene = gameEngine.current.getCurrentScene();
-    const sceneItem = scene.items?.find(i => i.id === itemId);
+  // Handle exit selection
+  const handleExitSelect = useCallback((exitId: string) => {
+    // Find the exit in the current scene
+    const exit = currentScene.exits?.find(e => e.id === exitId);
     
-    if (sceneItem) {
-      const success = gameEngine.current.addItemToInventory(sceneItem.itemId);
-      if (success) {
-        // Hide the item from the scene
-        gameEngine.current.interactWithHotspot(itemId);
+    if (!exit) return;
+    
+    // Check if exit is locked
+    if (exit.locked) {
+      // In a real game, we would check inventory for key items
+      const hasRequiredItem = gameState.inventory.some(
+        item => item.id === exit.requiredItem
+      );
+      
+      if (!hasRequiredItem && exit.lockedMessage) {
+        addNotification({
+          id: `exit_locked_${exitId}`,
+          type: 'warning',
+          message: exit.lockedMessage,
+          duration: 5000
+        });
+        return;
       }
     }
-  };
+    
+    // In a real game, this would trigger a scene change via the game engine
+    // Mock a loading state
+    setLoading(true);
+    
+    // Simulate scene loading
+    setTimeout(() => {
+      // For demo purposes, just change back to the same scene
+      // In a real game, this would load the target scene
+      setGameState(prev => ({
+        ...prev,
+        currentScene: exit.targetScene || prev.currentScene,
+        visitedScenes: [...prev.visitedScenes, exit.targetScene]
+      }));
+      setLoading(false);
+      
+      // Update visited exits
+      // In a real game, the game engine would track this
+    }, 1000);
+  }, [currentScene, gameState.inventory]);
   
-  // Handle dialog advancement
-  const handleDialogAdvance = () => {
-    gameEngine.current.advanceDialog();
-  };
+  // Handle item pickup
+  const handleItemTake = useCallback((itemId: string) => {
+    // Find the item in the current scene
+    const sceneItem = currentScene.items?.find(i => i.id === itemId);
+    
+    if (!sceneItem) return;
+    
+    // In a real game, this would come from a data store based on the itemId
+    const item: InventoryItem = {
+      id: sceneItem.itemId,
+      name: 'Ancient Coin',
+      description: 'A weathered gold coin with strange symbols. It feels unnaturally cold to the touch.',
+      type: 'quest',
+      imageUrl: '/assets/items/ancient-coin.png'
+    };
+    
+    // Add to inventory
+    setGameState(prev => ({
+      ...prev,
+      inventory: [...prev.inventory, { ...item, discoveredAt: prev.gameTime }]
+    }));
+    
+    // Remove item from scene (in a real game, this would be handled by the game engine)
+    setCurrentScene(prev => ({
+      ...prev,
+      items: prev.items?.filter(i => i.id !== itemId)
+    }));
+    
+    // Show notification
+    addNotification({
+      id: `item_pickup_${itemId}`,
+      type: 'success',
+      message: `Picked up ${item.name}`,
+      duration: 3000
+    });
+  }, [currentScene]);
   
-  // Handle dialog choice selection
-  const handleDialogChoice = (choiceIndex: number) => {
-    gameEngine.current.advanceDialog(choiceIndex);
-  };
-  
-  // Handle dialog close
-  const handleDialogClose = () => {
-    gameEngine.current.endDialog();
-  };
-  
-  // Handle item use from inventory
-  const handleItemUse = (itemId: string) => {
-    gameEngine.current.useItem(itemId);
-    setShowInventory(false);
-  };
+  // Handle inventory item use
+  const handleItemUse = useCallback((itemId: string) => {
+    // Find the item in inventory
+    const item = gameState.inventory.find(i => i.id === itemId);
+    
+    if (!item) return;
+    
+    // In a real game, this would be handled by the game engine
+    addNotification({
+      id: `item_use_${itemId}`,
+      type: 'info',
+      message: `You tried to use ${item.name} but nothing happened.`,
+      duration: 3000
+    });
+  }, [gameState.inventory]);
   
   // Handle item inspection
-  const handleItemInspect = (itemId: string) => {
+  const handleItemInspect = useCallback((itemId: string) => {
+    // Find the item in inventory
     const item = gameState.inventory.find(i => i.id === itemId);
-    if (item) {
-      showNotification(item.description, 'info');
-    }
-  };
+    
+    if (!item) return;
+    
+    // In a real game, this might trigger a dialog or detailed view
+    addNotification({
+      id: `item_inspect_${itemId}`,
+      type: 'info',
+      message: item.description,
+      duration: 5000
+    });
+  }, [gameState.inventory]);
   
   // Handle item combination
-  const handleItemCombine = (itemId1: string, itemId2: string) => {
-    // If implementing item combination, add the logic here
-    showNotification("Item combination not implemented yet", "info");
-  };
+  const handleItemCombine = useCallback((itemId1: string, itemId2: string) => {
+    // In a real game, this would check if the items can be combined and create a new item
+    addNotification({
+      id: `item_combine_${itemId1}_${itemId2}`,
+      type: 'info',
+      message: 'These items cannot be combined.',
+      duration: 3000
+    });
+  }, []);
   
-  // Show notification
-  const showNotification = (message: string, type: 'info' | 'warning' | 'error' | 'success' = 'info') => {
-    setActiveNotification({ message, type });
+  // Handle dialog choice selection
+  const handleDialogChoice = useCallback((choice: DialogChoice) => {
+    // In a real game, this would be handled by the game engine
+    // For now, just close the dialog
+    setCurrentDialog(null);
+  }, []);
+  
+  // Handle dialog close
+  const handleDialogClose = useCallback(() => {
+    setCurrentDialog(null);
+  }, []);
+  
+  // Handle puzzle solve
+  const handlePuzzleSolve = useCallback(() => {
+    // In a real game, this would be handled by the game engine
+    setCurrentPuzzle(null);
+    
+    addNotification({
+      id: 'puzzle_solved',
+      type: 'success',
+      message: 'Puzzle solved!',
+      duration: 3000
+    });
+  }, []);
+  
+  // Handle puzzle close
+  const handlePuzzleClose = useCallback(() => {
+    setCurrentPuzzle(null);
+  }, []);
+  
+  // Handle puzzle hint
+  const handlePuzzleHint = useCallback(() => {
+    // In a real game, this would provide a hint specific to the puzzle
+    addNotification({
+      id: 'puzzle_hint',
+      type: 'info',
+      message: 'Look for patterns in the symbols.',
+      duration: 4000
+    });
+  }, []);
+  
+  // Utility to add notifications
+  const addNotification = (notification: GameNotification) => {
+    setNotifications(prev => [...prev, { ...notification, timestamp: Date.now() }]);
+    
+    // Auto-remove notification after its duration
+    if (notification.duration && notification.duration > 0) {
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      }, notification.duration);
+    }
   };
   
   // Handle notification close
-  const handleNotificationClose = () => {
-    setActiveNotification(null);
+  const handleNotificationClose = (notification: GameNotification) => {
+    setNotifications(prev => prev.filter(n => n.id !== notification.id));
   };
   
-  // Handle puzzle solving
-  const handlePuzzleSolve = () => {
-    gameEngine.current.solvePuzzle();
+  // Handle game exit
+  const handleExitGame = () => {
+    if (onExit) onExit();
   };
   
-  // Handle puzzle cancellation
-  const handlePuzzleClose = () => {
-    gameEngine.current.cancelPuzzle();
+  // Show the inventory panel
+  const openInventory = () => {
+    setShowInventory(true);
   };
   
-  // Handle hint request for puzzle
-  const handlePuzzleHint = () => {
-    const puzzle = gameEngine.current.getActivePuzzle();
-    if (puzzle && puzzle.hints && puzzle.hints.length > 0) {
-      showNotification(puzzle.hints[0], 'info');
-    }
+  // Close the inventory panel
+  const closeInventory = () => {
+    setShowInventory(false);
   };
   
-  // Get current scene
-  const currentScene = gameEngine.current.getCurrentScene();
+  // Loading screen
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">Loading...</div>
+      </div>
+    );
+  }
+  
+  // Game over screen
+  if (gameState.isGameOver) {
+    return (
+      <div className="game-over-screen">
+        <h2>Game Over</h2>
+        <p>{gameState.gameOverReason || 'Your journey has come to an end.'}</p>
+        <button onClick={handleExitGame}>Return to Menu</button>
+      </div>
+    );
+  }
   
   return (
     <div className="eden-game">
-      {/* Main Scene View */}
-      <SceneView 
-        scene={currentScene}
-        onHotspotInteract={handleHotspotInteract}
-        onExitSelect={handleExitSelect}
-        onItemTake={handleItemTake}
-      />
+      {/* Game UI */}
+      <div className="game-interface">
+        {/* Top Bar */}
+        <div className="top-bar">
+          <div className="game-menu-button" onClick={() => setShowMenu(!showMenu)}>
+            Menu
+          </div>
+          <div className="game-title">Eden's Hollow</div>
+          <div className="inventory-button" onClick={openInventory}>
+            Inventory ({gameState.inventory.length})
+          </div>
+        </div>
+        
+        {/* Game menu dropdown */}
+        {showMenu && (
+          <div className="game-menu">
+            <div className="menu-option" onClick={() => setShowMenu(false)}>Continue</div>
+            <div className="menu-option">Save Game</div>
+            <div className="menu-option">Load Game</div>
+            <div className="menu-option">Settings</div>
+            <div className="menu-option exit-option" onClick={handleExitGame}>Exit Game</div>
+          </div>
+        )}
+        
+        {/* Scene View */}
+        <div className="scene-container">
+          <SceneView 
+            scene={currentScene}
+            onHotspotInteract={handleHotspotInteract}
+            onExitSelect={handleExitSelect}
+            onItemTake={handleItemTake}
+            visitedExits={gameState.visitedScenes}
+            inventoryItems={gameState.inventory}
+          />
+        </div>
+        
+        {/* Status Bar */}
+        <div className="status-bar-container">
+          <StatusBar 
+            health={gameState.player.health}
+            maxHealth={gameState.player.maxHealth}
+            mana={gameState.player.mana}
+            maxMana={gameState.player.maxMana}
+            sanity={gameState.player.sanity}
+            maxSanity={gameState.player.maxSanity}
+          />
+        </div>
+      </div>
       
-      {/* Status Bar */}
-      <StatusBar
-        health={gameState.player.health}
-        maxHealth={gameState.player.maxHealth}
-        mana={gameState.player.mana}
-        maxMana={gameState.player.maxMana}
-        sanity={gameState.player.sanity}
-        maxSanity={gameState.player.maxSanity}
-      />
+      {/* Overlays */}
       
       {/* Dialog Box */}
-      {gameState.currentDialog && (
-        <DialogBox
-          dialog={gameState.currentDialog}
-          onAdvance={handleDialogAdvance}
-          onChoiceSelect={handleDialogChoice}
+      {currentDialog && (
+        <DialogBox 
+          text={currentDialog.text}
+          choices={currentDialog.choices}
           onClose={handleDialogClose}
+          onChoiceSelect={handleDialogChoice}
+          characterName={currentDialog.character}
+          characterImage={currentDialog.characterImage}
+          position={currentDialog.position || 'bottom'}
         />
       )}
       
       {/* Inventory Panel */}
       {showInventory && (
-        <InventoryPanel
+        <InventoryPanel 
           inventory={gameState.inventory}
           onItemUse={handleItemUse}
           onItemInspect={handleItemInspect}
           onItemCombine={handleItemCombine}
-          onClose={() => setShowInventory(false)}
+          onClose={closeInventory}
         />
       )}
       
-      {/* Active Puzzle */}
-      {gameState.activePuzzleId && gameEngine.current.getActivePuzzle() && (
+      {/* Puzzle Interface */}
+      {currentPuzzle && (
         <PuzzleInterface
-          puzzle={gameEngine.current.getActivePuzzle()!}
+          puzzle={currentPuzzle}
           onSolve={handlePuzzleSolve}
           onClose={handlePuzzleClose}
           onHint={handlePuzzleHint}
+          isOpen={!!currentPuzzle}
         />
       )}
       
       {/* Notification System */}
-      {activeNotification && (
-        <NotificationSystem
-          message={activeNotification.message}
-          type={activeNotification.type as 'info' | 'warning' | 'error' | 'success'}
-          onClose={handleNotificationClose}
-          duration={5000}
-        />
-      )}
+      <NotificationSystem 
+        notifications={notifications}
+        onNotificationClose={handleNotificationClose}
+        position="top-right"
+      />
       
-      {/* Controls */}
-      <div className="game-controls">
-        <button 
-          className="control-button inventory-button"
-          onClick={() => setShowInventory(prev => !prev)}
-        >
-          Inventory
-        </button>
+      <style>{`
+        .eden-game {
+          width: 100%;
+          height: 100vh;
+          position: relative;
+          overflow: hidden;
+          background-color: #000;
+          display: flex;
+          flex-direction: column;
+        }
         
-        <button 
-          className="control-button menu-button"
-          onClick={() => setShowGameMenu(prev => !prev)}
-        >
-          Menu
-        </button>
-      </div>
-      
-      {/* Game Menu */}
-      {showGameMenu && (
-        <div className="game-menu-overlay">
-          <div className="game-menu">
-            <h2>Game Menu</h2>
-            <button onClick={() => gameEngine.current.saveGame()}>Save Game</button>
-            <button onClick={() => {
-              const loadedState = gameEngine.current.loadGame();
-              if (loadedState) {
-                setGameState(loadedState);
-                showNotification("Game loaded successfully", "success");
-              } else {
-                showNotification("No saved game found", "warning");
-              }
-              setShowGameMenu(false);
-            }}>Load Game</button>
-            <button onClick={() => {
-              // Settings would be implemented here
-              showNotification("Settings are not implemented yet", "info");
-            }}>Settings</button>
-            <button onClick={() => {
-              gameEngine.current.saveGame();
-              onExit && onExit();
-            }}>Exit Game</button>
-            <button onClick={() => setShowGameMenu(false)}>Resume</button>
-          </div>
-        </div>
-      )}
-      
-      {/* Game Over Screen */}
-      {gameState.isGameOver && (
-        <div className="game-over-screen">
-          <h1>Game Over</h1>
-          <p>
-            {gameState.gameOverReason === 'death' && "You have died..."}
-            {gameState.gameOverReason === 'insanity' && "Your mind has been lost to the darkness..."}
-            {gameState.gameOverReason === 'victory' && "You have escaped Eden's Hollow!"}
-          </p>
-          <div className="game-over-buttons">
-            <button onClick={() => {
-              gameEngine.current.deleteSave();
-              gameEngine.current.navigateToScene('village_entrance');
-            }}>
-              Start Over
-            </button>
-            <button onClick={() => {
-              onExit && onExit();
-            }}>
-              Exit Game
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <style>
-        {`
-          .eden-game {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Times New Roman', serif;
-            background-color: #000;
-            color: #fff;
-          }
-          
-          .game-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 600;
-          }
-          
-          .control-button {
-            padding: 10px 20px;
-            background-color: rgba(30, 30, 40, 0.7);
-            color: white;
-            border: 1px solid rgba(100, 100, 150, 0.5);
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.2s;
-          }
-          
-          .control-button:hover {
-            background-color: rgba(40, 40, 60, 0.9);
-            border-color: rgba(120, 120, 180, 0.7);
-          }
-          
-          .game-menu-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 900;
-          }
-          
-          .game-menu {
-            background-color: rgba(20, 20, 30, 0.9);
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid rgba(100, 100, 150, 0.5);
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            min-width: 300px;
-          }
-          
-          .game-menu h2 {
-            color: #b3a380;
-            font-size: 28px;
-            margin: 0 0 20px 0;
-            text-align: center;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-          }
-          
-          .game-menu button {
-            padding: 12px;
-            background-color: rgba(40, 40, 60, 0.8);
-            color: white;
-            border: 1px solid rgba(100, 100, 150, 0.5);
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 16px;
-            transition: all 0.2s;
-          }
-          
-          .game-menu button:hover {
-            background-color: rgba(60, 60, 90, 0.9);
-            border-color: rgba(120, 120, 180, 0.7);
-          }
-          
-          .game-over-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-          }
-          
-          .game-over-screen h1 {
-            color: #d93240;
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(217, 50, 64, 0.5);
-          }
-          
-          .game-over-screen p {
-            color: #fff;
-            font-size: 24px;
-            margin-bottom: 40px;
-            max-width: 80%;
-            text-align: center;
-            line-height: 1.5;
-          }
-          
-          .game-over-buttons {
-            display: flex;
-            gap: 20px;
-          }
-          
-          .game-over-buttons button {
-            padding: 12px 24px;
-            background-color: rgba(60, 60, 80, 0.8);
-            color: white;
-            border: 1px solid rgba(120, 120, 160, 0.5);
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 18px;
-            transition: all 0.2s;
-          }
-          
-          .game-over-buttons button:hover {
-            background-color: rgba(80, 80, 100, 0.9);
-            border-color: rgba(150, 150, 200, 0.7);
-          }
-          
-          @media (max-width: 768px) {
-            .game-controls {
-              bottom: 10px;
-              left: 10px;
-            }
-            
-            .control-button {
-              padding: 8px 16px;
-              font-size: 14px;
-            }
-            
-            .game-menu {
-              padding: 20px;
-              min-width: 250px;
-            }
-            
-            .game-menu h2 {
-              font-size: 24px;
-              margin-bottom: 15px;
-            }
-            
-            .game-menu button {
-              padding: 10px;
-              font-size: 14px;
-            }
-            
-            .game-over-screen h1 {
-              font-size: 36px;
-            }
-            
-            .game-over-screen p {
-              font-size: 18px;
-            }
-            
-            .game-over-buttons button {
-              padding: 10px 20px;
-              font-size: 16px;
-            }
-          }
-        `}
-      </style>
+        .game-interface {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        }
+        
+        .top-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background-color: rgba(20, 20, 30, 0.8);
+          padding: 10px 20px;
+          border-bottom: 1px solid rgba(100, 100, 150, 0.4);
+          z-index: 10;
+        }
+        
+        .game-title {
+          font-family: 'Times New Roman', serif;
+          font-size: 20px;
+          color: #c0c0e0;
+          text-align: center;
+        }
+        
+        .game-menu-button, .inventory-button {
+          padding: 6px 12px;
+          background-color: rgba(40, 40, 60, 0.8);
+          color: #e0e0e0;
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          border-radius: 4px;
+          cursor: pointer;
+          font-family: 'Times New Roman', serif;
+          font-size: 14px;
+          transition: all 0.2s ease;
+        }
+        
+        .game-menu-button:hover, .inventory-button:hover {
+          background-color: rgba(60, 60, 90, 0.8);
+        }
+        
+        .game-menu {
+          position: absolute;
+          top: 50px;
+          left: 20px;
+          background-color: rgba(30, 30, 40, 0.95);
+          border: 1px solid rgba(100, 100, 150, 0.4);
+          border-radius: 4px;
+          width: 200px;
+          z-index: 20;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .menu-option {
+          padding: 12px 15px;
+          color: #e0e0e0;
+          cursor: pointer;
+          border-bottom: 1px solid rgba(100, 100, 150, 0.2);
+          transition: background-color 0.2s ease;
+        }
+        
+        .menu-option:hover {
+          background-color: rgba(60, 60, 90, 0.5);
+        }
+        
+        .exit-option {
+          color: #e08080;
+        }
+        
+        .scene-container {
+          flex: 1;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        .status-bar-container {
+          padding: 10px 20px;
+          background-color: rgba(20, 20, 30, 0.8);
+          border-top: 1px solid rgba(100, 100, 150, 0.4);
+        }
+        
+        .loading-screen {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #0f0f17;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          z-index: 100;
+        }
+        
+        .loading-spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid rgba(100, 100, 150, 0.3);
+          border-top: 4px solid #c0c0e0;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 20px;
+        }
+        
+        .loading-text {
+          color: #c0c0e0;
+          font-family: 'Times New Roman', serif;
+          font-size: 18px;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .game-over-screen {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(20, 10, 15, 0.95);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          z-index: 100;
+          color: #e0e0e0;
+          font-family: 'Times New Roman', serif;
+        }
+        
+        .game-over-screen h2 {
+          font-size: 36px;
+          margin-bottom: 20px;
+          color: #e08080;
+        }
+        
+        .game-over-screen p {
+          font-size: 18px;
+          margin-bottom: 30px;
+          max-width: 80%;
+          text-align: center;
+          line-height: 1.5;
+        }
+        
+        .game-over-screen button {
+          padding: 12px 24px;
+          background-color: #39304a;
+          color: #e0e0e0;
+          border: none;
+          border-radius: 4px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: 'Times New Roman', serif;
+        }
+        
+        .game-over-screen button:hover {
+          background-color: #4a3f5e;
+        }
+      `}</style>
     </div>
   );
 };
