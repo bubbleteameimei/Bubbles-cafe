@@ -22,7 +22,7 @@ import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "3001", 10); // Changed from 3000 to 3001
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
