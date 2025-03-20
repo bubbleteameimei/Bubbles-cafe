@@ -1,121 +1,117 @@
-import { Item, ItemEffect } from '../types';
+import { Item } from '../types';
 
-export const items: Record<string, Item> = {
-  'rusty_key': {
-    id: 'rusty_key',
-    name: 'Rusty Key',
-    description: 'An old, rusted key. It might unlock a door somewhere in the village.',
+// Map of all game items
+const items: Record<string, Item> = {
+  // Key Items
+  'old_key': {
+    id: 'old_key',
+    name: 'Brass Key',
+    description: 'A tarnished brass key with a strange symbol etched into it. It looks very old but still sturdy.',
+    icon: '/assets/eden/items/old_key.png',
     type: 'key',
-    icon: '/assets/items/rusty_key.png',
+    quantity: 1,
     usable: true,
-    useableOn: ['abandoned_house_door'],
-    quantity: 1
+    isConsumable: false
   },
   
-  'dusk_lily': {
-    id: 'dusk_lily',
-    name: 'Dusk Lily',
-    description: 'A strange flower that only grows in the perpetual twilight of Eden\'s Hollow. It seems to glow with a faint inner light.',
-    type: 'quest',
-    icon: '/assets/items/dusk_lily.png',
+  // Documents & Notes
+  'village_journal': {
+    id: 'village_journal',
+    name: 'Weathered Journal',
+    description: 'A weathered leather journal found in the village square. Many pages are missing or damaged, but some entries remain legible. It appears to document strange events in Eden\'s Hollow.',
+    icon: '/assets/eden/items/journal.png',
+    type: 'note',
+    quantity: 1,
     usable: true,
-    useableOn: ['church_altar'],
-    quantity: 1
+    isConsumable: false,
+    metadata: {
+      pages: [
+        "April 15th - The excavation beneath the fountain has uncovered something... unusual. Mayor won't let anyone near it.",
+        "April 20th - Three children have fallen ill with the same symptoms. High fever, hallucinations, and speaking in what sounds like another language.",
+        "May 3rd - More villagers sick. Doctor suspects something in the water. The fountain has been sealed off.",
+        "May 10th - The voices... they're getting louder. I'm not sleeping. I think I saw something moving in the shadows last night.",
+        "May 15th - They're coming from below. God help us all."
+      ]
+    }
   },
   
-  'church_key': {
-    id: 'church_key',
-    name: 'Church Key',
-    description: 'A heavy iron key with a cross-shaped handle. It likely unlocks an important door in the church.',
-    type: 'key',
-    icon: '/assets/items/church_key.png',
-    usable: true,
-    useableOn: ['church_basement_door', 'locked_cabinet'],
-    quantity: 1
-  },
-  
-  'healing_potion': {
-    id: 'healing_potion',
-    name: 'Strange Tonic',
-    description: 'A small bottle containing a glowing red liquid. It smells like herbs and iron.',
+  // Consumables
+  'strange_elixir': {
+    id: 'strange_elixir',
+    name: 'Strange Elixir',
+    description: 'A glass bottle containing a luminescent blue liquid. It pulses with an inner light that seems almost alive. The contents smell like night-blooming flowers and ozone.',
+    icon: '/assets/eden/items/elixir.png',
     type: 'consumable',
-    icon: '/assets/items/healing_potion.png',
-    effects: [
-      { type: 'health', value: 20 }
-    ],
+    quantity: 1,
     usable: true,
     isConsumable: true,
-    destroyOnUse: true,
-    quantity: 1
+    effects: [
+      {
+        type: 'health',
+        value: 25
+      },
+      {
+        type: 'mana',
+        value: 15
+      },
+      {
+        type: 'status',
+        value: { 'enhanced_perception': true }
+      }
+    ]
   },
   
-  'clarity_crystal': {
-    id: 'clarity_crystal',
-    name: 'Clarity Crystal',
-    description: 'A small, blue crystal that seems to resonate with your thoughts. Holding it makes your mind feel clearer.',
+  'healing_herb': {
+    id: 'healing_herb',
+    name: 'Mist Bloom',
+    description: 'A pale, luminescent flower that only grows in perpetual fog. Its petals are cool to the touch and smell faintly of mint. Known for its healing properties.',
+    icon: '/assets/eden/items/herb.png',
     type: 'consumable',
-    icon: '/assets/items/clarity_crystal.png',
-    effects: [
-      { type: 'mana', value: 15 }
-    ],
+    quantity: 1,
     usable: true,
     isConsumable: true,
-    destroyOnUse: true,
-    quantity: 1
+    effects: [
+      {
+        type: 'health',
+        value: 15
+      }
+    ]
   },
   
-  'ritual_page': {
-    id: 'ritual_page',
-    name: 'Ritual Page',
-    description: 'A torn page from an ancient book. It describes part of a ritual involving five elements arranged in a specific order.',
-    type: 'document',
-    icon: '/assets/items/ritual_page.png',
+  // Tools
+  'rusted_lantern': {
+    id: 'rusted_lantern',
+    name: 'Rusted Lantern',
+    description: 'An old iron lantern, surprisingly still functional. It casts a warm, steady light that seems to penetrate the unnatural fog better than it should.',
+    icon: '/assets/eden/items/lantern.png',
+    type: 'tool',
+    quantity: 1,
     usable: true,
-    useableOn: ['research_table'],
-    quantity: 1
+    isConsumable: false,
+    effects: [
+      {
+        type: 'status',
+        value: { 'has_light': true }
+      }
+    ]
   },
   
-  'mausoleum_key': {
-    id: 'mausoleum_key',
-    name: 'Mausoleum Key',
-    description: 'A small, ornate key with a skull-shaped handle. It was hidden beneath fresh flowers on a grave.',
-    type: 'key',
-    icon: '/assets/items/mausoleum_key.png',
-    usable: true,
-    useableOn: ['mausoleum_door'],
-    quantity: 1
-  },
-  
-  'ritual_amulet': {
-    id: 'ritual_amulet',
-    name: 'Ritual Amulet',
-    description: 'An ancient amulet with strange symbols etched into its surface. It pulses with an unnatural energy.',
+  // Artifacts
+  'mysterious_amulet': {
+    id: 'mysterious_amulet',
+    name: 'Whispering Amulet',
+    description: 'A silver amulet with a black stone at its center. When held, you can hear faint whispers emanating from it. The stone seems to absorb light rather than reflect it.',
+    icon: '/assets/eden/items/amulet.png',
     type: 'artifact',
-    icon: '/assets/items/ritual_amulet.png',
+    quantity: 1,
     usable: true,
-    useableOn: ['mausoleum_altar', 'ritual_circle'],
-    quantity: 1
-  },
-  
-  'old_photograph': {
-    id: 'old_photograph',
-    name: 'Faded Photograph',
-    description: 'A black and white photograph showing the village as it once was. The people in the image appear happy and unaware of what was to come.',
-    type: 'document',
-    icon: '/assets/items/old_photograph.png',
-    usable: true,
-    quantity: 1
-  },
-  
-  'pocket_watch': {
-    id: 'pocket_watch',
-    name: 'Stopped Pocket Watch',
-    description: 'An ornate pocket watch that has stopped at exactly midnight. The hands refuse to move no matter how much you wind it.',
-    type: 'artifact',
-    icon: '/assets/items/pocket_watch.png',
-    usable: true,
-    useableOn: ['clock_mechanism'],
-    quantity: 1
+    isConsumable: false,
+    effects: [
+      {
+        type: 'status',
+        value: { 'can_hear_whispers': true }
+      }
+    ]
   }
 };
 

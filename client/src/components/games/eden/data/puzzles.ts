@@ -1,173 +1,141 @@
 import { Puzzle } from '../types';
 
-export const puzzles: Record<string, Puzzle> = {
-  'clock_puzzle': {
-    id: 'clock_puzzle',
-    title: 'Clockwork Mechanism',
-    description: 'Align the gears of the ancient clock to restart time in Eden\'s Hollow. Each gear must connect to at least one other.',
-    type: 'pattern',
-    solution: [
-      "1", "2", "3", "4", "5" // These must be strings, not numbers
-    ],
-    difficulty: 'medium',
-    pattern: [
-      ["1", "2", "3"],
-      ["4", "5", ""]
-    ],
-    initialState: [
-      "5", "3", "1", "4", "2"
-    ],
-    hints: [
-      "The large central gear must connect to the pendulum",
-      "The arrangement forms a pattern matching the ritual symbols",
-      "Look at the positions of the hour markers for clues"
-    ],
-    maxAttempts: 5,
-    reward: {
-      status: { clock_fixed: true },
-      notification: {
-        id: "clock_fixed",
-        message: "The gears align perfectly. With a deep resonating sound, the clock mechanism begins to move, and you feel the air change as if time itself has begun to flow again.",
-        type: "discovery"
-      }
-    }
-  },
-  
-  'binding_ritual': {
-    id: 'binding_ritual',
-    title: 'The Binding Ritual',
-    description: 'Complete the ritual correctly to free the trapped souls of Eden\'s Hollow.',
-    type: 'sequence',
-    solution: [
-      "earth", "water", "fire", "air", "spirit"
-    ],
-    difficulty: 'hard',
-    inputs: [
-      {
-        id: "element1",
-        label: "First Element",
-        type: "text"
-      },
-      {
-        id: "element2",
-        label: "Second Element",
-        type: "text"
-      },
-      {
-        id: "element3",
-        label: "Third Element",
-        type: "text"
-      }
-    ],
-    hints: [
-      "The order matters - the priest's notes mention starting with the most solid element",
-      "Water comes before fire in this ritual, unlike in nature",
-      "The final element represents transcendence"
-    ],
-    options: [
-      {
-        id: "earth",
-        text: "Earth"
-      },
-      {
-        id: "water",
-        text: "Water"
-      },
-      {
-        id: "fire",
-        text: "Fire"
-      },
-      {
-        id: "air",
-        text: "Air"
-      },
-      {
-        id: "spirit",
-        text: "Spirit"
-      }
-    ],
-    reward: {
-      status: { ritual_completed: true },
-      notification: {
-        id: "ritual_completed",
-        message: "As you complete the correct sequence, a blinding light fills the mausoleum. The air feels lighter, and for a moment, you see the transparent figures of villagers all around you, their faces peaceful as they begin to fade away.",
-        type: "discovery"
-      }
-    },
-    maxAttempts: 3
-  },
-  
-  'church_door_lock': {
-    id: 'church_door_lock',
-    title: 'Church Basement Lock',
-    description: 'Solve the ancient combination lock to access the church basement.',
+// Map of all game puzzles
+const puzzles: Record<string, Puzzle> = {
+  // Combination lock puzzle in the abandoned store
+  'store_safe': {
+    id: 'store_safe',
     type: 'combination',
-    solution: ["1", "8", "9", "7"],
-    difficulty: 'medium',
-    inputs: [
-      {
-        id: "digit1",
-        label: "First Digit",
-        type: "number"
-      },
-      {
-        id: "digit2",
-        label: "Second Digit",
-        type: "number"
-      },
-      {
-        id: "digit3",
-        label: "Third Digit",
-        type: "number"
-      },
-      {
-        id: "digit4",
-        label: "Fourth Digit",
-        type: "number"
-      }
-    ],
+    title: 'General Store Safe',
+    description: 'An old combination safe behind the store counter. It has three dials, each with numbers from 0-9. The metal is rusted, but the mechanism seems intact.',
+    solution: ['4', '2', '7'],
+    pieces: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    attempts: 0,
     hints: [
-      "The year the ritual took place might be significant",
-      "Check the gravestones for dates",
-      "The mayor's diary mentions a specific date"
+      'Look for any dates or significant numbers around the store.',
+      'The shopkeeper might have hidden the combination somewhere nearby.',
+      'Check the ledger on the counter for any unusual entries.'
     ],
+    image: '/assets/eden/puzzles/store_safe.jpg',
     reward: {
-      status: { basement_unlocked: true },
+      item: 'rusted_lantern',
+      message: 'The safe opens with a creak. Inside, you find an old lantern that still appears to be functional.',
       notification: {
-        id: "basement_unlocked",
-        message: "The lock clicks and the heavy door swings open, revealing a narrow staircase descending into darkness.",
-        type: "discovery"
+        id: 'safe_solved',
+        type: 'success',
+        message: 'You\'ve successfully opened the old safe!',
+        duration: 5000,
+        autoDismiss: true
       }
     }
   },
   
-  'mirror_puzzle': {
-    id: 'mirror_puzzle',
-    title: 'Reflections of Truth',
-    description: 'Arrange the mirrors to reveal what lies beyond the veil.',
+  // Pattern puzzle in town hall
+  'ritual_pattern': {
+    id: 'ritual_pattern',
     type: 'pattern',
-    solution: [
-      "1", "2", "3", "4", "5" // These must be strings, not numbers
-    ],
-    difficulty: 'hard',
-    pattern: [
-      ["1", "2", ""],
-      ["3", "4", "5"]
-    ],
-    initialState: [
-      "3", "1", "5", "4", "2"
-    ],
+    title: 'Ritual Symbol Arrangement',
+    description: 'A circular indentation in the floor with five stone symbols scattered nearby. Each symbol seems to fit into specific slots around the circle.',
+    solution: ['moon', 'tree', 'eye', 'crown', 'hand'],
+    pieces: ['moon', 'tree', 'eye', 'crown', 'hand', 'star'],
+    attempts: 0,
     hints: [
-      "The light must reach the central symbol",
-      "Each mirror can reflect in only one direction",
-      "The pattern forms an ancient symbol of protection"
+      'The symbols may need to be arranged in a specific order.',
+      'Look for clues in the murals on the walls.',
+      'The order might relate to the village\'s history.'
     ],
+    image: '/assets/eden/puzzles/ritual_symbols.jpg',
     reward: {
-      status: { truth_revealed: true },
+      status: { 'ritual_completed': true },
+      message: 'As you place the last symbol, the floor begins to rumble. The center of the circle descends, revealing a hidden staircase.',
       notification: {
-        id: "truth_revealed",
-        message: "As the final mirror clicks into place, a beam of light reflects through all the mirrors, converging on a hidden symbol. The wall before you shimmers and reveals a hidden chamber.",
-        type: "discovery"
+        id: 'ritual_solved',
+        type: 'discovery',
+        message: 'You\'ve discovered a hidden passage beneath the town hall!',
+        duration: 5000,
+        autoDismiss: true
+      }
+    }
+  },
+  
+  // Riddle puzzle by the whispering well
+  'well_riddle': {
+    id: 'well_riddle',
+    type: 'riddle',
+    title: 'The Whispering Well',
+    description: 'An ancient well with strange inscriptions around its rim. A voice emanates from the depths, posing a riddle that seems to require a spoken answer.',
+    solution: ['silence', 'nothing'],
+    attempts: 0,
+    hints: [
+      'The answer is something intangible.',
+      'Consider what the well itself represents.',
+      'Sometimes what isn\'t said is more important than what is.'
+    ],
+    image: '/assets/eden/puzzles/whispering_well.jpg',
+    reward: {
+      item: 'mysterious_amulet',
+      message: 'As you speak the answer, the whispers cease momentarily. Then, from the depths of the well, a small object rises to the surface, carried by an unseen force.',
+      notification: {
+        id: 'riddle_solved',
+        type: 'success',
+        message: 'You\'ve answered the well\'s riddle!',
+        duration: 5000,
+        autoDismiss: true
+      }
+    }
+  },
+  
+  // Slider puzzle in the abandoned library
+  'bookshelf_puzzle': {
+    id: 'bookshelf_puzzle',
+    type: 'slider',
+    title: 'Ancient Bookshelf',
+    description: 'A bookshelf with sliding sections. The books are arranged in a way that suggests they can be moved to form a specific pattern or image.',
+    solution: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    pieces: ['3', '1', '4', '8', '6', '2', '7', '5', '9'],
+    attempts: 0,
+    hints: [
+      'The books form sections that can slide horizontally and vertically.',
+      'Try to arrange them in numerical order.',
+      'The correct arrangement may reveal a hidden message or symbol.'
+    ],
+    image: '/assets/eden/puzzles/bookshelf.jpg',
+    reward: {
+      status: { 'library_secret_found': true },
+      message: 'As the last section clicks into place, a hidden compartment in the bookshelf slides open, revealing an ancient text.',
+      notification: {
+        id: 'bookshelf_solved',
+        type: 'discovery',
+        message: 'You\'ve uncovered a hidden compartment in the bookshelf!',
+        duration: 5000,
+        autoDismiss: true
+      }
+    }
+  },
+  
+  // Lock puzzle for the cellar door
+  'cellar_lock': {
+    id: 'cellar_lock',
+    type: 'lock',
+    title: 'Cellar Door Lock',
+    description: 'A sturdy iron lock on the cellar door. It appears to require a key with a specific shape.',
+    solution: ['old_key'],
+    attempts: 0,
+    hints: [
+      'The lock seems old and ornate, possibly requiring an equally distinctive key.',
+      'Check the tavern for any keys that might have been left behind.',
+      'Perhaps someone hid a key somewhere nearby.'
+    ],
+    image: '/assets/eden/puzzles/cellar_lock.jpg',
+    reward: {
+      status: { 'cellar_unlocked': true },
+      message: 'The key fits perfectly. With a turn and a heavy click, the lock opens, and the cellar door swings inward on creaking hinges.',
+      notification: {
+        id: 'cellar_unlocked',
+        type: 'success',
+        message: 'You\'ve unlocked the cellar door!',
+        duration: 5000,
+        autoDismiss: true
       }
     }
   }

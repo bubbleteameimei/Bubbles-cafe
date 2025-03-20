@@ -1,604 +1,428 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Scene, SceneFeature, SceneExit, SceneAction } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Scene, InteractiveElement, Exit } from '../types';
 
-interface SceneViewProps {
+export interface SceneViewProps {
   scene: Scene;
-  onFeatureInteract: (featureId: string) => void;
-  onExitSelect: (exit: SceneExit) => void;
-  playerStatus?: Record<string, any>;
-  inventory?: string[];
+  onInteract: (elementId: string, actionType: string) => void;
+  onExitClick: (exitId: string) => void;
 }
 
-/**
- * Renders a game scene with interactive features, exits, and ambient effects
- */
-const SceneView: React.FC<SceneViewProps> = ({
+export const SceneView: React.FC<SceneViewProps> = ({
   scene,
-  onFeatureInteract,
-  onExitSelect,
-  playerStatus = {},
-  inventory = [],
+  onInteract,
+  onExitClick
 }) => {
-  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [hoveredExit, setHoveredExit] = useState<string | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [sceneLoaded, setSceneLoaded] = useState(false);
   
-  // Handle audio effects
+  // Trigger scene loaded effect
   useEffect(() => {
-    if (!scene) return;
+    const timer = setTimeout(() => {
+      setSceneLoaded(true);
+    }, 500);
     
-    // Setup ambient audio if provided
-    let ambientAudio: HTMLAudioElement | null = null;
+    return () => clearTimeout(timer);
+  }, [scene.id]);
+  
+  // Reset hover states when scene changes
+  useEffect(() => {
+    setHoveredElement(null);
+    setHoveredExit(null);
+    setSceneLoaded(false);
     
-    if (scene.audio?.ambient) {
-      ambientAudio = new Audio(scene.audio.ambient);
-      ambientAudio.loop = true;
-      ambientAudio.volume = scene.audio.ambientVolume || 0.3;
-      
-      // Delay ambient audio slightly for better experience
-      setTimeout(() => {
-        ambientAudio?.play().catch(err => {
-          console.log('Audio playback prevented by browser', err);
-        });
-      }, 300);
-    }
+    const timer = setTimeout(() => {
+      setSceneLoaded(true);
+    }, 500);
     
-    // Play entrance sound if provided
-    if (scene.audio?.entrance) {
-      const entranceSound = new Audio(scene.audio.entrance);
-      entranceSound.volume = scene.audio.entranceVolume || 0.5;
-      entranceSound.play().catch(err => {
-        console.log('Audio playback prevented by browser', err);
-      });
-    }
-    
-    // Clean up audio on component unmount
-    return () => {
-      if (ambientAudio) {
-        ambientAudio.pause();
-        ambientAudio = null;
-      }
-    };
+    return () => clearTimeout(timer);
   }, [scene]);
   
-  // Update container size on mount and resize
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight
-        });
+  // Handle element hover
+  const handleElementMouseEnter = (elementId: string) => {
+    setHoveredElement(elementId);
+  };
+  
+  // Handle element unhover
+  const handleElementMouseLeave = () => {
+    setHoveredElement(null);
+  };
+  
+  // Handle exit hover
+  const handleExitMouseEnter = (exitId: string) => {
+    setHoveredExit(exitId);
+  };
+  
+  // Handle exit unhover
+  const handleExitMouseLeave = () => {
+    setHoveredExit(null);
+  };
+  
+  // Handle element click
+  const handleElementClick = (element: InteractiveElement) => {
+    // Use default action or first action if available
+    const defaultAction = element.actions.find(a => a.isDefault) || element.actions[0];
+    if (defaultAction) {
+      onInteract(element.id, defaultAction.type);
+    }
+  };
+  
+  // Handle element right click to show action menu
+  const handleElementRightClick = (
+    e: React.MouseEvent,
+    element: InteractiveElement
+  ) => {
+    e.preventDefault();
+    
+    // Implement context menu for multiple actions
+    // This would be more complex in a real implementation
+    if (element.actions.length > 1) {
+      // For now, just use the first non-default action
+      const alternativeAction = element.actions.find(a => !a.isDefault);
+      if (alternativeAction) {
+        onInteract(element.id, alternativeAction.type);
       }
-    };
-    
-    // Initial size
-    updateSize();
-    
-    // Add resize listener
-    window.addEventListener('resize', updateSize);
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('resize', updateSize);
-    };
-  }, []);
-  
-  // Play sound effect for feature interaction
-  const playInteractionSound = (featureId: string) => {
-    const feature = scene.features.find(f => f.id === featureId);
-    if (feature && scene.audio?.interactions?.[featureId]) {
-      const sound = new Audio(scene.audio.interactions[featureId]);
-      sound.volume = scene.audio?.interactionVolume || 0.5;
-      sound.play().catch(err => {
-        console.log('Audio playback prevented by browser', err);
-      });
-    } else if (scene.audio?.defaultInteraction) {
-      // Play default interaction sound
-      const sound = new Audio(scene.audio.defaultInteraction);
-      sound.volume = scene.audio?.interactionVolume || 0.5;
-      sound.play().catch(err => {
-        console.log('Audio playback prevented by browser', err);
-      });
     }
   };
   
-  // Check if a feature or exit is available based on requirements
-  const isInteractable = (
-    item: { requiredItems?: string[]; requiredStatus?: Record<string, boolean> }
-  ): boolean => {
-    // Check required items
-    if (item.requiredItems && item.requiredItems.length > 0) {
-      const hasAllItems = item.requiredItems.every(itemId => inventory.includes(itemId));
-      if (!hasAllItems) return false;
-    }
-    
-    // Check required status
-    if (item.requiredStatus && Object.keys(item.requiredStatus).length > 0) {
-      const hasAllStatus = Object.entries(item.requiredStatus).every(
-        ([key, value]) => playerStatus[key] === value
-      );
-      if (!hasAllStatus) return false;
-    }
-    
-    return true;
+  // Find the hovered element
+  const getHoveredElement = () => {
+    if (!hoveredElement) return null;
+    return scene.interactiveElements.find(el => el.id === hoveredElement);
   };
   
-  // Handle scene effects (particles, overlays, etc.)
-  const renderSceneEffects = () => {
-    if (!scene.effects) return null;
-    
-    return (
-      <>
-        {/* Fog/mist effect */}
-        {scene.effects.fog && (
-          <div
-            className="scene-fog"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              pointerEvents: 'none',
-              opacity: scene.effects.fogIntensity || 0.5,
-              background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, ${scene.effects.fogColor || 'rgba(255,255,255,0.2)'} ${scene.effects.fogHeight || '70%'})`,
-              zIndex: 3
-            }}
-          />
-        )}
-        
-        {/* Rain effect */}
-        {scene.effects.rain && (
-          <div
-            className="scene-rain"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              pointerEvents: 'none',
-              opacity: scene.effects.rainIntensity || 0.7,
-              backgroundImage: 'url(/assets/effects/rain.png)',
-              backgroundRepeat: 'repeat',
-              animation: 'rainFall 0.5s linear infinite',
-              zIndex: 4
-            }}
-          />
-        )}
-        
-        {/* Color overlay */}
-        {scene.effects.colorOverlay && (
-          <div
-            className="scene-color-overlay"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              pointerEvents: 'none',
-              opacity: scene.effects.colorIntensity || 0.2,
-              backgroundColor: scene.effects.colorOverlay,
-              mixBlendMode: scene.effects.blendMode || 'multiply',
-              zIndex: 2
-            }}
-          />
-        )}
-        
-        {/* Vignette */}
-        {scene.effects.vignette && (
-          <div
-            className="scene-vignette"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              pointerEvents: 'none',
-              boxShadow: `inset 0 0 ${scene.effects.vignetteSize || '100px'} ${scene.effects.vignetteColor || 'rgba(0,0,0,0.8)'}`,
-              zIndex: 5
-            }}
-          />
-        )}
-      </>
-    );
+  // Find the hovered exit
+  const getHoveredExit = () => {
+    if (!hoveredExit) return null;
+    return scene.exits.find(exit => exit.id === hoveredExit);
   };
   
-  // Handle feature interaction
-  const handleFeatureClick = (featureId: string) => {
-    const feature = scene.features.find(f => f.id === featureId);
-    if (!feature || !isInteractable(feature)) return;
-    
-    // Play interaction sound
-    playInteractionSound(featureId);
-    
-    // Set active feature briefly for visual feedback
-    setActiveFeature(featureId);
-    setTimeout(() => {
-      setActiveFeature(null);
-    }, 300);
-    
-    // Call parent handler
-    onFeatureInteract(featureId);
-  };
-  
-  // Handle exit selection
-  const handleExitClick = (exit: SceneExit) => {
-    if (!isInteractable(exit)) return;
-    
-    // Play exit sound if provided
-    if (scene.audio?.exits?.[exit.id]) {
-      const sound = new Audio(scene.audio.exits[exit.id]);
-      sound.volume = scene.audio?.exitVolume || 0.5;
-      sound.play().catch(err => {
-        console.log('Audio playback prevented by browser', err);
-      });
-    }
-    
-    // Set transition state
-    setIsTransitioning(true);
-    
-    // Call parent handler after a brief delay
-    setTimeout(() => {
-      onExitSelect(exit);
-      setIsTransitioning(false);
-    }, 500);
-  };
-  
-  // Render scene exits (doors, paths, etc.)
-  const renderExits = () => {
-    if (!scene.exits || scene.exits.length === 0) return null;
-    
-    return scene.exits.map(exit => {
-      // Skip hidden exits
-      if (exit.isHidden) return null;
-      
-      // Check if exit is interactable
-      const canUseExit = isInteractable(exit);
-      
-      // Default dimensions
-      const exitWidth = exit.width || 80;
-      const exitHeight = exit.height || 80;
-      
-      return (
-        <div
-          key={exit.id}
-          className={`scene-exit ${hoveredExit === exit.id ? 'hovered' : ''} ${canUseExit ? 'available' : 'unavailable'}`}
-          style={{
-            position: 'absolute',
-            top: typeof exit.position === 'string' ? exit.position : exit.position.top,
-            left: typeof exit.position === 'string' ? '50%' : exit.position.left,
-            right: typeof exit.position === 'string' ? undefined : exit.position.right, 
-            bottom: typeof exit.position === 'string' ? undefined : exit.position.bottom,
-            transform: typeof exit.position === 'string' ? 'translateX(-50%)' : undefined,
-            width: `${exitWidth}px`,
-            height: `${exitHeight}px`,
-            cursor: canUseExit ? 'pointer' : 'not-allowed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: canUseExit ? 1 : 0.6,
-            transition: 'all 0.3s ease',
-            zIndex: 10
-          }}
-          onClick={() => canUseExit && handleExitClick(exit)}
-          onMouseEnter={() => setHoveredExit(exit.id)}
-          onMouseLeave={() => setHoveredExit(null)}
-          title={exit.name}
-        >
-          {/* Exit Icon */}
-          {exit.icon && (
-            <div 
-              className="exit-icon"
-              style={{
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${exit.icon})`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-              }}
-            />
-          )}
-          
-          {/* Exit Tooltip */}
-          {hoveredExit === exit.id && (
-            <div
-              className="exit-tooltip"
-              style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                color: '#fff',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                whiteSpace: 'nowrap',
-                fontFamily: 'serif',
-                fontSize: '0.9rem',
-                pointerEvents: 'none',
-                zIndex: 11
-              }}
-            >
-              {exit.name} {!canUseExit && exit.requiredItems?.length ? '(Need item)' : ''}
-              {!canUseExit && exit.requiredStatus ? `(Need to ${exit.targetScene})` : ''}
-            </div>
-          )}
-        </div>
-      );
-    });
-  };
-  
-  // Render interactive features
-  const renderFeatures = () => {
-    if (!scene.features || scene.features.length === 0) return null;
-    
-    return scene.features.map(feature => {
-      // Skip hidden features
-      if (feature.isHidden) return null;
-      
-      // Check if feature is interactable
-      const canInteract = isInteractable(feature);
-      
-      // Default dimensions
-      const featureWidth = feature.width || 60;
-      const featureHeight = feature.height || 60;
-      const featureShape = feature.shape || 'circle';
-      
-      // Determine hover effect style
-      const highlightStyle = feature.highlight || {
-        border: '2px solid rgba(255, 255, 255, 0.7)',
-        boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)'
-      };
-      
-      return (
-        <div
-          key={feature.id}
-          className={`scene-feature ${activeFeature === feature.id ? 'active' : ''} ${canInteract ? 'interactable' : 'locked'}`}
-          style={{
-            position: 'absolute',
-            top: typeof feature.position === 'string' ? feature.position : feature.position.top,
-            left: typeof feature.position === 'string' ? '50%' : feature.position.left,
-            right: typeof feature.position === 'string' ? undefined : feature.position.right,
-            bottom: typeof feature.position === 'string' ? undefined : feature.position.bottom,
-            transform: typeof feature.position === 'string' ? 'translateX(-50%)' : undefined,
-            width: `${featureWidth}px`,
-            height: `${featureHeight}px`,
-            borderRadius: featureShape === 'circle' ? '50%' : featureShape === 'rounded' ? '12px' : '0',
-            cursor: canInteract ? 'pointer' : 'not-allowed',
-            opacity: canInteract ? (feature.glow ? 1 : 0.001) : 0.001, // Nearly invisible until hovered
-            transition: 'all 0.3s ease',
-            zIndex: 20,
-            ...(activeFeature === feature.id ? highlightStyle : {})
-          }}
-          onClick={() => canInteract && handleFeatureClick(feature.id)}
-          onMouseEnter={() => {
-            if (canInteract) {
-              // Apply hover effect
-              if (containerRef.current) {
-                const element = containerRef.current.querySelector(`.scene-feature[data-id="${feature.id}"]`);
-                if (element) {
-                  element.classList.add('hovered');
-                }
-              }
-            }
-          }}
-          onMouseLeave={() => {
-            // Remove hover effect
-            if (containerRef.current) {
-              const element = containerRef.current.querySelector(`.scene-feature[data-id="${feature.id}"]`);
-              if (element) {
-                element.classList.remove('hovered');
-              }
-            }
-          }}
-          data-id={feature.id}
-        >
-          {/* Feature Icon (if present) */}
-          {feature.icon && (
-            <div 
-              className="feature-icon"
-              style={{
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${feature.icon})`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                opacity: canInteract ? 1 : 0.5
-              }}
-            />
-          )}
-          
-          {/* Feature Prompt - visible on hover */}
-          {feature.prompt && (
-            <div
-              className="feature-prompt"
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                color: '#fff',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                whiteSpace: 'nowrap',
-                fontFamily: 'serif',
-                fontSize: '0.9rem',
-                opacity: 0,
-                pointerEvents: 'none',
-                transition: 'opacity 0.2s ease',
-                zIndex: 21
-              }}
-            >
-              {feature.prompt}
-            </div>
-          )}
-        </div>
-      );
-    });
-  };
-  
-  // Render lighting effects (if present)
-  const renderLightingEffects = () => {
-    if (!scene.effects?.lighting) return null;
-    
-    return scene.effects.lighting.map((light, index) => (
-      <div
-        key={`light-${index}`}
-        style={{
-          position: 'absolute',
-          top: light.position.top || '50%',
-          left: light.position.left || '50%',
-          transform: 'translate(-50%, -50%)',
-          width: light.size || '150px',
-          height: light.size || '150px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${light.color || 'rgba(255, 220, 150, 0.8)'} 0%, transparent 70%)`,
-          opacity: light.intensity || 0.7,
-          pointerEvents: 'none',
-          zIndex: 2,
-          animation: light.flicker ? 'lightFlicker 3s infinite alternate' : 'none'
-        }}
-      />
-    ));
-  };
-  
-  // Render particle effects (if present)
-  const renderParticleEffects = () => {
-    if (!scene.effects?.particles) return null;
-    
-    return scene.effects.particles.map((particle, index) => (
-      <div
-        key={`particle-${index}`}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: `url(${particle.texture})`,
-          backgroundRepeat: 'repeat',
-          opacity: particle.opacity || 0.5,
-          animation: `${particle.animation} ${particle.duration || '20s'} linear infinite`,
-          pointerEvents: 'none',
-          zIndex: 3
-        }}
-      />
-    ));
-  };
-  
-  // Render ambient weather effects (if present)
-  const renderWeatherEffects = () => {
-    if (!scene.effects?.weather) return null;
-    
-    return (
-      <div
-        className={`weather-effect ${scene.effects.weather}`}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          pointerEvents: 'none',
-          zIndex: 4
-        }}
-      />
-    );
+  // Check if an element has multiple actions
+  const hasMultipleActions = (element: InteractiveElement) => {
+    return element.actions.length > 1;
   };
   
   return (
-    <div
-      ref={containerRef}
-      className={`scene-view ${scene.id} ${isTransitioning ? 'transitioning' : ''}`}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-        backgroundImage: `url(${scene.backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        transition: isTransitioning ? 'opacity 0.5s ease' : 'none',
-        opacity: isTransitioning ? 0 : 1
-      }}
-    >
-      {/* Scene effects layer */}
-      {renderSceneEffects()}
+    <div className={`scene-view ${sceneLoaded ? 'scene-loaded' : ''}`}>
+      {/* Scene Background */}
+      <div 
+        className="scene-background"
+        style={{ backgroundImage: `url(${scene.background})` }}
+      >
+        {/* Scene Title Overlay */}
+        {scene.showTitle && (
+          <div className="scene-title-overlay">
+            <h2>{scene.title}</h2>
+            {scene.subtitle && <p>{scene.subtitle}</p>}
+          </div>
+        )}
       
-      {/* Lighting effects */}
-      {renderLightingEffects()}
+        {/* Interactive Elements */}
+        {scene.interactiveElements.map(element => (
+          <div
+            key={element.id}
+            className={`interactive-element ${hoveredElement === element.id ? 'element-hovered' : ''} ${hasMultipleActions(element) ? 'multiple-actions' : ''}`}
+            style={{
+              left: `${element.position.x}%`,
+              top: `${element.position.y}%`,
+              width: `${element.size.width}%`,
+              height: `${element.size.height}%`
+            }}
+            onMouseEnter={() => handleElementMouseEnter(element.id)}
+            onMouseLeave={handleElementMouseLeave}
+            onClick={() => handleElementClick(element)}
+            onContextMenu={(e) => handleElementRightClick(e, element)}
+          >
+            {hoveredElement === element.id && (
+              <div className="element-tooltip">
+                {element.name}
+                {hasMultipleActions(element) && (
+                  <span className="multiple-actions-indicator">⋮</span>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {/* Scene Exits */}
+        {scene.exits.map(exit => (
+          <div
+            key={exit.id}
+            className={`scene-exit ${hoveredExit === exit.id ? 'exit-hovered' : ''}`}
+            style={{
+              left: `${exit.position.x}%`,
+              top: `${exit.position.y}%`,
+              width: `${exit.size?.width || 10}%`,
+              height: `${exit.size?.height || 10}%`
+            }}
+            onMouseEnter={() => handleExitMouseEnter(exit.id)}
+            onMouseLeave={handleExitMouseLeave}
+            onClick={() => onExitClick(exit.id)}
+          >
+            {hoveredExit === exit.id && (
+              <div className="exit-tooltip">
+                {exit.name || 'Exit'} 
+                {exit.direction && (
+                  <span className="exit-direction">
+                    {exit.direction === 'north' && '↑'}
+                    {exit.direction === 'east' && '→'}
+                    {exit.direction === 'south' && '↓'}
+                    {exit.direction === 'west' && '←'}
+                    {exit.direction === 'up' && '⤴️'}
+                    {exit.direction === 'down' && '⤵️'}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="exit-indicator">
+              {exit.direction === 'north' && '↑'}
+              {exit.direction === 'east' && '→'}
+              {exit.direction === 'south' && '↓'}
+              {exit.direction === 'west' && '←'}
+              {exit.direction === 'up' && '⤴️'}
+              {exit.direction === 'down' && '⤵️'}
+            </div>
+          </div>
+        ))}
+        
+        {/* Hover Information */}
+        {getHoveredElement() && (
+          <div className="hover-info">
+            <h3>{getHoveredElement()?.name}</h3>
+            {getHoveredElement()?.description && (
+              <p>{getHoveredElement()?.description}</p>
+            )}
+          </div>
+        )}
+        
+        {getHoveredExit() && (
+          <div className="hover-info">
+            <h3>{getHoveredExit()?.name || 'Exit'}</h3>
+            {getHoveredExit()?.description && (
+              <p>{getHoveredExit()?.description}</p>
+            )}
+          </div>
+        )}
+        
+        {/* Visual Effects */}
+        {scene.visualEffects && scene.visualEffects.map((effect, index) => (
+          <div 
+            key={`effect-${index}`}
+            className={`visual-effect ${effect.type}`}
+            style={{
+              opacity: effect.opacity || 0.5,
+              animationDuration: `${effect.duration || 5}s`,
+              ...effect.style
+            }}
+          />
+        ))}
+      </div>
       
-      {/* Particle effects */}
-      {renderParticleEffects()}
-      
-      {/* Weather effects */}
-      {renderWeatherEffects()}
-      
-      {/* Interactive features */}
-      {renderFeatures()}
-      
-      {/* Scene exits */}
-      {renderExits()}
-      
-      {/* Animation styles */}
-      <style>
-        {`
-          @keyframes lightFlicker {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 0.5; }
-            75% { opacity: 0.6; }
-          }
-          
-          @keyframes rainFall {
-            from { background-position: 0 0; }
-            to { background-position: 0 100%; }
-          }
-          
-          .scene-feature.hovered .feature-prompt {
-            opacity: 1;
-          }
-          
-          .scene-feature.active {
-            animation: pulse 0.3s ease;
-          }
-          
-          @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-          }
-          
-          .weather-effect.rain {
-            background: url('/assets/effects/rain.png') repeat;
-            animation: rainFall 0.5s linear infinite;
-          }
-          
-          .weather-effect.snow {
-            background: url('/assets/effects/snow.png') repeat;
-            animation: snowFall 10s linear infinite;
-          }
-          
-          .weather-effect.fog {
-            background: linear-gradient(to bottom, transparent, rgba(200, 200, 220, 0.3));
-          }
-          
-          @keyframes snowFall {
-            from { background-position: 0 0; }
-            to { background-position: 100px 1000px; }
-          }
-        `}
-      </style>
+      <style jsx>{`
+        .scene-view {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          flex: 1;
+          overflow: hidden;
+          transition: opacity 0.5s ease;
+          opacity: 0;
+        }
+        
+        .scene-loaded {
+          opacity: 1;
+        }
+        
+        .scene-background {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
+        
+        .scene-title-overlay {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          background-color: rgba(0, 0, 0, 0.6);
+          padding: 10px 15px;
+          border-radius: 5px;
+          color: #f1d7c5;
+          max-width: 80%;
+          border-left: 4px solid #8a5c41;
+          animation: fadeIn 1s ease;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .scene-title-overlay h2 {
+          margin: 0 0 5px;
+          font-size: 20px;
+        }
+        
+        .scene-title-overlay p {
+          margin: 0;
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        
+        .interactive-element {
+          position: absolute;
+          cursor: pointer;
+          border-radius: 5px;
+          transition: all 0.2s;
+          z-index: 2;
+        }
+        
+        .element-hovered {
+          box-shadow: 0 0 0 2px rgba(138, 92, 65, 0.8), 0 0 10px rgba(255, 217, 180, 0.5);
+        }
+        
+        .element-tooltip {
+          position: absolute;
+          top: -30px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: rgba(20, 20, 25, 0.9);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          color: #f1d7c5;
+          white-space: nowrap;
+          pointer-events: none;
+          border: 1px solid #8a5c41;
+        }
+        
+        .multiple-actions-indicator {
+          margin-left: 5px;
+          color: #ffb973;
+          font-weight: bold;
+        }
+        
+        .scene-exit {
+          position: absolute;
+          cursor: pointer;
+          border-radius: 5px;
+          transition: all 0.2s;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 2;
+        }
+        
+        .exit-hovered {
+          box-shadow: 0 0 0 2px rgba(138, 92, 65, 0.8), 0 0 10px rgba(255, 217, 180, 0.5);
+        }
+        
+        .exit-tooltip {
+          position: absolute;
+          top: -30px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: rgba(20, 20, 25, 0.9);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          color: #f1d7c5;
+          white-space: nowrap;
+          pointer-events: none;
+          border: 1px solid #8a5c41;
+        }
+        
+        .exit-direction {
+          margin-left: 5px;
+          font-size: 14px;
+        }
+        
+        .exit-indicator {
+          font-size: 18px;
+          color: rgba(255, 217, 180, 0.7);
+          text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hover-info {
+          position: absolute;
+          bottom: 80px;
+          left: 20px;
+          background-color: rgba(20, 20, 25, 0.9);
+          padding: 10px 15px;
+          border-radius: 5px;
+          color: #f1d7c5;
+          max-width: 300px;
+          border-left: 4px solid #8a5c41;
+          animation: fadeIn 0.3s ease;
+          z-index: 3;
+        }
+        
+        .hover-info h3 {
+          margin: 0 0 5px;
+          font-size: 16px;
+          color: #ffb973;
+        }
+        
+        .hover-info p {
+          margin: 0;
+          font-size: 14px;
+        }
+        
+        /* Visual effects */
+        .visual-effect {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        }
+        
+        .fog {
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(200, 200, 220, 0.2) 50%,
+            rgba(200, 200, 220, 0.3) 100%
+          );
+          animation: fogMove linear infinite;
+        }
+        
+        .rain {
+          background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,2 L18,98" stroke="rgba(200,220,255,0.8)" stroke-width="1"/><path d="M40,2 L38,98" stroke="rgba(200,220,255,0.7)" stroke-width="1"/><path d="M60,2 L58,98" stroke="rgba(200,220,255,0.8)" stroke-width="1"/><path d="M80,2 L78,98" stroke="rgba(200,220,255,0.7)" stroke-width="1"/></svg>');
+          animation: rainMove linear infinite;
+        }
+        
+        .darkness {
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .glow {
+          box-shadow: inset 0 0 50px rgba(255, 200, 100, 0.5);
+          animation: glowPulse ease-in-out infinite alternate;
+        }
+        
+        @keyframes fogMove {
+          0% { background-position: 0% 0%; }
+          100% { background-position: 0% 100%; }
+        }
+        
+        @keyframes rainMove {
+          0% { background-position: 0% 0%; }
+          100% { background-position: 20% 100%; }
+        }
+        
+        @keyframes glowPulse {
+          0% { box-shadow: inset 0 0 30px rgba(255, 200, 100, 0.3); }
+          100% { box-shadow: inset 0 0 70px rgba(255, 200, 100, 0.7); }
+        }
+      `}</style>
     </div>
   );
 };
-
-export default SceneView;

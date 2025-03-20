@@ -1,622 +1,645 @@
-import { GameState, GameOptions, Item, Scene, Puzzle, Dialog, Notification } from './types';
-import { gameScenes } from './data/scenes';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  GameOptions,
+  GameState,
+  GameAction,
+  Inventory,
+  Item,
+  Scene,
+  Dialog,
+  Puzzle,
+  Notification,
+  PlayerStats
+} from './types';
+import items from './data/items';
+import scenes from './data/scenes';
+import dialogs from './data/dialogs';
+import puzzles from './data/puzzles';
 
-/**
- * Eden's Hollow Game Engine
- * Core class that manages game state and logic
- */
 export class GameEngine {
-  private static instance: GameEngine;
-  private gameState: GameState;
-  private scenes: Record<string, Scene>;
-  private items: Record<string, Item>;
-  private dialogs: Record<string, Dialog>;
-  private puzzles: Record<string, Puzzle>;
-  private onStateChange?: (state: GameState) => void;
+  private state: GameState;
+  private options: GameOptions;
+  private listeners: ((state: GameState) => void)[] = [];
   
-  // Private constructor for singleton pattern
-  private constructor(options: GameOptions) {
-    this.scenes = options.scenes;
-    this.items = options.items;
-    this.dialogs = options.dialogs;
-    this.puzzles = options.puzzles;
-    this.onStateChange = options.onStateChange;
+  constructor(options: GameOptions = {}) {
+    this.options = options;
     
-    // Initialize default game state
-    this.gameState = {
-      currentScene: options.startScene || 'forest_edge',
-      inventory: [],
+    // Create inventory interface
+    const inventoryItems: Item[] = [];
+    const inventory: Inventory = {
+      items: inventoryItems,
+      get: (id: string) => inventoryItems.find(item => item.id === id),
+      add: (item: Item) => {
+        const existingItem = this.state.inventory.get(item.id);
+        if (existingItem) {
+          existingItem.quantity += item.quantity;
+          this.notifyListeners();
+          return true;
+        } else {
+          inventoryItems.push(item);
+          this.notifyListeners();
+          return true;
+        }
+      },
+      remove: (id: string) => {
+        const index = inventoryItems.findIndex(item => item.id === id);
+        if (index >= 0) {
+          inventoryItems.splice(index, 1);
+          this.notifyListeners();
+          return true;
+        }
+        return false;
+      },
+      has: (id: string) => !!inventoryItems.find(item => item.id === id),
+      filter: (predicate) => inventoryItems.filter(item => predicate(item.id)),
+      map: (callback) => inventoryItems.map(item => callback(item.id, item))
+    };
+    
+    // Create player stats
+    const playerStats: PlayerStats = {
       health: 100,
-      mana: 100,
-      puzzleAttempts: 0,
-      gameStatus: 'playing',
-      playerStatus: {},
-      notifications: [],
-      unlockedScenes: [options.startScene || 'forest_edge'],
-      collectibles: {},
-      stats: {
-        itemsFound: 0,
-        puzzlesSolved: 0,
-        secretsDiscovered: 0,
-        completionPercentage: 0
-      }
-    };
-  }
-  
-  /**
-   * Get singleton instance or create new one
-   */
-  public static getInstance(options?: GameOptions): GameEngine {
-    if (!GameEngine.instance && options) {
-      GameEngine.instance = new GameEngine(options);
-    }
-    return GameEngine.instance;
-  }
-  
-  /**
-   * Get current game state
-   */
-  public getState(): GameState {
-    return this.gameState;
-  }
-  
-  /**
-   * Update game state and notify subscribers
-   */
-  private updateState(newState: Partial<GameState>): void {
-    this.gameState = {
-      ...this.gameState,
-      ...newState
+      maxHealth: 100,
+      energy: 100,
+      maxEnergy: 100,
+      level: 1,
+      experience: 0,
+      status: []
     };
     
-    if (this.onStateChange) {
-      this.onStateChange(this.gameState);
+    // Initialize game state
+    this.state = {
+      currentSceneId: options.startScene || 'village_entrance',
+      previousSceneId: null,
+      inventory,
+      score: {},
+      status: { first_visit: false },
+      player: playerStats,
+      visitedScenes: new Set<string>(),
+      activeDialogId: null,
+      dialogIndex: 0,
+      currentPuzzleId: null,
+      notificationQueue: [],
+      lastAction: null,
+      health: 100,
+      maxHealth: 100,
+      mana: 75,
+      maxMana: 100
+    };
+    
+    // Add options change listener if provided
+    if (options.onStateChange) {
+      this.addListener(options.onStateChange);
     }
   }
   
-  /**
-   * Transition to a new scene
-   */
-  public transitionToScene(sceneId: string): void {
-    if (!this.scenes[sceneId]) {
-      this.addNotification({
-        id: 'scene-error',
-        message: `Error: Scene "${sceneId}" not found.`,
-        type: 'error'
-      });
+  // Add a listener for state changes
+  public addListener(listener: (state: GameState) => void): void {
+    this.listeners.push(listener);
+  }
+  
+  // Remove a listener
+  public removeListener(listener: (state: GameState) => void): void {
+    const index = this.listeners.indexOf(listener);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
+  }
+  
+  // Notify all listeners of state changes
+  private notifyListeners(): void {
+    for (const listener of this.listeners) {
+      listener(this.state);
+    }
+  }
+  
+  // Get the current game state
+  public getState(): GameState {
+    return this.state;
+  }
+  
+  // Get a scene by ID
+  public getScene(sceneId: string): Scene | undefined {
+    return scenes[sceneId];
+  }
+  
+  // Get the current scene
+  public getCurrentScene(): Scene | undefined {
+    return this.getScene(this.state.currentSceneId);
+  }
+  
+  // Get a dialog by ID
+  public getDialog(dialogId: string): Dialog | undefined {
+    return dialogs[dialogId];
+  }
+  
+  // Get a puzzle by ID
+  public getPuzzle(puzzleId: string): Puzzle | undefined {
+    return puzzles[puzzleId];
+  }
+  
+  // Get an item by ID
+  public getItem(itemId: string): Item | undefined {
+    return items[itemId];
+  }
+  
+  // Dispatch an action to update the game state
+  public dispatch(action: GameAction): void {
+    switch (action.type) {
+      case 'MOVE_TO_SCENE':
+        this.moveToScene(action.sceneId);
+        break;
+      case 'ADD_ITEM':
+        this.addItem(action.item);
+        break;
+      case 'REMOVE_ITEM':
+        this.removeItem(action.itemId);
+        break;
+      case 'USE_ITEM':
+        this.useItem(action.itemId, action.targetId);
+        break;
+      case 'UPDATE_STATUS':
+        this.updateStatus(action.status);
+        break;
+      case 'ADD_SCORE':
+        this.addScore(action.key, action.value);
+        break;
+      case 'START_DIALOG':
+        this.startDialog(action.dialogId);
+        break;
+      case 'ADVANCE_DIALOG':
+        this.advanceDialog(action.responseIndex);
+        break;
+      case 'END_DIALOG':
+        this.endDialog();
+        break;
+      case 'START_PUZZLE':
+        this.startPuzzle(action.puzzleId);
+        break;
+      case 'SUBMIT_PUZZLE_SOLUTION':
+        this.submitPuzzleSolution(action.solution);
+        break;
+      case 'END_PUZZLE':
+        this.endPuzzle(action.success);
+        break;
+      case 'ADD_NOTIFICATION':
+        this.addNotification(action.notification);
+        break;
+      case 'CLEAR_NOTIFICATION':
+        this.clearNotification(action.id);
+        break;
+      case 'UPDATE_HEALTH':
+        this.updateHealth(action.value);
+        break;
+      case 'UPDATE_MANA':
+        this.updateMana(action.value);
+        break;
+      case 'UPDATE_STATE':
+        this.updateState(action.partialState);
+        break;
+      default:
+        console.warn('Unknown action type:', (action as any).type);
+    }
+  }
+  
+  // Update a part of the game state
+  private updateState(partialState: Partial<GameState>): void {
+    this.state = { ...this.state, ...partialState };
+    this.notifyListeners();
+  }
+  
+  // Move to a new scene
+  private moveToScene(sceneId: string): void {
+    const targetScene = this.getScene(sceneId);
+    if (!targetScene) {
+      console.error(`Scene ${sceneId} not found`);
       return;
     }
     
-    // Add scene to unlocked scenes
-    if (!this.gameState.unlockedScenes.includes(sceneId)) {
-      this.updateState({
-        unlockedScenes: [...this.gameState.unlockedScenes, sceneId]
-      });
+    // Update state
+    this.state.previousSceneId = this.state.currentSceneId;
+    this.state.currentSceneId = sceneId;
+    this.state.visitedScenes.add(sceneId);
+    
+    // Process scene events on entry
+    if (targetScene.events) {
+      for (const event of targetScene.events) {
+        if (event.trigger === 'entry') {
+          // Check if conditions are met
+          if (event.condition) {
+            if (event.condition.requiredItems && 
+                !event.condition.requiredItems.every(itemId => this.state.inventory.has(itemId))) {
+              continue;
+            }
+            
+            if (event.condition.requiredStatus) {
+              let conditionsMet = true;
+              for (const [key, value] of Object.entries(event.condition.requiredStatus)) {
+                if (this.state.status[key] !== value) {
+                  conditionsMet = false;
+                  break;
+                }
+              }
+              if (!conditionsMet) continue;
+            }
+          }
+          
+          // Process event outcome
+          const outcome = event.outcome;
+          if (outcome.message) {
+            // TODO: Display message
+          }
+          
+          if (outcome.dialog) {
+            this.startDialog(outcome.dialog);
+          }
+          
+          if (outcome.item) {
+            const item = this.getItem(outcome.item);
+            if (item) {
+              this.addItem(item);
+            }
+          }
+          
+          if (outcome.status) {
+            this.updateStatus(outcome.status);
+          }
+          
+          if (outcome.notification) {
+            this.addNotification(outcome.notification);
+          }
+          
+          if (outcome.puzzle) {
+            this.startPuzzle(outcome.puzzle);
+          }
+        }
+      }
     }
     
-    // Update current scene
-    this.updateState({
-      currentScene: sceneId
-    });
+    this.notifyListeners();
+  }
+  
+  // Add an item to inventory
+  private addItem(item: Item): void {
+    this.state.inventory.add(item);
+    this.notifyListeners();
+  }
+  
+  // Remove an item from inventory
+  private removeItem(itemId: string): void {
+    this.state.inventory.remove(itemId);
+    this.notifyListeners();
+  }
+  
+  // Use an item (possibly on a target)
+  private useItem(itemId: string, targetId?: string): void {
+    const item = this.state.inventory.get(itemId);
+    if (!item) return;
     
-    // Check for scene entrance events
-    const scene = this.scenes[sceneId];
-    const entranceEvents = scene.events?.filter(event => event.trigger === 'enter');
+    // Handle item effects
+    if (item.effects) {
+      for (const effect of item.effects) {
+        if (effect.type === 'health') {
+          if (typeof effect.value === 'number') {
+            this.updateHealth(effect.value);
+          }
+        } else if (effect.type === 'mana') {
+          if (typeof effect.value === 'number') {
+            this.updateMana(effect.value);
+          }
+        } else if (effect.type === 'status' && typeof effect.value === 'object') {
+          this.updateStatus(effect.value as Record<string, boolean>);
+        }
+      }
+    }
     
-    if (entranceEvents && entranceEvents.length > 0) {
-      entranceEvents.forEach(event => {
-        // Check if event has conditions and if they're met
-        if (event.condition) {
-          const conditionsMet = Object.entries(event.condition).every(([key, value]) => {
-            return this.gameState.playerStatus[key] === value;
-          });
-          
-          if (!conditionsMet) {
-            return;
+    // Remove consumable items after use
+    if (item.isConsumable) {
+      if (item.quantity > 1) {
+        item.quantity--;
+      } else {
+        this.removeItem(itemId);
+      }
+    }
+    
+    this.notifyListeners();
+  }
+  
+  // Update game status flags
+  private updateStatus(status: Record<string, boolean>): void {
+    this.state.status = { ...this.state.status, ...status };
+    this.notifyListeners();
+  }
+  
+  // Add to score
+  private addScore(key: string, value: number): void {
+    this.state.score[key] = (this.state.score[key] || 0) + value;
+    this.notifyListeners();
+  }
+  
+  // Start a dialog
+  private startDialog(dialogId: string): void {
+    const dialog = this.getDialog(dialogId);
+    if (!dialog) {
+      console.error(`Dialog ${dialogId} not found`);
+      return;
+    }
+    
+    this.state.activeDialogId = dialogId;
+    this.state.dialogIndex = 0;
+    this.notifyListeners();
+  }
+  
+  // Advance dialog to next segment or process response
+  private advanceDialog(responseIndex?: number): void {
+    if (!this.state.activeDialogId) return;
+    
+    const dialog = this.getDialog(this.state.activeDialogId);
+    if (!dialog) return;
+    
+    const currentSegment = dialog.content[this.state.dialogIndex];
+    if (!currentSegment) {
+      this.endDialog();
+      return;
+    }
+    
+    // If a response was selected and it has an outcome, process it
+    if (responseIndex !== undefined && 
+        currentSegment.responses && 
+        currentSegment.responses[responseIndex]) {
+      
+      const response = currentSegment.responses[responseIndex];
+      
+      // Process response outcome if any
+      if (response.outcome) {
+        if (response.outcome.status) {
+          this.updateStatus(response.outcome.status);
+        }
+        
+        if (response.outcome.item) {
+          const item = this.getItem(response.outcome.item);
+          if (item) {
+            this.addItem(item);
           }
         }
         
-        // Apply event outcome
-        if (event.outcome.status) {
-          this.updateStatus(event.outcome.status);
+        if (response.outcome.notification) {
+          this.addNotification(response.outcome.notification);
         }
         
-        if (event.outcome.notification) {
-          this.addNotification(event.outcome.notification);
+        if (response.outcome.puzzle) {
+          this.startPuzzle(response.outcome.puzzle);
         }
-        
-        if (event.outcome.dialog) {
-          this.startDialog(event.outcome.dialog);
-        }
-      });
-    }
-  }
-  
-  /**
-   * Add item to inventory
-   */
-  public addItem(itemId: string): void {
-    if (!this.items[itemId]) {
-      console.error(`Item "${itemId}" not found.`);
-      return;
-    }
-    
-    this.updateState({
-      inventory: [...this.gameState.inventory, itemId],
-      stats: {
-        ...this.gameState.stats,
-        itemsFound: this.gameState.stats.itemsFound + 1
-      }
-    });
-    
-    // Notify player about item acquisition
-    this.addNotification({
-      id: `item-${itemId}`,
-      message: `You obtained: ${this.items[itemId].name}`,
-      type: 'discovery'
-    });
-  }
-  
-  /**
-   * Remove item from inventory
-   */
-  public removeItem(itemId: string): void {
-    this.updateState({
-      inventory: this.gameState.inventory.filter(id => id !== itemId)
-    });
-  }
-  
-  /**
-   * Use an item in the current scene
-   */
-  public useItem(itemId: string): void {
-    const item = this.items[itemId];
-    
-    if (!item) {
-      console.error(`Item "${itemId}" not found.`);
-      return;
-    }
-    
-    // Check if item is usable
-    if (!item.isUsable) {
-      this.addNotification({
-        id: 'item-not-usable',
-        message: `${item.name} cannot be used here.`,
-        type: 'info'
-      });
-      return;
-    }
-    
-    // Apply item effects if any
-    if (item.effects) {
-      if (item.effects.health) {
-        this.updateState({
-          health: Math.min(100, this.gameState.health + item.effects.health)
-        });
       }
       
-      if (item.effects.mana) {
-        this.updateState({
-          mana: Math.min(100, this.gameState.mana + item.effects.mana)
-        });
-      }
-      
-      if (item.effects.status) {
-        this.updateStatus(item.effects.status);
-      }
-    }
-    
-    // Remove item if it's consumable
-    if (item.isConsumable || item.destroyOnUse) {
-      this.removeItem(itemId);
-    }
-    
-    // Notify player about item use
-    this.addNotification({
-      id: `item-used-${itemId}`,
-      message: `Used: ${item.name}`,
-      type: 'success'
-    });
-  }
-  
-  /**
-   * Perform an action in the current scene
-   */
-  public performAction(actionId: string): void {
-    const scene = this.scenes[this.gameState.currentScene];
-    const action = scene.actions?.find(a => a.id === actionId);
-    
-    if (!action) {
-      console.error(`Action "${actionId}" not found in current scene.`);
-      return;
-    }
-    
-    // Apply action outcome
-    if (action.outcome.status) {
-      this.updateStatus(action.outcome.status);
-    }
-    
-    if (action.outcome.notification) {
-      this.addNotification(action.outcome.notification);
-    }
-    
-    if (action.outcome.dialog) {
-      this.startDialog(action.outcome.dialog);
-    }
-    
-    if (action.outcome.puzzle) {
-      this.startPuzzle(action.outcome.puzzle);
-    }
-    
-    if (action.outcome.item) {
-      this.addItem(action.outcome.item);
-    }
-  }
-  
-  /**
-   * Start a dialog
-   */
-  public startDialog(dialogId: string): void {
-    if (!this.dialogs[dialogId]) {
-      console.error(`Dialog "${dialogId}" not found.`);
-      return;
-    }
-    
-    this.updateState({
-      activeDialog: dialogId,
-      dialogIndex: 0
-    });
-  }
-  
-  /**
-   * Select dialog response
-   */
-  public selectDialogResponse(responseIndex: number): void {
-    const dialog = this.dialogs[this.gameState.activeDialog || ''];
-    const dialogSegment = dialog?.content[this.gameState.dialogIndex || 0];
-    
-    if (!dialog || !dialogSegment || !dialogSegment.responses) {
-      this.endDialog();
-      return;
-    }
-    
-    const response = dialogSegment.responses[responseIndex];
-    
-    if (!response) {
-      this.endDialog();
-      return;
-    }
-    
-    // Apply response outcome
-    if (response.outcome) {
-      if (response.outcome.status) {
-        this.updateStatus(response.outcome.status);
-      }
-      
-      if (response.outcome.notification) {
-        this.addNotification(response.outcome.notification);
-      }
-      
-      if (response.outcome.item) {
-        this.addItem(response.outcome.item);
-      }
-      
-      if (response.outcome.puzzle) {
-        this.startPuzzle(response.outcome.puzzle);
-      }
-      
-      if (response.outcome.scene) {
-        this.transitionToScene(response.outcome.scene);
-      }
-    }
-    
-    // Move to next dialog segment if specified
-    if (response.nextIndex !== undefined) {
-      this.updateState({
-        dialogIndex: response.nextIndex
-      });
+      // Move to the next dialog segment based on response
+      this.state.dialogIndex = response.nextIndex;
     } else {
+      // If no response index provided, just go to the next segment
+      this.state.dialogIndex++;
+    }
+    
+    // Check if we've reached the end of the dialog
+    if (this.state.dialogIndex >= dialog.content.length) {
       this.endDialog();
+    } else {
+      this.notifyListeners();
     }
   }
   
-  /**
-   * End dialog
-   */
-  public endDialog(): void {
-    this.updateState({
-      activeDialog: undefined,
-      dialogIndex: undefined
-    });
+  // End the current dialog
+  private endDialog(): void {
+    this.state.activeDialogId = null;
+    this.state.dialogIndex = 0;
+    this.notifyListeners();
   }
   
-  /**
-   * Start a puzzle
-   */
-  public startPuzzle(puzzleId: string): void {
-    if (!this.puzzles[puzzleId]) {
-      console.error(`Puzzle "${puzzleId}" not found.`);
-      return;
-    }
-    
-    this.updateState({
-      currentPuzzle: puzzleId,
-      puzzleAttempts: 0
-    });
-  }
-  
-  /**
-   * Attempt to solve a puzzle
-   */
-  public attemptPuzzle(puzzleId: string, solution: any): void {
-    const puzzle = this.puzzles[puzzleId];
-    
+  // Start a puzzle
+  private startPuzzle(puzzleId: string): void {
+    const puzzle = this.getPuzzle(puzzleId);
     if (!puzzle) {
-      console.error(`Puzzle "${puzzleId}" not found.`);
+      console.error(`Puzzle ${puzzleId} not found`);
       return;
     }
     
-    // Compare solution
-    let solved = false;
+    this.state.currentPuzzleId = puzzleId;
+    this.notifyListeners();
+  }
+  
+  // Submit a solution to the current puzzle
+  private submitPuzzleSolution(solution: string[]): void {
+    if (!this.state.currentPuzzleId) return;
     
-    if (puzzle.type === 'combination') {
-      // For combination puzzles, compare each input value
-      solved = Object.entries(solution).every(([key, value]) => {
-        const correctValue = puzzle.solution[key];
-        return String(value).toLowerCase() === String(correctValue).toLowerCase();
-      });
-    } else if (puzzle.type === 'order') {
-      // For order puzzles, compare the sequence
-      solved = JSON.stringify(solution.order) === JSON.stringify(puzzle.solution);
-    } else {
-      // For selection puzzles, direct comparison
-      solved = solution === puzzle.solution;
-    }
+    const puzzle = this.getPuzzle(this.state.currentPuzzleId);
+    if (!puzzle) return;
     
-    if (solved) {
-      // Puzzle solved
-      this.updateState({
-        currentPuzzle: undefined,
-        puzzleAttempts: 0,
-        stats: {
-          ...this.gameState.stats,
-          puzzlesSolved: this.gameState.stats.puzzlesSolved + 1
-        }
-      });
-      
-      // Apply puzzle reward
+    // Check if solution is correct
+    const isCorrect = solution.length === puzzle.solution.length &&
+                      solution.every((val, index) => {
+                        // Allow for multiple correct solutions
+                        if (Array.isArray(puzzle.solution[index])) {
+                          return (puzzle.solution[index] as string[]).includes(val);
+                        }
+                        return val === puzzle.solution[index];
+                      });
+    
+    if (isCorrect) {
+      // Process puzzle reward
       if (puzzle.reward) {
+        if (puzzle.reward.item) {
+          const item = this.getItem(puzzle.reward.item);
+          if (item) {
+            this.addItem(item);
+          }
+        }
+        
         if (puzzle.reward.status) {
           this.updateStatus(puzzle.reward.status);
         }
         
-        if (puzzle.reward.item) {
-          this.addItem(puzzle.reward.item);
-        }
-        
         if (puzzle.reward.notification) {
           this.addNotification(puzzle.reward.notification);
-        } else {
-          this.addNotification({
-            id: `puzzle-solved-${puzzleId}`,
-            message: 'Puzzle solved successfully!',
-            type: 'success'
-          });
         }
-      } else {
-        this.addNotification({
-          id: `puzzle-solved-${puzzleId}`,
-          message: 'Puzzle solved successfully!',
-          type: 'success'
-        });
       }
+      
+      this.endPuzzle(true);
     } else {
-      // Incorrect solution
-      const newAttempts = this.gameState.puzzleAttempts + 1;
-      
-      this.updateState({
-        puzzleAttempts: newAttempts
+      // Handle incorrect solution
+      this.addNotification({
+        id: uuidv4(),
+        type: 'error',
+        message: 'That solution doesn\'t seem to work. Try again.',
+        duration: 3000,
+        autoDismiss: true
       });
       
-      // Check if maximum attempts reached
-      if (puzzle.maxAttempts && newAttempts >= puzzle.maxAttempts) {
-        this.updateState({
-          currentPuzzle: undefined,
-          puzzleAttempts: 0
-        });
-        
-        this.addNotification({
-          id: `puzzle-failed-${puzzleId}`,
-          message: 'Maximum attempts reached. Puzzle failed.',
-          type: 'error'
-        });
-      } else {
-        // Show hint if available
-        if (puzzle.hints && puzzle.hints.length > 0) {
-          const hintIndex = Math.min(newAttempts - 1, puzzle.hints.length - 1);
-          
+      this.notifyListeners();
+    }
+  }
+  
+  // End the current puzzle
+  private endPuzzle(success: boolean): void {
+    this.state.currentPuzzleId = null;
+    
+    if (success) {
+      this.addNotification({
+        id: uuidv4(),
+        type: 'success',
+        message: 'Puzzle solved successfully!',
+        duration: 3000,
+        autoDismiss: true
+      });
+    }
+    
+    this.notifyListeners();
+  }
+  
+  // Add a notification to the queue
+  private addNotification(notification: Notification): void {
+    // Ensure notification has an ID
+    if (!notification.id) {
+      notification.id = uuidv4();
+    }
+    
+    this.state.notificationQueue = [...this.state.notificationQueue, notification];
+    this.notifyListeners();
+  }
+  
+  // Clear a notification from the queue
+  private clearNotification(id: string): void {
+    this.state.notificationQueue = this.state.notificationQueue.filter(n => n.id !== id);
+    this.notifyListeners();
+  }
+  
+  // Update player health
+  private updateHealth(value: number): void {
+    this.state.health = Math.max(0, Math.min(this.state.maxHealth, this.state.health + value));
+    this.notifyListeners();
+  }
+  
+  // Update player mana
+  private updateMana(value: number): void {
+    this.state.mana = Math.max(0, Math.min(this.state.maxMana, this.state.mana + value));
+    this.notifyListeners();
+  }
+  
+  // Interact with a scene element
+  public interactWithElement(elementId: string, actionType: string): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene) return;
+    
+    const element = currentScene.interactiveElements.find(el => el.id === elementId);
+    if (!element) return;
+    
+    const action = element.actions.find(a => a.type === actionType);
+    if (!action) return;
+    
+    // Check if any required items or status conditions are needed
+    if (action.requiredItems && !action.requiredItems.every(itemId => this.state.inventory.has(itemId))) {
+      this.addNotification({
+        id: uuidv4(),
+        type: 'warning',
+        message: 'You need specific items to do that.',
+        duration: 3000,
+        autoDismiss: true
+      });
+      return;
+    }
+    
+    if (action.requiredStatus) {
+      for (const [key, value] of Object.entries(action.requiredStatus)) {
+        if (this.state.status[key] !== value) {
           this.addNotification({
-            id: `puzzle-hint-${puzzleId}-${hintIndex}`,
-            message: `Hint: ${puzzle.hints[hintIndex]}`,
-            type: 'info'
+            id: uuidv4(),
+            type: 'warning',
+            message: 'You can\'t do that right now.',
+            duration: 3000,
+            autoDismiss: true
           });
-        } else {
-          this.addNotification({
-            id: `puzzle-incorrect-${puzzleId}`,
-            message: 'Incorrect solution. Try again.',
-            type: 'warning'
-          });
+          return;
         }
       }
     }
-  }
-  
-  /**
-   * Close the current puzzle
-   */
-  public closePuzzle(): void {
-    this.updateState({
-      currentPuzzle: undefined,
-      puzzleAttempts: 0
-    });
-  }
-  
-  /**
-   * Add notification
-   */
-  public addNotification(notification: Notification): void {
-    this.updateState({
-      notifications: [...this.gameState.notifications, notification]
-    });
     
-    // Auto-remove notification after timeout
-    if (notification.timeout) {
-      setTimeout(() => {
-        this.dismissNotification(notification.id);
-      }, notification.timeout);
-    }
-  }
-  
-  /**
-   * Dismiss notification
-   */
-  public dismissNotification(id: string): void {
-    this.updateState({
-      notifications: this.gameState.notifications.filter(notification => notification.id !== id)
-    });
-  }
-  
-  /**
-   * Update player status
-   */
-  private updateStatus(status: Record<string, boolean | number | string>): void {
-    this.updateState({
-      playerStatus: {
-        ...this.gameState.playerStatus,
-        ...status
-      }
-    });
+    // Process the action result
+    const result = action.result;
     
-    // Recalculate completion percentage
-    this.calculateCompletion();
-  }
-  
-  /**
-   * Calculate game completion percentage
-   */
-  private calculateCompletion(): void {
-    const totalScenes = Object.keys(this.scenes).length;
-    const totalItems = Object.keys(this.items).filter(id => this.items[id].type === 'collectible').length;
-    const totalSecrets = 10; // Example number of total secrets
-    
-    const scenesVisited = this.gameState.unlockedScenes.length;
-    const itemsFound = this.gameState.stats.itemsFound;
-    const secretsDiscovered = this.gameState.stats.secretsDiscovered;
-    
-    const sceneCompletion = totalScenes > 0 ? (scenesVisited / totalScenes) * 0.4 : 0;
-    const itemCompletion = totalItems > 0 ? (itemsFound / totalItems) * 0.3 : 0;
-    const secretCompletion = totalSecrets > 0 ? (secretsDiscovered / totalSecrets) * 0.3 : 0;
-    
-    const completionPercentage = Math.round((sceneCompletion + itemCompletion + secretCompletion) * 100);
-    
-    this.updateState({
-      stats: {
-        ...this.gameState.stats,
-        completionPercentage
-      }
-    });
-  }
-  
-  /**
-   * Save game state to localStorage
-   */
-  public saveGame(): void {
-    try {
-      const saveData = {
-        gameState: this.gameState,
-        timestamp: Date.now(),
-        version: '1.0.0'
-      };
-      
-      localStorage.setItem('eden_save', JSON.stringify(saveData));
-      
+    if (result.message) {
       this.addNotification({
-        id: 'game-saved',
-        message: 'Game saved successfully!',
-        type: 'success',
-        timeout: 3000
-      });
-    } catch (error) {
-      console.error('Failed to save game:', error);
-      
-      this.addNotification({
-        id: 'game-save-error',
-        message: 'Failed to save game.',
-        type: 'error'
+        id: uuidv4(),
+        type: 'info',
+        message: result.message,
+        duration: 5000,
+        autoDismiss: true
       });
     }
-  }
-  
-  /**
-   * Load game state from localStorage
-   */
-  public loadGame(): boolean {
-    try {
-      const saveData = localStorage.getItem('eden_save');
-      
-      if (!saveData) {
-        this.addNotification({
-          id: 'no-save',
-          message: 'No saved game found.',
-          type: 'info'
-        });
-        return false;
+    
+    if (result.item) {
+      const item = this.getItem(result.item);
+      if (item) {
+        this.addItem(item);
       }
-      
-      const data = JSON.parse(saveData);
-      
-      this.updateState(data.gameState);
-      
-      this.addNotification({
-        id: 'game-loaded',
-        message: 'Game loaded successfully!',
-        type: 'success',
-        timeout: 3000
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to load game:', error);
-      
-      this.addNotification({
-        id: 'game-load-error',
-        message: 'Failed to load game.',
-        type: 'error'
-      });
-      
-      return false;
     }
+    
+    if (result.dialog) {
+      this.startDialog(result.dialog);
+    }
+    
+    if (result.puzzle) {
+      this.startPuzzle(result.puzzle);
+    }
+    
+    if (result.status) {
+      this.updateStatus(result.status);
+    }
+    
+    if (result.removeItem) {
+      this.removeItem(result.removeItem);
+    }
+    
+    if (result.notification) {
+      this.addNotification(result.notification);
+    }
+    
+    this.notifyListeners();
   }
   
-  /**
-   * Reset game
-   */
-  public resetGame(): void {
-    GameEngine.instance = new GameEngine({
-      scenes: this.scenes,
-      items: this.items,
-      dialogs: this.dialogs,
-      puzzles: this.puzzles,
-      onStateChange: this.onStateChange
-    });
+  // Try to exit the current scene through a specific exit
+  public tryExit(exitId: string): void {
+    const currentScene = this.getCurrentScene();
+    if (!currentScene) return;
     
-    this.updateState(GameEngine.instance.getState());
+    const exit = currentScene.exits.find(e => e.id === exitId);
+    if (!exit) return;
     
-    this.addNotification({
-      id: 'game-reset',
-      message: 'Game has been reset.',
-      type: 'info',
-      timeout: 3000
-    });
+    // Check for required items to use this exit
+    if (exit.requiredItems && !exit.requiredItems.every(itemId => this.state.inventory.has(itemId))) {
+      this.addNotification({
+        id: uuidv4(),
+        type: 'warning',
+        message: exit.lockedMessage || 'You can\'t go that way yet.',
+        duration: 3000,
+        autoDismiss: true
+      });
+      return;
+    }
+    
+    // Check for required status conditions
+    if (exit.requiredStatus) {
+      for (const [key, value] of Object.entries(exit.requiredStatus)) {
+        if (this.state.status[key] !== value) {
+          this.addNotification({
+            id: uuidv4(),
+            type: 'warning',
+            message: exit.lockedMessage || 'You can\'t go that way yet.',
+            duration: 3000,
+            autoDismiss: true
+          });
+          return;
+        }
+      }
+    }
+    
+    // Move to the target scene
+    this.moveToScene(exit.targetScene);
   }
 }

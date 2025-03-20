@@ -1,268 +1,205 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export interface LoadingScreenProps {
   message: string;
   isLoading: boolean;
-  onComplete?: () => void;
-  duration?: number;
 }
 
-/**
- * Atmospheric loading screen with fog and particle effects
- */
-const LoadingScreen: React.FC<LoadingScreenProps> = ({
-  message,
-  isLoading,
-  onComplete,
-  duration = 3000
-}) => {
-  const [progress, setProgress] = useState<number>(0);
-  const [showContent, setShowContent] = useState<boolean>(false);
-  const [particleCount] = useState<number>(20);
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ message, isLoading }) => {
+  const [fadeOut, setFadeOut] = useState(false);
+  const [particleCount] = useState(20);
+  const [particles, setParticles] = useState<Array<{
+    id: number;
+    x: number;
+    y: number;
+    size: number;
+    opacity: number;
+    speed: number;
+  }>>([]);
   
-  // Generate random particles for the background effect
-  const particles = Array.from({ length: particleCount }, (_, index) => ({
-    id: `particle-${index}`,
-    size: Math.random() * 6 + 2,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    opacity: Math.random() * 0.8 + 0.2,
-    duration: Math.random() * 20 + 10,
-    delay: Math.random() * 2
-  }));
-  
+  // Generate particles for background effect
   useEffect(() => {
-    let timerId: NodeJS.Timeout;
-    let progressInterval: NodeJS.Timeout;
+    if (!isLoading) return;
     
-    if (isLoading) {
-      // Reset progress when loading starts
-      setProgress(0);
-      setShowContent(false);
-      
-      // Simulate loading progress
-      const step = 100 / (duration / 100); // Progress every 100ms
-      
-      progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + step;
-          return newProgress >= 100 ? 100 : newProgress;
-        });
-      }, 100);
-      
-      // Show content with a slight delay for better UX
-      timerId = setTimeout(() => {
-        setShowContent(true);
-      }, 800);
-      
-      // Call onComplete after duration
-      timerId = setTimeout(() => {
-        clearInterval(progressInterval);
-        if (onComplete) onComplete();
-      }, duration);
+    const newParticles = [];
+    for (let i = 0; i < particleCount; i++) {
+      newParticles.push({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: Math.random() * 3 + 1,
+        opacity: Math.random() * 0.5 + 0.1,
+        speed: Math.random() * 1 + 0.5,
+      });
     }
+    setParticles(newParticles);
     
-    return () => {
-      clearTimeout(timerId);
-      clearInterval(progressInterval);
-    };
-  }, [isLoading, duration, onComplete]);
+    // Animate particles
+    const intervalId = setInterval(() => {
+      setParticles(prevParticles => 
+        prevParticles.map(particle => ({
+          ...particle,
+          y: (particle.y + particle.speed) % 100,
+          opacity: Math.sin((Date.now() + particle.id * 100) / 1000) * 0.3 + 0.4
+        }))
+      );
+    }, 50);
+    
+    return () => clearInterval(intervalId);
+  }, [isLoading, particleCount]);
   
-  if (!isLoading) return null;
+  // Handle fade out animation
+  useEffect(() => {
+    if (!isLoading) {
+      setFadeOut(true);
+    } else {
+      setFadeOut(false);
+    }
+  }, [isLoading]);
+
+  // If not loading and fade-out animation is complete, don't render
+  if (!isLoading && fadeOut) {
+    return null;
+  }
   
   return (
-    <div 
-      className="loading-screen"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#0a0a0f',
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Fog overlay */}
-      <div 
-        className="fog-overlay"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundImage: 'url(/assets/effects/fog.png)',
-          backgroundSize: 'cover',
-          opacity: 0.3,
-          animation: 'drift 30s linear infinite',
-          zIndex: 2
-        }}
-      />
+    <div className={`loading-screen ${fadeOut ? 'fade-out' : ''}`}>
+      <div className="loading-fog"></div>
       
-      {/* Particles for atmosphere */}
-      <div 
-        className="particle-container"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 1
-        }}
-      >
-        {particles.map(particle => (
-          <div
-            key={particle.id}
-            className="particle"
-            style={{
-              position: 'absolute',
-              top: `${particle.y}%`,
-              left: `${particle.x}%`,
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              borderRadius: '50%',
-              backgroundColor: '#b3a7de',
-              opacity: particle.opacity,
-              animation: `float ${particle.duration}s ease-in-out infinite`,
-              animationDelay: `${particle.delay}s`,
-              zIndex: 2
-            }}
-          />
-        ))}
+      {/* Floating particles */}
+      {particles.map(particle => (
+        <div 
+          key={particle.id}
+          className="particle"
+          style={{
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            opacity: particle.opacity
+          }}
+        ></div>
+      ))}
+      
+      <div className="loading-content">
+        <div className="loading-icon">
+          <div className="loading-spinner"></div>
+        </div>
+        <div className="loading-message">{message}</div>
       </div>
       
-      {/* Vignette effect */}
-      <div 
-        className="vignette"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          boxShadow: 'inset 0 0 150px 60px rgba(0, 0, 0, 0.8)',
-          zIndex: 3
-        }}
-      />
-      
-      {/* Content container with fade-in animation */}
-      <div 
-        className={`content-container ${showContent ? 'visible' : ''}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 4,
-          opacity: showContent ? 1 : 0,
-          transform: showContent ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'opacity 0.8s ease, transform 0.8s ease',
-          fontFamily: 'serif',
-          textAlign: 'center',
-          padding: '20px'
-        }}
-      >
-        <h2 
-          style={{
-            color: '#d0c0e9',
-            fontSize: '2rem',
-            marginBottom: '20px',
-            textShadow: '0 0 10px rgba(208, 192, 233, 0.5)',
-            fontWeight: 'normal'
-          }}
-        >
-          Eden's Hollow
-        </h2>
+      <style jsx>{`
+        .loading-screen {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: #0a0a10;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          opacity: 1;
+          transition: opacity 1s ease;
+        }
         
-        <p 
-          style={{
-            color: '#a395c7',
-            fontSize: '1.1rem',
-            maxWidth: '80%',
-            marginBottom: '30px',
-            lineHeight: 1.6,
-            textShadow: '0 0 8px rgba(163, 149, 199, 0.3)'
-          }}
-        >
-          {message}
-        </p>
+        .loading-screen.fade-out {
+          opacity: 0;
+          pointer-events: none;
+        }
         
-        {/* Progress bar */}
-        <div 
-          className="progress-container"
-          style={{
-            width: '250px',
-            height: '3px',
-            backgroundColor: 'rgba(128, 116, 159, 0.3)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          <div 
-            className="progress-bar"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '100%',
-              width: `${progress}%`,
-              backgroundColor: '#a395c7',
-              borderRadius: '2px',
-              transition: 'width 0.3s ease',
-              boxShadow: '0 0 8px rgba(163, 149, 199, 0.7)'
-            }}
-          />
-        </div>
+        .loading-fog {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: url('https://i.imgur.com/RdQwrU0.png') repeat;
+          background-size: cover;
+          opacity: 0.3;
+          animation: fogMove 40s infinite linear;
+        }
         
-        {/* Loading text */}
-        <div 
-          className="loading-text"
-          style={{
-            color: '#8e82b4',
-            fontSize: '0.8rem',
-            marginTop: '15px',
-            textTransform: 'uppercase',
-            letterSpacing: '2px'
-          }}
-        >
-          Loading
-          <span className="dot" style={{ animation: 'pulse 1s infinite 0.2s' }}>.</span>
-          <span className="dot" style={{ animation: 'pulse 1s infinite 0.4s' }}>.</span>
-          <span className="dot" style={{ animation: 'pulse 1s infinite 0.6s' }}>.</span>
-        </div>
-      </div>
-      
-      {/* Animation styles */}
-      <style>
-        {`
-          @keyframes drift {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 100% 100%; }
-          }
-          
-          @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); }
-            25% { transform: translateY(-15px) translateX(10px); }
-            50% { transform: translateY(-25px) translateX(-10px); }
-            75% { transform: translateY(-15px) translateX(5px); }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
-          }
-        `}
-      </style>
+        .loading-content {
+          position: relative;
+          z-index: 2;
+          text-align: center;
+        }
+        
+        .loading-icon {
+          margin-bottom: 30px;
+        }
+        
+        .loading-spinner {
+          width: 60px;
+          height: 60px;
+          border: 3px solid transparent;
+          border-top-color: #8a5c41;
+          border-right-color: #6a4331;
+          border-radius: 50%;
+          animation: spin 1.5s linear infinite;
+        }
+        
+        .loading-spinner::before,
+        .loading-spinner::after {
+          content: '';
+          position: absolute;
+          border-radius: 50%;
+        }
+        
+        .loading-spinner::before {
+          top: 5px;
+          left: 5px;
+          right: 5px;
+          bottom: 5px;
+          border: 3px solid transparent;
+          border-top-color: #b17d5d;
+          animation: spin 3s linear infinite;
+        }
+        
+        .loading-spinner::after {
+          top: 15px;
+          left: 15px;
+          right: 15px;
+          bottom: 15px;
+          border: 3px solid transparent;
+          border-top-color: #cba68c;
+          animation: spin 1.75s linear infinite;
+        }
+        
+        .loading-message {
+          color: #f1d7c5;
+          font-family: 'Cinzel', serif;
+          font-size: 24px;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+          max-width: 80%;
+          animation: pulse 2s infinite;
+        }
+        
+        .particle {
+          position: absolute;
+          background-color: #f1d7c5;
+          border-radius: 50%;
+          pointer-events: none;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        @keyframes fogMove {
+          0% { background-position: 0 0; }
+          100% { background-position: 100% 100%; }
+        }
+      `}</style>
     </div>
   );
 };
-
-export default LoadingScreen;

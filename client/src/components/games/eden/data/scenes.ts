@@ -1,790 +1,596 @@
-import { Scene, SceneAction, SceneEvent } from '../types';
+import { Scene } from '../types';
 
-export const scenes: Record<string, Scene> = {
+// Map of all game scenes
+const scenes: Record<string, Scene> = {
+  // Village entrance
   'village_entrance': {
     id: 'village_entrance',
-    name: 'Village Entrance',
-    description: 'The fog-shrouded entrance to Eden\'s Hollow. Weathered wooden signage swings gently in the perpetual dusk.',
-    backgroundImage: '/assets/scenes/village_entrance.jpg',
-    features: [
+    name: 'Eden\'s Hollow Entrance',
+    description: 'A weathered wooden sign welcomes you to Eden\'s Hollow. The path ahead is shrouded in mist, with only the faint silhouettes of buildings visible in the distance. The fog seems to swirl with unnatural patterns, occasionally revealing glimpses of the abandoned village.',
+    background: '/assets/eden/scenes/village_entrance.jpg',
+    ambient: '/assets/eden/audio/ambient/eerie_wind.mp3',
+    hotspots: [
       {
-        id: 'signpost',
-        name: 'Weathered Signpost',
-        description: 'A wooden sign pointing toward the village. The paint is chipped and faded.',
-        position: {
-          top: '60%',
-          left: '25%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'read_sign',
-            name: 'Read Sign',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'signpost_text',
-                message: 'The weathered sign reads "Eden\'s Hollow - Where Peace Abides". Someone has scratched "LIES" underneath in what appears to be dried blood.',
-                type: 'discovery'
-              }
-            }
+        id: 'sign',
+        name: 'Village Sign',
+        description: 'A weathered wooden sign with faded lettering. It reads "Eden\'s Hollow" with smaller text below that\'s difficult to make out.',
+        x: 150,
+        y: 320,
+        width: 100,
+        height: 60,
+        action: 'examine',
+        onInteract: {
+          message: 'The sign reads: "Eden\'s Hollow - Founded 1842". Below, in smaller text: "Where peace and prosperity flow like water." The word "water" has been violently scratched out.',
+          notification: {
+            id: 'sign_clue',
+            type: 'discovery',
+            message: 'You noticed something unusual about the village sign.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       },
       {
-        id: 'strange_flowers',
-        name: 'Strange Flowers',
-        description: 'Unusual pale flowers grow among the weeds by the roadside.',
-        position: {
-          top: '80%',
-          left: '15%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_flowers',
-            name: 'Examine Flowers',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'strange_flowers_note',
-                message: 'These are "Dusk Lilies." They only bloom in twilight, but it\'s been twilight here for as long as anyone can remember.',
-                type: 'discovery'
-              }
-            }
-          },
-          {
-            id: 'pick_flowers',
-            name: 'Pick Flowers',
-            action: 'collect',
-            outcome: {
-              item: 'dusk_lily',
-              notification: {
-                id: 'flower_collected',
-                message: 'You carefully pluck a Dusk Lily. It emanates a subtle glow in your hand.',
-                type: 'info'
-              }
-            }
+        id: 'strange_marking',
+        name: 'Strange Marking',
+        description: 'Something is carved into the base of a nearby tree. It\'s not immediately visible unless you look closely.',
+        x: 350,
+        y: 400,
+        width: 50,
+        height: 50,
+        action: 'examine',
+        onInteract: {
+          message: 'A crude symbol has been carved into the tree - a circle with a vertical line through it. The carving seems recent, the wood still pale where it\'s been cut.',
+          notification: {
+            id: 'marking_discovery',
+            type: 'discovery',
+            message: 'You\'ve found a strange marking that may be significant.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
-      },
-      {
-        id: 'abandoned_cart',
-        name: 'Abandoned Cart',
-        description: 'A wooden cart sits abandoned by the roadside, as if its owner fled in a hurry.',
-        position: {
-          top: '65%',
-          left: '70%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'search_cart',
-            name: 'Search Cart',
-            action: 'examine',
-            outcome: {
-              item: 'rusty_key',
-              notification: {
-                id: 'found_key',
-                message: 'Among the abandoned supplies, you find a rusty key.',
-                type: 'discovery'
-              }
-            }
-          }
-        ]
+        }
       }
     ],
     exits: [
       {
         id: 'to_village_square',
-        name: 'Enter Village',
-        description: 'The fog-shrouded path leads deeper into the village.',
+        name: 'Continue to Village',
+        description: 'The path leads deeper into the village, toward what appears to be a central square.',
         targetScene: 'village_square',
-        position: {
-          top: '50%',
-          left: '50%'
+        x: 400,
+        y: 300,
+        width: 200,
+        height: 100,
+        condition: null
+      },
+      {
+        id: 'turn_back',
+        name: 'Return to Forest Path',
+        description: 'The forest path you came from. It\'s almost entirely obscured by thick fog now.',
+        targetScene: null,
+        x: 50,
+        y: 450,
+        width: 150,
+        height: 80,
+        onInteract: {
+          dialog: 'strange_force_stops_you',
+          message: 'As you try to return, the fog thickens impossibly. You walk for several minutes but somehow end up facing the village again. It seems the forest path no longer leads anywhere but here.'
         }
       }
     ],
-    events: [
-      {
-        trigger: 'entry',
-        outcome: {
-          notification: {
-            id: 'village_welcome',
-            message: 'A sense of dread washes over you as you approach Eden\'s Hollow. The air is thick with fog and an unnatural stillness.',
-            type: 'info'
-          }
-        }
-      }
-    ]
+    items: []
   },
   
+  // Village square
   'village_square': {
     id: 'village_square',
     name: 'Village Square',
-    description: 'The central gathering place of the village, now eerily empty. A defunct fountain stands in the center.',
-    backgroundImage: '/assets/scenes/village_square.jpg',
-    features: [
+    description: 'The central square of Eden\'s Hollow is dominated by an ornate stone fountain, now dry and cracked. Abandoned buildings surround the square - a general store, tavern, and what appears to be a town hall. The fog is thinner here, but the silence is oppressive.',
+    background: '/assets/eden/scenes/village_square.jpg',
+    ambient: '/assets/eden/audio/ambient/distant_whispers.mp3',
+    hotspots: [
       {
-        id: 'dried_fountain',
-        name: 'Dried Fountain',
-        description: 'A once-beautiful stone fountain that has long since stopped flowing. Strange symbols are carved into its rim.',
-        position: {
-          top: '60%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_fountain',
-            name: 'Examine Fountain',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'fountain_description',
-                message: 'The symbols appear to be an ancient language. You recognize symbols for "binding," "twilight," and "eternity."',
-                type: 'discovery'
-              }
-            }
-          },
-          {
-            id: 'touch_symbols',
-            name: 'Trace Symbols',
-            action: 'interact',
-            outcome: {
-              status: { fountain_symbols_traced: true },
-              notification: {
-                id: 'symbols_glow',
-                message: 'As your fingers trace the symbols, they briefly glow with a soft blue light. You hear distant whispers.',
-                type: 'discovery'
-              }
-            }
+        id: 'fountain',
+        name: 'Dry Fountain',
+        description: 'A once-elegant stone fountain stands in the center of the square. It\'s completely dry now, with cracks running through the stone basin.',
+        x: 300,
+        y: 350,
+        width: 150,
+        height: 120,
+        action: 'examine',
+        onInteract: {
+          message: 'The fountain appears to have been beautiful once. Stone figures of children playing form the centerpiece. Their faces have been deliberately chiseled away, leaving disturbing blank slates. There\'s something scratched into the basin: "IT CAME FROM BELOW".',
+          notification: {
+            id: 'fountain_clue',
+            type: 'discovery',
+            message: 'You\'ve found a concerning message on the fountain.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       },
       {
-        id: 'church_door',
-        name: 'Church Entrance',
-        description: 'The imposing wooden doors of the village church. They\'re carved with religious imagery.',
-        position: {
-          top: '40%',
-          left: '80%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_church_door',
-            name: 'Examine Door',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'church_door_description',
-                message: 'The carvings depict a ritual with robed figures standing in a circle. At the center is what appears to be a child.',
-                type: 'discovery'
-              }
-            }
+        id: 'corpse',
+        name: 'Slumped Figure',
+        description: 'A dark shape sits slumped against the fountain\'s edge. It\'s not moving.',
+        x: 380,
+        y: 370,
+        width: 70,
+        height: 90,
+        action: 'examine',
+        onInteract: {
+          dialog: 'mysterious_whisper',
+          message: 'It\'s the long-decayed corpse of what was once a person. They\'re clutching a journal to their chest. As you approach to examine it closer, you feel a cold presence behind you...'
+        }
+      },
+      {
+        id: 'scattered_papers',
+        name: 'Scattered Papers',
+        description: 'Several weathered papers are scattered across the square, caught against the cobblestones.',
+        x: 200,
+        y: 450,
+        width: 100,
+        height: 30,
+        action: 'examine',
+        onInteract: {
+          message: 'The papers are mostly ruined by exposure to the elements. One is partially legible - it appears to be a public notice: "BY ORDER OF MAYOR THORNE: ALL RESIDENTS ARE REQUIRED TO ATTEND THE TOWN MEETING TONIGHT. CONSUMPTION OF VILLAGE WATER IS STRICTLY PROHIBITED UNTIL FURTHER NOTICE."',
+          notification: {
+            id: 'water_warning',
+            type: 'discovery',
+            message: 'You\'ve found evidence of problems with the village water supply.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       }
     ],
     exits: [
       {
         id: 'to_village_entrance',
-        name: 'Return to Entrance',
+        name: 'Return to Village Entrance',
         description: 'The path back to the village entrance.',
         targetScene: 'village_entrance',
-        position: {
-          top: '90%',
-          left: '50%'
-        }
+        x: 50,
+        y: 400,
+        width: 120,
+        height: 80,
+        condition: null
       },
       {
-        id: 'to_church',
-        name: 'Enter Church',
-        description: 'The heavy wooden doors of the church.',
-        targetScene: 'church',
-        position: {
-          top: '40%',
-          left: '80%'
-        }
+        id: 'to_general_store',
+        name: 'Enter General Store',
+        description: 'An abandoned general store with a broken window and door slightly ajar.',
+        targetScene: 'general_store',
+        x: 100,
+        y: 250,
+        width: 150,
+        height: 100,
+        condition: null
       },
       {
-        id: 'to_graveyard',
-        name: 'To Graveyard',
-        description: 'A narrow path leading to the village graveyard.',
-        targetScene: 'graveyard',
-        position: {
-          top: '70%',
-          left: '20%'
-        }
+        id: 'to_tavern',
+        name: 'Enter Tavern',
+        description: 'The village tavern. Its sign hangs by a single chain, creaking in the faint breeze.',
+        targetScene: 'tavern',
+        x: 500,
+        y: 250,
+        width: 150,
+        height: 100,
+        condition: null
       },
       {
-        id: 'to_abandoned_house',
-        name: 'Abandoned House',
-        description: 'A dilapidated house with boarded windows.',
-        targetScene: 'abandoned_house',
-        position: {
-          top: '30%',
-          left: '20%'
-        },
-        requiredItems: ['rusty_key']
+        id: 'to_town_hall',
+        name: 'Enter Town Hall',
+        description: 'The imposing town hall building. Its doors are weathered but intact.',
+        targetScene: 'town_hall',
+        x: 300,
+        y: 200,
+        width: 180,
+        height: 120,
+        condition: null
+      }
+    ],
+    items: [
+      {
+        id: 'village_journal',
+        x: 385,
+        y: 390,
+        width: 30,
+        height: 20,
+        condition: {
+          dialog: 'mysterious_whisper',
+          mustBeCompleted: true
+        }
       }
     ]
   },
   
-  'church': {
-    id: 'church',
-    name: 'Village Church',
-    description: 'The interior of the church is dimly lit by candles that never seem to burn down. Pews face an altar with unusual decorations.',
-    backgroundImage: '/assets/scenes/church.jpg',
-    features: [
+  // General store
+  'general_store': {
+    id: 'general_store',
+    name: 'Abandoned General Store',
+    description: 'Shelves lie toppled and empty inside the once-bustling general store. The counter is still intact, with an antique cash register and a thick layer of dust covering everything. Weak light filters through the grimy windows.',
+    background: '/assets/eden/scenes/general_store.jpg',
+    ambient: '/assets/eden/audio/ambient/creaking_wood.mp3',
+    hotspots: [
       {
-        id: 'altar',
-        name: 'Strange Altar',
-        description: 'The altar is adorned with unusual symbols and appears to have channels carved into it, perhaps for liquid to flow.',
-        position: {
-          top: '60%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_altar',
-            name: 'Examine Altar',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'altar_description',
-                message: 'The channels in the altar lead to a central basin. There are dark stains that could be very old blood.',
-                type: 'discovery'
-              }
-            }
-          },
-          {
-            id: 'place_lily',
-            name: 'Place Dusk Lily',
-            action: 'use',
-            outcome: {
-              status: { altar_lily_placed: true },
-              notification: {
-                id: 'lily_reaction',
-                message: 'When you place the Dusk Lily on the altar, it dissolves into luminescent liquid that flows through the channels, briefly illuminating hidden symbols.',
-                type: 'discovery'
-              }
-            },
-            condition: {
-              requiredItems: ['dusk_lily']
-            }
+        id: 'cash_register',
+        name: 'Cash Register',
+        description: 'An old brass cash register sits on the counter, its once-polished surface now tarnished.',
+        x: 350,
+        y: 320,
+        width: 80,
+        height: 60,
+        action: 'examine',
+        onInteract: {
+          message: 'The cash register drawer is open and empty. Someone has scratched a sequence of numbers into the metal beneath it: "4-2-7". It seems deliberate, like a code or combination.',
+          notification: {
+            id: 'safe_combination',
+            type: 'discovery',
+            message: 'You\'ve found what appears to be a combination.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       },
       {
-        id: 'confessional',
-        name: 'Confessional Booth',
-        description: 'A wooden confessional booth with worn velvet curtains. One side appears to be for the priest, the other for penitents.',
-        position: {
-          top: '70%',
-          left: '80%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'enter_booth',
-            name: 'Enter Booth',
-            action: 'interact',
-            outcome: {
-              dialog: 'priest_ghost'
-            }
-          }
-        ]
+        id: 'store_safe',
+        name: 'Wall Safe',
+        description: 'A small wall safe is partially hidden behind the counter. It has a combination dial on the front.',
+        x: 420,
+        y: 280,
+        width: 60,
+        height: 60,
+        action: 'puzzle',
+        puzzle: 'store_safe'
       },
       {
-        id: 'stained_glass',
-        name: 'Stained Glass Window',
-        description: 'A large stained glass window depicting what appears to be a ritual. The glass glows despite the lack of sunlight outside.',
-        position: {
-          top: '30%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_window',
-            name: 'Study Window',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'window_description',
-                message: 'The window depicts robed figures standing in a circle with a child in the center. Above them hovers a dark entity reaching down with shadowy tendrils.',
-                type: 'discovery'
-              }
-            }
+        id: 'store_ledger',
+        name: 'Store Ledger',
+        description: 'A large leather-bound book lies open on a small desk near the counter.',
+        x: 250,
+        y: 340,
+        width: 70,
+        height: 50,
+        action: 'examine',
+        onInteract: {
+          message: 'The ledger contains records of purchases. The final entries show a sudden increase in salt, canned goods, and ammunition sales. The last entry, dated May 8th, reads only: "God help us all. They\'re coming through the walls now."',
+          notification: {
+            id: 'ledger_discovery',
+            type: 'discovery',
+            message: 'The store ledger contains ominous final entries.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       }
     ],
     exits: [
       {
         id: 'to_village_square',
-        name: 'Exit Church',
+        name: 'Exit to Village Square',
         description: 'Return to the village square.',
         targetScene: 'village_square',
-        position: {
-          top: '90%',
-          left: '50%'
+        x: 300,
+        y: 450,
+        width: 200,
+        height: 80,
+        condition: null
+      },
+      {
+        id: 'to_store_backroom',
+        name: 'Enter Back Room',
+        description: 'A door behind the counter appears to lead to a storage area.',
+        targetScene: 'store_backroom',
+        x: 500,
+        y: 300,
+        width: 80,
+        height: 140,
+        condition: null
+      }
+    ],
+    items: []
+  },
+  
+  // Store backroom
+  'store_backroom': {
+    id: 'store_backroom',
+    name: 'Store Storage Room',
+    description: 'A cramped storage room behind the general store. Empty shelves line the walls, and broken crates are scattered across the floor. A small window lets in minimal light, revealing swirling dust motes in the air.',
+    background: '/assets/eden/scenes/store_backroom.jpg',
+    ambient: '/assets/eden/audio/ambient/creaking_wood.mp3',
+    hotspots: [
+      {
+        id: 'hidden_note',
+        name: 'Folded Paper',
+        description: 'A folded piece of paper wedged between two shelves, easily missed unless looking carefully.',
+        x: 200,
+        y: 300,
+        width: 40,
+        height: 30,
+        action: 'examine',
+        onInteract: {
+          message: 'The note is written in a hurried scrawl: "J - The mayor knows more than he\'s saying. Saw him taking boxes down to the cellar beneath town hall at night. Something\'s not right with the water. Don\'t drink it. Meet me at the tavern tonight. - T"',
+          notification: {
+            id: 'conspiracy_note',
+            type: 'discovery',
+            message: 'You\'ve found a note suggesting a conspiracy.',
+            duration: 5000,
+            autoDismiss: true
+          }
         }
       },
       {
-        id: 'to_church_basement',
-        name: 'Basement Stairs',
-        description: 'A narrow stairway leading down to what appears to be a basement.',
-        targetScene: 'church_basement',
-        position: {
-          top: '80%',
-          left: '20%'
-        },
-        isHidden: true,
-        requiredStatus: {
-          priest_helped: true
+        id: 'scratched_wall',
+        name: 'Scratched Wall',
+        description: 'Deep gouges mark one of the wooden walls, as if made by something with claws.',
+        x: 350,
+        y: 280,
+        width: 100,
+        height: 150,
+        action: 'examine',
+        onInteract: {
+          message: 'The gouges are deep and violent, splintering the wood. They\'re arranged in sets of five, like fingers or claws. Some gouges puncture all the way through the wall. Whatever made them was incredibly strong.',
+          notification: {
+            id: 'claw_marks',
+            type: 'discovery',
+            message: 'Something with incredible strength damaged this wall.',
+            duration: 5000,
+            autoDismiss: true
+          }
         }
+      }
+    ],
+    exits: [
+      {
+        id: 'to_general_store',
+        name: 'Return to Store',
+        description: 'Go back to the main store area.',
+        targetScene: 'general_store',
+        x: 50,
+        y: 350,
+        width: 100,
+        height: 150,
+        condition: null
+      }
+    ],
+    items: [
+      {
+        id: 'old_key',
+        x: 330,
+        y: 400,
+        width: 20,
+        height: 10,
+        condition: null
       }
     ]
   },
   
-  'graveyard': {
-    id: 'graveyard',
-    name: 'Misty Graveyard',
-    description: 'Rows of weathered tombstones shrouded in mist. Many graves appear to be from the same date.',
-    backgroundImage: '/assets/scenes/graveyard.jpg',
-    features: [
+  // Tavern
+  'tavern': {
+    id: 'tavern',
+    name: 'Hollow Barrel Tavern',
+    description: 'The village tavern is in disarray, with overturned tables and broken chairs scattered across the floor. The bar remains intact, bottles of liquor still lined up behind it. A thick layer of dust covers everything, disturbed only by your footprints.',
+    background: '/assets/eden/scenes/tavern.jpg',
+    ambient: '/assets/eden/audio/ambient/distant_whispers.mp3',
+    hotspots: [
       {
-        id: 'mass_grave',
-        name: 'Mass Grave Marker',
-        description: 'A large stone monument marking what appears to be a mass grave. The date is worn but readable.',
-        position: {
-          top: '70%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'read_monument',
-            name: 'Read Monument',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'monument_inscription',
-                message: 'The inscription reads: "In memory of those lost during The Binding, October 31, 1897. May their souls find the peace denied to them in life."',
-                type: 'discovery'
-              }
-            }
+        id: 'bar_counter',
+        name: 'Bar Counter',
+        description: 'The long wooden bar counter still has glasses and bottles arranged as if waiting for customers.',
+        x: 400,
+        y: 350,
+        width: 200,
+        height: 80,
+        action: 'examine',
+        onInteract: {
+          message: 'Behind the counter, you find a trapdoor partially hidden by a wine rack. It appears to lead to a cellar below. The door has a substantial lock securing it.',
+          notification: {
+            id: 'cellar_discovery',
+            type: 'discovery',
+            message: 'You\'ve discovered a locked cellar beneath the tavern.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       },
       {
-        id: 'fresh_flowers',
-        name: 'Fresh Flowers',
-        description: 'Surprisingly fresh flowers placed on one of the graves. They appear to have been left recently.',
-        position: {
-          top: '80%',
-          left: '30%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_flowers',
-            name: 'Examine Flowers',
-            action: 'examine',
-            outcome: {
-              status: { graves_examined: true },
-              notification: {
-                id: 'flower_discovery',
-                message: 'The flowers are arranged in a specific pattern. Underneath them, you find a small key with a tag reading "Mausoleum".',
-                type: 'discovery'
-              },
-              item: 'mausoleum_key'
-            }
+        id: 'cellar_door',
+        name: 'Cellar Door',
+        description: 'A heavy wooden trapdoor set into the floor behind the bar. It\'s secured with a sturdy iron lock.',
+        x: 420,
+        y: 380,
+        width: 80,
+        height: 60,
+        action: 'puzzle',
+        puzzle: 'cellar_lock',
+        condition: {
+          hotspot: 'bar_counter',
+          mustBeInteracted: true
+        }
+      },
+      {
+        id: 'dead_barkeep',
+        name: 'Slumped Figure',
+        description: 'A figure sits motionless at a corner table, head down as if sleeping.',
+        x: 200,
+        y: 320,
+        width: 70,
+        height: 90,
+        action: 'examine',
+        onInteract: {
+          message: 'The figure is the long-dead corpse of a man, presumably the barkeep. He\'s wearing an apron with "Thomas" embroidered on it. Around his neck is a chain with several keys. One of them might open the cellar.',
+          notification: {
+            id: 'barkeep_discovery',
+            type: 'discovery',
+            message: 'You\'ve found the remains of the barkeep, Thomas.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
+      },
+      {
+        id: 'strange_bottle',
+        name: 'Unusual Bottle',
+        description: 'Among the liquor bottles behind the bar, one stands out - a blue bottle with strange symbols etched into the glass.',
+        x: 450,
+        y: 300,
+        width: 40,
+        height: 60,
+        action: 'examine',
+        onInteract: {
+          message: 'The blue bottle contains a luminescent liquid that seems to move with a life of its own. The symbols etched into the glass are unfamiliar - flowing and organic in design. The bottle is sealed with wax bearing an impression of a crescent moon.',
+          notification: {
+            id: 'elixir_discovery',
+            type: 'discovery',
+            message: 'You\'ve found a bottle of strange liquid.',
+            duration: 5000,
+            autoDismiss: true
+          }
+        }
       }
     ],
     exits: [
       {
         id: 'to_village_square',
-        name: 'Return to Square',
-        description: 'The path back to the village square.',
-        targetScene: 'village_square',
-        position: {
-          top: '90%',
-          left: '50%'
-        }
-      },
-      {
-        id: 'to_mausoleum',
-        name: 'Mausoleum',
-        description: 'A stone mausoleum with a heavy locked door.',
-        targetScene: 'mausoleum',
-        position: {
-          top: '40%',
-          left: '70%'
-        },
-        isHidden: true,
-        requiredStatus: {
-          graves_examined: true
-        }
-      }
-    ]
-  },
-  
-  'abandoned_house': {
-    id: 'abandoned_house',
-    name: 'Abandoned House',
-    description: 'The interior of the house is in disarray, as if the occupants left in a hurry. Dust covers everything.',
-    backgroundImage: '/assets/scenes/abandoned_house.jpg',
-    features: [
-      {
-        id: 'writing_desk',
-        name: 'Writing Desk',
-        description: 'A small writing desk with papers scattered about and a partially open drawer.',
-        position: {
-          top: '70%',
-          left: '30%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'search_desk',
-            name: 'Search Desk',
-            action: 'examine',
-            outcome: {
-              status: { desk_searched: true },
-              notification: {
-                id: 'diary_entry',
-                message: 'You find a diary. The last entry is dated October 30, 1897: "The town council has decided. Tomorrow, we perform the ritual. God forgive us for what we\'re about to do to save ourselves."',
-                type: 'discovery'
-              }
-            }
-          }
-        ]
-      },
-      {
-        id: 'family_portrait',
-        name: 'Family Portrait',
-        description: 'A framed portrait of a family - mother, father, and a young girl. Their expressions seem unusually solemn.',
-        position: {
-          top: '40%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_portrait',
-            name: 'Examine Portrait',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'portrait_details',
-                message: 'On the back of the portrait, someone has written "May she forgive us for what we must do. The needs of the many outweigh the needs of the few."',
-                type: 'discovery'
-              }
-            }
-          }
-        ]
-      },
-      {
-        id: 'loose_floorboard',
-        name: 'Loose Floorboard',
-        description: 'One of the floorboards appears to be loose, as if it\'s been pried up before.',
-        position: {
-          top: '85%',
-          left: '60%'
-        },
-        isInteractive: true,
-        isHidden: true,
-        requiredStatus: {
-          desk_searched: true
-        },
-        interactions: [
-          {
-            id: 'pry_floorboard',
-            name: 'Pry Up Floorboard',
-            action: 'interact',
-            outcome: {
-              status: { found_ritual_page: true },
-              notification: {
-                id: 'hidden_page',
-                message: 'Beneath the floorboard, you find a torn page from what appears to be an ancient book. It describes part of a ritual to "bind a being of great power."',
-                type: 'discovery'
-              },
-              item: 'ritual_page'
-            }
-          }
-        ]
-      }
-    ],
-    exits: [
-      {
-        id: 'to_village_square',
-        name: 'Exit House',
+        name: 'Exit to Village Square',
         description: 'Return to the village square.',
         targetScene: 'village_square',
-        position: {
-          top: '90%',
-          left: '50%'
-        }
-      }
-    ]
-  },
-  
-  'mausoleum': {
-    id: 'mausoleum',
-    name: 'Ancient Mausoleum',
-    description: 'The interior of the stone mausoleum is cold and damp. Stone sarcophagi line the walls, and strange symbols are carved everywhere.',
-    backgroundImage: '/assets/scenes/mausoleum.jpg',
-    features: [
-      {
-        id: 'central_altar',
-        name: 'Central Altar',
-        description: 'A stone altar in the center of the mausoleum. Five candle holders are positioned around it, but only two contain candles.',
-        position: {
-          top: '60%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_altar',
-            name: 'Examine Altar',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'altar_symbols',
-                message: 'The altar is carved with the same symbols you saw in the fountain. At its center is a circular depression, as if something is meant to be placed there.',
-                type: 'discovery'
-              }
-            }
-          },
-          {
-            id: 'place_amulet',
-            name: 'Place Amulet',
-            action: 'use',
-            outcome: {
-              puzzle: 'binding_ritual',
-              notification: {
-                id: 'altar_activation',
-                message: 'When you place the amulet in the depression, the symbols around the altar begin to glow. You feel the air thicken with energy.',
-                type: 'discovery'
-              }
-            },
-            condition: {
-              requiredItems: ['ritual_amulet']
-            }
-          }
-        ]
+        x: 300,
+        y: 450,
+        width: 200,
+        height: 80,
+        condition: null
       },
       {
-        id: 'stone_sarcophagus',
-        name: 'Child\'s Sarcophagus',
-        description: 'A smaller sarcophagus, clearly meant for a child. Unlike the others, it\'s decorated with fresh flowers and small toys.',
-        position: {
-          top: '70%',
-          left: '20%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_sarcophagus',
-            name: 'Examine Sarcophagus',
-            action: 'examine',
-            outcome: {
-              dialog: 'child_ghost'
-            }
-          }
-        ]
+        id: 'to_tavern_cellar',
+        name: 'Descend to Cellar',
+        description: 'Climb down through the trapdoor into the tavern cellar.',
+        targetScene: 'tavern_cellar',
+        x: 420,
+        y: 380,
+        width: 80,
+        height: 60,
+        condition: {
+          puzzle: 'cellar_lock',
+          mustBeSolved: true
+        }
       }
     ],
-    exits: [
+    items: [
       {
-        id: 'to_graveyard',
-        name: 'Exit Mausoleum',
-        description: 'Return to the graveyard.',
-        targetScene: 'graveyard',
-        position: {
-          top: '90%',
-          left: '50%'
+        id: 'strange_elixir',
+        x: 450,
+        y: 320,
+        width: 20,
+        height: 30,
+        condition: {
+          hotspot: 'strange_bottle',
+          mustBeInteracted: true
         }
       }
     ]
   },
   
-  'church_basement': {
-    id: 'church_basement',
-    name: 'Church Basement',
-    description: 'A hidden chamber beneath the church. Ceremonial items and ancient texts line the shelves. A ritual circle is drawn on the floor.',
-    backgroundImage: '/assets/scenes/church_basement.jpg',
-    features: [
+  // Town hall
+  'town_hall': {
+    id: 'town_hall',
+    name: 'Eden\'s Hollow Town Hall',
+    description: 'The imposing town hall building features a grand central chamber with high ceilings and faded murals. Rows of wooden benches face a raised platform where town officials would have presided. Papers are scattered everywhere, and there\'s a palpable sense of hasty abandonment.',
+    background: '/assets/eden/scenes/town_hall.jpg',
+    ambient: '/assets/eden/audio/ambient/low_rumble.mp3',
+    hotspots: [
       {
         id: 'ritual_circle',
-        name: 'Ritual Circle',
-        description: 'A complex circle of symbols drawn on the floor in what appears to be a mixture of chalk and dried blood.',
-        position: {
-          top: '70%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_circle',
-            name: 'Examine Circle',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'circle_details',
-                message: 'The circle contains five points, each with a different symbol: Earth, Air, Fire, Water, and Spirit. At the center is a symbol you don\'t recognize, depicting a child inside a star.',
-                type: 'discovery'
-              }
-            }
-          }
-        ]
+        name: 'Strange Floor Pattern',
+        description: 'A circular pattern is inlaid into the floor before the raised platform. Several stone symbols lie scattered around it.',
+        x: 300,
+        y: 400,
+        width: 150,
+        height: 60,
+        action: 'puzzle',
+        puzzle: 'ritual_pattern'
       },
       {
-        id: 'ancient_book',
-        name: 'Ancient Book',
-        description: 'A large, leather-bound tome rests on a pedestal near the circle. Its pages appear brittle with age.',
-        position: {
-          top: '50%',
-          left: '20%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'read_book',
-            name: 'Read Book',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'book_contents',
-                message: 'The book describes a ritual to bind an entity known as "The Hollow One" using a child as a vessel. The price of failure is eternal twilight for all involved, neither living nor dead.',
-                type: 'discovery'
-              }
-            }
+        id: 'mural',
+        name: 'Faded Mural',
+        description: 'A large mural spans the wall behind the raised platform. It appears to depict the founding of Eden\'s Hollow.',
+        x: 300,
+        y: 200,
+        width: 250,
+        height: 120,
+        action: 'examine',
+        onInteract: {
+          message: 'The mural shows settlers establishing the village near a pristine fountain. In the original painting, water flows from the fountain to nourish crops and sustain the people. However, someone has altered the mural - painting black tendrils emerging from the fountain and reaching toward the villagers. The modification appears recent.',
+          notification: {
+            id: 'mural_defacement',
+            type: 'discovery',
+            message: 'The town hall mural has been ominously altered.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
-      },
-      {
-        id: 'locked_cabinet',
-        name: 'Locked Cabinet',
-        description: 'A heavy wooden cabinet with an ornate lock. The wood around the lock has scratch marks, as if someone tried to break in.',
-        position: {
-          top: '40%',
-          left: '80%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'use_key',
-            name: 'Use Church Key',
-            action: 'use',
-            outcome: {
-              item: 'ritual_amulet',
-              notification: {
-                id: 'found_amulet',
-                message: 'Inside the cabinet, you find an ancient amulet with the same symbol you saw at the center of the ritual circle. It pulses with an unnatural energy.',
-                type: 'discovery'
-              }
-            },
-            condition: {
-              requiredItems: ['church_key']
-            }
-          }
-        ]
-      }
-    ],
-    exits: [
-      {
-        id: 'to_church',
-        name: 'Return Upstairs',
-        description: 'The stairs leading back up to the main church area.',
-        targetScene: 'church',
-        position: {
-          top: '90%',
-          left: '50%'
         }
-      }
-    ]
-  },
-  
-  'clock_tower': {
-    id: 'clock_tower',
-    name: 'Village Clock Tower',
-    description: 'The clock tower looms above you, the massive mechanism sits frozen, its gears and pendulum motionless. The hands are stopped at precisely midnight.',
-    backgroundImage: '/assets/scenes/clock_tower.jpg',
-    features: [
+      },
       {
-        id: 'clock_mechanism',
-        name: 'Clock Mechanism',
-        description: 'The intricate mechanism of gears, weights, and pendulum that once kept time for the village. It appears to be intact but doesn\'t move.',
-        position: {
-          top: '50%',
-          left: '50%'
-        },
-        isInteractive: true,
-        interactions: [
-          {
-            id: 'examine_clock',
-            name: 'Examine Mechanism',
-            action: 'examine',
-            outcome: {
-              notification: {
-                id: 'clock_details',
-                message: 'Upon closer inspection, the mechanism isn\'t broken. Something seems to be holding it in place, as if time itself has been frozen at this moment.',
-                type: 'discovery'
-              }
-            }
-          },
-          {
-            id: 'repair_clock',
-            name: 'Repair Clock',
-            action: 'interact',
-            outcome: {
-              puzzle: 'clock_puzzle',
-              notification: {
-                id: 'clock_puzzle_start',
-                message: 'You attempt to realign the gears and pendulum. This will require careful adjustment of the mechanism.',
-                type: 'info'
-              }
-            }
+        id: 'mayors_podium',
+        name: 'Mayor\'s Podium',
+        description: 'A wooden podium stands on the raised platform, where the mayor would have addressed the townspeople.',
+        x: 300,
+        y: 250,
+        width: 80,
+        height: 100,
+        action: 'examine',
+        onInteract: {
+          message: 'The mayor\'s podium has papers still laid out upon it - the agenda for what appears to be the final town meeting. The last item reads "WATER CONTAMINATION - EMERGENCY MEASURES". Scrawled in the margin in frantic handwriting: "THEY KNOW I\'VE HIDDEN IT. THE FAITHFUL ARE COMING."',
+          notification: {
+            id: 'mayors_note',
+            type: 'discovery',
+            message: 'You\'ve found the mayor\'s disturbing notes.',
+            duration: 5000,
+            autoDismiss: true
           }
-        ]
+        }
       }
     ],
     exits: [
       {
         id: 'to_village_square',
-        name: 'Descend Tower',
-        description: 'The winding staircase leading back down to the village.',
+        name: 'Exit to Village Square',
+        description: 'Return to the village square.',
         targetScene: 'village_square',
-        position: {
-          top: '90%',
-          left: '50%'
-        }
+        x: 300,
+        y: 450,
+        width: 200,
+        height: 80,
+        condition: null
       },
       {
-        id: 'to_tower_overlook',
-        name: 'Tower Overlook',
-        description: 'A viewing platform at the top of the tower.',
-        targetScene: 'tower_overlook',
-        position: {
-          top: '20%',
-          left: '50%'
-        },
-        isHidden: true,
-        requiredStatus: {
-          clock_fixed: true
+        id: 'to_mayors_office',
+        name: 'Enter Mayor\'s Office',
+        description: 'A door to the side of the raised platform appears to lead to the mayor\'s office.',
+        targetScene: 'mayors_office',
+        x: 500,
+        y: 300,
+        width: 80,
+        height: 140,
+        condition: null
+      },
+      {
+        id: 'to_secret_passage',
+        name: 'Hidden Staircase',
+        description: 'A staircase has appeared in the center of the ritual circle, descending into darkness.',
+        targetScene: 'secret_passage',
+        x: 300,
+        y: 400,
+        width: 150,
+        height: 60,
+        condition: {
+          puzzle: 'ritual_pattern',
+          mustBeSolved: true
         }
       }
-    ]
+    ],
+    items: []
   }
 };
 

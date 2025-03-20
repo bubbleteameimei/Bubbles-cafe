@@ -6,136 +6,172 @@ export interface StatusBarProps {
   mana: number;
   maxMana: number;
   onInventoryClick: () => void;
+  onMapClick: () => void;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ 
-  health, 
-  maxHealth, 
-  mana, 
-  maxMana, 
-  onInventoryClick 
+export const StatusBar: React.FC<StatusBarProps> = ({
+  health,
+  maxHealth,
+  mana,
+  maxMana,
+  onInventoryClick,
+  onMapClick
 }) => {
-  const healthPercentage = (health / maxHealth) * 100;
-  const manaPercentage = (mana / maxMana) * 100;
+  // Calculate health and mana percentages for visual indicators
+  const healthPercentage = Math.max(0, Math.min(100, (health / maxHealth) * 100));
+  const manaPercentage = Math.max(0, Math.min(100, (mana / maxMana) * 100));
   
-  // Determine health bar color based on current health percentage
+  // Determine health color based on percentage
   const getHealthColor = () => {
-    if (healthPercentage > 60) return '#4CAF50'; // Green
-    if (healthPercentage > 30) return '#FFC107'; // Yellow
-    return '#F44336'; // Red
+    if (healthPercentage <= 20) return '#ff3b30'; // Critical - red
+    if (healthPercentage <= 50) return '#ff9500'; // Warning - orange
+    return '#30d158'; // Good - green
+  };
+  
+  // Determine mana color (always a shade of blue, but intensity varies)
+  const getManaColor = () => {
+    if (manaPercentage <= 20) return '#5ac8fa'; // Light blue
+    if (manaPercentage <= 50) return '#007aff'; // Medium blue
+    return '#5e5ce6'; // Deep blue/purple
   };
   
   return (
     <div className="status-bar">
-      <div className="status-container">
-        <div className="status-bars">
-          <div className="status-bar-label">Health</div>
-          <div className="status-bar-container">
+      <div className="status-meters">
+        <div className="meter health-meter">
+          <div className="meter-label">Health</div>
+          <div className="meter-bar">
             <div 
-              className="status-bar-fill health-bar" 
+              className="meter-fill health-fill" 
               style={{ 
                 width: `${healthPercentage}%`,
                 backgroundColor: getHealthColor()
-              }}
+              }} 
             />
+            <div className="meter-text">{health}/{maxHealth}</div>
           </div>
-          <div className="status-bar-value">{Math.floor(health)}/{maxHealth}</div>
+        </div>
         
-          <div className="status-bar-label">Mana</div>
-          <div className="status-bar-container">
+        <div className="meter mana-meter">
+          <div className="meter-label">Mana</div>
+          <div className="meter-bar">
             <div 
-              className="status-bar-fill mana-bar" 
+              className="meter-fill mana-fill" 
               style={{ 
                 width: `${manaPercentage}%`,
-                backgroundColor: '#2196F3' // Blue
-              }}
+                backgroundColor: getManaColor()
+              }} 
             />
+            <div className="meter-text">{mana}/{maxMana}</div>
           </div>
-          <div className="status-bar-value">{Math.floor(mana)}/{maxMana}</div>
         </div>
       </div>
       
-      <div className="game-controls">
-        <button className="inventory-button" onClick={onInventoryClick}>
+      <div className="status-buttons">
+        <button 
+          className="status-button inventory-button"
+          onClick={onInventoryClick}
+        >
           Inventory
         </button>
-        <button className="menu-button">
-          Menu
+        <button 
+          className="status-button map-button"
+          onClick={onMapClick}
+        >
+          Map
         </button>
       </div>
       
       <style jsx>{`
         .status-bar {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background-color: rgba(0, 0, 0, 0.7);
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 10px 20px;
-          color: #fff;
-          font-family: 'Cinzel', serif;
-          z-index: 100;
+          background-color: rgba(10, 10, 15, 0.9);
+          border-top: 2px solid #8a5c41;
+          padding: 10px 15px;
+          height: 70px;
+          box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
         }
         
-        .status-container {
+        .status-meters {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          flex: 1;
+        }
+        
+        .meter {
           display: flex;
           align-items: center;
+          gap: 10px;
         }
         
-        .status-bars {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          grid-gap: 8px;
-          align-items: center;
-          min-width: 300px;
-        }
-        
-        .status-bar-label {
+        .meter-label {
+          width: 60px;
           font-size: 14px;
-          margin-right: 8px;
+          color: #eee;
+          text-align: right;
         }
         
-        .status-bar-container {
-          height: 12px;
-          background-color: rgba(0, 0, 0, 0.5);
-          border-radius: 6px;
-          overflow: hidden;
+        .meter-bar {
+          position: relative;
+          height: 15px;
           width: 100%;
+          max-width: 250px;
+          background-color: rgba(30, 30, 35, 0.7);
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid #8a5c41;
         }
         
-        .status-bar-fill {
+        .meter-fill {
           height: 100%;
-          transition: width 0.3s ease;
+          width: 0;
+          transition: width 0.5s, background-color 0.5s;
         }
         
-        .status-bar-value {
+        .meter-text {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 12px;
-          margin-left: 8px;
-          min-width: 60px;
-          text-align: left;
+          color: #fff;
+          text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
         
-        .game-controls {
+        .status-buttons {
           display: flex;
           gap: 10px;
         }
         
-        .inventory-button, .menu-button {
-          background-color: rgba(50, 50, 50, 0.7);
-          color: #fff;
-          border: 1px solid #666;
+        .status-button {
+          background-color: rgba(60, 40, 30, 0.6);
+          border: 1px solid #8a5c41;
+          border-radius: 5px;
+          color: #f1d7c5;
           padding: 8px 15px;
-          border-radius: 4px;
+          font-size: 14px;
           cursor: pointer;
-          font-family: 'Cinzel', serif;
-          transition: background-color 0.2s ease;
+          transition: all 0.2s;
         }
         
-        .inventory-button:hover, .menu-button:hover {
-          background-color: rgba(80, 80, 80, 0.9);
+        .status-button:hover {
+          background-color: rgba(80, 50, 30, 0.7);
+          border-color: #a47755;
+        }
+        
+        .inventory-button {
+          background-color: rgba(70, 45, 30, 0.7);
+        }
+        
+        .map-button {
+          background-color: rgba(40, 50, 60, 0.7);
         }
       `}</style>
     </div>
