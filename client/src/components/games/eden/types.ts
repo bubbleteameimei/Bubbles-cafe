@@ -1,160 +1,80 @@
-/**
- * Type definitions for Eden's Hollow game
- * 
- * This file contains all the interfaces and types needed for
- * the game engine, scene management, inventory, and dialog systems.
- */
-
-// ===== Core Game Types =====
-
-/**
- * Options passed when initializing the game engine
- */
-export interface GameOptions {
-  startScene: string;
-  onStateChange?: (state: GameState) => void;
-  scenes: Scene[];
-  items: Item[];
-  dialogs: Dialog[];
-  puzzles: Puzzle[];
-}
-
-/**
- * Main game state interface that tracks all game progress
- */
+// Game state types
 export interface GameState {
   currentSceneId: string;
+  previousSceneId: string | null;
   inventory: Inventory;
+  score: Record<string, number>;
+  status: Record<string, boolean>;
+  player: PlayerStatus;
+  visitedScenes: Set<string>;
   activeDialogId: string | null;
   dialogIndex: number;
   currentPuzzleId: string | null;
-  visitedScenes: string[];
-  flags: Record<string, boolean>;
-  counters: Record<string, number>;
-  playerStatus: PlayerStatus;
-  activePuzzles: {
-    [id: string]: {
-      id: string;
-      progress: any;
-      attempts: number;
-    }
-  };
-  notifications: Notification[];
-  secrets: {
-    found: string[];
-    hints: string[];
-  };
-  progress: {
-    puzzlesSolved: number;
-    itemsFound: number;
-    secretsDiscovered: number;
-    completionPercentage: number;
-  };
+  notificationQueue: Notification[];
+  lastAction: string | null;
+  health: number;
+  maxHealth: number;
+  mana: number;
+  maxMana: number;
 }
 
-/**
- * Player status including health, energy, etc.
- */
+export interface GameContext {
+  state: GameState;
+  dispatch: (action: GameAction) => void;
+}
+
+export interface Inventory {
+  items: Item[];
+  get: (id: string) => Item | undefined;
+  add: (item: Item) => boolean;
+  remove: (id: string) => boolean;
+  has: (id: string) => boolean;
+  filter: (predicate: (id: string) => boolean) => Item[];
+  map: <T>(callback: (itemId: string, item: Item) => T) => T[];
+}
+
 export interface PlayerStatus {
   health: number;
   maxHealth: number;
   energy: number;
   maxEnergy: number;
-  sanity: number;
-  maxSanity: number;
-  conditions: string[];
+  level: number;
+  experience: number;
+  status: string[];
 }
 
-// ===== Scene & Environment =====
+// Action types
+export type GameAction =
+  | { type: 'MOVE_TO_SCENE'; sceneId: string }
+  | { type: 'ADD_ITEM'; item: Item }
+  | { type: 'REMOVE_ITEM'; itemId: string }
+  | { type: 'USE_ITEM'; itemId: string; targetId: string }
+  | { type: 'UPDATE_STATUS'; status: Record<string, boolean> }
+  | { type: 'ADD_SCORE'; key: string; value: number }
+  | { type: 'START_DIALOG'; dialogId: string }
+  | { type: 'ADVANCE_DIALOG'; responseIndex?: number }
+  | { type: 'END_DIALOG' }
+  | { type: 'START_PUZZLE'; puzzleId: string }
+  | { type: 'SUBMIT_PUZZLE_SOLUTION'; solution: string[] }
+  | { type: 'END_PUZZLE'; success: boolean }
+  | { type: 'ADD_NOTIFICATION'; notification: Notification }
+  | { type: 'CLEAR_NOTIFICATION'; id: string }
+  | { type: 'UPDATE_HEALTH'; value: number }
+  | { type: 'UPDATE_MANA'; value: number }
+  | { type: 'UPDATE_STATE'; partialState: Partial<GameState> };
 
-/**
- * Scene definition with all required details
- */
+// Scene types
 export interface Scene {
   id: string;
   name: string;
   description: string;
   backgroundImage: string;
+  features: SceneFeature[];
   exits: SceneExit[];
-  items: string[];
-  events: SceneEvent[];
-  interactables: SceneInteractable[];
-  actions?: SceneAction[];
-  features?: SceneFeature[];
-  lighting?: 'dark' | 'dim' | 'normal' | 'bright';
-  ambience?: {
-    soundEffect?: string;
-    volume?: number;
-    loop?: boolean;
-    fadeIn?: number;
-    fadeOut?: number;
-  };
-  title?: string;
-  isStartScene?: boolean;
-  isEndScene?: boolean;
-  mapPosition?: {
-    x: number;
-    y: number;
-  };
+  events?: SceneEvent[];
+  ambientSound?: string;
 }
 
-/**
- * Exit to another scene
- */
-export interface SceneExit {
-  id: string;
-  target: string;
-  condition?: Condition;
-  locked?: boolean;
-  keyItem?: string;
-  name?: string;
-  description?: string;
-  position?: {
-    top?: string;
-    left?: string;
-    bottom?: string;
-    right?: string;
-  };
-}
-
-/**
- * Interactive element in a scene
- */
-export interface SceneInteractable {
-  id: string;
-  name: string;
-  description: string;
-  type: 'object' | 'character' | 'mechanism' | 'decoration';
-  position: {
-    top: string;
-    left: string;
-    width?: string;
-    height?: string;
-  };
-  state?: string;
-  states?: Record<string, string>;
-  dialogId?: string;
-  actionId?: string;
-  examinable?: boolean;
-  condition?: Condition;
-  itemRequired?: string;
-  puzzle?: string;
-  image?: string;
-  animation?: string;
-  interactions?: {
-    default?: SceneEvent;
-    examine?: SceneEvent;
-    use?: Record<string, SceneEvent>;
-    talk?: SceneEvent;
-    push?: SceneEvent;
-    pull?: SceneEvent;
-    activate?: SceneEvent;
-  };
-}
-
-/**
- * Visual feature or detail in a scene
- */
 export interface SceneFeature {
   id: string;
   name: string;
@@ -162,330 +82,206 @@ export interface SceneFeature {
   position: {
     top: string;
     left: string;
-    width?: string;
-    height?: string;
   };
-  image?: string;
-  opacity?: number;
-  visible?: boolean;
-  condition?: Condition;
-  event?: SceneEvent;
-  layer?: number;
-  animation?: string;
-  transformOrigin?: string;
-  transform?: string;
-  zIndex?: number;
+  isInteractive: boolean;
+  isHidden?: boolean;
+  requiredStatus?: Record<string, boolean>;
+  requiredItems?: string[];
+  interactions: SceneInteraction[];
 }
 
-/**
- * Action available in a scene
- */
-export interface SceneAction {
+export interface SceneInteraction {
+  id: string;
+  name: string;
+  action: 'examine' | 'collect' | 'use' | 'interact';
+  condition?: {
+    requiredItems?: string[];
+    requiredStatus?: Record<string, boolean>;
+  };
+  outcome: InteractionOutcome;
+}
+
+export interface InteractionOutcome {
+  success?: GameEffect;
+  failure?: GameEffect;
+  status?: Record<string, boolean>;
+  notification?: Notification;
+  dialog?: string;
+  item?: string;
+  scene?: string;
+  puzzle?: string;
+}
+
+export interface GameEffect {
+  health?: number;
+  mana?: number;
+  status?: Record<string, boolean>;
+}
+
+export interface SceneExit {
   id: string;
   name: string;
   description: string;
-  condition?: Condition;
-  outcome: SceneEvent;
-  energy?: number;
-  cooldown?: number;
-  icon?: string;
+  targetScene: string;
+  position: {
+    top: string;
+    left: string;
+  };
+  isHidden?: boolean;
+  requiredStatus?: Record<string, boolean>;
+  requiredItems?: string[];
 }
 
-/**
- * Event triggered in a scene
- */
 export interface SceneEvent {
-  id: string;
-  effect: GameEffect;
-  trigger?: 'enter' | 'examine' | 'use' | 'time' | 'condition';
-  condition?: Condition;
+  trigger: 'entry' | 'exit' | 'timer';
   delay?: number;
-  chance?: number;
-  outcome?: {
-    success?: GameEffect;
-    failure?: GameEffect;
+  condition?: {
+    requiredItems?: string[];
+    requiredStatus?: Record<string, boolean>;
   };
+  outcome: InteractionOutcome;
 }
 
-/**
- * Condition that must be met
- */
-export interface Condition {
-  type: 'item' | 'flag' | 'counter' | 'combination';
-  item?: string;
-  flag?: string;
-  counter?: {
-    id: string;
-    operator: '>' | '<' | '>=' | '<=' | '==' | '!=';
-    value: number;
-  };
-  items?: string[];
-  flags?: string[];
-  counters?: Array<{
-    id: string;
-    operator: '>' | '<' | '>=' | '<=' | '==' | '!=';
-    value: number;
-  }>;
-  operator?: 'AND' | 'OR';
-  value?: any;
-  not?: boolean;
+// Dialog types
+export interface Dialog {
+  id: string;
+  character: Character;
+  content: DialogSegment[];
 }
 
-/**
- * Effect on game state
- */
-export interface GameEffect {
-  type: 'scene' | 'item' | 'event' | 'status';
-  value: string;
-  scene?: string;
-  item?: {
-    id: string;
-    operation: 'add' | 'remove';
-    count?: number;
-  };
-  flag?: {
-    id: string;
-    value: boolean;
-  };
-  counter?: {
-    id: string;
-    operation: 'set' | 'increment' | 'decrement';
-    value: number;
-  };
-  status?: {
-    type: 'health' | 'energy' | 'sanity';
-    operation: 'set' | 'add' | 'subtract';
-    value: number;
-  };
-  notification?: {
-    id: string;
-    message: string;
-    type: NotificationType;
-    duration?: number;
-  };
-  puzzle?: string;
-  condition?: Condition;
-  dialog?: string;
+export interface Character {
+  id: string;
+  name: string;
+  avatarImage: string;
+  nameColor: string;
 }
 
-// ===== Inventory & Items =====
-
-/**
- * Player inventory
- */
-export interface Inventory {
-  items: Item[];
-  maxItems?: number;
-  categories?: Record<string, Item[]>;
-  get: (id: string) => Item | undefined;
-  add: (item: Item) => boolean;
-  remove: (id: string) => boolean;
-  has: (id: string) => boolean;
-  count: (id: string) => number;
-  filter: (filterFn: (id: string) => boolean) => string[];
+export interface DialogSegment {
+  speaker: string;
+  text: string;
+  responses: DialogResponse[];
 }
 
-/**
- * Item that can be collected or used
- */
+export interface DialogResponse {
+  text: string;
+  nextIndex: number;
+  condition?: {
+    requiredItems?: string[];
+    requiredStatus?: Record<string, boolean>;
+  };
+  outcome?: InteractionOutcome;
+}
+
+// Item types
 export interface Item {
   id: string;
   name: string;
   description: string;
-  image: string;
-  category: 'quest' | 'tool' | 'consumable' | 'lore';
-  type?: 'weapon' | 'key' | 'document' | 'artifact' | 'valuable';
+  type: string;
+  icon: string;
+  usable: boolean;
+  useableOn?: string[];
   effects?: ItemEffect[];
-  count?: number;
-  stackable?: boolean;
-  isUsable?: boolean;
-  usable?: boolean;
-  single_use?: boolean;
-  value?: number;
-  combines_with?: string[];
-  combination_result?: string;
-  condition?: Condition;
-  examine_text?: string;
-  use_text?: string;
-  inventory_text?: string;
-  lore?: string;
-  secret?: boolean;
-  state?: 'new' | 'used' | 'damaged' | 'repaired';
+  isConsumable?: boolean;
+  destroyOnUse?: boolean;
+  quantity: number;
+  category?: string;
 }
 
-/**
- * Effect when using an item
- */
 export interface ItemEffect {
-  type: 'health' | 'mana' | 'status' | 'flag' | 'counter' | 'scene' | 'remove';
-  value: any;
-  health?: {
-    operation: 'add' | 'subtract' | 'set';
-    amount: number;
-  };
-  mana?: {
-    operation: 'add' | 'subtract' | 'set';
-    amount: number;
-  };
-  status?: {
-    operation: 'add' | 'remove';
-    condition: string;
-  };
-  flag?: {
-    id: string;
-    value: boolean;
-  };
-  counter?: {
-    id: string;
-    operation: 'add' | 'subtract' | 'set';
-    value: number;
-  };
-  scene?: string;
+  type: string;
+  value: number;
   duration?: number;
-  remove?: boolean;
-  message?: string;
-  notification?: {
-    type: 'success' | 'info' | 'warning' | 'error';
-    message: string;
-  };
 }
 
-// ===== Dialog System =====
-
-/**
- * Character dialog tree
- */
-export interface Dialog {
-  id: string;
-  character: DialogCharacter | string;
-  content: DialogSegment[];
-  condition?: Condition;
-  triggers?: Record<string, GameEffect>;
-  initial?: number;
-}
-
-/**
- * Character involved in dialog
- */
-export interface DialogCharacter {
-  id: string;
-  name: string;
-  portrait: string;
-  portraits?: {
-    neutral?: string;
-    happy?: string;
-    sad?: string;
-    angry?: string;
-    surprised?: string;
-    scared?: string;
-    [key: string]: string | undefined;
-  };
-  voice?: string;
-  description?: string;
-  relationship?: number;
-}
-
-/**
- * Single segment of dialog
- */
-export interface DialogSegment {
-  text: string;
-  speaker?: string;
-  emotion?: string;
-  responses?: DialogResponse[];
-  events?: SceneEvent[];
-  animation?: string;
-  audio?: string;
-  condition?: Condition;
-  outcome?: GameEffect;
-}
-
-/**
- * Response option in dialog
- */
-export interface DialogResponse {
-  text: string;
-  nextIndex?: number;
-  condition?: Condition;
-  outcome?: GameEffect;
-  requiresItem?: string;
-  endsDialog?: boolean;
-}
-
-// ===== Puzzle System =====
-
-/**
- * Puzzle that can be solved
- */
+// Puzzle types
 export interface Puzzle {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  type: 'combination' | 'pattern' | 'riddle' | 'sequence' | 'slider' | 'lock';
+  type: 'combination' | 'pattern' | 'sequence' | 'riddle';
+  solution: string[];
   difficulty: 'easy' | 'medium' | 'hard';
-  maxAttempts?: number;
-  timeLimit?: number;
-  clues?: string[];
-  solution: string[] | Record<string, string>;
+  pattern?: string[][];
+  initialState?: string[];
   inputs?: PuzzleInput[];
-  hintItem?: string;
-  onSolve: GameEffect;
-  onFail?: GameEffect;
-  image?: string;
-  resetOnFail?: boolean;
-  allowHints?: boolean;
-  trackAttempts?: boolean;
-  progressSaved?: boolean;
-  helpText?: string;
+  options?: PuzzleOption[];
+  items?: string[];
+  hints: string[];
+  maxAttempts?: number;
+  currentAttempt?: number;
+  reward: InteractionOutcome;
 }
 
-/**
- * Input for puzzles
- */
 export interface PuzzleInput {
   id: string;
-  type: 'button' | 'dial' | 'slider' | 'toggle' | 'text' | 'select';
   label: string;
-  options?: string[];
-  min?: number;
-  max?: number;
-  step?: number;
-  default?: any;
-  position?: {
-    top: string;
-    left: string;
-  };
-  image?: string;
-  sounds?: {
-    activate?: string;
-    success?: string;
-    failure?: string;
-  };
+  type: string;
+  placeholder?: string;
 }
 
-// ===== Notification System =====
+export interface PuzzleOption {
+  id: string;
+  text: string;
+}
 
-/**
- * Types of notifications
- */
-export type NotificationType = 
-  | 'item' 
-  | 'quest' 
-  | 'discovery' 
-  | 'achievement' 
-  | 'hint' 
-  | 'warning' 
-  | 'danger' 
-  | 'info';
+// Notification types
+export type NotificationType = 'info' | 'warning' | 'discovery' | 'achievement' | 'error' | 'success';
 
-/**
- * Notification displayed to player
- */
 export interface Notification {
   id: string;
-  type: NotificationType;
   message: string;
+  type: NotificationType;
   duration?: number;
-  dismissible?: boolean;
-  icon?: string;
+  autoDismiss?: boolean;
 }
+
+// UI component props
+export interface LoadingScreenProps {
+  message: string;
+  isLoading: boolean;
+}
+
+export interface SceneViewProps {
+  scene: Scene;
+  onFeatureClick?: (featureId: string) => void;
+  onExitClick?: (exitId: string) => void;
+  onActionClick?: (actionId: string) => void;
+}
+
+export interface DialogBoxProps {
+  dialog: Dialog;
+  currentIndex: number;
+  onResponseClick: (responseIndex: number) => void;
+  onClose: () => void;
+}
+
+export interface InventoryPanelProps {
+  inventory: Inventory;
+  onItemClick: (itemId: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface NotificationProps {
+  notification: Notification;
+  onDismiss: () => void;
+}
+
+export interface GameOptions {
+  initialScene: string;
+  debugMode?: boolean;
+  autoSave?: boolean;
+}
+
+export interface PuzzleInterfaceProps {
+  puzzle: Puzzle;
+  onSubmit: (solution: string[]) => void;
+  onClose: () => void;
+}
+
+// Utility type for mix-blend-mode CSS property
+export type MixBlendMode = 
+  'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 
+  'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 
+  'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';

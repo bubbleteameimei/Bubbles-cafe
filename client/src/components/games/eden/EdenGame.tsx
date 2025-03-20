@@ -1,347 +1,192 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
+import { GameState, Scene, Notification, Inventory, Dialog, Puzzle } from './types';
 import { GameEngine } from './GameEngine';
-import { GameState, Scene, Item, Puzzle } from './types';
-import { gameItems } from './data/items';
-import { gamePuzzles } from './data/puzzles';
+import items from './data/items';
+import puzzles from './data/puzzles';
+import scenes from './data/scenes';
+import { SceneView } from './ui/SceneView';
+import { DialogBox } from './ui/DialogBox';
+import { NotificationSystem } from './ui/NotificationSystem';
+import { InventoryPanel } from './ui/InventoryPanel';
+import { PuzzleInterface } from './ui/PuzzleInterface';
+import { LoadingScreen } from './ui/LoadingScreen';
+import { StatusBar } from './ui/StatusBar';
 
-// Import UI components
-import SceneView from './ui/SceneView';
-import InventoryPanel from './ui/InventoryPanel';
-import DialogBox from './ui/DialogBox';
-import PuzzleInterface from './ui/PuzzleInterface';
-import GameControls from './ui/GameControls';
-import NotificationSystem from './ui/NotificationSystem';
-import LoadingScreen from './ui/LoadingScreen';
+const gameEngine = new GameEngine({ initialScene: 'village_entrance' });
 
-// Mock data for initial testing
-const mockScenes: Record<string, Scene> = {
-  forest_edge: {
-    id: 'forest_edge',
-    title: 'Forest Edge',
-    description: 'The edge of a dense, misty forest. A dirt path leads toward a village in the distance.',
-    backgroundImage: 'forest_edge.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_village_entrance',
-        name: 'To Village',
-        target: 'village_entrance',
-        destination: 'Village Entrance',
-        position: 'east'
-      }
-    ],
-    actions: [
-      {
-        id: 'look_around',
-        name: 'Look Around',
-        outcome: {
-          notification: {
-            id: 'forest-look',
-            message: 'You scan the dense trees. Something feels off about this place...',
-            type: 'info'
-          }
-        }
-      }
-    ]
+// Initial game state
+const initialState: GameState = {
+  currentSceneId: 'village_entrance',
+  previousSceneId: null,
+  inventory: {
+    items: [],
+    get: () => undefined,
+    add: () => false,
+    remove: () => false,
+    has: () => false,
+    filter: () => [],
+    map: () => []
   },
-  village_entrance: {
-    id: 'village_entrance',
-    title: 'Village Entrance',
-    description: 'A weathered sign reads "Eden\'s Hollow". The village looks abandoned, with dilapidated buildings.',
-    backgroundImage: 'village_entrance.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_forest_edge',
-        name: 'Back to Forest',
-        target: 'forest_edge',
-        destination: 'Forest Edge',
-        position: 'west'
-      },
-      {
-        id: 'to_village_square',
-        name: 'Village Square',
-        target: 'village_square',
-        destination: 'Village Square',
-        position: 'north'
-      }
-    ]
+  score: {},
+  status: {},
+  player: {
+    health: 100,
+    maxHealth: 100,
+    energy: 100,
+    maxEnergy: 100,
+    level: 1,
+    experience: 0,
+    status: []
   },
-  village_square: {
-    id: 'village_square',
-    title: 'Village Square',
-    description: 'The central square is empty and eerily quiet. A broken fountain stands in the center.',
-    backgroundImage: 'village_square.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_village_entrance',
-        name: 'Village Entrance',
-        target: 'village_entrance',
-        destination: 'Village Entrance',
-        position: 'south'
-      },
-      {
-        id: 'to_church_exterior',
-        name: 'To Church',
-        target: 'church_exterior',
-        destination: 'Church',
-        position: 'east'
-      },
-      {
-        id: 'to_clock_tower',
-        name: 'To Clock Tower',
-        target: 'clock_tower',
-        destination: 'Clock Tower',
-        position: 'north'
-      }
-    ]
-  },
-  church_exterior: {
-    id: 'church_exterior',
-    title: 'Church Exterior',
-    description: 'An old stone church with boarded windows and a heavy oak door. The steeple is missing its cross.',
-    backgroundImage: 'church_exterior.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_village_square',
-        name: 'To Village Square',
-        target: 'village_square',
-        destination: 'Village Square',
-        position: 'west'
-      },
-      {
-        id: 'to_church_interior',
-        name: 'Enter Church',
-        target: 'church_interior',
-        destination: 'Church Interior',
-        position: 'north'
-      }
-    ]
-  },
-  church_interior: {
-    id: 'church_interior',
-    title: 'Church Interior',
-    description: 'Rows of broken pews face an altar. Strange symbols are carved into the stone walls.',
-    backgroundImage: 'church_interior.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_church_exterior',
-        name: 'Exit Church',
-        target: 'church_exterior',
-        destination: 'Church Exterior',
-        position: 'south'
-      }
-    ],
-    actions: [
-      {
-        id: 'examine_altar',
-        name: 'Examine Altar',
-        outcome: {
-          notification: {
-            id: 'altar-examine',
-            message: 'The altar has five symbols arranged in a circle: a Moon, Star, Sun, Tree, and Flame.',
-            type: 'info'
-          },
-          puzzle: 'altar_puzzle'
-        }
-      }
-    ]
-  },
-  clock_tower: {
-    id: 'clock_tower',
-    title: 'Clock Tower',
-    description: 'The village clock tower. Its hands are frozen at 3:17.',
-    backgroundImage: 'clock_tower.jpg',
-    time: 'dusk',
-    exits: [
-      {
-        id: 'to_village_square',
-        name: 'To Village Square',
-        target: 'village_square',
-        destination: 'Village Square',
-        position: 'south'
-      }
-    ],
-    actions: [
-      {
-        id: 'check_mechanism',
-        name: 'Check Mechanism',
-        outcome: {
-          notification: {
-            id: 'clock-check',
-            message: 'The clock mechanism appears to be intact. Perhaps it can be restarted...',
-            type: 'info'
-          },
-          puzzle: 'clock_puzzle'
-        }
-      }
-    ]
-  }
+  visitedScenes: new Set<string>(),
+  activeDialogId: null,
+  dialogIndex: 0,
+  currentPuzzleId: null,
+  notificationQueue: [],
+  lastAction: null,
+  health: 100,
+  maxHealth: 100,
+  mana: 100,
+  maxMana: 100
 };
 
-/**
- * Main Eden's Hollow Game Component
- */
+// Reducer function for game state
+function gameReducer(state: GameState, action: any): GameState {
+  return gameEngine.handleAction(state, action);
+}
+
+// Main game component
 const EdenGame: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null);
-  const [showInventory, setShowInventory] = useState(false);
-  
-  // Initialize game engine
+  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Entering Eden\'s Hollow...');
+
+  // Initialize the game
   useEffect(() => {
-    const initializeGame = async () => {
-      try {
-        // Simulate loading delay
-        setTimeout(() => {
-          const engine = GameEngine.getInstance({
-            scenes: mockScenes,
-            items: gameItems,
-            dialogs: {},
-            puzzles: gamePuzzles,
-            onStateChange: (newState) => {
-              setGameState(newState);
-            }
-          });
-          
-          setGameEngine(engine);
-          setGameState(engine.getState());
-          setLoading(false);
-        }, 1500);
-      } catch (error) {
-        console.error('Failed to initialize game:', error);
-      }
-    };
+    // Simulate loading time for atmosphere
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
     
-    initializeGame();
+    // Cleanup
+    return () => clearTimeout(timer);
   }, []);
-  
+
+  // Get the current scene
+  const currentScene: Scene = scenes[state.currentSceneId];
+
   // Handle scene transitions
   const handleExitClick = (exitId: string) => {
-    if (!gameEngine || !gameState) return;
-    
-    const currentScene = mockScenes[gameState.currentScene];
     const exit = currentScene.exits.find(e => e.id === exitId);
-    
     if (exit) {
-      gameEngine.transitionToScene(exit.target);
+      setIsLoading(true);
+      setLoadingMessage(`Traveling to ${exit.name}...`);
+      
+      // Simulating travel time
+      setTimeout(() => {
+        dispatch({ type: 'MOVE_TO_SCENE', sceneId: exit.targetScene });
+        setIsLoading(false);
+      }, 1500);
     }
   };
-  
-  // Handle action clicks
+
+  // Handle puzzle solutions
+  const handlePuzzleSolution = (solution: string[]) => {
+    if (state.currentPuzzleId) {
+      const puzzle = puzzles[state.currentPuzzleId];
+      dispatch({ type: 'SUBMIT_PUZZLE_SOLUTION', solution });
+    }
+  };
+
+  // Handle inventory item use
+  const handleItemClick = (itemId: string) => {
+    // TODO: Implement context-sensitive item usage
+    console.log(`Item clicked: ${itemId}`);
+  };
+
+  // Handle character interactions
+  const handleCharacterClick = () => {
+    // TODO: Implement character interaction logic
+    console.log('Character clicked');
+  };
+
+  // Handle scene feature interaction
   const handleActionClick = (actionId: string) => {
-    if (!gameEngine) return;
-    gameEngine.performAction(actionId);
+    dispatch({ type: 'INTERACT', actionId });
   };
-  
-  // Handle puzzle attempts
-  const handlePuzzleAttempt = (solution: any) => {
-    if (!gameEngine || !gameState || !gameState.currentPuzzle) return;
-    gameEngine.attemptPuzzle(gameState.currentPuzzle, solution);
-  };
-  
-  // Handle dialog responses
+
+  // Handle dialog response selection
   const handleDialogResponse = (responseIndex: number) => {
-    if (!gameEngine) return;
-    gameEngine.selectDialogResponse(responseIndex);
+    dispatch({ type: 'ADVANCE_DIALOG', responseIndex });
   };
-  
-  // Handle item use
-  const handleItemUse = (itemId: string) => {
-    if (!gameEngine) return;
-    gameEngine.useItem(itemId);
-  };
-  
+
   // Handle notification dismissal
-  const handleDismissNotification = (id: string) => {
-    if (!gameEngine) return;
-    gameEngine.dismissNotification(id);
+  const handleNotificationDismiss = (id: string) => {
+    dispatch({ type: 'CLEAR_NOTIFICATION', id });
   };
-  
-  // Handle save game
-  const handleSaveGame = () => {
-    if (!gameEngine) return;
-    gameEngine.saveGame();
-  };
-  
-  // Display loading screen while initializing
-  if (loading || !gameState) {
-    return <LoadingScreen message="Entering Eden's Hollow..." />;
+
+  // Update the page title based on the current scene
+  useEffect(() => {
+    document.title = `Eden's Hollow - ${currentScene?.name || 'Loading...'}`;
+  }, [state.currentSceneId]);
+
+  if (isLoading) {
+    return <LoadingScreen message={loadingMessage} isLoading={true} />;
   }
-  
-  // Get current scene data
-  const currentScene = mockScenes[gameState.currentScene];
-  
-  // Get inventory items
-  const inventoryItems = gameState.inventory
-    .map(itemId => gameItems[itemId])
-    .filter(item => item !== undefined) as Item[];
-  
-  // Get current puzzle if any
-  const currentPuzzle = gameState.currentPuzzle 
-    ? gamePuzzles[gameState.currentPuzzle] 
-    : undefined;
-  
+
   return (
-    <div className="eden-game" style={{
-      position: 'relative',
-      width: '100%',
-      height: '100vh',
-      backgroundColor: '#000',
-      overflow: 'hidden'
-    }}>
+    <div className="game-container">
       {/* Main scene view */}
-      <SceneView 
-        scene={currentScene}
-        onExitClick={handleExitClick}
-        onItemClick={() => {}} // Not implemented in this simplified version
-        onCharacterClick={() => {}} // Not implemented in this simplified version
-        onActionClick={handleActionClick}
-      />
+      {currentScene && (
+        <SceneView 
+          scene={currentScene} 
+          onFeatureClick={(featureId: string) => console.log(`Feature clicked: ${featureId}`)}
+          onExitClick={handleExitClick}
+          onActionClick={handleActionClick}
+        />
+      )}
       
-      {/* Game controls */}
-      <GameControls 
-        health={gameState.health}
-        mana={gameState.mana}
-        onInventoryToggle={() => setShowInventory(!showInventory)}
-        onSettingsToggle={() => {}} // Not implemented in this simplified version
-        onSaveGame={handleSaveGame}
+      {/* Status bar */}
+      <StatusBar 
+        health={state.health} 
+        maxHealth={state.maxHealth}
+        mana={state.mana}
+        maxMana={state.maxMana}
+        onInventoryClick={() => setIsInventoryOpen(!isInventoryOpen)}
       />
       
       {/* Inventory panel */}
       <InventoryPanel 
-        items={inventoryItems}
-        onItemUse={handleItemUse}
-        onInventoryClose={() => setShowInventory(false)}
-        isOpen={showInventory}
+        inventory={state.inventory} 
+        onItemClick={handleItemClick} 
+        isOpen={isInventoryOpen}
+        onClose={() => setIsInventoryOpen(false)}
       />
       
-      {/* Active dialog if any */}
-      {gameState.activeDialog && gameState.dialogIndex !== undefined && (
+      {/* Dialog box */}
+      {state.activeDialogId && state.dialogIndex >= 0 && (
         <DialogBox 
-          dialog={{id: 'test-dialog', content: [{speaker: 'Test', text: 'Test dialog', responses: []}]}}
-          dialogIndex={0}
-          onResponse={handleDialogResponse}
+          dialog={scenes[state.activeDialogId] as unknown as Dialog} 
+          currentIndex={state.dialogIndex}
+          onResponseClick={handleDialogResponse}
+          onClose={() => dispatch({ type: 'END_DIALOG' })}
         />
       )}
       
-      {/* Active puzzle if any */}
-      {currentPuzzle && (
+      {/* Puzzle interface */}
+      {state.currentPuzzleId && (
         <PuzzleInterface 
-          puzzle={currentPuzzle}
-          attempts={gameState.puzzleAttempts}
-          onAttempt={handlePuzzleAttempt}
-          onClose={() => gameEngine?.closePuzzle()}
+          puzzle={puzzles[state.currentPuzzleId]} 
+          onSubmit={handlePuzzleSolution}
+          onClose={() => dispatch({ type: 'END_PUZZLE', success: false })}
         />
       )}
       
       {/* Notification system */}
       <NotificationSystem 
-        notifications={gameState.notifications}
-        onDismiss={handleDismissNotification}
+        notifications={state.notificationQueue} 
+        onDismiss={handleNotificationDismiss} 
       />
     </div>
   );

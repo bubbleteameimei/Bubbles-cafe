@@ -1,86 +1,77 @@
 import React, { useState, useEffect } from 'react';
 
-interface LoadingScreenProps {
+export interface LoadingScreenProps {
+  message: string;
   isLoading: boolean;
-  message?: string;
-  progress?: number;
   onComplete?: () => void;
-  theme?: 'dark' | 'light';
-  hasAnimation?: boolean;
+  duration?: number;
 }
 
 /**
- * Displays loading screen with progress bar and animated effects
+ * Atmospheric loading screen with fog and particle effects
  */
 const LoadingScreen: React.FC<LoadingScreenProps> = ({
+  message,
   isLoading,
-  message = 'Loading...',
-  progress = 0,
   onComplete,
-  theme = 'dark',
-  hasAnimation = true,
+  duration = 3000
 }) => {
-  const [fadeOut, setFadeOut] = useState<boolean>(false);
-  const [dots, setDots] = useState<string>('');
-  const [internalProgress, setInternalProgress] = useState<number>(progress);
+  const [progress, setProgress] = useState<number>(0);
+  const [showContent, setShowContent] = useState<boolean>(false);
+  const [particleCount] = useState<number>(20);
   
-  // Update internal progress when prop changes
+  // Generate random particles for the background effect
+  const particles = Array.from({ length: particleCount }, (_, index) => ({
+    id: `particle-${index}`,
+    size: Math.random() * 6 + 2,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    opacity: Math.random() * 0.8 + 0.2,
+    duration: Math.random() * 20 + 10,
+    delay: Math.random() * 2
+  }));
+  
   useEffect(() => {
-    setInternalProgress(progress);
-  }, [progress]);
+    let timerId: NodeJS.Timeout;
+    let progressInterval: NodeJS.Timeout;
+    
+    if (isLoading) {
+      // Reset progress when loading starts
+      setProgress(0);
+      setShowContent(false);
+      
+      // Simulate loading progress
+      const step = 100 / (duration / 100); // Progress every 100ms
+      
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + step;
+          return newProgress >= 100 ? 100 : newProgress;
+        });
+      }, 100);
+      
+      // Show content with a slight delay for better UX
+      timerId = setTimeout(() => {
+        setShowContent(true);
+      }, 800);
+      
+      // Call onComplete after duration
+      timerId = setTimeout(() => {
+        clearInterval(progressInterval);
+        if (onComplete) onComplete();
+      }, duration);
+    }
+    
+    return () => {
+      clearTimeout(timerId);
+      clearInterval(progressInterval);
+    };
+  }, [isLoading, duration, onComplete]);
   
-  // Auto-advance progress slightly for better UX
-  useEffect(() => {
-    if (!isLoading || internalProgress >= 100) return;
-    
-    const timer = setTimeout(() => {
-      // Slowly advance progress up to 90% max to give impression of loading
-      if (internalProgress < 90) {
-        setInternalProgress(prev => Math.min(prev + Math.random() * 2, 90));
-      }
-    }, 200);
-    
-    return () => clearTimeout(timer);
-  }, [isLoading, internalProgress]);
-  
-  // Handle loading animation dots
-  useEffect(() => {
-    if (!isLoading) return;
-    
-    const dotTimer = setInterval(() => {
-      setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
-    }, 500);
-    
-    return () => clearInterval(dotTimer);
-  }, [isLoading]);
-  
-  // Handle fade out animation when loading is complete
-  useEffect(() => {
-    if (isLoading || internalProgress < 100) return;
-    
-    setFadeOut(true);
-    const timer = setTimeout(() => {
-      if (onComplete) {
-        onComplete();
-      }
-    }, 800); // Match with CSS transition duration
-    
-    return () => clearTimeout(timer);
-  }, [isLoading, internalProgress, onComplete]);
-  
-  // If not loading and already faded out, don't render
-  if (!isLoading && fadeOut) {
-    return null;
-  }
-  
-  // Theme-based styles
-  const backgroundColor = theme === 'dark' ? 'rgba(13, 10, 20, 0.97)' : 'rgba(240, 238, 245, 0.97)';
-  const textColor = theme === 'dark' ? '#e0d0ff' : '#33274b';
-  const progressBarBackground = theme === 'dark' ? 'rgba(60, 45, 80, 0.5)' : 'rgba(210, 200, 230, 0.7)';
-  const progressBarFill = theme === 'dark' ? 'rgba(120, 90, 180, 0.9)' : 'rgba(100, 80, 160, 0.9)';
+  if (!isLoading) return null;
   
   return (
-    <div
+    <div 
       className="loading-screen"
       style={{
         position: 'fixed',
@@ -88,246 +79,185 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: backgroundColor,
-        backdropFilter: 'blur(3px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        opacity: fadeOut ? 0 : 1,
-        transition: 'opacity 800ms ease-out',
+        backgroundColor: '#0a0a0f',
         zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden'
       }}
     >
-      {/* Fog/mist animation (conditionally rendered) */}
-      {hasAnimation && theme === 'dark' && (
-        <div
-          className="fog-animation"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            overflow: 'hidden',
-            opacity: 0.4,
-            pointerEvents: 'none',
-          }}
-        >
-          {/* Fog layers */}
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                bottom: `-${10 * i}%`,
-                left: 0,
-                width: '200%',
-                height: '100%',
-                backgroundImage: 'radial-gradient(rgba(255,255,255,0.1) 10%, transparent 60%)',
-                backgroundSize: `${20 + i * 15}% ${5 + i * 10}%`,
-                animation: `fog-move-${i} ${30 + i * 10}s linear infinite`,
-                opacity: 0.2 - i * 0.02,
-                transform: `translateX(${i % 2 === 0 ? 0 : '-30%'})`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-      
-      {/* Light particles (conditionally rendered) */}
-      {hasAnimation && (
-        <div
-          className="light-particles"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            overflow: 'hidden',
-            opacity: theme === 'dark' ? 0.3 : 0.15,
-            pointerEvents: 'none',
-          }}
-        >
-          {/* Generate random particles */}
-          {[...Array(30)].map((_, i) => {
-            const size = Math.random() * 4 + 1;
-            const top = Math.random() * 100;
-            const left = Math.random() * 100;
-            const duration = Math.random() * 10 + 15;
-            const delay = Math.random() * 5;
-            
-            return (
-              <div
-                key={i}
-                style={{
-                  position: 'absolute',
-                  top: `${top}%`,
-                  left: `${left}%`,
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  borderRadius: '50%',
-                  backgroundColor: theme === 'dark' ? 'rgba(220, 210, 255, 0.6)' : 'rgba(120, 100, 190, 0.4)',
-                  boxShadow: theme === 'dark' 
-                    ? `0 0 ${size * 2}px rgba(180, 160, 255, 0.6)` 
-                    : `0 0 ${size * 2}px rgba(120, 100, 190, 0.3)`,
-                  animation: `float-particle ${duration}s ease-in-out ${delay}s infinite`,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-      
-      {/* Game Logo */}
-      <div
-        className="game-logo"
+      {/* Fog overlay */}
+      <div 
+        className="fog-overlay"
         style={{
-          marginBottom: '40px',
-          textAlign: 'center',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'url(/assets/effects/fog.png)',
+          backgroundSize: 'cover',
+          opacity: 0.3,
+          animation: 'drift 30s linear infinite',
+          zIndex: 2
+        }}
+      />
+      
+      {/* Particles for atmosphere */}
+      <div 
+        className="particle-container"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 1
         }}
       >
-        <h1
-          style={{
-            fontSize: '3.5rem',
-            fontWeight: 'bold',
-            color: textColor,
-            textShadow: theme === 'dark' 
-              ? '0 0 10px rgba(140, 120, 200, 0.6), 0 0 20px rgba(100, 80, 160, 0.3)'
-              : '0 0 10px rgba(100, 80, 160, 0.3)',
-            fontFamily: 'serif',
-            letterSpacing: '3px',
-            marginBottom: '10px',
-          }}
-        >
-          EDEN'S HOLLOW
-        </h1>
-        <div
-          style={{
-            fontSize: '1.1rem',
-            color: textColor,
-            opacity: 0.8,
-            fontFamily: 'serif',
-            letterSpacing: '1px',
-          }}
-        >
-          A tale of darkness and redemption
-        </div>
-      </div>
-      
-      {/* Loading Message */}
-      <div
-        className="loading-message"
-        style={{
-          marginBottom: '25px',
-          fontSize: '1.1rem',
-          color: textColor,
-          fontFamily: 'serif',
-          maxWidth: '80%',
-          textAlign: 'center',
-          minHeight: '2em',
-        }}
-      >
-        {message}{dots}
-      </div>
-      
-      {/* Progress Bar */}
-      <div
-        className="progress-container"
-        style={{
-          width: '300px',
-          height: '6px',
-          backgroundColor: progressBarBackground,
-          borderRadius: '3px',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <div
-          className="progress-fill"
-          style={{
-            height: '100%',
-            width: `${internalProgress}%`,
-            backgroundColor: progressBarFill,
-            borderRadius: '3px',
-            transition: 'width 0.3s ease-in-out',
-            position: 'relative',
-          }}
-        />
-        {/* Progress glow effect */}
-        {hasAnimation && (
+        {particles.map(particle => (
           <div
-            className="progress-glow"
+            key={particle.id}
+            className="particle"
+            style={{
+              position: 'absolute',
+              top: `${particle.y}%`,
+              left: `${particle.x}%`,
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              borderRadius: '50%',
+              backgroundColor: '#b3a7de',
+              opacity: particle.opacity,
+              animation: `float ${particle.duration}s ease-in-out infinite`,
+              animationDelay: `${particle.delay}s`,
+              zIndex: 2
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Vignette effect */}
+      <div 
+        className="vignette"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          boxShadow: 'inset 0 0 150px 60px rgba(0, 0, 0, 0.8)',
+          zIndex: 3
+        }}
+      />
+      
+      {/* Content container with fade-in animation */}
+      <div 
+        className={`content-container ${showContent ? 'visible' : ''}`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 4,
+          opacity: showContent ? 1 : 0,
+          transform: showContent ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 0.8s ease, transform 0.8s ease',
+          fontFamily: 'serif',
+          textAlign: 'center',
+          padding: '20px'
+        }}
+      >
+        <h2 
+          style={{
+            color: '#d0c0e9',
+            fontSize: '2rem',
+            marginBottom: '20px',
+            textShadow: '0 0 10px rgba(208, 192, 233, 0.5)',
+            fontWeight: 'normal'
+          }}
+        >
+          Eden's Hollow
+        </h2>
+        
+        <p 
+          style={{
+            color: '#a395c7',
+            fontSize: '1.1rem',
+            maxWidth: '80%',
+            marginBottom: '30px',
+            lineHeight: 1.6,
+            textShadow: '0 0 8px rgba(163, 149, 199, 0.3)'
+          }}
+        >
+          {message}
+        </p>
+        
+        {/* Progress bar */}
+        <div 
+          className="progress-container"
+          style={{
+            width: '250px',
+            height: '3px',
+            backgroundColor: 'rgba(128, 116, 159, 0.3)',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
+          <div 
+            className="progress-bar"
             style={{
               position: 'absolute',
               top: 0,
-              left: `calc(${internalProgress}% - 10px)`,
-              width: '20px',
+              left: 0,
               height: '100%',
-              background: `radial-gradient(ellipse at center, ${progressBarFill} 0%, transparent 80%)`,
-              opacity: 0.8,
-              filter: 'blur(3px)',
-              display: internalProgress > 5 ? 'block' : 'none',
+              width: `${progress}%`,
+              backgroundColor: '#a395c7',
+              borderRadius: '2px',
+              transition: 'width 0.3s ease',
+              boxShadow: '0 0 8px rgba(163, 149, 199, 0.7)'
             }}
           />
-        )}
+        </div>
+        
+        {/* Loading text */}
+        <div 
+          className="loading-text"
+          style={{
+            color: '#8e82b4',
+            fontSize: '0.8rem',
+            marginTop: '15px',
+            textTransform: 'uppercase',
+            letterSpacing: '2px'
+          }}
+        >
+          Loading
+          <span className="dot" style={{ animation: 'pulse 1s infinite 0.2s' }}>.</span>
+          <span className="dot" style={{ animation: 'pulse 1s infinite 0.4s' }}>.</span>
+          <span className="dot" style={{ animation: 'pulse 1s infinite 0.6s' }}>.</span>
+        </div>
       </div>
       
-      {/* Progress Percentage */}
-      <div
-        style={{
-          marginTop: '10px',
-          fontSize: '0.9rem',
-          color: textColor,
-          opacity: 0.7,
-          fontFamily: 'serif',
-        }}
-      >
-        {Math.round(internalProgress)}%
-      </div>
-      
-      {/* CSS Animations */}
+      {/* Animation styles */}
       <style>
         {`
-          @keyframes fog-move-0 {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-          }
-          @keyframes fog-move-1 {
-            0% { transform: translateX(-30%); }
-            100% { transform: translateX(20%); }
-          }
-          @keyframes fog-move-2 {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-          }
-          @keyframes fog-move-3 {
-            0% { transform: translateX(-30%); }
-            100% { transform: translateX(20%); }
-          }
-          @keyframes fog-move-4 {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
+          @keyframes drift {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
           }
           
-          @keyframes float-particle {
-            0%, 100% {
-              transform: translate(0, 0);
-              opacity: 0.3;
-            }
-            25% {
-              transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px);
-              opacity: 0.9;
-            }
-            50% {
-              transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 100 - 50}px);
-              opacity: 0.5;
-            }
-            75% {
-              transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 200 - 100}px);
-              opacity: 0.7;
-            }
+          @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-15px) translateX(10px); }
+            50% { transform: translateY(-25px) translateX(-10px); }
+            75% { transform: translateY(-15px) translateX(5px); }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
           }
         `}
       </style>
