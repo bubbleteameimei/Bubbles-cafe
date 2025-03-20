@@ -25,6 +25,10 @@ import {
   type Bookmark, type InsertBookmark,
   type UserFeedback, type InsertUserFeedback,
   type UserPrivacySettings, type InsertUserPrivacySettings,
+  // Game types
+  type GameSaveRecord, type InsertGameSave,
+  type GameProgressRecord, type InsertGameProgress,
+  type GameStatsRecord, type InsertGameStats, 
   // Tables
   posts as postsTable,
   comments,
@@ -51,6 +55,9 @@ import {
   userFeedback,
   resetTokens,
   userPrivacySettings,
+  gameSaves,
+  gameProgress,
+  gameStats,
   type Achievement,
   type UserAchievement,
   achievements,
@@ -226,6 +233,21 @@ export interface IStorage {
   getUserPrivacySettings(userId: number): Promise<UserPrivacySettings | undefined>;
   createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings>;
   updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings>;
+  
+  // Game Save methods
+  getGameSaves(userId: number): Promise<GameSaveRecord[]>;
+  getGameSave(saveId: string, userId?: number): Promise<GameSaveRecord | undefined>;
+  createGameSave(save: InsertGameSave): Promise<string>;
+  updateGameSave(saveId: string, userId: number | null, data: Partial<InsertGameSave>): Promise<boolean>;
+  deleteGameSave(saveId: string, userId: number | null): Promise<boolean>;
+  
+  // Game Progress methods
+  getGameProgress(userId: number): Promise<GameProgressRecord | undefined>;
+  updateGameProgress(userId: number, progress: InsertGameProgress): Promise<number>;
+  
+  // Game Stats methods
+  getGameStats(userId: number): Promise<GameStatsRecord | undefined>;
+  updateGameStats(userId: number, stats: InsertGameStats): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2217,6 +2239,256 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`[Storage] Error updating user privacy settings:`, error);
       throw new Error('Failed to update privacy settings');
+    }
+  }
+  // Game Save Methods
+  async getGameSaves(userId: number): Promise<GameSaveRecord[]> {
+    try {
+      console.log('[Storage] Fetching game saves for user:', userId);
+      
+      // Get all saves belonging to the user, ordered by most recent first
+      const saves = await db.select()
+        .from(gameSaves)
+        .where(eq(gameSaves.userId, userId))
+        .orderBy(desc(gameSaves.updatedAt));
+      
+      console.log(`[Storage] Found ${saves.length} game saves for user ${userId}`);
+      return saves;
+    } catch (error) {
+      console.error('[Storage] Error in getGameSaves:', error);
+      throw new Error('Failed to fetch game saves');
+    }
+  }
+  
+  async getGameSave(saveId: string, userId?: number): Promise<GameSaveRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game save with ID: ${saveId}`);
+      
+      // Base query
+      let query = db.select()
+        .from(gameSaves)
+        .where(eq(gameSaves.saveId, saveId));
+      
+      // Add user check if userId is provided (for security)
+      if (userId !== undefined) {
+        query = query.where(eq(gameSaves.userId, userId));
+      }
+      
+      const [save] = await query.limit(1);
+      
+      if (save) {
+        console.log(`[Storage] Found game save with ID: ${saveId}`);
+      } else {
+        console.log(`[Storage] No game save found with ID: ${saveId}`);
+      }
+      
+      return save;
+    } catch (error) {
+      console.error('[Storage] Error in getGameSave:', error);
+      throw new Error('Failed to fetch game save');
+    }
+  }
+  
+  async createGameSave(save: InsertGameSave): Promise<string> {
+    try {
+      console.log('[Storage] Creating new game save');
+      
+      // Insert the save
+      const [newSave] = await db.insert(gameSaves)
+        .values({
+          ...save,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[Storage] Game save created with ID: ${newSave.saveId}`);
+      return newSave.saveId;
+    } catch (error) {
+      console.error('[Storage] Error in createGameSave:', error);
+      throw new Error('Failed to create game save');
+    }
+  }
+  
+  async updateGameSave(saveId: string, userId: number | null, data: Partial<InsertGameSave>): Promise<boolean> {
+    try {
+      console.log(`[Storage] Updating game save with ID: ${saveId}`);
+      
+      // Base query
+      let query = db.update(gameSaves)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(gameSaves.saveId, saveId));
+      
+      // Add user check if userId is provided (for security)
+      if (userId !== null) {
+        query = query.where(eq(gameSaves.userId, userId));
+      }
+      
+      const result = await query.returning();
+      
+      if (result.length > 0) {
+        console.log(`[Storage] Game save updated with ID: ${saveId}`);
+        return true;
+      } else {
+        console.log(`[Storage] No game save found with ID: ${saveId} for update`);
+        return false;
+      }
+    } catch (error) {
+      console.error('[Storage] Error in updateGameSave:', error);
+      throw new Error('Failed to update game save');
+    }
+  }
+  
+  async deleteGameSave(saveId: string, userId: number | null): Promise<boolean> {
+    try {
+      console.log(`[Storage] Deleting game save with ID: ${saveId}`);
+      
+      // Base query
+      let query = db.delete(gameSaves)
+        .where(eq(gameSaves.saveId, saveId));
+      
+      // Add user check if userId is provided (for security)
+      if (userId !== null) {
+        query = query.where(eq(gameSaves.userId, userId));
+      }
+      
+      const result = await query.returning();
+      
+      if (result.length > 0) {
+        console.log(`[Storage] Game save deleted with ID: ${saveId}`);
+        return true;
+      } else {
+        console.log(`[Storage] No game save found with ID: ${saveId} for deletion`);
+        return false;
+      }
+    } catch (error) {
+      console.error('[Storage] Error in deleteGameSave:', error);
+      throw new Error('Failed to delete game save');
+    }
+  }
+  
+  // Game Progress Methods
+  async getGameProgress(userId: number): Promise<GameProgressRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game progress for user: ${userId}`);
+      
+      const [progress] = await db.select()
+        .from(gameProgress)
+        .where(eq(gameProgress.userId, userId))
+        .limit(1);
+      
+      if (progress) {
+        console.log(`[Storage] Found game progress for user: ${userId}`);
+      } else {
+        console.log(`[Storage] No game progress found for user: ${userId}`);
+      }
+      
+      return progress;
+    } catch (error) {
+      console.error('[Storage] Error in getGameProgress:', error);
+      throw new Error('Failed to fetch game progress');
+    }
+  }
+  
+  async updateGameProgress(userId: number, progressData: InsertGameProgress): Promise<number> {
+    try {
+      console.log(`[Storage] Updating game progress for user: ${userId}`);
+      
+      // Check if progress exists for this user
+      const existingProgress = await this.getGameProgress(userId);
+      
+      if (existingProgress) {
+        // Update existing progress
+        const [updated] = await db.update(gameProgress)
+          .set({
+            ...progressData,
+            updatedAt: new Date()
+          })
+          .where(eq(gameProgress.userId, userId))
+          .returning();
+        
+        console.log(`[Storage] Updated game progress for user: ${userId}`);
+        return updated.id;
+      } else {
+        // Create new progress
+        const [newProgress] = await db.insert(gameProgress)
+          .values({
+            ...progressData,
+            userId,
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        console.log(`[Storage] Created game progress for user: ${userId}`);
+        return newProgress.id;
+      }
+    } catch (error) {
+      console.error('[Storage] Error in updateGameProgress:', error);
+      throw new Error('Failed to update game progress');
+    }
+  }
+  
+  // Game Stats Methods
+  async getGameStats(userId: number): Promise<GameStatsRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game stats for user: ${userId}`);
+      
+      const [stats] = await db.select()
+        .from(gameStats)
+        .where(eq(gameStats.userId, userId))
+        .limit(1);
+      
+      if (stats) {
+        console.log(`[Storage] Found game stats for user: ${userId}`);
+      } else {
+        console.log(`[Storage] No game stats found for user: ${userId}`);
+      }
+      
+      return stats;
+    } catch (error) {
+      console.error('[Storage] Error in getGameStats:', error);
+      throw new Error('Failed to fetch game stats');
+    }
+  }
+  
+  async updateGameStats(userId: number, statsData: InsertGameStats): Promise<number> {
+    try {
+      console.log(`[Storage] Updating game stats for user: ${userId}`);
+      
+      // Check if stats exists for this user
+      const existingStats = await this.getGameStats(userId);
+      
+      if (existingStats) {
+        // Update existing stats
+        const [updated] = await db.update(gameStats)
+          .set({
+            ...statsData,
+            updatedAt: new Date()
+          })
+          .where(eq(gameStats.userId, userId))
+          .returning();
+        
+        console.log(`[Storage] Updated game stats for user: ${userId}`);
+        return updated.id;
+      } else {
+        // Create new stats
+        const [newStats] = await db.insert(gameStats)
+          .values({
+            ...statsData,
+            userId,
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        console.log(`[Storage] Created game stats for user: ${userId}`);
+        return newStats.id;
+      }
+    } catch (error) {
+      console.error('[Storage] Error in updateGameStats:', error);
+      throw new Error('Failed to update game stats');
     }
   }
 }
