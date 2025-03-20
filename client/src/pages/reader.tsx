@@ -359,16 +359,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     margin-top: 2em;  /* Double line break effect */
     text-indent: 0; /* No indent to maintain modern style */
   }
-  .story-content p:first-of-type::first-letter {
-    font-size: 1.8em;
-    font-weight: 500;
-    margin-right: 0.05em;
-    float: left;
-    line-height: 1;
-    padding-top: 0.1em;
-  }
+  /* Removed first letter styling to make all text equal size */
   .story-content p:first-of-type {
-    font-size: 1.05em;
+    font-size: 1em; /* Same size as other paragraphs */
   }
   @media (max-width: 768px) {
     .story-content p {
@@ -528,9 +521,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-2 pb-4">
-        {/* Enhanced font size controls with Narration button - scrollable with content */}
-        <div className="flex justify-between items-center mb-0 px-4 md:px-8 lg:px-12 sticky top-3 z-40">
+      <div className="pt-0 pb-0 bg-background -mt-2">
+        {/* Static font size controls in a prominent position */}
+        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1">
           {/* Font size controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -538,7 +531,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               size="sm"
               onClick={decreaseFontSize}
               disabled={fontSize <= 12}
-              className="h-8 px-2 bg-background hover:bg-background/80"
+              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
               aria-label="Decrease font size"
             >
               <Minus className="h-4 w-4 mr-1" />
@@ -550,7 +543,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               size="sm"
               onClick={increaseFontSize}
               disabled={fontSize >= 20}
-              className="h-8 px-2 bg-background hover:bg-background/80"
+              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
               aria-label="Increase font size"
             >
               A+
@@ -575,7 +568,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             variant="outline"
             size="sm"
             onClick={() => setLocation('/')}
-            className="h-8 px-2 bg-background hover:bg-background/80 w-32"
+            className="h-9 px-3 bg-background hover:bg-background/80 w-32 shadow-sm"
           >
             Return to Home
           </Button>
@@ -591,11 +584,11 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.4,
               ease: [0.22, 1, 0.36, 1] 
             }}
-            className="prose dark:prose-invert max-w-none px-4 md:px-8 lg:px-12"
+            className="prose dark:prose-invert max-w-none px-4 md:px-8 lg:px-12 pt-3"
           >
-            <div className="flex flex-col items-center mb-4">
+            <div className="flex flex-col items-center mb-5 mt-2">
               <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-2 tracking-tight leading-tight"
+                className="text-4xl md:text-5xl font-bold text-center mb-3 tracking-tight leading-tight"
                 dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
               />
 
