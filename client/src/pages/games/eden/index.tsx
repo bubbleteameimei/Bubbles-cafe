@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Helmet } from 'react-helmet';
+import React, { useState, useEffect } from 'react';
 import EdenGame from '../../../components/games/eden/EdenGame';
 
 /**
@@ -10,6 +9,22 @@ import EdenGame from '../../../components/games/eden/EdenGame';
 const EdenHollowPage: React.FC = () => {
   const [showIntro, setShowIntro] = useState(true);
   
+  // Set the page title using useEffect
+  useEffect(() => {
+    document.title = "Eden's Hollow | A Dark Fantasy Adventure";
+    
+    // Optional: Set meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'A dark fantasy interactive story and puzzle experience');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'A dark fantasy interactive story and puzzle experience';
+      document.head.appendChild(meta);
+    }
+  }, []);
+  
   const handleStartGame = () => {
     setShowIntro(false);
   };
@@ -17,10 +32,6 @@ const EdenHollowPage: React.FC = () => {
   if (showIntro) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
-        <Helmet>
-          <title>Eden's Hollow | A Dark Fantasy Adventure</title>
-          <meta name="description" content="A dark fantasy interactive story and puzzle experience" />
-        </Helmet>
         
         <div className="max-w-2xl text-center">
           <h1 className="text-4xl md:text-6xl font-serif text-amber-100 mb-6">Eden's Hollow</h1>
