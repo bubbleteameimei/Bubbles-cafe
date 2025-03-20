@@ -361,11 +361,37 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
 
 /**
  * Attempt to fetch posts from the server API as a fallback
+ * Now enhanced with local sync fallback support
  */
 async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
   console.log(`[WordPress] Attempting fallback to server API`);
   
   try {
+    // First check for locally synced posts from auto-sync if available
+    // This provides an additional layer of reliability
+    if (!options.slug) {  // Local sync fallback only works for post listings, not single post by slug
+      const localSyncedPosts = checkLocalSyncedPosts();
+      
+      if (localSyncedPosts && localSyncedPosts.posts.length > 0) {
+        console.log(`[WordPress] Using ${localSyncedPosts.posts.length} locally synced posts as fallback`);
+        
+        // If we need to filter or paginate the sync posts, do it here
+        const { page = 1, perPage = 10 } = options;
+        const startIndex = (page - 1) * perPage;
+        const endIndex = startIndex + perPage;
+        const paginatedPosts = localSyncedPosts.posts.slice(startIndex, endIndex);
+        
+        return {
+          posts: paginatedPosts,
+          totalPages: Math.ceil(localSyncedPosts.posts.length / perPage),
+          total: localSyncedPosts.posts.length,
+          fromLocalSync: true,
+          fromFallback: true
+        };
+      }
+    }
+    
+    // If no local synced posts or we need a specific post by slug, use server API
     const { page = 1, perPage = 10 } = options;
     
     // Adjust fallback URL based on options
@@ -449,11 +475,37 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
 
 /**
  * Fetch a single post by slug with enhanced error handling
+ * Now enhanced with local sync lookup capabilities
  */
 export async function fetchWordPressPostBySlug(slug: string) {
   console.log(`[WordPress] Fetching post with slug: ${slug}`);
   
   try {
+    // First try to find the post in local synced posts for immediate display
+    const localSyncedPosts = checkLocalSyncedPosts();
+    if (localSyncedPosts && localSyncedPosts.posts.length > 0) {
+      // Search for the post by slug in the local synced collection
+      const localPost = localSyncedPosts.posts.find((post: WordPressPost) => post.slug === slug);
+      
+      if (localPost) {
+        console.log(`[WordPress] Found post "${slug}" in local sync storage`);
+        
+        // We found it locally, but still attempt to refresh from API in background
+        // This ensures we always try to get the latest version when possible
+        setTimeout(() => {
+          fetchWordPressPosts({ 
+            slug, 
+            perPage: 1,
+            skipCache: true,
+            maxRetries: 1
+          }).catch(e => console.warn('[WordPress] Background refresh failed:', e));
+        }, 1000);
+        
+        return localPost;
+      }
+    }
+    
+    // Post not found locally or no local sync available, fetch from API
     const result = await fetchWordPressPosts({ 
       slug, 
       perPage: 1,
@@ -654,38 +706,98 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
 }
 
 /**
+ * Check for and utilize locally synced posts from the sync service
+ */
+export function checkLocalSyncedPosts() {
+  try {
+    // This key should match the one in wordpress-sync.ts
+    const LOCAL_POSTS_KEY = 'wp_local_posts';
+    const data = localStorage.getItem(LOCAL_POSTS_KEY);
+    
+    if (!data) return null;
+    
+    const parsedData = JSON.parse(data);
+    if (!parsedData.posts || !Array.isArray(parsedData.posts) || parsedData.posts.length === 0) {
+      return null;
+    }
+    
+    // Verify that the posts aren't too old (24 hours max)
+    const timestamp = parsedData.timestamp;
+    const now = Date.now();
+    const ageMs = now - timestamp;
+    const ageHours = ageMs / (1000 * 60 * 60);
+    
+    if (ageHours > 24) {
+      console.log('[WordPress] Local synced posts are too old, ignoring');
+      return null;
+    }
+    
+    console.log(`[WordPress] Found ${parsedData.posts.length} locally synced posts from ${Math.round(ageHours * 10) / 10}h ago`);
+    return {
+      posts: parsedData.posts,
+      totalPages: 1,
+      total: parsedData.posts.length,
+      fromLocalSync: true
+    };
+  } catch (error) {
+    console.error('[WordPress] Error checking local synced posts:', error);
+    return null;
+  }
+}
+
+/**
  * Preload WordPress posts in the background for faster initial page load
- * Enhanced with better error handling and initialization
+ * Enhanced with better error handling, initialization, and local sync fallback
  */
 export function preloadWordPressPosts(): Promise<void> {
   console.log('[WordPress] Starting background preload of posts');
   
   // Return a promise that resolves when the preload is complete
   return new Promise((resolve, reject) => {
-    // First check API status to determine the best approach
+    // First check for locally synced posts from auto-sync service
+    const localSyncedPosts = checkLocalSyncedPosts();
+    
+    if (localSyncedPosts) {
+      console.log(`[WordPress] Using ${localSyncedPosts.posts.length} locally synced posts for quick initial load`);
+      resolve();
+      
+      // Still try to refresh from the API in the background
+      setTimeout(() => {
+        checkWordPressApiStatus()
+          .then(refreshInBackground)
+          .catch(error => console.warn('[WordPress] Background refresh failed:', error));
+      }, 3000); // Wait 3 seconds before attempting a background refresh
+      
+      return;
+    }
+    
+    // No local synced posts available, proceed with normal API check
     checkWordPressApiStatus()
-      .then(isAvailable => {
-        if (!isAvailable) {
-          console.log('[WordPress] API unavailable, using fallback directly');
-          // Directly use server API to avoid unnecessary retries
-          return fallbackToServerAPI({ perPage: 5 });
-        }
-        
-        // API is available, fetch posts normally
-        return fetchWordPressPosts({ 
-          perPage: 5, 
-          skipCache: true,
-          maxRetries: 1  // Limit retries for initial load
-        });
-      })
-      .then(result => {
-        console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
-        resolve();
-      })
+      .then(refreshInBackground)
+      .then(() => resolve())
       .catch(error => {
         console.warn('[WordPress] Preload failed:', error);
         // Still resolve the promise to prevent blocking
         resolve();
       });
   });
+  
+  // Helper function to refresh posts based on API availability
+  function refreshInBackground(isAvailable: boolean) {
+    if (!isAvailable) {
+      console.log('[WordPress] API unavailable, using fallback directly');
+      // Directly use server API to avoid unnecessary retries
+      return fallbackToServerAPI({ perPage: 5 });
+    }
+    
+    // API is available, fetch posts normally
+    return fetchWordPressPosts({ 
+      perPage: 5, 
+      skipCache: true,
+      maxRetries: 1  // Limit retries for initial load
+    }).then(result => {
+      console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
+      return result;
+    });
+  }
 }

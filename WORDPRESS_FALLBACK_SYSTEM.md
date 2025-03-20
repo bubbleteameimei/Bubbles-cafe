@@ -1,146 +1,86 @@
-# WordPress API Fallback System Documentation
+# WordPress Integration Fallback System
+
+This document explains the WordPress integration and auto-synchronization system implemented in the application.
 
 ## Overview
-The WordPress API Fallback System provides robust content delivery even when the primary WordPress API is unavailable. It implements a multi-tiered approach to ensure content availability through:
 
-1. Primary WordPress API integration
-2. Secondary WordPress API endpoints
-3. Local database fallback
-4. Cached content retrieval
-5. Status persistence across sessions
+The application integrates with a WordPress site (BubbleTeaMeiMei) to fetch stories and content using WordPress's REST API. To ensure maximum reliability and offline functionality, we've implemented a comprehensive fallback system with automatic synchronization.
 
-## Key Features
+## Key Components
 
-### Multi-Endpoint Checking
-- Attempts connection to multiple WordPress endpoints
-- Implements intelligent endpoint prioritization
-- Provides automatic failover between endpoints
+### 1. WordPress Auto-Sync Service (wordpress-sync.ts)
 
-### Intelligent Caching System
-- Stores successful WordPress responses in localStorage
-- Implements time-based cache expiration
-- Manages different cache invalidation strategies per content type
+This service automatically synchronizes WordPress posts every 5 minutes, storing them in local browser storage.
 
-### Status Persistence
-- Maintains API connection status across page loads and sessions
-- Implements localStorage-based status tracking
-- Provides visual indicators of fallback status to users
+- **Sync Interval**: 5 minutes
+- **Storage Location**: Browser's localStorage (persists between sessions)
+- **Data Retention**: Local posts are considered valid for up to 24 hours
+- **Implementation**: Initialized on application startup in App.tsx
 
-### Comprehensive Error Categorization
-- Differentiates between various WordPress API error types:
-  - Network timeouts
-  - CORS errors
-  - Authentication failures
-  - Rate limiting issues
-  - Parse errors
+### 2. Multi-Level Fallback System
 
-### User Experience Enhancements
-- Themed fallback UI consistent with horror styling
-- Clear user messaging about connection status
-- Manual reconnection capability
+The system implements a cascading fallback approach when retrieving WordPress content:
 
-## Technical Implementation
+1. **Primary Source**: WordPress REST API (https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com)
+2. **Fallback 1**: Local synchronized posts from auto-sync service
+3. **Fallback 2**: Server API endpoint (/api/posts)
 
-### API Status Check
-```typescript
-export async function checkWordPressAPIStatus(): Promise<boolean> {
-  try {
-    const cachedStatus = localStorage.getItem('wordpressApiStatus');
-    if (cachedStatus) {
-      const { status, timestamp } = JSON.parse(cachedStatus);
-      // Use cached status if less than 5 minutes old
-      if (Date.now() - timestamp < 5 * 60 * 1000) {
-        return status === 'available';
-      }
-    }
-    
-    // Try multiple endpoints for better reliability
-    const endpoints = [
-      '/wp/v2/posts?per_page=1',
-      '/wp/v2/pages?per_page=1',
-      '/wp/v2/categories?per_page=1'
-    ];
-    
-    for (const endpoint of endpoints) {
-      const response = await fetch(`${WORDPRESS_API_URL}${endpoint}`);
-      if (response.ok) {
-        localStorage.setItem('wordpressApiStatus', JSON.stringify({
-          status: 'available',
-          timestamp: Date.now()
-        }));
-        return true;
-      }
-    }
-    
-    localStorage.setItem('wordpressApiStatus', JSON.stringify({
-      status: 'unavailable',
-      timestamp: Date.now()
-    }));
-    return false;
-  } catch (error) {
-    localStorage.setItem('wordpressApiStatus', JSON.stringify({
-      status: 'unavailable',
-      timestamp: Date.now(),
-      error: error.message
-    }));
-    return false;
-  }
-}
-```
+### 3. Error Handling and Recovery
 
-### Error Categorization Logic
-```typescript
-export function categorizeWordPressError(error: any): WordPressErrorType {
-  const errorMessage = error?.message?.toLowerCase() || '';
-  const errorDetails = error?.toString().toLowerCase() || '';
-  
-  if (errorMessage.includes('timeout') || errorDetails.includes('timeout')) {
-    return 'timeout';
-  }
-  
-  if (errorMessage.includes('cors') || errorDetails.includes('cors') || 
-      errorMessage.includes('origin') || errorDetails.includes('access-control')) {
-    return 'cors';
-  }
-  
-  if (errorMessage.includes('json') || errorDetails.includes('json') || 
-      errorMessage.includes('parse') || errorDetails.includes('syntax')) {
-    return 'parse';
-  }
-  
-  if (errorMessage.includes('authentication') || errorDetails.includes('auth') ||
-      errorMessage.includes('401') || errorDetails.includes('unauthorized')) {
-    return 'authentication';
-  }
-  
-  if (errorMessage.includes('rate') || errorDetails.includes('limit') ||
-      errorMessage.includes('429') || errorDetails.includes('too many requests')) {
-    return 'rate_limit';
-  }
-  
-  return 'unknown';
-}
-```
+- API status is checked before making requests to avoid unnecessary network operations
+- A progressive retry mechanism handles intermittent connectivity issues
+- API status is cached for 5 minutes to prevent repeated checks
+- Detailed error logging helps diagnose and debug API issues
 
-### WordPress Rate Limits
-- Analytics Endpoints: 200 requests per minute
-- General API Endpoints: 50 requests per 15 minutes
-- Authentication Endpoints: 5 requests per 15 minutes
+## Fallback Flow
 
-## User Interface Elements
+The system makes decisions on which data source to use based on the following decision tree:
 
-### Fallback Mode Indicator
-- Toast notification when fallback mode is activated
-- Persistence indicator in UI for continued fallback status
-- Different visual styling for fallback content vs. regular content
+1. First attempt to use locally synchronized posts:
+   - If available and not too old (< 24 hours), use immediately
+   - In parallel, try to refresh from the API in the background
 
-### Reconnection Controls
-- Manual reconnection button
-- Automatic reconnection attempts at configurable intervals
-- Clear feedback on reconnection success/failure
+2. If no local posts are available, check WordPress API status:
+   - If API is available, fetch directly from WordPress
+   - If API is down, use server-side fallback
 
-## Future Enhancements
-- Implement offline mode with Service Worker
-- Add differential sync for content updates
-- Extend caching strategies for media content
-- Implement user preference for fallback behavior
+3. If both API and server fallback fail:
+   - Show appropriate error messages
+   - Allow for manual retry
+
+## Synchronization Process
+
+The synchronization process works as follows:
+
+1. At application startup and every 5 minutes thereafter:
+   - Attempt to fetch latest posts from WordPress API
+   - Store successful responses in localStorage
+
+2. When a sync fails:
+   - Record the error details and timestamp
+   - Continue to use previously synced data
+   - Retry at the next scheduled interval
+
+3. When a user navigates to content:
+   - Check for locally synced content first (for speed)
+   - Verify with live API in the background (for freshness)
+
+## Benefits
+
+- **Improved Reliability**: Content remains accessible even during WordPress API outages
+- **Better Performance**: Local content loads instantly without network delays
+- **Reduced API Load**: Fewer direct API calls to WordPress servers
+- **Offline Support**: Core content functionality works without active internet connection
+- **Seamless Degradation**: Users experience no interruption when backend services have issues
+
+## Implementation Details
+
+The fallback system is implemented across several key files:
+
+- `client/src/lib/wordpress-sync.ts`: Auto-sync service
+- `client/src/lib/wordpress-api.ts`: API interface with fallback logic
+- `client/src/App.tsx`: Service initialization
+
+## Debugging
+
+API and synchronization activity is logged in the browser console with the `[WordPress]` prefix for easy filtering and debugging.

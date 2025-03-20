@@ -1,0 +1,114 @@
+To store WordPress stories locally on your horror story website and persist them even after syncing, follow this approach:
+
+1. Fetch and Store Stories in Local Storage
+
+You’ll first fetch stories from the WordPress API, then store them in localStorage, ensuring they persist even if the API is unavailable.
+
+JavaScript Code (Frontend)
+
+const WP_API_URL = 'https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts';
+
+// Function to fetch stories
+async function fetchStories() {
+    try {
+        const response = await fetch(WP_API_URL);
+        const stories = await response.json();
+        
+        if (stories.length > 0) {
+            // Save stories to Local Storage
+            localStorage.setItem('stories', JSON.stringify(stories));
+            console.log('Stories saved to local storage');
+        }
+        return stories;
+    } catch (error) {
+        console.error('Error fetching stories:', error);
+        return null;
+    }
+}
+
+// Function to load stories from Local Storage
+function getStoriesFromLocalStorage() {
+    const storedStories = localStorage.getItem('stories');
+    return storedStories ? JSON.parse(storedStories) : [];
+}
+
+// Function to get stories (try API first, fallback to local storage)
+async function getStories() {
+    let stories = await fetchStories();
+
+    if (!stories || stories.length === 0) {
+        console.warn('Using offline stories');
+        stories = getStoriesFromLocalStorage();
+    }
+    
+    return stories;
+}
+
+// Usage Example: Load stories on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    const stories = await getStories();
+    console.log('Stories loaded:', stories);
+});
+
+2. Automatically Sync on a Schedule
+
+You can set an automatic sync to update stories every 6 hours:
+
+// Function to check and sync every 6 hours
+setInterval(async () => {
+    console.log('Checking for new stories...');
+    await fetchStories();
+}, 6 * 60 * 60 * 1000); // 6 hours in milliseconds
+
+3. Display Stories (React Example)
+
+If you’re using React, modify your component like this:
+
+import { useState, useEffect } from 'react';
+
+const WP_API_URL = 'https://bubbleteameimei.wordpress.com/wp-json/wp/v2/posts';
+
+const fetchStories = async () => {
+    try {
+        const response = await fetch(WP_API_URL);
+        const stories = await response.json();
+        
+        if (stories.length > 0) {
+            localStorage.setItem('stories', JSON.stringify(stories));
+        }
+        return stories;
+    } catch (error) {
+        return JSON.parse(localStorage.getItem('stories') || '[]');
+    }
+};
+
+export default function Stories() {
+    const [stories, setStories] = useState([]);
+
+    useEffect(() => {
+        fetchStories().then(setStories);
+    }, []);
+
+    return (
+        <div>
+            <h1>Horror Stories</h1>
+            {stories.map((story) => (
+                <div key={story.id}>
+                    <h2>{story.title.rendered}</h2>
+                    <div dangerouslySetInnerHTML={{ __html: story.content.rendered }} />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+4. What This Does:
+
+✅ Fetches stories from WordPress API
+✅ Saves them to local storage
+✅ Falls back to stored stories if offline
+✅ Auto-syncs every 6 hours
+
+🚀 Now your horror story website can work even when offline!
+
+If you need more refinements, let me know.

@@ -33,6 +33,8 @@ import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/Global
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
+// Import WordPress sync service
+import { initWordPressSync } from './lib/wordpress-sync';
 // Import FeedbackButton component for site-wide feedback
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 
@@ -335,12 +337,20 @@ function App() {
 
   // We now use the WordPress API provider for status management
   useEffect(() => {
+    // Initialize WordPress sync service for auto-syncing every 5 minutes
+    const syncIntervalId = initWordPressSync();
+    
     // Preload posts if needed
     preloadWordPressPosts()
       .catch(error => {
         console.error('[App] Error preloading WordPress posts:', 
           error instanceof Error ? error.message : 'Unknown error');
       });
+    
+    // Clean up sync service on component unmount
+    return () => {
+      if (syncIntervalId) clearInterval(syncIntervalId);
+    };
   }, []);
 
   // Detect touch capability and add appropriate class to body
