@@ -1,223 +1,350 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Bookmark, Settings, Map, Book, Heart } from 'lucide-react';
 import { GameEngine } from './GameEngine';
-import { GameState, GameSettings, GameSaveData } from './types';
-import { gameScenes } from './data/scenes';
+import { GameState, Scene, Item, Puzzle } from './types';
 import { gameItems } from './data/items';
 import { gamePuzzles } from './data/puzzles';
-import { gameDialogs } from './data/dialogs';
 
-// Components
-import SceneView from './components/SceneView';
-import InventoryPanel from './components/InventoryPanel';
-import DialogPanel from './components/DialogPanel';
-import PuzzlePanel from './components/PuzzlePanel';
-import GameMenu from './components/GameMenu';
-import NotificationOverlay from './components/NotificationOverlay';
-import LoadingScreen from './components/LoadingScreen';
+// Import UI components
+import SceneView from './ui/SceneView';
+import InventoryPanel from './ui/InventoryPanel';
+import DialogBox from './ui/DialogBox';
+import PuzzleInterface from './ui/PuzzleInterface';
+import GameControls from './ui/GameControls';
+import NotificationSystem from './ui/NotificationSystem';
+import LoadingScreen from './ui/LoadingScreen';
 
-// Default game state
-const initialGameState: GameState = {
-  currentScene: 'forest_edge',
-  inventory: [],
-  status: {},
-  time: 'dusk',
-  visitedScenes: ['forest_edge'],
-  solvedPuzzles: [],
-  health: 100,
-  mana: 100,
-  dialogHistory: [],
-  notifications: []
+// Mock data for initial testing
+const mockScenes: Record<string, Scene> = {
+  forest_edge: {
+    id: 'forest_edge',
+    title: 'Forest Edge',
+    description: 'The edge of a dense, misty forest. A dirt path leads toward a village in the distance.',
+    backgroundImage: 'forest_edge.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_entrance',
+        name: 'To Village',
+        target: 'village_entrance',
+        destination: 'Village Entrance',
+        position: 'east'
+      }
+    ],
+    actions: [
+      {
+        id: 'look_around',
+        name: 'Look Around',
+        outcome: {
+          notification: {
+            id: 'forest-look',
+            message: 'You scan the dense trees. Something feels off about this place...',
+            type: 'info'
+          }
+        }
+      }
+    ]
+  },
+  village_entrance: {
+    id: 'village_entrance',
+    title: 'Village Entrance',
+    description: 'A weathered sign reads "Eden\'s Hollow". The village looks abandoned, with dilapidated buildings.',
+    backgroundImage: 'village_entrance.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_forest_edge',
+        name: 'Back to Forest',
+        target: 'forest_edge',
+        destination: 'Forest Edge',
+        position: 'west'
+      },
+      {
+        id: 'to_village_square',
+        name: 'Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'north'
+      }
+    ]
+  },
+  village_square: {
+    id: 'village_square',
+    title: 'Village Square',
+    description: 'The central square is empty and eerily quiet. A broken fountain stands in the center.',
+    backgroundImage: 'village_square.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_entrance',
+        name: 'Village Entrance',
+        target: 'village_entrance',
+        destination: 'Village Entrance',
+        position: 'south'
+      },
+      {
+        id: 'to_church_exterior',
+        name: 'To Church',
+        target: 'church_exterior',
+        destination: 'Church',
+        position: 'east'
+      },
+      {
+        id: 'to_clock_tower',
+        name: 'To Clock Tower',
+        target: 'clock_tower',
+        destination: 'Clock Tower',
+        position: 'north'
+      }
+    ]
+  },
+  church_exterior: {
+    id: 'church_exterior',
+    title: 'Church Exterior',
+    description: 'An old stone church with boarded windows and a heavy oak door. The steeple is missing its cross.',
+    backgroundImage: 'church_exterior.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_square',
+        name: 'To Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'west'
+      },
+      {
+        id: 'to_church_interior',
+        name: 'Enter Church',
+        target: 'church_interior',
+        destination: 'Church Interior',
+        position: 'north'
+      }
+    ]
+  },
+  church_interior: {
+    id: 'church_interior',
+    title: 'Church Interior',
+    description: 'Rows of broken pews face an altar. Strange symbols are carved into the stone walls.',
+    backgroundImage: 'church_interior.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_church_exterior',
+        name: 'Exit Church',
+        target: 'church_exterior',
+        destination: 'Church Exterior',
+        position: 'south'
+      }
+    ],
+    actions: [
+      {
+        id: 'examine_altar',
+        name: 'Examine Altar',
+        outcome: {
+          notification: {
+            id: 'altar-examine',
+            message: 'The altar has five symbols arranged in a circle: a Moon, Star, Sun, Tree, and Flame.',
+            type: 'info'
+          },
+          puzzle: 'altar_puzzle'
+        }
+      }
+    ]
+  },
+  clock_tower: {
+    id: 'clock_tower',
+    title: 'Clock Tower',
+    description: 'The village clock tower. Its hands are frozen at 3:17.',
+    backgroundImage: 'clock_tower.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_square',
+        name: 'To Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'south'
+      }
+    ],
+    actions: [
+      {
+        id: 'check_mechanism',
+        name: 'Check Mechanism',
+        outcome: {
+          notification: {
+            id: 'clock-check',
+            message: 'The clock mechanism appears to be intact. Perhaps it can be restarted...',
+            type: 'info'
+          },
+          puzzle: 'clock_puzzle'
+        }
+      }
+    ]
+  }
 };
 
-export default function EdenGame() {
+/**
+ * Main Eden's Hollow Game Component
+ */
+const EdenGame: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null);
   const [showInventory, setShowInventory] = useState(false);
-  const [showMap, setShowMap] = useState(false);
-  const [showJournal, setShowJournal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [engineReady, setEngineReady] = useState(false);
   
-  // Initialize the game engine
-  const gameEngine = GameEngine.getInstance({
-    scenes: gameScenes,
-    items: gameItems,
-    puzzles: gamePuzzles,
-    dialogs: gameDialogs,
-    onStateChange: (newState) => setGameState(newState)
-  });
-  
+  // Initialize game engine
   useEffect(() => {
-    // Simulate loading assets
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setEngineReady(true);
-    }, 2000);
+    const initializeGame = async () => {
+      try {
+        // Simulate loading delay
+        setTimeout(() => {
+          const engine = GameEngine.getInstance({
+            scenes: mockScenes,
+            items: gameItems,
+            dialogs: {},
+            puzzles: gamePuzzles,
+            onStateChange: (newState) => {
+              setGameState(newState);
+            }
+          });
+          
+          setGameEngine(engine);
+          setGameState(engine.getState());
+          setLoading(false);
+        }, 1500);
+      } catch (error) {
+        console.error('Failed to initialize game:', error);
+      }
+    };
     
-    return () => clearTimeout(timer);
+    initializeGame();
   }, []);
   
   // Handle scene transitions
-  const handleSceneTransition = (sceneId: string) => {
-    gameEngine.transitionToScene(sceneId);
+  const handleExitClick = (exitId: string) => {
+    if (!gameEngine || !gameState) return;
+    
+    const currentScene = mockScenes[gameState.currentScene];
+    const exit = currentScene.exits.find(e => e.id === exitId);
+    
+    if (exit) {
+      gameEngine.transitionToScene(exit.target);
+    }
   };
   
-  // Handle inventory item use
-  const handleItemUse = (itemId: string) => {
-    gameEngine.useItem(itemId);
-  };
-  
-  // Handle dialog response selection
-  const handleDialogResponse = (responseIndex: number) => {
-    gameEngine.selectDialogResponse(responseIndex);
-  };
-  
-  // Handle puzzle attempt
-  const handlePuzzleAttempt = (puzzleId: string, solution: any) => {
-    gameEngine.attemptPuzzle(puzzleId, solution);
-  };
-  
-  // Handle scene action
-  const handleSceneAction = (actionId: string) => {
+  // Handle action clicks
+  const handleActionClick = (actionId: string) => {
+    if (!gameEngine) return;
     gameEngine.performAction(actionId);
   };
   
-  if (loading) {
-    return <LoadingScreen isLoading={loading} progress={50} message="Loading Eden's Hollow..." />;
+  // Handle puzzle attempts
+  const handlePuzzleAttempt = (solution: any) => {
+    if (!gameEngine || !gameState || !gameState.currentPuzzle) return;
+    gameEngine.attemptPuzzle(gameState.currentPuzzle, solution);
+  };
+  
+  // Handle dialog responses
+  const handleDialogResponse = (responseIndex: number) => {
+    if (!gameEngine) return;
+    gameEngine.selectDialogResponse(responseIndex);
+  };
+  
+  // Handle item use
+  const handleItemUse = (itemId: string) => {
+    if (!gameEngine) return;
+    gameEngine.useItem(itemId);
+  };
+  
+  // Handle notification dismissal
+  const handleDismissNotification = (id: string) => {
+    if (!gameEngine) return;
+    gameEngine.dismissNotification(id);
+  };
+  
+  // Handle save game
+  const handleSaveGame = () => {
+    if (!gameEngine) return;
+    gameEngine.saveGame();
+  };
+  
+  // Display loading screen while initializing
+  if (loading || !gameState) {
+    return <LoadingScreen message="Entering Eden's Hollow..." />;
   }
   
-  const currentScene = gameScenes[gameState.currentScene];
+  // Get current scene data
+  const currentScene = mockScenes[gameState.currentScene];
+  
+  // Get inventory items
+  const inventoryItems = gameState.inventory
+    .map(itemId => gameItems[itemId])
+    .filter(item => item !== undefined) as Item[];
+  
+  // Get current puzzle if any
+  const currentPuzzle = gameState.currentPuzzle 
+    ? gamePuzzles[gameState.currentPuzzle] 
+    : undefined;
   
   return (
-    <div className="eden-game relative h-screen w-full bg-black text-white overflow-hidden">
-      {/* Main Game Screen */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={gameState.currentScene}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative h-full"
-        >
-          <SceneView 
-            scene={currentScene}
-            onExitClick={handleSceneTransition}
-            onActionClick={handleSceneAction}
-            onCharacterClick={(characterId) => console.log('Character clicked:', characterId)}
-            onItemClick={(itemId) => console.log('Item clicked:', itemId)}
-            onPuzzleClick={(puzzleId) => console.log('Puzzle clicked:', puzzleId)}
-          />
-        </motion.div>
-      </AnimatePresence>
+    <div className="eden-game" style={{
+      position: 'relative',
+      width: '100%',
+      height: '100vh',
+      backgroundColor: '#000',
+      overflow: 'hidden'
+    }}>
+      {/* Main scene view */}
+      <SceneView 
+        scene={currentScene}
+        onExitClick={handleExitClick}
+        onItemClick={() => {}} // Not implemented in this simplified version
+        onCharacterClick={() => {}} // Not implemented in this simplified version
+        onActionClick={handleActionClick}
+      />
       
-      {/* Dialog Panel */}
-      {gameState.activeDialog && (
-        <DialogPanel
-          dialog={gameDialogs[gameState.activeDialog]}
-          onResponseSelect={(response) => handleDialogResponse(response.nextDialog ? 0 : 1)}
-          isOpen={!!gameState.activeDialog}
-          onClose={() => gameEngine.closeDialog()}
-        />
-      )}
+      {/* Game controls */}
+      <GameControls 
+        health={gameState.health}
+        mana={gameState.mana}
+        onInventoryToggle={() => setShowInventory(!showInventory)}
+        onSettingsToggle={() => {}} // Not implemented in this simplified version
+        onSaveGame={handleSaveGame}
+      />
       
-      {/* Puzzle Panel */}
-      {gameState.currentPuzzle && (
-        <PuzzlePanel
-          puzzle={gamePuzzles[gameState.currentPuzzle]}
-          onSolve={handlePuzzleAttempt}
-          onClose={() => gameEngine.closePuzzle()}
-          isOpen={!!gameState.currentPuzzle}
-          attempts={gameState.puzzleAttempts || 0}
-        />
-      )}
-      
-      {/* UI Controls */}
-      <div className="absolute bottom-4 right-4 flex space-x-3">
-        <button 
-          onClick={() => setShowInventory(!showInventory)}
-          className="p-3 bg-gray-900/80 rounded-full hover:bg-gray-800 transition-colors"
-        >
-          <Book size={24} />
-        </button>
-        <button 
-          onClick={() => setShowMap(!showMap)}
-          className="p-3 bg-gray-900/80 rounded-full hover:bg-gray-800 transition-colors"
-        >
-          <Map size={24} />
-        </button>
-        <button 
-          onClick={() => setShowJournal(!showJournal)}
-          className="p-3 bg-gray-900/80 rounded-full hover:bg-gray-800 transition-colors"
-        >
-          <Bookmark size={24} />
-        </button>
-        <button 
-          onClick={() => setShowSettings(!showSettings)}
-          className="p-3 bg-gray-900/80 rounded-full hover:bg-gray-800 transition-colors"
-        >
-          <Settings size={24} />
-        </button>
-      </div>
-      
-      {/* Status Bar */}
-      <div className="absolute top-4 left-4 flex items-center space-x-4">
-        <div className="flex items-center">
-          <Heart size={20} className="text-red-500 mr-2" />
-          <div className="h-2 w-32 bg-gray-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-red-500 transition-all duration-500"
-              style={{ width: `${gameState.health}%` }}
-            ></div>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <div className="w-5 h-5 rounded-full bg-blue-500 mr-2"></div>
-          <div className="h-2 w-32 bg-gray-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-500 transition-all duration-500"
-              style={{ width: `${gameState.mana}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Inventory Panel */}
-      <InventoryPanel
-        items={gameState.inventory.map(id => gameItems[id])}
-        onItemUse={(item) => handleItemUse(item.id)}
-        onItemSelect={() => {}}
+      {/* Inventory panel */}
+      <InventoryPanel 
+        items={inventoryItems}
+        onItemUse={handleItemUse}
+        onInventoryClose={() => setShowInventory(false)}
         isOpen={showInventory}
-        onClose={() => setShowInventory(false)}
       />
       
-      {/* Settings Panel */}
-      <GameMenu
-        onClose={() => setShowSettings(false)}
-        onSave={() => gameEngine.saveGame()}
-        onLoad={(saveId) => gameEngine.loadGame(saveId)}
-        onSettingsChange={(settings) => gameEngine.updateSettings(settings)}
-        onQuit={() => window.location.href = '/'}
-        isOpen={showSettings}
-        savedGames={[]}
-        currentState={gameState}
-        settings={{
-          textSpeed: 'medium',
-          volume: 0.7,
-          darkMode: true,
-          showHints: true,
-          language: 'en',
-          autoSave: true
-        }}
-      />
+      {/* Active dialog if any */}
+      {gameState.activeDialog && gameState.dialogIndex !== undefined && (
+        <DialogBox 
+          dialog={{id: 'test-dialog', content: [{speaker: 'Test', text: 'Test dialog', responses: []}]}}
+          dialogIndex={0}
+          onResponse={handleDialogResponse}
+        />
+      )}
       
-      {/* Notification Overlay */}
-      <NotificationOverlay 
+      {/* Active puzzle if any */}
+      {currentPuzzle && (
+        <PuzzleInterface 
+          puzzle={currentPuzzle}
+          attempts={gameState.puzzleAttempts}
+          onAttempt={handlePuzzleAttempt}
+          onClose={() => gameEngine?.closePuzzle()}
+        />
+      )}
+      
+      {/* Notification system */}
+      <NotificationSystem 
         notifications={gameState.notifications}
-        onDismiss={(id) => gameEngine.dismissNotification(id)}
+        onDismiss={handleDismissNotification}
       />
     </div>
   );
-}
+};
+
+export default EdenGame;

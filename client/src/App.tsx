@@ -167,6 +167,9 @@ const CookieManagementPage = withSuspense(React.lazy(() => import('./pages/setti
 const QuickSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/quick-settings')));
 const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/preview')));
 
+// Game Pages
+const EdenGamePage = withSuspense(React.lazy(() => import('./pages/games/eden')));
+
 // Admin Pages
 const AdminPage = withSuspense(React.lazy(() => import('./pages/admin')));
 const AdminAnalyticsPage = withSuspense(React.lazy(() => import('./pages/admin/analytics')));
@@ -261,6 +264,9 @@ const AppContent = () => {
                 {/* Removed test pages routes */}
                 <Route path="/bookmarks" component={BookmarksPage} />
                 {/* Removed other test page routes */}
+
+                {/* Game Routes */}
+                <Route path="/eden-game" component={EdenGamePage} />
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />

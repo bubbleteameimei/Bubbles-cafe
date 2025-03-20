@@ -1,296 +1,245 @@
 import { Scene } from '../types';
 
-// Game scenes collection
+/**
+ * Scenes/locations in Eden's Hollow
+ */
 export const gameScenes: Record<string, Scene> = {
   forest_edge: {
     id: 'forest_edge',
-    title: 'Edge of the Forest',
-    description: 'A dense fog hangs between the ancient trees. The path behind you has mysteriously vanished, leaving only a dark trail leading deeper into the forest toward Eden\'s Hollow.',
-    backgroundImage: '/images/eden/scenes/forest_edge.jpg',
+    title: 'Forest Edge',
+    description: 'The edge of a dense, misty forest. A dirt path leads toward a village in the distance.',
+    backgroundImage: 'forest_edge.jpg',
     time: 'dusk',
-    ambientSound: 'forest_ambience',
     exits: [
       {
-        id: 'to_forest_path',
-        name: 'Forest Path',
-        target: 'forest_path',
-        destination: 'forest_path', // Added destination property to match SceneExit interface
+        id: 'to_village_entrance',
+        name: 'To Village',
+        target: 'village_entrance',
+        destination: 'Village Entrance',
+        position: 'east'
+      }
+    ],
+    actions: [
+      {
+        id: 'look_around',
+        name: 'Look Around',
+        outcome: {
+          notification: {
+            id: 'forest-look',
+            message: 'You scan the dense trees. Something feels off about this place...',
+            type: 'info'
+          }
+        }
+      }
+    ]
+  },
+  village_entrance: {
+    id: 'village_entrance',
+    title: 'Village Entrance',
+    description: 'A weathered sign reads "Eden\'s Hollow". The village looks abandoned, with dilapidated buildings.',
+    backgroundImage: 'village_entrance.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_forest_edge',
+        name: 'Back to Forest',
+        target: 'forest_edge',
+        destination: 'Forest Edge',
+        position: 'west'
+      },
+      {
+        id: 'to_village_square',
+        name: 'Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
         position: 'north'
+      }
+    ]
+  },
+  village_square: {
+    id: 'village_square',
+    title: 'Village Square',
+    description: 'The central square is empty and eerily quiet. A broken fountain stands in the center.',
+    backgroundImage: 'village_square.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_entrance',
+        name: 'Village Entrance',
+        target: 'village_entrance',
+        destination: 'Village Entrance',
+        position: 'south'
+      },
+      {
+        id: 'to_church_exterior',
+        name: 'To Church',
+        target: 'church_exterior',
+        destination: 'Church',
+        position: 'east'
+      },
+      {
+        id: 'to_clock_tower',
+        name: 'To Clock Tower',
+        target: 'clock_tower',
+        destination: 'Clock Tower',
+        position: 'north'
+      }
+    ]
+  },
+  church_exterior: {
+    id: 'church_exterior',
+    title: 'Church Exterior',
+    description: 'An old stone church with boarded windows and a heavy oak door. The steeple is missing its cross.',
+    backgroundImage: 'church_exterior.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_square',
+        name: 'To Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'west'
+      },
+      {
+        id: 'to_church_interior',
+        name: 'Enter Church',
+        target: 'church_interior',
+        destination: 'Church Interior',
+        position: 'north'
+      }
+    ]
+  },
+  church_interior: {
+    id: 'church_interior',
+    title: 'Church Interior',
+    description: 'Rows of broken pews face an altar. Strange symbols are carved into the stone walls.',
+    backgroundImage: 'church_interior.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_church_exterior',
+        name: 'Exit Church',
+        target: 'church_exterior',
+        destination: 'Church Exterior',
+        position: 'south'
+      }
+    ],
+    actions: [
+      {
+        id: 'examine_altar',
+        name: 'Examine Altar',
+        outcome: {
+          notification: {
+            id: 'altar-examine',
+            message: 'The altar has five symbols arranged in a circle: a Moon, Star, Sun, Tree, and Flame.',
+            type: 'info'
+          },
+          puzzle: 'altar_puzzle'
+        }
+      }
+    ]
+  },
+  clock_tower: {
+    id: 'clock_tower',
+    title: 'Clock Tower',
+    description: 'The village clock tower. Its hands are frozen at 3:17.',
+    backgroundImage: 'clock_tower.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_square',
+        name: 'To Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'south'
+      }
+    ],
+    actions: [
+      {
+        id: 'check_mechanism',
+        name: 'Check Mechanism',
+        outcome: {
+          notification: {
+            id: 'clock-check',
+            message: 'The clock mechanism appears to be intact. Perhaps it can be restarted...',
+            type: 'info'
+          },
+          puzzle: 'clock_puzzle'
+        }
+      }
+    ]
+  },
+  inn_exterior: {
+    id: 'inn_exterior',
+    title: 'Abandoned Inn',
+    description: 'The village inn - "The Sleeping Crow" - stands dark and abandoned.',
+    backgroundImage: 'inn_exterior.jpg',
+    time: 'dusk',
+    exits: [
+      {
+        id: 'to_village_square',
+        name: 'To Village Square',
+        target: 'village_square',
+        destination: 'Village Square',
+        position: 'north'
+      },
+      {
+        id: 'to_inn_interior',
+        name: 'Enter Inn',
+        target: 'inn_interior',
+        destination: 'Inn Interior',
+        position: 'south',
+        isLocked: true,
+        requiredItem: 'rusty_key'
       }
     ],
     items: [
       {
         id: 'rusty_key',
         name: 'Rusty Key',
-        position: 'bottom-left',
+        position: 'left:20%,top:70%',
         isHidden: false
-      }
-    ],
-    actions: [
-      {
-        id: 'examine_trees',
-        name: 'Examine the trees',
-        outcome: {
-          notification: {
-            id: 'tree_observation',
-            message: 'The trees seem unnaturally twisted, with bark patterns that almost resemble faces in certain light.',
-            type: 'info'
-          }
-        }
-      },
-      {
-        id: 'listen_carefully',
-        name: 'Listen carefully',
-        outcome: {
-          notification: {
-            id: 'forest_sounds',
-            message: 'The forest is eerily quiet. No birds, no insects - just the occasional rustle of leaves, even though there is no wind.',
-            type: 'info'
-          }
-        }
       }
     ]
   },
-  
-  forest_path: {
-    id: 'forest_path',
-    title: 'Winding Forest Path',
-    description: 'The narrow path twists through the dark forest. Strange symbols have been carved into some of the trees. An abandoned campsite lies off to one side.',
-    backgroundImage: '/images/eden/scenes/forest_path.jpg',
+  cemetery: {
+    id: 'cemetery',
+    title: 'Old Cemetery',
+    description: 'Rows of weathered gravestones sit behind the church. Five small graves are arranged in a circle.',
+    backgroundImage: 'cemetery.jpg',
     time: 'dusk',
-    ambientSound: 'forest_ambience',
     exits: [
       {
-        id: 'to_forest_edge',
-        name: 'Back to Forest Edge',
-        target: 'forest_edge',
-        destination: 'forest_edge', // Added destination property
-        position: 'south'
-      },
-      {
-        id: 'to_abandoned_camp',
-        name: 'Abandoned Camp',
-        target: 'abandoned_camp',
-        destination: 'abandoned_camp', // Added destination property
-        position: 'east'
-      },
-      {
-        id: 'to_hollow_entrance',
-        name: 'Path to Village',
-        target: 'hollow_entrance',
-        destination: 'hollow_entrance', // Added destination property
-        position: 'north'
-      }
-    ],
-    items: [
-      {
-        id: 'strange_coin',
-        name: 'Strange Coin',
-        position: 'bottom-right',
-        isHidden: true,
-        requiresStatus: 'examined_symbols'
-      }
-    ],
-    puzzles: [
-      {
-        id: 'tree_symbols',
-        name: 'Strange Tree Symbols',
-        position: 'wall',
-        description: 'Unusual symbols have been carved into the bark of several trees.'
-      }
-    ],
-    actions: [
-      {
-        id: 'examine_symbols',
-        name: 'Examine the symbols',
-        outcome: {
-          puzzle: 'tree_symbols',
-          status: { 'examined_symbols': true }
-        }
-      }
-    ]
-  },
-  
-  abandoned_camp: {
-    id: 'abandoned_camp',
-    title: 'Abandoned Campsite',
-    description: 'A small campsite that appears to have been hastily abandoned. A tent lies collapsed, and personal belongings are scattered about. A cold fire pit sits in the center.',
-    backgroundImage: '/images/eden/scenes/abandoned_camp.jpg',
-    time: 'dusk',
-    ambientSound: 'forest_ambience',
-    exits: [
-      {
-        id: 'to_forest_path',
-        name: 'Back to Forest Path',
-        target: 'forest_path',
-        destination: 'forest_path', // Added destination property
-        position: 'west'
-      }
-    ],
-    items: [
-      {
-        id: 'old_journal',
-        name: 'Weathered Journal',
-        position: 'center',
-        isHidden: false
-      },
-      {
-        id: 'lantern',
-        name: 'Oil Lantern',
-        position: 'bottom-right',
-        isHidden: false
-      }
-    ],
-    actions: [
-      {
-        id: 'search_tent',
-        name: 'Search the tent',
-        outcome: {
-          notification: {
-            id: 'tent_search',
-            message: 'Inside the tent, you find a sleeping bag and some personal belongings. There are signs of a struggle.',
-            type: 'info'
-          }
-        }
-      },
-      {
-        id: 'examine_fire_pit',
-        name: 'Examine the fire pit',
-        outcome: {
-          notification: {
-            id: 'fire_pit',
-            message: 'The fire has been out for a while, but some of the ashes seem unusual - they form patterns that couldn\'t have occurred naturally.',
-            type: 'warning'
-          }
-        }
-      }
-    ]
-  },
-  
-  hollow_entrance: {
-    id: 'hollow_entrance',
-    title: 'Eden\'s Hollow Entrance',
-    description: 'The path opens to reveal the small, foggy village of Eden\'s Hollow. Old Victorian houses line the cobblestone street. Most windows are dark, but a single lantern burns outside what appears to be an inn.',
-    backgroundImage: '/images/eden/scenes/hollow_entrance.jpg',
-    time: 'night',
-    ambientSound: 'village_night',
-    exits: [
-      {
-        id: 'to_forest_path',
-        name: 'Back to Forest Path',
-        target: 'forest_path',
-        destination: 'forest_path', // Added destination property
-        position: 'south'
-      },
-      {
-        id: 'to_village_square',
-        name: 'Village Square',
-        target: 'village_square',
-        destination: 'village_square', // Added destination property
-        position: 'north'
-      },
-      {
-        id: 'to_inn',
-        name: 'Old Inn',
-        target: 'inn_exterior',
-        destination: 'inn_exterior', // Added destination property
-        position: 'east'
-      }
-    ],
-    characters: [
-      {
-        id: 'mysterious_stranger',
-        name: 'Mysterious Stranger',
-        image: '/images/eden/characters/stranger.jpg',
-        position: 'foreground',
-        dialog: 'stranger_greeting'
-      }
-    ],
-    actions: [
-      {
-        id: 'observe_houses',
-        name: 'Observe the houses',
-        outcome: {
-          notification: {
-            id: 'houses_observation',
-            message: 'The houses have an odd, abandoned feel to them, yet you sense you are being watched from behind the curtains.',
-            type: 'warning'
-          }
-        }
-      }
-    ]
-  },
-  
-  village_square: {
-    id: 'village_square',
-    title: 'Village Square',
-    description: 'The heart of Eden\'s Hollow - a cobblestone square with an old fountain at its center. The water in the fountain is murky and still. Strange statues line the perimeter, their features worn by time.',
-    backgroundImage: '/images/eden/scenes/village_square.jpg',
-    time: 'night',
-    ambientSound: 'village_night',
-    exits: [
-      {
-        id: 'to_hollow_entrance',
-        name: 'Village Entrance',
-        target: 'hollow_entrance',
-        destination: 'hollow_entrance', // Added destination property
-        position: 'south'
-      },
-      {
-        id: 'to_church',
-        name: 'Old Church',
+        id: 'to_church_exterior',
+        name: 'Back to Church',
         target: 'church_exterior',
-        destination: 'church_exterior', // Added destination property
-        position: 'north'
-      },
-      {
-        id: 'to_town_hall',
-        name: 'Town Hall',
-        target: 'town_hall_exterior',
-        destination: 'town_hall_exterior', // Added destination property
-        position: 'east'
-      },
-      {
-        id: 'to_abandoned_shop',
-        name: 'Abandoned Shop',
-        target: 'abandoned_shop',
-        destination: 'abandoned_shop', // Added destination property
+        destination: 'Church Exterior',
         position: 'west'
-      }
-    ],
-    puzzles: [
-      {
-        id: 'fountain_puzzle',
-        name: 'Mysterious Fountain',
-        position: 'center',
-        description: 'An ornate fountain with strange symbols carved around its rim.'
       }
     ],
     items: [
       {
         id: 'strange_amulet',
         name: 'Strange Amulet',
-        position: 'bottom-right',
+        position: 'left:50%,top:60%',
         isHidden: true,
-        requiresStatus: 'fountain_solved'
+        requiredStatus: {
+          all_graves_read: true
+        }
       }
     ],
     actions: [
       {
-        id: 'examine_fountain',
-        name: 'Examine the fountain',
-        outcome: {
-          puzzle: 'fountain_puzzle'
-        }
-      },
-      {
-        id: 'examine_statues',
-        name: 'Examine the statues',
+        id: 'read_gravestones',
+        name: 'Read Gravestones',
         outcome: {
           notification: {
-            id: 'statues_observation',
-            message: 'The statues depict people with expressions of terror. Upon closer inspection, they almost look too realistic...',
-            type: 'warning'
+            id: 'graves-read',
+            message: 'The five small graves belong to children who died in 1891. Their names are: Emma, Thomas, Sarah, William, and Lucy.',
+            type: 'info'
+          },
+          status: {
+            all_graves_read: true
           }
         }
       }
