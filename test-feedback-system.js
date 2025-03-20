@@ -8,8 +8,8 @@
  * 4. Validation - Testing input validation and error handling
  */
 
-const fetch = require('node-fetch');
-const assert = require('assert').strict;
+import fetch from 'node-fetch';
+import assert from 'assert/strict';
 
 // Configuration
 const API_BASE_URL = 'http://localhost:3000';

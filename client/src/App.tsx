@@ -33,6 +33,8 @@ import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/Global
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
+// Import FeedbackButton component for site-wide feedback
+import { FeedbackButton } from './components/feedback/FeedbackButton';
 
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
@@ -326,6 +328,10 @@ const AppContent = () => {
       <Sonner />
       <CookieConsent />
       <ScrollToTopButton />
+      {/* Only show feedback button on homepage */}
+      {location === '/' && (
+        <FeedbackButton position="bottom-left" showIcon={true} buttonText="Feedback" />
+      )}
     </div>
   );
 };

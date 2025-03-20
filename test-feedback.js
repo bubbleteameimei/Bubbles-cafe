@@ -1,4 +1,5 @@
 // Test script for the feedback API
+import fetch from 'node-fetch';
 
 async function testFeedbackSubmission() {
   console.log('Testing feedback submission...');
