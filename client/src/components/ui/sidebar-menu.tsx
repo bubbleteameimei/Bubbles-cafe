@@ -6,7 +6,7 @@ import {
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
-  Search, Sparkles, GanttChart
+  Search, Sparkles, GanttChart, GamepadIcon
 } from "lucide-react"
 
 
@@ -150,10 +150,29 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Bookmarks</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
 
-
-
-
+      {/* Games & Interactive Experiences */}
+      <SidebarGroup>
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+          Interactive Experiences
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/eden-game'}
+                onClick={() => handleNavigation('/eden-game')}
+                tooltip="Eden - Experimental Game"
+                className={menuItemClass}
+              >
+                {renderActiveIndicator('/eden-game')}
+                <GamepadIcon className="h-4 w-4" />
+                <span>Eden - Experimental Game</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
