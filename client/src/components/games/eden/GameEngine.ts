@@ -86,15 +86,123 @@ class GameEngine {
     // Merge provided config with defaults
     this.config = { ...this.config, ...config };
     
-    // In a real implementation, we would load scene, dialog, item, and puzzle data here
-    // For now, we'll just set the initial scene
-    this.gameState.currentScene = this.config.initialScene;
-    this.gameState.visitedScenes = [this.config.initialScene];
+    try {
+      // Try to load existing game progress from the database
+      const progressResponse = await fetch('/api/game/progress');
+      
+      if (progressResponse.ok) {
+        // We have existing progress - load it
+        const progress = await progressResponse.json();
+        
+        if (progress) {
+          console.log('Loading existing game progress:', progress);
+          
+          // Update game state with progress data
+          if (progress.currentSceneId) {
+            this.gameState.currentScene = progress.currentSceneId;
+          } else {
+            this.gameState.currentScene = this.config.initialScene;
+          }
+          
+          if (progress.visitedScenes && progress.visitedScenes.length > 0) {
+            this.gameState.visitedScenes = progress.visitedScenes;
+          } else {
+            this.gameState.visitedScenes = [this.gameState.currentScene];
+          }
+          
+          if (progress.inventory) {
+            this.gameState.inventory = progress.inventory;
+          }
+          
+          if (progress.flags) {
+            this.gameState.flags = progress.flags;
+          }
+          
+          if (progress.gameTime) {
+            this.gameState.gameTime = progress.gameTime;
+          }
+          
+          // Load available game data from the database (scenes, items, dialogs, puzzles)
+          await this.loadGameData();
+        }
+      } else {
+        // No existing progress or error - set up new game
+        console.log('No existing game progress found, starting new game');
+        this.gameState.currentScene = this.config.initialScene;
+        this.gameState.visitedScenes = [this.config.initialScene];
+        
+        // Load available game data from the database (scenes, items, dialogs, puzzles)
+        await this.loadGameData();
+      }
+    } catch (error) {
+      // Error loading progress - default to new game
+      console.error('Error loading game progress:', error);
+      this.gameState.currentScene = this.config.initialScene;
+      this.gameState.visitedScenes = [this.config.initialScene];
+      
+      // Still try to load game data
+      try {
+        await this.loadGameData();
+      } catch (dataError) {
+        console.error('Error loading game data:', dataError);
+      }
+    }
     
     this.isInitialized = true;
     
     // Notify all callbacks about state change
     this.notifyStateChange();
+  }
+  
+  /**
+   * Load game data (scenes, items, dialogs, puzzles) from the database
+   */
+  private async loadGameData(): Promise<void> {
+    try {
+      // In a full implementation, we would load all game data here
+      // For now, we'll leave it as a placeholder for future implementation
+      
+      // Example implementation:
+      /*
+      // Load scenes
+      const scenesResponse = await fetch('/api/game/scenes');
+      if (scenesResponse.ok) {
+        const scenes = await scenesResponse.json();
+        scenes.forEach(scene => {
+          this.sceneData[scene.sceneId] = scene.data;
+        });
+      }
+      
+      // Load items
+      const itemsResponse = await fetch('/api/game/items');
+      if (itemsResponse.ok) {
+        const items = await itemsResponse.json();
+        items.forEach(item => {
+          this.itemData[item.itemId] = item.data;
+        });
+      }
+      
+      // Load dialogs
+      const dialogsResponse = await fetch('/api/game/dialogs');
+      if (dialogsResponse.ok) {
+        const dialogs = await dialogsResponse.json();
+        dialogs.forEach(dialog => {
+          this.dialogData[dialog.dialogId] = dialog.data;
+        });
+      }
+      
+      // Load puzzles
+      const puzzlesResponse = await fetch('/api/game/puzzles');
+      if (puzzlesResponse.ok) {
+        const puzzles = await puzzlesResponse.json();
+        puzzles.forEach(puzzle => {
+          this.puzzleData[puzzle.puzzleId] = puzzle.data;
+        });
+      }
+      */
+    } catch (error) {
+      console.error('Error loading game data:', error);
+    }
   }
   
   /**
@@ -136,6 +244,18 @@ class GameEngine {
     
     // Check for entry dialog in the initial scene
     this.checkSceneEntryDialog();
+    
+    // Save the initial game state and update stats
+    this.saveProgress().catch(error => {
+      console.error('Error saving initial game progress:', error);
+    });
+    
+    // Update game stats - new game started
+    this.updateStats({
+      gamesStarted: 1
+    }).catch(error => {
+      console.error('Error updating game stats:', error);
+    });
   }
   
   /**
@@ -165,9 +285,19 @@ class GameEngine {
     // Update scene in game state
     this.gameState.currentScene = sceneId;
     
+    // Track if this is a newly discovered scene
+    const isNewScene = !this.gameState.visitedScenes.includes(sceneId);
+    
     // Add to visited scenes if not already visited
-    if (!this.gameState.visitedScenes.includes(sceneId)) {
+    if (isNewScene) {
       this.gameState.visitedScenes.push(sceneId);
+      
+      // Update stats for newly discovered area
+      this.updateStats({
+        areasDiscovered: 1
+      }).catch(error => {
+        console.error('Error updating areas discovered stats:', error);
+      });
     }
     
     // Notify callbacks
@@ -179,6 +309,11 @@ class GameEngine {
     
     // Apply any environment effects from the scene
     this.applySceneEnvironmentEffects();
+    
+    // Save progress when changing scenes
+    this.saveProgress().catch(error => {
+      console.error('Error saving progress after scene change:', error);
+    });
   }
   
   /**
@@ -391,6 +526,18 @@ class GameEngine {
     // Notify callbacks
     this.notifyStateChange();
     
+    // Update game stats for puzzle solved
+    this.updateStats({
+      puzzlesSolved: 1
+    }).catch(error => {
+      console.error('Error updating puzzle stats:', error);
+    });
+    
+    // Save progress after solving puzzle
+    this.saveProgress().catch(error => {
+      console.error('Error saving progress after puzzle solved:', error);
+    });
+    
     // Start completion dialog if specified
     if (completionDialogId) {
       this.startDialog(completionDialogId);
@@ -577,6 +724,9 @@ class GameEngine {
       return;
     }
     
+    // Check if this is a new item collection
+    const isNewItem = !this.gameState.inventory.some(i => i.id === itemId);
+    
     // Check if item is stackable and already in inventory
     if (item.stackable) {
       const existingItem = this.gameState.inventory.find(i => i.id === itemId);
@@ -594,6 +744,20 @@ class GameEngine {
       this.gameState.inventory.push({
         ...item,
         discoveredAt: this.gameState.gameTime
+      });
+    }
+    
+    // Update stats if this is a new item
+    if (isNewItem) {
+      this.updateStats({
+        itemsCollected: 1
+      }).catch(error => {
+        console.error('Error updating item collection stats:', error);
+      });
+      
+      // Save progress after collecting a new item
+      this.saveProgress().catch(error => {
+        console.error('Error saving progress after item collection:', error);
       });
     }
     
@@ -667,6 +831,71 @@ class GameEngine {
   }
   
   /**
+   * Save game progress to the database
+   */
+  async saveProgress(): Promise<boolean> {
+    try {
+      const progress = {
+        currentSceneId: this.gameState.currentScene,
+        visitedScenes: this.gameState.visitedScenes,
+        inventory: this.gameState.inventory,
+        flags: this.gameState.flags,
+        gameTime: this.gameState.gameTime
+      };
+
+      const response = await fetch('/api/game/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(progress)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save progress: ${response.status}`);
+      }
+
+      console.log('Game progress saved successfully');
+      return true;
+    } catch (error) {
+      console.error('Error saving game progress:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update game stats in the database
+   */
+  async updateStats(stats: {
+    playtime?: number;
+    puzzlesSolved?: number;
+    itemsCollected?: number;
+    areasDiscovered?: number;
+    gamesStarted?: number;
+    gamesCompleted?: number;
+  }): Promise<boolean> {
+    try {
+      const response = await fetch('/api/game/stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(stats)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update stats: ${response.status}`);
+      }
+
+      console.log('Game stats updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating game stats:', error);
+      return false;
+    }
+  }
+
+  /**
    * Advance game time
    */
   advanceTime(minutes: number): void {
@@ -682,7 +911,15 @@ class GameEngine {
     if (this.config.enableAutoSave && 
         this.config.saveInterval && 
         this.gameState.gameTime % (this.config.saveInterval * 60) < minutes) {
-      this.autoSave();
+      // We can't make this method async, so handle the promise separately
+      this.autoSave().catch(error => {
+        console.error('Error during auto-save:', error);
+      });
+      
+      // Also save progress
+      this.saveProgress().catch(error => {
+        console.error('Error saving progress:', error);
+      });
     }
   }
   
@@ -692,6 +929,30 @@ class GameEngine {
   gameOver(reason: string): void {
     this.gameState.isGameOver = true;
     this.gameState.gameOverReason = reason;
+    
+    // Check if game was completed (not died)
+    const isCompleted = !reason.includes('died') && !reason.includes('lost your mind');
+    
+    // Update game stats
+    this.updateStats({
+      gamesCompleted: isCompleted ? 1 : 0,
+      playtime: this.gameState.gameTime
+    }).catch(error => {
+      console.error('Error updating game completion stats:', error);
+    });
+    
+    // Save final game state
+    this.saveProgress().catch(error => {
+      console.error('Error saving final game state:', error);
+    });
+    
+    // Create a final save if the game was completed successfully
+    if (isCompleted) {
+      const saveName = `Completed Game - ${new Date().toLocaleDateString()}`;
+      this.saveGame(saveName).catch(error => {
+        console.error('Error creating completion save:', error);
+      });
+    }
     
     // Notify callbacks
     this.notifyStateChange();
@@ -745,7 +1006,7 @@ class GameEngine {
   /**
    * Auto-save the game
    */
-  private autoSave(): void {
+  private async autoSave(): Promise<void> {
     if (!this.config.enableAutoSave) return;
     
     const saveData: SaveData = {
@@ -755,45 +1016,157 @@ class GameEngine {
       version: '1.0.0' // Game version
     };
     
-    // In a real implementation, we would save to localStorage or a server
-    console.log('Auto-saving game:', saveData);
+    try {
+      // Use the auto-save slot name
+      const saveName = "Auto-save";
+      
+      // Check if auto-save already exists
+      const saves = await this.getSaves();
+      const autoSave = saves.find(save => save.name === saveName);
+      
+      if (autoSave) {
+        // Update existing auto-save
+        await fetch(`/api/game/saves/${autoSave.saveId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            gameState: saveData.gameState,
+            playtime: saveData.playTime
+          })
+        });
+      } else {
+        // Create a new auto-save
+        await fetch('/api/game/saves', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: saveName,
+            gameState: saveData.gameState,
+            playtime: saveData.playTime,
+            saveId: `autosave-${Date.now()}`
+          })
+        });
+      }
+      
+      console.log('Auto-saving game:', saveName);
+    } catch (error) {
+      console.error('Failed to auto-save game:', error);
+    }
+  }
+  
+  /**
+   * Get all saved games
+   */
+  async getSaves(): Promise<any[]> {
+    try {
+      const response = await fetch('/api/game/saves');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch saves: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching game saves:', error);
+      return [];
+    }
   }
   
   /**
    * Save the game to a slot
    */
-  saveGame(slotIndex: number): void {
-    const saveData: SaveData = {
-      gameState: this.getState(),
-      saveDate: new Date().toISOString(),
-      playTime: this.gameState.gameTime,
-      version: '1.0.0' // Game version
-    };
-    
-    // In a real implementation, we would save to localStorage or a server
-    this.saveSlots[slotIndex] = saveData;
-    console.log(`Game saved to slot ${slotIndex}:`, saveData);
+  async saveGame(name: string): Promise<boolean> {
+    try {
+      const saveData: SaveData = {
+        gameState: this.getState(),
+        saveDate: new Date().toISOString(),
+        playTime: this.gameState.gameTime,
+        version: '1.0.0' // Game version
+      };
+      
+      // Take a screenshot for the save (simplified for now)
+      // In a real implementation, we would create a thumbnail of the current scene
+      const screenshot = this.getCurrentScene()?.backgroundImage || '';
+      
+      // Create a unique save ID
+      const saveId = `save-${Date.now()}`;
+      
+      const response = await fetch('/api/game/saves', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name,
+          saveId,
+          gameState: saveData.gameState,
+          playtime: saveData.playTime,
+          screenshot
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save game: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log(`Game saved successfully:`, result);
+      return true;
+    } catch (error) {
+      console.error('Error saving game:', error);
+      return false;
+    }
   }
   
   /**
-   * Load the game from a slot
+   * Load the game from a save ID
    */
-  loadGame(slotIndex: number): boolean {
-    const saveData = this.saveSlots[slotIndex];
-    if (!saveData) {
-      console.error(`No save data found in slot ${slotIndex}`);
+  async loadGame(saveId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/game/saves/${saveId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load save: ${response.status}`);
+      }
+      
+      const saveData = await response.json();
+      
+      // Restore game state
+      this.gameState = saveData.gameState;
+      
+      // Notify callbacks
+      this.notifyStateChange();
+      this.notifySceneChange(this.gameState.currentScene);
+      
+      console.log(`Game loaded successfully:`, saveData);
+      return true;
+    } catch (error) {
+      console.error('Error loading game save:', error);
       return false;
     }
-    
-    // Restore game state
-    this.gameState = saveData.gameState;
-    
-    // Notify callbacks
-    this.notifyStateChange();
-    this.notifySceneChange(this.gameState.currentScene);
-    
-    console.log(`Game loaded from slot ${slotIndex}:`, saveData);
-    return true;
+  }
+  
+  /**
+   * Delete a saved game
+   */
+  async deleteSave(saveId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/game/saves/${saveId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete save: ${response.status}`);
+      }
+      
+      console.log(`Save ${saveId} deleted successfully`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting game save:', error);
+      return false;
+    }
   }
   
   /**

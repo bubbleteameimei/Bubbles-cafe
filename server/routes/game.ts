@@ -106,7 +106,11 @@ router.put('/saves/:saveId', async (req, res) => {
 router.delete('/saves/:saveId', async (req, res) => {
   try {
     const { saveId } = req.params;
-    const userId = req.session.userId || null;
+    const userId = req.session.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     
     const deleted = await storage.deleteGameSave(saveId, userId);
     
@@ -124,7 +128,7 @@ router.delete('/saves/:saveId', async (req, res) => {
 // Update game progress
 router.post('/progress', async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -152,7 +156,7 @@ router.post('/progress', async (req, res) => {
 // Get game progress
 router.get('/progress', async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -174,7 +178,7 @@ router.get('/progress', async (req, res) => {
 // Update game stats
 router.post('/stats', async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -202,7 +206,7 @@ router.post('/stats', async (req, res) => {
 // Get game stats
 router.get('/stats', async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.user?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });

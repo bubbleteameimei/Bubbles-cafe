@@ -20,6 +20,7 @@ import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
+import gameRoutes from './routes/game';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db";
 import { desc, eq, sql } from "drizzle-orm";
@@ -1985,6 +1986,9 @@ Message ID: ${savedMessage.id}
 
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
+  
+  // Mount the game routes
+  app.use('/api/game', gameRoutes);
   
   // Register user feedback routes
   registerUserFeedbackRoutes(app, storage);
