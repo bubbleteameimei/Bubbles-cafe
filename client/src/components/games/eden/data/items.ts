@@ -1,117 +1,195 @@
-import { Item } from '../types';
+import { InventoryItem } from '../types';
 
-// Map of all game items
-const items: Record<string, Item> = {
-  // Key Items
-  'old_key': {
-    id: 'old_key',
-    name: 'Brass Key',
-    description: 'A tarnished brass key with a strange symbol etched into it. It looks very old but still sturdy.',
-    icon: '/assets/eden/items/old_key.png',
-    type: 'key',
-    quantity: 1,
-    usable: true,
-    isConsumable: false
+/**
+ * Eden's Hollow Items Data
+ * Defines all collectible items and their properties
+ */
+
+const items: Record<string, InventoryItem> = {
+  // General items
+  'matches': {
+    id: 'matches',
+    name: 'Box of Matches',
+    description: 'A damp box of matches. Only a few remain dry enough to light.',
+    image: '/assets/eden/items/matches.png',
+    category: 'tool',
+    combinable: true,
+    consumable: true,
+    usableOn: ['old_lantern', 'church_candle'],
+    weight: 0.1
   },
   
-  // Documents & Notes
-  'village_journal': {
-    id: 'village_journal',
-    name: 'Weathered Journal',
-    description: 'A weathered leather journal found in the village square. Many pages are missing or damaged, but some entries remain legible. It appears to document strange events in Eden\'s Hollow.',
-    icon: '/assets/eden/items/journal.png',
-    type: 'note',
-    quantity: 1,
-    usable: true,
-    isConsumable: false,
-    metadata: {
-      pages: [
-        "April 15th - The excavation beneath the fountain has uncovered something... unusual. Mayor won't let anyone near it.",
-        "April 20th - Three children have fallen ill with the same symptoms. High fever, hallucinations, and speaking in what sounds like another language.",
-        "May 3rd - More villagers sick. Doctor suspects something in the water. The fountain has been sealed off.",
-        "May 10th - The voices... they're getting louder. I'm not sleeping. I think I saw something moving in the shadows last night.",
-        "May 15th - They're coming from below. God help us all."
-      ]
-    }
+  'old_lantern': {
+    id: 'old_lantern',
+    name: 'Rusty Lantern',
+    description: 'An old oil lantern. Its light flickers weakly, casting moving shadows.',
+    image: '/assets/eden/items/lantern.png',
+    category: 'tool',
+    combinable: true,
+    illuminates: true,
+    weight: 1.5
   },
   
-  // Consumables
-  'strange_elixir': {
-    id: 'strange_elixir',
-    name: 'Strange Elixir',
-    description: 'A glass bottle containing a luminescent blue liquid. It pulses with an inner light that seems almost alive. The contents smell like night-blooming flowers and ozone.',
-    icon: '/assets/eden/items/elixir.png',
-    type: 'consumable',
-    quantity: 1,
-    usable: true,
-    isConsumable: true,
-    effects: [
-      {
-        type: 'health',
-        value: 25
-      },
-      {
-        type: 'mana',
-        value: 15
-      },
-      {
-        type: 'status',
-        value: { 'enhanced_perception': true }
-      }
-    ]
+  'torn_journal': {
+    id: 'torn_journal',
+    name: 'Torn Journal Page',
+    description: 'A page ripped from a journal. The handwriting is frantic and difficult to read.',
+    image: '/assets/eden/items/journal_page.png',
+    category: 'document',
+    examinable: true,
+    examineText: `"...the ritual must be performed at midnight. The five of us have agreed. We've gone too far to turn back now. The symbols must be drawn exactly as shown in the old text. God help us if we've misinterpreted anything..."`,
+    weight: 0.1
   },
   
-  'healing_herb': {
-    id: 'healing_herb',
-    name: 'Mist Bloom',
-    description: 'A pale, luminescent flower that only grows in perpetual fog. Its petals are cool to the touch and smell faintly of mint. Known for its healing properties.',
-    icon: '/assets/eden/items/herb.png',
-    type: 'consumable',
-    quantity: 1,
-    usable: true,
-    isConsumable: true,
-    effects: [
-      {
-        type: 'health',
-        value: 15
-      }
-    ]
+  // Keys and access items
+  'rusty_key': {
+    id: 'rusty_key',
+    name: 'Rusty Key',
+    description: 'An old iron key, heavily rusted. It looks ancient.',
+    image: '/assets/eden/items/rusty_key.png',
+    category: 'key',
+    combinable: true,
+    usableOn: ['old_chest'],
+    weight: 0.2
   },
   
-  // Tools
-  'rusted_lantern': {
-    id: 'rusted_lantern',
-    name: 'Rusted Lantern',
-    description: 'An old iron lantern, surprisingly still functional. It casts a warm, steady light that seems to penetrate the unnatural fog better than it should.',
-    icon: '/assets/eden/items/lantern.png',
-    type: 'tool',
-    quantity: 1,
-    usable: true,
-    isConsumable: false,
-    effects: [
-      {
-        type: 'status',
-        value: { 'has_light': true }
-      }
-    ]
+  'cellar_key': {
+    id: 'cellar_key',
+    name: 'Cellar Key',
+    description: 'A heavy iron key with an unusual tooth pattern. It feels unnaturally cold to the touch.',
+    image: '/assets/eden/items/cellar_key.png',
+    category: 'key',
+    combinable: false,
+    weight: 0.3
   },
   
-  // Artifacts
-  'mysterious_amulet': {
-    id: 'mysterious_amulet',
-    name: 'Whispering Amulet',
-    description: 'A silver amulet with a black stone at its center. When held, you can hear faint whispers emanating from it. The stone seems to absorb light rather than reflect it.',
-    icon: '/assets/eden/items/amulet.png',
-    type: 'artifact',
-    quantity: 1,
-    usable: true,
-    isConsumable: false,
-    effects: [
-      {
-        type: 'status',
-        value: { 'can_hear_whispers': true }
-      }
-    ]
+  'church_key': {
+    id: 'church_key',
+    name: 'Church Key',
+    description: 'An ornate brass key with a cross-shaped bow. It seems well-preserved despite its age.',
+    image: '/assets/eden/items/church_key.png',
+    category: 'key',
+    combinable: false,
+    weight: 0.3
+  },
+  
+  'empty_bottle': {
+    id: 'empty_bottle',
+    name: 'Empty Bottle',
+    description: 'A small glass bottle. It could be used to hold liquids.',
+    image: '/assets/eden/items/empty_bottle.png',
+    category: 'container',
+    combinable: true,
+    usableOn: ['well_bucket', 'strange_liquid'],
+    weight: 0.4
+  },
+  
+  'water_bottle': {
+    id: 'water_bottle',
+    name: 'Bottle of Well Water',
+    description: 'A bottle filled with strangely clear water from the village well. It seems to shimmer slightly in the light.',
+    image: '/assets/eden/items/water_bottle.png',
+    category: 'container',
+    combinable: true,
+    consumable: true,
+    usableOn: ['withered_plant', 'ritual_circle'],
+    weight: 0.8
+  },
+  
+  // Special/ritual items
+  'strange_amulet': {
+    id: 'strange_amulet',
+    name: 'Strange Amulet',
+    description: 'A bronze amulet with unusual symbols around its edge. The central symbol depicts an eye surrounded by tentacle-like shapes.',
+    image: '/assets/eden/items/amulet.png',
+    category: 'artifact',
+    puzzle: 'strange_amulet_puzzle',
+    weight: 0.3
+  },
+  
+  'eliza_doll': {
+    id: 'eliza_doll',
+    name: 'Porcelain Doll',
+    description: "A worn porcelain doll with glass eyes and a faded blue dress. The name 'ELIZA' is stitched into the hem.",
+    image: '/assets/eden/items/doll.png',
+    category: 'artifact',
+    combinable: true,
+    usableOn: ['doll_shelf', 'ritual_circle'],
+    weight: 0.6,
+    lore: "Sometimes at night, you could swear you hear the doll whispering."
+  },
+  
+  'ritual_dagger': {
+    id: 'ritual_dagger',
+    name: 'Ceremonial Dagger',
+    description: 'An ornate dagger with a curved blade and strange symbols etched into the hilt. Dark stains mar the blade.',
+    image: '/assets/eden/items/ritual_dagger.png',
+    category: 'weapon',
+    combinable: true,
+    usableOn: ['ritual_circle', 'strange_vines'],
+    damage: 10,
+    weight: 0.8
+  },
+  
+  'sacred_medallion': {
+    id: 'sacred_medallion',
+    name: 'Sacred Medallion',
+    description: 'A silver medallion depicting a radiant sun. It feels warm to the touch and seems to repel the darkness around it.',
+    image: '/assets/eden/items/medallion.png',
+    category: 'artifact',
+    combinable: true,
+    usableOn: ['shadow_barrier', 'possessed_villager'],
+    illuminates: true,
+    weight: 0.3
+  },
+  
+  'harpers_journal': {
+    id: 'harpers_journal',
+    name: "Harper's Journal",
+    description: "A leather-bound journal belonging to Thomas Harper, dated 1879. The later entries show increasingly erratic handwriting.",
+    image: '/assets/eden/items/journal.png',
+    category: 'document',
+    examinable: true,
+    puzzle: 'journal_cipher_puzzle',
+    weight: 0.7,
+    lore: "The final pages contain strange symbols that seem to form a code."
+  },
+  
+  'church_candle': {
+    id: 'church_candle',
+    name: 'Blessed Candle',
+    description: 'A tall white candle from the church. It gives off a steady, pure light when lit.',
+    image: '/assets/eden/items/candle.png',
+    category: 'tool',
+    combinable: true,
+    consumable: true,
+    usableOn: ['dark_corner', 'ritual_circle'],
+    illuminates: true,
+    weight: 0.4
+  },
+  
+  'ritual_component': {
+    id: 'ritual_component',
+    name: 'Ancient Relic',
+    description: 'A small stone object covered in strange markings. It pulses with an eerie blue light when held near other mystical objects.',
+    image: '/assets/eden/items/ritual_component.png',
+    category: 'artifact',
+    combinable: true,
+    usableOn: ['ritual_circle', 'strange_altar'],
+    weight: 0.5,
+    lore: "One of five components needed to complete the ritual."
+  },
+  
+  'crowbar': {
+    id: 'crowbar',
+    name: 'Rusty Crowbar',
+    description: 'A sturdy iron crowbar with patches of rust. Good for prying things open.',
+    image: '/assets/eden/items/crowbar.png',
+    category: 'tool',
+    combinable: true,
+    usableOn: ['boarded_window', 'crumbling_wall', 'nailed_chest'],
+    damage: 5,
+    weight: 2.0
   }
 };
 

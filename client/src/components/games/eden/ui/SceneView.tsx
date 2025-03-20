@@ -1,428 +1,279 @@
-import React, { useState, useEffect } from 'react';
-import { Scene, InteractiveElement, Exit } from '../types';
+import React, { useState } from 'react';
+import { SceneViewProps, Hotspot, Exit, SceneItem } from '../types';
 
-export interface SceneViewProps {
-  scene: Scene;
-  onInteract: (elementId: string, actionType: string) => void;
-  onExitClick: (exitId: string) => void;
-}
-
-export const SceneView: React.FC<SceneViewProps> = ({
+/**
+ * SceneView component - Renders the current game scene with interactable elements
+ */
+const SceneView: React.FC<SceneViewProps> = ({
   scene,
-  onInteract,
-  onExitClick
+  onHotspotInteract,
+  onExitSelect,
+  onItemTake
 }) => {
-  const [hoveredElement, setHoveredElement] = useState<string | null>(null);
-  const [hoveredExit, setHoveredExit] = useState<string | null>(null);
-  const [sceneLoaded, setSceneLoaded] = useState(false);
+  const [hoveredElement, setHoveredElement] = useState<{ type: string, id: string, name: string } | null>(null);
   
-  // Trigger scene loaded effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSceneLoaded(true);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [scene.id]);
-  
-  // Reset hover states when scene changes
-  useEffect(() => {
-    setHoveredElement(null);
-    setHoveredExit(null);
-    setSceneLoaded(false);
-    
-    const timer = setTimeout(() => {
-      setSceneLoaded(true);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [scene]);
-  
-  // Handle element hover
-  const handleElementMouseEnter = (elementId: string) => {
-    setHoveredElement(elementId);
+  // Handle mouse hovering over scene elements
+  const handleMouseEnter = (type: string, id: string, name: string) => {
+    setHoveredElement({ type, id, name });
   };
   
-  // Handle element unhover
-  const handleElementMouseLeave = () => {
+  // Handle mouse leaving scene elements
+  const handleMouseLeave = () => {
     setHoveredElement(null);
   };
   
-  // Handle exit hover
-  const handleExitMouseEnter = (exitId: string) => {
-    setHoveredExit(exitId);
+  // Handle scene interactions
+  const handleHotspotClick = (hotspotId: string) => {
+    onHotspotInteract(hotspotId);
   };
   
-  // Handle exit unhover
-  const handleExitMouseLeave = () => {
-    setHoveredExit(null);
+  const handleExitClick = (exitId: string) => {
+    onExitSelect(exitId);
   };
   
-  // Handle element click
-  const handleElementClick = (element: InteractiveElement) => {
-    // Use default action or first action if available
-    const defaultAction = element.actions.find(a => a.isDefault) || element.actions[0];
-    if (defaultAction) {
-      onInteract(element.id, defaultAction.type);
+  const handleItemClick = (itemId: string) => {
+    onItemTake(itemId);
+  };
+  
+  // Generate CSS filters based on scene lighting
+  const getSceneEffects = (): string => {
+    switch (scene.lighting) {
+      case 'dark':
+        return 'brightness(0.6) contrast(1.1)';
+      case 'fog':
+        return 'brightness(0.8) contrast(0.9) blur(1px)';
+      case 'fire':
+        return 'brightness(0.8) sepia(0.3) hue-rotate(-10deg)';
+      case 'magical':
+        return 'brightness(1.1) saturate(1.3) hue-rotate(5deg)';
+      default:
+        return 'brightness(1) contrast(1)';
     }
-  };
-  
-  // Handle element right click to show action menu
-  const handleElementRightClick = (
-    e: React.MouseEvent,
-    element: InteractiveElement
-  ) => {
-    e.preventDefault();
-    
-    // Implement context menu for multiple actions
-    // This would be more complex in a real implementation
-    if (element.actions.length > 1) {
-      // For now, just use the first non-default action
-      const alternativeAction = element.actions.find(a => !a.isDefault);
-      if (alternativeAction) {
-        onInteract(element.id, alternativeAction.type);
-      }
-    }
-  };
-  
-  // Find the hovered element
-  const getHoveredElement = () => {
-    if (!hoveredElement) return null;
-    return scene.interactiveElements.find(el => el.id === hoveredElement);
-  };
-  
-  // Find the hovered exit
-  const getHoveredExit = () => {
-    if (!hoveredExit) return null;
-    return scene.exits.find(exit => exit.id === hoveredExit);
-  };
-  
-  // Check if an element has multiple actions
-  const hasMultipleActions = (element: InteractiveElement) => {
-    return element.actions.length > 1;
   };
   
   return (
-    <div className={`scene-view ${sceneLoaded ? 'scene-loaded' : ''}`}>
+    <div className="scene-view-container">
       {/* Scene Background */}
       <div 
-        className="scene-background"
-        style={{ backgroundImage: `url(${scene.background})` }}
-      >
-        {/* Scene Title Overlay */}
-        {scene.showTitle && (
-          <div className="scene-title-overlay">
-            <h2>{scene.title}</h2>
-            {scene.subtitle && <p>{scene.subtitle}</p>}
-          </div>
-        )}
+        className="scene-background" 
+        style={{ 
+          backgroundImage: `url(${scene.background})`,
+          filter: getSceneEffects()
+        }}
+      />
       
-        {/* Interactive Elements */}
-        {scene.interactiveElements.map(element => (
+      {/* Overlay for scene interaction elements */}
+      <div className="scene-interaction-layer">
+        {/* Hotspots */}
+        {scene.hotspots?.map((hotspot: Hotspot) => (
           <div
-            key={element.id}
-            className={`interactive-element ${hoveredElement === element.id ? 'element-hovered' : ''} ${hasMultipleActions(element) ? 'multiple-actions' : ''}`}
+            key={hotspot.id}
+            className="hotspot"
             style={{
-              left: `${element.position.x}%`,
-              top: `${element.position.y}%`,
-              width: `${element.size.width}%`,
-              height: `${element.size.height}%`
+              left: `${hotspot.x}px`,
+              top: `${hotspot.y}px`,
+              width: `${hotspot.width}px`,
+              height: `${hotspot.height}px`
             }}
-            onMouseEnter={() => handleElementMouseEnter(element.id)}
-            onMouseLeave={handleElementMouseLeave}
-            onClick={() => handleElementClick(element)}
-            onContextMenu={(e) => handleElementRightClick(e, element)}
-          >
-            {hoveredElement === element.id && (
-              <div className="element-tooltip">
-                {element.name}
-                {hasMultipleActions(element) && (
-                  <span className="multiple-actions-indicator">⋮</span>
-                )}
-              </div>
-            )}
-          </div>
+            onMouseEnter={() => handleMouseEnter('hotspot', hotspot.id, hotspot.name)}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleHotspotClick(hotspot.id)}
+            title={hotspot.name}
+            role="button"
+            aria-label={`Interact with ${hotspot.name}`}
+            tabIndex={0}
+          />
         ))}
         
-        {/* Scene Exits */}
-        {scene.exits.map(exit => (
+        {/* Exits */}
+        {scene.exits?.map((exit: Exit) => (
           <div
             key={exit.id}
-            className={`scene-exit ${hoveredExit === exit.id ? 'exit-hovered' : ''}`}
+            className="exit"
             style={{
-              left: `${exit.position.x}%`,
-              top: `${exit.position.y}%`,
-              width: `${exit.size?.width || 10}%`,
-              height: `${exit.size?.height || 10}%`
+              left: `${exit.position.x}px`,
+              top: `${exit.position.y}px`,
+              width: `${exit.position.width}px`,
+              height: `${exit.position.height}px`
             }}
-            onMouseEnter={() => handleExitMouseEnter(exit.id)}
-            onMouseLeave={handleExitMouseLeave}
-            onClick={() => onExitClick(exit.id)}
-          >
-            {hoveredExit === exit.id && (
-              <div className="exit-tooltip">
-                {exit.name || 'Exit'} 
-                {exit.direction && (
-                  <span className="exit-direction">
-                    {exit.direction === 'north' && '↑'}
-                    {exit.direction === 'east' && '→'}
-                    {exit.direction === 'south' && '↓'}
-                    {exit.direction === 'west' && '←'}
-                    {exit.direction === 'up' && '⤴️'}
-                    {exit.direction === 'down' && '⤵️'}
-                  </span>
-                )}
-              </div>
-            )}
-            <div className="exit-indicator">
-              {exit.direction === 'north' && '↑'}
-              {exit.direction === 'east' && '→'}
-              {exit.direction === 'south' && '↓'}
-              {exit.direction === 'west' && '←'}
-              {exit.direction === 'up' && '⤴️'}
-              {exit.direction === 'down' && '⤵️'}
-            </div>
-          </div>
+            onMouseEnter={() => handleMouseEnter('exit', exit.id, exit.name)}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleExitClick(exit.id)}
+            title={exit.name}
+            role="button"
+            aria-label={`Go to ${exit.name}`}
+            tabIndex={0}
+          />
         ))}
         
-        {/* Hover Information */}
-        {getHoveredElement() && (
-          <div className="hover-info">
-            <h3>{getHoveredElement()?.name}</h3>
-            {getHoveredElement()?.description && (
-              <p>{getHoveredElement()?.description}</p>
-            )}
-          </div>
-        )}
-        
-        {getHoveredExit() && (
-          <div className="hover-info">
-            <h3>{getHoveredExit()?.name || 'Exit'}</h3>
-            {getHoveredExit()?.description && (
-              <p>{getHoveredExit()?.description}</p>
-            )}
-          </div>
-        )}
-        
-        {/* Visual Effects */}
-        {scene.visualEffects && scene.visualEffects.map((effect, index) => (
-          <div 
-            key={`effect-${index}`}
-            className={`visual-effect ${effect.type}`}
+        {/* Items */}
+        {scene.items?.map((item: SceneItem) => (
+          <div
+            key={item.id}
+            className="scene-item"
             style={{
-              opacity: effect.opacity || 0.5,
-              animationDuration: `${effect.duration || 5}s`,
-              ...effect.style
+              left: `${item.x}px`,
+              top: `${item.y}px`,
+              width: `${item.width}px`,
+              height: `${item.height}px`
             }}
+            onMouseEnter={() => handleMouseEnter('item', item.id, 'Item')}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleItemClick(item.id)}
+            title="Item"
+            role="button"
+            aria-label="Pick up item"
+            tabIndex={0}
           />
         ))}
       </div>
       
-      <style jsx>{`
-        .scene-view {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          flex: 1;
-          overflow: hidden;
-          transition: opacity 0.5s ease;
-          opacity: 0;
-        }
-        
-        .scene-loaded {
-          opacity: 1;
-        }
-        
-        .scene-background {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-size: cover;
-          background-position: center;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-        }
-        
-        .scene-title-overlay {
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          background-color: rgba(0, 0, 0, 0.6);
-          padding: 10px 15px;
-          border-radius: 5px;
-          color: #f1d7c5;
-          max-width: 80%;
-          border-left: 4px solid #8a5c41;
-          animation: fadeIn 1s ease;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .scene-title-overlay h2 {
-          margin: 0 0 5px;
-          font-size: 20px;
-        }
-        
-        .scene-title-overlay p {
-          margin: 0;
-          font-size: 14px;
-          opacity: 0.9;
-        }
-        
-        .interactive-element {
-          position: absolute;
-          cursor: pointer;
-          border-radius: 5px;
-          transition: all 0.2s;
-          z-index: 2;
-        }
-        
-        .element-hovered {
-          box-shadow: 0 0 0 2px rgba(138, 92, 65, 0.8), 0 0 10px rgba(255, 217, 180, 0.5);
-        }
-        
-        .element-tooltip {
-          position: absolute;
-          top: -30px;
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: rgba(20, 20, 25, 0.9);
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          color: #f1d7c5;
-          white-space: nowrap;
-          pointer-events: none;
-          border: 1px solid #8a5c41;
-        }
-        
-        .multiple-actions-indicator {
-          margin-left: 5px;
-          color: #ffb973;
-          font-weight: bold;
-        }
-        
-        .scene-exit {
-          position: absolute;
-          cursor: pointer;
-          border-radius: 5px;
-          transition: all 0.2s;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 2;
-        }
-        
-        .exit-hovered {
-          box-shadow: 0 0 0 2px rgba(138, 92, 65, 0.8), 0 0 10px rgba(255, 217, 180, 0.5);
-        }
-        
-        .exit-tooltip {
-          position: absolute;
-          top: -30px;
-          left: 50%;
-          transform: translateX(-50%);
-          background-color: rgba(20, 20, 25, 0.9);
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          color: #f1d7c5;
-          white-space: nowrap;
-          pointer-events: none;
-          border: 1px solid #8a5c41;
-        }
-        
-        .exit-direction {
-          margin-left: 5px;
-          font-size: 14px;
-        }
-        
-        .exit-indicator {
-          font-size: 18px;
-          color: rgba(255, 217, 180, 0.7);
-          text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-        }
-        
-        .hover-info {
-          position: absolute;
-          bottom: 80px;
-          left: 20px;
-          background-color: rgba(20, 20, 25, 0.9);
-          padding: 10px 15px;
-          border-radius: 5px;
-          color: #f1d7c5;
-          max-width: 300px;
-          border-left: 4px solid #8a5c41;
-          animation: fadeIn 0.3s ease;
-          z-index: 3;
-        }
-        
-        .hover-info h3 {
-          margin: 0 0 5px;
-          font-size: 16px;
-          color: #ffb973;
-        }
-        
-        .hover-info p {
-          margin: 0;
-          font-size: 14px;
-        }
-        
-        /* Visual effects */
-        .visual-effect {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-        }
-        
-        .fog {
-          background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(200, 200, 220, 0.2) 50%,
-            rgba(200, 200, 220, 0.3) 100%
-          );
-          animation: fogMove linear infinite;
-        }
-        
-        .rain {
-          background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,2 L18,98" stroke="rgba(200,220,255,0.8)" stroke-width="1"/><path d="M40,2 L38,98" stroke="rgba(200,220,255,0.7)" stroke-width="1"/><path d="M60,2 L58,98" stroke="rgba(200,220,255,0.8)" stroke-width="1"/><path d="M80,2 L78,98" stroke="rgba(200,220,255,0.7)" stroke-width="1"/></svg>');
-          animation: rainMove linear infinite;
-        }
-        
-        .darkness {
-          background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .glow {
-          box-shadow: inset 0 0 50px rgba(255, 200, 100, 0.5);
-          animation: glowPulse ease-in-out infinite alternate;
-        }
-        
-        @keyframes fogMove {
-          0% { background-position: 0% 0%; }
-          100% { background-position: 0% 100%; }
-        }
-        
-        @keyframes rainMove {
-          0% { background-position: 0% 0%; }
-          100% { background-position: 20% 100%; }
-        }
-        
-        @keyframes glowPulse {
-          0% { box-shadow: inset 0 0 30px rgba(255, 200, 100, 0.3); }
-          100% { box-shadow: inset 0 0 70px rgba(255, 200, 100, 0.7); }
-        }
-      `}</style>
+      {/* Tooltip for hovering */}
+      {hoveredElement && (
+        <div
+          className="scene-tooltip"
+          style={{
+            left: hoveredElement.type === 'exit' ? '50%' : undefined,
+            bottom: hoveredElement.type === 'exit' ? '20px' : undefined,
+            transform: hoveredElement.type === 'exit' ? 'translateX(-50%)' : undefined
+          }}
+        >
+          <span className="tooltip-text">{hoveredElement.name}</span>
+        </div>
+      )}
+      
+      {/* Scene name display */}
+      <div className="scene-name-display">
+        <h2>{scene.name}</h2>
+      </div>
+      
+      <style>
+        {`
+          .scene-view-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+          }
+          
+          .scene-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: filter 1s ease-out;
+          }
+          
+          .scene-interaction-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+          }
+          
+          .hotspot {
+            position: absolute;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            transition: border-color 0.2s;
+          }
+          
+          .hotspot:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+          
+          .exit {
+            position: absolute;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 3px;
+            transition: all 0.3s;
+          }
+          
+          .exit:hover {
+            border-color: rgba(200, 255, 200, 0.5);
+            background-color: rgba(100, 255, 100, 0.1);
+          }
+          
+          .scene-item {
+            position: absolute;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            transition: all 0.3s;
+          }
+          
+          .scene-item:hover {
+            border-color: rgba(255, 215, 0, 0.7);
+            background-color: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+          }
+          
+          .scene-tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
+            animation: fadeIn 0.2s ease-out;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            min-width: 100px;
+          }
+          
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          .tooltip-text {
+            white-space: nowrap;
+          }
+          
+          .scene-name-display {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+          }
+          
+          .scene-name-display h2 {
+            display: inline-block;
+            margin: 0;
+            padding: 5px 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+          }
+          
+          /* Focus styles for accessibility */
+          .hotspot:focus, .exit:focus, .scene-item:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.6);
+          }
+        `}
+      </style>
     </div>
   );
 };
+
+export default SceneView;

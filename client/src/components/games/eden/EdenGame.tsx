@@ -1,497 +1,407 @@
-import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect, useCallback } from 'react';
+import { EdenGameProps, Scene, Dialog, Puzzle, Notification, InventoryItem } from './types';
 import { GameEngine } from './GameEngine';
-import { GameState, Scene, Dialog, Puzzle, Notification, Item } from './types';
-import { SceneView } from './ui/SceneView';
-import { DialogBox } from './ui/DialogBox';
-import { StatusBar } from './ui/StatusBar';
-import { NotificationSystem } from './ui/NotificationSystem';
 
-export interface EdenGameProps {
-  onExit?: () => void;
-}
+// UI Components
+import SceneView from './ui/SceneView';
+import DialogBox from './ui/DialogBox';
+import StatusBar from './ui/StatusBar';
+import InventoryPanel from './ui/InventoryPanel';
+import NotificationSystem from './ui/NotificationSystem';
+import PuzzleInterface from './ui/PuzzleInterface';
 
-export const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
-  // Initialize game engine with start scene
-  const [engine] = useState(() => new GameEngine({ startScene: 'village_entrance' }));
-  const [gameState, setGameState] = useState<GameState>(engine.getState());
-  const [showInventory, setShowInventory] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+// Game data
+import scenesData from './data/scenes';
+import itemsData from './data/items';
+import dialogsData from './data/dialogs';
+import puzzlesData from './data/puzzles';
+
+/**
+ * EdenGame Component
+ * Main component for the Eden's Hollow game
+ */
+const EdenGame: React.FC<EdenGameProps> = ({
+  initialState,
+  onGameSave,
+  onGameComplete
+}) => {
+  // Initialize game engine and data
+  const [gameEngine] = useState(() => new GameEngine(
+    scenesData,
+    dialogsData,
+    puzzlesData,
+    itemsData,
+    initialState
+  ));
   
-  // Subscribe to game state changes
+  // Game state
+  const [currentScene, setCurrentScene] = useState<Scene>(gameEngine.getCurrentScene());
+  const [health, setHealth] = useState(gameEngine.state.status.health);
+  const [maxHealth, setMaxHealth] = useState(gameEngine.state.status.maxHealth);
+  const [mana, setMana] = useState(gameEngine.state.status.mana);
+  const [maxMana, setMaxMana] = useState(gameEngine.state.status.maxMana);
+  const [gameTime, setGameTime] = useState(gameEngine.state.gameTime);
+  const [fogLevel, setFogLevel] = useState(gameEngine.state.fogLevel);
+  const [inventory, setInventory] = useState<InventoryItem[]>(gameEngine.state.inventory);
+  
+  // UI state
+  const [activeDialog, setActiveDialog] = useState<Dialog | null>(null);
+  const [dialogIndex, setDialogIndex] = useState(0);
+  const [activePuzzle, setActivePuzzle] = useState<Puzzle | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [ending, setEnding] = useState<string | null>(null);
+  
+  // Handle scene changes
   useEffect(() => {
-    const handleStateChange = (state: GameState) => {
-      setGameState({ ...state });
+    const handleSceneChange = (scene: Scene) => {
+      setCurrentScene(scene);
     };
     
-    engine.addListener(handleStateChange);
-    return () => engine.removeListener(handleStateChange);
-  }, [engine]);
+    gameEngine.addEventListener('sceneChanged', handleSceneChange);
+    
+    return () => {
+      gameEngine.removeEventListener('sceneChanged', handleSceneChange);
+    };
+  }, [gameEngine]);
   
-  // Get current scene
-  const currentScene = engine.getScene(gameState.currentSceneId);
+  // Handle status changes
+  useEffect(() => {
+    const handleStatusChange = (status: any) => {
+      setHealth(status.health);
+      setMaxHealth(status.maxHealth);
+      setMana(status.mana);
+      setMaxMana(status.maxMana);
+    };
+    
+    gameEngine.addEventListener('statusChanged', handleStatusChange);
+    
+    return () => {
+      gameEngine.removeEventListener('statusChanged', handleStatusChange);
+    };
+  }, [gameEngine]);
   
-  // Get active dialog if any
-  const activeDialog = gameState.activeDialogId 
-    ? engine.getDialog(gameState.activeDialogId) 
-    : null;
+  // Handle inventory changes
+  useEffect(() => {
+    const handleInventoryChange = (updatedInventory: InventoryItem[]) => {
+      setInventory([...updatedInventory]);
+    };
+    
+    gameEngine.addEventListener('inventoryChanged', handleInventoryChange);
+    
+    return () => {
+      gameEngine.removeEventListener('inventoryChanged', handleInventoryChange);
+    };
+  }, [gameEngine]);
   
-  // Get active puzzle if any
-  const activePuzzle = gameState.currentPuzzleId 
-    ? engine.getPuzzle(gameState.currentPuzzleId) 
-    : null;
+  // Handle time changes
+  useEffect(() => {
+    const handleTimeChange = (time: number) => {
+      setGameTime(time);
+    };
+    
+    gameEngine.addEventListener('timeChanged', handleTimeChange);
+    
+    return () => {
+      gameEngine.removeEventListener('timeChanged', handleTimeChange);
+    };
+  }, [gameEngine]);
   
-  // Handle interactions with scene elements
-  const handleInteract = (elementId: string, actionType: string) => {
-    engine.interactWithElement(elementId, actionType);
-  };
+  // Handle fog changes
+  useEffect(() => {
+    const handleFogChange = (level: number) => {
+      setFogLevel(level);
+    };
+    
+    gameEngine.addEventListener('fogChanged', handleFogChange);
+    
+    return () => {
+      gameEngine.removeEventListener('fogChanged', handleFogChange);
+    };
+  }, [gameEngine]);
   
-  // Handle exit clicks
-  const handleExitClick = (exitId: string) => {
-    engine.tryExit(exitId);
-  };
+  // Handle dialog events
+  useEffect(() => {
+    const handleDialogStart = (data: { dialog: Dialog, initialIndex: number }) => {
+      setActiveDialog(data.dialog);
+      setDialogIndex(data.initialIndex);
+    };
+    
+    const handleDialogEnd = () => {
+      setActiveDialog(null);
+      setDialogIndex(0);
+    };
+    
+    gameEngine.addEventListener('dialogStarted', handleDialogStart);
+    gameEngine.addEventListener('dialogEnded', handleDialogEnd);
+    
+    return () => {
+      gameEngine.removeEventListener('dialogStarted', handleDialogStart);
+      gameEngine.removeEventListener('dialogEnded', handleDialogEnd);
+    };
+  }, [gameEngine]);
   
-  // Handle dialog responses
-  const handleDialogResponse = (responseIndex: number) => {
-    engine.dispatch({ type: 'ADVANCE_DIALOG', responseIndex });
-  };
+  // Handle puzzle events
+  useEffect(() => {
+    const handlePuzzleStart = (puzzle: Puzzle) => {
+      setActivePuzzle(puzzle);
+    };
+    
+    const handlePuzzleSolved = () => {
+      setActivePuzzle(null);
+    };
+    
+    const handlePuzzleCancel = () => {
+      setActivePuzzle(null);
+    };
+    
+    gameEngine.addEventListener('puzzleStarted', handlePuzzleStart);
+    gameEngine.addEventListener('puzzleSolved', handlePuzzleSolved);
+    gameEngine.addEventListener('puzzleCancelled', handlePuzzleCancel);
+    
+    return () => {
+      gameEngine.removeEventListener('puzzleStarted', handlePuzzleStart);
+      gameEngine.removeEventListener('puzzleSolved', handlePuzzleSolved);
+      gameEngine.removeEventListener('puzzleCancelled', handlePuzzleCancel);
+    };
+  }, [gameEngine]);
   
-  // Handle dialog close
-  const handleDialogClose = () => {
-    engine.dispatch({ type: 'END_DIALOG' });
-  };
+  // Handle notifications
+  useEffect(() => {
+    const handleNotificationAdded = (notification: Notification) => {
+      setNotifications(prevNotifications => [...prevNotifications, notification]);
+    };
+    
+    const handleNotificationDismissed = (id: string) => {
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(n => n.id !== id)
+      );
+    };
+    
+    gameEngine.addEventListener('notificationAdded', handleNotificationAdded);
+    gameEngine.addEventListener('notificationDismissed', handleNotificationDismissed);
+    
+    return () => {
+      gameEngine.removeEventListener('notificationAdded', handleNotificationAdded);
+      gameEngine.removeEventListener('notificationDismissed', handleNotificationDismissed);
+    };
+  }, [gameEngine]);
   
-  // Handle notifications dismiss
-  const handleNotificationDismiss = (id: string) => {
-    engine.dispatch({ type: 'CLEAR_NOTIFICATION', id });
-  };
+  // Handle game completion
+  useEffect(() => {
+    const handleGameComplete = (endingId: string) => {
+      setIsGameOver(true);
+      setEnding(endingId);
+      
+      if (onGameComplete) {
+        onGameComplete(endingId);
+      }
+    };
+    
+    gameEngine.addEventListener('gameComplete', handleGameComplete);
+    
+    return () => {
+      gameEngine.removeEventListener('gameComplete', handleGameComplete);
+    };
+  }, [gameEngine, onGameComplete]);
   
-  // Handle puzzle solution submission
-  const handlePuzzleSolution = (solution: string[]) => {
-    engine.dispatch({ type: 'SUBMIT_PUZZLE_SOLUTION', solution });
-  };
+  // Auto-save game state periodically
+  useEffect(() => {
+    if (!onGameSave) return;
+    
+    const saveInterval = setInterval(() => {
+      const savedState = gameEngine.saveGame();
+      onGameSave(savedState);
+    }, 30000); // Save every 30 seconds
+    
+    return () => {
+      clearInterval(saveInterval);
+    };
+  }, [gameEngine, onGameSave]);
   
-  // Handle puzzle close
-  const handlePuzzleClose = () => {
-    engine.dispatch({ type: 'END_PUZZLE', success: false });
-  };
+  // Callback handlers for scene interactions
+  const handleHotspotInteract = useCallback((hotspotId: string) => {
+    gameEngine.interactWithHotspot(hotspotId);
+  }, [gameEngine]);
   
-  // Toggle inventory
-  const toggleInventory = () => {
-    setShowInventory(prev => !prev);
-    if (showMap) setShowMap(false);
-  };
+  const handleExitSelect = useCallback((exitId: string) => {
+    gameEngine.useExit(exitId);
+  }, [gameEngine]);
   
-  // Toggle map
-  const toggleMap = () => {
-    setShowMap(prev => !prev);
-    if (showInventory) setShowInventory(false);
-  };
+  const handleItemTake = useCallback((itemPlacementId: string) => {
+    gameEngine.takeItem(itemPlacementId);
+  }, [gameEngine]);
   
-  // Handle item use from inventory
-  const handleItemUse = (itemId: string) => {
-    engine.dispatch({ type: 'USE_ITEM', itemId, targetId: '' });
-  };
-  
-  // Handle item drop/discard
-  const handleItemDiscard = (itemId: string) => {
-    if (confirm('Are you sure you want to discard this item?')) {
-      engine.dispatch({ type: 'REMOVE_ITEM', itemId });
+  // Callback handlers for dialog interactions
+  const handleDialogSelect = useCallback((responseIndex: number) => {
+    gameEngine.selectDialogResponse(responseIndex);
+    
+    if (activeDialog?.content[dialogIndex]?.responses) {
+      const nextIndex = activeDialog.content[dialogIndex].responses?.[responseIndex]?.nextIndex;
+      
+      if (nextIndex !== undefined) {
+        setDialogIndex(nextIndex);
+      } else {
+        gameEngine.endDialog();
+      }
     }
-  };
+  }, [gameEngine, activeDialog, dialogIndex]);
   
-  // Handle item info view
-  const handleItemInfo = (itemId: string) => {
-    const item = engine.getItem(itemId);
-    if (item) {
-      engine.dispatch({
-        type: 'ADD_NOTIFICATION',
-        notification: {
-          id: uuidv4(),
-          type: 'info',
-          message: item.description,
-          duration: 5000,
-          autoDismiss: true
-        }
-      });
-    }
-  };
+  const handleDialogClose = useCallback(() => {
+    gameEngine.endDialog();
+  }, [gameEngine]);
   
-  // Handle exit game
-  const handleExitGame = () => {
-    if (onExit) onExit();
-  };
+  // Callback handlers for inventory interactions
+  const handleItemSelect = useCallback((itemId: string) => {
+    // Simply selection, doesn't need game engine interaction
+  }, []);
   
+  const handleItemUse = useCallback((itemId: string) => {
+    gameEngine.useItem(itemId);
+  }, [gameEngine]);
+  
+  const handleItemExamine = useCallback((itemId: string) => {
+    gameEngine.examineItem(itemId);
+  }, [gameEngine]);
+  
+  const handleItemCombine = useCallback((itemId1: string, itemId2: string) => {
+    gameEngine.combineItems(itemId1, itemId2);
+  }, [gameEngine]);
+  
+  // Callback handlers for notification interactions
+  const handleNotificationDismiss = useCallback((id: string) => {
+    gameEngine.dismissNotification(id);
+  }, [gameEngine]);
+  
+  const handleNotificationAction = useCallback((id: string) => {
+    // Custom actions would go here
+    // For now, just dismiss the notification
+    gameEngine.dismissNotification(id);
+  }, [gameEngine]);
+  
+  // Callback handlers for puzzle interactions
+  const handlePuzzleSolve = useCallback(() => {
+    gameEngine.solvePuzzle();
+  }, [gameEngine]);
+  
+  const handlePuzzleClose = useCallback(() => {
+    gameEngine.cancelPuzzle();
+  }, [gameEngine]);
+  
+  const handlePuzzleHint = useCallback(() => {
+    // Could trigger additional gameplay effects
+  }, []);
+  
+  // Game over screen
+  if (isGameOver) {
+    return (
+      <div className="game-over-screen">
+        <h1>The End</h1>
+        <h2>{ending === 'good' ? 'You escaped Eden\'s Hollow!' : 'The darkness claimed you...'}</h2>
+        <p>Thank you for playing.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="eden-game">
-      {/* Main Game View */}
-      <div className="game-container">
-        {/* Scene View */}
-        {currentScene && (
-          <SceneView 
-            scene={currentScene}
-            onInteract={handleInteract}
-            onExitClick={handleExitClick}
-          />
-        )}
-        
-        {/* Status Bar */}
-        <StatusBar 
-          health={gameState.health}
-          maxHealth={gameState.maxHealth}
-          mana={gameState.mana}
-          maxMana={gameState.maxMana}
-          onInventoryClick={toggleInventory}
-          onMapClick={toggleMap}
-        />
-      </div>
+      {/* Main scene view */}
+      <SceneView 
+        scene={currentScene}
+        gameState={gameEngine.state}
+        onHotspotInteract={handleHotspotInteract}
+        onExitSelect={handleExitSelect}
+        onItemTake={handleItemTake}
+      />
       
-      {/* Dialog Box */}
+      {/* Dialog overlay */}
       {activeDialog && (
         <DialogBox 
           dialog={activeDialog}
-          dialogIndex={gameState.dialogIndex}
-          onResponseClick={handleDialogResponse}
+          currentIndex={dialogIndex}
+          onSelect={handleDialogSelect}
           onClose={handleDialogClose}
         />
       )}
       
-      {/* Notification System */}
-      <NotificationSystem 
-        notifications={gameState.notificationQueue}
-        onDismiss={handleNotificationDismiss}
+      {/* Puzzle overlay */}
+      {activePuzzle && (
+        <PuzzleInterface 
+          puzzle={activePuzzle}
+          onSolve={handlePuzzleSolve}
+          onClose={handlePuzzleClose}
+          onHint={handlePuzzleHint}
+        />
+      )}
+      
+      {/* Status bar */}
+      <StatusBar 
+        health={health}
+        maxHealth={maxHealth}
+        mana={mana}
+        maxMana={maxMana}
+        gameTime={gameTime}
+        fogLevel={fogLevel}
       />
       
-      {/* Inventory Panel */}
-      {showInventory && (
-        <div className="inventory-panel">
-          <div className="inventory-header">
-            <h2>Inventory</h2>
-            <button 
-              className="close-button"
-              onClick={toggleInventory}
-            >
-              ×
-            </button>
-          </div>
-          
-          {gameState.inventory.items.length === 0 ? (
-            <div className="empty-inventory">
-              Your inventory is empty.
-            </div>
-          ) : (
-            <div className="inventory-grid">
-              {gameState.inventory.items.map(item => (
-                <div key={item.id} className="inventory-item">
-                  <div className="item-icon">
-                    <img src={item.icon} alt={item.name} />
-                    {item.quantity > 1 && (
-                      <span className="item-quantity">{item.quantity}</span>
-                    )}
-                  </div>
-                  <div className="item-details">
-                    <h3>{item.name}</h3>
-                    <div className="item-actions">
-                      {item.usable && (
-                        <button 
-                          className="item-action use-action"
-                          onClick={() => handleItemUse(item.id)}
-                        >
-                          Use
-                        </button>
-                      )}
-                      <button 
-                        className="item-action info-action"
-                        onClick={() => handleItemInfo(item.id)}
-                      >
-                        Info
-                      </button>
-                      <button 
-                        className="item-action discard-action"
-                        onClick={() => handleItemDiscard(item.id)}
-                      >
-                        Drop
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Inventory panel */}
+      <InventoryPanel 
+        inventory={inventory}
+        onItemSelect={handleItemSelect}
+        onItemUse={handleItemUse}
+        onItemExamine={handleItemExamine}
+        onItemCombine={handleItemCombine}
+      />
       
-      {/* Map View */}
-      {showMap && (
-        <div className="map-panel">
-          <div className="map-header">
-            <h2>Map</h2>
-            <button 
-              className="close-button"
-              onClick={toggleMap}
-            >
-              ×
-            </button>
-          </div>
-          
-          <div className="map-content">
-            <p className="map-placeholder">
-              You found a map of Eden's Hollow.
-              Visited locations will be marked here.
-            </p>
-            <div className="visited-locations">
-              <h3>Visited Locations:</h3>
-              <ul>
-                {Array.from(gameState.visitedScenes).map(sceneId => {
-                  const scene = engine.getScene(sceneId);
-                  return scene ? (
-                    <li key={sceneId}>{scene.title}</li>
-                  ) : null;
-                })}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Exit Game Button */}
-      <button 
-        className="exit-game-button"
-        onClick={handleExitGame}
-      >
-        Exit Game
-      </button>
+      {/* Notification system */}
+      <NotificationSystem 
+        notifications={notifications}
+        onDismiss={handleNotificationDismiss}
+        onAction={handleNotificationAction}
+      />
       
       <style jsx>{`
         .eden-game {
-          display: flex;
-          flex-direction: column;
+          position: relative;
           width: 100%;
           height: 100vh;
-          position: relative;
-          background-color: #1a1a1a;
-          color: #eee;
-          font-family: 'Inter', sans-serif;
-        }
-        
-        .game-container {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
           overflow: hidden;
+          font-family: 'Goudy Old Style', serif;
         }
         
-        .inventory-panel, .map-panel {
+        .game-over-screen {
           position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: rgba(20, 20, 25, 0.95);
-          border: 2px solid #8a5c41;
-          border-radius: 8px;
-          width: 90%;
-          max-width: 500px;
-          max-height: 80vh;
-          display: flex;
-          flex-direction: column;
-          z-index: 100;
-          box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-          animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        .inventory-header, .map-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 15px;
-          background-color: rgba(30, 30, 35, 0.8);
-          border-bottom: 1px solid #8a5c41;
-        }
-        
-        .inventory-header h2, .map-header h2 {
-          margin: 0;
-          color: #f1d7c5;
-          font-size: 20px;
-        }
-        
-        .close-button {
-          background: none;
-          border: none;
-          color: #f1d7c5;
-          font-size: 24px;
-          cursor: pointer;
-          padding: 0 5px;
-          opacity: 0.8;
-          transition: opacity 0.2s;
-        }
-        
-        .close-button:hover {
-          opacity: 1;
-        }
-        
-        .empty-inventory {
-          padding: 30px;
-          text-align: center;
-          color: #aaa;
-        }
-        
-        .inventory-grid {
-          padding: 15px;
-          overflow-y: auto;
-          max-height: 60vh;
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-          gap: 15px;
-        }
-        
-        .inventory-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 10px;
-          background-color: rgba(40, 40, 45, 0.7);
-          border-radius: 5px;
-          border: 1px solid #6a4331;
-          transition: transform 0.2s;
-        }
-        
-        .inventory-item:hover {
-          transform: translateY(-2px);
-          border-color: #8a5c41;
-        }
-        
-        .item-icon {
-          position: relative;
-          width: 50px;
-          height: 50px;
-          border-radius: 5px;
-          overflow: hidden;
-          background-color: rgba(20, 20, 25, 0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        
-        .item-icon img {
-          max-width: 100%;
-          max-height: 100%;
-        }
-        
-        .item-quantity {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          background-color: rgba(0, 0, 0, 0.7);
-          color: white;
-          font-size: 12px;
-          padding: 1px 4px;
-          border-top-left-radius: 3px;
-        }
-        
-        .item-details {
+          top: 0;
+          left: 0;
           width: 100%;
-          margin-top: 8px;
+          height: 100%;
           display: flex;
           flex-direction: column;
           align-items: center;
-        }
-        
-        .item-details h3 {
-          margin: 0 0 5px;
-          font-size: 14px;
-          text-align: center;
-          color: #f1d7c5;
-        }
-        
-        .item-actions {
-          display: flex;
-          gap: 5px;
           justify-content: center;
-          width: 100%;
+          background-color: rgba(0, 0, 0, 0.9);
+          color: #fff;
+          text-align: center;
+          z-index: 2000;
         }
         
-        .item-action {
-          background-color: rgba(60, 40, 30, 0.6);
-          border: 1px solid #6a4331;
-          color: #ddd;
-          font-size: 10px;
-          padding: 2px 5px;
-          border-radius: 3px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .item-action:hover {
-          background-color: rgba(80, 50, 30, 0.7);
-          border-color: #8a5c41;
-        }
-        
-        .use-action {
-          background-color: rgba(20, 60, 30, 0.7);
-        }
-        
-        .info-action {
-          background-color: rgba(30, 40, 60, 0.7);
-        }
-        
-        .discard-action {
-          background-color: rgba(60, 30, 30, 0.7);
-        }
-        
-        .map-content {
-          padding: 15px;
-          overflow-y: auto;
-          max-height: 60vh;
-        }
-        
-        .map-placeholder {
+        .game-over-screen h1 {
+          font-size: 48px;
           margin-bottom: 20px;
-          font-style: italic;
-          color: #ccc;
         }
         
-        .visited-locations h3 {
-          font-size: 16px;
-          margin: 0 0 10px;
-          color: #f1d7c5;
+        .game-over-screen h2 {
+          font-size: 32px;
+          margin-bottom: 40px;
         }
         
-        .visited-locations ul {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-        
-        .visited-locations li {
-          padding: 5px 0;
-          border-bottom: 1px solid rgba(138, 92, 65, 0.3);
-        }
-        
-        .exit-game-button {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background-color: rgba(60, 30, 30, 0.7);
-          border: 1px solid #8a5c41;
-          color: #f1d7c5;
-          padding: 5px 10px;
-          border-radius: 4px;
-          cursor: pointer;
-          z-index: 10;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-        
-        .exit-game-button:hover {
-          background-color: rgba(80, 40, 40, 0.8);
-          border-color: #a47755;
+        .game-over-screen p {
+          font-size: 18px;
+          opacity: 0.7;
         }
       `}</style>
     </div>
   );
 };
+
+export default EdenGame;

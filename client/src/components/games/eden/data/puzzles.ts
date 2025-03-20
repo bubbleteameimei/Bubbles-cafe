@@ -1,142 +1,154 @@
 import { Puzzle } from '../types';
 
-// Map of all game puzzles
+/**
+ * Eden's Hollow Puzzles Data
+ * Defines all puzzles and challenges in the game
+ */
+
 const puzzles: Record<string, Puzzle> = {
-  // Combination lock puzzle in the abandoned store
-  'store_safe': {
-    id: 'store_safe',
-    type: 'combination',
-    title: 'General Store Safe',
-    description: 'An old combination safe behind the store counter. It has three dials, each with numbers from 0-9. The metal is rusted, but the mechanism seems intact.',
-    solution: ['4', '2', '7'],
-    pieces: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-    attempts: 0,
-    hints: [
-      'Look for any dates or significant numbers around the store.',
-      'The shopkeeper might have hidden the combination somewhere nearby.',
-      'Check the ledger on the counter for any unusual entries.'
-    ],
-    image: '/assets/eden/puzzles/store_safe.jpg',
+  // Sequence puzzles
+  'blood_symbol_puzzle': {
+    id: 'blood_symbol_puzzle',
+    name: "Blood Symbol Pattern",
+    description: "The symbol painted in blood on the cobblestones seems to be missing parts of its pattern. Complete it by arranging the segments in the correct order.",
+    type: 'sequence',
+    difficulty: 'medium',
+    solution: ['eye', 'tentacle', 'circle', 'rune', 'star'],
+    hint: "The central eye must be placed first. Look for similar symbols around the village for clues to the pattern.",
+    image: '/assets/eden/puzzles/blood_symbol.jpg',
     reward: {
-      item: 'rusted_lantern',
-      message: 'The safe opens with a creak. Inside, you find an old lantern that still appears to be functional.',
-      notification: {
-        id: 'safe_solved',
-        type: 'success',
-        message: 'You\'ve successfully opened the old safe!',
-        duration: 5000,
-        autoDismiss: true
-      }
+      type: 'status',
+      id: 'blood_symbol_knowledge',
+      value: true
     }
   },
   
-  // Pattern puzzle in town hall
-  'ritual_pattern': {
-    id: 'ritual_pattern',
+  'painting_puzzle': {
+    id: 'painting_puzzle',
+    name: "Shifting Portrait",
+    description: "The eyes in the portrait follow you, but they seem to be trying to communicate something. Can you trace the pattern they're making?",
     type: 'pattern',
-    title: 'Ritual Symbol Arrangement',
-    description: 'A circular indentation in the floor with five stone symbols scattered nearby. Each symbol seems to fit into specific slots around the circle.',
-    solution: ['moon', 'tree', 'eye', 'crown', 'hand'],
-    pieces: ['moon', 'tree', 'eye', 'crown', 'hand', 'star'],
-    attempts: 0,
-    hints: [
-      'The symbols may need to be arranged in a specific order.',
-      'Look for clues in the murals on the walls.',
-      'The order might relate to the village\'s history.'
-    ],
-    image: '/assets/eden/puzzles/ritual_symbols.jpg',
+    difficulty: 'hard',
+    solution: ['left', 'up', 'right', 'right', 'down', 'left'],
+    hint: "Watch the movement of the eyes carefully. They trace a symbol - try to follow their gaze in the correct order.",
+    image: '/assets/eden/puzzles/portrait_puzzle.jpg',
     reward: {
-      status: { 'ritual_completed': true },
-      message: 'As you place the last symbol, the floor begins to rumble. The center of the circle descends, revealing a hidden staircase.',
-      notification: {
-        id: 'ritual_solved',
-        type: 'discovery',
-        message: 'You\'ve discovered a hidden passage beneath the town hall!',
-        duration: 5000,
-        autoDismiss: true
-      }
+      type: 'item',
+      id: 'cellar_key'
     }
   },
   
-  // Riddle puzzle by the whispering well
-  'well_riddle': {
-    id: 'well_riddle',
+  // Combination puzzles
+  'altar_puzzle': {
+    id: 'altar_puzzle',
+    name: "Ritual Altar Configuration",
+    description: "Five stone pieces must be arranged on the altar in a specific pattern. Symbols on each piece must align with markings on the altar.",
+    type: 'combination',
+    difficulty: 'hard',
+    solution: ['chalice_center', 'dagger_north', 'skull_east', 'candle_south', 'book_west'],
+    hint: "The journal found in the house describes the ritual arrangement. 'The vessel of life at center, surrounded by the tools of sacrifice.'",
+    image: '/assets/eden/puzzles/altar_puzzle.jpg',
+    reward: {
+      type: 'scene',
+      id: 'ritual_complete',
+      value: true
+    }
+  },
+  
+  'church_altar_puzzle': {
+    id: 'church_altar_puzzle',
+    name: "Sanctified Stone",
+    description: "The church altar has circular indentations that must be filled with the correct stones in the right order to reveal a hidden compartment.",
+    type: 'combination',
+    difficulty: 'medium',
+    solution: ['faith', 'sacrifice', 'rebirth', 'eternity', 'silence'],
+    hint: "The stained glass windows tell a story - follow the narrative from left to right to determine the correct order.",
+    image: '/assets/eden/puzzles/church_altar.jpg',
+    reward: {
+      type: 'scene',
+      id: 'church_crypt_access',
+      value: true
+    }
+  },
+  
+  // Riddle puzzles
+  'well_carvings_puzzle': {
+    id: 'well_carvings_puzzle',
+    name: "Well Riddle",
+    description: "Ancient carvings around the well's edge form a riddle that must be solved.",
     type: 'riddle',
-    title: 'The Whispering Well',
-    description: 'An ancient well with strange inscriptions around its rim. A voice emanates from the depths, posing a riddle that seems to require a spoken answer.',
-    solution: ['silence', 'nothing'],
-    attempts: 0,
-    hints: [
-      'The answer is something intangible.',
-      'Consider what the well itself represents.',
-      'Sometimes what isn\'t said is more important than what is.'
-    ],
-    image: '/assets/eden/puzzles/whispering_well.jpg',
+    difficulty: 'medium',
+    solution: ['water'],
+    acceptedAnswers: ['water', 'reflection', 'mirror', 'looking glass'],
+    hint: "The riddle speaks of something that 'shows all but touches nothing' and 'gives life but can take it away'.",
+    image: '/assets/eden/puzzles/well_carvings.jpg',
     reward: {
-      item: 'mysterious_amulet',
-      message: 'As you speak the answer, the whispers cease momentarily. Then, from the depths of the well, a small object rises to the surface, carried by an unseen force.',
-      notification: {
-        id: 'riddle_solved',
-        type: 'success',
-        message: 'You\'ve answered the well\'s riddle!',
-        duration: 5000,
-        autoDismiss: true
-      }
+      type: 'item',
+      id: 'church_key'
     }
   },
   
-  // Slider puzzle in the abandoned library
-  'bookshelf_puzzle': {
-    id: 'bookshelf_puzzle',
-    type: 'slider',
-    title: 'Ancient Bookshelf',
-    description: 'A bookshelf with sliding sections. The books are arranged in a way that suggests they can be moved to form a specific pattern or image.',
-    solution: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-    pieces: ['3', '1', '4', '8', '6', '2', '7', '5', '9'],
-    attempts: 0,
-    hints: [
-      'The books form sections that can slide horizontally and vertically.',
-      'Try to arrange them in numerical order.',
-      'The correct arrangement may reveal a hidden message or symbol.'
-    ],
-    image: '/assets/eden/puzzles/bookshelf.jpg',
+  'confessional_puzzle': {
+    id: 'confessional_puzzle',
+    name: "Whispers of Confession",
+    description: "A ghostly voice in the confessional asks a series of questions. You must answer truthfully to gain its trust.",
+    type: 'riddle',
+    difficulty: 'hard',
+    solution: ['sin', 'forgiveness', 'sacrifice'],
+    acceptedAnswers: ['sin', 'guilt', 'shame', 'transgression', 'forgiveness', 'absolution', 'redemption', 'sacrifice', 'offering', 'atonement'],
+    hint: "The questions relate to fundamental concepts of redemption and atonement. Listen carefully to the phrasing.",
+    image: '/assets/eden/puzzles/confessional.jpg',
     reward: {
-      status: { 'library_secret_found': true },
-      message: 'As the last section clicks into place, a hidden compartment in the bookshelf slides open, revealing an ancient text.',
-      notification: {
-        id: 'bookshelf_solved',
-        type: 'discovery',
-        message: 'You\'ve uncovered a hidden compartment in the bookshelf!',
-        duration: 5000,
-        autoDismiss: true
-      }
+      type: 'item',
+      id: 'sacred_medallion'
     }
   },
   
-  // Lock puzzle for the cellar door
-  'cellar_lock': {
-    id: 'cellar_lock',
-    type: 'lock',
-    title: 'Cellar Door Lock',
-    description: 'A sturdy iron lock on the cellar door. It appears to require a key with a specific shape.',
-    solution: ['old_key'],
-    attempts: 0,
-    hints: [
-      'The lock seems old and ornate, possibly requiring an equally distinctive key.',
-      'Check the tavern for any keys that might have been left behind.',
-      'Perhaps someone hid a key somewhere nearby.'
-    ],
-    image: '/assets/eden/puzzles/cellar_lock.jpg',
+  // Text-based puzzles  
+  'journal_cipher_puzzle': {
+    id: 'journal_cipher_puzzle',
+    name: "Harper's Journal Cipher",
+    description: "The final pages of Harper's journal contain strange symbols that appear to be a coded message.",
+    type: 'text',
+    difficulty: 'hard',
+    solution: ['beneath the well lies the gateway'],
+    hint: "The cipher substitutes letters with symbols that relate to elements of the ritual. Look for repeated patterns and common words.",
+    image: '/assets/eden/puzzles/journal_cipher.jpg',
     reward: {
-      status: { 'cellar_unlocked': true },
-      message: 'The key fits perfectly. With a turn and a heavy click, the lock opens, and the cellar door swings inward on creaking hinges.',
-      notification: {
-        id: 'cellar_unlocked',
-        type: 'success',
-        message: 'You\'ve unlocked the cellar door!',
-        duration: 5000,
-        autoDismiss: true
-      }
+      type: 'status',
+      id: 'cipher_knowledge',
+      value: true
+    }
+  },
+  
+  'strange_amulet_puzzle': {
+    id: 'strange_amulet_puzzle',
+    name: "Amulet Inscription",
+    description: "The strange amulet has tiny inscriptions around its edge. They appear to form words when the inner ring is rotated to specific positions.",
+    type: 'combination',
+    difficulty: 'medium',
+    solution: ['eye', 'below', 'open', 'forth'],
+    hint: "Each correct alignment reveals one word of a four-word phrase. The symbols on the outer ring indicate which direction to rotate.",
+    image: '/assets/eden/puzzles/amulet_puzzle.jpg',
+    reward: {
+      type: 'status',
+      id: 'amulet_activated',
+      value: true
+    }
+  },
+  
+  'gravestone_puzzle': {
+    id: 'gravestone_puzzle',
+    name: "Forgotten Names",
+    description: "Five weathered gravestones form a circle. Their names have been worn away, but symbols at the base of each remain visible.",
+    type: 'sequence',
+    difficulty: 'hard',
+    solution: ['shepherd', 'blacksmith', 'mayor', 'doctor', 'priest'],
+    hint: "The village records in the church mention the five who performed the ritual. Their professions are the key.",
+    image: '/assets/eden/puzzles/graveyard_circle.jpg',
+    reward: {
+      type: 'item',
+      id: 'ritual_component'
     }
   }
 };

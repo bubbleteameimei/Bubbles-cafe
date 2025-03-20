@@ -1,316 +1,273 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogSegment } from '../types';
+import { DialogBoxProps, DialogChoice } from '../types';
 
-export interface DialogBoxProps {
-  dialog: Dialog;
-  dialogIndex: number;
-  onResponseClick: (responseIndex: number) => void;
-  onClose: () => void;
-}
-
-export const DialogBox: React.FC<DialogBoxProps> = ({
+/**
+ * DialogBox component - Displays in-game dialog with a typewriter effect
+ */
+const DialogBox: React.FC<DialogBoxProps> = ({
   dialog,
-  dialogIndex,
-  onResponseClick,
-  onClose
+  onComplete,
+  onChoiceSelected
 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(true);
-  const [typingSpeed, setTypingSpeed] = useState(40); // ms per character
-  const currentSegment = dialog.content[dialogIndex];
-  const textRef = useRef<string>('');
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const characterIndex = useRef<number>(0);
+  const [currentLineIndex, setCurrentLineIndex] = useState<number>(0);
+  const [displayedText, setDisplayedText] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(true);
+  const [showChoices, setShowChoices] = useState<boolean>(false);
+  const typingSpeed = 30; // ms per character
+  const lineRef = useRef<HTMLDivElement>(null);
   
-  // Start typewriter effect when dialog segment changes
+  // Get the current dialog line
+  const currentLine = dialog.content[currentLineIndex];
+  const isLastLine = currentLineIndex === dialog.content.length - 1;
+  
+  // Typewriter effect for dialog text
   useEffect(() => {
-    if (!currentSegment) return;
-    
-    // Reset state for new segment
-    textRef.current = currentSegment.text;
-    characterIndex.current = 0;
+    // Reset when line changes
     setDisplayedText('');
     setIsTyping(true);
+    setShowChoices(false);
     
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    const fullText = currentLine.text;
+    let currentIndex = 0;
+    
+    // Skip typing if user clicked to speed up
+    if (!isTyping) {
+      setDisplayedText(fullText);
+      return;
     }
     
-    // Set up typewriter effect
-    timerRef.current = setInterval(() => {
-      if (characterIndex.current < textRef.current.length) {
-        setDisplayedText(prev => prev + textRef.current[characterIndex.current]);
-        characterIndex.current++;
-      } else {
-        // Done typing
+    // Set up the typing interval
+    const typingInterval = setInterval(() => {
+      currentIndex++;
+      setDisplayedText(fullText.substring(0, currentIndex));
+      
+      // Check if typing is complete
+      if (currentIndex >= fullText.length) {
+        clearInterval(typingInterval);
         setIsTyping(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
+        
+        // Show choices if this is the last line
+        if (isLastLine && dialog.choices) {
+          setShowChoices(true);
         }
       }
     }, typingSpeed);
     
-    // Clean up on unmount or when dialog changes
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [currentSegment, typingSpeed]);
+    return () => clearInterval(typingInterval);
+  }, [currentLineIndex, currentLine, isTyping, isLastLine, dialog.choices]);
   
-  // Handle click to speed up or complete typing
-  const handleTextClick = () => {
+  // Advance to the next line or complete the dialog
+  const handleNext = () => {
+    // If still typing, show the whole text immediately
     if (isTyping) {
-      // Skip typing and show full text
-      setDisplayedText(textRef.current);
       setIsTyping(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+      setDisplayedText(currentLine.text);
+      
+      // Show choices if this is the last line
+      if (isLastLine && dialog.choices) {
+        setShowChoices(true);
       }
-    } else if (!currentSegment.responses) {
-      // If no responses, advance dialog
-      onClose();
+      return;
     }
+    
+    // If there are more lines, advance to the next one
+    if (currentLineIndex < dialog.content.length - 1) {
+      setCurrentLineIndex(prev => prev + 1);
+      setIsTyping(true);
+    } else if (!dialog.choices) {
+      // If no choices and no more lines, complete dialog
+      onComplete();
+    }
+    // Otherwise, keep showing the choices
   };
   
-  // Render character avatar
-  const renderAvatar = () => {
-    if (currentSegment.speaker && currentSegment.speaker.avatar) {
-      return (
-        <div className="dialog-avatar">
-          <img 
-            src={currentSegment.speaker.avatar} 
-            alt={currentSegment.speaker.name || 'Character'} 
-          />
-        </div>
-      );
-    }
-    return null;
+  // Handle selecting a dialog choice
+  const handleChoiceSelect = (choice: DialogChoice) => {
+    onChoiceSelected(choice);
   };
   
-  // Handle keyboard navigation for responses
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isTyping && currentSegment.responses) {
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key >= '1' && e.key <= '9') {
-        const responseIndex = parseInt(e.key) - 1;
-        if (responseIndex < currentSegment.responses.length) {
-          onResponseClick(responseIndex);
-        }
-      }
+  // Scroll to the bottom of the dialog when text changes
+  useEffect(() => {
+    if (lineRef.current) {
+      lineRef.current.scrollTop = lineRef.current.scrollHeight;
     }
-  };
+  }, [displayedText]);
   
   return (
-    <div 
-      className="dialog-container"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-    >
+    <div className="dialog-box-container">
       <div className="dialog-box">
-        {/* Header with speaker name */}
-        {currentSegment.speaker && (
+        <div className="dialog-header">
           <div 
-            className="dialog-header"
-            style={{ 
-              color: currentSegment.speaker.color || '#ffb973'
-            }}
+            className="speaker-name"
+            style={{ color: currentLine.speaker.color || '#ffffff' }}
           >
-            {currentSegment.speaker.name}
-          </div>
-        )}
-        
-        <div className="dialog-content">
-          {/* Avatar */}
-          {renderAvatar()}
-          
-          {/* Dialog text with typewriter effect */}
-          <div 
-            className="dialog-text"
-            onClick={handleTextClick}
-          >
-            <p>{displayedText}</p>
-            {isTyping && <span className="typing-cursor">▎</span>}
+            {currentLine.speaker.name}
           </div>
         </div>
         
-        {/* Response options */}
-        {!isTyping && currentSegment.responses && (
-          <div className="dialog-responses">
-            {currentSegment.responses.map((response, index) => (
-              <button
-                key={index}
-                className="dialog-response"
-                onClick={() => onResponseClick(index)}
-              >
-                <span className="response-number">{index + 1}</span>
-                <span className="response-text">{response.text}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="dialog-content" ref={lineRef}>
+          <div className="dialog-text">{displayedText}</div>
+          
+          {/* Choices */}
+          {showChoices && dialog.choices && (
+            <div className="dialog-choices">
+              {dialog.choices.map((choice, index) => (
+                <button
+                  key={`choice-${index}`}
+                  className="dialog-choice"
+                  onClick={() => handleChoiceSelect(choice)}
+                >
+                  {choice.text}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         
-        {/* Close button */}
-        {!isTyping && !currentSegment.responses && (
-          <div className="dialog-continue">
-            <button className="continue-button" onClick={onClose}>
-              Continue
-            </button>
+        {/* Continue indicator */}
+        {!showChoices && (
+          <div className="dialog-continue" onClick={handleNext}>
+            {isTyping ? (
+              <span className="typing-indicator">...</span>
+            ) : (
+              <div className="continue-icon">▼</div>
+            )}
           </div>
         )}
       </div>
       
-      <style jsx>{`
-        .dialog-container {
-          position: absolute;
-          bottom: 80px;
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: center;
-          padding: 0 20px;
-          z-index: 50;
-          outline: none;
-        }
-        
-        .dialog-box {
-          background-color: rgba(20, 20, 25, 0.95);
-          border: 2px solid #8a5c41;
-          border-radius: 8px;
-          width: 100%;
-          max-width: 800px;
-          animation: slideUp 0.3s ease-out;
-          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .dialog-header {
-          padding: 10px 15px;
-          background-color: rgba(30, 30, 35, 0.8);
-          border-bottom: 1px solid #8a5c41;
-          font-size: 16px;
-          font-weight: bold;
-        }
-        
-        .dialog-content {
-          display: flex;
-          padding: 15px;
-          min-height: 100px;
-        }
-        
-        .dialog-avatar {
-          flex-shrink: 0;
-          width: 80px;
-          height: 80px;
-          margin-right: 15px;
-          border-radius: 50%;
-          overflow: hidden;
-          border: 2px solid #8a5c41;
-        }
-        
-        .dialog-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .dialog-text {
-          flex: 1;
-          font-size: 16px;
-          line-height: 1.5;
-          color: #f1d7c5;
-          cursor: pointer;
-        }
-        
-        .dialog-text p {
-          margin: 0;
-        }
-        
-        .typing-cursor {
-          display: inline-block;
-          animation: blink 0.7s infinite;
-          color: #ffb973;
-          margin-left: 2px;
-        }
-        
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        
-        .dialog-responses {
-          display: flex;
-          flex-direction: column;
-          padding: 10px 15px;
-          gap: 8px;
-          border-top: 1px solid rgba(138, 92, 65, 0.3);
-        }
-        
-        .dialog-response {
-          display: flex;
-          align-items: center;
-          background-color: rgba(60, 40, 30, 0.4);
-          border: 1px solid #6a4331;
-          border-radius: 5px;
-          color: #f1d7c5;
-          padding: 8px 12px;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .dialog-response:hover {
-          background-color: rgba(80, 50, 30, 0.5);
-          border-color: #8a5c41;
-        }
-        
-        .response-number {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          width: 20px;
-          height: 20px;
-          background-color: rgba(138, 92, 65, 0.5);
-          border-radius: 50%;
-          margin-right: 10px;
-          font-size: 12px;
-        }
-        
-        .response-text {
-          flex: 1;
-        }
-        
-        .dialog-continue {
-          display: flex;
-          justify-content: center;
-          padding: 10px 15px;
-          border-top: 1px solid rgba(138, 92, 65, 0.3);
-        }
-        
-        .continue-button {
-          background-color: rgba(60, 40, 30, 0.6);
-          border: 1px solid #8a5c41;
-          border-radius: 5px;
-          color: #f1d7c5;
-          padding: 8px 15px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .continue-button:hover {
-          background-color: rgba(80, 50, 30, 0.7);
-          border-color: #a47755;
-        }
-      `}</style>
+      <style>
+        {`
+          .dialog-box-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px 20px;
+            z-index: 900;
+            pointer-events: none;
+          }
+          
+          .dialog-box {
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 30vh;
+            padding: 15px;
+            color: #e9e9e9;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+          }
+          
+          .dialog-header {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          
+          .speaker-name {
+            font-weight: bold;
+            font-size: 18px;
+          }
+          
+          .dialog-content {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding-right: 5px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+          }
+          
+          .dialog-content::-webkit-scrollbar {
+            width: 5px;
+          }
+          
+          .dialog-content::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          .dialog-content::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+          }
+          
+          .dialog-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+          }
+          
+          .dialog-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+          }
+          
+          .dialog-choice {
+            background-color: rgba(50, 50, 80, 0.6);
+            border: 1px solid rgba(100, 100, 150, 0.4);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: #ffffff;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+          }
+          
+          .dialog-choice:hover {
+            background-color: rgba(80, 80, 120, 0.8);
+          }
+          
+          .dialog-continue {
+            align-self: flex-end;
+            cursor: pointer;
+            padding: 5px;
+            text-align: center;
+          }
+          
+          .typing-indicator {
+            font-size: 20px;
+            animation: blink 1s infinite;
+          }
+          
+          .continue-icon {
+            animation: bounce 1s infinite;
+            font-size: 12px;
+          }
+          
+          @keyframes blink {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+          }
+          
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(3px); }
+          }
+          
+          @media (max-width: 640px) {
+            .dialog-box {
+              max-height: 40vh;
+            }
+            
+            .dialog-box-container {
+              padding: 0 10px 10px;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
+
+export default DialogBox;

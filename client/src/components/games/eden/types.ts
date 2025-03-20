@@ -1,63 +1,59 @@
 /**
- * Interface definitions for the Eden's Hollow game
+ * Eden's Hollow Game Types
+ * These types define the structure of the game's state and components
  */
 
-// Game state interface
+// Game State 
 export interface GameState {
   currentScene: string;
-  inventory: Item[];
-  health: number;
-  maxHealth: number;
-  mana: number;
-  maxMana: number;
-  status: Record<string, boolean>;
-  visitedScenes: string[];
-  activeDialog: string | null;
-  notifications: Notification[];
-  activePuzzle: string | null;
-  solvedPuzzles: string[];
-  interactedHotspots: string[];
-  gameTime: number; // In-game time in minutes (0-1440, representing a day)
-  fogLevel: number; // 0-100, affects visibility
+  status: {
+    health: number;
+    maxHealth: number;
+    mana: number;
+    maxMana: number;
+    has_light: boolean;
+    fog_reduction: boolean;
+    [key: string]: any;
+  };
+  inventory: InventoryItem[];
+  visitedScenes: Record<string, boolean>;
+  completedPuzzles: Record<string, boolean>;
+  triggeredDialogs: Record<string, boolean>;
+  collectedItems: Record<string, boolean>;
+  gameFlags: Record<string, boolean>;
+  activeDialog?: string;
+  activePuzzle?: string;
 }
 
-// Scene Interface
+// Game Actions
+export type GameAction =
+  | { type: 'CHANGE_SCENE'; payload: string }
+  | { type: 'INTERACT_HOTSPOT'; payload: string }
+  | { type: 'COLLECT_ITEM'; payload: string }
+  | { type: 'USE_ITEM'; payload: string }
+  | { type: 'COMBINE_ITEMS'; payload: { item1: string; item2: string } }
+  | { type: 'SOLVE_PUZZLE'; payload: { puzzleId: string; solution: string[] } }
+  | { type: 'DIALOG_CHOICE'; payload: { dialogId: string; choiceIndex: number } }
+  | { type: 'CLOSE_DIALOG' }
+  | { type: 'UPDATE_STATUS'; payload: { key: string; value: any } }
+  | { type: 'SAVE_GAME' }
+  | { type: 'LOAD_GAME' };
+
+// Scene Types
 export interface Scene {
   id: string;
   name: string;
   description: string;
   background: string;
-  ambient: AmbientSound;
+  music?: string;
+  ambientSound?: string;
+  lighting: 'dark' | 'normal' | 'bright' | 'fog';
   hotspots: Hotspot[];
   exits: Exit[];
-  items: ItemPlacement[];
-  onEnter?: SceneEffect;
-  onExit?: SceneEffect;
-  lighting?: 'normal' | 'dark' | 'fog' | 'moonlight';
+  items?: SceneItem[];
+  triggers?: SceneTrigger[];
 }
 
-// Ambient Sound Interface
-export interface AmbientSound {
-  sound: string;
-  volume?: number;
-  loop?: boolean;
-}
-
-// Scene Effect Interface
-export interface SceneEffect {
-  message?: string;
-  status?: Record<string, boolean>;
-  dialog?: string;
-  notification?: Notification;
-  damage?: number;
-  heal?: number;
-  mana?: number;
-  item?: string;
-  removeItem?: string;
-  fogChange?: number;
-}
-
-// Hotspot Interface
 export interface Hotspot {
   id: string;
   name: string;
@@ -66,220 +62,156 @@ export interface Hotspot {
   y: number;
   width: number;
   height: number;
-  action: 'examine' | 'take' | 'use' | 'puzzle' | 'dialog' | 'custom';
-  onInteract?: SceneEffect;
-  condition?: Condition;
-  puzzle?: string;
-  requiresItem?: string;
-  animation?: string;
-  // For custom actions
-  customAction?: (gameState: GameState) => GameState;
+  interaction: {
+    type: 'dialog' | 'puzzle' | 'item' | 'effect';
+    targetId: string;
+    data?: any;
+  };
+  condition?: string;
 }
 
-// Exit Interface
 export interface Exit {
   id: string;
   name: string;
   description: string;
-  targetScene: string | null;
-  condition?: Condition;
+  targetScene: string;
   position: {
     x: number;
     y: number;
     width: number;
     height: number;
   };
-  onInteract?: SceneEffect;
-  transition?: 'fade' | 'slide' | 'dissolve';
+  locked?: boolean;
+  keyId?: string;
+  condition?: string;
 }
 
-// Item Interface
-export interface Item {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  type: 'key' | 'weapon' | 'tool' | 'consumable' | 'quest' | 'note' | 'artifact';
-  quantity: number;
-  usable: boolean;
-  isConsumable: boolean;
-  effects?: Effect[];
-  metadata?: Record<string, any>;
-  condition?: Condition;
-  onUse?: (gameState: GameState, targetId?: string) => GameState;
-}
-
-// Item Placement Interface (for items in scenes)
-export interface ItemPlacement {
+export interface SceneItem {
   id: string;
   x: number;
   y: number;
   width: number;
   height: number;
-  condition?: Condition;
-  animation?: string;
+  condition?: string;
 }
 
-// Effect Interface (for items, puzzles, etc.)
-export interface Effect {
-  type: 'health' | 'mana' | 'status' | 'damage' | 'visibility' | 'special';
-  value: number | Record<string, boolean> | string;
-  duration?: number;
-}
-
-// Condition Interface
-export interface Condition {
-  item?: string;
-  hasItem?: boolean;
-  status?: Record<string, boolean>;
-  health?: { min?: number; max?: number };
-  mana?: { min?: number; max?: number };
-  gameTime?: { min?: number; max?: number };
-  dialog?: string;
-  mustBeCompleted?: boolean;
-  puzzle?: string;
-  mustBeSolved?: boolean;
-  fogLevel?: { min?: number; max?: number };
-  hotspot?: string;
-  mustBeInteracted?: boolean;
-  visitedScene?: string;
-  customCondition?: (gameState: GameState) => boolean;
-}
-
-// Notification Interface
-export interface Notification {
+export interface SceneTrigger {
   id: string;
-  message: string;
-  type: 'info' | 'warning' | 'discovery' | 'success' | 'danger';
-  duration: number;
-  autoDismiss: boolean;
-  icon?: string;
-  actionText?: string;
-  onAction?: (gameState: GameState) => GameState;
+  type: 'dialog' | 'puzzle' | 'notification' | 'effect';
+  targetId: string;
+  condition: string;
+  oneTime: boolean;
+  data?: any;
 }
 
-// Dialog Interface
+// Item System
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  image?: string;
+  category: 'key' | 'weapon' | 'consumable' | 'quest' | 'tool' | 'misc';
+  usable: boolean;
+  combinable?: boolean;
+  quantity?: number;
+  effect?: {
+    type: 'heal' | 'mana' | 'light' | 'status';
+    value: number;
+    duration?: number;
+  };
+}
+
+// Dialog System
 export interface Dialog {
   id: string;
-  content: DialogSegment[];
-  condition?: Condition;
-  onComplete?: SceneEffect;
+  content: DialogLine[];
+  choices?: DialogChoice[];
 }
 
-// Dialog Segment Interface
-export interface DialogSegment {
+export interface DialogLine {
   text: string;
   speaker: {
     name: string;
-    color: string;
     portrait?: string;
+    color?: string;
   };
-  responses?: DialogResponse[];
-  animation?: string;
-  sfx?: string;
-  nextIndex?: number;
 }
 
-// Dialog Response Interface
-export interface DialogResponse {
+export interface DialogChoice {
   text: string;
-  nextIndex: number;
-  condition?: Condition;
-  outcome?: SceneEffect;
+  next?: string;
+  effect?: {
+    type: 'status' | 'item' | 'health' | 'mana';
+    value: any;
+  };
 }
 
-// Puzzle Interface
+// Puzzle System
 export interface Puzzle {
   id: string;
-  type: 'combination' | 'slider' | 'pattern' | 'riddle' | 'lock';
-  title: string;
-  description: string;
-  solution: string[];
-  pieces?: string[];
-  attempts: number;
-  hints?: string[];
-  image?: string;
-  reward?: SceneEffect;
-  onFail?: SceneEffect;
-  condition?: Condition;
-  maxAttempts?: number;
-}
-
-// Character Interface for NPCs
-export interface Character {
-  id: string;
   name: string;
-  portrait: string;
   description: string;
-  dialogStyle: {
-    color: string;
-    font?: string;
-    speed?: number;
+  type: 'sequence' | 'combination' | 'riddle' | 'pattern' | 'text';
+  difficulty: 'easy' | 'medium' | 'hard';
+  solution: string[];
+  acceptedAnswers?: string[];
+  hint?: string;
+  image?: string;
+  reward?: {
+    type: 'item' | 'scene' | 'status';
+    id: string;
+    value?: any;
   };
-  initialDialog: string;
-  condition?: Condition;
-  animation?: string;
 }
 
-// Game Engine Interface
-export interface GameEngine {
-  initGame: () => GameState;
-  loadGame: (savedState: string) => GameState;
-  saveGame: (state: GameState) => string;
-  changeScene: (state: GameState, sceneId: string) => GameState;
-  interactWithHotspot: (state: GameState, hotspotId: string) => GameState;
-  useItem: (state: GameState, itemId: string, targetId?: string) => GameState;
-  takeItem: (state: GameState, itemId: string) => GameState;
-  showDialog: (state: GameState, dialogId: string) => GameState;
-  selectDialogOption: (state: GameState, optionIndex: number) => GameState;
-  attemptPuzzle: (state: GameState, puzzleId: string, attempt: string[]) => GameState;
-  addNotification: (state: GameState, notification: Notification) => GameState;
-  dismissNotification: (state: GameState, notificationId: string) => GameState;
-  updateGameTime: (state: GameState, minutes: number) => GameState;
-  changeFogLevel: (state: GameState, amount: number) => GameState;
-  applyEffect: (state: GameState, effect: Effect) => GameState;
-  checkCondition: (state: GameState, condition: Condition) => boolean;
+// Notification System
+export interface GameNotification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  message: string;
+  duration?: number; // in milliseconds, 0 for no auto-dismiss
 }
 
-// Props for various UI components
-export interface DialogBoxProps {
-  dialog: Dialog;
-  currentIndex: number;
-  onSelect: (optionIndex: number) => void;
-  onClose: () => void;
-}
-
-export interface SceneViewProps {
-  scene: Scene;
-  gameState: GameState;
-  onHotspotInteract: (hotspotId: string) => void;
-  onExitSelect: (exitId: string) => void;
-  onItemTake: (itemId: string) => void;
-}
-
-export interface InventoryPanelProps {
-  items: Item[];
-  onItemUse: (itemId: string) => void;
-  onItemInspect: (itemId: string) => void;
-}
-
-export interface NotificationSystemProps {
-  notifications: Notification[];
-  onDismiss: (notificationId: string) => void;
-  onAction: (notificationId: string) => void;
-}
-
-export interface PuzzleInterfaceProps {
-  puzzle: Puzzle;
-  onAttempt: (attempt: string[]) => void;
-  onClose: () => void;
-}
-
+// Component Props
 export interface StatusBarProps {
   health: number;
   maxHealth: number;
   mana: number;
   maxMana: number;
-  gameTime: number;
-  fogLevel: number;
+}
+
+export interface SceneViewProps {
+  scene: Scene;
+  gameState: GameState;
+  onHotspotClick: (hotspot: Hotspot) => void;
+  onExitClick: (exit: Exit) => void;
+  onItemClick: (item: SceneItem) => void;
+}
+
+export interface DialogBoxProps {
+  dialog: Dialog;
+  onComplete: () => void;
+  onChoiceSelected: (choice: DialogChoice) => void;
+}
+
+export interface NotificationSystemProps {
+  notifications: GameNotification[];
+  onDismiss: (id: string) => void;
+}
+
+export interface InventoryPanelProps {
+  items: InventoryItem[];
+  onUse: (item: InventoryItem) => void;
+  onExamine: (item: InventoryItem) => void;
+  onCombine: (item1: InventoryItem, item2: InventoryItem) => void;
+}
+
+export interface PuzzleInterfaceProps {
+  puzzle: Puzzle;
+  onSolve: (solution: string[]) => void;
+  onCancel: () => void;
+}
+
+export interface EdenGameProps {
+  // Any props for the main game component
 }
