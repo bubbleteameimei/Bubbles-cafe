@@ -346,8 +346,8 @@ export interface GameEngine {
   getCurrentScene(): Scene | null;
   changeScene(sceneId: string): void;
   startNewGame(): void;
-  saveProgress(): Promise<void>;
-  loadProgress(): Promise<void>;
+  saveProgress(): Promise<boolean>;
+  loadProgress(): Promise<boolean>;
   startDialog(dialogId: string): void;
   startPuzzle(puzzleId: string): void;
   onStateChange(callback: (state: GameState) => void): () => void;

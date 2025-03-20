@@ -559,25 +559,45 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
               if (initialized) {
                 setLoading(true);
                 gameEngine.saveProgress()
-                  .then(() => {
+                  .then((success) => {
                     setLoading(false);
-                    addNotification({
-                      id: 'game_saved',
-                      type: 'success',
-                      message: 'Game saved successfully',
-                      duration: 3000
-                    });
+                    if (success) {
+                      addNotification({
+                        id: 'game_saved',
+                        type: 'success',
+                        message: 'Game saved successfully',
+                        duration: 3000
+                      });
+                    } else {
+                      addNotification({
+                        id: 'save_error',
+                        type: 'warning',
+                        message: 'Unable to save game progress.',
+                        duration: 3000
+                      });
+                    }
                   })
-                  .catch(error => {
+                  .catch((error: unknown) => {
                     console.error('Error saving game:', error);
                     setLoading(false);
-                    addNotification({
-                      id: 'save_error',
-                      type: 'error',
-                      title: 'Error',
-                      message: 'Failed to save game. Please try again.',
-                      duration: 5000
-                    });
+                    
+                    if ((error as any)?.message?.includes('Unauthorized')) {
+                      addNotification({
+                        id: 'auth_required',
+                        type: 'warning',
+                        title: 'Login Required',
+                        message: 'You need to login to save or load games.',
+                        duration: 5000
+                      });
+                    } else {
+                      addNotification({
+                        id: 'save_error',
+                        type: 'error',
+                        title: 'Error',
+                        message: 'Failed to save game. Please try again.',
+                        duration: 5000
+                      });
+                    }
                   });
               }
               setShowMenu(false);
@@ -586,25 +606,45 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
               if (initialized) {
                 setLoading(true);
                 gameEngine.loadProgress()
-                  .then(() => {
+                  .then((success) => {
                     setLoading(false);
-                    addNotification({
-                      id: 'game_loaded',
-                      type: 'success',
-                      message: 'Game loaded successfully',
-                      duration: 3000
-                    });
+                    if (success) {
+                      addNotification({
+                        id: 'game_loaded',
+                        type: 'success',
+                        message: 'Game loaded successfully',
+                        duration: 3000
+                      });
+                    } else {
+                      addNotification({
+                        id: 'load_error',
+                        type: 'info',
+                        message: 'No saved game found. Starting new game.',
+                        duration: 3000
+                      });
+                    }
                   })
-                  .catch(error => {
+                  .catch((error: unknown) => {
                     console.error('Error loading game:', error);
                     setLoading(false);
-                    addNotification({
-                      id: 'load_error',
-                      type: 'error',
-                      title: 'Error',
-                      message: 'Failed to load game. Please try again.',
-                      duration: 5000
-                    });
+                    
+                    if ((error as any)?.message?.includes('Unauthorized')) {
+                      addNotification({
+                        id: 'auth_required',
+                        type: 'warning',
+                        title: 'Login Required',
+                        message: 'You need to login to save or load games.',
+                        duration: 5000
+                      });
+                    } else {
+                      addNotification({
+                        id: 'load_error',
+                        type: 'error',
+                        title: 'Error',
+                        message: 'Failed to load game. Please try again.',
+                        duration: 5000
+                      });
+                    }
                   });
               }
               setShowMenu(false);

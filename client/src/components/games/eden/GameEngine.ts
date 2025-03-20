@@ -851,6 +851,12 @@ class GameEngine {
         },
         body: JSON.stringify(progress)
       });
+      
+      // Handle auth errors separately
+      if (response.status === 401) {
+        console.log('User not authenticated for saving progress');
+        throw new Error('Unauthorized: Login required to save progress');
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to save progress: ${response.status}`);
@@ -872,6 +878,18 @@ class GameEngine {
       // Fetch progress from server
       const response = await fetch('/api/game/progress');
       
+      // Handle auth errors separately
+      if (response.status === 401) {
+        console.log('User not authenticated for loading progress');
+        throw new Error('Unauthorized: Login required to load progress');
+      }
+      
+      // Handle 404 separately as it's normal (no saved progress)
+      if (response.status === 404) {
+        console.log('No existing game progress found, starting new game');
+        return false;
+      }
+      
       if (!response.ok) {
         throw new Error(`Error loading progress: ${response.status} ${response.statusText}`);
       }
@@ -879,7 +897,8 @@ class GameEngine {
       const progressData = await response.json();
       
       if (!progressData) {
-        throw new Error('No progress data found');
+        console.log('No progress data found in response');
+        return false;
       }
       
       // Update game state with loaded progress
@@ -937,6 +956,12 @@ class GameEngine {
         },
         body: JSON.stringify(stats)
       });
+      
+      // Handle auth errors silently - stats are non-critical
+      if (response.status === 401) {
+        console.log('User not authenticated for updating stats - continuing without saving');
+        return false;
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to update stats: ${response.status}`);
@@ -1128,6 +1153,13 @@ class GameEngine {
   async getSaves(): Promise<any[]> {
     try {
       const response = await fetch('/api/game/saves');
+      
+      // Handle unauthorized users gracefully
+      if (response.status === 401) {
+        console.log('User not authenticated for fetching saves - returning empty array');
+        return [];
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch saves: ${response.status}`);
       }
@@ -1191,6 +1223,13 @@ class GameEngine {
   async loadGame(saveId: string): Promise<boolean> {
     try {
       const response = await fetch(`/api/game/saves/${saveId}`);
+      
+      // Handle auth errors separately
+      if (response.status === 401) {
+        console.log('User not authenticated for loading saved game');
+        throw new Error('Unauthorized: Login required to load saved game');
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to load save: ${response.status}`);
       }
