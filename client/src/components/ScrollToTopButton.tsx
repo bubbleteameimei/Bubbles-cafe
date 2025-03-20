@@ -21,8 +21,8 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
 
   // Position classes based on the position prop
   const positionClasses = {
-    "bottom-right": "right-6 bottom-6",
-    "bottom-left": "left-6 bottom-6"
+    "bottom-right": "right-4 bottom-4 mb-2 mr-1", // Match the FeedbackButton spacing
+    "bottom-left": "left-4 bottom-4 mb-2 ml-1"
   };
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
             variant="outline"
             aria-label="Scroll to top"
             className={cn(
-              "rounded-full bg-background/80 backdrop-blur-sm shadow-md hover:bg-accent/20",
+              "rounded-full bg-background/80 backdrop-blur-sm shadow-md hover:shadow-lg hover:bg-accent/20 transition-shadow",
               showLabel ? "px-4" : "size-10"
             )}
           >

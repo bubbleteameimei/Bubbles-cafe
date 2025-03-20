@@ -235,7 +235,7 @@ const AppContent = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-screen lg:ml-64">
+      <main className="min-h-screen lg:ml-64 pb-16">
         <AutoHideNavbar />
         <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
           <ErrorBoundary>
@@ -321,7 +321,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <CookieConsent />
-      <ScrollToTopButton />
+      <ScrollToTopButton position="bottom-right" />
       {/* Only show feedback button on homepage */}
       {location === '/' && (
         <FeedbackButton position="bottom-left" showIcon={true} buttonText="Feedback" />

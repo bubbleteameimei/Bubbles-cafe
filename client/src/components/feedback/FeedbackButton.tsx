@@ -31,7 +31,7 @@ export function FeedbackButton({
   // Map position to CSS classes
   const positionClasses = {
     'bottom-right': 'fixed bottom-4 right-4',
-    'bottom-left': 'fixed bottom-4 left-4',
+    'bottom-left': 'fixed bottom-4 left-4 mb-2 ml-1', // Adjusted for better positioning
     'top-right': 'fixed top-4 right-4',
     'top-left': 'fixed top-4 left-4',
   };
@@ -42,7 +42,7 @@ export function FeedbackButton({
         <Button 
           variant={variant} 
           size={size}
-          className={`${positionClasses[position]} z-50 shadow-md`}
+          className={`${positionClasses[position]} z-50 shadow-md hover:shadow-lg transition-shadow`}
           aria-label="Open feedback form"
         >
           {showIcon && <MessageSquare className="h-4 w-4 mr-2" />}

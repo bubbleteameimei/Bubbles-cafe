@@ -80,16 +80,16 @@ export default function Home() {
             style={{ zIndex: 1 }} // Changed from -1 to 1
           />
 
-          {/* Content */}
-          <div className="relative z-10 flex min-h-screen flex-col items-center justify-start pt-20 text-center max-w-3xl mx-auto px-4">
+          {/* Content - Moved upwards with less padding and spacing */}
+          <div className="relative z-10 flex min-h-screen flex-col items-center justify-start pt-8 text-center max-w-3xl mx-auto px-4">
             <FadeInSection style="horror" direction="scale" duration={0.8}>
-              <h1 className="font-bodoni text-5xl sm:text-6xl md:text-7xl mb-8 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
+              <h1 className="font-bodoni text-5xl sm:text-6xl md:text-7xl mb-4 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
                 <span>BUBBLE'S</span>
-                <span className="mt-2">CAFE</span>
+                <span className="mt-1">CAFE</span>
               </h1>
             </FadeInSection>
             
-            <div className="space-y-6 mb-12">
+            <div className="space-y-4 mb-8">
               <FadeInSection style="glitch" direction="up" delay={0.2} duration={0.6}>
                 <p className="text-lg sm:text-xl text-foreground/90 max-w-2xl leading-relaxed drop-shadow">
                   Each story here is a portal to the unexpected,
@@ -98,11 +98,11 @@ export default function Home() {
               </FadeInSection>
 
               <FadeInSection style="horror" direction="up" delay={0.3} duration={0.5}>
-                <div className="grid gap-4 sm:grid-cols-2 w-full max-w-lg">
+                <div className="grid gap-3 sm:grid-cols-2 w-full max-w-lg">
                   <Button
                     size="lg"
                     onClick={() => setLocation('/stories')}
-                    className="text-lg h-14 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm"
+                    className="text-lg h-12 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm"
                   >
                     Browse Stories
                     <Book className="ml-2 h-5 w-5" />
@@ -111,7 +111,7 @@ export default function Home() {
                     size="lg"
                     variant="secondary"
                     onClick={() => setLocation('/reader')}
-                    className="text-lg h-14 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
+                    className="text-lg h-12 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
                   >
                     Start Reading
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -119,22 +119,22 @@ export default function Home() {
                 </div>
               </FadeInSection>
               
-              <FadeInSection style="horror" direction="up" delay={0.4} duration={0.5} className="mt-10 mb-10">
+              <FadeInSection style="horror" direction="up" delay={0.4} duration={0.5} className="mt-5 mb-5">
                 <BuyMeCoffeeButton />
               </FadeInSection>
               
               {posts.length > 0 && (
-                <FadeInSection style="horror" delay={0.9} duration={0.8} className="mt-16 text-center space-y-4">
+                <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-6 text-center space-y-3">
                   <p className="text-sm font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => navigateToStory(posts[0].slug)}
                     className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200"
                   >
                     <h2 
-                      className="text-2xl font-bold mb-3 text-foreground/95 group-hover:text-primary transition-colors"
+                      className="text-2xl font-bold mb-2 text-foreground/95 group-hover:text-primary transition-colors"
                       dangerouslySetInnerHTML={{ __html: posts[0]?.title?.rendered || 'Featured Story' }}
                     />
-                    <div className="text-foreground/80 max-w-xl mx-auto mb-4 line-clamp-2">
+                    <div className="text-foreground/80 max-w-xl mx-auto mb-3 line-clamp-2">
                       {posts[0]?.content?.rendered && (
                         <motion.span
                           initial={{ opacity: 0, y: 10 }}
@@ -149,7 +149,7 @@ export default function Home() {
                       Read full story 
                       <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    <div className="text-sm font-medium text-foreground/70 mt-3">
+                    <div className="text-sm font-medium text-foreground/70 mt-2">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
                     </div>
                   </div>
