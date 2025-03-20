@@ -14,8 +14,8 @@
 import { z } from 'zod';
 import { ErrorCategory, ErrorSeverity, handleError, handleValidationError } from './error-handler';
 
-// Base URL for WordPress API - temporarily using invalid URL to test fallback
-const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://invalid-wordpress-url.example.com';
+// Base URL for WordPress API - using the WordPress.com REST API for your site
+const WORDPRESS_API_BASE = import.meta.env.VITE_WORDPRESS_API_URL || 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
 // Fallback to server API if WordPress is unavailable
 const SERVER_FALLBACK_API = '/api/posts';
@@ -239,8 +239,11 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': window.location.origin
           },
+          mode: 'cors',
+          credentials: 'omit',
           signal: controller.signal
         });
         
@@ -652,13 +655,29 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
 
 /**
  * Preload WordPress posts in the background for faster initial page load
+ * Enhanced with better error handling and initialization
  */
 export function preloadWordPressPosts(): Promise<void> {
   console.log('[WordPress] Starting background preload of posts');
   
   // Return a promise that resolves when the preload is complete
   return new Promise((resolve, reject) => {
-    fetchWordPressPosts({ perPage: 5, skipCache: true })
+    // First check API status to determine the best approach
+    checkWordPressApiStatus()
+      .then(isAvailable => {
+        if (!isAvailable) {
+          console.log('[WordPress] API unavailable, using fallback directly');
+          // Directly use server API to avoid unnecessary retries
+          return fallbackToServerAPI({ perPage: 5 });
+        }
+        
+        // API is available, fetch posts normally
+        return fetchWordPressPosts({ 
+          perPage: 5, 
+          skipCache: true,
+          maxRetries: 1  // Limit retries for initial load
+        });
+      })
       .then(result => {
         console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
         resolve();
