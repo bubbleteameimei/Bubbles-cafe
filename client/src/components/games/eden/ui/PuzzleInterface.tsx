@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { PuzzleInterfaceProps, Puzzle, PuzzleType } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { PuzzleInterfaceProps, Puzzle } from '../types';
 
 /**
- * PuzzleInterface Component
- * Handles displaying and interacting with different types of puzzles
+ * PuzzleInterface Component - Handles various types of puzzle interactions
  */
 const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
   puzzle,
@@ -11,653 +10,753 @@ const PuzzleInterface: React.FC<PuzzleInterfaceProps> = ({
   onClose,
   onHint
 }) => {
-  // State for puzzle interaction
-  const [userInput, setUserInput] = useState<string[]>(
-    Array(puzzle.type === 'combination' ? puzzle.solution.length : 1).fill('')
-  );
-  const [message, setMessage] = useState<string | null>(null);
+  const [userInput, setUserInput] = useState('');
+  const [sliderValues, setSliderValues] = useState<number[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
   const [showHint, setShowHint] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [shakingError, setShakingError] = useState(false);
-  const [solved, setSolved] = useState(false);
+  const [currentHint, setCurrentHint] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   
-  // Reset component when puzzle changes
+  // Initialize puzzle state
   useEffect(() => {
-    setUserInput(Array(puzzle.type === 'combination' ? puzzle.solution.length : 1).fill(''));
-    setMessage(null);
+    // Reset states when puzzle changes
+    setUserInput('');
+    setErrorMessage('');
     setShowHint(false);
-    setAttempts(0);
-    setSolved(false);
-    setShakingError(false);
-  }, [puzzle]);
-  
-  // Handle input change based on puzzle type
-  const handleInputChange = (value: string, index: number = 0) => {
-    const newInput = [...userInput];
+    setCurrentHint(0);
     
-    if (puzzle.type === 'combination') {
-      newInput[index] = value;
-    } else {
-      newInput[0] = value;
+    // Focus input if it exists
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
     
-    setUserInput(newInput);
-    setMessage(null);
+    // Initialize sliders based on puzzle data
+    if (puzzle.type === 'slider' && puzzle.data && Array.isArray(puzzle.data.initialValues)) {
+      setSliderValues([...puzzle.data.initialValues]);
+    }
+    
+    // Initialize puzzle-specific states
+    if (puzzle.type === 'pattern' && puzzle.data && Array.isArray(puzzle.data.options)) {
+      setSelectedOptions([]);
+    }
+  }, [puzzle.id]);
+  
+  // Check if puzzle solution is correct
+  const checkSolution = () => {
+    switch (puzzle.type) {
+      case 'riddle':
+        if (puzzle.acceptedAnswers) {
+          const answers = Array.isArray(puzzle.acceptedAnswers) 
+            ? puzzle.acceptedAnswers 
+            : [puzzle.acceptedAnswers];
+          
+          const isCorrect = answers.some(answer => 
+            userInput.toLowerCase().trim() === answer.toLowerCase().trim()
+          );
+          
+          if (isCorrect) {
+            onSolve();
+          } else {
+            setErrorMessage('That doesn\'t seem to be the right answer.');
+          }
+        }
+        break;
+        
+      case 'combination':
+        if (userInput === puzzle.data?.solution) {
+          onSolve();
+        } else {
+          setErrorMessage('That combination doesn\'t work.');
+        }
+        break;
+        
+      case 'slider':
+        const targetValues = puzzle.data?.targetValues;
+        if (targetValues && JSON.stringify(sliderValues) === JSON.stringify(targetValues)) {
+          onSolve();
+        } else {
+          setErrorMessage('The sliders aren\'t in the right positions yet.');
+        }
+        break;
+        
+      case 'pattern':
+        const pattern = puzzle.data?.pattern;
+        if (pattern && JSON.stringify(selectedOptions) === JSON.stringify(pattern)) {
+          onSolve();
+        } else {
+          setErrorMessage('That pattern isn\'t correct.');
+        }
+        break;
+        
+      case 'memory':
+        if (userInput === puzzle.data?.solution) {
+          onSolve();
+        } else {
+          setErrorMessage('That\'s not what you need to remember.');
+        }
+        break;
+        
+      case 'order':
+        const correctOrder = puzzle.data?.correctOrder;
+        if (correctOrder && JSON.stringify(selectedOptions) === JSON.stringify(correctOrder)) {
+          onSolve();
+        } else {
+          setErrorMessage('The order isn\'t correct.');
+        }
+        break;
+    }
   };
   
-  // Check if puzzle is solved
-  const checkSolution = () => {
-    setAttempts(attempts + 1);
+  // Handle input change for text-based puzzles
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserInput(e.target.value);
+    setErrorMessage('');
+  };
+  
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    checkSolution();
+  };
+  
+  // Handle slider change
+  const handleSliderChange = (index: number, value: number) => {
+    const newValues = [...sliderValues];
+    newValues[index] = value;
+    setSliderValues(newValues);
+    setErrorMessage('');
+  };
+  
+  // Handle option selection
+  const handleOptionSelect = (option: string) => {
+    setErrorMessage('');
     
-    let isSolved = false;
-    
-    if (puzzle.type === 'riddle' || puzzle.type === 'text') {
-      // For riddles, check if answer contains any of the accepted solutions
-      const answer = userInput[0].toLowerCase().trim();
-      isSolved = puzzle.acceptedAnswers.some(solution => 
-        answer.includes(solution.toLowerCase())
-      );
-    } else if (puzzle.type === 'combination') {
-      // For combinations, check exact match
-      isSolved = userInput.join('') === puzzle.solution.join('');
-    } else if (puzzle.type === 'pattern') {
-      // For patterns, check exact match
-      isSolved = userInput[0] === puzzle.solution.join('');
-    }
-    
-    if (isSolved) {
-      setMessage('Correct!');
-      setSolved(true);
-      // Notify parent component
-      setTimeout(() => {
-        onSolve();
-      }, 1500);
-    } else {
-      setMessage('Incorrect. Try again.');
-      // Shake the interface to indicate error
-      setShakingError(true);
-      setTimeout(() => setShakingError(false), 500);
-      
-      // Show hint after several failed attempts
-      if (attempts >= 2 && !showHint) {
-        setShowHint(true);
+    if (puzzle.type === 'pattern') {
+      // Toggle selection for pattern puzzles
+      if (selectedOptions.includes(option)) {
+        setSelectedOptions(selectedOptions.filter(opt => opt !== option));
+      } else {
+        setSelectedOptions([...selectedOptions, option]);
+      }
+    } else if (puzzle.type === 'order') {
+      // Add to sequence or remove if already last item for order puzzles
+      if (selectedOptions[selectedOptions.length - 1] === option) {
+        setSelectedOptions(selectedOptions.slice(0, -1));
+      } else if (!selectedOptions.includes(option)) {
+        setSelectedOptions([...selectedOptions, option]);
       }
     }
   };
   
-  // Request a hint
-  const requestHint = () => {
+  // Show the next hint
+  const handleHintClick = () => {
+    if (showHint) {
+      // If already showing a hint, go to next one
+      if (currentHint < puzzle.hints.length - 1) {
+        setCurrentHint(currentHint + 1);
+      } else {
+        // Cycle back to first hint
+        setCurrentHint(0);
+      }
+    } else {
+      // Show first hint
+      setShowHint(true);
+    }
+    
+    // Call parent hint handler
     onHint();
-    setShowHint(true);
   };
   
-  // Render puzzle based on type
+  // Render puzzle specific UI
   const renderPuzzleContent = () => {
     switch (puzzle.type) {
-      case 'combination':
-        return renderCombinationPuzzle();
       case 'riddle':
-        return renderRiddlePuzzle();
-      case 'pattern':
-        return renderPatternPuzzle();
+        return (
+          <div className="puzzle-riddle">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.image && (
+              <div className="puzzle-image-container">
+                <img src={puzzle.data.image} alt="Riddle clue" className="puzzle-image" />
+              </div>
+            )}
+            <form onSubmit={handleSubmit}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder="Enter your answer..."
+                className="puzzle-input"
+              />
+              <button type="submit" className="puzzle-submit">Solve</button>
+            </form>
+          </div>
+        );
+        
+      case 'combination':
+        return (
+          <div className="puzzle-combination">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.image && (
+              <div className="puzzle-image-container">
+                <img src={puzzle.data.image} alt="Lock" className="puzzle-image" />
+              </div>
+            )}
+            <div className="combination-input">
+              <input
+                ref={inputRef}
+                type="text"
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder="Enter combination..."
+                className="puzzle-input"
+                maxLength={puzzle.data?.maxLength || 10}
+              />
+              <button onClick={checkSolution} className="puzzle-submit">Try</button>
+            </div>
+          </div>
+        );
+        
       case 'slider':
-        return renderSliderPuzzle();
-      case 'text':
-        return renderTextPuzzle();
+        return (
+          <div className="puzzle-slider">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.image && (
+              <div className="puzzle-image-container">
+                <img src={puzzle.data.image} alt="Slider mechanism" className="puzzle-image" />
+              </div>
+            )}
+            <div className="sliders-container">
+              {sliderValues.map((value, index) => (
+                <div key={index} className="slider-item">
+                  <input
+                    type="range"
+                    min={puzzle.data?.minValue || 0}
+                    max={puzzle.data?.maxValue || 10}
+                    value={value}
+                    onChange={(e) => handleSliderChange(index, parseInt(e.target.value))}
+                    className="puzzle-slider-input"
+                  />
+                  <span className="slider-value">{value}</span>
+                </div>
+              ))}
+              <button onClick={checkSolution} className="puzzle-submit">Try</button>
+            </div>
+          </div>
+        );
+        
+      case 'pattern':
+        return (
+          <div className="puzzle-pattern">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.options && (
+              <div className="pattern-grid">
+                {puzzle.data.options.map((option, index) => (
+                  <button
+                    key={index}
+                    className={`pattern-option ${selectedOptions.includes(option) ? 'selected' : ''}`}
+                    onClick={() => handleOptionSelect(option)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={checkSolution} className="puzzle-submit">Check Pattern</button>
+          </div>
+        );
+        
+      case 'memory':
+        return (
+          <div className="puzzle-memory">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.longText && (
+              <div className="memory-text-container">
+                <p className="memory-text">{puzzle.data.longText}</p>
+              </div>
+            )}
+            <form onSubmit={handleSubmit}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder="What do you remember?"
+                className="puzzle-input"
+              />
+              <button type="submit" className="puzzle-submit">Answer</button>
+            </form>
+          </div>
+        );
+        
+      case 'order':
+        return (
+          <div className="puzzle-order">
+            <p className="puzzle-description">{puzzle.description}</p>
+            {puzzle.data?.options && (
+              <div className="order-options">
+                {puzzle.data.options.map((option, index) => (
+                  <button
+                    key={index}
+                    className={`order-option ${selectedOptions.includes(option) ? 'selected' : ''}`}
+                    onClick={() => handleOptionSelect(option)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="selected-order">
+              <p>Current sequence:</p>
+              <div className="order-sequence">
+                {selectedOptions.length > 0 ? (
+                  selectedOptions.map((option, index) => (
+                    <div key={index} className="order-item">
+                      {option}
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-sequence">No items selected</p>
+                )}
+              </div>
+            </div>
+            <button onClick={checkSolution} className="puzzle-submit">Check Order</button>
+          </div>
+        );
+        
       default:
-        return <div>Unsupported puzzle type</div>;
+        return (
+          <div className="puzzle-generic">
+            <p className="puzzle-description">{puzzle.description}</p>
+            <form onSubmit={handleSubmit}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder="Enter your solution..."
+                className="puzzle-input"
+              />
+              <button type="submit" className="puzzle-submit">Solve</button>
+            </form>
+          </div>
+        );
     }
   };
   
-  // Render combination lock puzzle
-  const renderCombinationPuzzle = () => {
-    return (
-      <div className="combination-puzzle">
-        <div className="combination-slots">
-          {userInput.map((value, index) => (
-            <div key={index} className="combination-slot">
-              <input
-                type="text"
-                value={value}
-                onChange={(e) => handleInputChange(e.target.value.slice(0, 1), index)}
-                maxLength={1}
-                className="combination-input"
-                disabled={solved}
-              />
-            </div>
-          ))}
-        </div>
-        {puzzle.image && (
-          <div className="puzzle-image-container">
-            <img src={puzzle.image} alt="Puzzle" className="puzzle-image" />
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  // Render riddle puzzle
-  const renderRiddlePuzzle = () => {
-    return (
-      <div className="riddle-puzzle">
-        <p className="riddle-text">{puzzle.question}</p>
-        {puzzle.image && (
-          <div className="puzzle-image-container">
-            <img src={puzzle.image} alt="Riddle" className="puzzle-image" />
-          </div>
-        )}
-        <input
-          type="text"
-          value={userInput[0]}
-          onChange={(e) => handleInputChange(e.target.value)}
-          className="riddle-input"
-          placeholder="Your answer..."
-          disabled={solved}
-        />
-      </div>
-    );
-  };
-  
-  // Render pattern puzzle (like a sequence or order puzzle)
-  const renderPatternPuzzle = () => {
-    const patternOptions = puzzle.options || [];
-    
-    return (
-      <div className="pattern-puzzle">
-        <p className="pattern-instruction">{puzzle.question}</p>
-        
-        {puzzle.image && (
-          <div className="puzzle-image-container">
-            <img src={puzzle.image} alt="Pattern" className="puzzle-image" />
-          </div>
-        )}
-        
-        <div className="pattern-output">
-          {userInput[0] && 
-            userInput[0].split('').map((char, index) => (
-              <div key={index} className="pattern-selected-item">
-                {char}
-              </div>
-            ))
-          }
-        </div>
-        
-        <div className="pattern-options">
-          {patternOptions.map((option, index) => (
-            <button
-              key={index}
-              className="pattern-option"
-              onClick={() => handleInputChange(userInput[0] + option)}
-              disabled={solved}
-            >
-              {option}
-            </button>
-          ))}
-          
-          <button
-            className="pattern-reset"
-            onClick={() => handleInputChange('')}
-            disabled={solved}
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-    );
-  };
-  
-  // Render slider puzzle (placeholder - would need more complex interaction)
-  const renderSliderPuzzle = () => {
-    return (
-      <div className="slider-puzzle">
-        <p className="slider-instruction">
-          Arrange the tiles to form the correct image.
-        </p>
-        <div className="slider-placeholder">
-          <p>Slider puzzle would need a more complex implementation</p>
-          {/* This would be implemented with actual draggable pieces */}
-        </div>
-        
-        {puzzle.image && (
-          <div className="puzzle-image-container">
-            <img src={puzzle.image} alt="Slider reference" className="puzzle-image" />
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  // Render text puzzle (similar to riddle but with different presentation)
-  const renderTextPuzzle = () => {
-    return (
-      <div className="text-puzzle">
-        <div className="text-puzzle-content">
-          {puzzle.longText && (
-            <div className="text-puzzle-scroll">
-              <p>{puzzle.longText}</p>
-            </div>
-          )}
-          
-          <p className="text-puzzle-question">{puzzle.question}</p>
-          
-          <input
-            type="text"
-            value={userInput[0]}
-            onChange={(e) => handleInputChange(e.target.value)}
-            className="text-puzzle-input"
-            placeholder="Your answer..."
-            disabled={solved}
-          />
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="puzzle-overlay">
-      <div className={`puzzle-container ${shakingError ? 'shaking' : ''} ${solved ? 'solved' : ''}`}>
+    <div className="puzzle-interface">
+      <div className="puzzle-container">
         <div className="puzzle-header">
           <h2 className="puzzle-title">{puzzle.name}</h2>
-          <button 
-            className="puzzle-close" 
-            onClick={onClose}
-            aria-label="Close puzzle"
-          >
-            ×
-          </button>
+          <span className="puzzle-difficulty">
+            {"⭐".repeat(puzzle.difficulty)}
+          </span>
+          <button className="puzzle-close" onClick={onClose}>✕</button>
         </div>
         
+        {/* Error message */}
+        {errorMessage && (
+          <div className="puzzle-error">
+            {errorMessage}
+          </div>
+        )}
+        
+        {/* Puzzle specific content */}
         <div className="puzzle-content">
           {renderPuzzleContent()}
-          
-          {message && (
-            <div className={`puzzle-message ${message.includes('Correct') ? 'success' : 'error'}`}>
-              {message}
-            </div>
-          )}
-          
-          {showHint && puzzle.hint && (
-            <div className="puzzle-hint">
-              <strong>Hint:</strong> {puzzle.hint}
-            </div>
-          )}
         </div>
         
-        <div className="puzzle-footer">
-          {!showHint && puzzle.hint && (
-            <button 
-              className="puzzle-hint-btn" 
-              onClick={requestHint}
-              disabled={solved}
-            >
-              Get Hint
-            </button>
-          )}
-          
+        {/* Hint section */}
+        <div className="puzzle-hint-section">
           <button 
-            className="puzzle-submit" 
-            onClick={checkSolution}
-            disabled={solved}
+            className="hint-button" 
+            onClick={handleHintClick}
           >
-            Submit
+            {showHint ? "Next Hint" : "Get Hint"}
           </button>
+          
+          {showHint && puzzle.hints && puzzle.hints.length > 0 && (
+            <div className="hint-display">
+              <p>{puzzle.hints[currentHint]}</p>
+              <span className="hint-counter">
+                Hint {currentHint + 1} of {puzzle.hints.length}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       
-      <style jsx>{`
-        .puzzle-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.8);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-          backdrop-filter: blur(5px);
-        }
-        
-        .puzzle-container {
-          background-color: rgba(20, 20, 20, 0.95);
-          border: 1px solid #444;
-          border-radius: 8px;
-          width: 90%;
-          max-width: 600px;
-          max-height: 80vh;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-          color: #eee;
-          font-family: 'Goudy Old Style', serif;
-        }
-        
-        .puzzle-container.shaking {
-          animation: shake 0.5s;
-        }
-        
-        .puzzle-container.solved {
-          box-shadow: 0 0 20px rgba(100, 255, 100, 0.6);
-          border-color: #4caf50;
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-          20%, 40%, 60%, 80% { transform: translateX(10px); }
-        }
-        
-        .puzzle-header {
-          background-color: rgba(0, 0, 0, 0.5);
-          padding: 15px 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 1px solid #333;
-        }
-        
-        .puzzle-title {
-          margin: 0;
-          font-size: 24px;
-        }
-        
-        .puzzle-close {
-          background: none;
-          border: none;
-          color: #ccc;
-          font-size: 28px;
-          line-height: 1;
-          cursor: pointer;
-          padding: 0;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .puzzle-close:hover {
-          color: #fff;
-        }
-        
-        .puzzle-content {
-          padding: 20px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        
-        .puzzle-footer {
-          padding: 15px 20px;
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          border-top: 1px solid #333;
-        }
-        
-        .puzzle-hint-btn, .puzzle-submit {
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 16px;
-          transition: background-color 0.2s;
-        }
-        
-        .puzzle-hint-btn {
-          background-color: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          color: #fff;
-        }
-        
-        .puzzle-hint-btn:hover:not(:disabled) {
-          background-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .puzzle-submit {
-          background-color: rgba(76, 175, 80, 0.2);
-          border: 1px solid rgba(76, 175, 80, 0.5);
-          color: #4caf50;
-        }
-        
-        .puzzle-submit:hover:not(:disabled) {
-          background-color: rgba(76, 175, 80, 0.3);
-        }
-        
-        .puzzle-hint-btn:disabled, .puzzle-submit:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .puzzle-message {
-          margin-top: 15px;
-          padding: 10px;
-          border-radius: 4px;
-          text-align: center;
-        }
-        
-        .puzzle-message.success {
-          background-color: rgba(76, 175, 80, 0.2);
-          border: 1px solid rgba(76, 175, 80, 0.5);
-          color: #4caf50;
-        }
-        
-        .puzzle-message.error {
-          background-color: rgba(244, 67, 54, 0.2);
-          border: 1px solid rgba(244, 67, 54, 0.5);
-          color: #f44336;
-        }
-        
-        .puzzle-hint {
-          margin-top: 15px;
-          padding: 10px;
-          background-color: rgba(255, 193, 7, 0.2);
-          border: 1px solid rgba(255, 193, 7, 0.5);
-          border-radius: 4px;
-          color: #ffc107;
-        }
-        
-        /* Combination puzzle specific styles */
-        .combination-puzzle {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-        }
-        
-        .combination-slots {
-          display: flex;
-          gap: 15px;
-        }
-        
-        .combination-slot {
-          width: 60px;
-          height: 60px;
-          background-color: rgba(0, 0, 0, 0.3);
-          border: 2px solid #555;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .combination-input {
-          width: 40px;
-          height: 40px;
-          background-color: transparent;
-          border: none;
-          color: #fff;
-          font-size: 24px;
-          text-align: center;
-        }
-        
-        /* Riddle puzzle specific styles */
-        .riddle-puzzle {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        
-        .riddle-text {
-          font-size: 18px;
-          line-height: 1.5;
-          font-style: italic;
-        }
-        
-        .riddle-input {
-          padding: 10px;
-          background-color: rgba(255, 255, 255, 0.1);
-          border: 1px solid #555;
-          border-radius: 4px;
-          color: #fff;
-          font-size: 16px;
-          width: 100%;
-        }
-        
-        /* Pattern puzzle specific styles */
-        .pattern-puzzle {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        
-        .pattern-instruction {
-          font-size: 18px;
-          line-height: 1.5;
-        }
-        
-        .pattern-output {
-          min-height: 60px;
-          background-color: rgba(0, 0, 0, 0.3);
-          border: 1px solid #555;
-          border-radius: 4px;
-          padding: 10px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        
-        .pattern-selected-item {
-          width: 40px;
-          height: 40px;
-          background-color: rgba(0, 0, 0, 0.5);
-          border: 1px solid #777;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-        }
-        
-        .pattern-options {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        
-        .pattern-option {
-          width: 50px;
-          height: 50px;
-          background-color: rgba(255, 255, 255, 0.1);
-          border: 1px solid #555;
-          border-radius: 4px;
-          color: #fff;
-          font-size: 18px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .pattern-option:hover:not(:disabled) {
-          background-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .pattern-reset {
-          background-color: rgba(244, 67, 54, 0.2);
-          border: 1px solid rgba(244, 67, 54, 0.5);
-          color: #f44336;
-          padding: 0 15px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        
-        .pattern-reset:hover:not(:disabled) {
-          background-color: rgba(244, 67, 54, 0.3);
-        }
-        
-        /* Text puzzle specific styles */
-        .text-puzzle {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        
-        .text-puzzle-scroll {
-          max-height: 200px;
-          overflow-y: auto;
-          padding: 10px;
-          background-color: rgba(0, 0, 0, 0.3);
-          border: 1px solid #555;
-          border-radius: 4px;
-          line-height: 1.5;
-        }
-        
-        .text-puzzle-question {
-          font-size: 18px;
-          font-weight: bold;
-        }
-        
-        .text-puzzle-input {
-          padding: 10px;
-          background-color: rgba(255, 255, 255, 0.1);
-          border: 1px solid #555;
-          border-radius: 4px;
-          color: #fff;
-          font-size: 16px;
-          width: 100%;
-        }
-        
-        /* Slider puzzle specific styles */
-        .slider-puzzle {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          align-items: center;
-        }
-        
-        .slider-instruction {
-          font-size: 18px;
-          text-align: center;
-        }
-        
-        .slider-placeholder {
-          width: 300px;
-          height: 300px;
-          background-color: rgba(0, 0, 0, 0.3);
-          border: 1px solid #555;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          text-align: center;
-        }
-        
-        /* Common image container for all puzzles */
-        .puzzle-image-container {
-          display: flex;
-          justify-content: center;
-          margin: 15px 0;
-        }
-        
-        .puzzle-image {
-          max-width: 100%;
-          max-height: 200px;
-          object-fit: contain;
-          border-radius: 4px;
-        }
-      `}</style>
+      <style>
+        {`
+          .puzzle-interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 800;
+            animation: fadeIn 0.3s ease;
+          }
+          
+          .puzzle-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(30, 30, 40, 0.95);
+            border: 1px solid rgba(100, 100, 150, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+            animation: slideDown 0.3s ease;
+          }
+          
+          .puzzle-header {
+            padding: 15px;
+            background-color: rgba(40, 40, 60, 0.8);
+            border-bottom: 1px solid rgba(100, 100, 150, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .puzzle-title {
+            margin: 0;
+            color: white;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+          }
+          
+          .puzzle-difficulty {
+            color: #ffcc00;
+            font-size: 1.2rem;
+          }
+          
+          .puzzle-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+          }
+          
+          .puzzle-close:hover {
+            color: white;
+          }
+          
+          .puzzle-error {
+            background-color: rgba(170, 30, 30, 0.3);
+            border-left: 4px solid #aa3333;
+            padding: 10px 15px;
+            color: #ffaaaa;
+            margin: 10px;
+            border-radius: 4px;
+            animation: shake 0.5s;
+          }
+          
+          .puzzle-content {
+            padding: 20px;
+            color: white;
+          }
+          
+          .puzzle-description {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+          }
+          
+          .puzzle-image-container {
+            text-align: center;
+            margin: 15px 0;
+          }
+          
+          .puzzle-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            border: 1px solid rgba(100, 100, 150, 0.3);
+          }
+          
+          .puzzle-input {
+            padding: 10px;
+            border: 1px solid rgba(100, 100, 150, 0.4);
+            border-radius: 4px;
+            background-color: rgba(20, 20, 30, 0.7);
+            color: white;
+            font-size: 16px;
+            width: calc(100% - 100px);
+            margin-right: 10px;
+          }
+          
+          .puzzle-input:focus {
+            outline: none;
+            border-color: rgba(100, 150, 255, 0.6);
+            box-shadow: 0 0 5px rgba(100, 150, 255, 0.3);
+          }
+          
+          .puzzle-submit {
+            padding: 10px 15px;
+            border: 1px solid rgba(100, 150, 200, 0.4);
+            border-radius: 4px;
+            background-color: rgba(60, 80, 150, 0.6);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .puzzle-submit:hover {
+            background-color: rgba(80, 100, 170, 0.8);
+          }
+          
+          /* Slider puzzle styles */
+          .sliders-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+          }
+          
+          .slider-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          
+          .puzzle-slider-input {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            background-color: rgba(50, 50, 70, 0.6);
+            border-radius: 4px;
+            outline: none;
+          }
+          
+          .puzzle-slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(100, 150, 200, 0.8);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .puzzle-slider-input::-webkit-slider-thumb:hover {
+            background-color: rgba(120, 170, 220, 1);
+          }
+          
+          .slider-value {
+            min-width: 30px;
+            text-align: center;
+            padding: 5px;
+            background-color: rgba(40, 40, 60, 0.6);
+            border-radius: 4px;
+          }
+          
+          /* Pattern puzzle styles */
+          .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+          }
+          
+          .pattern-option {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background-color: rgba(50, 50, 70, 0.6);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .pattern-option:hover {
+            background-color: rgba(70, 70, 90, 0.8);
+          }
+          
+          .pattern-option.selected {
+            background-color: rgba(80, 130, 200, 0.6);
+            border-color: rgba(100, 150, 220, 0.8);
+            box-shadow: 0 0 10px rgba(100, 150, 220, 0.3);
+          }
+          
+          /* Order puzzle styles */
+          .order-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+          }
+          
+          .order-option {
+            padding: 8px 15px;
+            background-color: rgba(50, 50, 70, 0.6);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+          }
+          
+          .order-option:hover {
+            background-color: rgba(70, 70, 90, 0.8);
+          }
+          
+          .order-option.selected {
+            background-color: rgba(80, 100, 140, 0.6);
+            opacity: 0.7;
+          }
+          
+          .selected-order {
+            margin-bottom: 20px;
+          }
+          
+          .order-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background-color: rgba(20, 20, 30, 0.5);
+            border-radius: 4px;
+            min-height: 40px;
+            align-items: center;
+          }
+          
+          .order-item {
+            padding: 5px 12px;
+            background-color: rgba(80, 130, 200, 0.6);
+            border-radius: 4px;
+            position: relative;
+          }
+          
+          .order-item:not(:last-child)::after {
+            content: "→";
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+          }
+          
+          .empty-sequence {
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+            margin: 0;
+          }
+          
+          /* Memory puzzle styles */
+          .memory-text-container {
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(20, 20, 30, 0.5);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(100, 100, 150, 0.3);
+          }
+          
+          .memory-text {
+            margin: 0;
+            line-height: 1.6;
+          }
+          
+          /* Hint section */
+          .puzzle-hint-section {
+            padding: 15px;
+            border-top: 1px solid rgba(100, 100, 150, 0.3);
+            background-color: rgba(20, 20, 30, 0.6);
+          }
+          
+          .hint-button {
+            padding: 8px 15px;
+            background-color: rgba(100, 70, 140, 0.6);
+            border: 1px solid rgba(150, 100, 200, 0.4);
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .hint-button:hover {
+            background-color: rgba(120, 90, 160, 0.8);
+          }
+          
+          .hint-display {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: rgba(60, 40, 80, 0.4);
+            border-left: 3px solid rgba(120, 80, 180, 0.6);
+            border-radius: 4px;
+          }
+          
+          .hint-display p {
+            margin: 0 0 8px 0;
+            font-style: italic;
+          }
+          
+          .hint-counter {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+          }
+          
+          /* Animations */
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+          }
+          
+          /* Mobile responsive */
+          @media (max-width: 500px) {
+            .puzzle-container {
+              width: 95%;
+            }
+            
+            .puzzle-title {
+              font-size: 1.2rem;
+            }
+            
+            .puzzle-description {
+              font-size: 14px;
+            }
+            
+            .puzzle-input {
+              width: calc(100% - 80px);
+              font-size: 14px;
+            }
+            
+            .puzzle-submit {
+              font-size: 14px;
+              padding: 8px 12px;
+            }
+            
+            .pattern-grid {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

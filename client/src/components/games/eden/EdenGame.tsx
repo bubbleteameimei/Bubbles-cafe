@@ -1,405 +1,277 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { EdenGameProps, Scene, Dialog, Puzzle, Notification, InventoryItem } from './types';
-import { GameEngine } from './GameEngine';
+import React, { useState, useEffect, useRef } from 'react';
+import { GameState, GameNotification, Scene, Dialog, Puzzle, GameResults } from './types';
+import GameEngine from './GameEngine';
 
 // UI Components
 import SceneView from './ui/SceneView';
 import DialogBox from './ui/DialogBox';
-import StatusBar from './ui/StatusBar';
 import InventoryPanel from './ui/InventoryPanel';
+import StatusBar from './ui/StatusBar';
 import NotificationSystem from './ui/NotificationSystem';
 import PuzzleInterface from './ui/PuzzleInterface';
 
-// Game data
-import scenesData from './data/scenes';
-import itemsData from './data/items';
-import dialogsData from './data/dialogs';
-import puzzlesData from './data/puzzles';
-
 /**
- * EdenGame Component
- * Main component for the Eden's Hollow game
+ * Eden's Hollow - Main Game Component
+ * 
+ * This component orchestrates all the game elements and manages the game state
+ * through the GameEngine.
  */
-const EdenGame: React.FC<EdenGameProps> = ({
-  initialState,
-  onGameSave,
-  onGameComplete
-}) => {
-  // Initialize game engine and data
-  const [gameEngine] = useState(() => new GameEngine(
-    scenesData,
-    dialogsData,
-    puzzlesData,
-    itemsData,
-    initialState
-  ));
+const EdenGame: React.FC = () => {
+  // Initialize game engine
+  const gameEngine = useRef<GameEngine>(new GameEngine());
   
-  // Game state
-  const [currentScene, setCurrentScene] = useState<Scene>(gameEngine.getCurrentScene());
-  const [health, setHealth] = useState(gameEngine.state.status.health);
-  const [maxHealth, setMaxHealth] = useState(gameEngine.state.status.maxHealth);
-  const [mana, setMana] = useState(gameEngine.state.status.mana);
-  const [maxMana, setMaxMana] = useState(gameEngine.state.status.maxMana);
-  const [gameTime, setGameTime] = useState(gameEngine.state.gameTime);
-  const [fogLevel, setFogLevel] = useState(gameEngine.state.fogLevel);
-  const [inventory, setInventory] = useState<InventoryItem[]>(gameEngine.state.inventory);
-  
-  // UI state
+  // State for current game elements
+  const [gameState, setGameState] = useState<GameState>(gameEngine.current.getState());
+  const [currentScene, setCurrentScene] = useState<Scene>(gameEngine.current.getCurrentScene());
   const [activeDialog, setActiveDialog] = useState<Dialog | null>(null);
-  const [dialogIndex, setDialogIndex] = useState(0);
   const [activePuzzle, setActivePuzzle] = useState<Puzzle | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [ending, setEnding] = useState<string | null>(null);
   
-  // Handle scene changes
+  // Set up event listeners when component mounts
   useEffect(() => {
-    const handleSceneChange = (scene: Scene) => {
+    const engine = gameEngine.current;
+    
+    // Scene change handler
+    const handleSceneChanged = (scene: Scene) => {
       setCurrentScene(scene);
+      setGameState(engine.getState());
     };
     
-    gameEngine.addEventListener('sceneChanged', handleSceneChange);
-    
-    return () => {
-      gameEngine.removeEventListener('sceneChanged', handleSceneChange);
-    };
-  }, [gameEngine]);
-  
-  // Handle status changes
-  useEffect(() => {
-    const handleStatusChange = (status: any) => {
-      setHealth(status.health);
-      setMaxHealth(status.maxHealth);
-      setMana(status.mana);
-      setMaxMana(status.maxMana);
+    // Dialog handlers
+    const handleDialogOpened = (dialog: Dialog) => {
+      setActiveDialog(dialog);
+      setGameState(engine.getState());
     };
     
-    gameEngine.addEventListener('statusChanged', handleStatusChange);
-    
-    return () => {
-      gameEngine.removeEventListener('statusChanged', handleStatusChange);
-    };
-  }, [gameEngine]);
-  
-  // Handle inventory changes
-  useEffect(() => {
-    const handleInventoryChange = (updatedInventory: InventoryItem[]) => {
-      setInventory([...updatedInventory]);
-    };
-    
-    gameEngine.addEventListener('inventoryChanged', handleInventoryChange);
-    
-    return () => {
-      gameEngine.removeEventListener('inventoryChanged', handleInventoryChange);
-    };
-  }, [gameEngine]);
-  
-  // Handle time changes
-  useEffect(() => {
-    const handleTimeChange = (time: number) => {
-      setGameTime(time);
-    };
-    
-    gameEngine.addEventListener('timeChanged', handleTimeChange);
-    
-    return () => {
-      gameEngine.removeEventListener('timeChanged', handleTimeChange);
-    };
-  }, [gameEngine]);
-  
-  // Handle fog changes
-  useEffect(() => {
-    const handleFogChange = (level: number) => {
-      setFogLevel(level);
-    };
-    
-    gameEngine.addEventListener('fogChanged', handleFogChange);
-    
-    return () => {
-      gameEngine.removeEventListener('fogChanged', handleFogChange);
-    };
-  }, [gameEngine]);
-  
-  // Handle dialog events
-  useEffect(() => {
-    const handleDialogStart = (data: { dialog: Dialog, initialIndex: number }) => {
-      setActiveDialog(data.dialog);
-      setDialogIndex(data.initialIndex);
-    };
-    
-    const handleDialogEnd = () => {
+    const handleDialogClosed = () => {
       setActiveDialog(null);
-      setDialogIndex(0);
+      setGameState(engine.getState());
     };
     
-    gameEngine.addEventListener('dialogStarted', handleDialogStart);
-    gameEngine.addEventListener('dialogEnded', handleDialogEnd);
-    
-    return () => {
-      gameEngine.removeEventListener('dialogStarted', handleDialogStart);
-      gameEngine.removeEventListener('dialogEnded', handleDialogEnd);
+    const handleDialogAdvanced = () => {
+      setGameState(engine.getState());
     };
-  }, [gameEngine]);
-  
-  // Handle puzzle events
-  useEffect(() => {
-    const handlePuzzleStart = (puzzle: Puzzle) => {
+    
+    // Puzzle handlers
+    const handlePuzzleStarted = (puzzle: Puzzle) => {
       setActivePuzzle(puzzle);
+      setGameState(engine.getState());
     };
     
     const handlePuzzleSolved = () => {
       setActivePuzzle(null);
+      setGameState(engine.getState());
     };
     
-    const handlePuzzleCancel = () => {
+    const handlePuzzleCancelled = () => {
       setActivePuzzle(null);
+      setGameState(engine.getState());
     };
     
-    gameEngine.addEventListener('puzzleStarted', handlePuzzleStart);
-    gameEngine.addEventListener('puzzleSolved', handlePuzzleSolved);
-    gameEngine.addEventListener('puzzleCancelled', handlePuzzleCancel);
+    // State change handlers
+    const handleInventoryChanged = () => {
+      setGameState(engine.getState());
+    };
     
+    const handleNotificationShown = () => {
+      setGameState(engine.getState());
+    };
+    
+    const handleNotificationDismissed = () => {
+      setGameState(engine.getState());
+    };
+    
+    // Game completion handler
+    const handleGameCompleted = (results: GameResults) => {
+      console.log('Game completed with results:', results);
+      // Display end screen, trigger completion callback, etc.
+    };
+    
+    // Register event listeners
+    engine.addEventListener('sceneChanged', handleSceneChanged);
+    engine.addEventListener('dialogOpened', handleDialogOpened);
+    engine.addEventListener('dialogClosed', handleDialogClosed);
+    engine.addEventListener('dialogAdvanced', handleDialogAdvanced);
+    engine.addEventListener('puzzleStarted', handlePuzzleStarted);
+    engine.addEventListener('puzzleSolved', handlePuzzleSolved);
+    engine.addEventListener('puzzleCancelled', handlePuzzleCancelled);
+    engine.addEventListener('inventoryChanged', handleInventoryChanged);
+    engine.addEventListener('notificationShown', handleNotificationShown);
+    engine.addEventListener('notificationDismissed', handleNotificationDismissed);
+    engine.addEventListener('gameCompleted', handleGameCompleted);
+    
+    // Clean up event listeners on unmount
     return () => {
-      gameEngine.removeEventListener('puzzleStarted', handlePuzzleStart);
-      gameEngine.removeEventListener('puzzleSolved', handlePuzzleSolved);
-      gameEngine.removeEventListener('puzzleCancelled', handlePuzzleCancel);
+      engine.removeEventListener('sceneChanged', handleSceneChanged);
+      engine.removeEventListener('dialogOpened', handleDialogOpened);
+      engine.removeEventListener('dialogClosed', handleDialogClosed);
+      engine.removeEventListener('dialogAdvanced', handleDialogAdvanced);
+      engine.removeEventListener('puzzleStarted', handlePuzzleStarted);
+      engine.removeEventListener('puzzleSolved', handlePuzzleSolved);
+      engine.removeEventListener('puzzleCancelled', handlePuzzleCancelled);
+      engine.removeEventListener('inventoryChanged', handleInventoryChanged);
+      engine.removeEventListener('notificationShown', handleNotificationShown);
+      engine.removeEventListener('notificationDismissed', handleNotificationDismissed);
+      engine.removeEventListener('gameCompleted', handleGameCompleted);
     };
-  }, [gameEngine]);
+  }, []);
   
-  // Handle notifications
+  // Save game state when component unmounts or before page reloads
   useEffect(() => {
-    const handleNotificationAdded = (notification: Notification) => {
-      setNotifications(prevNotifications => [...prevNotifications, notification]);
+    const handleBeforeUnload = () => {
+      localStorage.setItem('eden_game_save', JSON.stringify(gameEngine.current.saveGame()));
     };
     
-    const handleNotificationDismissed = (id: string) => {
-      setNotifications(prevNotifications => 
-        prevNotifications.filter(n => n.id !== id)
-      );
-    };
-    
-    gameEngine.addEventListener('notificationAdded', handleNotificationAdded);
-    gameEngine.addEventListener('notificationDismissed', handleNotificationDismissed);
+    window.addEventListener('beforeunload', handleBeforeUnload);
     
     return () => {
-      gameEngine.removeEventListener('notificationAdded', handleNotificationAdded);
-      gameEngine.removeEventListener('notificationDismissed', handleNotificationDismissed);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [gameEngine]);
+  }, []);
   
-  // Handle game completion
-  useEffect(() => {
-    const handleGameComplete = (endingId: string) => {
-      setIsGameOver(true);
-      setEnding(endingId);
-      
-      if (onGameComplete) {
-        onGameComplete(endingId);
-      }
-    };
-    
-    gameEngine.addEventListener('gameComplete', handleGameComplete);
-    
-    return () => {
-      gameEngine.removeEventListener('gameComplete', handleGameComplete);
-    };
-  }, [gameEngine, onGameComplete]);
+  // Handle hotspot interaction
+  const handleHotspotInteract = (hotspotId: string) => {
+    gameEngine.current.interactWithHotspot(hotspotId);
+  };
   
-  // Auto-save game state periodically
-  useEffect(() => {
-    if (!onGameSave) return;
-    
-    const saveInterval = setInterval(() => {
-      const savedState = gameEngine.saveGame();
-      onGameSave(savedState);
-    }, 30000); // Save every 30 seconds
-    
-    return () => {
-      clearInterval(saveInterval);
-    };
-  }, [gameEngine, onGameSave]);
+  // Handle exit selection
+  const handleExitSelect = (exitId: string) => {
+    gameEngine.current.useExit(exitId);
+  };
   
-  // Callback handlers for scene interactions
-  const handleHotspotInteract = useCallback((hotspotId: string) => {
-    gameEngine.interactWithHotspot(hotspotId);
-  }, [gameEngine]);
+  // Handle item pickup
+  const handleItemTake = (itemPlacementId: string) => {
+    gameEngine.current.takeItem(itemPlacementId);
+  };
   
-  const handleExitSelect = useCallback((exitId: string) => {
-    gameEngine.useExit(exitId);
-  }, [gameEngine]);
+  // Handle dialog response selection
+  const handleDialogSelect = (responseIndex: number) => {
+    gameEngine.current.selectDialogResponse(responseIndex);
+  };
   
-  const handleItemTake = useCallback((itemPlacementId: string) => {
-    gameEngine.takeItem(itemPlacementId);
-  }, [gameEngine]);
+  // Handle dialog close
+  const handleDialogClose = () => {
+    gameEngine.current.endDialog();
+  };
   
-  // Callback handlers for dialog interactions
-  const handleDialogSelect = useCallback((responseIndex: number) => {
-    gameEngine.selectDialogResponse(responseIndex);
-    
-    if (activeDialog?.content[dialogIndex]?.responses) {
-      const nextIndex = activeDialog.content[dialogIndex].responses?.[responseIndex]?.nextIndex;
-      
-      if (nextIndex !== undefined) {
-        setDialogIndex(nextIndex);
-      } else {
-        gameEngine.endDialog();
-      }
+  // Handle inventory item selection
+  const handleItemSelect = (itemId: string) => {
+    // This is just a selection, no direct action yet
+    console.log('Selected item:', itemId);
+  };
+  
+  // Handle inventory item use
+  const handleItemUse = (itemId: string) => {
+    gameEngine.current.useItem(itemId);
+  };
+  
+  // Handle inventory item examination
+  const handleItemExamine = (itemId: string) => {
+    gameEngine.current.examineItem(itemId);
+  };
+  
+  // Handle inventory item combination
+  const handleItemCombine = (itemId1: string, itemId2: string) => {
+    gameEngine.current.combineItems(itemId1, itemId2);
+  };
+  
+  // Handle notification dismissal
+  const handleNotificationDismiss = (notificationId: string) => {
+    gameEngine.current.dismissNotification(notificationId);
+  };
+  
+  // Handle notification action
+  const handleNotificationAction = (notificationId: string) => {
+    const notification = gameState.notifications.find(n => n.id === notificationId);
+    if (notification && notification.action) {
+      gameEngine.current.dismissNotification(notificationId);
+      // Process the action's event
+      gameEngine.current.processEvents([notification.action.event]);
     }
-  }, [gameEngine, activeDialog, dialogIndex]);
+  };
   
-  const handleDialogClose = useCallback(() => {
-    gameEngine.endDialog();
-  }, [gameEngine]);
+  // Handle puzzle solution
+  const handlePuzzleSolve = () => {
+    gameEngine.current.solvePuzzle();
+  };
   
-  // Callback handlers for inventory interactions
-  const handleItemSelect = useCallback((itemId: string) => {
-    // Simply selection, doesn't need game engine interaction
-  }, []);
+  // Handle puzzle cancellation
+  const handlePuzzleCancel = () => {
+    gameEngine.current.cancelPuzzle();
+  };
   
-  const handleItemUse = useCallback((itemId: string) => {
-    gameEngine.useItem(itemId);
-  }, [gameEngine]);
+  // Handle puzzle hint request
+  const handlePuzzleHint = () => {
+    // You could implement a hint system here
+    console.log('Hint requested for puzzle');
+  };
   
-  const handleItemExamine = useCallback((itemId: string) => {
-    gameEngine.examineItem(itemId);
-  }, [gameEngine]);
-  
-  const handleItemCombine = useCallback((itemId1: string, itemId2: string) => {
-    gameEngine.combineItems(itemId1, itemId2);
-  }, [gameEngine]);
-  
-  // Callback handlers for notification interactions
-  const handleNotificationDismiss = useCallback((id: string) => {
-    gameEngine.dismissNotification(id);
-  }, [gameEngine]);
-  
-  const handleNotificationAction = useCallback((id: string) => {
-    // Custom actions would go here
-    // For now, just dismiss the notification
-    gameEngine.dismissNotification(id);
-  }, [gameEngine]);
-  
-  // Callback handlers for puzzle interactions
-  const handlePuzzleSolve = useCallback(() => {
-    gameEngine.solvePuzzle();
-  }, [gameEngine]);
-  
-  const handlePuzzleClose = useCallback(() => {
-    gameEngine.cancelPuzzle();
-  }, [gameEngine]);
-  
-  const handlePuzzleHint = useCallback(() => {
-    // Could trigger additional gameplay effects
-  }, []);
-  
-  // Game over screen
-  if (isGameOver) {
-    return (
-      <div className="game-over-screen">
-        <h1>The End</h1>
-        <h2>{ending === 'good' ? 'You escaped Eden\'s Hollow!' : 'The darkness claimed you...'}</h2>
-        <p>Thank you for playing.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="eden-game">
-      {/* Main scene view */}
+      {/* Scene View - Main game visual area */}
       <SceneView 
         scene={currentScene}
-        gameState={gameEngine.state}
         onHotspotInteract={handleHotspotInteract}
         onExitSelect={handleExitSelect}
         onItemTake={handleItemTake}
       />
       
-      {/* Dialog overlay */}
+      {/* Status Bar - Player stats */}
+      <StatusBar 
+        health={gameState.player.health}
+        maxHealth={gameState.player.maxHealth}
+        mana={gameState.player.mana}
+        maxMana={gameState.player.maxMana}
+      />
+      
+      {/* Dialog Box - Character conversations */}
       {activeDialog && (
         <DialogBox 
           dialog={activeDialog}
-          currentIndex={dialogIndex}
+          currentIndex={gameState.dialogLineIndex}
           onSelect={handleDialogSelect}
           onClose={handleDialogClose}
         />
       )}
       
-      {/* Puzzle overlay */}
+      {/* Puzzle Interface - Game puzzles */}
       {activePuzzle && (
         <PuzzleInterface 
           puzzle={activePuzzle}
           onSolve={handlePuzzleSolve}
-          onClose={handlePuzzleClose}
+          onClose={handlePuzzleCancel}
           onHint={handlePuzzleHint}
         />
       )}
       
-      {/* Status bar */}
-      <StatusBar 
-        health={health}
-        maxHealth={maxHealth}
-        mana={mana}
-        maxMana={maxMana}
-        gameTime={gameTime}
-        fogLevel={fogLevel}
-      />
-      
-      {/* Inventory panel */}
+      {/* Inventory Panel - Item management */}
       <InventoryPanel 
-        inventory={inventory}
+        inventory={gameState.inventory}
         onItemSelect={handleItemSelect}
         onItemUse={handleItemUse}
         onItemExamine={handleItemExamine}
         onItemCombine={handleItemCombine}
       />
       
-      {/* Notification system */}
+      {/* Notification System - Game alerts */}
       <NotificationSystem 
-        notifications={notifications}
+        notifications={gameState.notifications}
         onDismiss={handleNotificationDismiss}
         onAction={handleNotificationAction}
       />
       
-      <style jsx>{`
-        .eden-game {
-          position: relative;
-          width: 100%;
-          height: 100vh;
-          overflow: hidden;
-          font-family: 'Goudy Old Style', serif;
-        }
-        
-        .game-over-screen {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background-color: rgba(0, 0, 0, 0.9);
-          color: #fff;
-          text-align: center;
-          z-index: 2000;
-        }
-        
-        .game-over-screen h1 {
-          font-size: 48px;
-          margin-bottom: 20px;
-        }
-        
-        .game-over-screen h2 {
-          font-size: 32px;
-          margin-bottom: 40px;
-        }
-        
-        .game-over-screen p {
-          font-size: 18px;
-          opacity: 0.7;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .eden-game {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Georgia', serif;
+          }
+        `}
+      </style>
     </div>
   );
 };

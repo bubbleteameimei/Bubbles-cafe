@@ -1,163 +1,267 @@
 import React, { useState, useEffect } from 'react';
-import { GameNotification, NotificationSystemProps } from '../types';
+import { NotificationSystemProps, GameNotification } from '../types';
 
 /**
- * NotificationSystem component - Displays game notifications and alerts
+ * NotificationSystem Component - Displays game notifications and alerts
  */
 const NotificationSystem: React.FC<NotificationSystemProps> = ({
   notifications,
-  onDismiss
+  onDismiss,
+  onAction
 }) => {
-  const [activeNotifications, setActiveNotifications] = useState<GameNotification[]>([]);
+  const [visibleNotifications, setVisibleNotifications] = useState<GameNotification[]>([]);
+  const [animatingOut, setAnimatingOut] = useState<Record<string, boolean>>({});
   
-  // Update active notifications when props change
+  // Update visible notifications when props change
   useEffect(() => {
-    setActiveNotifications(notifications);
+    setVisibleNotifications(notifications);
+  }, [notifications]);
+  
+  // Setup auto-dismiss timers for notifications
+  useEffect(() => {
+    // For each notification with a timeout
+    const timers = notifications
+      .filter(n => n.timeout && n.timeout > 0)
+      .map(notification => {
+        // Set a timer to dismiss this notification after timeout
+        return setTimeout(() => {
+          handleDismiss(notification.id);
+        }, notification.timeout);
+      });
     
-    // Auto-dismiss notifications with duration > 0
-    notifications.forEach(notification => {
-      if (notification.duration && notification.duration > 0) {
-        const timer = setTimeout(() => {
-          onDismiss(notification.id);
-        }, notification.duration);
-        
-        return () => clearTimeout(timer);
-      }
-    });
+    // Clear timers on unmount
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
   }, [notifications, onDismiss]);
   
-  // Get appropriate styling based on notification type
-  const getNotificationClass = (type: string): string => {
+  // Handle dismissal with animation
+  const handleDismiss = (id: string) => {
+    // Start animation out
+    setAnimatingOut(prev => ({ ...prev, [id]: true }));
+    
+    // After animation completes, call the actual dismiss handler
+    setTimeout(() => {
+      onDismiss(id);
+    }, 300); // Match the animation duration
+  };
+  
+  // Handle action button click
+  const handleAction = (id: string) => {
+    onAction(id);
+  };
+  
+  // Get class name based on notification type
+  const getNotificationClass = (type: GameNotification['type']) => {
     switch (type) {
-      case 'success':
-        return 'notification-success';
       case 'warning':
         return 'notification-warning';
-      case 'error':
-        return 'notification-error';
+      case 'danger':
+        return 'notification-danger';
+      case 'discovery':
+        return 'notification-discovery';
+      case 'achievement':
+        return 'notification-achievement';
       default:
         return 'notification-info';
     }
   };
   
-  // Handle manual dismissal
-  const handleDismiss = (id: string) => {
-    onDismiss(id);
+  // Get icon based on notification type
+  const getNotificationIcon = (type: GameNotification['type']) => {
+    switch (type) {
+      case 'warning':
+        return '⚠️';
+      case 'danger':
+        return '🔥';
+      case 'discovery':
+        return '🔍';
+      case 'achievement':
+        return '🏆';
+      default:
+        return 'ℹ️';
+    }
   };
   
-  if (activeNotifications.length === 0) {
-    return null;
-  }
-  
   return (
-    <div className="notification-container">
-      {activeNotifications.map(notification => (
-        <div
+    <div className="notification-system">
+      {visibleNotifications.map(notification => (
+        <div 
           key={notification.id}
-          className={`notification ${getNotificationClass(notification.type)}`}
-          role="alert"
+          className={`notification ${getNotificationClass(notification.type)} ${
+            animatingOut[notification.id] ? 'animate-out' : 'animate-in'
+          }`}
         >
-          <div className="notification-content">
-            <p>{notification.message}</p>
+          <div className="notification-icon">
+            {getNotificationIcon(notification.type)}
           </div>
+          
+          <div className="notification-content">
+            <div className="notification-message">
+              {notification.message}
+            </div>
+            
+            {notification.action && (
+              <button
+                className="notification-action"
+                onClick={() => handleAction(notification.id)}
+              >
+                {notification.action.label}
+              </button>
+            )}
+          </div>
+          
           <button 
-            className="notification-dismiss" 
+            className="notification-dismiss"
             onClick={() => handleDismiss(notification.id)}
             aria-label="Dismiss notification"
           >
-            ×
+            ✕
           </button>
         </div>
       ))}
       
       <style>
         {`
-          .notification-container {
+          .notification-system {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
+            top: 20px;
+            left: 20px;
+            z-index: 900;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 300px;
+            max-width: 350px;
+            pointer-events: none;
           }
           
           .notification {
+            background-color: rgba(30, 30, 40, 0.9);
+            border-left: 4px solid #666;
+            color: white;
+            padding: 12px;
+            border-radius: 4px;
             display: flex;
             align-items: flex-start;
-            padding: 15px;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            animation: notification-fade-in 0.3s ease-out forwards;
-            backdrop-filter: blur(3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            transform-origin: top left;
+            transition: all 0.3s ease;
           }
           
-          @keyframes notification-fade-in {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
+          .notification.animate-in {
+            animation: slideIn 0.3s ease forwards;
+          }
+          
+          .notification.animate-out {
+            animation: slideOut 0.3s ease forwards;
+          }
+          
+          .notification-info {
+            border-left-color: #3498db;
+          }
+          
+          .notification-warning {
+            border-left-color: #f39c12;
+          }
+          
+          .notification-danger {
+            border-left-color: #e74c3c;
+          }
+          
+          .notification-discovery {
+            border-left-color: #9b59b6;
+          }
+          
+          .notification-achievement {
+            border-left-color: #2ecc71;
+          }
+          
+          .notification-icon {
+            margin-right: 10px;
+            font-size: 20px;
           }
           
           .notification-content {
             flex: 1;
+            padding-right: 5px;
           }
           
-          .notification-content p {
-            margin: 0;
+          .notification-message {
             font-size: 14px;
+            margin-bottom: 5px;
             line-height: 1.4;
+          }
+          
+          .notification-action {
+            background-color: rgba(80, 80, 100, 0.3);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            color: white;
+            padding: 3px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+          }
+          
+          .notification-action:hover {
+            background-color: rgba(100, 100, 120, 0.5);
           }
           
           .notification-dismiss {
             background: none;
             border: none;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
             cursor: pointer;
-            padding: 0 0 0 10px;
-            margin-top: -5px;
-            transition: color 0.2s;
+            font-size: 14px;
+            padding: 0 5px;
+            transition: color 0.2s ease;
           }
           
           .notification-dismiss:hover {
-            color: rgba(255, 255, 255, 1);
-          }
-          
-          /* Notification Types */
-          .notification-info {
-            background-color: rgba(30, 100, 180, 0.85);
-            border-left: 3px solid #3498db;
             color: white;
           }
           
-          .notification-success {
-            background-color: rgba(40, 150, 90, 0.85);
-            border-left: 3px solid #2ecc71;
-            color: white;
+          @keyframes slideIn {
+            0% {
+              opacity: 0;
+              transform: translateX(-20px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateX(0);
+            }
           }
           
-          .notification-warning {
-            background-color: rgba(200, 120, 30, 0.85);
-            border-left: 3px solid #f39c12;
-            color: white;
+          @keyframes slideOut {
+            0% {
+              opacity: 1;
+              transform: translateX(0);
+            }
+            100% {
+              opacity: 0;
+              transform: translateX(-20px);
+            }
           }
           
-          .notification-error {
-            background-color: rgba(180, 40, 40, 0.85);
-            border-left: 3px solid #e74c3c;
-            color: white;
-          }
-          
-          /* Dark Theme Adjustments */
-          @media (prefers-color-scheme: dark) {
+          @media (max-width: 500px) {
+            .notification-system {
+              top: 10px;
+              left: 10px;
+              max-width: calc(100% - 20px);
+            }
+            
             .notification {
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+              padding: 8px;
+            }
+            
+            .notification-icon {
+              font-size: 16px;
+            }
+            
+            .notification-message {
+              font-size: 12px;
             }
           }
         `}

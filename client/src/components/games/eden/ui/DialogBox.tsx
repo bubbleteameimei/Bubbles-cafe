@@ -1,267 +1,408 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DialogBoxProps, DialogChoice } from '../types';
+import { DialogBoxProps, DialogLine } from '../types';
 
 /**
- * DialogBox component - Displays in-game dialog with a typewriter effect
+ * DialogBox Component - Displays character dialog with typewriter effect
  */
 const DialogBox: React.FC<DialogBoxProps> = ({
   dialog,
-  onComplete,
-  onChoiceSelected
+  currentIndex,
+  onSelect,
+  onClose
 }) => {
-  const [currentLineIndex, setCurrentLineIndex] = useState<number>(0);
   const [displayedText, setDisplayedText] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(true);
-  const [showChoices, setShowChoices] = useState<boolean>(false);
-  const typingSpeed = 30; // ms per character
-  const lineRef = useRef<HTMLDivElement>(null);
+  const [typewriterSpeed, setTypewriterSpeed] = useState<number>(30); // ms per character
+  const currentLine = dialog.lines[currentIndex];
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
   
-  // Get the current dialog line
-  const currentLine = dialog.content[currentLineIndex];
-  const isLastLine = currentLineIndex === dialog.content.length - 1;
-  
-  // Typewriter effect for dialog text
+  // Reset typing state when dialog or index changes
   useEffect(() => {
-    // Reset when line changes
-    setDisplayedText('');
     setIsTyping(true);
-    setShowChoices(false);
+    setDisplayedText('');
+    startTypewriterEffect();
     
-    const fullText = currentLine.text;
-    let currentIndex = 0;
-    
-    // Skip typing if user clicked to speed up
-    if (!isTyping) {
-      setDisplayedText(fullText);
-      return;
-    }
-    
-    // Set up the typing interval
-    const typingInterval = setInterval(() => {
-      currentIndex++;
-      setDisplayedText(fullText.substring(0, currentIndex));
-      
-      // Check if typing is complete
-      if (currentIndex >= fullText.length) {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-        
-        // Show choices if this is the last line
-        if (isLastLine && dialog.choices) {
-          setShowChoices(true);
-        }
+    // Clean up typing timer when unmounting or changing dialog/index
+    return () => {
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
       }
-    }, typingSpeed);
-    
-    return () => clearInterval(typingInterval);
-  }, [currentLineIndex, currentLine, isTyping, isLastLine, dialog.choices]);
+    };
+  }, [dialog.id, currentIndex]);
   
-  // Advance to the next line or complete the dialog
-  const handleNext = () => {
-    // If still typing, show the whole text immediately
-    if (isTyping) {
-      setIsTyping(false);
-      setDisplayedText(currentLine.text);
-      
-      // Show choices if this is the last line
-      if (isLastLine && dialog.choices) {
-        setShowChoices(true);
-      }
-      return;
-    }
-    
-    // If there are more lines, advance to the next one
-    if (currentLineIndex < dialog.content.length - 1) {
-      setCurrentLineIndex(prev => prev + 1);
-      setIsTyping(true);
-    } else if (!dialog.choices) {
-      // If no choices and no more lines, complete dialog
-      onComplete();
-    }
-    // Otherwise, keep showing the choices
-  };
-  
-  // Handle selecting a dialog choice
-  const handleChoiceSelect = (choice: DialogChoice) => {
-    onChoiceSelected(choice);
-  };
-  
-  // Scroll to the bottom of the dialog when text changes
+  // Scroll to bottom when text updates
   useEffect(() => {
-    if (lineRef.current) {
-      lineRef.current.scrollTop = lineRef.current.scrollHeight;
+    if (textContainerRef.current) {
+      textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight;
     }
   }, [displayedText]);
+  
+  // Typewriter effect
+  const startTypewriterEffect = () => {
+    let index = 0;
+    const fullText = currentLine.text;
+    
+    // Clear any existing timer
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+    }
+    
+    // Function to add one character at a time
+    const typeNextCharacter = () => {
+      if (index < fullText.length) {
+        setDisplayedText(fullText.substring(0, index + 1));
+        index++;
+        
+        // Adjust speed for punctuation (pause slightly for periods, commas)
+        let delay = typewriterSpeed;
+        const currentChar = fullText[index - 1];
+        if (['.', '!', '?'].includes(currentChar)) {
+          delay = typewriterSpeed * 5;
+        } else if ([',', ';', ':'].includes(currentChar)) {
+          delay = typewriterSpeed * 3;
+        }
+        
+        typingTimerRef.current = setTimeout(typeNextCharacter, delay);
+      } else {
+        setIsTyping(false);
+      }
+    };
+    
+    // Start typing
+    typingTimerRef.current = setTimeout(typeNextCharacter, 300); // Initial delay before typing starts
+  };
+  
+  // Skip typewriter effect and show full text
+  const skipTypewriterEffect = () => {
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+    }
+    setDisplayedText(currentLine.text);
+    setIsTyping(false);
+  };
+  
+  // Handle clicking on text
+  const handleTextClick = () => {
+    if (isTyping) {
+      skipTypewriterEffect();
+    } else if (!currentLine.responses || currentLine.responses.length === 0) {
+      // If there are no responses, clicking again will advance to the next line
+      if (currentLine.nextIndex !== undefined) {
+        onSelect(-1); // -1 indicates auto-advance
+      } else {
+        onClose();
+      }
+    }
+  };
+  
+  // Get the right character name to display
+  const getCharacterName = () => {
+    return currentLine.speaker || dialog.character;
+  };
+  
+  // Get emotion CSS class
+  const getEmotionClass = () => {
+    if (!currentLine.emotion) return '';
+    return `dialog-emotion-${currentLine.emotion.toLowerCase()}`;
+  };
   
   return (
     <div className="dialog-box-container">
       <div className="dialog-box">
-        <div className="dialog-header">
-          <div 
-            className="speaker-name"
-            style={{ color: currentLine.speaker.color || '#ffffff' }}
-          >
-            {currentLine.speaker.name}
+        {/* Character portrait */}
+        {dialog.avatar && (
+          <div className={`dialog-avatar ${getEmotionClass()}`}>
+            <img
+              src={dialog.avatar}
+              alt={getCharacterName()}
+              className="avatar-image"
+            />
           </div>
-        </div>
+        )}
         
-        <div className="dialog-content" ref={lineRef}>
-          <div className="dialog-text">{displayedText}</div>
+        {/* Dialog content */}
+        <div className="dialog-content">
+          {/* Character name */}
+          <div className="dialog-name">
+            {getCharacterName()}
+            {currentLine.emotion && (
+              <span className="dialog-emotion">
+                {` (${currentLine.emotion})`}
+              </span>
+            )}
+          </div>
           
-          {/* Choices */}
-          {showChoices && dialog.choices && (
-            <div className="dialog-choices">
-              {dialog.choices.map((choice, index) => (
+          {/* Text with typewriter effect */}
+          <div
+            ref={textContainerRef}
+            className="dialog-text"
+            onClick={handleTextClick}
+          >
+            {displayedText}
+            {isTyping && <span className="typing-cursor">_</span>}
+          </div>
+          
+          {/* Response options */}
+          {!isTyping && currentLine.responses && currentLine.responses.length > 0 && (
+            <div className="dialog-responses">
+              {currentLine.responses.map((response, index) => (
                 <button
-                  key={`choice-${index}`}
-                  className="dialog-choice"
-                  onClick={() => handleChoiceSelect(choice)}
+                  key={index}
+                  className="dialog-response-option"
+                  onClick={() => onSelect(index)}
                 >
-                  {choice.text}
+                  {response.text}
                 </button>
               ))}
             </div>
           )}
         </div>
         
-        {/* Continue indicator */}
-        {!showChoices && (
-          <div className="dialog-continue" onClick={handleNext}>
-            {isTyping ? (
-              <span className="typing-indicator">...</span>
-            ) : (
-              <div className="continue-icon">▼</div>
-            )}
-          </div>
-        )}
+        {/* Close button */}
+        <button
+          className="dialog-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
       </div>
+      
+      {/* Continue indicator */}
+      {!isTyping && (!currentLine.responses || currentLine.responses.length === 0) && (
+        <div className="dialog-continue">
+          Click to continue
+          <div className="dialog-continue-arrow">↓</div>
+        </div>
+      )}
       
       <style>
         {`
           .dialog-box-container {
             position: fixed;
-            bottom: 0;
+            bottom: 20px;
             left: 0;
             width: 100%;
             display: flex;
-            justify-content: center;
-            padding: 0 20px 20px;
-            z-index: 900;
+            flex-direction: column;
+            align-items: center;
+            z-index: 500;
             pointer-events: none;
           }
           
           .dialog-box {
-            background-color: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            width: 100%;
+            width: calc(100% - 40px);
             max-width: 800px;
-            max-height: 30vh;
+            background-color: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(100, 100, 150, 0.4);
+            border-radius: 8px;
             padding: 15px;
-            color: #e9e9e9;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             display: flex;
-            flex-direction: column;
+            margin-bottom: 5px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             pointer-events: auto;
-            backdrop-filter: blur(4px);
+            animation: slideUp 0.3s ease-out;
           }
           
-          .dialog-header {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          .dialog-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-right: 15px;
+            flex-shrink: 0;
+            border: 2px solid rgba(100, 100, 150, 0.4);
+            background-color: rgba(30, 30, 50, 0.5);
+            transition: all 0.3s ease;
           }
           
-          .speaker-name {
-            font-weight: bold;
-            font-size: 18px;
+          .avatar-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
           }
           
           .dialog-content {
             flex: 1;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding-right: 5px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            display: flex;
+            flex-direction: column;
           }
           
-          .dialog-content::-webkit-scrollbar {
-            width: 5px;
+          .dialog-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ccd6ff;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
           }
           
-          .dialog-content::-webkit-scrollbar-track {
-            background: transparent;
-          }
-          
-          .dialog-content::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
+          .dialog-emotion {
+            color: #aab3cc;
+            font-style: italic;
+            font-weight: normal;
           }
           
           .dialog-text {
             font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 15px;
+            line-height: 1.5;
+            color: #ffffff;
+            margin-bottom: 12px;
+            min-height: 50px;
+            max-height: 150px;
+            overflow-y: auto;
+            cursor: pointer;
+            padding-right: 5px;
+            /* Custom scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 100, 150, 0.4) rgba(30, 30, 50, 0.2);
           }
           
-          .dialog-choices {
+          .dialog-text::-webkit-scrollbar {
+            width: 6px;
+          }
+          
+          .dialog-text::-webkit-scrollbar-track {
+            background: rgba(30, 30, 50, 0.2);
+            border-radius: 3px;
+          }
+          
+          .dialog-text::-webkit-scrollbar-thumb {
+            background: rgba(100, 100, 150, 0.4);
+            border-radius: 3px;
+          }
+          
+          .typing-cursor {
+            display: inline-block;
+            margin-left: 2px;
+            animation: blink 0.7s infinite;
+          }
+          
+          .dialog-responses {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 5px;
           }
           
-          .dialog-choice {
-            background-color: rgba(50, 50, 80, 0.6);
+          .dialog-response-option {
+            background-color: rgba(60, 60, 90, 0.6);
             border: 1px solid rgba(100, 100, 150, 0.4);
-            border-radius: 4px;
+            color: white;
             padding: 8px 12px;
-            color: #ffffff;
-            text-align: left;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            text-align: left;
+            transition: all 0.2s ease;
             font-size: 14px;
           }
           
-          .dialog-choice:hover {
+          .dialog-response-option:hover {
             background-color: rgba(80, 80, 120, 0.8);
+            border-color: rgba(120, 120, 180, 0.6);
+          }
+          
+          .dialog-response-option:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(120, 120, 180, 0.6);
+          }
+          
+          .dialog-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 5px;
+            align-self: flex-start;
+            transition: color 0.2s ease;
+          }
+          
+          .dialog-close:hover {
+            color: white;
           }
           
           .dialog-continue {
-            align-self: flex-end;
-            cursor: pointer;
-            padding: 5px;
-            text-align: center;
+            background-color: rgba(30, 30, 40, 0.7);
+            color: #ccd6ff;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            animation: pulse 1.5s infinite;
           }
           
-          .typing-indicator {
-            font-size: 20px;
-            animation: blink 1s infinite;
+          .dialog-continue-arrow {
+            font-size: 16px;
+            margin-top: 2px;
           }
           
-          .continue-icon {
-            animation: bounce 1s infinite;
-            font-size: 12px;
+          /* Emotion classes for the avatar */
+          .dialog-emotion-happy .avatar-image {
+            filter: brightness(1.1) saturate(1.1);
           }
           
+          .dialog-emotion-sad .avatar-image {
+            filter: brightness(0.9) saturate(0.8);
+          }
+          
+          .dialog-emotion-angry .avatar-image {
+            filter: brightness(1.1) saturate(1.2) hue-rotate(-10deg);
+          }
+          
+          .dialog-emotion-fearful .avatar-image {
+            filter: brightness(0.85) saturate(0.7) hue-rotate(20deg);
+          }
+          
+          .dialog-emotion-surprised .avatar-image {
+            filter: brightness(1.15) contrast(1.1);
+          }
+          
+          /* Animations */
           @keyframes blink {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
           }
           
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(3px); }
+          @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(3px); }
           }
           
-          @media (max-width: 640px) {
+          @keyframes slideUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+          }
+          
+          /* Mobile responsive */
+          @media (max-width: 500px) {
             .dialog-box {
-              max-height: 40vh;
+              width: calc(100% - 20px);
+              padding: 10px;
             }
             
-            .dialog-box-container {
-              padding: 0 10px 10px;
+            .dialog-avatar {
+              width: 60px;
+              height: 60px;
+              margin-right: 10px;
+            }
+            
+            .dialog-name {
+              font-size: 16px;
+            }
+            
+            .dialog-text {
+              font-size: 14px;
+              max-height: 120px;
+            }
+            
+            .dialog-response-option {
+              padding: 6px 10px;
+              font-size: 13px;
             }
           }
         `}
