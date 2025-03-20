@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { 
+  Eye, 
+  EyeOff, 
+  Loader2, 
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldQuestion
+} from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import "./auth.css";
@@ -26,6 +36,56 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { login, registerMutation } = useAuth();
   const { toast } = useToast();
+  
+  // Password validation states
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
+  const [validations, setValidations] = useState({
+    hasMinLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
+  
+  // Check password strength and validations whenever password changes
+  useEffect(() => {
+    if (password) {
+      // Update all validation checks
+      const newValidations = {
+        hasMinLength: password.length >= 6,
+        hasUpperCase: /[A-Z]/.test(password),
+        hasLowerCase: /[a-z]/.test(password),
+        hasNumber: /[0-9]/.test(password),
+        hasSpecial: /[^A-Za-z0-9]/.test(password)
+      };
+      
+      setValidations(newValidations);
+      
+      // Calculate password strength (0-4)
+      const strength = Object.values(newValidations).filter(Boolean).length;
+      setPasswordStrength(strength);
+    } else {
+      // Reset validation when password is empty
+      setValidations({
+        hasMinLength: false,
+        hasUpperCase: false,
+        hasLowerCase: false,
+        hasNumber: false,
+        hasSpecial: false
+      });
+      setPasswordStrength(0);
+    }
+  }, [password]);
+  
+  // Check if passwords match whenever either password field changes
+  useEffect(() => {
+    if (confirmPassword) {
+      setPasswordsMatch(password === confirmPassword);
+    } else {
+      setPasswordsMatch(null);
+    }
+  }, [password, confirmPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +162,11 @@ export default function AuthPage() {
           throw new Error("Passwords do not match");
         }
         
+        // Password strength validation
+        if (passwordStrength < 3) {
+          throw new Error("Password is too weak. Please include at least uppercase letters, numbers, or special characters.");
+        }
+        
         console.log("[Auth] Validations passed, submitting registration request");
         const result = await registerMutation.mutateAsync({ 
           username, 
@@ -146,6 +211,36 @@ export default function AuthPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Get password strength indicator
+  const getPasswordStrengthLabel = () => {
+    if (!password) return null;
+    
+    if (passwordStrength <= 1) return "Weak";
+    if (passwordStrength === 2) return "Fair";
+    if (passwordStrength === 3) return "Good";
+    return "Strong";
+  };
+  
+  // Get password strength color class
+  const getPasswordStrengthClass = () => {
+    if (!password) return "";
+    
+    if (passwordStrength <= 1) return "bg-red-500";
+    if (passwordStrength === 2) return "bg-yellow-500";
+    if (passwordStrength === 3) return "bg-blue-500";
+    return "bg-green-500";
+  };
+  
+  // Get password strength icon
+  const getPasswordStrengthIcon = () => {
+    if (!password) return null;
+    
+    if (passwordStrength <= 1) return <ShieldAlert className="h-4 w-4 text-red-500" />;
+    if (passwordStrength === 2) return <ShieldQuestion className="h-4 w-4 text-yellow-500" />;
+    if (passwordStrength === 3) return <ShieldCheck className="h-4 w-4 text-blue-500" />;
+    return <ShieldCheck className="h-4 w-4 text-green-500" />;
   };
 
   const togglePassword = () => {
@@ -340,7 +435,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a password"
-                      className="auth-input pr-10"
+                      className={`auth-input pr-10 ${password ? (passwordStrength >= 3 ? 'border-green-500' : 'border-yellow-500') : ''}`}
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
@@ -368,6 +463,58 @@ export default function AuthPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Password Strength Indicator */}
+                  {password && (
+                    <div className="mt-2 space-y-2" aria-live="polite">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs flex items-center">
+                          {getPasswordStrengthIcon()}
+                          <span className="ml-1">Password strength: <strong>{getPasswordStrengthLabel()}</strong></span>
+                        </span>
+                      </div>
+                      
+                      {/* Password strength bar */}
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${getPasswordStrengthClass()}`} 
+                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                          role="progressbar"
+                          aria-valuenow={passwordStrength}
+                          aria-valuemin={0}
+                          aria-valuemax={5}
+                        />
+                      </div>
+
+                      {/* Password requirements list */}
+                      <ul className="text-xs space-y-1 mt-1 pl-0 list-none">
+                        <li className="flex items-center">
+                          {validations.hasMinLength ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
+                          )}
+                          <span>At least 6 characters</span>
+                        </li>
+                        <li className="flex items-center">
+                          {validations.hasUpperCase ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
+                          )}
+                          <span>Uppercase letter (A-Z)</span>
+                        </li>
+                        <li className="flex items-center">
+                          {validations.hasNumber ? (
+                            <CheckCircle2 className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-500 mr-1 flex-shrink-0" />
+                          )}
+                          <span>Number (0-9)</span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Confirm Password Field with Toggle */}
@@ -380,7 +527,15 @@ export default function AuthPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className="auth-input pr-10"
+                      className={`auth-input pr-10 ${
+                        confirmPassword 
+                          ? (passwordsMatch === true 
+                              ? 'border-green-500' 
+                              : passwordsMatch === false 
+                                ? 'border-red-500' 
+                                : '')
+                          : ''
+                      }`}
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
@@ -408,6 +563,27 @@ export default function AuthPage() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Password Matching Indicator */}
+                  {confirmPassword && (
+                    <div className="mt-2" aria-live="polite">
+                      <div className={`text-xs flex items-center ${
+                        passwordsMatch ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {passwordsMatch ? (
+                          <>
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            <span>Passwords match</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3 w-3 mr-1" />
+                            <span>Passwords do not match</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sign Up Button */}

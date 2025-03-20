@@ -22,7 +22,7 @@ interface FeedbackButtonProps {
 export function FeedbackButton({
   variant = 'default',
   size = 'default',
-  position = 'bottom-right',
+  position = 'bottom-left',
   showIcon = true,
   buttonText = 'Feedback',
 }: FeedbackButtonProps) {

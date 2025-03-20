@@ -1,0 +1,85 @@
+Got it! You want to personalize the WordPress API integration for your horror story website. Here’s how you can customize the WordPress API responses and fetch only the data you need for a cleaner, more optimized setup.
+
+1. Customize WordPress API Response (Reduce Unnecessary Data)
+
+By default, the WordPress API returns a lot of unnecessary data. You can modify the API response to return only the fields you need.
+
+Modify the REST API Response in functions.php
+
+Add this code to your theme’s functions.php to limit API output to just the necessary fields:
+
+function customize_rest_api_response($response, $post) {
+    return [
+        'id'      => $post->ID,
+        'title'   => get_the_title($post->ID),
+        'content' => apply_filters('the_content', $post->post_content),
+        'excerpt' => get_the_excerpt($post->ID),
+        'image'   => get_the_post_thumbnail_url($post->ID, 'large'),
+        'date'    => get_the_date('Y-m-d', $post->ID),
+        'author'  => get_the_author_meta('display_name', $post->post_author),
+    ];
+}
+add_filter('rest_prepare_post', 'customize_rest_api_response', 10, 2);
+
+Result:
+
+Instead of a bloated API response, it will now return only:
+
+{
+  "id": 123,
+  "title": "Horror Story",
+  "content": "<p>Darkness filled the room...</p>",
+  "excerpt": "A shadow loomed over...",
+  "image": "https://yoursite.com/wp-content/uploads/image.jpg",
+  "date": "2025-03-18",
+  "author": "Vanessa Chiwetalu"
+}
+
+2. Fetch Stories in React (Frontend)
+
+Now, fetch only the customized data in your frontend:
+
+const fetchStories = async () => {
+  try {
+    const response = await fetch('https://yourwordpresssite.com/wp-json/wp/v2/posts');
+    const stories = await response.json();
+    console.log(stories); // Debugging
+    return stories;
+  } catch (error) {
+    console.error('Error fetching stories:', error);
+  }
+};
+
+3. Filter by Category (Only Show Horror Stories)
+
+If your WordPress site has multiple categories, and you only want horror stories, modify the API request like this:
+
+const fetchHorrorStories = async () => {
+  try {
+    const response = await fetch('https://yourwordpresssite.com/wp-json/wp/v2/posts?categories=5');
+    const horrorStories = await response.json();
+    return horrorStories;
+  } catch (error) {
+    console.error('Error fetching horror stories:', error);
+  }
+};
+
+(Replace 5 with your actual horror category ID in WordPress.)
+
+4. Fix CORS Issues (If API Blocked)
+
+If you get a CORS error, add this to functions.php:
+
+function add_cors_headers() {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+}
+add_action('rest_api_init', function() {
+    remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
+    add_filter('rest_pre_serve_request', 'add_cors_headers');
+}, 15);
+
+5. Enable WordPress API for Logged-in Users Only (If Needed)
+
+If you

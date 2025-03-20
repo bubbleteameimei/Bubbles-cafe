@@ -3,7 +3,7 @@ import * as React from "react"
 import {
   Home, Book, Users, Settings, HelpCircle, FileText, ChevronDown,
   Bug, Scroll, Shield, ShieldAlert, Monitor, ScrollText, Bell, Lock, Building,
-  Mail, MessageSquare, Database, Palette, Moon, Sun, Type, Volume2,
+  Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
   Search, Sparkles, GanttChart
@@ -338,27 +338,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/text-to-speech'}
-                        onClick={() => handleNavigation('/settings/text-to-speech')}
-                        className={submenuItemClass}
-                      >
-                        <Volume2 className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Text-to-Speech</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    {/* Removed text-to-speech menu item */}
                     
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/accessibility-test'}
-                        onClick={() => handleNavigation('/accessibility-test')}
-                        className={submenuItemClass}
-                      >
-                        <HelpCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Accessibility Test</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    {/* Removed accessibility test menu item */}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </Collapsible>

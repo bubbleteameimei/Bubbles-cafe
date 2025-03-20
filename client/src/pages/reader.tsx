@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Clock, Share2, Minus, Plus, Shuffle, Headphones, Volume2, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
@@ -26,9 +26,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Lazy load non-essential components
+// Lazy load non-essential components 
 const CommentSection = lazy(() => import("@/components/blog/comment-section"));
-const AudioNarrator = lazy(() => import("@/components/ui/audio-narrator").then(module => ({ default: module.AudioNarrator })));
 
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -76,32 +75,6 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
-  
-  // Audio narrator settings
-  const [isTextToSpeechEnabled, setIsTextToSpeechEnabled] = useState(() => {
-    try {
-      return localStorage.getItem('tts-enabled') === 'true';
-    } catch (error) {
-      console.error('[Reader] Error reading TTS settings from localStorage:', error);
-      return false;
-    }
-  });
-  const [isNarratorOpen, setIsNarratorOpen] = useState(false);
-  const [narratorTone, setNarratorTone] = useState<"neutral" | "creepy" | "suspense" | "terror" | "panic" | "whisper">("whisper");
-  
-  // Listen for changes to text-to-speech enabled setting
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tts-enabled') {
-        setIsTextToSpeechEnabled(e.newValue === 'true');
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
@@ -596,96 +569,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
           />
 
-          {/* Only show narration button if text-to-speech is enabled */}
-          {isTextToSpeechEnabled && (
-            <Dialog 
-              open={isNarratorOpen} 
-              onOpenChange={(open) => {
-                console.log('[Reader] Narrator dialog state changed:', open);
-                setIsNarratorOpen(open);
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 mx-2 group relative"
-                  aria-label="Listen to narration"
-                >
-                  <Headphones className="h-4 w-4" />
-                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-sm border border-border/50">
-                    Narration
-                  </span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent 
-                className="sm:max-w-2xl"
-                aria-labelledby="dialog-title-narrator"
-                aria-describedby="dialog-desc-narrator"
-              >
-                <DialogHeader>
-                  <DialogTitle id="dialog-title-narrator">Whisper Narration</DialogTitle>
-                  <DialogDescription id="dialog-desc-narrator">
-                    Listen to the story with emotional tone modulation
-                  </DialogDescription>
-                </DialogHeader>
-                
-                {/* Emotional tone selector */}
-                <div className="grid grid-cols-3 gap-2 my-4">
-                  {["whisper", "creepy", "suspense", "terror", "panic", "neutral"].map((tone) => (
-                    <Button
-                      key={tone}
-                      variant={narratorTone === tone ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setNarratorTone(tone as any)}
-                      className="capitalize"
-                    >
-                      {tone}
-                    </Button>
-                  ))}
-                </div>
-                
-                {/* Audio narrator component */}
-                <ErrorBoundary fallback={
-                  <div className="p-4 border border-destructive/10 bg-destructive/5 rounded-lg">
-                    <h4 className="font-medium text-destructive mb-2">Narrator Unavailable</h4>
-                    <p className="text-sm text-muted-foreground">
-                      We're having trouble loading the audio narrator. Please try again later.
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.location.reload()}
-                      >
-                        <RefreshCcw className="h-3 w-3 mr-2" />
-                        Try again
-                      </Button>
-                    </div>
-                  </div>
-                }>
-                  <Suspense fallback={
-                    <div className="w-full p-4 flex items-center justify-center">
-                      <div className="animate-pulse flex space-x-4">
-                        <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
-                        <div className="space-y-3 flex-1">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                    </div>
-                  }>
-                    <AudioNarrator
-                      content={sanitizeHtmlContent(currentPost.content.rendered).replace(/<[^>]*>/g, ' ')}
-                      title={sanitizeHtmlContent(currentPost.title.rendered).replace(/<[^>]*>/g, '')}
-                      emotionalTone={narratorTone}
-                      autoScroll={false}
-                    />
-                  </Suspense>
-                </ErrorBoundary>
-              </DialogContent>
-            </Dialog>
-          )}
+          {/* Text-to-speech functionality removed */}
 
           <Button
             variant="outline"

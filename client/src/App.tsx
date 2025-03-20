@@ -116,7 +116,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
-const ContentTestPage = withSuspense(React.lazy(() => import('./pages/content-test')));
+// Removed ContentTestPage
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
 
 
@@ -129,14 +129,14 @@ const Error500Page = withSuspense(React.lazy(() => import('./pages/errors/500'))
 const Error503Page = withSuspense(React.lazy(() => import('./pages/errors/503')));
 const Error504Page = withSuspense(React.lazy(() => import('./pages/errors/504')));
 
-// Demo Pages
-const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
-const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
-const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
-const ChartDashboardPage = withSuspense(React.lazy(() => import('./pages/chart-dashboard')));
-const SwitchTestPage = withSuspense(React.lazy(() => import('./pages/switch-test')));
-const ToggleComparisonPage = withSuspense(React.lazy(() => import('./pages/toggle-comparison')));
-const TestRecommendationsPage = withSuspense(React.lazy(() => import('./pages/test-recommendations')));
+// Demo Pages - All Removed
+// const ToastDemoPage = withSuspense(React.lazy(() => import('./pages/demo/toast-demo')));
+// const ToastDocsPage = withSuspense(React.lazy(() => import('./pages/demo/toast-docs')));
+// const ToastTestPage = withSuspense(React.lazy(() => import('./pages/toast-test')));
+// const ChartDashboardPage = withSuspense(React.lazy(() => import('./pages/chart-dashboard')));
+// const SwitchTestPage = withSuspense(React.lazy(() => import('./pages/switch-test')));
+// const ToggleComparisonPage = withSuspense(React.lazy(() => import('./pages/toggle-comparison')));
+// const TestRecommendationsPage = withSuspense(React.lazy(() => import('./pages/test-recommendations')));
 
 // Legal Pages
 const CopyrightPage = withSuspense(React.lazy(() => import('./pages/legal/copyright')));
@@ -152,10 +152,10 @@ const GuidelinesPage = withSuspense(React.lazy(() => import('./pages/support/gui
 // Settings Pages
 const ProfileSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/profile')));
 const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/settings/connected-accounts')));
-const TextToSpeechPage = withSuspense(React.lazy(() => import('./pages/settings/text-to-speech')));
+// Removed TextToSpeechPage
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
-const AccessibilityTestPage = withSuspense(React.lazy(() => import('./pages/accessibility-test')));
+// Removed AccessibilityTestPage
 const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
@@ -181,7 +181,7 @@ const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages
 const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
 const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
 const AdminSiteStatisticsPage = withSuspense(React.lazy(() => import('./pages/admin/site-statistics')));
-const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
+// const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
 const ResetPasswordPage = withSuspense(React.lazy(() => import('./pages/reset-password')));
 
 const AppContent = () => {
@@ -256,17 +256,9 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
-                <Route path="/content-test" component={ContentTestPage} />
+                {/* Removed test pages routes */}
                 <Route path="/bookmarks" component={BookmarksPage} />
-                <Route path="/cookie-test" component={CookieTestPage} />
-                <Route path="/demo/toast" component={ToastDemoPage} />
-                <Route path="/demo/toast-docs" component={ToastDocsPage} />
-                <Route path="/toast-test" component={ToastTestPage} />
-                <Route path="/charts" component={ChartDashboardPage} />
-                <Route path="/switch-test" component={SwitchTestPage} />
-                <Route path="/toggle-comparison" component={ToggleComparisonPage} />
-                <Route path="/accessibility-test" component={AccessibilityTestPage} />
-                <Route path="/test-recommendations" component={TestRecommendationsPage} />
+                {/* Removed other test page routes */}
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />
@@ -282,7 +274,7 @@ const AppContent = () => {
                 {/* Settings Routes */}
                 <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
                 <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-                <ProtectedRoute path="/settings/text-to-speech" component={TextToSpeechPage} />
+                {/* Removed text-to-speech page route */}
                 <Route path="/settings/fonts" component={FontSettingsPage} />
                 <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
                 <Route path="/settings/display" component={DisplaySettingsPage} />

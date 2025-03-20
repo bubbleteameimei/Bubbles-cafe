@@ -4,7 +4,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { TooltipsHighlighting } from '@/components/accessibility/TooltipsHighlighting';
-import { AudioControls } from '@/components/accessibility/AudioControls';
 
 export default function ReadingPreferencesPage() {
   const [highContrast, setHighContrast] = useState<boolean>(
@@ -109,11 +108,6 @@ export default function ReadingPreferencesPage() {
           
           {/* New Tooltips & Highlighting Component */}
           <TooltipsHighlighting />
-        </div>
-        
-        {/* New Adjustable Audio Controls Component */}
-        <div className="mt-6">
-          <AudioControls />
         </div>
       </div>
     </div>
