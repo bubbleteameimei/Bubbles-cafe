@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SceneView from './ui/SceneView';
 import DialogBox from './ui/DialogBox';
 import InventoryPanel from './ui/InventoryPanel';
@@ -16,17 +16,18 @@ import {
   SceneItem, 
   InventoryItem, 
   Puzzle, 
-  GameNotification 
+  GameNotification,
+  GameEngineConfig
 } from './types';
 
 // Import GameEngine instance
-// import { gameEngine } from './GameEngine';
+import { gameEngine } from './GameEngine';
 
 /**
  * EdenGame - Main game component that integrates all UI components with the game engine
  */
 const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
-  // Game state
+  // Game state reference from the engine
   const [gameState, setGameState] = useState<GameState>({
     player: {
       health: 100,
@@ -53,6 +54,7 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<GameNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState<boolean>(false);
   
   // Temporary mock scene data (in a real game, this would come from the game engine)
   const [currentScene, setCurrentScene] = useState<Scene>({
@@ -127,30 +129,73 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
   // Puzzle state
   const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle | null>(null);
   
-  // Load mock data
+  // Initialize the game engine
   useEffect(() => {
-    // In a real game, this would be loaded from data files
-    setLoading(false);
+    // Configure and initialize the game engine
+    const initGame = async () => {
+      try {
+        setLoading(true);
+        
+        // Define engine configuration
+        const config: GameEngineConfig = {
+          initialScene: 'village_entrance',
+          showIntro: true,
+          enableHints: true,
+          enableAutoSave: true,
+          saveInterval: 5, // minutes
+          debugMode: false,
+          difficultyLevel: 'normal'
+        };
+        
+        // Register state change callback to update our component state
+        gameEngine.onStateChange((newState) => {
+          setGameState(newState);
+        });
+        
+        // Register dialog callback
+        gameEngine.onDialogStart((dialog) => {
+          setCurrentDialog(dialog);
+        });
+        
+        // Initialize the engine
+        await gameEngine.initialize(config);
+        
+        // Set the game as initialized
+        setInitialized(true);
+        setLoading(false);
+        
+        // Show welcome notification
+        addNotification({
+          id: 'welcome',
+          type: 'info',
+          title: 'Welcome to Eden\'s Hollow',
+          message: 'Explore the village, find items, and uncover its dark secrets.',
+          duration: 8000
+        });
+      } catch (error) {
+        console.error('Failed to initialize game engine:', error);
+        setLoading(false);
+        
+        // Display error notification
+        addNotification({
+          id: 'error',
+          type: 'error',
+          title: 'Game Error',
+          message: 'Failed to initialize the game. Please try again.',
+          duration: 5000
+        });
+      }
+    };
     
-    // Show welcome notification
-    addNotification({
-      id: 'welcome',
-      type: 'info',
-      title: 'Welcome to Eden\'s Hollow',
-      message: 'Explore the village, find items, and uncover its dark secrets.',
-      duration: 8000
-    });
+    // Start initialization
+    initGame();
     
-    // Simulate entry dialog after slight delay
-    setTimeout(() => {
-      // In a real game, this would come from the game engine based on scene
-      setCurrentDialog({
-        id: 'village_entrance_first_visit',
-        type: 'narration',
-        text: 'The fog hangs thick as you approach the entrance to Eden\'s Hollow. The air is unnaturally still, and the silence is broken only by the occasional distant crow. Something about this place feels... wrong.',
-        choices: []
-      });
-    }, 1000);
+    // Cleanup when component unmounts
+    return () => {
+      // Unregister callbacks
+      gameEngine.clearStateChangeCallbacks();
+      gameEngine.clearDialogCallbacks();
+    };
   }, []);
   
   // --- Game Logic Functions ---
@@ -162,25 +207,51 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
     
     if (!hotspot) return;
     
-    if (hotspot.dialogId) {
-      // In a real game, this would fetch the dialog from the game engine
-      // For now, show a mock dialog
-      setCurrentDialog({
-        id: hotspot.dialogId,
-        type: 'narration',
-        text: hotspot.description || 'You examine the object closely.',
-        choices: []
-      });
-    } else if (hotspot.description) {
-      // Show a notification with the description
+    try {
+      if (initialized && hotspot.dialogId) {
+        // Use game engine to start dialog
+        gameEngine.startDialog(hotspot.dialogId);
+      } else if (hotspot.dialogId) {
+        // Fallback to local dialog handling
+        setCurrentDialog({
+          id: hotspot.dialogId,
+          type: 'narration',
+          text: hotspot.description || 'You examine the object closely.',
+          choices: []
+        });
+      } else if (hotspot.puzzleId && initialized) {
+        // Start puzzle using game engine
+        gameEngine.startPuzzle(hotspot.puzzleId);
+      } else if (hotspot.description) {
+        // Show notification with description
+        addNotification({
+          id: `hotspot_${hotspotId}`,
+          type: 'info',
+          message: hotspot.description,
+          duration: 5000
+        });
+      }
+      
+      // Apply any interaction effects if defined
+      if (hotspot.interactionEffects && initialized) {
+        hotspot.interactionEffects.forEach(effect => {
+          // In a full implementation, this would trigger effects via game engine
+          // gameEngine.applyGameEffect(effect);
+          console.log('Applying effect:', effect);
+        });
+      }
+    } catch (error) {
+      console.error('Error interacting with hotspot:', error);
+      
       addNotification({
-        id: `hotspot_${hotspotId}`,
-        type: 'info',
-        message: hotspot.description,
+        id: 'hotspot_error',
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to interact with this object.',
         duration: 5000
       });
     }
-  }, [currentScene]);
+  }, [currentScene, initialized]);
   
   // Handle exit selection
   const handleExitSelect = useCallback((exitId: string) => {
@@ -191,7 +262,7 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
     
     // Check if exit is locked
     if (exit.locked) {
-      // In a real game, we would check inventory for key items
+      // Check inventory for key items
       const hasRequiredItem = gameState.inventory.some(
         item => item.id === exit.requiredItem
       );
@@ -207,25 +278,37 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
       }
     }
     
-    // In a real game, this would trigger a scene change via the game engine
-    // Mock a loading state
+    // Set loading state
     setLoading(true);
     
-    // Simulate scene loading
-    setTimeout(() => {
-      // For demo purposes, just change back to the same scene
-      // In a real game, this would load the target scene
-      setGameState(prev => ({
-        ...prev,
-        currentScene: exit.targetScene || prev.currentScene,
-        visitedScenes: [...prev.visitedScenes, exit.targetScene]
-      }));
+    try {
+      // Use the game engine to change the scene
+      if (initialized) {
+        gameEngine.changeScene(exit.targetScene);
+      } else {
+        // Fallback if engine not initialized yet
+        setTimeout(() => {
+          setGameState(prevState => ({
+            ...prevState,
+            currentScene: exit.targetScene,
+            visitedScenes: [...prevState.visitedScenes, exit.targetScene]
+          }));
+          setLoading(false);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error changing scene:', error);
       setLoading(false);
       
-      // Update visited exits
-      // In a real game, the game engine would track this
-    }, 1000);
-  }, [currentScene, gameState.inventory]);
+      addNotification({
+        id: 'scene_change_error',
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to change scene. Please try again.',
+        duration: 5000
+      });
+    }
+  }, [currentScene, gameState.inventory, initialized]);
   
   // Handle item pickup
   const handleItemTake = useCallback((itemId: string) => {
@@ -234,35 +317,87 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
     
     if (!sceneItem) return;
     
-    // In a real game, this would come from a data store based on the itemId
-    const item: InventoryItem = {
-      id: sceneItem.itemId,
-      name: 'Ancient Coin',
-      description: 'A weathered gold coin with strange symbols. It feels unnaturally cold to the touch.',
-      type: 'quest',
-      imageUrl: '/assets/items/ancient-coin.png'
-    };
-    
-    // Add to inventory
-    setGameState(prev => ({
-      ...prev,
-      inventory: [...prev.inventory, { ...item, discoveredAt: prev.gameTime }]
-    }));
-    
-    // Remove item from scene (in a real game, this would be handled by the game engine)
-    setCurrentScene(prev => ({
-      ...prev,
-      items: prev.items?.filter(i => i.id !== itemId)
-    }));
-    
-    // Show notification
-    addNotification({
-      id: `item_pickup_${itemId}`,
-      type: 'success',
-      message: `Picked up ${item.name}`,
-      duration: 3000
-    });
-  }, [currentScene]);
+    try {
+      if (initialized) {
+        // In a real implementation, this would use gameEngine.addInventoryItem(sceneItem.itemId)
+        // For now, we'll update our local state and then synchronize with the engine
+        
+        // Create temporary item (this should come from game data in full implementation)
+        const item: InventoryItem = {
+          id: sceneItem.itemId,
+          name: 'Ancient Coin',
+          description: 'A weathered gold coin with strange symbols. It feels unnaturally cold to the touch.',
+          type: 'quest',
+          imageUrl: '/assets/items/ancient-coin.png'
+        };
+        
+        // Update local state
+        setGameState(prevState => ({
+          ...prevState,
+          inventory: [...prevState.inventory, { ...item, discoveredAt: prevState.gameTime }]
+        }));
+        
+        // Remove item from scene
+        setCurrentScene(prev => ({
+          ...prev,
+          items: prev.items?.filter(i => i.id !== itemId)
+        }));
+        
+        // Trigger game engine save (in a real implementation)
+        setTimeout(() => {
+          if (initialized) {
+            gameEngine.saveProgress().catch(error => {
+              console.error('Error saving progress after item pickup:', error);
+            });
+          }
+        }, 100);
+        
+        // Show notification
+        addNotification({
+          id: `item_pickup_${itemId}`,
+          type: 'success',
+          message: `Picked up ${item.name}`,
+          duration: 3000
+        });
+      } else {
+        // Fallback without game engine
+        const item: InventoryItem = {
+          id: sceneItem.itemId,
+          name: 'Ancient Coin',
+          description: 'A weathered gold coin with strange symbols. It feels unnaturally cold to the touch.',
+          type: 'quest',
+          imageUrl: '/assets/items/ancient-coin.png'
+        };
+        
+        setGameState(prevState => ({
+          ...prevState,
+          inventory: [...prevState.inventory, { ...item, discoveredAt: prevState.gameTime }]
+        }));
+        
+        setCurrentScene(prev => ({
+          ...prev,
+          items: prev.items?.filter(i => i.id !== itemId)
+        }));
+        
+        addNotification({
+          id: `item_pickup_${itemId}`,
+          type: 'success',
+          message: `Picked up ${item.name}`,
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error('Error picking up item:', error);
+      
+      addNotification({
+        id: 'item_pickup_error',
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to pick up item. Please try again.',
+        duration: 5000
+      });
+    }
+  }, [currentScene, initialized]);
   
   // Handle inventory item use
   const handleItemUse = useCallback((itemId: string) => {
@@ -420,9 +555,70 @@ const EdenGame: React.FC<EdenGameProps> = ({ onExit }) => {
         {showMenu && (
           <div className="game-menu">
             <div className="menu-option" onClick={() => setShowMenu(false)}>Continue</div>
-            <div className="menu-option">Save Game</div>
-            <div className="menu-option">Load Game</div>
-            <div className="menu-option">Settings</div>
+            <div className="menu-option" onClick={() => {
+              if (initialized) {
+                setLoading(true);
+                gameEngine.saveProgress()
+                  .then(() => {
+                    setLoading(false);
+                    addNotification({
+                      id: 'game_saved',
+                      type: 'success',
+                      message: 'Game saved successfully',
+                      duration: 3000
+                    });
+                  })
+                  .catch(error => {
+                    console.error('Error saving game:', error);
+                    setLoading(false);
+                    addNotification({
+                      id: 'save_error',
+                      type: 'error',
+                      title: 'Error',
+                      message: 'Failed to save game. Please try again.',
+                      duration: 5000
+                    });
+                  });
+              }
+              setShowMenu(false);
+            }}>Save Game</div>
+            <div className="menu-option" onClick={() => {
+              if (initialized) {
+                setLoading(true);
+                gameEngine.loadProgress()
+                  .then(() => {
+                    setLoading(false);
+                    addNotification({
+                      id: 'game_loaded',
+                      type: 'success',
+                      message: 'Game loaded successfully',
+                      duration: 3000
+                    });
+                  })
+                  .catch(error => {
+                    console.error('Error loading game:', error);
+                    setLoading(false);
+                    addNotification({
+                      id: 'load_error',
+                      type: 'error',
+                      title: 'Error',
+                      message: 'Failed to load game. Please try again.',
+                      duration: 5000
+                    });
+                  });
+              }
+              setShowMenu(false);
+            }}>Load Game</div>
+            <div className="menu-option" onClick={() => {
+              // Settings would open a separate dialog with game settings
+              setShowMenu(false);
+              addNotification({
+                id: 'settings',
+                type: 'info',
+                message: 'Settings menu is not implemented yet.',
+                duration: 3000
+              });
+            }}>Settings</div>
             <div className="menu-option exit-option" onClick={handleExitGame}>Exit Game</div>
           </div>
         )}

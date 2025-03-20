@@ -245,16 +245,17 @@ class GameEngine {
     // Check for entry dialog in the initial scene
     this.checkSceneEntryDialog();
     
+    // Update game stats for a new game started
+    this.updateStats({
+      gamesStarted: 1,
+      areasDiscovered: 1  // Count the initial area
+    }).catch(error => {
+      console.error('Error updating game start stats:', error);
+    });
+    
     // Save the initial game state and update stats
     this.saveProgress().catch(error => {
       console.error('Error saving initial game progress:', error);
-    });
-    
-    // Update game stats - new game started
-    this.updateStats({
-      gamesStarted: 1
-    }).catch(error => {
-      console.error('Error updating game stats:', error);
     });
   }
   
@@ -864,6 +865,60 @@ class GameEngine {
   }
 
   /**
+   * Load game progress from the database
+   */
+  async loadProgress(): Promise<boolean> {
+    try {
+      // Fetch progress from server
+      const response = await fetch('/api/game/progress');
+      
+      if (!response.ok) {
+        throw new Error(`Error loading progress: ${response.status} ${response.statusText}`);
+      }
+      
+      const progressData = await response.json();
+      
+      if (!progressData) {
+        throw new Error('No progress data found');
+      }
+      
+      // Update game state with loaded progress
+      if (progressData.currentSceneId) {
+        this.gameState.currentScene = progressData.currentSceneId;
+      }
+      
+      if (progressData.visitedScenes && progressData.visitedScenes.length > 0) {
+        this.gameState.visitedScenes = progressData.visitedScenes;
+      }
+      
+      if (progressData.inventory) {
+        this.gameState.inventory = progressData.inventory;
+      }
+      
+      if (progressData.flags) {
+        this.gameState.flags = progressData.flags;
+      }
+      
+      if (progressData.gameTime) {
+        this.gameState.gameTime = progressData.gameTime;
+      }
+      
+      if (progressData.playerState) {
+        this.gameState.player = progressData.playerState;
+      }
+      
+      // Notify callbacks about state change
+      this.notifyStateChange();
+      
+      console.log('Game progress loaded successfully');
+      return true;
+    } catch (error) {
+      console.error('Error loading game progress:', error);
+      return false;
+    }
+  }
+  
+  /**
    * Update game stats in the database
    */
   async updateStats(stats: {
@@ -906,6 +961,15 @@ class GameEngine {
     
     // Update active effects, removing expired ones
     this.updateActiveEffects();
+    
+    // Update playtime in stats every 10 minutes of game time
+    if (minutes >= 10 || this.gameState.gameTime % 10 < minutes) {
+      this.updateStats({
+        playtime: minutes
+      }).catch(error => {
+        console.error('Error updating playtime stats:', error);
+      });
+    }
     
     // Auto-save if enabled
     if (this.config.enableAutoSave && 
@@ -1237,6 +1301,34 @@ class GameEngine {
     return () => {
       this.onGameOverCallbacks = this.onGameOverCallbacks.filter(cb => cb !== callback);
     };
+  }
+  
+  /**
+   * Clear all state change callbacks
+   */
+  clearStateChangeCallbacks(): void {
+    this.onStateChangeCallbacks = [];
+  }
+  
+  /**
+   * Clear all dialog callbacks
+   */
+  clearDialogCallbacks(): void {
+    this.onDialogStartCallbacks = [];
+    this.onDialogEndCallbacks = [];
+  }
+  
+  /**
+   * Clear all callbacks
+   */
+  clearAllCallbacks(): void {
+    this.onStateChangeCallbacks = [];
+    this.onSceneChangeCallbacks = [];
+    this.onDialogStartCallbacks = [];
+    this.onDialogEndCallbacks = [];
+    this.onItemAddedCallbacks = [];
+    this.onPuzzleStartCallbacks = [];
+    this.onGameOverCallbacks = [];
   }
   
   /**

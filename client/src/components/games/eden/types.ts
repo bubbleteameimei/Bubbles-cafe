@@ -339,3 +339,25 @@ export interface SaveData {
   playTime: number;
   version: string;
 }
+
+export interface GameEngine {
+  initialize(config?: Partial<GameEngineConfig>): Promise<void>;
+  getState(): GameState;
+  getCurrentScene(): Scene | null;
+  changeScene(sceneId: string): void;
+  startNewGame(): void;
+  saveProgress(): Promise<void>;
+  loadProgress(): Promise<void>;
+  startDialog(dialogId: string): void;
+  startPuzzle(puzzleId: string): void;
+  onStateChange(callback: (state: GameState) => void): () => void;
+  onDialogStart(callback: (dialog: Dialog) => void): () => void;
+  onSceneChange(callback: (sceneId: string) => void): () => void;
+  onDialogEnd(callback: (dialogId: string) => void): () => void;
+  onItemAdded(callback: (item: InventoryItem) => void): () => void;
+  onPuzzleStart(callback: (puzzle: Puzzle) => void): () => void;
+  onGameOver(callback: (reason: string) => void): () => void;
+  clearStateChangeCallbacks(): void;
+  clearDialogCallbacks(): void;
+  clearAllCallbacks(): void;
+}

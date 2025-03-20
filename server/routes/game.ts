@@ -225,4 +225,18 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Check if game system is working
+router.get('/stats/check', async (req, res) => {
+  try {
+    res.json({ 
+      status: 'ok', 
+      message: 'Game system is operational', 
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    console.error('Error checking game system:', error);
+    res.status(500).json({ error: 'Failed to check game system' });
+  }
+});
+
 export default router;

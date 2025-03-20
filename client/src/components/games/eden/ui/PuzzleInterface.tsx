@@ -17,8 +17,7 @@ const PuzzleInterface = ({
   isOpen = true,
   attempts = 0,
   maxAttempts = 3
-}: PuzzleInterfaceProps
-}) => {
+}: PuzzleInterfaceProps) => {
   // State for different puzzle inputs
   const [sequenceInput, setSequenceInput] = useState<string[]>([]);
   const [codeInput, setCodeInput] = useState<string>('');

@@ -10,7 +10,7 @@
       "VITE_HOT_RELOAD": "true"
     },
     "wait_for_port": true,
-    "port": 3000,
+    "port": 3001,
     "protocol": "http",
     "onAfterCompleted": "continue", 
     "persistent": true,
