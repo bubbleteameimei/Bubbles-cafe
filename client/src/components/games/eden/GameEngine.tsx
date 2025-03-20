@@ -1,425 +1,654 @@
-import { GameState, SceneData, PuzzleData, DialogData, InventoryItem, MapLocation } from './types';
-import { gameScenes } from './data/scenes';
-import { gamePuzzles } from './data/puzzles';
-import { gameDialogs } from './data/dialogs';
-import { gameItems } from './data/items';
-import { gameMap } from './data/map';
+/**
+ * Eden's Hollow Game Engine
+ * Core logic for handling game state, transitions, and game mechanics
+ */
 
+import { v4 as uuidv4 } from 'uuid';
+import { 
+  GameState, 
+  GameScene, 
+  PuzzleData, 
+  DialogData, 
+  InventoryItem 
+} from './types';
+
+// Game Engine Configuration
+interface GameEngineConfig {
+  scenes: Record<string, GameScene>;
+  items: Record<string, InventoryItem>;
+  puzzles: Record<string, PuzzleData>;
+  dialogs: Record<string, DialogData>;
+  onStateChange: (state: GameState) => void;
+}
+
+/**
+ * Game Engine (Singleton)
+ * Central controller for all game mechanics and state management
+ */
 export class GameEngine {
-  private gameState: GameState;
-  private setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  private setTextContent: React.Dispatch<React.SetStateAction<string[]>>;
-  private setChoices: React.Dispatch<React.SetStateAction<{text: string, nextScene: string}[]>>;
-  
-  private scenes: Record<string, SceneData>;
+  private static instance: GameEngine;
+  private state: GameState;
+  private scenes: Record<string, GameScene>;
+  private items: Record<string, InventoryItem>;
   private puzzles: Record<string, PuzzleData>;
   private dialogs: Record<string, DialogData>;
-  private items: Record<string, InventoryItem>;
-  private map: Record<string, MapLocation>;
+  private onStateChange: (state: GameState) => void;
   
-  constructor(
-    setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-    setTextContent: React.Dispatch<React.SetStateAction<string[]>>,
-    setChoices: React.Dispatch<React.SetStateAction<{text: string, nextScene: string}[]>>
-  ) {
-    this.setGameState = setGameState;
-    this.setTextContent = setTextContent;
-    this.setChoices = setChoices;
-    
-    // Initialize game data
-    this.scenes = gameScenes;
-    this.puzzles = gamePuzzles;
-    this.dialogs = gameDialogs;
-    this.items = gameItems;
-    this.map = gameMap;
-    
-    // Initialize default game state
-    this.gameState = {
-      currentScene: 'intro',
+  private constructor(config: GameEngineConfig) {
+    // Initial game state
+    this.state = {
+      currentScene: 'forest_edge',
       inventory: [],
-      visitedScenes: new Set(['intro']),
-      playerHealth: 100,
-      playerMana: 50,
-      puzzlesSolved: new Set(),
-      gameProgress: 0,
-      choices: {},
-      characterName: '',
-      currentDialog: null,
-      activePuzzle: null,
-      gameOver: false,
-      showMap: false,
-      showInventory: false,
-    };
-  }
-  
-  // Start the game
-  public startGame(): void {
-    this.transitionToScene('intro');
-  }
-  
-  // Restart the game
-  public restartGame(): void {
-    // Reset game state
-    this.gameState = {
-      currentScene: 'intro',
-      inventory: [],
-      visitedScenes: new Set(['intro']),
-      playerHealth: 100,
-      playerMana: 50,
-      puzzlesSolved: new Set(),
-      gameProgress: 0,
-      choices: {},
-      characterName: '',
-      currentDialog: null,
-      activePuzzle: null,
-      gameOver: false,
-      showMap: false,
-      showInventory: false,
+      status: {},
+      time: 'dusk',
+      visitedScenes: ['forest_edge'],
+      solvedPuzzles: [],
+      health: 100,
+      mana: 100,
+      dialogHistory: [],
+      notifications: []
     };
     
-    // Update state
-    this.updateGameState();
-    
-    // Start the game
-    this.transitionToScene('intro');
+    this.scenes = config.scenes;
+    this.items = config.items;
+    this.puzzles = config.puzzles;
+    this.dialogs = config.dialogs;
+    this.onStateChange = config.onStateChange;
   }
   
-  // Transition to a new scene
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(config?: GameEngineConfig): GameEngine {
+    if (!GameEngine.instance && config) {
+      GameEngine.instance = new GameEngine(config);
+    }
+    return GameEngine.instance;
+  }
+  
+  /**
+   * Update state and notify listeners
+   */
+  private updateState(updater: (state: GameState) => GameState): void {
+    this.state = updater(this.state);
+    this.onStateChange(this.state);
+  }
+  
+  /**
+   * Add notification to the game state
+   */
+  private addNotification(message: string, type: 'info' | 'warning' | 'success' | 'danger' = 'info'): void {
+    this.updateState(state => ({
+      ...state,
+      notifications: [
+        ...state.notifications,
+        {
+          id: uuidv4(),
+          message,
+          type,
+          duration: 5000
+        }
+      ]
+    }));
+    
+    // Auto-remove notification after duration
+    setTimeout(() => {
+      this.updateState(state => ({
+        ...state,
+        notifications: state.notifications.slice(1)
+      }));
+    }, 5000);
+  }
+  
+  /**
+   * Check if a requirement is met
+   */
+  public checkRequirement(requirement: any): boolean {
+    if (!requirement) return true;
+    
+    if (requirement.item) {
+      return this.state.inventory.includes(requirement.item);
+    }
+    
+    if (requirement.status) {
+      return Object.entries(requirement.status).every(
+        ([key, value]) => this.state.status[key] === value
+      );
+    }
+    
+    if (requirement.time) {
+      return this.state.time === requirement.time;
+    }
+    
+    if (requirement.puzzle) {
+      return this.state.solvedPuzzles.includes(requirement.puzzle);
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Transition to a new scene
+   */
   public transitionToScene(sceneId: string): void {
-    const scene = this.scenes[sceneId];
-    
-    if (!scene) {
-      console.error(`Scene with id ${sceneId} not found!`);
+    // Check if scene exists
+    if (!this.scenes[sceneId]) {
+      this.addNotification(`Error: Scene '${sceneId}' not found.`, 'danger');
       return;
     }
     
-    // Update game state
-    this.gameState.currentScene = sceneId;
-    this.gameState.visitedScenes.add(sceneId);
+    // Check if any exit leads to this scene from current scene
+    const currentScene = this.scenes[this.state.currentScene];
+    const validExit = currentScene.exits.find(exit => 
+      exit.destination === sceneId && this.checkRequirement(exit.requirement)
+    );
     
-    // Process scene triggers
-    this.processSceneTriggers(scene);
+    if (!validExit) {
+      this.addNotification("You cannot go there right now.", 'warning');
+      return;
+    }
     
-    // Set text content
-    this.setTextContent(scene.text);
+    // Update state with new scene
+    this.updateState(state => ({
+      ...state,
+      previousScene: state.currentScene,
+      currentScene: sceneId,
+      visitedScenes: state.visitedScenes.includes(sceneId) 
+        ? state.visitedScenes 
+        : [...state.visitedScenes, sceneId],
+      activeDialog: undefined,
+      activeCharacter: undefined
+    }));
     
-    // Filter choices based on conditions
-    const availableChoices = scene.choices.filter(choice => {
-      if (!choice.condition) return true;
-      
-      const { condition } = choice;
-      
-      // Check item condition
-      if (condition.item && !this.gameState.inventory.includes(condition.item)) {
-        return false;
-      }
-      
-      // Check puzzle condition
-      if (condition.puzzle && !this.gameState.puzzlesSolved.has(condition.puzzle)) {
-        return false;
-      }
-      
-      // Check choice condition
-      if (condition.choice && 
-          this.gameState.choices[condition.choice.key] !== condition.choice.value) {
-        return false;
-      }
-      
-      // Check health condition
-      if (condition.health !== undefined && this.gameState.playerHealth < condition.health) {
-        return false;
-      }
-      
-      // Check mana condition
-      if (condition.mana !== undefined && this.gameState.playerMana < condition.mana) {
-        return false;
-      }
-      
-      return true;
-    });
+    // Check for auto-discovery in the new scene
+    this.checkForDiscovery();
     
-    // Set available choices
-    this.setChoices(availableChoices.map(choice => ({
-      text: choice.text,
-      nextScene: choice.nextScene
-    })));
+    // Check for auto-collectible items
+    this.checkForItems();
     
-    // Process choice consequences
-    this.updateGameState();
+    // Check for puzzles
+    this.checkForPuzzles();
+    
+    // Notify player of scene transition
+    this.addNotification(`Entered: ${this.scenes[sceneId].title}`, 'info');
   }
   
-  // Process scene triggers
-  private processSceneTriggers(scene: SceneData): void {
-    if (!scene.triggers) return;
-    
-    for (const trigger of scene.triggers) {
-      // Check trigger condition
-      if (trigger.condition) {
-        const { condition } = trigger;
-        
-        // Check item condition
-        if (condition.item && !this.gameState.inventory.includes(condition.item)) {
-          continue;
-        }
-        
-        // Check puzzle condition
-        if (condition.puzzle && !this.gameState.puzzlesSolved.has(condition.puzzle)) {
-          continue;
-        }
-        
-        // Check choice condition
-        if (condition.choice && 
-            this.gameState.choices[condition.choice.key] !== condition.choice.value) {
-          continue;
-        }
-        
-        // Check health condition
-        if (condition.health !== undefined && this.gameState.playerHealth < condition.health) {
-          continue;
-        }
-        
-        // Check mana condition
-        if (condition.mana !== undefined && this.gameState.playerMana < condition.mana) {
-          continue;
-        }
-        
-        // Check visit count condition
-        if (condition.visitCount !== undefined) {
-          const visitCount = Array.from(this.gameState.visitedScenes)
-            .filter(id => id === scene.id).length;
-          
-          if (visitCount !== condition.visitCount) {
-            continue;
-          }
-        }
-      }
-      
-      // Process trigger based on type
-      switch (trigger.type) {
-        case 'dialog':
-          this.gameState.currentDialog = this.dialogs[trigger.data.dialogId];
-          break;
-        
-        case 'puzzle':
-          this.gameState.activePuzzle = this.puzzles[trigger.data.puzzleId];
-          break;
-        
-        case 'combat':
-          // Handle combat trigger
-          this.processCombat(trigger.data);
-          break;
-        
-        case 'item':
-          // Handle item trigger
-          if (trigger.data.action === 'add') {
-            this.addItemToInventory(trigger.data.itemId);
-          } else if (trigger.data.action === 'remove') {
-            this.removeItemFromInventory(trigger.data.itemId);
-          }
-          break;
-        
-        case 'status':
-          // Handle status effect trigger
-          this.processStatusEffect(trigger.data);
-          break;
-      }
-    }
-  }
-  
-  // Process choice consequences
-  private processChoiceConsequences(consequences: any): void {
-    if (!consequences) return;
-    
-    // Add item
-    if (consequences.addItem) {
-      this.addItemToInventory(consequences.addItem);
+  /**
+   * Use an inventory item
+   */
+  public useItem(itemId: string): void {
+    if (!this.state.inventory.includes(itemId)) {
+      this.addNotification("You don't have that item.", 'warning');
+      return;
     }
     
-    // Remove item
-    if (consequences.removeItem) {
-      this.removeItemFromInventory(consequences.removeItem);
-    }
-    
-    // Update health
-    if (consequences.health) {
-      this.gameState.playerHealth = Math.max(
-        0, 
-        Math.min(100, this.gameState.playerHealth + consequences.health)
-      );
-      
-      // Check for game over
-      if (this.gameState.playerHealth <= 0) {
-        this.gameState.gameOver = true;
-      }
-    }
-    
-    // Update mana
-    if (consequences.mana) {
-      this.gameState.playerMana = Math.max(
-        0, 
-        Math.min(100, this.gameState.playerMana + consequences.mana)
-      );
-    }
-    
-    // Update progress
-    if (consequences.progress) {
-      this.gameState.gameProgress += consequences.progress;
-    }
-    
-    // Set choice
-    if (consequences.setChoice) {
-      this.gameState.choices[consequences.setChoice.key] = consequences.setChoice.value;
-    }
-  }
-  
-  // Process combat
-  private processCombat(combatData: any): void {
-    // Apply damage to player
-    if (combatData.damage) {
-      this.gameState.playerHealth = Math.max(
-        0, 
-        this.gameState.playerHealth - combatData.damage
-      );
-      
-      // Check for game over
-      if (this.gameState.playerHealth <= 0) {
-        this.gameState.gameOver = true;
-      }
-    }
-    
-    // Apply mana cost
-    if (combatData.manaCost) {
-      this.gameState.playerMana = Math.max(
-        0, 
-        this.gameState.playerMana - combatData.manaCost
-      );
-    }
-  }
-  
-  // Process status effect
-  private processStatusEffect(statusData: any): void {
-    // Apply health effect
-    if (statusData.health) {
-      this.gameState.playerHealth = Math.max(
-        0, 
-        Math.min(100, this.gameState.playerHealth + statusData.health)
-      );
-      
-      // Check for game over
-      if (this.gameState.playerHealth <= 0) {
-        this.gameState.gameOver = true;
-      }
-    }
-    
-    // Apply mana effect
-    if (statusData.mana) {
-      this.gameState.playerMana = Math.max(
-        0, 
-        Math.min(100, this.gameState.playerMana + statusData.mana)
-      );
-    }
-  }
-  
-  // Add item to inventory
-  public addItemToInventory(itemId: string): void {
-    if (!this.gameState.inventory.includes(itemId)) {
-      this.gameState.inventory.push(itemId);
-    }
-  }
-  
-  // Remove item from inventory
-  public removeItemFromInventory(itemId: string): void {
-    this.gameState.inventory = this.gameState.inventory.filter(id => id !== itemId);
-  }
-  
-  // Solve puzzle
-  public solvePuzzle(puzzleId: string): void {
-    // Mark puzzle as solved
-    this.gameState.puzzlesSolved.add(puzzleId);
-    
-    // Close puzzle dialog
-    this.gameState.activePuzzle = null;
-    
-    // Update game progress
-    this.gameState.gameProgress += 10;
-    
-    // Check for special puzzle rewards
-    const puzzle = this.puzzles[puzzleId];
-    if (puzzle && puzzle.data.reward) {
-      if (puzzle.data.reward.item) {
-        this.addItemToInventory(puzzle.data.reward.item);
-      }
-      
-      if (puzzle.data.reward.health) {
-        this.gameState.playerHealth = Math.min(
-          100, 
-          this.gameState.playerHealth + puzzle.data.reward.health
-        );
-      }
-      
-      if (puzzle.data.reward.mana) {
-        this.gameState.playerMana = Math.min(
-          100, 
-          this.gameState.playerMana + puzzle.data.reward.mana
-        );
-      }
-    }
-    
-    this.updateGameState();
-  }
-  
-  // Get inventory item details
-  public getInventoryItemDetails(itemId: string): InventoryItem | null {
-    return this.items[itemId] || null;
-  }
-  
-  // Use inventory item
-  public useInventoryItem(itemId: string): void {
     const item = this.items[itemId];
     
-    if (!item) return;
+    // Handle different item use actions
+    switch (item.useAction) {
+      case 'heal':
+        this.updateState(state => ({
+          ...state,
+          health: Math.min(100, state.health + 25)
+        }));
+        this.addNotification(`Used ${item.name} to restore health.`, 'success');
+        break;
+        
+      case 'restore_mana':
+        this.updateState(state => ({
+          ...state,
+          mana: Math.min(100, state.mana + 25)
+        }));
+        this.addNotification(`Used ${item.name} to restore mana.`, 'success');
+        break;
+        
+      case 'unlock':
+        // Check current scene for unlockable objects
+        const currentScene = this.scenes[this.state.currentScene];
+        // This would be implemented based on scene-specific unlockable objects
+        this.addNotification(`Used ${item.name}, but nothing happened here.`, 'info');
+        break;
+        
+      case 'activate':
+        // Activate special item effects
+        if (itemId === 'ghostlight_lantern') {
+          this.updateState(state => ({
+            ...state,
+            status: {
+              ...state.status,
+              lantern_active: true
+            }
+          }));
+          this.addNotification(`Activated the ${item.name}. Hidden things may now be revealed.`, 'success');
+          // Check for newly visible entities
+          this.checkForDiscovery();
+        } else {
+          this.addNotification(`Activated ${item.name}.`, 'info');
+        }
+        break;
+        
+      case 'read':
+        if (itemId === 'ancient_tome') {
+          this.addNotification(`You read from the ${item.name}. The strange symbols swim before your eyes, slowly resolving into meaning.`, 'info');
+          this.updateState(state => ({
+            ...state,
+            status: {
+              ...state.status,
+              read_tome: true
+            },
+            health: state.health - 5 // Reading causes minor psychic damage
+          }));
+        } else {
+          this.addNotification(`You read the ${item.name}.`, 'info');
+        }
+        break;
+        
+      default:
+        this.addNotification(`You examine the ${item.name} but aren't sure how to use it here.`, 'info');
+    }
+  }
+  
+  /**
+   * Start a dialog with a character
+   */
+  public startDialog(characterId: string): void {
+    const currentScene = this.scenes[this.state.currentScene];
+    const character = currentScene.characters.find(c => c.id === characterId);
     
-    // If item has a use action, perform it
-    if (item.useAction) {
-      switch (item.useAction) {
-        case 'heal':
-          this.gameState.playerHealth = Math.min(100, this.gameState.playerHealth + 20);
+    if (!character || !character.dialog) {
+      this.addNotification("This character has nothing to say.", 'warning');
+      return;
+    }
+    
+    this.updateState(state => ({
+      ...state,
+      activeDialog: character.dialog,
+      activeCharacter: characterId
+    }));
+  }
+  
+  /**
+   * Select a dialog response
+   */
+  public selectDialogResponse(responseIndex: number): void {
+    if (!this.state.activeDialog) return;
+    
+    const dialog = this.dialogs[this.state.activeDialog];
+    if (!dialog || !dialog.responses || responseIndex >= dialog.responses.length) {
+      this.addNotification("Invalid dialog response.", 'danger');
+      return;
+    }
+    
+    const response = dialog.responses[responseIndex];
+    
+    // Add to dialog history
+    this.updateState(state => ({
+      ...state,
+      dialogHistory: [
+        ...state.dialogHistory,
+        {
+          character: dialog.character.name,
+          text: response.text,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    }));
+    
+    // Handle response action
+    if (response.action === 'leave') {
+      // End dialog
+      this.updateState(state => ({
+        ...state,
+        activeDialog: undefined,
+        activeCharacter: undefined
+      }));
+      return;
+    }
+    
+    // Handle response outcome
+    if (response.outcome) {
+      switch (response.outcome.type) {
+        case 'item':
+          this.addItemToInventory(response.outcome.value);
+          if (response.outcome.message) {
+            this.addNotification(response.outcome.message, 'success');
+          }
           break;
-        
-        case 'restore_mana':
-          this.gameState.playerMana = Math.min(100, this.gameState.playerMana + 20);
+        case 'status':
+          this.updateState(state => ({
+            ...state,
+            status: {
+              ...state.status,
+              ...response.outcome.value
+            }
+          }));
+          if (response.outcome.message) {
+            this.addNotification(response.outcome.message, 'info');
+          }
           break;
-        
-        case 'unlock':
-          // This will be handled by scene conditions
-          break;
-        
-        case 'activate':
-          // This will be handled by scene conditions
-          break;
-        
-        case 'consume':
-          // Remove consumable item after use
-          this.removeItemFromInventory(itemId);
-          break;
+        case 'scene':
+          this.transitionToScene(response.outcome.value);
+          return;
+        case 'puzzle':
+          // Start a puzzle
+          this.startPuzzle(response.outcome.value);
+          return;
       }
     }
     
-    this.updateGameState();
+    // Move to next dialog if specified
+    if (response.nextDialog) {
+      this.updateState(state => ({
+        ...state,
+        activeDialog: response.nextDialog
+      }));
+    } else {
+      // End dialog if no next dialog
+      this.updateState(state => ({
+        ...state,
+        activeDialog: undefined,
+        activeCharacter: undefined
+      }));
+    }
   }
   
-  // Get map location
-  public getMapLocation(locationId: string): MapLocation | null {
-    return this.map[locationId] || null;
+  /**
+   * Start a puzzle
+   */
+  private startPuzzle(puzzleId: string): void {
+    if (!this.puzzles[puzzleId]) {
+      this.addNotification(`Error: Puzzle '${puzzleId}' not found.`, 'danger');
+      return;
+    }
+    
+    this.updateState(state => ({
+      ...state,
+      currentPuzzle: puzzleId,
+      puzzleAttempts: 0
+    }));
   }
   
-  // Get scene details
-  public getSceneDetails(sceneId: string): SceneData | null {
-    return this.scenes[sceneId] || null;
+  /**
+   * Attempt to solve a puzzle
+   */
+  public attemptPuzzle(puzzleId: string, solution: any): void {
+    const puzzle = this.puzzles[puzzleId];
+    if (!puzzle) {
+      this.addNotification(`Error: Puzzle '${puzzleId}' not found.`, 'danger');
+      return;
+    }
+    
+    // Increment attempts counter
+    this.updateState(state => ({
+      ...state,
+      puzzleAttempts: (state.puzzleAttempts || 0) + 1
+    }));
+    
+    // Check solution based on puzzle type
+    let solved = false;
+    
+    switch (puzzle.type) {
+      case 'riddle':
+        // For riddles, solution is a string answer
+        const correctAnswer = puzzle.data.answer.toLowerCase();
+        const providedAnswer = (solution as string).toLowerCase();
+        solved = correctAnswer === providedAnswer || 
+                (puzzle.data.alternateAnswers && 
+                 puzzle.data.alternateAnswers.map(a => a.toLowerCase()).includes(providedAnswer));
+        break;
+        
+      case 'pattern':
+        // For patterns, solution is an array of indices
+        solved = JSON.stringify(puzzle.data.correctPattern) === JSON.stringify(solution);
+        break;
+        
+      case 'combination':
+        // For combinations, solution is an array of values
+        solved = JSON.stringify(puzzle.data.combination) === JSON.stringify(solution);
+        break;
+        
+      case 'runes':
+        // For runes, solution is an array of selected rune symbols
+        solved = JSON.stringify(puzzle.data.correctSequence) === JSON.stringify(solution);
+        break;
+        
+      case 'sacrifice':
+        // For sacrifice puzzles, solution is an array of selected item ids
+        const selectedItems = (solution as string[])
+          .map(id => puzzle.data.items.find(item => item.id === id))
+          .filter(Boolean);
+        
+        const totalValue = selectedItems.reduce((sum, item) => sum + item.value, 0);
+        solved = totalValue === puzzle.data.targetValue && 
+                 selectedItems.length <= puzzle.data.maxSelections;
+        break;
+    }
+    
+    if (solved) {
+      // Puzzle completed successfully
+      this.addNotification(`You solved the ${puzzle.title}!`, 'success');
+      
+      // Update puzzle in state as solved
+      this.updateState(state => ({
+        ...state,
+        currentPuzzle: undefined,
+        puzzleAttempts: 0,
+        solvedPuzzles: [...state.solvedPuzzles, puzzleId]
+      }));
+      
+      // Check for newly available paths or items
+      this.checkForDiscovery();
+      this.checkForItems();
+    } else {
+      // Puzzle failed
+      if (puzzle.data.maxAttempts && this.state.puzzleAttempts >= puzzle.data.maxAttempts) {
+        // Max attempts reached
+        this.addNotification(`You failed to solve the ${puzzle.title}. It can no longer be attempted.`, 'danger');
+        this.updateState(state => ({
+          ...state,
+          currentPuzzle: undefined,
+          puzzleAttempts: 0,
+          health: state.health - 10 // Penalty for failing a puzzle
+        }));
+      } else {
+        // Can try again
+        this.addNotification(`Your solution to the ${puzzle.title} was incorrect. Try again.`, 'warning');
+      }
+    }
   }
   
-  // Update game state
-  private updateGameState(): void {
-    this.setGameState({...this.gameState});
+  /**
+   * Perform a scene action
+   */
+  public performAction(actionId: string): void {
+    const currentScene = this.scenes[this.state.currentScene];
+    const action = currentScene.actions?.find(a => a.action === actionId);
+    
+    if (!action) {
+      this.addNotification("This action is not available.", 'warning');
+      return;
+    }
+    
+    // Display action result
+    this.addNotification(action.result, 'info');
+    
+    // Apply action outcomes
+    if (action.outcomes && action.outcomes.length > 0) {
+      action.outcomes.forEach(outcome => {
+        switch (outcome.type) {
+          case 'item':
+            this.addItemToInventory(outcome.value);
+            if (outcome.message) {
+              this.addNotification(outcome.message, 'success');
+            }
+            break;
+          case 'status':
+            this.updateState(state => ({
+              ...state,
+              status: {
+                ...state.status,
+                ...outcome.value
+              }
+            }));
+            break;
+          case 'health':
+            this.updateState(state => ({
+              ...state,
+              health: Math.max(0, Math.min(100, state.health + outcome.value))
+            }));
+            if (outcome.message) {
+              this.addNotification(outcome.message, outcome.value > 0 ? 'success' : 'danger');
+            }
+            break;
+          case 'mana':
+            this.updateState(state => ({
+              ...state,
+              mana: Math.max(0, Math.min(100, state.mana + outcome.value))
+            }));
+            if (outcome.message) {
+              this.addNotification(outcome.message, outcome.value > 0 ? 'success' : 'warning');
+            }
+            break;
+        }
+      });
+    }
+    
+    // Check for discoveries or new items after action
+    this.checkForDiscovery();
+    this.checkForItems();
+  }
+  
+  /**
+   * Check for discoveries in the current scene
+   */
+  private checkForDiscovery(): void {
+    const currentScene = this.scenes[this.state.currentScene];
+    
+    if (currentScene.discovery && 
+        this.checkRequirement(currentScene.discovery.requires) && 
+        !this.state.status[`discovered_${currentScene.id}`]) {
+      
+      // Add discovery to status
+      this.updateState(state => ({
+        ...state,
+        status: {
+          ...state.status,
+          [`discovered_${currentScene.id}`]: true
+        }
+      }));
+      
+      // Notify player
+      this.addNotification(currentScene.discovery.text, 'info');
+    }
+  }
+  
+  /**
+   * Check for items that can be collected in current scene
+   */
+  private checkForItems(): void {
+    const currentScene = this.scenes[this.state.currentScene];
+    
+    currentScene.items.forEach(itemPlacement => {
+      // If item is not hidden and requirement is met, add to inventory
+      if (!itemPlacement.hidden && 
+          this.checkRequirement(itemPlacement.requirement) &&
+          !this.state.inventory.includes(itemPlacement.id) &&
+          !this.state.status[`collected_${itemPlacement.id}`]) {
+        
+        this.addItemToInventory(itemPlacement.id);
+        this.addNotification(`You found ${this.items[itemPlacement.id].name}!`, 'success');
+      }
+    });
+  }
+  
+  /**
+   * Check for puzzles in the current scene
+   */
+  private checkForPuzzles(): void {
+    const currentScene = this.scenes[this.state.currentScene];
+    
+    if (currentScene.puzzles && currentScene.puzzles.length > 0) {
+      currentScene.puzzles.forEach(puzzlePlacement => {
+        // If puzzle isn't already solved, present it
+        if (!this.state.solvedPuzzles.includes(puzzlePlacement.id) &&
+            !this.state.status[`failed_${puzzlePlacement.id}`]) {
+          this.addNotification(puzzlePlacement.introduction, 'info');
+          this.startPuzzle(puzzlePlacement.id);
+        }
+      });
+    }
+  }
+  
+  /**
+   * Add an item to the player's inventory
+   */
+  private addItemToInventory(itemId: string): void {
+    if (!this.items[itemId]) {
+      console.error(`Error: Item '${itemId}' not found.`);
+      return;
+    }
+    
+    this.updateState(state => ({
+      ...state,
+      inventory: [...state.inventory, itemId],
+      status: {
+        ...state.status,
+        [`collected_${itemId}`]: true
+      }
+    }));
+  }
+  
+  /**
+   * Save game to local storage
+   */
+  public saveGame(): void {
+    try {
+      const saveData = {
+        id: uuidv4(),
+        timestamp: new Date().toISOString(),
+        gameState: this.state,
+        playTime: 0 // Would track play time in real implementation
+      };
+      
+      localStorage.setItem('edens_hollow_save', JSON.stringify(saveData));
+      this.addNotification("Game saved successfully.", 'success');
+    } catch (error) {
+      console.error("Error saving game:", error);
+      this.addNotification("Failed to save game.", 'danger');
+    }
+  }
+  
+  /**
+   * Load game from local storage
+   */
+  public loadGame(): void {
+    try {
+      const saveData = localStorage.getItem('edens_hollow_save');
+      if (saveData) {
+        const { gameState } = JSON.parse(saveData);
+        this.updateState(() => gameState);
+        this.addNotification("Game loaded successfully.", 'success');
+      } else {
+        this.addNotification("No saved game found.", 'warning');
+      }
+    } catch (error) {
+      console.error("Error loading game:", error);
+      this.addNotification("Failed to load game.", 'danger');
+    }
+  }
+  
+  /**
+   * Change the time of day
+   */
+  public changeTimeOfDay(newTime: 'dawn' | 'day' | 'dusk' | 'night'): void {
+    this.updateState(state => ({
+      ...state,
+      time: newTime
+    }));
+    
+    this.addNotification(`Time passes. It is now ${newTime}.`, 'info');
+    
+    // Check for time-dependent discoveries
+    this.checkForDiscovery();
   }
 }
