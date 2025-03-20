@@ -16,63 +16,64 @@ export function useFontSize() {
     }
   });
 
-  // Apply the font size when the component mounts
+  // Apply the font size when the component mounts and whenever it changes
   useEffect(() => {
-    console.log('[FontSize] Initializing font size:', fontSize);
+    console.log('[FontSize] Setting font size:', fontSize);
+    
+    // Update CSS custom property for global access
     document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
     
     // Also set a data attribute for easier CSS targeting
     document.documentElement.setAttribute('data-font-size', fontSize.toString());
-  }, []);
+    
+    // Create or update a global style tag for consistent font sizing
+    let styleTag = document.getElementById('reader-font-size-styles');
+    
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'reader-font-size-styles';
+      document.head.appendChild(styleTag);
+    }
+    
+    // Set consistent styles for story content that will override any inline styles
+    styleTag.textContent = `
+      .story-content {
+        font-size: ${fontSize}px !important;
+        line-height: 1.6 !important;
+      }
+      .story-content p, 
+      .story-content li,
+      .story-content div:not(.not-content) {
+        font-size: ${fontSize}px !important;
+        line-height: 1.6 !important;
+        font-family: 'Cormorant Garamond', serif !important;
+      }
+      .story-content h1 { font-size: ${fontSize * 1.8}px !important; }
+      .story-content h2 { font-size: ${fontSize * 1.5}px !important; }
+      .story-content h3 { font-size: ${fontSize * 1.3}px !important; }
+      .story-content h4 { font-size: ${fontSize * 1.1}px !important; }
+      .story-content small { font-size: ${fontSize * 0.85}px !important; }
+    `;
+    
+    // Clean up function
+    return () => {
+      // We don't remove the style tag on unmount to maintain font size between page navigations
+    };
+  }, [fontSize]);
 
   const updateFontSize = useCallback((newSize: number) => {
     const clampedSize = Math.min(Math.max(newSize, MIN_FONT_SIZE), MAX_FONT_SIZE);
     console.log('[FontSize] Updating font size to:', clampedSize);
     
-    // Update state
-    setFontSize(clampedSize);
-    
-    // Save to localStorage
+    // Save to localStorage before updating state
     try {
       localStorage.setItem('reader-font-size', clampedSize.toString());
     } catch (error) {
       console.error('[FontSize] Error saving to localStorage:', error);
     }
     
-    // Update CSS custom property for global access
-    document.documentElement.style.setProperty('--base-font-size', `${clampedSize}px`);
-    
-    // Update data attribute for easier CSS targeting
-    document.documentElement.setAttribute('data-font-size', clampedSize.toString());
-    
-    // Force update any story content by applying styles directly to elements with a proper selector
-    const storyContentElements = document.querySelectorAll('.story-content p, .story-content li, .story-content, .story-content div');
-    
-    // Apply styles immediately to ensure instant feedback
-    requestAnimationFrame(() => {
-      storyContentElements.forEach(el => {
-        if (el instanceof HTMLElement) {
-          el.style.fontSize = `${clampedSize}px`;
-        }
-      });
-      
-      // Force a reflow/repaint for immediate visual update
-      document.body.style.zoom = '99.99%';
-      requestAnimationFrame(() => {
-        document.body.style.zoom = '100%';
-      });
-    });
-    
-    // Also update the dynamically injected style tag for better coverage
-    const styleTag = document.getElementById('reader-dynamic-styles');
-    if (styleTag && styleTag instanceof HTMLStyleElement) {
-      const currentStyles = styleTag.textContent || '';
-      const updatedStyles = currentStyles.replace(
-        /font-size:\s*\d+px\s*!/g, 
-        `font-size: ${clampedSize}px!`
-      );
-      styleTag.textContent = updatedStyles;
-    }
+    // Update state (will trigger the useEffect)
+    setFontSize(clampedSize);
   }, []);
 
   const increaseFontSize = useCallback(() => {

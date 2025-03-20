@@ -336,7 +336,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   .story-content p {
-    line-height: 1.8;  /* Adjusted for Cormorant Garamond font */
+    line-height: 1.6;  /* Consistent with About page */
     margin-bottom: 1.2em;  /* Improved spacing between paragraphs */
     text-align: justify;
     letter-spacing: 0.01em; /* Subtle letter spacing */
@@ -348,10 +348,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
   }
   .story-content em {
-    font-family: 'Dancing Script', cursive;
-    font-style: normal;
-    font-size: 1.05em;
-    line-height: 1.5;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1em;
+    line-height: 1.6;
     letter-spacing: 0.01em;
     font-weight: 500;
   }
@@ -489,21 +489,25 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   
   // Function to navigate to previous story
   const goToPreviousStory = () => {
-    if (posts.length <= 1) return;
+    if (posts.length <= 1 || currentIndex === 0) return;
     
-    const newIndex = currentIndex > 0 ? currentIndex - 1 : posts.length - 1;
+    const newIndex = currentIndex - 1;
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   // Function to navigate to next story
   const goToNextStory = () => {
-    if (posts.length <= 1) return;
+    if (posts.length <= 1 || currentIndex === posts.length - 1) return;
     
-    const newIndex = (currentIndex + 1) % posts.length;
+    const newIndex = currentIndex + 1;
     setCurrentIndex(newIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  
+  // Check if we're at first or last story
+  const isFirstStory = currentIndex === 0;
+  const isLastStory = currentIndex === posts.length - 1;
 
   // The theme and toggleTheme functions are already declared at the top of the component
   
@@ -610,7 +614,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     size="sm"
                     onClick={goToPreviousStory}
                     className="h-8 px-2 bg-background hover:bg-background/80 w-24"
-                    disabled={posts.length <= 1}
+                    disabled={posts.length <= 1 || isFirstStory}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
                       <path d="m15 18-6-6 6-6"/>
@@ -636,7 +640,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     size="sm"
                     onClick={goToNextStory}
                     className="h-8 px-2 bg-background hover:bg-background/80 w-24"
-                    disabled={posts.length <= 1}
+                    disabled={posts.length <= 1 || isLastStory}
                   >
                     Next
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-1">
@@ -650,9 +654,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             <div
               className="story-content mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
               style={{
-                fontSize: `${fontSize}px`,
                 whiteSpace: 'pre-wrap',
-                lineHeight: '1.7',
                 letterSpacing: '0.01em'
               }}
               dangerouslySetInnerHTML={{
@@ -670,7 +672,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   onClick={goToPreviousStory}
                   className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
                   aria-label="Previous story"
-                  disabled={posts.length <= 1}
+                  disabled={posts.length <= 1 || isFirstStory}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                     <path d="m15 18-6-6 6-6"/>
@@ -692,7 +694,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   onClick={goToNextStory}
                   className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
                   aria-label="Next story"
-                  disabled={posts.length <= 1}
+                  disabled={posts.length <= 1 || isLastStory}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                     <path d="m9 18 6-6-6-6"/>
