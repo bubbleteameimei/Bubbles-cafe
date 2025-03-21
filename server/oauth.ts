@@ -36,6 +36,9 @@ interface OAuthData {
 
 interface UserMetadata {
   oauth?: OAuthData;
+  displayName?: string | null;
+  photoURL?: string | null;
+  bio?: string | null;
   [key: string]: any;
 }
 
@@ -84,25 +87,25 @@ export function setupOAuth(app: Express) {
           if (user) {
             // Update existing user with OAuth info if needed
             const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
-            if (photoUrl && !user.avatar) {
-              const currentMetadata = user.metadata || {};
-              const updatedMetadata = (currentMetadata || {}) as UserMetadata;
-              const oauthData = updatedMetadata.oauth || {} as OAuthData;
-              
-              user = await storage.updateUser(user.id, {
-                avatar: photoUrl,
-                metadata: {
-                  ...updatedMetadata,
-                  oauth: {
-                    ...oauthData,
-                    [profile.provider]: {
-                      providerId: profile.id,
-                      lastLogin: new Date().toISOString()
-                    }
+            // Store profile data in metadata instead
+            const currentMetadata = user.metadata || {};
+            const updatedMetadata = (currentMetadata || {}) as UserMetadata;
+            const oauthData = updatedMetadata.oauth || {} as OAuthData;
+            
+            user = await storage.updateUser(user.id, {
+              metadata: {
+                ...updatedMetadata,
+                photoURL: photoUrl || updatedMetadata.photoURL,
+                displayName: profile.displayName || updatedMetadata.displayName,
+                oauth: {
+                  ...oauthData,
+                  [profile.provider]: {
+                    providerId: profile.id,
+                    lastLogin: new Date().toISOString()
                   }
                 }
-              });
-            }
+              }
+            });
             return done(null, user);
           } else {
             // Create new user with OAuth info
@@ -121,9 +124,10 @@ export function setupOAuth(app: Express) {
               email,
               username: email.split('@')[0] + '_' + Math.floor(Math.random() * 10000),
               password,
-              fullName: profile.displayName || undefined,
-              avatar: photoUrl || undefined,
+              // Remove fullName and avatar as they don't exist in the database
               metadata: {
+                displayName: profile.displayName || undefined,
+                photoURL: photoUrl || undefined,
                 oauth: {
                   [profile.provider]: {
                     providerId: profile.id,
@@ -173,21 +177,19 @@ export function setupOAuth(app: Express) {
         const updatedFields: any = {};
         let needsUpdate = false;
         
-        // Update avatar if not set
-        if (photoURL && !user.avatar) {
-          updatedFields.avatar = photoURL;
-          needsUpdate = true;
-        }
-        
-        // Update full name if not set
-        if (displayName && !user.fullName) {
-          updatedFields.fullName = displayName;
-          needsUpdate = true;
-        }
-        
-        // Update metadata to include social provider info
+        // Get user metadata once
         const userMetadata = (user.metadata || {}) as UserMetadata;
         const oauthData = userMetadata.oauth || {} as OAuthData;
+        
+        // Store profile info in metadata since the columns don't exist
+        if (photoURL || displayName) {
+          updatedFields.metadata = {
+            ...userMetadata,
+            displayName: displayName || userMetadata.displayName || null,
+            photoURL: photoURL || userMetadata.photoURL || null
+          };
+          needsUpdate = true;
+        }
         
         if (!userMetadata.oauth || !oauthData[provider]) {
           updatedFields.metadata = {
@@ -215,9 +217,10 @@ export function setupOAuth(app: Express) {
           email,
           username,
           password,
-          fullName: displayName || null,
-          avatar: photoURL || null,
+          // Store displayName and photoURL in metadata instead
           metadata: {
+            displayName: displayName || null,
+            photoURL: photoURL || null,
             oauth: {
               [provider]: {
                 providerId,
@@ -236,15 +239,18 @@ export function setupOAuth(app: Express) {
         }
         
         // Return user data without sensitive information
+        // Extract profile data from metadata since those columns don't exist
+        const metadata = (user.metadata || {}) as UserMetadata;
         return res.status(200).json({
           id: user.id,
           username: user.username,
           email: user.email,
           isAdmin: user.isAdmin,
           createdAt: user.createdAt,
-          avatar: user.avatar,
-          fullName: user.fullName,
-          bio: user.bio
+          // Use metadata values instead
+          avatar: metadata.photoURL || null,
+          fullName: metadata.displayName || null,
+          bio: metadata.bio || null
         });
       });
     } catch (error) {
@@ -282,6 +288,7 @@ export function setupOAuth(app: Express) {
       console.log('[Auth] Authenticated user info request:', user.id);
       
       // Return user data without sensitive information
+      const metadata = user.metadata || {};
       return res.json({
         isAuthenticated: true,
         user: {
@@ -290,9 +297,10 @@ export function setupOAuth(app: Express) {
           email: user.email, 
           isAdmin: user.isAdmin,
           createdAt: user.createdAt,
-          avatar: user.avatar,
-          fullName: user.fullName,
-          bio: user.bio
+          // Use metadata values since those columns don't exist in the database
+          avatar: metadata.photoURL || null,
+          fullName: metadata.displayName || null,
+          bio: metadata.bio || null
         }
       });
     } else {
@@ -312,15 +320,17 @@ export function setupOAuth(app: Express) {
   // User profile route
   app.get('/api/auth/profile', isAuthenticated, (req: Request, res: Response) => {
     const user = req.user as any;
+    const metadata = user.metadata || {};
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
-      avatar: user.avatar,
-      fullName: user.fullName,
-      bio: user.bio
+      // Use metadata values since the columns don't exist in the database
+      avatar: metadata.photoURL || null,
+      fullName: metadata.displayName || null,
+      bio: metadata.bio || null
     });
   });
 }

@@ -23,6 +23,7 @@ async function getOrCreateAdminUser() {
     }
 
     // Create new admin user if doesn't exist
+    // Only include fields that exist in the actual database table
     const [newAdmin] = await db.insert(users).values({
       username: "admin",
       email: "vantalison@gmail.com",
