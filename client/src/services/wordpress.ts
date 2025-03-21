@@ -156,14 +156,53 @@ function getPaginatedPostsFromCache(page: number, perPage: number): WordPressPos
   return allCachedPosts.slice(startIndex, endIndex);
 }
 
-export async function fetchWordPressPosts(page = 1, perPage = 20): Promise<WordPressPost[]> {
+/**
+ * Fetch all WordPress posts, potentially across multiple pages
+ */
+export async function fetchAllWordPressPosts(): Promise<WordPressPost[]> {
+  try {
+    console.log('[WordPress Service] Fetching all available posts');
+    
+    // Start with page 1 and a large per_page value
+    let currentPage = 1;
+    const perPage = 100; // WordPress API allows up to 100 per page
+    let allPosts: WordPressPost[] = [];
+    let hasMorePages = true;
+    
+    // Fetch posts until we've retrieved all available pages
+    while (hasMorePages && currentPage <= 10) { // Cap at 10 pages (1000 posts) for safety
+      console.log(`[WordPress Service] Fetching page ${currentPage} of posts`);
+      const pagePosts = await fetchWordPressPosts(currentPage, perPage);
+      
+      if (pagePosts.length > 0) {
+        allPosts = [...allPosts, ...pagePosts];
+        currentPage++;
+      } else {
+        hasMorePages = false;
+      }
+      
+      // If we got fewer posts than requested, we've reached the end
+      if (pagePosts.length < perPage) {
+        hasMorePages = false;
+      }
+    }
+    
+    console.log(`[WordPress Service] Successfully fetched all ${allPosts.length} posts`);
+    return allPosts;
+  } catch (error) {
+    console.error('[WordPress Service] Error fetching all posts:', error);
+    return getPostsFromLocalStorage();
+  }
+}
+
+export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<WordPressPost[]> {
   try {
     console.log(`[WordPress Service] Fetching posts for page ${page} with ${perPage} per page`);
     
     // Create simpler URL parameters for basic fetch
     const params = new URLSearchParams({
       page: page.toString(),
-      per_page: perPage.toString(), // Updated to use the perPage parameter
+      per_page: perPage.toString(), // Use larger per_page value to get more posts at once
       orderby: 'date',
       order: 'desc'
     });

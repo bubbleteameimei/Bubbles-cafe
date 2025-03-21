@@ -413,24 +413,38 @@ export function validateContent(data: unknown): {
  * @param maxLength Maximum length of the excerpt
  * @returns Clean excerpt text
  */
-export function getExcerpt(htmlContent: string, maxLength: number = 200): string {
+export function getExcerpt(htmlContent: string, maxLength: number = 250): string {
   try {
     if (!htmlContent) return '';
     
-    // Remove HTML tags
+    // Remove HTML tags and clean up whitespace
     const text = htmlContent
-      .replace(/<\/?[^>]+(>|$)/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+      .replace(/<\/?[^>]+(>|$)/g, '')  // Remove HTML tags
+      .replace(/&nbsp;/g, ' ')          // Convert &nbsp; to regular spaces
+      .replace(/\s+/g, ' ')             // Normalize whitespace
+      .trim();                          // Remove leading/trailing whitespace
     
-    // Truncate to max length
+    // Truncate to max length if needed
     if (text.length <= maxLength) {
       return text;
     }
     
-    // Find a good breaking point
+    // Find a good breaking point at a sentence or paragraph end
     const truncated = text.substring(0, maxLength);
+    
+    // Check for periods, question marks, or exclamation points followed by space
+    const sentenceEnd = Math.max(
+      truncated.lastIndexOf('. '),
+      truncated.lastIndexOf('? '),
+      truncated.lastIndexOf('! ')
+    );
+    
+    // If a sentence end is found within the last 40 characters, use it
+    if (sentenceEnd > maxLength - 40 && sentenceEnd > 0) {
+      return truncated.substring(0, sentenceEnd + 1) + '...';
+    }
+    
+    // Otherwise fall back to breaking at word boundaries
     const lastSpace = truncated.lastIndexOf(' ');
     
     // Return truncated text with ellipsis
