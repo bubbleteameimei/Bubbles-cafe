@@ -20,6 +20,7 @@ const badgeVariants = cva(
         supernatural: "border-transparent bg-blue-900/20 text-blue-400 hover:bg-blue-900/30",
         parasite: "border-transparent bg-green-900/20 text-green-400 hover:bg-green-900/30",
         lovecraftian: "border-transparent bg-indigo-900/20 text-indigo-400 hover:bg-indigo-900/30",
+        cosmic: "border-transparent bg-indigo-900/20 text-indigo-400 hover:bg-indigo-900/30", // Added for cosmic horror
         suicidal: "border-transparent bg-gray-900/20 text-gray-400 hover:bg-gray-900/30",
         technological: "border-transparent bg-cyan-900/20 text-cyan-400 hover:bg-cyan-900/30",
         body: "border-transparent bg-pink-900/20 text-pink-400 hover:bg-pink-900/30",
@@ -36,6 +37,11 @@ const badgeVariants = cva(
         urban: "border-transparent bg-amber-900/20 text-amber-400 hover:bg-amber-900/30",
         time: "border-transparent bg-fuchsia-900/20 text-fuchsia-400 hover:bg-fuchsia-900/30",
         dreamscape: "border-transparent bg-purple-950/20 text-purple-300 hover:bg-purple-950/30",
+        uncanny: "border-transparent bg-teal-900/20 text-teal-400 hover:bg-teal-900/30", // Added for uncanny horror
+        existential: "border-transparent bg-gray-800/20 text-gray-300 hover:bg-gray-800/30", // Added for existential horror
+        vehicular: "border-transparent bg-yellow-900/20 text-yellow-400 hover:bg-yellow-900/30", // Added for vehicular horror
+        doppelganger: "border-transparent bg-purple-800/20 text-purple-300 hover:bg-purple-800/30", // Added for doppelgänger horror
+        slasher: "border-transparent bg-red-800/20 text-red-300 hover:bg-red-800/30", // Added for slasher horror
       },
     },
     defaultVariants: {

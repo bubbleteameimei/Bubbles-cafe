@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
@@ -14,10 +14,8 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "@/shared/types";
-// Import social icons lazily to avoid loading them initially
-const FaTwitter = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaTwitter })));
-const FaWordpress = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaWordpress })));
-const FaInstagram = lazy(() => import('react-icons/fa').then(module => ({ default: module.FaInstagram })));
+// Import social icons directly since lazy loading was causing issues
+import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
@@ -32,8 +30,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Lazy load non-essential components 
-const CommentSection = lazy(() => import("@/components/blog/comment-section"));
+// Import comment section directly for now to avoid lazy loading issues
+import CommentSection from "@/components/blog/comment-section";
 
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -800,13 +798,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                         ))}
                       </div>
                     }>
-                      <Suspense fallback={
-                        <div className="flex gap-3">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className="w-9 h-9 rounded-full border border-gray-200 animate-pulse bg-gray-100 dark:bg-gray-800 dark:border-gray-700"></div>
-                          ))}
-                        </div>
-                      }>
+                      <div className="flex gap-3">
                         {socialLinks.map(({ key, Icon, url }) => (
                           <Button
                             key={key}
@@ -819,7 +811,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                             <span className="sr-only">Follow on {key}</span>
                           </Button>
                         ))}
-                      </Suspense>
+                      </div>
                     </ErrorBoundary>
                   </div>
                 </div>
@@ -859,21 +851,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                         </Button>
                       </div>
                     }>
-                      <Suspense fallback={
-                        <div className="p-4 space-y-4">
-                          <div className="animate-pulse space-y-2">
-                            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                          </div>
-                          <div className="animate-pulse space-y-2">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                          </div>
-                        </div>
-                      }>
-                        <CommentSection postId={currentPost.id} />
-                      </Suspense>
+                      <CommentSection postId={currentPost.id} />
                     </ErrorBoundary>
                   </div>
                 </div>

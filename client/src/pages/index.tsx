@@ -6,8 +6,9 @@ import { useState } from "react";
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// Removed LoadingScreen import
-import { ArrowRight, ChevronRight, Calendar, BookOpen, Search, Filter, Book, Loader2 } from "lucide-react";
+import { 
+  ArrowRight, ChevronRight, Clock, Calendar, BookOpen, Search, Filter, Book, Loader2
+} from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { FloatingPagination } from "@/components/ui/floating-pagination";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import Mist from "@/components/effects/mist";
 
-import { getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
+import { getReadingTime, getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 
 interface WordPressResponse {
@@ -183,22 +185,23 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen w-full bg-background">
+      <Mist className="opacity-30" />
       <div className="container pb-20">
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 pt-4 border-b pb-6"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div>
-            <h1 className="text-4xl font-decorative mb-2 text-primary">Latest Stories</h1>
-            <p className="text-muted-foreground italic">Explore our collection of haunting tales that will keep you up at night</p>
+            <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
+            <p className="text-muted-foreground">Explore our collection of haunting tales</p>
           </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => setLocation('/')}
-              className="hover:bg-primary/20 transition-colors shadow-sm"
+              className="hover:bg-primary/20 transition-colors"
             >
               Back to Home
             </Button>
@@ -213,72 +216,66 @@ export default function IndexView() {
           </div>
         </motion.div>
 
-        {/* Filter Bar */}
+        {/* Simple Search and Filter Bar */}
         <motion.div
-          className="mb-8 border rounded-lg p-5 bg-card/80 shadow-sm"
+          className="mb-6 flex flex-col md:flex-row gap-4 items-end"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="w-full">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search stories by title or content..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 shadow-sm focus:shadow focus:border-primary/40 transition-all"
-                />
-              </form>
-            </div>
+          <div className="w-full md:flex-1">
+            <form onSubmit={handleSearch} className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search stories by title or content..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-background/70 border border-muted"
+              />
+            </form>
+          </div>
+          
+          <div className="flex gap-3 w-full md:w-auto">
+            <Select value={theme} onValueChange={setTheme}>
+              <SelectTrigger className="bg-background/70 border border-muted">
+                <div className="flex items-center">
+                  <Book className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Theme" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Themes</SelectItem>
+                {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
+                  <SelectItem key={key} value={key}>
+                    {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            <div className="flex gap-3 w-full md:w-auto">
-              <div className="w-full md:w-[180px]">
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="shadow-sm hover:border-primary/30 transition-all">
-                    <div className="flex items-center">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Theme" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Themes</SelectItem>
-                    {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-full md:w-[180px]">
-                <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="shadow-sm hover:border-primary/30 transition-all">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Sort by" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => refetch()}
-                title="Refresh stories"
-                className="shadow-sm hover:shadow hover:bg-primary/5 transition-all"
-              >
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger className="bg-background/70 border border-muted">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Sort by" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => refetch()}
+              title="Refresh stories"
+              className="bg-background/70 border border-muted"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </motion.div>
         
@@ -349,7 +346,6 @@ export default function IndexView() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {currentPosts.map((post, index) => {
-              // Reading time display removed
               const excerpt = getExcerpt(post.content);
               const globalIndex = startIndex + index; // Calculate the global index for navigation
               const metadata = post.metadata || {};
@@ -358,23 +354,32 @@ export default function IndexView() {
                 ? String(metadata.themeCategory || "") 
                 : "";
               
+              // Get theme info for icon display
+              const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
+              
+              // Capitalize first letter and lowercase the rest, replacing underscores with spaces
+              const displayName = themeCategory 
+                ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ') 
+                : '';
+              
               return (
                 <motion.article
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="group"
+                  className="group story-card-container"
+                  whileHover={{ scale: 1.01 }}
                 >
                   <Card className="h-full hover:shadow-md transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/30">
-                    {themeCategory && THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] && (
+                    {themeCategory && themeInfo && (
                       <div className="h-1.5 bg-primary w-full"></div>
                     )}
                     <CardHeader className="p-6">
                       <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-start gap-4">
                           <CardTitle
-                            className="text-xl group-hover:text-primary transition-colors cursor-pointer font-decorative"
+                            className="text-xl group-hover:text-primary transition-colors cursor-pointer font-castoro story-card-title"
                             onClick={() => navigateToReader(globalIndex)}
                           >
                             {post.title}
@@ -384,29 +389,32 @@ export default function IndexView() {
                               <Calendar className="h-3 w-3" />
                               <time>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</time>
                             </div>
-                            <div className="flex items-center gap-1 justify-end">
+                            <div className="flex items-center gap-1 justify-end read-time">
                               <Clock className="h-3 w-3" />
-                              <span>{readingTime}</span>
+                              <span>{getReadingTime(post.content)}</span>
                             </div>
                           </div>
                         </div>
                         
-                        {themeCategory && THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] && (
+                        {themeCategory && themeInfo && (
                           <Badge 
-                            variant="outline" 
-                            className="w-fit text-xs text-muted-foreground hover:bg-primary/5"
+                            variant={themeInfo.badgeVariant === "cosmic" ? "outline" : themeInfo.badgeVariant || "outline"}
+                            className="w-fit text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1"
                           >
-                            {themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ')}
+                            <span className="h-3 w-3 mr-1">
+                              <Book className="h-3 w-3" />
+                            </span>
+                            {displayName}
                           </Badge>
                         )}
                       </div>
                     </CardHeader>
 
-                    <CardContent className="px-6 flex-grow">
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3">
+                    <CardContent className="px-6 flex-grow story-card-content">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3 font-cormorant-italic">
                         {excerpt}
                       </p>
-                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
+                      <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium hover:underline">
                         Read full story <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
