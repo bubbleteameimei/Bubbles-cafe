@@ -76,7 +76,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
+    <div className="flex flex-col space-y-0 p-1 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide pb-0">
 
       {/* Main Navigation */}
       <SidebarGroup>
@@ -325,16 +325,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-1 px-2 py-1">
                   <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/display'}
-                        onClick={() => handleNavigation('/settings/display')}
-                        className={submenuItemClass}
-                      >
-                        <Palette className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Visual Horror Settings</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
 
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
@@ -565,7 +555,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Footer Buttons */}
-      <div className="mt-auto pt-4 border-t border-[hsl(var(--sidebar-border))]">
+      <div className="mt-auto border-t border-[hsl(var(--sidebar-border))]">
         {!user ? (
           <Button
             variant="default"

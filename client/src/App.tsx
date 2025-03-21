@@ -159,7 +159,7 @@ const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/sett
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
 // Removed AccessibilityTestPage
-const DisplaySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/display')));
+// DisplaySettingsPage removed
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
 const PrivacySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/privacy')));
 const DataExportPage = withSuspense(React.lazy(() => import('./pages/settings/data-export')));
@@ -287,7 +287,7 @@ const AppContent = () => {
                 {/* Removed text-to-speech page route */}
                 <Route path="/settings/fonts" component={FontSettingsPage} />
                 <Route path="/settings/accessibility" component={AccessibilitySettingsPage} />
-                <Route path="/settings/display" component={DisplaySettingsPage} />
+
                 <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
                 <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
                 <ProtectedRoute path="/settings/data-export" component={DataExportPage} />
