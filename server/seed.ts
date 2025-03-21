@@ -12,10 +12,17 @@ async function getOrCreateAdminUser() {
     const hashedPassword = await bcrypt.hash("powerPUFF7", 12);
     console.log("Creating admin user with email: vantalison@gmail.com");
 
-    // First check if admin user exists
-    const [existingAdmin] = await db.select()
-      .from(users)
-      .where(eq(users.email, "vantalison@gmail.com"));
+    // First check if admin user exists - explicit column selection to avoid errors with non-existent columns
+    const [existingAdmin] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      isAdmin: users.isAdmin,
+      metadata: users.metadata,
+      createdAt: users.createdAt
+    })
+    .from(users)
+    .where(eq(users.email, "vantalison@gmail.com"));
 
     if (existingAdmin) {
       console.log("Admin user already exists with ID:", existingAdmin.id);
@@ -24,11 +31,17 @@ async function getOrCreateAdminUser() {
 
     // Create new admin user if doesn't exist
     // Only include fields that exist in the actual database table
+    // Store user profile information in metadata
     const [newAdmin] = await db.insert(users).values({
       username: "admin",
       email: "vantalison@gmail.com",
       password_hash: hashedPassword,
-      isAdmin: true
+      isAdmin: true,
+      metadata: {
+        displayName: "Admin User",
+        photoURL: null,
+        bio: "Site Administrator"
+      }
     }).returning();
 
     console.log("Admin user created successfully with ID:", newAdmin.id);

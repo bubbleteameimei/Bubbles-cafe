@@ -137,10 +137,12 @@ export function setupAuth(app: Express) {
       // Create user - storage will handle password hashing
       console.log('[Auth] Creating user with registration data');
       const user = await storage.createUser({
-        email,
         username,
         password,
-        isAdmin: false
+        isAdmin: false,
+        metadata: {
+          email
+        }
       });
 
       // Omit password_hash before sending response
@@ -215,12 +217,12 @@ export function setupAuth(app: Express) {
             email,
             password: randomPassword, // pass the unhashed password, storage handles hashing
             isAdmin: false,
-            fullName: username || null,
-            avatar: photoURL || undefined,
             metadata: {
               socialId,
               provider,
-              lastLogin: new Date().toISOString()
+              lastLogin: new Date().toISOString(),
+              displayName: username || null,
+              photoURL: photoURL || null
             }
           });
           
@@ -240,12 +242,13 @@ export function setupAuth(app: Express) {
           const updatedMetadata = Object.assign({}, existingMetadata, {
             socialId,
             provider,
-            lastLogin: new Date().toISOString()
+            lastLogin: new Date().toISOString(),
+            // Store user profile data in metadata
+            displayName: username || existingMetadata?.displayName || null,
+            photoURL: photoURL || existingMetadata?.photoURL || null
           });
           
           await storage.updateUser(user.id, {
-            fullName: username || user.fullName,
-            avatar: photoURL || user.avatar,
             metadata: updatedMetadata
           });
         } catch (updateError) {

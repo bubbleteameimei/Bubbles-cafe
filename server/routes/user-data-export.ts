@@ -62,15 +62,18 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
         );
       }
       
+      // Extract profile data from metadata
+      const metadata = user.metadata || {};
+      
       // Format user data for export (excluding sensitive fields)
       const profileData = {
         id: user.id,
         username: user.username,
         email: user.email,
-        displayName: user.fullName || user.username, // Use fullName instead of displayName
-        bio: user.bio || '',
+        displayName: metadata.displayName || user.username,
+        bio: metadata.bio || '',
         createdAt: user.createdAt,
-        lastLogin: user.lastLogin || user.createdAt,
+        lastLogin: metadata.lastLogin || user.createdAt,
         privacySettings
       };
       

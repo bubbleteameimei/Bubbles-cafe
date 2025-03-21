@@ -318,11 +318,13 @@ export class DatabaseStorage implements IStorage {
         email: user.email,
         password_hash: hashedPassword,
         isAdmin: user.isAdmin ?? false,
-        // Add optional fields if provided
-        fullName: user.fullName,
-        avatar: user.avatar,
-        bio: user.bio,
-        metadata: user.metadata
+        // Store profile fields in metadata since those columns don't exist in the database
+        metadata: {
+          ...(user.metadata || {}),
+          ...(user.fullName ? { displayName: user.fullName } : {}),
+          ...(user.avatar ? { photoURL: user.avatar } : {}),
+          ...(user.bio ? { bio: user.bio } : {})
+        }
       };
 
       // Insert user with hashed password

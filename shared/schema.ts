@@ -9,11 +9,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password_hash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
-  fullName: text("full_name"),
-  avatar: text("avatar"),
-  bio: text("bio"),
-  metadata: json("metadata").default({}),
-  lastLogin: timestamp("last_login"),
+  // Profile data stored in metadata
+  metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   emailIdx: index("email_idx").on(table.email),
@@ -381,10 +378,10 @@ export const registrationSchema = z.object({
 export const insertUserSchema = createInsertSchema(users).omit({ 
   id: true, 
   createdAt: true,
-  password_hash: true,
-  lastLogin: true
+  password_hash: true
 }).extend({
   password: z.string(),
+  // Profile data to be stored in metadata
   fullName: z.string().optional(),
   avatar: z.string().optional(),
   bio: z.string().optional(),
