@@ -100,7 +100,7 @@ export function setupOAuth(app: Express) {
                 oauth: {
                   ...oauthData,
                   [profile.provider]: {
-                    providerId: profile.id,
+                    socialId: profile.id, // Changed from providerId to socialId for consistency
                     lastLogin: new Date().toISOString()
                   }
                 }
@@ -130,7 +130,7 @@ export function setupOAuth(app: Express) {
                 photoURL: photoUrl || undefined,
                 oauth: {
                   [profile.provider]: {
-                    providerId: profile.id,
+                    socialId: profile.id, // Changed from providerId to socialId for consistency
                     lastLogin: new Date().toISOString()
                   }
                 }
@@ -265,8 +265,10 @@ export function setupOAuth(app: Express) {
   }));
 
   app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
+    passport.authenticate('google', { failureRedirect: '/auth' }),
     (req: Request, res: Response) => {
+      // Log successful authentication
+      console.log('[OAuth] Google authentication successful for user:', (req.user as any)?.id);
       res.redirect('/');
     }
   );
