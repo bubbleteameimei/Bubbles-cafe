@@ -197,7 +197,7 @@ export function setupOAuth(app: Express) {
             oauth: {
               ...oauthData,
               [provider]: {
-                providerId,
+                socialId: providerId,
                 lastLogin: new Date().toISOString()
               }
             }
@@ -223,7 +223,7 @@ export function setupOAuth(app: Express) {
             photoURL: photoURL || null,
             oauth: {
               [provider]: {
-                providerId,
+                socialId: providerId,
                 lastLogin: new Date().toISOString()
               }
             }
@@ -319,7 +319,7 @@ export function setupOAuth(app: Express) {
     res.status(401).json({ error: 'Unauthorized' });
   };
 
-  // User profile route
+  // User profile route - GET
   app.get('/api/auth/profile', isAuthenticated, (req: Request, res: Response) => {
     const user = req.user as any;
     const metadata = user.metadata || {};
@@ -334,5 +334,67 @@ export function setupOAuth(app: Express) {
       fullName: metadata.displayName || null,
       bio: metadata.bio || null
     });
+  });
+
+  // User profile update route - PATCH
+  app.patch('/api/auth/profile', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      const { username, metadata } = req.body;
+      
+      // Validate input
+      if (username && (username.length < 3 || username.length > 30)) {
+        return res.status(400).json({ error: 'Username must be between 3 and 30 characters' });
+      }
+      
+      // Check if username is already taken (if being changed)
+      if (username && username !== user.username) {
+        const existingUser = await storage.getUserByUsername(username);
+        if (existingUser && existingUser.id !== user.id) {
+          return res.status(400).json({ error: 'Username is already taken' });
+        }
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+      if (username) {
+        updateData.username = username;
+      }
+      
+      // Handle metadata update
+      if (metadata) {
+        const currentMetadata = user.metadata || {};
+        updateData.metadata = {
+          ...currentMetadata,
+          displayName: metadata.fullName !== undefined ? metadata.fullName : currentMetadata.displayName,
+          photoURL: metadata.avatar !== undefined ? metadata.avatar : currentMetadata.photoURL,
+          bio: metadata.bio !== undefined ? metadata.bio : currentMetadata.bio
+        };
+      }
+      
+      // Only update if there are changes
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'No changes provided' });
+      }
+      
+      // Save updates
+      const updatedUser = await storage.updateUser(user.id, updateData);
+      
+      // Return updated profile
+      const updatedMetadata = updatedUser.metadata || {};
+      res.json({
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        isAdmin: updatedUser.isAdmin,
+        createdAt: updatedUser.createdAt,
+        avatar: updatedMetadata.photoURL || null,
+        fullName: updatedMetadata.displayName || null,
+        bio: updatedMetadata.bio || null
+      });
+    } catch (error) {
+      console.error('[Profile] Error updating user profile:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
   });
 }

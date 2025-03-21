@@ -22,7 +22,16 @@ export function SocialLoginButtons({ onSuccess, isSignIn = true }: SocialLoginBu
     try {
       // For Google OAuth, redirect to the backend endpoint
       if (provider === 'google') {
-        window.location.href = '/api/auth/google';
+        console.log(`[Social Auth] Initiating ${provider} OAuth login`);
+        toast({
+          title: 'Redirecting',
+          description: `You're being redirected to ${provider} for authentication.`,
+        });
+        
+        // Small delay to allow toast to show before redirect
+        setTimeout(() => {
+          window.location.href = '/api/auth/google';
+        }, 200);
         return;
       }
       
@@ -49,17 +58,22 @@ export function SocialLoginButtons({ onSuccess, isSignIn = true }: SocialLoginBu
       <Button
         type="button"
         variant="outline"
-        className="w-full flex items-center justify-center py-5 bg-white hover:bg-gray-50"
+        className="w-full flex items-center justify-center py-5 bg-white hover:bg-gray-50 shadow-sm border border-gray-200"
         onClick={() => handleSocialLogin('google')}
         disabled={!!isLoading}
+        aria-label={`${isSignIn ? 'Sign in' : 'Sign up'} with Google`}
       >
         {isLoading === 'google' ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <FcGoogle className="mr-2 h-5 w-5" />
         )}
-        <span>{isSignIn ? 'Sign in with Google' : 'Sign up with Google'}</span>
+        <span>{isSignIn ? 'Continue with Google' : 'Sign up with Google'}</span>
       </Button>
+      
+      <div className="text-xs text-center text-muted-foreground mt-2">
+        By continuing with Google, you agree to our <a href="/legal/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.
+      </div>
     </div>
   );
 }
