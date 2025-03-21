@@ -76,7 +76,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide pb-0">
+    <div className="flex flex-col space-y-0 p-1 pt-1 pb-0 h-full overflow-y-auto scrollbar-hide">
 
       {/* Main Navigation */}
       <SidebarGroup>
@@ -555,7 +555,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Footer Buttons */}
-      <div className="mt-auto border-t border-[hsl(var(--sidebar-border))]">
+      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))]">
         {!user ? (
           <Button
             variant="default"
@@ -585,7 +585,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         <button
           onClick={() => handleNavigation('/report-bug')}
           className={cn(
-            "mt-2 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+            "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
               ? "text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-accent))]"
               : "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-accent))]"
