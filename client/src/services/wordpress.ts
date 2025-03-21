@@ -156,14 +156,14 @@ function getPaginatedPostsFromCache(page: number, perPage: number): WordPressPos
   return allCachedPosts.slice(startIndex, endIndex);
 }
 
-export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
+export async function fetchWordPressPosts(page = 1, perPage = 20): Promise<WordPressPost[]> {
   try {
-    console.log(`[WordPress Service] Fetching posts for page ${page}`);
+    console.log(`[WordPress Service] Fetching posts for page ${page} with ${perPage} per page`);
     
     // Create simpler URL parameters for basic fetch
     const params = new URLSearchParams({
       page: page.toString(),
-      per_page: '5', // Reduced to 5 to troubleshoot
+      per_page: perPage.toString(), // Updated to use the perPage parameter
       orderby: 'date',
       order: 'desc'
     });
@@ -239,7 +239,7 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
       console.error('[WordPress Service] Fetch operation failed:', fetchError);
       
       // Return cached data if available
-      const cachedPosts = getPaginatedPostsFromCache(page, 5);
+      const cachedPosts = getPaginatedPostsFromCache(page, perPage);
       if (cachedPosts.length > 0) {
         console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts as fallback`);
         return cachedPosts;
@@ -253,7 +253,7 @@ export async function fetchWordPressPosts(page = 1): Promise<WordPressPost[]> {
     console.error('[WordPress Service] Fetch error:', error);
     
     // Return cached data in case of network errors
-    const cachedPosts = getPaginatedPostsFromCache(page, 5);
+    const cachedPosts = getPaginatedPostsFromCache(page, perPage);
     if (cachedPosts.length > 0) {
       console.log(`[WordPress Service] Returning ${cachedPosts.length} cached posts after fetch error`);
       return cachedPosts;

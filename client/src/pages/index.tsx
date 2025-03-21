@@ -14,20 +14,20 @@ import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
 
 import { getReadingTime, getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
-import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
+import { convertWordPressPost, type WordPressPost } from "@/services/wordpress";
+import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 interface WordPressResponse {
   posts: Post[];
   hasMore: boolean;
   page: number;
+  totalPages?: number;
+  total?: number;
 }
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
-  // Keep basic pagination for story display purposes
-  const [currentPage, setCurrentPage] = useState(1);
-  const POSTS_PER_PAGE = 10; // Number of posts to display per page
-
+  // No more pagination - fetch all posts at once
   const {
     data,
     fetchNextPage,
@@ -41,9 +41,15 @@ export default function IndexView() {
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       console.log('[Index] Fetching posts page:', page);
-      const wpPosts = await fetchWordPressPosts(page);
+      // Modified to fetch 20 posts per page
+      const wpResponse = await fetchWordPressPosts({ 
+        page, 
+        perPage: 20
+      });
+      const wpPosts = wpResponse.posts || [];
       console.log('[Index] Received posts:', wpPosts.length);
-      const posts = wpPosts.map(post => convertWordPressPost(post)) as Post[];
+      // Use proper type for the post parameter
+      const posts = wpPosts.map((post: WordPressPost) => convertWordPressPost(post)) as Post[];
       return {
         posts,
         hasMore: wpPosts.length > 0,
@@ -52,22 +58,10 @@ export default function IndexView() {
     },
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true, // Changed to true to ensure we get the latest posts
+    refetchOnWindowFocus: true, // Changed to true to ensure posts update when user returns to tab
     initialPageParam: 1
   });
-  
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Load more data if needed
-    const pagesNeeded = Math.ceil(page * POSTS_PER_PAGE / (data?.pages.length || 1) / POSTS_PER_PAGE);
-    if (pagesNeeded > (data?.pages.length || 0) && hasNextPage) {
-      fetchNextPage();
-    }
-  };
 
   // Navigation functions
   const navigateToReader = (index: number) => {
@@ -129,36 +123,37 @@ export default function IndexView() {
   // Sort posts by newest first (default sorting for March 3rd version)
   const sortedPosts = [...allPosts].sort((a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
-  // Calculate total pages
-  const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
+  // No need for pagination calculations anymore
   
-  // Get current page of posts
-  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-  const endIndex = startIndex + POSTS_PER_PAGE;
-  const currentPosts = sortedPosts.slice(startIndex, endIndex);
+  // Display all posts instead of paginating
+  const currentPosts = sortedPosts;
 
   return (
     <div className="min-h-screen w-full bg-background">
       <Mist className="opacity-30" />
-      <div className="container pb-20">
+      <div className="container pb-20 pt-4">
         <motion.div
-          className="flex justify-between items-center mb-8"
+          className="flex justify-end items-center mb-2"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div>
-            <h1 className="text-4xl font-decorative">Latest Stories</h1>
-          </div>
-          <div>
-            <Button
-              variant="outline"
-              onClick={() => setLocation('/')}
-              className="hover:bg-primary/20 transition-colors"
-            >
-              Back to Home
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => setLocation('/')}
+            className="hover:bg-primary/20 transition-colors"
+          >
+            Back to Home
+          </Button>
+        </motion.div>
+        
+        <motion.div
+          className="flex justify-center items-center mb-10 mt-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-4xl font-decorative whitespace-nowrap">Latest Stories</h1>
         </motion.div>
 
         {/* Stories Grid */}
@@ -193,7 +188,7 @@ export default function IndexView() {
           >
             {currentPosts.map((post: Post, index: number) => {
               const excerpt = getExcerpt(post.content);
-              const globalIndex = startIndex + index; // Calculate the global index for navigation
+              const globalIndex = index; // Since we're not paginating, index is the global index
               const metadata = post.metadata || {};
               // Handle the type safely
               const themeCategory = typeof metadata === 'object' && metadata !== null && 'themeCategory' in metadata
@@ -221,11 +216,11 @@ export default function IndexView() {
                     {themeCategory && themeInfo && (
                       <div className="h-1.5 bg-primary w-full"></div>
                     )}
-                    <CardHeader className="p-6">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-start gap-4">
+                    <CardHeader className="p-4">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-start gap-3">
                           <CardTitle
-                            className="text-xl group-hover:text-primary transition-colors cursor-pointer font-castoro story-card-title"
+                            className="text-lg group-hover:text-primary transition-colors cursor-pointer font-castoro story-card-title"
                             onClick={() => navigateToReader(globalIndex)}
                           >
                             {post.title}
@@ -256,8 +251,8 @@ export default function IndexView() {
                       </div>
                     </CardHeader>
 
-                    <CardContent className="px-6 flex-grow story-card-content">
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3 font-cormorant-italic">
+                    <CardContent className="px-4 flex-grow story-card-content">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-3 font-cormorant">
                         {excerpt}
                       </p>
                       <div className="flex items-center text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium hover:underline">
@@ -265,7 +260,7 @@ export default function IndexView() {
                       </div>
                     </CardContent>
 
-                    <CardFooter className="p-6 mt-auto border-t">
+                    <CardFooter className="p-4 mt-auto border-t">
                       <div className="w-full flex items-center justify-between">
                         <LikeDislike postId={post.id} />
                         <Button
