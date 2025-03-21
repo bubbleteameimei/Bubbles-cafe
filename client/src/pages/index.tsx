@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
@@ -7,15 +7,10 @@ import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  ArrowRight, ChevronRight, Clock, Calendar, BookOpen, Search, Filter, Book, Loader2
+  ArrowRight, ChevronRight, Clock, Calendar, Book, Loader2
 } from "lucide-react";
 import { LikeDislike } from "@/components/ui/like-dislike";
-import { FloatingPagination } from "@/components/ui/floating-pagination";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import Mist from "@/components/effects/mist";
 
 import { getReadingTime, getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -29,11 +24,8 @@ interface WordPressResponse {
 
 export default function IndexView() {
   const [, setLocation] = useLocation();
+  // Keep basic pagination for story display purposes
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  const [sortOrder, setSortOrder] = useState("newest");
-  const [theme, setTheme] = useState("all");
   const POSTS_PER_PAGE = 10; // Number of posts to display per page
 
   const {
@@ -45,7 +37,7 @@ export default function IndexView() {
     error,
     refetch
   } = useInfiniteQuery<WordPressResponse>({
-    queryKey: ["wordpress", "posts", sortOrder, theme],
+    queryKey: ["wordpress", "posts"],
     queryFn: async ({ pageParam = 1 }) => {
       const page = typeof pageParam === 'number' ? pageParam : 1;
       console.log('[Index] Fetching posts page:', page);
@@ -77,6 +69,7 @@ export default function IndexView() {
     }
   };
 
+  // Navigation functions
   const navigateToReader = (index: number) => {
     console.log('[Index] Navigating to reader:', {
       index,
@@ -101,37 +94,6 @@ export default function IndexView() {
         console.error('[Index] Recovery attempt failed:', retryError);
       }
     }
-  };
-
-  // Handle search
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    refetch();
-  };
-
-  // Filter posts by search term (client-side for now)
-  const filterPosts = (posts: Post[]) => {
-    if (!searchTerm) return posts;
-    
-    const term = searchTerm.toLowerCase();
-    return posts.filter(post => 
-      post.title.toLowerCase().includes(term) || 
-      post.content.toLowerCase().includes(term)
-    );
-  };
-
-  // Filter posts by category
-  const filterByTheme = (posts: Post[]) => {
-    if (theme === "all") return posts;
-    
-    return posts.filter(post => {
-      const metadata = post.metadata || {};
-      // Handle metadata type safely
-      return typeof metadata === 'object' && 
-             metadata !== null && 
-             'themeCategory' in metadata && 
-             metadata.themeCategory === theme;
-    });
   };
 
   if (isLoading) {
@@ -164,40 +126,31 @@ export default function IndexView() {
 
   const allPosts = data.pages.flatMap(page => page.posts);
   
-  // Apply filters and sorting
-  let filteredPosts = filterPosts(allPosts);
-  filteredPosts = filterByTheme(filteredPosts);
-  
-  // Sort posts
-  if (sortOrder === "newest") {
-    filteredPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  } else if (sortOrder === "oldest") {
-    filteredPosts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
+  // Sort posts by newest first (default sorting for March 3rd version)
+  const sortedPosts = [...allPosts].sort((a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   // Calculate total pages
-  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
   
   // Get current page of posts
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
-  const currentPosts = filteredPosts.slice(startIndex, endIndex);
+  const currentPosts = sortedPosts.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen w-full bg-background">
       <Mist className="opacity-30" />
       <div className="container pb-20">
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8"
+          className="flex justify-between items-center mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div>
-            <h1 className="text-4xl font-decorative mb-2">Latest Stories</h1>
-            <p className="text-muted-foreground">Explore our collection of haunting tales</p>
+            <h1 className="text-4xl font-decorative">Latest Stories</h1>
           </div>
-          <div className="flex gap-3">
+          <div>
             <Button
               variant="outline"
               onClick={() => setLocation('/')}
@@ -205,94 +158,7 @@ export default function IndexView() {
             >
               Back to Home
             </Button>
-            <Button
-              variant="default"
-              onClick={() => setLocation('/submit-story')}
-              className="hidden sm:flex items-center gap-2 shadow-sm hover:shadow-md transition-all"
-            >
-              <BookOpen className="h-4 w-4" />
-              Submit Your Story
-            </Button>
           </div>
-        </motion.div>
-
-        {/* Simple Search and Filter Bar */}
-        <motion.div
-          className="mb-6 flex flex-col md:flex-row gap-4 items-end"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <div className="w-full md:flex-1">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search stories by title or content..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/70 border border-muted"
-              />
-            </form>
-          </div>
-          
-          <div className="flex gap-3 w-full md:w-auto">
-            <Select value={theme} onValueChange={setTheme}>
-              <SelectTrigger className="bg-background/70 border border-muted">
-                <div className="flex items-center">
-                  <Book className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Theme" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Themes</SelectItem>
-                {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="bg-background/70 border border-muted">
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Sort by" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              variant="outline" 
-              size="icon"
-              onClick={() => refetch()}
-              title="Refresh stories"
-              className="bg-background/70 border border-muted"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </motion.div>
-        
-        {/* Story Count */}
-        <motion.div
-          className="mb-6 flex items-center justify-between"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{currentPosts.length}</span> of <span className="font-medium text-foreground">{filteredPosts.length}</span> stories
-          </div>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Book className="h-3 w-3" />
-            {filteredPosts.length} Stories
-          </Badge>
         </motion.div>
 
         {/* Stories Grid */}
@@ -307,35 +173,15 @@ export default function IndexView() {
               <Book className="h-16 w-16 mx-auto text-primary/40 mb-4 mt-4" />
               <h3 className="text-xl font-decorative mb-3">No Stories Found</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                {searchTerm 
-                  ? `We couldn't find any stories matching "${searchTerm}". Try different keywords or check your spelling.`
-                  : theme !== "all"
-                    ? `There are no stories in the ${theme.toLowerCase().replace(/_/g, ' ')} theme at the moment. Try selecting a different theme.`
-                    : "No stories are available at the moment. Check back soon or try refreshing the page."
-                }
+                No stories are available at the moment. Check back soon or try refreshing the page.
               </p>
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSearchTerm("");
-                    setTheme("all");
-                    setSortOrder("newest");
-                    refetch();
-                  }}
-                  className="shadow-sm flex items-center gap-1"
-                >
-                  <Filter className="h-4 w-4 mr-1" />
-                  Reset Filters
-                </Button>
-                <Button 
-                  variant="default"
-                  onClick={() => refetch()}
-                  className="shadow-sm"
-                >
-                  Refresh
-                </Button>
-              </div>
+              <Button 
+                variant="default"
+                onClick={() => refetch()}
+                className="shadow-sm"
+              >
+                Refresh
+              </Button>
             </div>
           </motion.div>
         ) : (
@@ -345,7 +191,7 @@ export default function IndexView() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            {currentPosts.map((post, index) => {
+            {currentPosts.map((post: Post, index: number) => {
               const excerpt = getExcerpt(post.content);
               const globalIndex = startIndex + index; // Calculate the global index for navigation
               const metadata = post.metadata || {};
@@ -437,75 +283,6 @@ export default function IndexView() {
               );
             })}
           </motion.div>
-        )}
-
-        {/* Standard Pagination for Larger Screens */}
-        <div className="mt-8 hidden lg:flex justify-center">
-          {totalPages > 1 && (
-            <motion.div 
-              className="flex flex-wrap gap-2 justify-center"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={page === currentPage ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                  className={`min-w-[40px] ${
-                    page === currentPage 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-primary/10 transition-colors"
-                  }`}
-                >
-                  {page}
-                </Button>
-              ))}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Load More Button - Alternative to pagination */}
-        {hasNextPage && allPosts.length < 50 && (
-          <motion.div 
-            className="flex justify-center mt-10 mb-6"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              className="w-full max-w-sm border-dashed shadow-sm hover:shadow relative group overflow-hidden"
-            >
-              {isFetchingNextPage ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full"></div>
-                  <span>Loading more stories...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>Load More Stories</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              )}
-              <span className="absolute bottom-0 left-0 h-[2px] bg-primary w-0 group-hover:w-full transition-all duration-500"></span>
-            </Button>
-          </motion.div>
-        )}
-        
-        {/* Floating Pagination Component - visible on all screens */}
-        {totalPages > 1 && (
-          <FloatingPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            variant="default"
-          />
         )}
       </div>
     </div>

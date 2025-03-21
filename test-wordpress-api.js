@@ -1,38 +1,55 @@
-// Test script for WordPress API integration
+// Simple script to test WordPress API directly
+import fetch from 'node-fetch';
 
-async function testWordPressApi() {
-  console.log('Testing WordPress API integration...');
-  
+const WORDPRESS_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts';
+
+async function testWordPressAPI() {
   try {
-    // Direct API call to WordPress
-    console.log('1. Testing direct WordPress API call:');
-    const wpResponse = await fetch('https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=1');
+    console.log('Attempting to fetch WordPress posts...');
     
-    if (!wpResponse.ok) {
-      throw new Error(`WordPress API responded with status: ${wpResponse.status}`);
+    const params = new URLSearchParams({
+      page: '1',
+      per_page: '5',
+      orderby: 'date',
+      order: 'desc'
+    });
+    
+    const url = `${WORDPRESS_API_URL}?${params}`;
+    console.log(`Request URL: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+    
+    // Check content type
+    const contentType = response.headers.get('content-type');
+    console.log(`Content type: ${contentType}`);
+    
+    if (!response.ok) {
+      console.error(`Error response: ${response.status} ${response.statusText}`);
+      return;
     }
     
-    const wpData = await wpResponse.json();
-    console.log(`Success! Retrieved ${wpData.length} posts directly from WordPress API`);
-    console.log(`First post title: "${wpData[0]?.title?.rendered}"`);
+    const data = await response.json();
     
-    // Test our local API
-    console.log('\n2. Testing application posts API:');
-    const localResponse = await fetch('http://localhost:3000/api/posts?page=1&limit=2');
-    
-    if (!localResponse.ok) {
-      throw new Error(`Local API responded with status: ${localResponse.status}`);
+    if (Array.isArray(data)) {
+      console.log(`Received ${data.length} posts`);
+      // Print first post title if available
+      if (data.length > 0) {
+        console.log(`First post title: ${data[0].title.rendered}`);
+      }
+    } else {
+      console.log('Response is not an array:', typeof data);
     }
-    
-    const localData = await localResponse.json();
-    console.log(`Success! Retrieved ${localData.posts?.length} posts from local API`);
-    console.log(`First post title: "${localData.posts[0]?.title}"`);
-    
-    console.log('\nAll tests completed successfully!');
   } catch (error) {
-    console.error('Error testing WordPress API:', error);
+    console.error('Error fetching WordPress data:', error);
   }
 }
 
-// Run the test
-testWordPressApi();
+testWordPressAPI();
