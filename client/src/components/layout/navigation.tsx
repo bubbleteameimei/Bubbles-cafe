@@ -124,7 +124,7 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setLocation('/settings/profile')}
+                onClick={() => setLocation('/profile')}
                 className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 mb-1"
                 aria-label="Profile"
                 noOutline={true}

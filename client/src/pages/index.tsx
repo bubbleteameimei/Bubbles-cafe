@@ -361,22 +361,26 @@ export default function IndexView() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {currentPosts.map((post: Post, index: number) => {
+              // Extract all data processing outside the render function
               const excerpt = getExcerpt(post.content);
               const globalIndex = index; // Since we're not paginating, index is the global index
               const metadata = post.metadata || {};
-              // Handle the type safely
-              const themeCategory = typeof metadata === 'object' && metadata !== null && 
-                'themeCategory' in (metadata as Record<string, unknown>)
-                ? String((metadata as Record<string, unknown>).themeCategory || "") 
-                : "";
               
-              // Get theme info for icon display
+              // Process metadata safely
+              let themeCategory = "";
+              if (typeof metadata === 'object' && metadata !== null && 
+                'themeCategory' in (metadata as Record<string, unknown>)) {
+                themeCategory = String((metadata as Record<string, unknown>).themeCategory || "");
+              }
+              
+              // Get theme info
               const themeInfo = themeCategory ? THEME_CATEGORIES[themeCategory as keyof typeof THEME_CATEGORIES] : null;
               
-              // Capitalize first letter and lowercase the rest, replacing underscores with spaces
-              const displayName = themeCategory 
-                ? themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ') 
-                : '';
+              // Format display name
+              let displayName = '';
+              if (themeCategory) {
+                displayName = themeCategory.charAt(0) + themeCategory.slice(1).toLowerCase().replace(/_/g, ' ');
+              }
               
               return (
                 <motion.article

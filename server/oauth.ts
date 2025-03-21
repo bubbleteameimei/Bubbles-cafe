@@ -388,9 +388,9 @@ export function setupOAuth(app: Express) {
         email: updatedUser.email,
         isAdmin: updatedUser.isAdmin,
         createdAt: updatedUser.createdAt,
-        avatar: updatedMetadata.photoURL || null,
-        fullName: updatedMetadata.displayName || null,
-        bio: updatedMetadata.bio || null
+        avatar: updatedMetadata && typeof updatedMetadata === 'object' && 'photoURL' in updatedMetadata ? updatedMetadata.photoURL : null,
+        fullName: updatedMetadata && typeof updatedMetadata === 'object' && 'displayName' in updatedMetadata ? updatedMetadata.displayName : null,
+        bio: updatedMetadata && typeof updatedMetadata === 'object' && 'bio' in updatedMetadata ? updatedMetadata.bio : null
       });
     } catch (error) {
       console.error('[Profile] Error updating user profile:', error);

@@ -393,6 +393,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
+                        isActive={location === '/profile'}
+                        onClick={() => handleNavigation('/profile')}
+                        className={submenuItemClass}
+                      >
+                        <UserCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>My Profile</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
                         isActive={location === '/settings/profile'}
                         onClick={() => handleNavigation('/settings/profile')}
                         className={submenuItemClass}

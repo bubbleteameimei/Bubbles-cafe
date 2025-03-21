@@ -118,6 +118,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const ProfilePage = withSuspense(React.lazy(() => import('./pages/profile')));
 // Removed ContentTestPage
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
 
@@ -263,6 +264,7 @@ const AppContent = () => {
                 <Route path="/privacy" component={PrivacyPage} />
                 {/* Removed test pages routes */}
                 <Route path="/bookmarks" component={BookmarksPage} />
+                <ProtectedRoute path="/profile" component={ProfilePage} />
                 {/* Removed other test page routes */}
 
                 {/* Game Routes */}
