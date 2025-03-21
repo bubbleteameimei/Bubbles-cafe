@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
+import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import "./auth.css";
 
 // Import user schema
@@ -275,7 +276,7 @@ export default function AuthPage() {
           <div className="login-form">
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ display: isSignIn ? "block" : "none" }}>
-                {/* Regular login only - social authentication removed */}
+                {/* Sign in form with email/password + social login options */}
                 
                 {/* Email Field */}
                 <div className="group">
@@ -364,6 +365,11 @@ export default function AuthPage() {
                     isSignIn={true}
                   />
                 </div>
+                
+                {/* Social Login Buttons */}
+                <div className="group mt-4">
+                  <SocialLoginButtons isSignIn={true} />
+                </div>
 
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
@@ -383,7 +389,7 @@ export default function AuthPage() {
               </div>
 
               <div style={{ display: isSignIn ? "none" : "block" }}>
-                {/* Regular sign up only - social authentication removed */}
+                {/* Sign up form with email/password + social login options */}
 
                 {/* Username Field */}
                 <div className="group">
@@ -595,6 +601,11 @@ export default function AuthPage() {
                     username={username}
                     isSignIn={false}
                   />
+                </div>
+                
+                {/* Social Login Buttons - Sign Up */}
+                <div className="group mt-4">
+                  <SocialLoginButtons isSignIn={false} />
                 </div>
 
                 <div className="tiny-disclaimer">
