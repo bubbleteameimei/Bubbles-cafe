@@ -139,9 +139,10 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         username,
         password,
+        email, // Keep email as top-level property for backward compatibility
         isAdmin: false,
         metadata: {
-          email
+          email // Also store in metadata for our new approach
         }
       });
 
@@ -214,10 +215,11 @@ export function setupAuth(app: Express) {
           // Create new user with social metadata
           user = await storage.createUser({
             username: username || email.split('@')[0],
-            email,
+            email, // Include as top-level property for backward compatibility
             password: randomPassword, // pass the unhashed password, storage handles hashing
             isAdmin: false,
             metadata: {
+              email, // Also store in metadata for our new approach
               socialId,
               provider,
               lastLogin: new Date().toISOString(),
@@ -244,8 +246,8 @@ export function setupAuth(app: Express) {
             provider,
             lastLogin: new Date().toISOString(),
             // Store user profile data in metadata
-            displayName: username || existingMetadata?.displayName || null,
-            photoURL: photoURL || existingMetadata?.photoURL || null
+            displayName: username || (existingMetadata as any)?.displayName || null,
+            photoURL: photoURL || (existingMetadata as any)?.photoURL || null
           });
           
           await storage.updateUser(user.id, {
@@ -331,6 +333,64 @@ export function setupAuth(app: Express) {
     } catch (error) {
       console.error('[Auth] Password reset request error:', error);
       return res.status(500).json({ message: "Error processing password reset request" });
+    }
+  });
+  
+  // Test metadata endpoint - temporary for verification
+  app.get("/api/auth/test-metadata", async (req: Request, res: Response) => {
+    try {
+      // Create a unique username and email for this test
+      const timestamp = Date.now();
+      const username = `test_metadata_user_${timestamp}`;
+      const email = `test${timestamp}@example.com`;
+      
+      // Create a test user with metadata
+      const testUser = await storage.createUser({
+        username,
+        email,
+        password: "password123",
+        isAdmin: false,
+        metadata: {
+          displayName: "Test Metadata User",
+          bio: "This is a test user for metadata verification",
+          lastLogin: new Date().toISOString(),
+          preferences: {
+            darkMode: true,
+            fontSize: "medium"
+          }
+        }
+      });
+      
+      // Get the user back from storage to verify metadata handling
+      const retrievedUser = await storage.getUser(testUser.id);
+      
+      if (!retrievedUser) {
+        throw new Error('Failed to retrieve newly created user');
+      }
+      
+      // Extract metadata with type safety
+      const metadata = retrievedUser.metadata || {};
+      
+      // Return verification results
+      res.json({
+        success: true,
+        message: "Metadata test successful",
+        testUser,
+        retrievedUser,
+        metadataAccess: {
+          displayName: (metadata as any).displayName,
+          bio: (metadata as any).bio,
+          lastLogin: (metadata as any).lastLogin,
+          preferences: (metadata as any).preferences
+        }
+      });
+    } catch (error) {
+      console.error('[Auth] Metadata test error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error testing metadata",
+        error: String(error)
+      });
     }
   });
   

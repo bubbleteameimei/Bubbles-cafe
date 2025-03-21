@@ -312,10 +312,13 @@ export class DatabaseStorage implements IStorage {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(user.password, salt);
 
+      // Extract email from user or metadata
+      const email = (user.metadata as any)?.email || user.email;
+
       // Prepare user values with optional fields
       const userValues = {
         username: user.username,
-        email: user.email,
+        email, // The email is still needed as a column in the users table
         password_hash: hashedPassword,
         isAdmin: user.isAdmin ?? false,
         // Store profile fields in metadata since those columns don't exist in the database

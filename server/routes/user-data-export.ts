@@ -62,7 +62,7 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
         );
       }
       
-      // Extract profile data from metadata
+      // Extract profile data from metadata with proper type casting
       const metadata = user.metadata || {};
       
       // Format user data for export (excluding sensitive fields)
@@ -70,10 +70,10 @@ export function registerUserDataExportRoutes(app: Express, storage: IStorage) {
         id: user.id,
         username: user.username,
         email: user.email,
-        displayName: metadata.displayName || user.username,
-        bio: metadata.bio || '',
+        displayName: (metadata as any).displayName || user.username,
+        bio: (metadata as any).bio || '',
         createdAt: user.createdAt,
-        lastLogin: metadata.lastLogin || user.createdAt,
+        lastLogin: (metadata as any).lastLogin || user.createdAt,
         privacySettings
       };
       

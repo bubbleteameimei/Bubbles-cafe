@@ -381,6 +381,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
   password_hash: true
 }).extend({
   password: z.string(),
+  // Still keep email in the schema for backward compatibility
+  email: z.string().email().optional(),
   // Profile data to be stored in metadata
   fullName: z.string().optional(),
   avatar: z.string().optional(),
