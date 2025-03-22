@@ -3,18 +3,90 @@
  * This is the main page for the game
  */
 
-import React, { useState } from 'react';
-import GameContainer from '../../components/GameContainer';
-import Game from '../../game/Game';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 
+// Instead of importing directly (which might cause the error), we'll load Phaser dynamically
+// and only render the game container when we're sure Phaser is available
+const GameContainer = React.lazy(() => import('../../components/GameContainer'));
+
+// Ensure Phaser is in the global namespace
+declare global {
+  interface Window {
+    Phaser: any;
+  }
+}
+
 export default function EdenGame() {
-  const [gameInstance, setGameInstance] = useState<Game | null>(null);
+  const [gameInstance, setGameInstance] = useState<any | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [phaserLoaded, setPhaserLoaded] = useState(false);
+  const [loadingPhaser, setLoadingPhaser] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load Phaser library on component mount
+  useEffect(() => {
+    const loadPhaserScript = async () => {
+      try {
+        // Check if Phaser is already available
+        if (window.Phaser) {
+          console.log("Phaser is already loaded:", window.Phaser.VERSION);
+          setPhaserLoaded(true);
+          setLoadingPhaser(false);
+          return;
+        }
+
+        console.log("Loading Phaser script...");
+        setLoadingPhaser(true);
+
+        // Create script element
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
+        script.async = true;
+        
+        // Create promise to handle script loading
+        const loadPromise = new Promise<void>((resolve, reject) => {
+          script.onload = () => {
+            console.log("Phaser script loaded successfully:", window.Phaser?.VERSION);
+            resolve();
+          };
+          script.onerror = () => {
+            reject(new Error("Failed to load Phaser script"));
+          };
+        });
+        
+        // Add script to document
+        document.head.appendChild(script);
+        
+        // Wait for script to load
+        await loadPromise;
+        
+        // Verify Phaser is now available
+        if (!window.Phaser) {
+          throw new Error("Phaser failed to initialize correctly");
+        }
+        
+        // Update state
+        setPhaserLoaded(true);
+        setLoadingPhaser(false);
+      } catch (err) {
+        console.error("Error loading Phaser:", err);
+        setError(`Failed to load game engine: ${err instanceof Error ? err.message : String(err)}`);
+        setLoadingPhaser(false);
+      }
+    };
+
+    loadPhaserScript();
+    
+    // Cleanup function
+    return () => {
+      // Nothing to clean up for script loading
+    };
+  }, []);
 
   // Handle game ready event
-  const handleGameReady = (game: Game) => {
+  const handleGameReady = (game: any) => {
     setGameInstance(game);
     console.log('Eden\'s Hollow game is ready!');
   };
@@ -54,16 +126,40 @@ export default function EdenGame() {
       <div className="game-container-wrapper">
         {/* Game Container */}
         <div className="game-main-container">
-          <GameContainer
-            width="100%"
-            height="600px"
-            autoStart={false}
-            onGameReady={handleGameReady}
-            className={gameStarted ? 'game-started' : 'game-intro'}
-          />
+          {loadingPhaser && (
+            <div className="game-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading game engine...</p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="game-error">
+              <h3>Game Error</h3>
+              <p>{error}</p>
+              <button onClick={() => window.location.reload()}>Retry</button>
+            </div>
+          )}
+          
+          {phaserLoaded && !error && (
+            <React.Suspense fallback={
+              <div className="game-loading">
+                <div className="loading-spinner"></div>
+                <p>Initializing game...</p>
+              </div>
+            }>
+              <GameContainer
+                width="100%"
+                height="600px"
+                autoStart={false}
+                onGameReady={handleGameReady}
+                className={gameStarted ? 'game-started' : 'game-intro'}
+              />
+            </React.Suspense>
+          )}
 
           {/* Intro Screen (shown before game starts) */}
-          {!gameStarted && (
+          {!gameStarted && !loadingPhaser && !error && (
             <div className="game-intro-overlay">
               <div className="intro-content">
                 <h2>Welcome to Eden's Hollow</h2>
@@ -83,7 +179,7 @@ export default function EdenGame() {
           )}
 
           {/* Instructions Overlay (can be toggled) */}
-          {showInstructions && gameStarted && (
+          {showInstructions && gameStarted && !error && (
             <div className="instructions-overlay">
               <div className="instructions-content">
                 <h3>How to Play</h3>
@@ -125,6 +221,7 @@ export default function EdenGame() {
           padding: 1rem;
           background-color: #1f1f1f;
           border-bottom: 2px solid #333;
+          z-index: 20;
         }
 
         .header-content {
@@ -184,6 +281,61 @@ export default function EdenGame() {
           border-radius: 8px;
           overflow: hidden;
           box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+          min-height: 600px;
+        }
+
+        .game-loading, .game-error {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(0, 0, 0, 0.8);
+          z-index: 25;
+        }
+
+        .loading-spinner {
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          border-top: 4px solid #32CD32;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+          margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .game-error {
+          background-color: rgba(0, 0, 0, 0.9);
+          text-align: center;
+          padding: 2rem;
+        }
+
+        .game-error h3 {
+          color: #ff6b6b;
+          margin-top: 0;
+        }
+
+        .game-error button {
+          margin-top: 20px;
+          padding: 10px 20px;
+          background-color: #444;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .game-error button:hover {
+          background-color: #555;
         }
 
         .game-intro-overlay {
@@ -314,6 +466,7 @@ export default function EdenGame() {
           background-color: #1a1a1a;
           font-size: 0.9rem;
           color: #888;
+          z-index: 20;
         }
 
         /* Responsive adjustments */
