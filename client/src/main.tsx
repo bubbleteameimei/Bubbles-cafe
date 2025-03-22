@@ -10,6 +10,8 @@ import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
 // Import the global loading manager - just importing initializes it
 import "@/utils/global-loading-manager";
+// Import CSRF protection
+import { initCSRFProtection } from "@/lib/csrf-token";
 
 console.log("[Client] Starting application...");
 
@@ -34,6 +36,14 @@ optimizeImagesForConnection();
 
 // Initialize style preloader
 setupStylePreloader();
+
+// Initialize CSRF protection - async but we don't block rendering on it
+console.log("[Client] Initializing CSRF protection...");
+initCSRFProtection().then(() => {
+  console.log("[Client] CSRF protection initialized successfully");
+}).catch(error => {
+  console.error("[Client] Error initializing CSRF protection:", error);
+});
 
 console.log("[Client] CSS styles loaded");
 console.log("[Client] Mounting React application...");

@@ -19,6 +19,7 @@ import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
+import { setCsrfToken, validateCsrfToken, csrfTokenToLocals } from "./middleware/csrf-protection";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -32,6 +33,9 @@ let server: ReturnType<typeof createServer>;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+
+// Session already handles cookies for us
+// No additional cookie parser needed for CSRF protection
 
 // Increase body parser limit for file uploads
 app.use((req, res, next) => {
@@ -53,6 +57,23 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
   store: storage.sessionStore
+}));
+
+// Setup CSRF protection
+app.use(setCsrfToken(!isDev)); // Secure cookies in production
+app.use(csrfTokenToLocals);
+
+// Apply CSRF validation after routes that don't need it
+app.use(validateCsrfToken({
+  ignorePaths: [
+    '/health', 
+    '/api/auth/status', 
+    '/api/auth/login',
+    '/api/auth/register', 
+    '/api/feedback',
+    '/api/posts',
+    '/api/recommendations'
+  ]
 }));
 
 // Setup authentication

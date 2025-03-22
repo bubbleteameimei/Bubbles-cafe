@@ -43,7 +43,21 @@ export function getCookiePreferences(): CookiePreferences {
     const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!saved) return defaultPreferences;
     
-    const parsed = JSON.parse(saved);
+    let parsed;
+    try {
+      parsed = JSON.parse(saved);
+    } catch (parseError) {
+      console.warn('Invalid JSON in cookie preferences, resetting to defaults');
+      localStorage.removeItem(COOKIE_CONSENT_KEY);
+      return defaultPreferences;
+    }
+    
+    // Validate the structure - ensure it's an object
+    if (!parsed || typeof parsed !== 'object') {
+      console.warn('Cookie preferences not in expected format, resetting to defaults');
+      localStorage.removeItem(COOKIE_CONSENT_KEY);
+      return defaultPreferences;
+    }
     
     // Ensure our preferences object has all needed fields (handles cases where 
     // the schema is updated but a user has older preferences stored)
@@ -55,6 +69,14 @@ export function getCookiePreferences(): CookiePreferences {
     };
   } catch (error) {
     console.warn('Error getting cookie preferences:', error);
+    
+    // Attempt to recover by removing potentially corrupted preferences
+    try {
+      localStorage.removeItem(COOKIE_CONSENT_KEY);
+    } catch (removeError) {
+      console.error('Failed to remove corrupted cookie preferences', removeError);
+    }
+    
     return defaultPreferences;
   }
 }
@@ -199,12 +221,46 @@ export function getCookie(name: string): string {
     return '';
   }
   
+  if (!name) {
+    console.warn('Attempted to get cookie with empty name');
+    return '';
+  }
+  
   try {
+    // Handle the empty cookie case gracefully
+    if (!document.cookie) {
+      return '';
+    }
+    
     const cookies = document.cookie.split(';');
+    
+    // Encode the name for comparison
+    const encodedName = encodeURIComponent(name);
+    
     for (const cookie of cookies) {
-      const [cookieName, cookieValue] = cookie.trim().split('=');
-      if (cookieName === encodeURIComponent(name)) {
-        return cookieValue ? decodeURIComponent(cookieValue) : '';
+      if (!cookie.trim()) continue;
+      
+      try {
+        // Use index-based parsing for more reliable results
+        const separatorIndex = cookie.indexOf('=');
+        
+        // Skip cookies with no value separator
+        if (separatorIndex === -1) continue;
+        
+        const cookieName = cookie.substring(0, separatorIndex).trim();
+        // If names match, return the decoded value
+        if (cookieName === encodedName || cookieName === name) {
+          const cookieValue = cookie.substring(separatorIndex + 1).trim();
+          try {
+            return cookieValue ? decodeURIComponent(cookieValue) : '';
+          } catch (decodeError) {
+            console.warn(`Failed to decode cookie value for ${name}, returning raw value`);
+            return cookieValue || '';
+          }
+        }
+      } catch (cookieError) {
+        console.warn(`Error parsing cookie during getCookie: ${cookie}`, cookieError);
+        // Continue with other cookies
       }
     }
     return '';
@@ -240,19 +296,45 @@ export function clearNonEssentialCookies(): void {
   }
   
   try {
+    // Handle the empty cookie case
+    if (!document.cookie) {
+      return;
+    }
+    
     // Get all cookies
     const cookies = document.cookie.split(';');
     
-    // List of essential cookies that should not be cleared
-    const essentialCookies = ['session', 'csrftoken', 'cookieConsent'];
+    // Expanded list of essential cookies that should not be cleared
+    const essentialCookies = [
+      'session', 'csrftoken', 'cookieConsent', 'connect.sid', 
+      'XSRF-TOKEN', 'JSESSIONID', 'sessionid'
+    ];
     
     // Delete each non-essential cookie
     for (const cookie of cookies) {
-      const [cookieName] = cookie.trim().split('=');
-      const name = decodeURIComponent(cookieName.trim());
-      
-      if (!essentialCookies.includes(name)) {
-        deleteCookie(name);
+      try {
+        // Use more robust parsing
+        const separatorIndex = cookie.indexOf('=');
+        if (separatorIndex === -1) continue;
+        
+        const cookieName = cookie.substring(0, separatorIndex).trim();
+        let name;
+        
+        // Safely decode the cookie name
+        try {
+          name = decodeURIComponent(cookieName);
+        } catch (decodeError) {
+          console.warn(`Failed to decode cookie name: ${cookieName}, using raw value`);
+          name = cookieName;
+        }
+        
+        // Don't delete essential cookies
+        if (!essentialCookies.includes(name)) {
+          deleteCookie(name);
+        }
+      } catch (cookieError) {
+        console.warn(`Error processing cookie during clear operation: ${cookie}`, cookieError);
+        // Continue with other cookies
       }
     }
   } catch (error) {
@@ -271,14 +353,51 @@ export function getAllCookies(): Record<string, string> {
   
   try {
     const result: Record<string, string> = {};
+    
+    // Handle the empty cookie case gracefully
+    if (!document.cookie) {
+      return result;
+    }
+    
     const cookies = document.cookie.split(';');
     
     for (const cookie of cookies) {
       if (cookie.trim()) {
-        const [cookieName, cookieValue] = cookie.trim().split('=');
-        const name = decodeURIComponent(cookieName.trim());
-        const value = cookieValue ? decodeURIComponent(cookieValue) : '';
-        result[name] = value;
+        try {
+          // Use a more robust parsing approach
+          const separatorIndex = cookie.indexOf('=');
+          
+          // Handle cookies without values
+          if (separatorIndex === -1) {
+            const cookieName = cookie.trim();
+            result[decodeURIComponent(cookieName)] = '';
+            continue;
+          }
+          
+          const cookieName = cookie.substring(0, separatorIndex).trim();
+          const cookieValue = cookie.substring(separatorIndex + 1).trim();
+          
+          // Safely decode URI components, fallback to raw values if decoding fails
+          let name, value;
+          try {
+            name = decodeURIComponent(cookieName);
+          } catch (e) {
+            console.warn(`Failed to decode cookie name: ${cookieName}`);
+            name = cookieName;
+          }
+          
+          try {
+            value = cookieValue ? decodeURIComponent(cookieValue) : '';
+          } catch (e) {
+            console.warn(`Failed to decode cookie value for ${cookieName}`);
+            value = cookieValue || '';
+          }
+          
+          result[name] = value;
+        } catch (cookieError) {
+          console.warn(`Failed to parse individual cookie: ${cookie}`, cookieError);
+          // Continue processing other cookies even if one fails
+        }
       }
     }
     
