@@ -1,211 +1,163 @@
 /**
- * BootScene.ts
- * 
- * The Boot Scene is responsible for initializing the game,
- * loading the initial assets, and transitioning to the main game scene.
+ * Boot Scene for Eden's Hollow
+ * Handles initial asset loading and setup for the game
  */
 
-import { PixelArtAssetLoader, AssetConfig } from '../utils/assetLoader';
+import AssetLoader, { defaultAssets } from '../utils/assetLoader';
+import PixelArtGenerator from '../utils/pixelArtGenerator';
 
-export class BootScene {
-  private loadingProgress: number = 0;
-  private onComplete: () => void;
+export default class BootScene extends Phaser.Scene {
+  private loadingText!: Phaser.GameObjects.Text;
+  private progressBar!: Phaser.GameObjects.Graphics;
+  private progressBox!: Phaser.GameObjects.Graphics;
   
-  constructor(onComplete: () => void) {
-    this.onComplete = onComplete;
+  constructor() {
+    super('BootScene');
   }
   
   preload(): void {
-    console.log('[BootScene] Preloading game assets...');
+    this.createLoadingUI();
     
-    // Define all the assets we need to load
-    const assets: AssetConfig[] = [
-      // Environment assets
-      {
-        key: 'tileset',
-        type: 'image',
-        url: '/assets/environment/tileset.svg'
-      },
-      {
-        key: 'background',
-        type: 'image',
-        url: '/assets/environment/background.svg'
-      },
-      {
-        key: 'map',
-        type: 'tilemap',
-        url: '/assets/environment/map.json'
-      },
-      
-      // Character assets
-      {
-        key: 'player',
-        type: 'spritesheet',
-        url: '/assets/characters/player/player.svg',
-        frameConfig: {
-          frameWidth: 32,
-          frameHeight: 48
-        }
-      },
-      {
-        key: 'npc_villager',
-        type: 'spritesheet',
-        url: '/assets/characters/npcs/villager.svg',
-        frameConfig: {
-          frameWidth: 32,
-          frameHeight: 48
-        }
-      },
-      
-      // Item assets
-      {
-        key: 'potion',
-        type: 'image',
-        url: '/assets/items/potion.svg'
-      },
-      {
-        key: 'coin',
-        type: 'image',
-        url: '/assets/items/coin.svg'
-      },
-      {
-        key: 'chest',
-        type: 'image',
-        url: '/assets/items/chest.svg'
-      },
-      
-      // UI assets
-      {
-        key: 'ui_frame',
-        type: 'image',
-        url: '/assets/ui/frame.svg'
-      },
-      {
-        key: 'ui_button',
-        type: 'image',
-        url: '/assets/ui/button.svg'
-      },
-      
-      // Audio assets
-      {
-        key: 'bgm_village',
-        type: 'audio',
-        url: '/assets/audio/village_theme.mp3'
-      },
-      {
-        key: 'sfx_pickup',
-        type: 'audio',
-        url: '/assets/audio/pickup.mp3'
-      }
-    ];
+    // Initialize asset loader
+    const assetLoader = new AssetLoader(this);
     
-    // Clear any existing assets and add new ones to the queue
-    PixelArtAssetLoader.clearCache();
-    PixelArtAssetLoader.addToQueue(assets);
+    // Load all default assets
+    assetLoader.loadAssets(defaultAssets, (progress) => {
+      // Update progress bar
+      this.updateLoadingProgress(progress);
+    });
     
-    // Start loading assets
-    this.loadAssets();
+    // Listen for load completion
+    this.load.on('complete', () => {
+      this.processAssets();
+    });
   }
   
-  private async loadAssets(): Promise<void> {
-    try {
-      await PixelArtAssetLoader.loadAll((progress) => {
-        this.loadingProgress = progress;
-        this.updateLoadingBar();
-      });
-      
-      console.log('[BootScene] Assets loaded successfully');
-      
-      // Short delay before completing to show 100% progress
-      setTimeout(() => {
-        this.onComplete();
-      }, 500);
-    } catch (error) {
-      console.error('[BootScene] Error loading assets:', error);
-    }
+  create(): void {
+    // Transition to the main game scene
+    this.scene.start('GameScene');
   }
   
-  private updateLoadingBar(): void {
-    // Update loading bar visual (for standalone implementation)
-    const progressElement = document.getElementById('game-loading-progress');
-    const progressBarElement = document.getElementById('game-loading-bar');
+  /**
+   * Create loading UI elements
+   */
+  private createLoadingUI(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
     
-    if (progressElement) {
-      progressElement.textContent = `${Math.floor(this.loadingProgress * 100)}%`;
-    }
-    
-    if (progressBarElement) {
-      progressBarElement.style.width = `${this.loadingProgress * 100}%`;
-    }
-  }
-  
-  render(): HTMLElement {
-    // Create loading screen element
-    const loadingScreen = document.createElement('div');
-    loadingScreen.className = 'loading-screen';
-    loadingScreen.style.position = 'absolute';
-    loadingScreen.style.top = '0';
-    loadingScreen.style.left = '0';
-    loadingScreen.style.width = '100%';
-    loadingScreen.style.height = '100%';
-    loadingScreen.style.display = 'flex';
-    loadingScreen.style.flexDirection = 'column';
-    loadingScreen.style.justifyContent = 'center';
-    loadingScreen.style.alignItems = 'center';
-    loadingScreen.style.backgroundColor = '#000';
-    loadingScreen.style.color = '#fff';
-    
-    // Create title
-    const title = document.createElement('h1');
-    title.textContent = "Eden's Hollow";
-    title.style.marginBottom = '20px';
-    title.style.fontFamily = 'monospace';
-    title.style.fontSize = '24px';
-    loadingScreen.appendChild(title);
-    
-    // Create loading bar container
-    const loadingBarContainer = document.createElement('div');
-    loadingBarContainer.style.width = '80%';
-    loadingBarContainer.style.height = '20px';
-    loadingBarContainer.style.backgroundColor = '#333';
-    loadingBarContainer.style.borderRadius = '4px';
-    loadingBarContainer.style.overflow = 'hidden';
-    
-    // Create loading bar
-    const loadingBar = document.createElement('div');
-    loadingBar.id = 'game-loading-bar';
-    loadingBar.style.width = '0%';
-    loadingBar.style.height = '100%';
-    loadingBar.style.backgroundColor = '#4CAF50';
-    loadingBar.style.transition = 'width 0.3s ease-in-out';
-    loadingBarContainer.appendChild(loadingBar);
-    loadingScreen.appendChild(loadingBarContainer);
+    // Create progress container
+    this.progressBox = this.add.graphics();
+    this.progressBox.fillStyle(0x222222, 0.8);
+    this.progressBox.fillRect(width / 4, height / 2 - 30, width / 2, 50);
     
     // Create loading text
-    const loadingText = document.createElement('div');
-    loadingText.id = 'game-loading-progress';
-    loadingText.textContent = '0%';
-    loadingText.style.marginTop = '10px';
-    loadingText.style.fontFamily = 'monospace';
-    loadingScreen.appendChild(loadingText);
+    this.loadingText = this.add.text(width / 2, height / 2 - 50, 'Loading...', {
+      font: '24px monospace',
+      color: '#ffffff'
+    });
+    this.loadingText.setOrigin(0.5, 0.5);
     
-    return loadingScreen;
+    // Create progress bar
+    this.progressBar = this.add.graphics();
   }
   
-  update(delta: number): void {
-    // Nothing to update in boot scene
+  /**
+   * Update loading progress UI
+   */
+  private updateLoadingProgress(value: number): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    
+    // Clear previous progress
+    this.progressBar.clear();
+    
+    // Draw new progress
+    this.progressBar.fillStyle(0x00ff00, 1);
+    this.progressBar.fillRect(
+      width / 4 + 10, 
+      height / 2 - 20, 
+      (width / 2 - 20) * value, 
+      30
+    );
+    
+    // Update loading percentage text
+    const percent = Math.floor(value * 100);
+    this.loadingText.setText(`Loading... ${percent}%`);
   }
   
-  destroy(): void {
-    // Clean up any resources
-    const progressElement = document.getElementById('game-loading-progress');
-    if (progressElement && progressElement.parentNode) {
-      progressElement.parentNode.removeChild(progressElement);
-    }
+  /**
+   * Process loaded assets (applying pixel art filters, etc.)
+   */
+  private processAssets(): void {
+    // Create pixel art generator
+    const pixelArtGenerator = new PixelArtGenerator(this);
     
-    const progressBarElement = document.getElementById('game-loading-bar');
-    if (progressBarElement && progressBarElement.parentNode) {
-      progressBarElement.parentNode.removeChild(progressBarElement);
-    }
+    // Apply pixel art style to the loaded assets
+    // Items
+    pixelArtGenerator.pixelateTexture('coin', 'coin_pixel', { 
+      pixelSize: 2,
+      edgeDetection: true
+    });
+    
+    pixelArtGenerator.pixelateTexture('potion', 'potion_pixel', { 
+      pixelSize: 2,
+      edgeDetection: true
+    });
+    
+    pixelArtGenerator.pixelateTexture('chest', 'chest_pixel', { 
+      pixelSize: 2,
+      edgeDetection: true
+    });
+    
+    // Process player spritesheet
+    pixelArtGenerator.pixelateTexture('player', 'player_pixel', { 
+      pixelSize: 2,
+      edgeDetection: true
+    });
+    
+    // Create player animations
+    this.createPlayerAnimations();
+    
+    console.log('Assets processed successfully');
+  }
+  
+  /**
+   * Create animations for the player character
+   */
+  private createPlayerAnimations(): void {
+    // Player animations
+    const frameRate = 10;
+    
+    // Down animation
+    this.anims.create({
+      key: 'player_down',
+      frames: this.anims.generateFrameNumbers('player_pixel', { start: 0, end: 0 }),
+      frameRate,
+      repeat: -1
+    });
+    
+    // Right animation
+    this.anims.create({
+      key: 'player_right',
+      frames: this.anims.generateFrameNumbers('player_pixel', { start: 1, end: 1 }),
+      frameRate,
+      repeat: -1
+    });
+    
+    // Up animation
+    this.anims.create({
+      key: 'player_up',
+      frames: this.anims.generateFrameNumbers('player_pixel', { start: 2, end: 2 }),
+      frameRate,
+      repeat: -1
+    });
+    
+    // Left animation
+    this.anims.create({
+      key: 'player_left',
+      frames: this.anims.generateFrameNumbers('player_pixel', { start: 3, end: 3 }),
+      frameRate,
+      repeat: -1
+    });
   }
 }

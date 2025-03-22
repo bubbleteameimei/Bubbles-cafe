@@ -1,339 +1,423 @@
 /**
- * GameScene.ts
- * 
- * The main game scene for Eden's Hollow.
- * Handles the gameplay logic, rendering, and player interactions.
+ * Main Game Scene for Eden's Hollow
+ * Handles core gameplay mechanics, level rendering, and character interactions
  */
 
-import { PixelArtAssetLoader } from '../utils/assetLoader';
-
-// Types for game entities
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Size {
-  width: number;
-  height: number;
-}
-
-interface Velocity {
-  x: number;
-  y: number;
-}
-
-interface GameObject {
-  position: Position;
-  size: Size;
-  velocity?: Velocity;
-  render(ctx: CanvasRenderingContext2D): void;
-  update(delta: number): void;
-}
-
-interface Player extends GameObject {
-  speed: number;
-  direction: 'up' | 'down' | 'left' | 'right';
-  isMoving: boolean;
-}
-
-// Input state management
-interface InputState {
-  up: boolean;
-  down: boolean;
-  left: boolean;
-  right: boolean;
-  interact: boolean;
-  inventory: boolean;
-}
-
-export class GameScene {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
-  private gameWidth: number;
-  private gameHeight: number;
-  private player: Player;
-  private input: InputState;
-  private lastTime: number = 0;
-  private animationFrameId: number | null = null;
+export default class GameScene extends Phaser.Scene {
+  // Game objects
+  private player!: Phaser.Physics.Arcade.Sprite;
+  private map!: Phaser.Tilemaps.Tilemap;
+  private tileset!: Phaser.Tilemaps.Tileset;
+  private groundLayer!: Phaser.Tilemaps.TilemapLayer;
+  private wallsLayer!: Phaser.Tilemaps.TilemapLayer;
+  private objectsLayer!: Phaser.Tilemaps.TilemapLayer;
   
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
-    this.gameWidth = canvas.width;
-    this.gameHeight = canvas.height;
-    
-    // Initialize canvas context
-    const context = canvas.getContext('2d');
-    if (!context) {
-      throw new Error('Failed to get 2D context from canvas');
-    }
-    this.ctx = context;
-    
-    // Enable pixel-perfect rendering
-    this.ctx.imageSmoothingEnabled = false;
-    
-    // Initialize input state
-    this.input = {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      interact: false,
-      inventory: false
-    };
-    
-    // Create player
-    this.player = this.createPlayer();
-    
-    // Set up input handlers
-    this.setupInputHandlers();
+  // Game items and collectibles
+  private coins!: Phaser.Physics.Arcade.Group;
+  private potions!: Phaser.Physics.Arcade.Group;
+  private chests!: Phaser.Physics.Arcade.Group;
+  
+  // Game state
+  private score: number = 0;
+  private health: number = 100;
+  
+  // UI elements
+  private scoreText!: Phaser.GameObjects.Text;
+  private healthText!: Phaser.GameObjects.Text;
+  
+  // Controls
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private actionKey!: Phaser.Input.Keyboard.Key;
+  
+  constructor() {
+    super('GameScene');
   }
   
-  private createPlayer(): Player {
-    // Create player object with initial position and properties
-    return {
-      position: {
-        x: this.gameWidth / 2 - 16, // Center player horizontally
-        y: this.gameHeight / 2 - 24  // Center player vertically
-      },
-      size: {
-        width: 32,
-        height: 48
-      },
-      velocity: {
-        x: 0,
-        y: 0
-      },
-      speed: 100, // Pixels per second
-      direction: 'down',
-      isMoving: false,
-      
-      render(ctx: CanvasRenderingContext2D): void {
-        // Get appropriate sprite based on direction and movement
-        // For now, draw a placeholder rectangle
-        ctx.fillStyle = '#4CAF50';
-        ctx.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-      },
-      
-      update(delta: number): void {
-        // Update position based on velocity
-        if (this.velocity) {
-          this.position.x += this.velocity.x * delta;
-          this.position.y += this.velocity.y * delta;
-        }
-        
-        // Keep player within game bounds
-        if (this.position.x < 0) this.position.x = 0;
-        if (this.position.y < 0) this.position.y = 0;
-        if (this.position.x > 640 - this.size.width) {
-          this.position.x = 640 - this.size.width;
-        }
-        if (this.position.y > 480 - this.size.height) {
-          this.position.y = 480 - this.size.height;
-        }
-      }
-    };
+  create(): void {
+    this.createMap();
+    this.createPlayer();
+    this.createItems();
+    this.createUI();
+    this.setupInput();
+    this.setupCamera();
+    this.setupCollisions();
+    
+    console.log('Game scene created successfully');
   }
   
-  private setupInputHandlers(): void {
-    // Keyboard down event handler
-    window.addEventListener('keydown', (event) => {
-      switch (event.key) {
-        case 'ArrowUp':
-          this.input.up = true;
-          break;
-        case 'ArrowDown':
-          this.input.down = true;
-          break;
-        case 'ArrowLeft':
-          this.input.left = true;
-          break;
-        case 'ArrowRight':
-          this.input.right = true;
-          break;
-        case ' ':
-          this.input.interact = true;
-          break;
-        case 'e':
-        case 'E':
-          this.input.inventory = true;
-          break;
-      }
+  update(): void {
+    this.handlePlayerMovement();
+    this.handlePlayerInteractions();
+    this.updateUI();
+  }
+  
+  /**
+   * Create and configure the game map using tilemap
+   */
+  private createMap(): void {
+    // Create tilemap from JSON
+    this.map = this.make.tilemap({ key: 'map' });
+    
+    // Add the tileset image
+    this.tileset = this.map.addTilesetImage('main', 'tileset');
+    
+    // Create layers
+    this.groundLayer = this.map.createLayer('ground', this.tileset, 0, 0);
+    this.wallsLayer = this.map.createLayer('walls', this.tileset, 0, 0);
+    this.objectsLayer = this.map.createLayer('objects', this.tileset, 0, 0);
+    
+    // Set collisions for the walls layer
+    this.wallsLayer.setCollisionByProperty({ collides: true });
+    
+    // Set depth ordering for layers
+    this.groundLayer.setDepth(0);
+    this.wallsLayer.setDepth(10);
+    this.objectsLayer.setDepth(20);
+  }
+  
+  /**
+   * Create and configure the player character
+   */
+  private createPlayer(): void {
+    // Find player spawn position from object layer
+    const spawnPoint = this.map.findObject('objects', (obj: any) => obj.name === 'Player') || { x: 100, y: 100 };
+    
+    // Create player sprite using pixelated texture
+    this.player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'player_pixel');
+    this.player.setDepth(30);
+    
+    // Set player collision bounds
+    this.player.setSize(24, 24);
+    this.player.setOffset(4, 8);
+    
+    // Start with the player facing down
+    this.player.anims.play('player_down');
+  }
+  
+  /**
+   * Create collectible items throughout the level
+   */
+  private createItems(): void {
+    // Create groups for the various items
+    this.coins = this.physics.add.group();
+    this.potions = this.physics.add.group();
+    this.chests = this.physics.add.group();
+    
+    // Place coins
+    const coinObjects = this.map.createFromObjects('objects', { 
+      name: 'Coin',
+      key: 'coin_pixel'
     });
     
-    // Keyboard up event handler
-    window.addEventListener('keyup', (event) => {
-      switch (event.key) {
-        case 'ArrowUp':
-          this.input.up = false;
-          break;
-        case 'ArrowDown':
-          this.input.down = false;
-          break;
-        case 'ArrowLeft':
-          this.input.left = false;
-          break;
-        case 'ArrowRight':
-          this.input.right = false;
-          break;
-        case ' ':
-          this.input.interact = false;
-          break;
-        case 'e':
-        case 'E':
-          this.input.inventory = false;
-          break;
-      }
+    this.coins.addMultiple(coinObjects);
+    this.physics.world.enable(coinObjects);
+    
+    coinObjects.forEach((coin: any) => {
+      coin.setDepth(25);
+      coin.setScale(0.8);
+      coin.body.setSize(20, 20);
+      
+      // Add a simple bobbing animation
+      this.tweens.add({
+        targets: coin,
+        y: coin.y - 5,
+        duration: 800,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1
+      });
+    });
+    
+    // Place potions
+    const potionObjects = this.map.createFromObjects('objects', { 
+      name: 'Potion',
+      key: 'potion_pixel'
+    });
+    
+    this.potions.addMultiple(potionObjects);
+    this.physics.world.enable(potionObjects);
+    
+    potionObjects.forEach((potion: any) => {
+      potion.setDepth(25);
+      potion.body.setSize(20, 24);
+    });
+    
+    // Place chests
+    const chestObjects = this.map.createFromObjects('objects', { 
+      name: 'Chest',
+      key: 'chest_pixel'
+    });
+    
+    this.chests.addMultiple(chestObjects);
+    this.physics.world.enable(chestObjects);
+    
+    chestObjects.forEach((chest: any) => {
+      chest.setDepth(25);
+      chest.body.setSize(28, 20);
+      
+      // Add a property to track if the chest has been opened
+      chest.isOpen = false;
     });
   }
   
-  public start(): void {
-    console.log('[GameScene] Starting game loop');
-    this.lastTime = performance.now();
+  /**
+   * Create UI elements for score, health, etc.
+   */
+  private createUI(): void {
+    // Create a UI container that stays fixed to the camera
+    const uiContainer = this.add.container(0, 0);
+    uiContainer.setScrollFactor(0); // Fix to camera
+    uiContainer.setDepth(100); // Always on top
     
-    // Start the game loop
-    this.gameLoop(this.lastTime);
+    // Add a semi-transparent background panel
+    const uiPanel = this.add.rectangle(
+      10, 10, 200, 80, 
+      0x000000, 0.5
+    );
+    uiPanel.setOrigin(0, 0);
     
-    // Play background music
-    try {
-      PixelArtAssetLoader.playAudio('bgm_village', true, 0.5);
-    } catch (error) {
-      console.warn('[GameScene] Could not play background music:', error);
+    // Add score text
+    this.scoreText = this.add.text(
+      20, 20, 
+      `Score: ${this.score}`, 
+      { font: '16px monospace', color: '#ffffff' }
+    );
+    
+    // Add health text
+    this.healthText = this.add.text(
+      20, 50, 
+      `Health: ${this.health}`, 
+      { font: '16px monospace', color: '#ffffff' }
+    );
+    
+    // Add all elements to the UI container
+    uiContainer.add([uiPanel, this.scoreText, this.healthText]);
+  }
+  
+  /**
+   * Setup keyboard and touch input
+   */
+  private setupInput(): void {
+    // Create cursor keys for movement
+    this.cursors = this.input.keyboard.createCursorKeys();
+    
+    // Create action key (Space)
+    this.actionKey = this.input.keyboard.addKey('SPACE');
+    
+    // Add touch input for mobile devices
+    this.input.addPointer(1);
+    
+    // Check for touch device - simplified for compatibility
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouchDevice) {
+      // Implement joystick if needed
+      console.log('Touch device detected, joystick could be implemented here');
     }
   }
   
-  private gameLoop = (timestamp: number): void => {
-    // Calculate delta time in seconds
-    const deltaTime = (timestamp - this.lastTime) / 1000;
-    this.lastTime = timestamp;
+  /**
+   * Configure the camera to follow the player
+   */
+  private setupCamera(): void {
+    // Set bounds to the map size
+    this.cameras.main.setBounds(
+      0, 0, 
+      this.map.widthInPixels, 
+      this.map.heightInPixels
+    );
     
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
+    // Set camera to follow player
+    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     
-    // Update game state
-    this.update(deltaTime);
+    // Add some zoom controls (for debugging)
+    this.input.keyboard.on('keydown-Z', () => {
+      this.cameras.main.zoom -= 0.1;
+    });
     
-    // Render game state
-    this.render();
-    
-    // Continue game loop
-    this.animationFrameId = requestAnimationFrame(this.gameLoop);
-  };
+    this.input.keyboard.on('keydown-X', () => {
+      this.cameras.main.zoom += 0.1;
+    });
+  }
   
-  private update(delta: number): void {
-    // Update player velocity based on input
-    this.player.velocity = { x: 0, y: 0 };
+  /**
+   * Setup collision detection between game elements
+   */
+  private setupCollisions(): void {
+    // Player collides with walls
+    this.physics.add.collider(this.player, this.wallsLayer);
     
-    if (this.input.up) {
-      this.player.velocity.y = -this.player.speed;
-      this.player.direction = 'up';
-      this.player.isMoving = true;
-    } else if (this.input.down) {
-      this.player.velocity.y = this.player.speed;
-      this.player.direction = 'down';
-      this.player.isMoving = true;
+    // Player overlaps with collectible items
+    this.physics.add.overlap(
+      this.player, this.coins, 
+      this.collectCoin, undefined, this
+    );
+    
+    this.physics.add.overlap(
+      this.player, this.potions, 
+      this.collectPotion, undefined, this
+    );
+    
+    this.physics.add.overlap(
+      this.player, this.chests, 
+      this.interactWithChest, undefined, this
+    );
+  }
+  
+  /**
+   * Handle player movement based on input
+   */
+  private handlePlayerMovement(): void {
+    // Reset velocity
+    this.player.setVelocity(0);
+    
+    const speed = 120;
+    let moving = false;
+    
+    // Handle keyboard input
+    if (this.cursors.left.isDown) {
+      this.player.setVelocityX(-speed);
+      this.player.anims.play('player_left', true);
+      moving = true;
+    } else if (this.cursors.right.isDown) {
+      this.player.setVelocityX(speed);
+      this.player.anims.play('player_right', true);
+      moving = true;
     }
     
-    if (this.input.left) {
-      this.player.velocity.x = -this.player.speed;
-      this.player.direction = 'left';
-      this.player.isMoving = true;
-    } else if (this.input.right) {
-      this.player.velocity.x = this.player.speed;
-      this.player.direction = 'right';
-      this.player.isMoving = true;
+    if (this.cursors.up.isDown) {
+      this.player.setVelocityY(-speed);
+      if (!moving) this.player.anims.play('player_up', true);
+      moving = true;
+    } else if (this.cursors.down.isDown) {
+      this.player.setVelocityY(speed);
+      if (!moving) this.player.anims.play('player_down', true);
+      moving = true;
     }
     
-    // Normalize diagonal movement
-    if (this.player.velocity.x !== 0 && this.player.velocity.y !== 0) {
-      const normalizer = Math.sqrt(2) / 2; // 1/sqrt(2)
-      this.player.velocity.x *= normalizer;
-      this.player.velocity.y *= normalizer;
+    // Stop animations if not moving
+    if (!moving) {
+      this.player.anims.stop();
     }
-    
-    // Check if player is not moving
-    if (this.player.velocity.x === 0 && this.player.velocity.y === 0) {
-      this.player.isMoving = false;
+  }
+  
+  /**
+   * Handle player interactions with objects
+   */
+  private handlePlayerInteractions(): void {
+    // Check for action key press to interact with nearby objects
+    if (Phaser.Input.Keyboard.JustDown(this.actionKey)) {
+      // This is handled by the overlap callbacks
     }
-    
-    // Update player state
-    this.player.update(delta);
-    
-    // Implement game logic here
-    // - Collision detection
-    // - Enemy AI
-    // - Item interactions
-    // - etc.
   }
   
-  private render(): void {
-    // Draw background
-    this.drawBackground();
-    
-    // Draw player
-    this.player.render(this.ctx);
-    
-    // Draw UI elements
-    this.drawUI();
+  /**
+   * Update UI elements based on game state
+   */
+  private updateUI(): void {
+    // Update score and health displays
+    this.scoreText.setText(`Score: ${this.score}`);
+    this.healthText.setText(`Health: ${this.health}`);
   }
   
-  private drawBackground(): void {
-    // Draw background (placeholder)
-    this.ctx.fillStyle = '#87CEEB'; // Sky blue
-    this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
+  /**
+   * Collect a coin and increase score
+   */
+  private collectCoin(player: any, coin: any): void {
+    // Disable the coin 
+    coin.disableBody(true, true);
     
-    // Draw tilemap (placeholder)
-    // In the future, this will render the actual tilemap loaded from assets
-    this.ctx.fillStyle = '#8FBC8F'; // Dark Sea Green (grass)
-    this.ctx.fillRect(0, this.gameHeight - 100, this.gameWidth, 100);
+    // Play collection animation
+    this.tweens.add({
+      targets: coin,
+      y: coin.y - 20,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2',
+      onComplete: () => {
+        coin.destroy();
+      }
+    });
+    
+    // Update score
+    this.score += 10;
+    
+    // Play coin collection sound effect (if available)
+    // this.sound.play('coin_pickup');
   }
   
-  private drawUI(): void {
-    // Draw UI elements (placeholder)
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    this.ctx.fillRect(10, 10, 150, 30);
+  /**
+   * Collect a potion and restore health
+   */
+  private collectPotion(player: any, potion: any): void {
+    // Disable the potion
+    potion.disableBody(true, true);
     
-    this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.font = '14px monospace';
-    this.ctx.fillText("Eden's Hollow", 20, 30);
+    // Play collection animation
+    this.tweens.add({
+      targets: potion,
+      y: potion.y - 20,
+      alpha: 0,
+      duration: 300,
+      ease: 'Power2',
+      onComplete: () => {
+        potion.destroy();
+      }
+    });
+    
+    // Increase health
+    this.health = Math.min(100, this.health + 25);
+    
+    // Play potion collection sound effect (if available)
+    // this.sound.play('potion_pickup');
   }
   
-  public stop(): void {
-    // Stop the game loop
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
+  /**
+   * Interact with a chest to open it and get rewards
+   */
+  private interactWithChest(player: any, chest: any): void {
+    // Only open the chest if action key is pressed and it's not already open
+    if (Phaser.Input.Keyboard.JustDown(this.actionKey) && !chest.isOpen) {
+      // Mark the chest as open
+      chest.isOpen = true;
+      
+      // Play chest opening animation
+      this.tweens.add({
+        targets: chest,
+        y: chest.y - 5,
+        duration: 100,
+        ease: 'Power1',
+        yoyo: true,
+        onComplete: () => {
+          // Change chest appearance to open state
+          // chest.setTexture('chest_open');
+          
+          // Award random loot
+          const lootValue = Phaser.Math.Between(20, 50);
+          this.score += lootValue;
+          
+          // Display floating score text
+          const scorePopup = this.add.text(
+            chest.x, chest.y - 20, 
+            `+${lootValue}`, 
+            { font: '14px monospace', color: '#ffff00' }
+          );
+          
+          // Animate the score popup
+          this.tweens.add({
+            targets: scorePopup,
+            y: scorePopup.y - 30,
+            alpha: 0,
+            duration: 1000,
+            ease: 'Power2',
+            onComplete: () => {
+              scorePopup.destroy();
+            }
+          });
+        }
+      });
+      
+      // Play chest opening sound effect (if available)
+      // this.sound.play('chest_open');
     }
-    
-    // Stop any audio
-    // This would need to be implemented in the asset loader
   }
-  
-  public resize(width: number, height: number): void {
-    this.gameWidth = width;
-    this.gameHeight = height;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    
-    // Maintain pixel perfect rendering after resize
-    this.ctx.imageSmoothingEnabled = false;
-  }
-  
-  public destroy(): void {
-    // Clean up resources
-    this.stop();
-    
-    // Remove event listeners
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
-  }
-  
-  // Event handler bound methods (for proper cleanup)
-  private handleKeyDown = (event: KeyboardEvent): void => {
-    // Same logic as in setupInputHandlers keydown
-  };
-  
-  private handleKeyUp = (event: KeyboardEvent): void => {
-    // Same logic as in setupInputHandlers keyup
-  };
 }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="32" height="32" fill="none"/>
+  <rect x="12" y="14" width="8" height="12" fill="#a54d35"/> <!-- Bottle -->
+  <rect x="10" y="8" width="12" height="6" fill="#a54d35"/> <!-- Bottle top -->
+  <rect x="13" y="4" width="6" height="4" fill="#a54d35"/> <!-- Bottle cap -->
+  
+  <!-- Potion content -->
+  <rect x="12" y="14" width="8" height="8" fill="#e8394c"/> <!-- Red potion -->
+  
+  <!-- Shine/highlights -->
+  <rect x="14" y="16" width="4" height="4" fill="#f25e6d"/>
+  <ellipse cx="15" cy="17" rx="1" ry="1" fill="#ffffff"/>
+  
+  <!-- Cork -->
+  <rect x="13" y="8" width="6" height="2" fill="#8b5a2b"/>
+</svg>

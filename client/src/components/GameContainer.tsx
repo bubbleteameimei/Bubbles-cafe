@@ -1,90 +1,233 @@
 /**
  * GameContainer Component
- * 
- * This component integrates the game into a React application.
- * It creates a container for the game canvas and manages the game lifecycle.
+ * A React component that wraps the Phaser game instance
  */
 
-import React, { useEffect, useRef } from 'react';
-import { Game } from '../game/Game';
+import React, { useEffect, useRef, useState } from 'react';
+import Game from '../game/Game';
 
+// Props for the GameContainer component
 interface GameContainerProps {
-  width?: number;
-  height?: number;
+  // Container ID (must be unique if multiple games on page)
+  containerId?: string;
+  
+  // Game dimensions
+  width?: number | string;
+  height?: number | string;
+  
+  // Additional game config options
+  pixelArt?: boolean;
+  backgroundColor?: string;
+  
+  // Whether to auto-start the game
+  autoStart?: boolean;
+  
+  // Callback when game is ready
+  onGameReady?: (game: Game) => void;
+  
+  // Custom styles for the container
+  style?: React.CSSProperties;
+  
+  // Custom class name for the container
   className?: string;
 }
 
-const GameContainer: React.FC<GameContainerProps> = ({ 
-  width = 640, 
-  height = 480,
-  className = '' 
-}) => {
+/**
+ * Game Container Component
+ * Renders a container for the Phaser game and manages its lifecycle
+ */
+export default function GameContainer({
+  containerId = 'eden-game-container',
+  width = '100%',
+  height = '600px',
+  pixelArt = true,
+  backgroundColor = '#000000',
+  autoStart = true,
+  onGameReady,
+  style,
+  className,
+}: GameContainerProps) {
+  // Refs for the container and game instance
   const containerRef = useRef<HTMLDivElement>(null);
-  const gameRef = useRef<Game | null>(null);
+  const gameInstanceRef = useRef<Game | null>(null);
   
-  // Initialize game when component mounts
+  // State for loading and errors
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Initialize the game on component mount
   useEffect(() => {
+    // Skip if no container
     if (!containerRef.current) return;
     
-    console.log('[GameContainer] Initializing game');
-    
-    // Create game instance
-    const game = new Game(containerRef.current, width, height);
-    
-    // Start the game
-    game.start().catch(error => {
-      console.error('[GameContainer] Error starting game:', error);
-    });
-    
-    // Store game instance
-    gameRef.current = game;
-    
-    // Clean up when component unmounts
-    return () => {
-      console.log('[GameContainer] Destroying game');
-      
-      if (gameRef.current) {
-        gameRef.current.destroy();
-        gameRef.current = null;
+    // Setup function to initialize the game
+    const setupGame = async () => {
+      try {
+        // Verify Phaser is available
+        if (typeof window === 'undefined' || (window as any).Phaser === undefined) {
+          // Load Phaser from CDN
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
+          script.async = true;
+          
+          // Create a promise that resolves when the script is loaded
+          const scriptLoadPromise = new Promise<void>((resolve, reject) => {
+            script.onload = () => {
+              console.log('Phaser loaded successfully from CDN');
+              // Make sure Phaser is globally available
+              window.Phaser = (window as any).Phaser;
+              resolve();
+            };
+            script.onerror = () => reject(new Error('Failed to load Phaser library'));
+          });
+          
+          // Add script to document
+          document.head.appendChild(script);
+          
+          // Wait for script to load
+          await scriptLoadPromise;
+        }
+        
+        // Create Game instance
+        const game = new Game({
+          parent: containerId,
+          width: typeof width === 'string' ? parseInt(width) || 800 : width,
+          height: typeof height === 'string' ? parseInt(height) || 600 : height,
+          pixelArt,
+          backgroundColor,
+        });
+        
+        // Store the game instance in ref
+        gameInstanceRef.current = game;
+        
+        // Initialize the game
+        if (autoStart) {
+          await game.initialize();
+        }
+        
+        // Notify parent when game is ready
+        if (onGameReady) {
+          onGameReady(game);
+        }
+        
+        // Update loading state
+        setLoading(false);
+      } catch (err) {
+        console.error('Error initializing game:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize game');
+        setLoading(false);
       }
     };
-  }, [width, height]);
+    
+    // Call setup function
+    setupGame();
+    
+    // Cleanup on unmount
+    return () => {
+      if (gameInstanceRef.current) {
+        gameInstanceRef.current.destroy();
+        gameInstanceRef.current = null;
+      }
+    };
+  }, [containerId, width, height, pixelArt, backgroundColor, autoStart, onGameReady]);
   
-  // Handle pause/resume when window visibility changes
+  // Handle window resize
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!gameRef.current) return;
-      
-      if (document.hidden) {
-        console.log('[GameContainer] Window hidden, pausing game');
-        gameRef.current.pause();
-      } else {
-        console.log('[GameContainer] Window visible, resuming game');
-        gameRef.current.resume();
+    const handleResize = () => {
+      if (gameInstanceRef.current && containerRef.current) {
+        const { clientWidth, clientHeight } = containerRef.current;
+        gameInstanceRef.current.resize(clientWidth, clientHeight);
       }
     };
     
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
   
+  // Combine base and custom styles
+  const containerStyle: React.CSSProperties = {
+    width,
+    height,
+    position: 'relative',
+    overflow: 'hidden',
+    ...style,
+  };
+  
   return (
     <div 
-      className={`game-container relative bg-black ${className}`}
-      style={{ 
-        width: `${width}px`, 
-        height: `${height}px`,
-        margin: '0 auto',
-        border: '1px solid #333'
-      }}
       ref={containerRef}
+      id={containerId}
+      className={`game-container ${className || ''}`}
+      style={containerStyle}
     >
-      {/* Game will be rendered here by the Game class */}
+      {loading && (
+        <div className="game-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading Eden's Hollow...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="game-error">
+          <p>Error: {error}</p>
+          <button onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      )}
+      
+      <style>{`
+        .game-container {
+          background-color: #000;
+          color: #fff;
+          font-family: monospace;
+        }
+        
+        .game-loading,
+        .game-error {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(0, 0, 0, 0.7);
+          z-index: 10;
+        }
+        
+        .loading-spinner {
+          border: 4px solid rgba(255, 255, 255, 0.3);
+          border-top: 4px solid #fff;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+          margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .game-error button {
+          margin-top: 20px;
+          padding: 8px 16px;
+          background-color: #4a4a4a;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .game-error button:hover {
+          background-color: #5a5a5a;
+        }
+      `}</style>
     </div>
   );
-};
-
-export default GameContainer;
+}
