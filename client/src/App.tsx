@@ -172,6 +172,7 @@ const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settin
 // Game Pages
 const EdenGamePage = withSuspense(React.lazy(() => import('./pages/games/eden')));
 const EdenCanvasGamePage = withSuspense(React.lazy(() => import('./pages/games/eden-game')));
+const EdenGameNewPage = withSuspense(React.lazy(() => import('./pages/games/eden-game-new')));
 const GameTestPage = withSuspense(React.lazy(() => import('./pages/game-test')));
 
 // Admin Pages
@@ -273,7 +274,7 @@ const AppContent = () => {
                 {/* Game Routes */}
                 <Route path="/eden-game" component={EdenGamePage} />
                 <Route path="/eden-pixelgame" component={EdenCanvasGamePage} />
-                <Route path="/eden-game-new" component={EdenCanvasGamePage} />
+                <Route path="/eden-game-new" component={EdenGameNewPage} />
                 <Route path="/game-test" component={GameTestPage} />
 
                 {/* Legal Routes */}

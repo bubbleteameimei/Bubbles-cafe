@@ -42,14 +42,14 @@ interface GameObject {
   position: Vector2;
   size: Vector2;
   velocity: Vector2;
-  sprite?: HTMLImageElement;
+  sprite?: HTMLImageElement | HTMLCanvasElement;
   type: string;
   isActive: boolean;
   data?: any;
 }
 
 interface Animation {
-  frames: HTMLImageElement[];
+  frames: (HTMLImageElement | HTMLCanvasElement)[];
   frameRate: number;
   loop: boolean;
   currentFrame: number;
@@ -491,11 +491,27 @@ export class GameWorld {
   
   /**
    * Get the current player animation based on state
+   * Enhanced to support jumping and falling animations
    */
   private getPlayerAnimation(): Animation | undefined {
+    // Check if player is in the air
+    if (!this.player.data.onGround) {
+      // Player is jumping or falling
+      if (this.player.velocity.y < 0) {
+        // Moving upward - use jump animation
+        return this.animations['player_jump'];
+      } else {
+        // Moving downward - use fall animation (currently same as jump)
+        return this.animations['player_jump'];
+      }
+    }
+    
+    // Player is on the ground
     if (this.player.velocity.x !== 0) {
+      // Player is running
       return this.animations['player_run'];
     } else {
+      // Player is idle
       return this.animations['player_idle'];
     }
   }
@@ -599,45 +615,111 @@ export class GameWorld {
   }
   
   /**
-   * Render a generic game object
+   * Render a generic game object with enhanced visual effects
    */
   private renderGameObject(ctx: CanvasRenderingContext2D, obj: GameObject): void {
     const width = obj.size.width || 30;
     const height = obj.size.height || 30;
     
-    if (obj.sprite) {
-      // Draw sprite image
-      ctx.drawImage(obj.sprite, obj.position.x, obj.position.y, width, height);
-    } else {
-      // Fallback rendering with color
-      switch (obj.type) {
-        case 'ground':
-          ctx.fillStyle = '#8B4513';
-          break;
-        case 'platform':
-          ctx.fillStyle = '#A0522D';
-          break;
-        case 'coin':
-          ctx.fillStyle = '#FFD700';
-          break;
-        case 'potion':
-          ctx.fillStyle = '#FF00FF';
-          break;
-        case 'enemy':
-          ctx.fillStyle = '#FF0000';
-          break;
-        case 'obstacle':
-          ctx.fillStyle = '#808080';
-          break;
-        case 'exit':
-          ctx.fillStyle = '#00FF00';
-          break;
-        default:
-          ctx.fillStyle = '#000000';
-      }
+    // Save the current context state
+    ctx.save();
+    
+    // Apply special effects based on object type
+    if (obj.type === 'potion') {
+      // Add glow effect for potions
+      const pulseAmount = Math.sin(this.timeElapsed * 5) * 0.1 + 1.05;
+      ctx.shadowColor = '#FF00FF';
+      ctx.shadowBlur = 10;
       
-      ctx.fillRect(obj.position.x, obj.position.y, width, height);
+      // Scale the potion slightly based on time for a "pulsing" effect
+      ctx.translate(
+        obj.position.x + width / 2, 
+        obj.position.y + height / 2
+      );
+      ctx.scale(pulseAmount, pulseAmount);
+      
+      if (obj.sprite) {
+        ctx.drawImage(obj.sprite, -width / 2, -height / 2, width, height);
+      } else {
+        ctx.fillStyle = '#FF00FF';
+        ctx.fillRect(-width / 2, -height / 2, width, height);
+      }
+    } 
+    else if (obj.type === 'coin') {
+      // Add rotation effect for coins
+      const rotationAmount = this.timeElapsed * 2;
+      
+      // Make coins bob up and down slightly
+      const bobAmount = Math.sin(this.timeElapsed * 3) * 5;
+      
+      ctx.translate(
+        obj.position.x + width / 2, 
+        obj.position.y + height / 2 + bobAmount
+      );
+      ctx.rotate(rotationAmount);
+      
+      // Add shimmering effect
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 5;
+      
+      if (obj.sprite) {
+        ctx.drawImage(obj.sprite, -width / 2, -height / 2, width, height);
+      } else {
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(-width / 2, -height / 2, width, height);
+      }
     }
+    else if (obj.type === 'exit') {
+      // Add subtle animation for the chest/exit
+      const pulseAmount = Math.sin(this.timeElapsed * 2) * 0.05 + 1;
+      
+      // Add slight glow effect
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 5;
+      
+      ctx.translate(
+        obj.position.x + width / 2, 
+        obj.position.y + height / 2
+      );
+      ctx.scale(pulseAmount, pulseAmount);
+      
+      if (obj.sprite) {
+        ctx.drawImage(obj.sprite, -width / 2, -height / 2, width, height);
+      } else {
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(-width / 2, -height / 2, width, height);
+      }
+    }
+    else {
+      // Standard rendering for other objects
+      if (obj.sprite) {
+        // Draw sprite image
+        ctx.drawImage(obj.sprite, obj.position.x, obj.position.y, width, height);
+      } else {
+        // Fallback rendering with color
+        switch (obj.type) {
+          case 'ground':
+            ctx.fillStyle = '#8B4513';
+            break;
+          case 'platform':
+            ctx.fillStyle = '#A0522D';
+            break;
+          case 'enemy':
+            ctx.fillStyle = '#FF0000';
+            break;
+          case 'obstacle':
+            ctx.fillStyle = '#808080';
+            break;
+          default:
+            ctx.fillStyle = '#000000';
+        }
+        
+        ctx.fillRect(obj.position.x, obj.position.y, width, height);
+      }
+    }
+    
+    // Restore context state
+    ctx.restore();
     
     // Draw debug box
     if (this.debug) {
@@ -751,7 +833,7 @@ export class GameWorld {
   
   /**
    * Create animations from assets
-   * Support for multi-frame animations from sprite sheets
+   * Advanced support for multi-frame animations from sprite sheets
    */
   private createAnimations(): void {
     // Create player idle animation
@@ -759,17 +841,37 @@ export class GameWorld {
     if (idleImg) {
       // Split the sprite sheet into frames (assuming horizontal layout)
       const framesCount = 4; // Number of frames in the animation
-      const frames: HTMLImageElement[] = [];
+      const frameWidth = idleImg.width / framesCount;
+      const frameHeight = idleImg.height;
+      const frames: HTMLCanvasElement[] = [];
       
-      // For now we're using the same image as all frames
-      // In a full implementation, we would slice the sprite sheet
+      // Extract individual frames from the sprite sheet using canvas
       for (let i = 0; i < framesCount; i++) {
-        frames.push(idleImg);
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = frameWidth;
+        frameCanvas.height = frameHeight;
+        
+        const ctx = frameCanvas.getContext('2d');
+        if (ctx) {
+          // Draw the specific portion of the sprite sheet to our frame canvas
+          ctx.drawImage(
+            idleImg,
+            i * frameWidth, 0,      // Source position (x,y)
+            frameWidth, frameHeight, // Source dimensions (width, height)
+            0, 0,                   // Destination position (x,y)
+            frameWidth, frameHeight  // Destination dimensions (width, height)
+          );
+          
+          // Convert canvas to image for our animation system
+          const frameImg = new Image();
+          frameImg.src = frameCanvas.toDataURL();
+          frames.push(frameCanvas);
+        }
       }
       
       this.animations['player_idle'] = {
         frames: frames,
-        frameRate: 5,
+        frameRate: 6,
         loop: true,
         currentFrame: 0,
         frameTimer: 0,
@@ -783,23 +885,69 @@ export class GameWorld {
     if (runImg) {
       // Split the sprite sheet into frames (assuming horizontal layout)
       const framesCount = 6; // Number of frames in the run animation
-      const frames: HTMLImageElement[] = [];
+      const frameWidth = runImg.width / framesCount;
+      const frameHeight = runImg.height;
+      const frames: HTMLCanvasElement[] = [];
       
-      // For now we're using the same image as all frames
-      // In a full implementation, we would slice the sprite sheet
+      // Extract individual frames from the sprite sheet
       for (let i = 0; i < framesCount; i++) {
-        frames.push(runImg);
+        const frameCanvas = document.createElement('canvas');
+        frameCanvas.width = frameWidth;
+        frameCanvas.height = frameHeight;
+        
+        const ctx = frameCanvas.getContext('2d');
+        if (ctx) {
+          // Draw the specific portion of the sprite sheet
+          ctx.drawImage(
+            runImg,
+            i * frameWidth, 0,      // Source position
+            frameWidth, frameHeight, // Source dimensions
+            0, 0,                   // Destination position
+            frameWidth, frameHeight  // Destination dimensions
+          );
+          
+          frames.push(frameCanvas);
+        }
       }
       
       this.animations['player_run'] = {
         frames: frames,
-        frameRate: 10,
+        frameRate: 12, // Faster framerate for running
         loop: true,
         currentFrame: 0,
         frameTimer: 0,
         name: 'player_run',
         paused: false
       };
+    }
+    
+    // Create jumping animation (using first frame of run animation for now)
+    if (runImg) {
+      const jumpCanvas = document.createElement('canvas');
+      jumpCanvas.width = runImg.width / 6; // Assuming 6 frames in run
+      jumpCanvas.height = runImg.height;
+      
+      const ctx = jumpCanvas.getContext('2d');
+      if (ctx) {
+        // Use the first frame of the run animation
+        ctx.drawImage(
+          runImg,
+          0, 0,            // Source position
+          runImg.width / 6, runImg.height, // Source dimensions
+          0, 0,            // Destination position
+          runImg.width / 6, runImg.height  // Destination dimensions
+        );
+        
+        this.animations['player_jump'] = {
+          frames: [jumpCanvas],
+          frameRate: 1,
+          loop: false,
+          currentFrame: 0,
+          frameTimer: 0,
+          name: 'player_jump',
+          paused: false
+        };
+      }
     }
     
     // Create coin animation
@@ -826,6 +974,20 @@ export class GameWorld {
         currentFrame: 0,
         frameTimer: 0,
         name: 'potion',
+        paused: false
+      };
+    }
+    
+    // Create chest animation
+    const chestImg = this.assets['chest'];
+    if (chestImg) {
+      this.animations['exit'] = {
+        frames: [chestImg],
+        frameRate: 2,
+        loop: true,
+        currentFrame: 0,
+        frameTimer: 0,
+        name: 'exit',
         paused: false
       };
     }
