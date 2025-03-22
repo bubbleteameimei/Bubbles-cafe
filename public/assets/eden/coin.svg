@@ -1,0 +1,29 @@
+<svg width="64" height="16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Frame 1 - Front view -->
+  <g transform="translate(0, 0)">
+    <circle cx="8" cy="8" r="7" fill="#ffd700" />
+    <circle cx="8" cy="8" r="5" fill="#ffcc00" />
+    <circle cx="6" cy="6" r="1" fill="#ffffcc" />
+  </g>
+  
+  <!-- Frame 2 - Slightly angled -->
+  <g transform="translate(16, 0)">
+    <ellipse cx="8" cy="8" rx="6" ry="7" fill="#ffd700" />
+    <ellipse cx="8" cy="8" rx="4" ry="5" fill="#ffcc00" />
+    <circle cx="7" cy="6" r="1" fill="#ffffcc" />
+  </g>
+  
+  <!-- Frame 3 - Side view -->
+  <g transform="translate(32, 0)">
+    <ellipse cx="8" cy="8" rx="2" ry="7" fill="#ffd700" />
+    <ellipse cx="8" cy="8" rx="1" ry="5" fill="#ffcc00" />
+    <line x1="8" y1="3" x2="8" y2="13" stroke="#ebcc00" stroke-width="1" />
+  </g>
+  
+  <!-- Frame 4 - Other side angled -->
+  <g transform="translate(48, 0)">
+    <ellipse cx="8" cy="8" rx="6" ry="7" fill="#ffd700" />
+    <ellipse cx="8" cy="8" rx="4" ry="5" fill="#ffcc00" />
+    <circle cx="9" cy="6" r="1" fill="#ffffcc" />
+  </g>
+</svg>
