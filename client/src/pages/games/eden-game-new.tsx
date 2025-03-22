@@ -8,66 +8,97 @@ import { PixelEngine } from '../../game/pixelEngine/PixelEngine';
 import { GameWorld } from '../../game/pixelEngine/scenes/GameWorld';
 
 const EdenGameNew: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [gameInitialized, setGameInitialized] = useState(false);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const pixelEngineRef = useRef<PixelEngine | null>(null);
   const gameWorldRef = useRef<GameWorld | null>(null);
 
   // Initialize game when component mounts
   useEffect(() => {
-    if (!canvasRef.current || gameInitialized) return;
+    // Safety check for browser environment
+    if (typeof window === 'undefined' || !canvasRef.current || gameInitialized) return;
 
-    const canvas = canvasRef.current;
-    
-    // Configure canvas size for pixel art
-    canvas.width = 800;
-    canvas.height = 480;
-    
-    // Initialize PixelEngine with proper configuration
-    const pixelEngine = new PixelEngine({
-      width: canvas.width,
-      height: canvas.height,
-      parent: canvas.parentElement || document.body,
-      backgroundColor: '#000000',
-      fps: 60,
-      pixelScale: 1,
-      debug: false
-    });
-    pixelEngineRef.current = pixelEngine;
-    
-    // Create game world
-    const gameWorld = new GameWorld(pixelEngine, {
-      gravity: 800,
-      playerSpeed: 300,
-      jumpForce: 500,
-      collectibles: 15,
-      debug: false
-    });
-    gameWorldRef.current = gameWorld;
-    
-    // Start the game
-    pixelEngine.start();
-    gameWorld.startGame();
-    
-    // Update game initialized flag
-    setGameInitialized(true);
-    
-    // Set up game score/lives update interval
-    const updateInterval = setInterval(() => {
-      if (gameWorldRef.current) {
-        setScore(gameWorldRef.current.getScore());
-        setLives(gameWorldRef.current.getLives());
+    try {
+      setIsLoading(true);
+      
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 480;
+      canvas.className = 'game-canvas';
+      canvas.tabIndex = 0;
+      
+      // Clear any existing content and append the new canvas
+      if (canvasRef.current.firstChild) {
+        canvasRef.current.innerHTML = '';
       }
-    }, 500);
-    
-    // Cleanup function
-    return () => {
-      clearInterval(updateInterval);
-      pixelEngine.stop();
-    };
+      canvasRef.current.appendChild(canvas);
+      
+      // Safe initialization with error handling
+      setTimeout(() => {
+        try {
+          // Initialize PixelEngine with proper configuration
+          const pixelEngine = new PixelEngine({
+            width: canvas.width,
+            height: canvas.height,
+            parent: canvasRef.current || document.body,
+            backgroundColor: '#000000',
+            fps: 60,
+            pixelScale: 1,
+            debug: false
+          });
+          pixelEngineRef.current = pixelEngine;
+          
+          // Create game world
+          const gameWorld = new GameWorld(pixelEngine, {
+            gravity: 800,
+            playerSpeed: 300,
+            jumpForce: 500,
+            collectibles: 15,
+            debug: false
+          });
+          gameWorldRef.current = gameWorld;
+          
+          // Start the game
+          pixelEngine.start();
+          gameWorld.startGame();
+          
+          // Update game initialized flag
+          setGameInitialized(true);
+          setIsLoading(false);
+          
+          // Set up game score/lives update interval
+          const updateInterval = setInterval(() => {
+            if (gameWorldRef.current) {
+              setScore(gameWorldRef.current.getScore());
+              setLives(gameWorldRef.current.getLives());
+            }
+          }, 500);
+          
+          // Cleanup function
+          return () => {
+            clearInterval(updateInterval);
+            if (pixelEngineRef.current) {
+              pixelEngineRef.current.stop();
+            }
+          };
+        } catch (err) {
+          console.error('Failed to initialize game:', err);
+          setError('Failed to initialize game. Please try refreshing the page.');
+          setIsLoading(false);
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Error in game initialization:', err);
+      setError('Failed to set up game environment. Please try refreshing the page.');
+      setIsLoading(false);
+    }
   }, [gameInitialized]);
   
   // Handle pause/resume
@@ -87,16 +118,92 @@ const EdenGameNew: React.FC = () => {
   const restartGame = () => {
     if (!canvasRef.current || !pixelEngineRef.current) return;
     
-    // Clean up existing game
-    pixelEngineRef.current.stop();
-    
-    // Reset state
-    setGameInitialized(false);
-    setScore(0);
-    setLives(3);
-    setIsPaused(false);
+    try {
+      // Clean up existing game
+      pixelEngineRef.current.stop();
+      
+      // Reset state
+      setGameInitialized(false);
+      setScore(0);
+      setLives(3);
+      setIsPaused(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error during game restart:', err);
+      setError('Failed to restart game. Please refresh the page.');
+    }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="eden-game-loading">
+        <h2>Loading Eden's Hollow...</h2>
+        <div className="loading-spinner"></div>
+        <style jsx>{`
+          .eden-game-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #eaeaea;
+          }
+          .loading-spinner {
+            margin-top: 20px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #32CD32;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="eden-game-error">
+        <h2>Oops! Something went wrong</h2>
+        <p>{error}</p>
+        <button onClick={restartGame}>Try Again</button>
+        <style jsx>{`
+          .eden-game-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #eaeaea;
+            padding: 20px;
+            text-align: center;
+          }
+          button {
+            margin-top: 20px;
+            background-color: #32CD32;
+            color: #121212;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Game UI
   return (
     <div className="eden-game-container">
       <div className="game-header">
@@ -112,11 +219,7 @@ const EdenGameNew: React.FC = () => {
       </div>
       
       <div className="game-canvas-container">
-        <canvas 
-          ref={canvasRef} 
-          className="game-canvas"
-          tabIndex={0} // Make canvas focusable to capture keyboard events
-        />
+        <div ref={canvasRef} className="canvas-wrapper"></div>
       </div>
       
       <div className="game-instructions">
@@ -130,8 +233,7 @@ const EdenGameNew: React.FC = () => {
         </ul>
       </div>
       
-      {/* Game UI styling */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style>{`
         .eden-game-container {
           display: flex;
           flex-direction: column;
@@ -199,10 +301,15 @@ const EdenGameNew: React.FC = () => {
           box-shadow: 0 0 20px rgba(50, 205, 50, 0.3);
         }
         
+        .canvas-wrapper {
+          width: 100%;
+          height: 100%;
+        }
+        
         .game-canvas {
           display: block;
           background-color: #000000;
-          image-rendering: pixelated; /* Crisp pixel art rendering */
+          image-rendering: pixelated;
           image-rendering: -moz-crisp-edges;
           image-rendering: crisp-edges;
         }
