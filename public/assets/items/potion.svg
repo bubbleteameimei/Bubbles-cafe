@@ -1,38 +1,28 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="32" height="32" version="1.1" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <!-- Health Potion -->
-  <g id="health-potion">
-    <!-- Bottle -->
-    <path d="M12,4 L20,4 L20,12 C20,16.4183 16.4183,20 12,20 L12,4 Z" fill="#E91E63" stroke="#C2185B" stroke-width="1"/>
-    <path d="M20,4 L20,12 C20,16.4183 16.4183,20 12,20 L12,12 C12,7.58172 15.5817,4 20,4 Z" fill="#F06292" stroke="#C2185B" stroke-width="1"/>
-    
-    <!-- Cork -->
-    <rect x="13" y="1" width="6" height="3" rx="1" fill="#8D6E63" stroke="#6D4C41" stroke-width="1"/>
-    
-    <!-- Highlight -->
-    <ellipse cx="14" cy="10" rx="1.5" ry="2" fill="#F8BBD0" opacity="0.6"/>
-    
-    <!-- Bubbles -->
-    <circle cx="16" cy="13" r="1" fill="#F8BBD0" opacity="0.8"/>
-    <circle cx="14" cy="16" r="0.8" fill="#F8BBD0" opacity="0.8"/>
-    <circle cx="17" cy="17" r="0.6" fill="#F8BBD0" opacity="0.8"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Eden's Hollow Pixel Art Health Potion -->
   
-  <!-- Mana Potion (Second potion in sprite sheet) -->
-  <g id="mana-potion" transform="translate(0, 20)">
-    <!-- Bottle -->
-    <path d="M12,4 L20,4 L20,12 C20,16.4183 16.4183,20 12,20 L12,4 Z" fill="#2196F3" stroke="#1976D2" stroke-width="1"/>
-    <path d="M20,4 L20,12 C20,16.4183 16.4183,20 12,20 L12,12 C12,7.58172 15.5817,4 20,4 Z" fill="#64B5F6" stroke="#1976D2" stroke-width="1"/>
-    
-    <!-- Cork -->
-    <rect x="13" y="1" width="6" height="3" rx="1" fill="#8D6E63" stroke="#6D4C41" stroke-width="1"/>
-    
-    <!-- Highlight -->
-    <ellipse cx="14" cy="10" rx="1.5" ry="2" fill="#BBDEFB" opacity="0.6"/>
-    
-    <!-- Bubbles -->
-    <circle cx="16" cy="13" r="1" fill="#BBDEFB" opacity="0.8"/>
-    <circle cx="14" cy="16" r="0.8" fill="#BBDEFB" opacity="0.8"/>
-    <circle cx="17" cy="17" r="0.6" fill="#BBDEFB" opacity="0.8"/>
-  </g>
+  <!-- Potion bottle shape -->
+  <path d="M12,8 L20,8 L20,12 C20,12 24,16 24,20 C24,24 20,28 16,28 C12,28 8,24 8,20 C8,16 12,12 12,12 Z" fill="#BD2CFF" opacity="0.9"/>
+  
+  <!-- Bottle neck -->
+  <rect x="14" y="5" width="4" height="3" fill="#A020F0"/>
+  
+  <!-- Bottle cap -->
+  <rect x="13" y="3" width="6" height="2" fill="#4B0082"/>
+  
+  <!-- Liquid inside -->
+  <path d="M12,13 L20,13 C20,13 22,16 22,20 C22,22 20,26 16,26 C12,26 10,22 10,20 C10,16 12,13 12,13 Z" fill="#FF0066"/>
+  
+  <!-- Bubbles in the potion -->
+  <circle cx="14" cy="16" r="1.5" fill="#FFFFFF" opacity="0.8"/>
+  <circle cx="17" cy="19" r="1" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="15" cy="22" r="1.2" fill="#FFFFFF" opacity="0.7"/>
+  
+  <!-- Bottle highlights (2x2 pixel squares for pixel art look) -->
+  <rect x="14" y="10" width="2" height="2" fill="#FFFFFF" opacity="0.4"/>
+  <rect x="18" y="14" width="2" height="2" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- Pixel art detail for potion glow effect -->
+  <path d="M12,24 L10,26 L9,24 L10,22 Z" fill="#FF99CC" opacity="0.6"/>
+  <path d="M20,24 L22,26 L23,24 L22,22 Z" fill="#FF99CC" opacity="0.6"/>
 </svg>

@@ -10,10 +10,12 @@ import { Link } from 'wouter';
 // and only render the game container when we're sure Phaser is available
 const GameContainer = React.lazy(() => import('../../components/GameContainer'));
 
-// Ensure Phaser is in the global namespace
+// Ensure Phaser and loader variables are in the global namespace
 declare global {
   interface Window {
     Phaser: any;
+    PHASER_LOADING_PROMISE: Promise<any>;
+    PHASER_LOADER_EXECUTED: boolean;
   }
 }
 
@@ -25,59 +27,69 @@ export default function EdenGame() {
   const [loadingPhaser, setLoadingPhaser] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load Phaser library on component mount
+  // Use pre-loaded Phaser from index.html
   useEffect(() => {
-    const loadPhaserScript = async () => {
+    const checkPhaserAvailability = async () => {
       try {
-        // Check if Phaser is already available
+        console.log("Checking Phaser availability...");
+        setLoadingPhaser(true);
+        
+        // Check if Phaser is immediately available (from index.html script)
         if (window.Phaser) {
-          console.log("Phaser is already loaded:", window.Phaser.VERSION);
+          console.log("Phaser is loaded directly:", window.Phaser.VERSION);
           setPhaserLoaded(true);
           setLoadingPhaser(false);
           return;
         }
-
-        console.log("Loading Phaser script...");
-        setLoadingPhaser(true);
-
-        // Create script element
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
-        script.async = true;
         
-        // Create promise to handle script loading
-        const loadPromise = new Promise<void>((resolve, reject) => {
-          script.onload = () => {
-            console.log("Phaser script loaded successfully:", window.Phaser?.VERSION);
-            resolve();
-          };
-          script.onerror = () => {
-            reject(new Error("Failed to load Phaser script"));
-          };
-        });
-        
-        // Add script to document
-        document.head.appendChild(script);
-        
-        // Wait for script to load
-        await loadPromise;
-        
-        // Verify Phaser is now available
-        if (!window.Phaser) {
-          throw new Error("Phaser failed to initialize correctly");
+        // Check if phaser-loader.js has run and created a loading promise
+        if (window.PHASER_LOADING_PROMISE) {
+          console.log("Phaser is being loaded via loader script, waiting...");
+          try {
+            // Wait for the loading promise to resolve
+            await window.PHASER_LOADING_PROMISE;
+            console.log("Phaser loader script completed:", window.Phaser?.VERSION);
+            setPhaserLoaded(true);
+          } catch (loaderError) {
+            throw new Error(`Phaser loader script failed: ${loaderError}`);
+          }
+        } else {
+          // Neither Phaser nor the loader script is available, try to load it directly
+          console.log("Loading Phaser as fallback (no loader script detected)...");
+          
+          const script = document.createElement('script');
+          script.src = '/assets/js/phaser.min.js';
+          script.async = true;
+          
+          const loadPromise = new Promise<void>((resolve, reject) => {
+            script.onload = () => {
+              console.log("Fallback Phaser loaded:", window.Phaser?.VERSION);
+              resolve();
+            };
+            script.onerror = () => {
+              reject(new Error("Failed to load Phaser via fallback method"));
+            };
+          });
+          
+          document.head.appendChild(script);
+          await loadPromise;
         }
         
-        // Update state
+        // Final verification
+        if (!window.Phaser) {
+          throw new Error("Phaser still not available after loading attempts");
+        }
+        
         setPhaserLoaded(true);
         setLoadingPhaser(false);
-      } catch (err) {
-        console.error("Error loading Phaser:", err);
+      } catch (err: Error | unknown) {
+        console.error("Error ensuring Phaser availability:", err);
         setError(`Failed to load game engine: ${err instanceof Error ? err.message : String(err)}`);
         setLoadingPhaser(false);
       }
     };
 
-    loadPhaserScript();
+    checkPhaserAvailability();
     
     // Cleanup function
     return () => {

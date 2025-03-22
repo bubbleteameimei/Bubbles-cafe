@@ -1,119 +1,84 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="256" height="256" version="1.1" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <!-- Grass tile (0,0) -->
-  <rect x="0" y="0" width="16" height="16" fill="#4CAF50"/>
-  <path d="M0,0 L16,0 L16,16 L0,16 Z" fill="none" stroke="#45A049" stroke-width="0.5"/>
-  <path d="M2,2 L4,5 M7,3 L10,6 M12,1 L14,3 M3,11 L6,14 M10,10 L13,12" stroke="#3D9142" stroke-width="0.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 64">
+  <!-- Eden's Hollow Tileset -->
+  <!-- Row 1: Basic terrain tiles -->
   
-  <!-- Dirt tile (16,0) -->
-  <rect x="16" y="0" width="16" height="16" fill="#8B4513"/>
-  <path d="M16,0 L32,0 L32,16 L16,16 Z" fill="none" stroke="#7A3D10" stroke-width="0.5"/>
-  <path d="M17,4 L19,4 M22,2 L24,2 M27,3 L30,3 M18,7 L20,7 M26,9 L29,9 M20,12 L22,12 M28,13 L30,13" stroke="#6A3810" stroke-width="0.5"/>
+  <!-- Tile 1: Wall (Dark Green with subtle texture) -->
+  <g id="wall-tile">
+    <rect x="0" y="0" width="32" height="32" fill="#1E5128"/>
+    <rect x="0" y="0" width="16" height="16" fill="#143718" opacity="0.3"/>
+    <rect x="16" y="16" width="16" height="16" fill="#143718" opacity="0.3"/>
+    <rect x="4" y="4" width="4" height="4" fill="#0C2010" opacity="0.2"/>
+    <rect x="20" y="10" width="4" height="4" fill="#0C2010" opacity="0.2"/>
+    <rect x="12" y="20" width="4" height="4" fill="#0C2010" opacity="0.2"/>
+    <rect x="24" y="24" width="4" height="4" fill="#0C2010" opacity="0.2"/>
+  </g>
   
-  <!-- Water tile (32,0) -->
-  <rect x="32" y="0" width="16" height="16" fill="#2196F3"/>
-  <path d="M32,0 L48,0 L48,16 L32,16 Z" fill="none" stroke="#1E88E5" stroke-width="0.5"/>
-  <path d="M32,4 Q36,2 40,4 Q44,6 48,4 M32,10 Q36,8 40,10 Q44,12 48,10" stroke="#1976D2" stroke-width="0.5" fill="none"/>
+  <!-- Tile 2: Edge terrain (Regular Green) -->
+  <g id="edge-tile">
+    <rect x="32" y="0" width="32" height="32" fill="#2D6A21"/>
+    <path d="M32,0 L64,0 L64,32 L32,32 Z" fill="#2D6A21"/>
+    <path d="M32,8 L40,8 L40,16 L32,16 Z" fill="#387D2A" opacity="0.7"/>
+    <path d="M48,16 L56,16 L56,24 L48,24 Z" fill="#387D2A" opacity="0.7"/>
+    <path d="M40,24 L48,24 L48,32 L40,32 Z" fill="#387D2A" opacity="0.7"/>
+  </g>
   
-  <!-- Stone tile (48,0) -->
-  <rect x="48" y="0" width="16" height="16" fill="#9E9E9E"/>
-  <path d="M48,0 L64,0 L64,16 L48,16 Z" fill="none" stroke="#757575" stroke-width="0.5"/>
-  <path d="M48,4 L52,4 L52,8 L48,8 Z M54,2 L60,2 L60,6 L54,6 Z M51,10 L57,10 L57,14 L51,14 Z M58,9 L63,9 L63,13 L58,13 Z" fill="#757575" stroke="#707070" stroke-width="0.5"/>
+  <!-- Tile 3: Path/Grass (Light Green) -->
+  <g id="grass-tile">
+    <rect x="64" y="0" width="32" height="32" fill="#52A336"/>
+    <path d="M64,0 L96,0 L96,32 L64,32 Z" fill="#52A336"/>
+    <!-- Grass blades -->
+    <path d="M68,4 L72,8 L68,8 Z" fill="#7CFC00" opacity="0.5"/>
+    <path d="M84,12 L88,16 L84,16 Z" fill="#7CFC00" opacity="0.5"/>
+    <path d="M74,24 L78,28 L74,28 Z" fill="#7CFC00" opacity="0.5"/>
+    <path d="M90,20 L94,24 L90,24 Z" fill="#7CFC00" opacity="0.5"/>
+  </g>
   
-  <!-- Sand tile (64,0) -->
-  <rect x="64" y="0" width="16" height="16" fill="#FDD835"/>
-  <path d="M64,0 L80,0 L80,16 L64,16 Z" fill="none" stroke="#F9A825" stroke-width="0.5"/>
-  <path d="M67,3 L69,3 M71,2 L73,2 M76,4 L78,4 M66,7 L68,7 M72,6 L74,6 M76,8 L78,8 M68,11 L70,11 M73,13 L76,13" stroke="#F9A825" stroke-width="0.5"/>
+  <!-- Tile 4: Dirt/Path (Brown) -->
+  <g id="dirt-tile">
+    <rect x="96" y="0" width="32" height="32" fill="#8B6914"/>
+    <path d="M96,0 L128,0 L128,32 L96,32 Z" fill="#8B6914"/>
+    <!-- Dirt texture -->
+    <path d="M100,8 L104,12 L100,12 Z" fill="#6F5118" opacity="0.7"/>
+    <path d="M116,4 L120,8 L116,8 Z" fill="#6F5118" opacity="0.7"/>
+    <path d="M108,20 L112,24 L108,24 Z" fill="#6F5118" opacity="0.7"/>
+    <path d="M120,24 L124,28 L120,28 Z" fill="#6F5118" opacity="0.7"/>
+  </g>
   
-  <!-- Path tile (0,16) -->
-  <rect x="0" y="16" width="16" height="16" fill="#CDAF95"/>
-  <path d="M0,16 L16,16 L16,32 L0,32 Z" fill="none" stroke="#BFA085" stroke-width="0.5"/>
-  <path d="M1,20 L3,20 M6,18 L9,18 M12,19 L15,19 M2,24 L5,24 M8,23 L11,23 M4,28 L7,28 M10,29 L14,29" stroke="#BFA085" stroke-width="0.5"/>
+  <!-- Row 2: Special tiles -->
   
-  <!-- Bush tile (16,16) -->
-  <rect x="16" y="16" width="16" height="16" fill="#4CAF50"/>
-  <path d="M16,16 L32,16 L32,32 L16,32 Z" fill="none" stroke="#45A049" stroke-width="0.5"/>
-  <path d="M16,22 Q20,18 24,22 Q28,18 32,22 L32,27 Q28,31 24,27 Q20,31 16,27 Z" fill="#388E3C" stroke="#2E7D32" stroke-width="0.5"/>
+  <!-- Tile 5: Water (Blue with ripple effect) -->
+  <g id="water-tile">
+    <rect x="0" y="32" width="32" height="32" fill="#0099CC"/>
+    <path d="M0,40 Q8,36 16,40 Q24,44 32,40 L32,48 Q24,52 16,48 Q8,44 0,48 Z" fill="#4DB9DB" opacity="0.5"/>
+    <path d="M0,56 Q8,52 16,56 Q24,60 32,56 L32,64 Q24,68 16,64 Q8,60 0,64 Z" fill="#4DB9DB" opacity="0.5"/>
+  </g>
   
-  <!-- Tree trunk tile (32,16) -->
-  <rect x="32" y="16" width="16" height="16" fill="#795548"/>
-  <path d="M32,16 L48,16 L48,32 L32,32 Z" fill="none" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="36" y="16" width="8" height="16" fill="#6D4C41" stroke="#5D4037" stroke-width="0.5"/>
+  <!-- Tile 6: Stone (Gray with texture) -->
+  <g id="stone-tile">
+    <rect x="32" y="32" width="32" height="32" fill="#808080"/>
+    <!-- Stone texture -->
+    <path d="M36,36 L44,36 L44,44 L36,44 Z" fill="#707070"/>
+    <path d="M52,40 L60,40 L60,48 L52,48 Z" fill="#707070"/>
+    <path d="M40,52 L48,52 L48,60 L40,60 Z" fill="#707070"/>
+  </g>
   
-  <!-- Tree top tile (48,16) -->
-  <rect x="48" y="16" width="16" height="16" fill="#388E3C"/>
-  <path d="M48,16 L64,16 L64,32 L48,32 Z" fill="none" stroke="#2E7D32" stroke-width="0.5"/>
-  <path d="M48,28 L56,16 L64,28 Z" fill="#2E7D32" stroke="#1B5E20" stroke-width="0.5"/>
-  <circle cx="56" cy="24" r="4" fill="#388E3C" stroke="#2E7D32" stroke-width="0.5"/>
+  <!-- Tile 7: Sand (Light beige) -->
+  <g id="sand-tile">
+    <rect x="64" y="32" width="32" height="32" fill="#F2D16B"/>
+    <!-- Sand texture -->
+    <path d="M68,36 L72,40 L68,40 Z" fill="#DFC270" opacity="0.5"/>
+    <path d="M80,44 L84,48 L80,48 Z" fill="#DFC270" opacity="0.5"/>
+    <path d="M72,52 L76,56 L72,56 Z" fill="#DFC270" opacity="0.5"/>
+    <path d="M88,56 L92,60 L88,60 Z" fill="#DFC270" opacity="0.5"/>
+  </g>
   
-  <!-- Rock tile (64,16) -->
-  <rect x="64" y="16" width="16" height="16" fill="#9E9E9E"/>
-  <path d="M64,16 L80,16 L80,32 L64,32 Z" fill="none" stroke="#757575" stroke-width="0.5"/>
-  <path d="M68,16 L76,16 L80,20 L80,28 L76,32 L68,32 L64,28 L64,20 Z" fill="#757575" stroke="#616161" stroke-width="0.5"/>
-  
-  <!-- Wooden floor tile (0,32) -->
-  <rect x="0" y="32" width="16" height="16" fill="#A1887F"/>
-  <path d="M0,32 L16,32 L16,48 L0,48 Z" fill="none" stroke="#8D6E63" stroke-width="0.5"/>
-  <path d="M0,36 L16,36 M0,40 L16,40 M0,44 L16,44" stroke="#8D6E63" stroke-width="0.5"/>
-  
-  <!-- Wall tile (16,32) -->
-  <rect x="16" y="32" width="16" height="16" fill="#BDBDBD"/>
-  <path d="M16,32 L32,32 L32,48 L16,48 Z" fill="none" stroke="#9E9E9E" stroke-width="0.5"/>
-  <path d="M16,36 L32,36 M16,40 L32,40 M16,44 L32,44 M20,32 L20,48 M24,32 L24,48 M28,32 L28,48" stroke="#9E9E9E" stroke-width="0.5"/>
-  
-  <!-- Door closed tile (32,32) -->
-  <rect x="32" y="32" width="16" height="16" fill="#795548"/>
-  <path d="M32,32 L48,32 L48,48 L32,48 Z" fill="none" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="34" y="33" width="12" height="15" fill="#6D4C41" stroke="#5D4037" stroke-width="0.5"/>
-  <circle cx="44" cy="40" r="1" fill="#FFC107"/>
-  
-  <!-- Door open tile (48,32) -->
-  <rect x="48" y="32" width="16" height="16" fill="#795548"/>
-  <path d="M48,32 L64,32 L64,48 L48,48 Z" fill="none" stroke="#6D4C41" stroke-width="0.5"/>
-  <path d="M48,32 L61,33 L61,47 L48,48 Z" fill="#5D4037" stroke="#4E342E" stroke-width="0.5"/>
-  <circle cx="59" cy="40" r="1" fill="#FFC107"/>
-  
-  <!-- Window tile (64,32) -->
-  <rect x="64" y="32" width="16" height="16" fill="#BDBDBD"/>
-  <path d="M64,32 L80,32 L80,48 L64,48 Z" fill="none" stroke="#9E9E9E" stroke-width="0.5"/>
-  <rect x="67" y="35" width="10" height="10" fill="#90CAF9" stroke="#42A5F5" stroke-width="0.5"/>
-  <path d="M72,35 L72,45 M67,40 L77,40" stroke="#42A5F5" stroke-width="0.5"/>
-
-  <!-- Flower tile (0,48) -->
-  <rect x="0" y="48" width="16" height="16" fill="#4CAF50"/>
-  <path d="M0,48 L16,48 L16,64 L0,64 Z" fill="none" stroke="#45A049" stroke-width="0.5"/>
-  <path d="M8,48 L8,58" stroke="#33691E" stroke-width="1"/>
-  <circle cx="8" cy="52" r="3" fill="#E91E63" stroke="#C2185B" stroke-width="0.5"/>
-  <circle cx="11" cy="55" r="2" fill="#F06292" stroke="#C2185B" stroke-width="0.5"/>
-  <circle cx="5" cy="55" r="2" fill="#F06292" stroke="#C2185B" stroke-width="0.5"/>
-  
-  <!-- Chest closed tile (16,48) -->
-  <rect x="16" y="48" width="16" height="16" fill="#A1887F"/>
-  <path d="M16,48 L32,48 L32,64 L16,64 Z" fill="none" stroke="#8D6E63" stroke-width="0.5"/>
-  <rect x="18" y="52" width="12" height="8" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="19" y="53" width="10" height="1" fill="#6D4C41"/>
-  <rect x="24" cy="54" width="2" height="2" fill="#FFC107" stroke="#FFA000" stroke-width="0.5"/>
-  
-  <!-- Chest open tile (32,48) -->
-  <rect x="32" y="48" width="16" height="16" fill="#A1887F"/>
-  <path d="M32,48 L48,48 L48,64 L32,64 Z" fill="none" stroke="#8D6E63" stroke-width="0.5"/>
-  <rect x="34" y="52" width="12" height="8" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <path d="M34,52 L34,60 L46,60 L46,52 L40,49 L34,52 Z" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="37" y="54" width="6" height="4" fill="#6D4C41"/>
-  <circle cx="40" cy="51" r="1" fill="#FFC107"/>
-  
-  <!-- Table tile (48,48) -->
-  <rect x="48" y="48" width="16" height="16" fill="#A1887F"/>
-  <path d="M48,48 L64,48 L64,64 L48,64 Z" fill="none" stroke="#8D6E63" stroke-width="0.5"/>
-  <rect x="50" y="52" width="12" height="2" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="52" y="54" width="2" height="8" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="58" y="54" width="2" height="8" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  
-  <!-- Chair tile (64,48) -->
-  <rect x="64" y="48" width="16" height="16" fill="#A1887F"/>
-  <path d="M64,48 L80,48 L80,64 L64,64 Z" fill="none" stroke="#8D6E63" stroke-width="0.5"/>
-  <rect x="68" y="52" width="8" height="2" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="68" y="54" width="1" height="6" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="75" y="54" width="1" height="6" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
-  <rect x="68" y="54" width="8" height="1" fill="#8D6E63" stroke="#6D4C41" stroke-width="0.5"/>
+  <!-- Tile 8: Dark stone/special (Dark gray) -->
+  <g id="dark-stone-tile">
+    <rect x="96" y="32" width="32" height="32" fill="#4D4D4D"/>
+    <!-- Special effects - pixels that look like crystals -->
+    <rect x="104" y="40" width="2" height="2" fill="#A180FF"/>
+    <rect x="116" y="44" width="2" height="2" fill="#A180FF"/>
+    <rect x="108" y="52" width="2" height="2" fill="#A180FF"/>
+    <rect x="120" y="56" width="2" height="2" fill="#A180FF"/>
+  </g>
 </svg>

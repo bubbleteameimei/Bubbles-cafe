@@ -4,12 +4,13 @@
  */
 
 import AssetLoader, { defaultAssets } from '../utils/assetLoader';
-import PixelArtGenerator from '../utils/pixelArtGenerator';
+import PixelArtGenerator, { SpriteSheetConfig } from '../utils/pixelArtGenerator';
 
 export default class BootScene extends Phaser.Scene {
   private loadingText!: Phaser.GameObjects.Text;
   private progressBar!: Phaser.GameObjects.Graphics;
   private progressBox!: Phaser.GameObjects.Graphics;
+  private pixelArtGenerator!: PixelArtGenerator;
   
   constructor() {
     super('BootScene');
@@ -89,95 +90,177 @@ export default class BootScene extends Phaser.Scene {
    * Process loaded assets (applying pixel art filters, etc.)
    */
   private processAssets(): void {
-    // Create pixel art generator
-    const pixelArtGenerator = new PixelArtGenerator(this);
+    console.log('Starting asset processing...');
     
-    // Apply pixel art style to the loaded assets
-    // Create copies of textures with "_pixel" suffix
-    // We'll use the original textures since our SVGs are already pixel art style
-    this.createPixelVersion('coin');
-    this.createPixelVersion('potion');
-    this.createPixelVersion('chest');
+    // Create pixel art generator with debug mode enabled
+    this.pixelArtGenerator = new PixelArtGenerator(this, true);
     
-    console.log('Items loaded successfully');
-    console.log('Coin dimensions:', this.textures.get('coin').source[0].width, this.textures.get('coin').source[0].height);
-    console.log('Potion dimensions:', this.textures.get('potion').source[0].width, this.textures.get('potion').source[0].height);
-    console.log('Chest dimensions:', this.textures.get('chest').source[0].width, this.textures.get('chest').source[0].height);
+    // Process item assets
+    this.processItemAssets();
     
     // Process player spritesheet
-    // Use the player SVG directly as the pixel version
-    this.createPixelVersion('player');
+    this.processPlayerSprite();
     
-    console.log('Player texture dimensions:', 
-      this.textures.get('player').source[0].width,
-      this.textures.get('player').source[0].height
-    );
+    // Process environment assets
+    this.processEnvironmentAssets();
     
-    // Create player animations
-    this.createPlayerAnimations();
+    // Create special effects textures
+    this.createSpecialEffects();
     
     console.log('Assets processed successfully');
   }
   
   /**
-   * Create a pixelated version of a texture
+   * Process item assets (coins, potions, chests)
    */
-  private createPixelVersion(key: string): void {
+  private processItemAssets(): void {
     try {
-      // Use the original texture directly for simplicity 
-      // This helps us avoid TypeScript errors with Phaser's types
+      // Process each item asset
+      const itemKeys = ['coin', 'potion', 'chest'];
       
-      console.log(`Loading ${key} as ${key}_pixel directly (without filtering)`);
-      
-      // The proper approach would be to apply a pixel shader to the texture
-      // or use Canvas to create a new texture with pixel art filtering
-      
-      // However, for now we'll use a simpler approach
-      // We'll tell Phaser to use the original texture where the _pixel version
-      // is expected - this is possible because our SVGs are already pixel art style
-      
-      // Check which texture keys are already loaded
-      console.log('Available textures:', Object.keys((this.textures as any).list || {}));
-      
-      // (Note: In a production version, we'd implement proper pixelation here)
-      
-      // Force the game to use the original texture when _pixel is requested
-      this.load.on('complete', () => {
-        if (this.textures.exists(key) && !this.textures.exists(key + '_pixel')) {
-          console.log(`Using ${key} in place of ${key}_pixel as a fallback`);
+      itemKeys.forEach(key => {
+        if (this.textures.exists(key)) {
+          // Create a pixelated version if the original exists
+          const pixelKey = `${key}_pixel`;
+          this.pixelArtGenerator.pixelateTexture(key, pixelKey);
+          
+          // Get dimensions for logging
+          const texture = this.textures.get(key);
+          console.log(`${key} dimensions:`, texture.source[0].width, texture.source[0].height);
+          
+          // For chests, we need to handle the open/closed states
+          if (key === 'chest') {
+            // For now we'll use the same texture for both states
+            // In a full implementation, we would have separate frames
+            this.anims.create({
+              key: 'chest_open',
+              frames: [
+                { key: pixelKey, frame: 0 }
+              ],
+              frameRate: 5,
+              repeat: 0
+            });
+          }
+          
+          // Add bobbing animation for coins
+          if (key === 'coin') {
+            // We don't have actual frames for coin rotation,
+            // so we'll use the game loop to handle the visual effect
+            console.log(`Created coin visual effect`);
+          }
+        } else {
+          console.warn(`Texture '${key}' not found`);
         }
       });
       
+      console.log('Item assets processed successfully');
     } catch (error) {
-      console.error(`Error handling texture for ${key}:`, error);
+      console.error('Error processing item assets:', error);
     }
   }
   
   /**
-   * Create animations for the player character
+   * Process player spritesheet
    */
-  private createPlayerAnimations(): void {
+  private processPlayerSprite(): void {
     try {
-      console.log('Creating player animations');
-      const frameRate = 10;
+      console.log('Processing player sprite');
       const playerKey = 'player';
       
-      // First check if the texture exists and has the needed frames
+      // Check if player texture exists
       if (!this.textures.exists(playerKey)) {
         console.error(`Player texture '${playerKey}' not found`);
         return;
       }
       
-      // Get texture frame details 
+      // Get player texture dimensions
       const texture = this.textures.get(playerKey);
-      // Access texture properties safely
-      const frameCount = (texture as any).frameTotal || 0;
-      console.log(`Player texture details: frames=${frameCount}`);
+      const width = texture.source[0].width;
+      const height = texture.source[0].height;
+      console.log(`Player texture dimensions: ${width}x${height}`);
       
-      // Create animation config objects with better error handling
+      // Create pixelated version
+      const playerPixelKey = 'player_pixel';
+      this.pixelArtGenerator.pixelateTexture(playerKey, playerPixelKey);
+      
+      // Define player spritesheet configuration
+      const playerSpriteConfig: SpriteSheetConfig = {
+        frameWidth: 24,
+        frameHeight: 32,
+        margin: 0,
+        spacing: 0,
+        // 4 rows (directions) with 4 frames each
+        rows: 4,
+        columns: 4,
+        // Define animations for each direction
+        animations: {
+          'player_down': {
+            frames: [0, 1, 2, 3],
+            frameRate: 10,
+            repeat: -1
+          },
+          'player_left': {
+            frames: [4, 5, 6, 7],
+            frameRate: 10,
+            repeat: -1
+          },
+          'player_right': {
+            frames: [8, 9, 10, 11],
+            frameRate: 10,
+            repeat: -1
+          },
+          'player_up': {
+            frames: [12, 13, 14, 15],
+            frameRate: 10,
+            repeat: -1
+          },
+          // Idle animations (just the first frame of each direction)
+          'player_idle_down': {
+            frames: [0],
+            frameRate: 1,
+            repeat: 0
+          },
+          'player_idle_left': {
+            frames: [4],
+            frameRate: 1,
+            repeat: 0
+          },
+          'player_idle_right': {
+            frames: [8],
+            frameRate: 1,
+            repeat: 0
+          },
+          'player_idle_up': {
+            frames: [12],
+            frameRate: 1,
+            repeat: 0
+          }
+        }
+      };
+      
+      // Process the player spritesheet
+      this.pixelArtGenerator.processSpriteSheet(playerPixelKey, playerSpriteConfig);
+      
+      console.log('Player sprite processed successfully');
+    } catch (error) {
+      console.error('Error processing player sprite:', error);
+      this.createFallbackPlayerAnimations();
+    }
+  }
+  
+  /**
+   * Create fallback player animations as a last resort
+   */
+  private createFallbackPlayerAnimations(): void {
+    try {
+      console.log('Creating fallback player animations');
+      const playerKey = 'player';
+      const frameRate = 10;
+      
+      // Simplified animation creation function
       const createAnim = (key: string, start: number, end: number, repeat = -1) => {
         try {
-          // Create simple animation frames array
+          // Create frames array
           const frames = [];
           for (let i = start; i <= end; i++) {
             frames.push({ key: playerKey, frame: i });
@@ -190,14 +273,13 @@ export default class BootScene extends Phaser.Scene {
             frameRate,
             repeat
           });
-          console.log(`Created animation: ${key}`);
-        } catch (error) {
-          console.error(`Failed to create animation ${key}:`, error);
+        } catch (err) {
+          console.error(`Failed to create animation ${key}:`, err);
           
-          // Fallback to single frame animation
+          // Ultra fallback to single frame
           this.anims.create({
             key,
-            frames: [{ key: playerKey, frame: start }],
+            frames: [{ key: playerKey, frame: 0 }],
             frameRate: 1,
             repeat: 0
           });
@@ -216,9 +298,78 @@ export default class BootScene extends Phaser.Scene {
       createAnim('player_idle_right', 8, 8, 0);
       createAnim('player_idle_up', 12, 12, 0);
       
-      console.log('Player animations created successfully');
+      console.log('Fallback player animations created');
     } catch (error) {
-      console.error('Failed to create player animations:', error);
+      console.error('Failed to create fallback player animations:', error);
+    }
+  }
+  
+  /**
+   * Process environment assets (tileset, map, etc.)
+   */
+  private processEnvironmentAssets(): void {
+    try {
+      // The tileset is already in a pixel art style,
+      // so we don't need to process it further
+      console.log('Environment assets processed');
+    } catch (error) {
+      console.error('Error processing environment assets:', error);
+    }
+  }
+  
+  /**
+   * Create special effects textures for use in the game
+   */
+  private createSpecialEffects(): void {
+    try {
+      // Create a simple particle texture
+      this.pixelArtGenerator.generateRandomPattern(
+        8, 8, 
+        [0xffffff, 0xffff00, 0xff8800], 
+        'particle_glow',
+        2
+      );
+      
+      // Create a shadow texture using arc rather than ellipse for compatibility
+      const shadowGraphics = this.add.graphics();
+      shadowGraphics.fillStyle(0x000000, 1);
+      // Draw an oval shadow using arcs instead of fillEllipse
+      shadowGraphics.beginPath();
+      shadowGraphics.arc(8, 4, 8, 0, Math.PI * 2);
+      shadowGraphics.closePath();
+      shadowGraphics.fill();
+      shadowGraphics.generateTexture('shadow', 16, 8);
+      shadowGraphics.destroy();
+      
+      console.log('Special effects textures created');
+    } catch (error) {
+      console.error('Error creating special effects:', error);
+    }
+  }
+  
+  /**
+   * Create a pixelated version of a texture (fallback method)
+   */
+  private createPixelVersion(key: string): void {
+    try {
+      // Use the original texture directly since our SVGs are already pixel art style
+      console.log(`Using ${key} directly as pixel art`);
+      
+      // Add the texture with a _pixel suffix if it doesn't exist
+      const pixelKey = `${key}_pixel`;
+      if (!this.textures.exists(pixelKey) && this.textures.exists(key)) {
+        // Create a new render texture to clone the original
+        const texture = this.textures.get(key);
+        const { width, height } = texture.source[0];
+        
+        const renderTexture = this.add.renderTexture(0, 0, width, height);
+        renderTexture.draw(key, 0, 0);
+        renderTexture.saveTexture(pixelKey);
+        
+        console.log(`Created ${pixelKey} from ${key}`);
+      }
+    } catch (error) {
+      console.error(`Error creating pixel version for ${key}:`, error);
     }
   }
 }

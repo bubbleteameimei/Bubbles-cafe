@@ -10,6 +10,8 @@ import Game from '../game/Game';
 declare global {
   interface Window {
     Phaser: any;
+    PHASER_LOADING_PROMISE: Promise<any>;
+    PHASER_LOADER_EXECUTED: boolean;
   }
 }
 
@@ -40,29 +42,48 @@ interface GameContainerProps {
 }
 
 /**
- * Load Phaser library dynamically if it's not already available
+ * Load or access the Phaser library
  */
 const loadPhaserLibrary = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if Phaser is already loaded
     if (window.Phaser) {
-      console.log('Phaser is already loaded');
+      console.log('GameContainer: Phaser is already loaded:', window.Phaser.VERSION);
       resolve();
       return;
     }
 
-    // Create script element to load Phaser
+    // Check if there's a loading promise from phaser-loader.js
+    if (window.PHASER_LOADING_PROMISE) {
+      console.log('GameContainer: Using Phaser loader promise');
+      window.PHASER_LOADING_PROMISE
+        .then(() => {
+          console.log('GameContainer: Phaser loader promise resolved');
+          resolve();
+        })
+        .catch((err: Error | unknown) => {
+          console.error('GameContainer: Phaser loader promise rejected:', err);
+          reject(err);
+        });
+      return;
+    }
+    
+    // Last resort: try to load Phaser ourselves
+    console.log('GameContainer: No pre-existing Phaser or loader, loading directly');
+    
+    // Create script element for our local Phaser copy
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
+    script.src = '/assets/js/phaser.min.js';
     script.async = true;
     
     // Handle script load events
     script.onload = () => {
-      console.log('Phaser library loaded dynamically');
+      console.log('GameContainer: Phaser library loaded dynamically:', window.Phaser?.VERSION);
       resolve();
     };
     
     script.onerror = () => {
+      console.error('GameContainer: Failed to load Phaser library');
       reject(new Error('Failed to load Phaser library'));
     };
     
@@ -104,7 +125,7 @@ export default function GameContainer({
         .then(() => {
           setPhaserLoaded(true);
         })
-        .catch((err) => {
+        .catch((err: Error | unknown) => {
           console.error('Failed to load Phaser:', err);
           setError('Failed to load Phaser game engine. Please try refreshing the page.');
           setLoading(false);
