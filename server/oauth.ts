@@ -380,6 +380,26 @@ export function setupOAuth(app: Express) {
       // Save updates
       const updatedUser = await storage.updateUser(user.id, updateData);
       
+      // Update session with the latest user data
+      if (req.session && req.session.user) {
+        // Update username if changed
+        if (username && username !== user.username) {
+          req.session.user.username = username;
+        }
+        
+        // Update avatar if changed
+        if (metadata && metadata.avatar && metadata.avatar !== req.session.user.avatar) {
+          req.session.user.avatar = metadata.avatar;
+        }
+        
+        // Save the session
+        req.session.save((err) => {
+          if (err) {
+            console.error('[Profile] Error saving session:', err);
+          }
+        });
+      }
+      
       // Return updated profile
       const updatedMetadata = updatedUser.metadata || {};
       res.json({
@@ -413,8 +433,8 @@ export function setupOAuth(app: Express) {
       
       // Define allowed file types
       const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      // Define max file size (5MB)
-      const MAX_FILE_SIZE = 5 * 1024 * 1024;
+      // Define max file size (10MB) - increased to match server limit
+      const MAX_FILE_SIZE = 10 * 1024 * 1024;
       
       // Check if the request's content type is multipart/form-data
       if (!req.headers['content-type']?.includes('multipart/form-data')) {
@@ -522,7 +542,7 @@ export function setupOAuth(app: Express) {
           
           // Check if the file size is too large (adjust for multipart overhead)
           if (fileData.length > MAX_FILE_SIZE) {
-            return res.status(400).json({ error: 'File is too large (max 5MB)' });
+            return res.status(400).json({ error: 'File is too large (max 10MB)' });
           }
           
           // Check file type
@@ -563,9 +583,25 @@ export function setupOAuth(app: Express) {
           // Save the update
           const updatedUser = await storage.updateUser(user.id, updateData);
           
-          // Update session if username changed
-          if (username && username !== user.username && req.session && req.session.user) {
-            req.session.user.username = username;
+          // Update session with latest user data
+          if (req.session && req.session.user) {
+            // Update username if changed
+            if (username && username !== user.username) {
+              req.session.user.username = username;
+            }
+            
+            // Update other user details in session
+            const updatedMetadata = (updatedUser.metadata || {}) as UserMetadata;
+            if (updatedMetadata.photoURL && updatedMetadata.photoURL !== req.session.user.avatar) {
+              req.session.user.avatar = updatedMetadata.photoURL;
+            }
+            
+            // Save the session changes
+            req.session.save((err) => {
+              if (err) {
+                console.error('[Profile] Error saving session:', err);
+              }
+            });
           }
           
           // Return success response

@@ -10,6 +10,9 @@ declare module 'express-session' {
       email: string;
       username: string;
       isAdmin: boolean;
+      avatar?: string;
+      fullName?: string;
+      bio?: string;
     };
   }
 }

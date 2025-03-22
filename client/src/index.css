@@ -5,7 +5,24 @@
 @tailwind utilities;
 
 :root {
-  /* Theme Variables */
+  /* Z-Index System Variables */
+  --z-background: -10;    /* Background elements below content */
+  --z-base: 0;            /* Regular page content */
+  --z-float: 20;          /* Dropdowns, tooltips, floating elements */
+  --z-sticky: 50;         /* Headers, footers, sticky elements */
+  --z-modal-backdrop: 80; /* Modal backgrounds */
+  --z-modal: 100;         /* Modal content, dialogs */
+  --z-notification: 300;  /* Toasts, notification banners */
+  --z-critical: 500;      /* Critical messages, error notifications */
+  --z-overlay: 1000;      /* Global loading indicators */
+  
+  /* Breakpoint System Variables */
+  --breakpoint-xs: 480px;  /* Extra small devices */
+  --breakpoint-sm: 640px;  /* Small devices */
+  --breakpoint-md: 768px;  /* Medium devices */
+  --breakpoint-lg: 1024px; /* Large devices */
+  --breakpoint-xl: 1280px; /* Extra large devices */
+  --breakpoint-2xl: 1536px; /* 2X large devices */
 }
 
 @keyframes pulse-subtle {
@@ -44,7 +61,7 @@
 }
 
 /* Prevent text field zoom on mobile */
-@media screen and (max-width: 767px) {
+@media (max-width: var(--breakpoint-md)) {
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -436,7 +453,7 @@ h4, h5, h6,
 }
 
 /* Mobile styles - Merged with edited responsive adjustments */
-@media (max-width: 640px) {
+@media (max-width: var(--breakpoint-sm)) {
   body {
     font-size: calc(0.9rem + 0.2vw);
   }
@@ -581,7 +598,7 @@ h4, h5, h6,
 /* Prevent content shift on parallax scroll */
 .content-wrapper {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-base);
   background: transparent;
   width: 100%;
   margin: 0;
@@ -708,7 +725,7 @@ input[type="reset"],
 
 .menu-button-container {
   position: relative;
-  z-index: 50;
+  z-index: var(--z-sticky);
   display: inline-block;
 }
 
@@ -734,7 +751,7 @@ input[type="reset"],
 }
 
 .my-z-9999 {
-  z-index: 9999;
+  z-index: var(--z-overlay);
 }
 
   height: 2px;
@@ -805,7 +822,7 @@ input[type="reset"],
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 50;
+  z-index: var(--z-sticky);
   overflow-y: auto;
   background-color: hsl(var(--background));
   padding: 2rem;
@@ -834,7 +851,8 @@ input[type="reset"],
   outline: none;
 }
 .social-interaction {
-  @apply fixed bottom-6 right-6 flex flex-col gap-3 z-50;
+  @apply fixed bottom-6 right-6 flex flex-col gap-3;
+  z-index: var(--z-sticky);
 }
 
 .share-btn {
@@ -843,14 +861,16 @@ input[type="reset"],
 }
 
 .reaction-buttons {
-  @apply fixed left-6 top-6 z-50 
+  @apply fixed left-6 top-6
          bg-background/50 backdrop-blur-sm p-3 rounded-xl shadow-lg
          transition-all duration-300 hover:bg-background/60 hover:shadow-xl;
   min-width: 280px;
+  z-index: var(--z-sticky);
 }
 
 .reaction-buttons .group {
-  @apply relative z-10;
+  @apply relative;
+  z-index: var(--z-base);
 }
 
 .reaction-buttons .group:hover svg {
@@ -891,7 +911,8 @@ input[type="reset"],
 }
 
 .buy-coffee-btn span {
-  @apply relative z-10 transition-all duration-300;
+  @apply relative transition-all duration-300;
+  z-index: var(--z-base);
 }
 
 .buy-coffee-btn:hover span {
@@ -938,7 +959,7 @@ input[type="reset"],
   background-repeat: no-repeat;
   background-attachment: fixed;
   opacity: 1;
-  z-index: -1;
+  z-index: var(--z-background);
   pointer-events: none; /* Prevents the background from capturing clicks */
   background-color: rgba(255, 255, 255, 0.8); /* Fallback color in case the image doesn't load */
 }

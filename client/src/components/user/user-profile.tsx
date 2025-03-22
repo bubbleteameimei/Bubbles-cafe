@@ -32,7 +32,7 @@ interface UserProfileResponse {
   createdAt: string;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export function UserProfile() {
@@ -52,6 +52,7 @@ export function UserProfile() {
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | undefined>(undefined);
+  const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined);
 
   // Query for user profile data
   const { data: profileData, isLoading } = useQuery<UserProfileResponse | null>({
@@ -84,15 +85,17 @@ export function UserProfile() {
     
     if (!files || files.length === 0) {
       setPreviewUrl(null);
+      setSelectedFileName(undefined);
       setFormData(prev => ({ ...prev, avatarFile: null }));
       return;
     }
     
     const file = files[0];
+    setSelectedFileName(file.name);
     
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      setFileError("Image must be less than 5MB");
+      setFileError("Image must be less than 10MB");
       setPreviewUrl(null);
       setFormData(prev => ({ ...prev, avatarFile: null }));
       return;
@@ -110,6 +113,14 @@ export function UserProfile() {
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setFormData(prev => ({ ...prev, avatarFile: file }));
+  };
+
+  // Handle clearing the file input
+  const handleClearFile = () => {
+    setPreviewUrl(null);
+    setSelectedFileName(undefined);
+    setFileError(undefined);
+    setFormData(prev => ({ ...prev, avatarFile: null }));
   };
 
   // Clean up preview URL when component unmounts
@@ -247,8 +258,10 @@ export function UserProfile() {
                   <FileInput
                     accept="image/png,image/jpeg,image/jpg,image/webp"
                     onChange={handleFileChange}
+                    onClear={handleClearFile}
+                    selectedFileName={selectedFileName}
                     error={fileError}
-                    helperText="Upload a profile picture (max 5MB)"
+                    helperText="Upload a profile picture (max 10MB)"
                     className="w-full"
                   />
                 </div>
