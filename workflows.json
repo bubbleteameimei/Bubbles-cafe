@@ -16,6 +16,7 @@
     "persistent": true,
     "type": "web",
     "public_address": "https://${REPL_SLUG}.${REPL_OWNER}.repl.co",
+    "ready_timeout": 30000,
     "restart_on": [
       "package.json",
       "package-lock.json",
