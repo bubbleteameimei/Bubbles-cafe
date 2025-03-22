@@ -51,20 +51,13 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative w-full overflow-x-hidden">
-          {/* Full screen background image */}
+          {/* Full screen background image - using CSS class from index.css */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.2 }}
-            className="fixed inset-0" 
+            className="bg-homepage" 
             style={{
-              backgroundImage: `url('/attached_assets/IMG_4918.jpeg')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundAttachment: 'fixed',
-              width: '100vw',
-              height: '100vh',
               zIndex: 0,
               willChange: 'transform',
               transform: 'translateZ(0)'

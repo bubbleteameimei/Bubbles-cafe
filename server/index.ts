@@ -29,9 +29,18 @@ const HOST = '0.0.0.0';
 let server: ReturnType<typeof createServer>;
 
 // Configure basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+
+// Increase body parser limit for file uploads
+app.use((req, res, next) => {
+  // Skip content-type check for multipart requests
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    return next();
+  }
+  next();
+});
 
 // Configure session
 app.use(session({
