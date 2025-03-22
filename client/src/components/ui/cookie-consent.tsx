@@ -9,22 +9,39 @@ export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if user has already made a choice
-    const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!hasConsent) {
-      // Only show if no choice has been made before
-      setIsVisible(true);
+    try {
+      // Check if user has already made a choice
+      const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+      if (!hasConsent) {
+        // Only show if no choice has been made before
+        setIsVisible(true);
+      }
+    } catch (error) {
+      // Handle any localStorage errors
+      console.warn("Could not access localStorage for cookie consent:", error);
+      // Default to not showing the banner if there's an error
+      setIsVisible(false);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-    setIsVisible(false);
+    try {
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+      setIsVisible(false);
+    } catch (error) {
+      console.warn("Could not store cookie consent:", error);
+      setIsVisible(false);
+    }
   };
 
   const handleDecline = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
-    setIsVisible(false);
+    try {
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
+      setIsVisible(false);
+    } catch (error) {
+      console.warn("Could not store cookie consent:", error);
+      setIsVisible(false);
+    }
   };
 
   if (!isVisible) return null;

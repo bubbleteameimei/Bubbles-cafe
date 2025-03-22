@@ -34,6 +34,11 @@ const defaultPreferences: CookiePreferences = {
  * @returns User's cookie preferences or default if not set
  */
 export function getCookiePreferences(): CookiePreferences {
+  // Use default preferences if we're not in a browser environment
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return defaultPreferences;
+  }
+  
   try {
     const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!saved) return defaultPreferences;
@@ -49,7 +54,7 @@ export function getCookiePreferences(): CookiePreferences {
       essential: true
     };
   } catch (error) {
-    console.error('Error getting cookie preferences:', error);
+    console.warn('Error getting cookie preferences:', error);
     return defaultPreferences;
   }
 }
@@ -71,23 +76,39 @@ export function isCategoryAllowed(category: CookieCategory): boolean {
  * Accept all cookie categories
  */
 export function acceptAllCookies(): void {
-  const newPreferences: CookiePreferences = {
-    essential: true,
-    functional: true,
-    analytics: true,
-    performance: true,
-    marketing: true,
-    lastUpdated: new Date().toISOString()
-  };
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
   
-  localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+  try {
+    const newPreferences: CookiePreferences = {
+      essential: true,
+      functional: true,
+      analytics: true,
+      performance: true,
+      marketing: true,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+  } catch (error) {
+    console.warn('Failed to accept all cookies:', error);
+  }
 }
 
 /**
  * Accept only essential cookies
  */
 export function acceptEssentialCookiesOnly(): void {
-  localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultPreferences));
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+  
+  try {
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultPreferences));
+  } catch (error) {
+    console.warn('Failed to accept essential cookies:', error);
+  }
 }
 
 /**
@@ -95,16 +116,24 @@ export function acceptEssentialCookiesOnly(): void {
  * @param preferences Partial preferences to update
  */
 export function updateCookiePreferences(preferences: Partial<Omit<CookiePreferences, 'lastUpdated'>>): void {
-  const currentPreferences = getCookiePreferences();
-  const newPreferences: CookiePreferences = {
-    ...currentPreferences,
-    ...preferences,
-    // Essential cookies can't be disabled
-    essential: true,
-    lastUpdated: new Date().toISOString()
-  };
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
   
-  localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+  try {
+    const currentPreferences = getCookiePreferences();
+    const newPreferences: CookiePreferences = {
+      ...currentPreferences,
+      ...preferences,
+      // Essential cookies can't be disabled
+      essential: true,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+  } catch (error) {
+    console.warn('Failed to update cookie preferences:', error);
+  }
 }
 
 /**
@@ -112,7 +141,16 @@ export function updateCookiePreferences(preferences: Partial<Omit<CookiePreferen
  * @returns Boolean indicating if the user has made a choice
  */
 export function hasConsentChoice(): boolean {
-  return localStorage.getItem(COOKIE_CONSENT_KEY) !== null;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return false;
+  }
+  
+  try {
+    return localStorage.getItem(COOKIE_CONSENT_KEY) !== null;
+  } catch (error) {
+    console.warn('Failed to check consent choice:', error);
+    return false;
+  }
 }
 
 /**
@@ -130,17 +168,25 @@ export function setCookie(
   category: CookieCategory = 'essential',
   path: string = '/'
 ): void {
-  // Only set the cookie if the category is allowed
-  if (!isCategoryAllowed(category)) {
-    console.log(`Cookie '${name}' not set because ${category} cookies are not allowed`);
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
   }
-
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + days);
   
-  const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expiryDate.toUTCString()}; path=${path}; SameSite=Lax`;
-  document.cookie = cookie;
+  try {
+    // Only set the cookie if the category is allowed
+    if (!isCategoryAllowed(category)) {
+      console.log(`Cookie '${name}' not set because ${category} cookies are not allowed`);
+      return;
+    }
+
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + days);
+    
+    const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expiryDate.toUTCString()}; path=${path}; SameSite=Lax`;
+    document.cookie = cookie;
+  } catch (error) {
+    console.warn(`Failed to set cookie '${name}':`, error);
+  }
 }
 
 /**
@@ -149,14 +195,23 @@ export function setCookie(
  * @returns Cookie value or empty string if not found
  */
 export function getCookie(name: string): string {
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (cookieName === encodeURIComponent(name)) {
-      return decodeURIComponent(cookieValue);
-    }
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return '';
   }
-  return '';
+  
+  try {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [cookieName, cookieValue] = cookie.trim().split('=');
+      if (cookieName === encodeURIComponent(name)) {
+        return cookieValue ? decodeURIComponent(cookieValue) : '';
+      }
+    }
+    return '';
+  } catch (error) {
+    console.warn(`Failed to get cookie '${name}':`, error);
+    return '';
+  }
 }
 
 /**
@@ -165,27 +220,43 @@ export function getCookie(name: string): string {
  * @param path Path for the cookie
  */
 export function deleteCookie(name: string, path: string = '/'): void {
-  document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}; SameSite=Lax`;
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+  
+  try {
+    document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}; SameSite=Lax`;
+  } catch (error) {
+    console.warn(`Failed to delete cookie '${name}':`, error);
+  }
 }
 
 /**
  * Clear all non-essential cookies
  */
 export function clearNonEssentialCookies(): void {
-  // Get all cookies
-  const cookies = document.cookie.split(';');
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
   
-  // List of essential cookies that should not be cleared
-  const essentialCookies = ['session', 'csrftoken', 'cookieConsent'];
-  
-  // Delete each non-essential cookie
-  for (const cookie of cookies) {
-    const [cookieName] = cookie.trim().split('=');
-    const name = decodeURIComponent(cookieName.trim());
+  try {
+    // Get all cookies
+    const cookies = document.cookie.split(';');
     
-    if (!essentialCookies.includes(name)) {
-      deleteCookie(name);
+    // List of essential cookies that should not be cleared
+    const essentialCookies = ['session', 'csrftoken', 'cookieConsent'];
+    
+    // Delete each non-essential cookie
+    for (const cookie of cookies) {
+      const [cookieName] = cookie.trim().split('=');
+      const name = decodeURIComponent(cookieName.trim());
+      
+      if (!essentialCookies.includes(name)) {
+        deleteCookie(name);
+      }
     }
+  } catch (error) {
+    console.warn('Failed to clear non-essential cookies:', error);
   }
 }
 
@@ -194,17 +265,26 @@ export function clearNonEssentialCookies(): void {
  * @returns Object with all cookies
  */
 export function getAllCookies(): Record<string, string> {
-  const result: Record<string, string> = {};
-  const cookies = document.cookie.split(';');
-  
-  for (const cookie of cookies) {
-    if (cookie.trim()) {
-      const [cookieName, cookieValue] = cookie.trim().split('=');
-      const name = decodeURIComponent(cookieName.trim());
-      const value = cookieValue ? decodeURIComponent(cookieValue) : '';
-      result[name] = value;
-    }
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return {};
   }
   
-  return result;
+  try {
+    const result: Record<string, string> = {};
+    const cookies = document.cookie.split(';');
+    
+    for (const cookie of cookies) {
+      if (cookie.trim()) {
+        const [cookieName, cookieValue] = cookie.trim().split('=');
+        const name = decodeURIComponent(cookieName.trim());
+        const value = cookieValue ? decodeURIComponent(cookieValue) : '';
+        result[name] = value;
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.warn('Failed to get all cookies:', error);
+    return {};
+  }
 }
