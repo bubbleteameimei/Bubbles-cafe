@@ -170,6 +170,7 @@ const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settin
 
 // Game Pages
 const EdenGamePage = withSuspense(React.lazy(() => import('./pages/games/eden')));
+const GameTestPage = withSuspense(React.lazy(() => import('./pages/game-test')));
 
 // Admin Pages
 const AdminPage = withSuspense(React.lazy(() => import('./pages/admin')));
@@ -269,6 +270,7 @@ const AppContent = () => {
 
                 {/* Game Routes */}
                 <Route path="/eden-game" component={EdenGamePage} />
+                <Route path="/game-test" component={GameTestPage} />
 
                 {/* Legal Routes */}
                 <Route path="/legal/copyright" component={CopyrightPage} />
