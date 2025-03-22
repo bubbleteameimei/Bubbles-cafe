@@ -1,307 +1,162 @@
-/**
- * GameContainer Component
- * A React component that wraps the Phaser game instance
- */
+import React, { useEffect, useRef } from 'react';
 
-import React, { useEffect, useRef, useState } from 'react';
-import Game from '../game/Game';
-
-// Create a Phaser type declaration for TypeScript
-declare global {
-  interface Window {
-    Phaser: any;
-    PHASER_LOADING_PROMISE: Promise<any>;
-    PHASER_LOADER_EXECUTED: boolean;
-  }
-}
-
-// Props for the GameContainer component
 interface GameContainerProps {
-  // Container ID (must be unique if multiple games on page)
-  containerId?: string;
-  
-  // Game dimensions
-  width?: number | string;
-  height?: number | string;
-  
-  // Additional game config options
-  pixelArt?: boolean;
-  backgroundColor?: string;
-  
-  // Whether to auto-start the game
-  autoStart?: boolean;
-  
-  // Callback when game is ready
-  onGameReady?: (game: Game) => void;
-  
-  // Custom styles for the container
-  style?: React.CSSProperties;
-  
-  // Custom class name for the container
+  width: string | number;
+  height: string | number;
   className?: string;
+  autoStart?: boolean;
+  onGameReady?: (game: any) => void;
 }
-
-/**
- * Load or access the Phaser library
- */
-const loadPhaserLibrary = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    // Check if Phaser is already loaded
-    if (window.Phaser) {
-      console.log('GameContainer: Phaser is already loaded:', window.Phaser.VERSION);
-      resolve();
-      return;
-    }
-
-    // Check if there's a loading promise from phaser-loader.js
-    if (window.PHASER_LOADING_PROMISE) {
-      console.log('GameContainer: Using Phaser loader promise');
-      window.PHASER_LOADING_PROMISE
-        .then(() => {
-          console.log('GameContainer: Phaser loader promise resolved');
-          resolve();
-        })
-        .catch((err: Error | unknown) => {
-          console.error('GameContainer: Phaser loader promise rejected:', err);
-          reject(err);
-        });
-      return;
-    }
-    
-    // Last resort: try to load Phaser ourselves
-    console.log('GameContainer: No pre-existing Phaser or loader, loading directly');
-    
-    // Create script element for our local Phaser copy
-    const script = document.createElement('script');
-    script.src = '/assets/js/phaser.min.js';
-    script.async = true;
-    
-    // Handle script load events
-    script.onload = () => {
-      console.log('GameContainer: Phaser library loaded dynamically:', window.Phaser?.VERSION);
-      resolve();
-    };
-    
-    script.onerror = () => {
-      console.error('GameContainer: Failed to load Phaser library');
-      reject(new Error('Failed to load Phaser library'));
-    };
-    
-    // Add script to document
-    document.head.appendChild(script);
-  });
-};
 
 /**
  * Game Container Component
- * Renders a container for the Phaser game and manages its lifecycle
+ * Wrapper for the Phaser game instance
  */
-export default function GameContainer({
-  containerId = 'eden-game-container',
-  width = '100%',
-  height = '600px',
-  pixelArt = true,
-  backgroundColor = '#000000',
+const GameContainer: React.FC<GameContainerProps> = ({
+  width,
+  height,
+  className = '',
   autoStart = true,
-  onGameReady,
-  style,
-  className,
-}: GameContainerProps) {
-  // Refs for the container and game instance
-  const containerRef = useRef<HTMLDivElement>(null);
-  const gameInstanceRef = useRef<Game | null>(null);
+  onGameReady
+}) => {
+  const gameRef = useRef<HTMLDivElement>(null);
+  const gameInstanceRef = useRef<any | null>(null);
   
-  // State for loading and errors
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [phaserLoaded, setPhaserLoaded] = useState<boolean>(!!window.Phaser);
-  
-  // First load Phaser if needed
+  // Initialize and clean up the game
   useEffect(() => {
-    if (!phaserLoaded) {
-      setLoading(true);
+    if (!gameRef.current || !window.Phaser) return;
+    
+    try {
+      console.log("Initializing Phaser game...");
       
-      loadPhaserLibrary()
-        .then(() => {
-          setPhaserLoaded(true);
-        })
-        .catch((err: Error | unknown) => {
-          console.error('Failed to load Phaser:', err);
-          setError('Failed to load Phaser game engine. Please try refreshing the page.');
-          setLoading(false);
-        });
-    }
-  }, [phaserLoaded]);
-  
-  // Initialize the game after Phaser is loaded
-  useEffect(() => {
-    // Skip if Phaser not loaded or no container
-    if (!phaserLoaded || !containerRef.current) return;
-    
-    // Keep track of mounted state to avoid updates after component unmounts
-    let isMounted = true;
-    
-    // Setup function to initialize the game
-    const setupGame = async () => {
-      try {
-        // Double-check Phaser is available
-        if (typeof window === 'undefined' || !window.Phaser) {
-          throw new Error('Phaser is not available even after loading. Please check browser console for errors.');
+      // Create a basic Phaser config
+      const config = {
+        type: Phaser.AUTO,
+        width: '100%',
+        height: '100%',
+        parent: gameRef.current,
+        backgroundColor: '#1a1a1a',
+        pixelArt: true,
+        scale: {
+          mode: Phaser.Scale.RESIZE,
+          autoCenter: Phaser.Scale.CENTER_BOTH
+        },
+        physics: {
+          default: 'arcade',
+          arcade: {
+            gravity: { y: 500 },
+            debug: false
+          }
+        },
+        scene: {
+          preload: function(this: any) {
+            // Preload assets
+            this.load.image('ground', '/assets/platform.png');
+            this.load.image('star', '/assets/star.png');
+            this.load.image('sky', '/assets/sky.png');
+            
+            // Create loading text
+            const loadingText = this.add.text(
+              this.cameras.main.width / 2, 
+              this.cameras.main.height / 2,
+              'Loading game assets...',
+              { 
+                font: '20px Arial', 
+                fill: '#ffffff' 
+              }
+            ).setOrigin(0.5);
+            
+            // Update progress text during loading
+            this.load.on('progress', function(value: number) {
+              loadingText.setText(`Loading game assets... ${Math.floor(value * 100)}%`);
+            });
+            
+            this.load.on('complete', function() {
+              loadingText.destroy();
+            });
+          },
+          create: function(this: any) {
+            // Set up the game world
+            this.add.image(0, 0, 'sky').setOrigin(0, 0).setScale(2);
+            
+            // Create a platform
+            const platforms = this.physics.add.staticGroup();
+            platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+            
+            // Create stars
+            const stars = this.physics.add.group({
+              key: 'star',
+              repeat: 12,
+              setXY: { x: 12, y: 0, stepX: 70 }
+            });
+            
+            stars.children.iterate(function(child: any) {
+              child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+            });
+            
+            // Add text on screen to indicate placeholder
+            this.add.text(
+              this.cameras.main.width / 2, 
+              50,
+              'Eden\'s Hollow Placeholder', 
+              { 
+                font: '24px Arial', 
+                fill: '#ffffff' 
+              }
+            ).setOrigin(0.5);
+            
+            // Add text with instructions
+            this.add.text(
+              this.cameras.main.width / 2, 
+              this.cameras.main.height - 50,
+              'This is just a placeholder. The actual game is under development.', 
+              { 
+                font: '16px Arial', 
+                fill: '#ffffff',
+                align: 'center'
+              }
+            ).setOrigin(0.5);
+            
+            // Notify parent that game is ready
+            if (onGameReady) {
+              onGameReady(this.game);
+            }
+          }
         }
-        
-        console.log('Initializing game with Phaser version:', window.Phaser.VERSION);
-        
-        // Create Game instance
-        const game = new Game({
-          parent: containerId,
-          width: typeof width === 'string' ? parseInt(width) || 800 : width,
-          height: typeof height === 'string' ? parseInt(height) || 600 : height,
-          pixelArt,
-          backgroundColor,
-        });
-        
-        // Store the game instance in ref
-        gameInstanceRef.current = game;
-        
-        // Initialize the game
-        if (autoStart) {
-          await game.initialize();
-        }
-        
-        // Guard against continues if component unmounted during async operations
-        if (!isMounted) return;
-        
-        // Notify parent when game is ready
-        if (onGameReady && isMounted) {
-          onGameReady(game);
-        }
-        
-        // Update loading state
-        if (isMounted) {
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('Error initializing game:', err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to initialize game');
-          setLoading(false);
-        }
+      };
+      
+      // Create the Phaser game instance
+      const game = new Phaser.Game(config);
+      gameInstanceRef.current = game;
+      
+      // Auto-start the game if needed
+      if (autoStart && game.scene) {
+        game.scene.start('default');
       }
-    };
+    } catch (error) {
+      console.error("Error initializing Phaser game:", error);
+    }
     
-    // Call setup function after a short delay to ensure Phaser is fully initialized
-    const timerId = setTimeout(() => {
-      setupGame();
-    }, 300);
-    
-    // Cleanup on unmount
+    // Cleanup function
     return () => {
-      clearTimeout(timerId);
-      isMounted = false;
+      console.log("Destroying Phaser game instance...");
       if (gameInstanceRef.current) {
-        gameInstanceRef.current.destroy();
+        gameInstanceRef.current.destroy(true);
         gameInstanceRef.current = null;
       }
     };
-  }, [containerId, width, height, pixelArt, backgroundColor, autoStart, onGameReady, phaserLoaded]);
-  
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (gameInstanceRef.current && containerRef.current) {
-        const { clientWidth, clientHeight } = containerRef.current;
-        gameInstanceRef.current.resize(clientWidth, clientHeight);
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-  
-  // Combine base and custom styles
-  const containerStyle: React.CSSProperties = {
-    width,
-    height,
-    position: 'relative',
-    overflow: 'hidden',
-    ...style,
-  };
+  }, [onGameReady, autoStart]);
   
   return (
     <div 
-      ref={containerRef}
-      id={containerId}
-      className={`game-container ${className || ''}`}
-      style={containerStyle}
-    >
-      {loading && (
-        <div className="game-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading Eden's Hollow{phaserLoaded ? '...' : ' (Loading Game Engine)...'}</p>
-        </div>
-      )}
-      
-      {error && (
-        <div className="game-error">
-          <p>Error: {error}</p>
-          <button onClick={() => window.location.reload()}>Reload</button>
-        </div>
-      )}
-      
-      <style>{`
-        .game-container {
-          background-color: #000;
-          color: #fff;
-          font-family: monospace;
-        }
-        
-        .game-loading,
-        .game-error {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background-color: rgba(0, 0, 0, 0.7);
-          z-index: 10;
-        }
-        
-        .loading-spinner {
-          border: 4px solid rgba(255, 255, 255, 0.3);
-          border-top: 4px solid #fff;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          animation: spin 1s linear infinite;
-          margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        .game-error button {
-          margin-top: 20px;
-          padding: 8px 16px;
-          background-color: #4a4a4a;
-          color: #fff;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        
-        .game-error button:hover {
-          background-color: #5a5a5a;
-        }
-      `}</style>
-    </div>
+      ref={gameRef} 
+      className={`game-canvas-container ${className}`} 
+      style={{ 
+        width: typeof width === 'number' ? `${width}px` : width,
+        height: typeof height === 'number' ? `${height}px` : height 
+      }}
+    />
   );
-}
+};
+
+export default GameContainer;

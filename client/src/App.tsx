@@ -18,7 +18,8 @@ import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import PageTransition from './components/PageTransition';
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
-import AnimatedSidebar from './components/layout/AnimatedSidebar';
+// Import commented out as component doesn't exist yet
+// import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
@@ -170,7 +171,7 @@ const PreviewSettingsPage = withSuspense(React.lazy(() => import('./pages/settin
 
 // Game Pages
 const EdenGamePage = withSuspense(React.lazy(() => import('./pages/games/eden')));
-const EdenNewGamePage = withSuspense(React.lazy(() => import('./pages/games/eden-game')));
+const EdenCanvasGamePage = withSuspense(React.lazy(() => import('./pages/games/eden-game')));
 const GameTestPage = withSuspense(React.lazy(() => import('./pages/game-test')));
 
 // Admin Pages
@@ -271,7 +272,8 @@ const AppContent = () => {
 
                 {/* Game Routes */}
                 <Route path="/eden-game" component={EdenGamePage} />
-                <Route path="/eden-pixelgame" component={EdenNewGamePage} />
+                <Route path="/eden-pixelgame" component={EdenCanvasGamePage} />
+                <Route path="/eden-game-new" component={EdenCanvasGamePage} />
                 <Route path="/game-test" component={GameTestPage} />
 
                 {/* Legal Routes */}

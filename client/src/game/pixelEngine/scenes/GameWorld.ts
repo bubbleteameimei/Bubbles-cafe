@@ -1,31 +1,68 @@
 /**
- * GameWorld - Main game scene for Eden's Hollow
+ * GameWorld - A pixel art platformer level for Eden's Hollow
  * 
- * Handles game logic, player movement, collectibles, and environment interactions.
+ * This scene manages the game's state, player movement, physics, collectibles,
+ * and game progression.
  */
 
-import { PixelEngine, Sprite, CollisionCallback } from '../PixelEngine';
+import { PixelEngine } from '../PixelEngine';
 
-export interface GameConfig {
-  gravity?: number;
-  playerSpeed?: number;
-  jumpForce?: number;
-  collectibles?: number;
+export enum GameState {
+  LOADING,
+  READY,
+  PLAYING,
+  PAUSED,
+  WIN,
+  GAME_OVER
+}
+
+export interface GameWorldConfig {
+  gravity: number;
+  playerSpeed: number;
+  jumpForce: number;
+  collectibles: number;
   debug?: boolean;
 }
 
-export enum GameState {
-  LOADING = 'loading',
-  READY = 'ready',
-  PLAYING = 'playing',
-  PAUSED = 'paused',
-  GAME_OVER = 'gameover',
-  WIN = 'win'
+interface Vector2 {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface GameObject {
+  position: Vector2;
+  size: Vector2;
+  velocity: Vector2;
+  sprite?: HTMLImageElement;
+  type: string;
+  isActive: boolean;
+  data?: any;
+}
+
+interface Animation {
+  frames: HTMLImageElement[];
+  frameRate: number;
+  loop: boolean;
+  currentFrame: number;
+  frameTimer: number;
+  name: string;
+  paused: boolean;
 }
 
 export class GameWorld {
+  // Core references
   private engine: PixelEngine;
-  private config: GameConfig;
+  private ctx: CanvasRenderingContext2D;
+  private config: GameWorldConfig;
   
   // Game state
   private state: GameState = GameState.LOADING;
@@ -33,503 +70,868 @@ export class GameWorld {
   private lives: number = 3;
   private timeElapsed: number = 0;
   
-  // Player properties
-  private playerId: string = 'player';
-  private playerX: number = 100;
-  private playerY: number = 200;
-  private isPlayerMoving: boolean = false;
-  private isPlayerJumping: boolean = false;
-  private playerDirection: 'left' | 'right' = 'right';
+  // Assets
+  private assets: { [key: string]: HTMLImageElement } = {};
+  private animations: { [key: string]: Animation } = {};
   
-  // Asset paths
-  private assets = {
-    background: '/assets/eden/background.svg',
-    playerIdle: '/assets/eden/player_idle.svg',
-    playerRun: '/assets/eden/player_run.svg',
-    coin: '/assets/eden/coin.svg',
-    potion: '/assets/eden/potion.svg',
-    chest: '/assets/eden/chest.svg'
-  };
+  // Game objects
+  private player: GameObject;
+  private ground: GameObject[];
+  private platforms: GameObject[];
+  private collectibles: GameObject[];
+  private enemies: GameObject[];
+  private obstacles: GameObject[];
+  private exit: GameObject;
   
-  // Collectibles
-  private coins: string[] = [];
-  private potions: string[] = [];
-  private chests: string[] = [];
+  // Camera
+  private cameraOffset: Vector2 = { x: 0, y: 0 };
   
-  // Game boundaries
-  private groundLevel: number = 300;
-  private worldWidth: number = 1600;
-  private worldHeight: number = 400;
+  // Debug
+  private debug: boolean;
   
-  // UI Elements
-  private uiElements: {
-    scoreText?: string;
-    livesText?: string;
-    timerText?: string;
-    pauseButton?: string;
-  } = {};
-  
-  // Asset loading status
-  private assetsLoaded: boolean = false;
-  private loadedAssets: Set<string> = new Set();
-  private totalAssets: number = 0;
-  
-  constructor(engine: PixelEngine, config: GameConfig = {}) {
+  constructor(engine: PixelEngine, config: GameWorldConfig) {
+    // Store references
     this.engine = engine;
+    this.ctx = engine.getContext();
     this.config = {
-      gravity: config.gravity || 980,
-      playerSpeed: config.playerSpeed || 200,
-      jumpForce: config.jumpForce || 400,
-      collectibles: config.collectibles || 10,
+      ...config,
       debug: config.debug || false
     };
+    this.debug = this.config.debug!;
     
-    // Count total assets to load
-    this.totalAssets = Object.keys(this.assets).length;
+    // Initialize empty game objects
+    this.player = this.createPlayer();
+    this.ground = [];
+    this.platforms = [];
+    this.collectibles = [];
+    this.enemies = [];
+    this.obstacles = [];
+    this.exit = this.createExit();
     
-    // Initialize game
-    this.init();
+    // Set up game event handlers
+    this.setupEventHandlers();
+    
+    // Load game assets
+    this.loadAssets()
+      .then(() => {
+        // Create animations
+        this.createAnimations();
+        
+        // Initialize level
+        this.initializeLevel();
+        
+        // Set game state to ready
+        this.state = GameState.READY;
+        console.log('Game world is ready');
+      })
+      .catch(error => {
+        console.error('Failed to load game assets:', error);
+      });
   }
   
-  private async init() {
-    // Set state to loading
-    this.state = GameState.LOADING;
-    
-    // Load background
-    try {
-      await this.engine.setBackground(this.assets.background);
-      this.loadedAssets.add('background');
-      this.checkAssetsLoaded();
-    } catch (error) {
-      console.error('Failed to load background:', error);
-    }
-    
-    // Load player sprites
-    try {
-      // Idle animation
-      await this.engine.addSprite({
-        id: 'player_idle',
-        x: this.playerX,
-        y: this.playerY,
-        width: 32,
-        height: 48,
-        imageUrl: this.assets.playerIdle,
-        spriteSheet: true,
-        frameWidth: 32,
-        frameHeight: 48,
-        totalFrames: 4,
-        animationSpeed: 5,
-        visible: true,
-        scale: 2,
-        collisionBox: {
-          x: 6, // offset from sprite x
-          y: 8, // offset from sprite y
-          width: 20,
-          height: 40
-        }
-      });
-      
-      // Running animation (initially hidden)
-      await this.engine.addSprite({
-        id: 'player_run',
-        x: this.playerX,
-        y: this.playerY,
-        width: 32,
-        height: 48,
-        imageUrl: this.assets.playerRun,
-        spriteSheet: true,
-        frameWidth: 32,
-        frameHeight: 48,
-        totalFrames: 6,
-        animationSpeed: 10,
-        visible: false,
-        scale: 2,
-        collisionBox: {
-          x: 6,
-          y: 8,
-          width: 20,
-          height: 40
-        }
-      });
-      
-      this.loadedAssets.add('player');
-      this.checkAssetsLoaded();
-    } catch (error) {
-      console.error('Failed to load player sprites:', error);
-    }
-    
-    // Load collectibles
-    try {
-      // Create coins
-      for (let i = 0; i < this.config.collectibles!; i++) {
-        const coinId = `coin_${i}`;
-        const coinX = 400 + Math.random() * (this.worldWidth - 800);
-        const coinY = this.groundLevel - 50 - Math.random() * 50;
-        
-        await this.engine.addSprite({
-          id: coinId,
-          x: coinX,
-          y: coinY,
-          width: 16,
-          height: 16,
-          imageUrl: this.assets.coin,
-          spriteSheet: true,
-          frameWidth: 16,
-          frameHeight: 16,
-          totalFrames: 4,
-          animationSpeed: 6,
-          visible: true,
-          scale: 1.5,
-          collisionBox: {
-            x: 2,
-            y: 2,
-            width: 12,
-            height: 12
-          }
-        });
-        
-        this.coins.push(coinId);
-        
-        // Add collision with player
-        this.engine.addCollision('player_idle', coinId, this.collectCoin.bind(this));
-        this.engine.addCollision('player_run', coinId, this.collectCoin.bind(this));
-      }
-      
-      // Create potions
-      for (let i = 0; i < 3; i++) {
-        const potionId = `potion_${i}`;
-        const potionX = 600 + Math.random() * (this.worldWidth - 800);
-        const potionY = this.groundLevel - 40;
-        
-        await this.engine.addSprite({
-          id: potionId,
-          x: potionX,
-          y: potionY,
-          width: 16,
-          height: 24,
-          imageUrl: this.assets.potion,
-          visible: true,
-          scale: 1.5,
-          collisionBox: {
-            x: 2,
-            y: 2,
-            width: 12,
-            height: 20
-          }
-        });
-        
-        this.potions.push(potionId);
-        
-        // Add collision with player
-        this.engine.addCollision('player_idle', potionId, this.collectPotion.bind(this));
-        this.engine.addCollision('player_run', potionId, this.collectPotion.bind(this));
-      }
-      
-      // Add treasure chest
-      const chestId = 'chest_1';
-      await this.engine.addSprite({
-        id: chestId,
-        x: this.worldWidth - 200,
-        y: this.groundLevel - 50,
-        width: 32,
-        height: 32,
-        imageUrl: this.assets.chest,
-        visible: true,
-        scale: 1.5,
-        collisionBox: {
-          x: 2,
-          y: 2,
-          width: 28,
-          height: 28
-        }
-      });
-      
-      this.chests.push(chestId);
-      
-      // Add collision with player
-      this.engine.addCollision('player_idle', chestId, this.openChest.bind(this));
-      this.engine.addCollision('player_run', chestId, this.openChest.bind(this));
-      
-      this.loadedAssets.add('collectibles');
-      this.checkAssetsLoaded();
-    } catch (error) {
-      console.error('Failed to load collectibles:', error);
-    }
-    
-    // Register update handler
-    this.engine.onUpdate(this.update.bind(this));
-  }
-  
-  private checkAssetsLoaded() {
-    if (this.loadedAssets.size >= 3) { // background, player, collectibles
-      this.assetsLoaded = true;
-      this.state = GameState.READY;
-      
-      // Set initial player state
-      this.setActivePlayerSprite('idle');
-      
-      console.log('Game ready to start!');
-    }
-  }
-  
-  private update(deltaTime: number) {
-    // Skip updates if game is not playing
-    if (this.state !== GameState.PLAYING && this.state !== GameState.READY) {
-      return;
-    }
-    
-    // Start game if ready and any key is pressed
+  /**
+   * Start the game
+   */
+  public startGame(): void {
     if (this.state === GameState.READY) {
-      if (
-        this.engine.isKeyPressed('arrowleft') || 
-        this.engine.isKeyPressed('arrowright') || 
-        this.engine.isKeyPressed('arrowup') || 
-        this.engine.isKeyPressed('space')
-      ) {
-        this.state = GameState.PLAYING;
-      }
-      
-      return;
-    }
-    
-    // Update game timer
-    this.timeElapsed += deltaTime;
-    
-    // Handle player input
-    this.handlePlayerInput(deltaTime);
-    
-    // Handle player movement and physics
-    this.updatePlayerPhysics(deltaTime);
-    
-    // Update camera to follow player
-    this.updateCamera();
-  }
-  
-  private handlePlayerInput(deltaTime: number) {
-    const player = this.getPlayer();
-    if (!player) return;
-    
-    // Reset movement flags
-    this.isPlayerMoving = false;
-    
-    // Initialize velocity if needed
-    if (!player.velocity) {
-      player.velocity = { x: 0, y: 0 };
-    }
-    
-    // Handle left/right movement
-    if (this.engine.isKeyPressed('arrowleft')) {
-      player.velocity.x = -this.config.playerSpeed!;
-      this.isPlayerMoving = true;
-      this.playerDirection = 'left';
-      this.engine.setSpriteFlip('player_idle', true);
-      this.engine.setSpriteFlip('player_run', true);
-    } else if (this.engine.isKeyPressed('arrowright')) {
-      player.velocity.x = this.config.playerSpeed!;
-      this.isPlayerMoving = true;
-      this.playerDirection = 'right';
-      this.engine.setSpriteFlip('player_idle', false);
-      this.engine.setSpriteFlip('player_run', false);
-    } else {
-      // Apply friction/deceleration when no keys are pressed
-      player.velocity.x *= 0.9; // Simple linear damping
-    }
-    
-    // Handle jumping
-    if (
-      (this.engine.isKeyPressed('arrowup') || this.engine.isKeyPressed('space')) && 
-      player.onGround && 
-      !this.isPlayerJumping
-    ) {
-      player.velocity.y = -this.config.jumpForce!;
-      player.onGround = false;
-      this.isPlayerJumping = true;
-    }
-    
-    // Switch between idle and running animations
-    if (this.isPlayerMoving) {
-      this.setActivePlayerSprite('run');
-    } else {
-      this.setActivePlayerSprite('idle');
-    }
-  }
-  
-  private updatePlayerPhysics(deltaTime: number) {
-    const player = this.getPlayer();
-    if (!player) return;
-    
-    // Apply gravity
-    player.velocity!.y += this.config.gravity! * deltaTime;
-    
-    // Update position
-    this.playerX = player.x;
-    this.playerY = player.y;
-    
-    // Ground collision detection
-    if (player.y + player.height >= this.groundLevel) {
-      player.y = this.groundLevel - player.height;
-      player.velocity!.y = 0;
-      player.onGround = true;
-      this.isPlayerJumping = false;
-    }
-    
-    // Left boundary
-    if (player.x < 0) {
-      player.x = 0;
-      player.velocity!.x = 0;
-    }
-    
-    // Right boundary
-    if (player.x + player.width > this.worldWidth) {
-      player.x = this.worldWidth - player.width;
-      player.velocity!.x = 0;
-    }
-    
-    // Update the other player sprite position to match
-    if (this.isPlayerMoving) {
-      this.engine.setSpritePosition('player_idle', player.x, player.y);
-    } else {
-      this.engine.setSpritePosition('player_run', player.x, player.y);
-    }
-  }
-  
-  private updateCamera() {
-    // Center camera on player, but with boundaries
-    if (!this.getPlayer()) return;
-    
-    const playerCenterX = this.playerX + 32; // player width / 2
-    const screenWidth = this.engine['canvasWidth']; // accessing private property
-    
-    let cameraX = Math.max(0, playerCenterX - screenWidth / 2);
-    cameraX = Math.min(cameraX, this.worldWidth - screenWidth);
-    
-    this.engine.setCamera(cameraX, 0);
-  }
-  
-  private getPlayer(): Sprite | undefined {
-    return this.isPlayerMoving 
-      ? this.engine.getSprite('player_run') 
-      : this.engine.getSprite('player_idle');
-  }
-  
-  private setActivePlayerSprite(type: 'idle' | 'run') {
-    if (type === 'idle') {
-      this.engine.setSpriteVisible('player_idle', true);
-      this.engine.setSpriteVisible('player_run', false);
-    } else {
-      this.engine.setSpriteVisible('player_idle', false);
-      this.engine.setSpriteVisible('player_run', true);
-    }
-  }
-  
-  private collectCoin: CollisionCallback = (player, coin) => {
-    // Increase score
-    this.score += 10;
-    console.log(`Collected coin! Score: ${this.score}`);
-    
-    // Hide the coin
-    this.engine.setSpriteVisible(coin.id, false);
-    
-    // Remove collision
-    this.engine.removeCollision('player_idle', coin.id);
-    this.engine.removeCollision('player_run', coin.id);
-    
-    // Remove from internal list
-    this.coins = this.coins.filter(id => id !== coin.id);
-    
-    // Check if all coins are collected
-    this.checkGameCompletion();
-  };
-  
-  private collectPotion: CollisionCallback = (player, potion) => {
-    // Increase lives
-    this.lives += 1;
-    console.log(`Collected potion! Lives: ${this.lives}`);
-    
-    // Hide the potion
-    this.engine.setSpriteVisible(potion.id, false);
-    
-    // Remove collision
-    this.engine.removeCollision('player_idle', potion.id);
-    this.engine.removeCollision('player_run', potion.id);
-    
-    // Remove from internal list
-    this.potions = this.potions.filter(id => id !== potion.id);
-  };
-  
-  private openChest: CollisionCallback = (player, chest) => {
-    // Bonus points
-    this.score += 50;
-    console.log(`Opened chest! Score: ${this.score}`);
-    
-    // Hide the chest
-    this.engine.setSpriteVisible(chest.id, false);
-    
-    // Remove collision
-    this.engine.removeCollision('player_idle', chest.id);
-    this.engine.removeCollision('player_run', chest.id);
-    
-    // Remove from internal list
-    this.chests = this.chests.filter(id => id !== chest.id);
-    
-    // Check if all collectibles are collected
-    this.checkGameCompletion();
-  };
-  
-  private checkGameCompletion() {
-    if (this.coins.length === 0 && this.chests.length === 0) {
-      this.state = GameState.WIN;
-      console.log('You win! All collectibles gathered!');
-      
-      // Here you could show a win screen or trigger other events
-    }
-  }
-  
-  // Public methods
-  
-  public startGame() {
-    if (this.state === GameState.READY || this.state === GameState.PAUSED) {
       this.state = GameState.PLAYING;
-      console.log('Game started!');
+      console.log('Game started');
     }
   }
   
-  public pauseGame() {
+  /**
+   * Pause the game
+   */
+  public pauseGame(): void {
     if (this.state === GameState.PLAYING) {
       this.state = GameState.PAUSED;
-      console.log('Game paused!');
+      console.log('Game paused');
     }
   }
   
-  public resumeGame() {
+  /**
+   * Resume the game
+   */
+  public resumeGame(): void {
     if (this.state === GameState.PAUSED) {
       this.state = GameState.PLAYING;
-      console.log('Game resumed!');
+      console.log('Game resumed');
     }
   }
   
-  public resetGame() {
-    // TO-DO: Implement game reset logic
-    console.log('Game reset not implemented yet!');
-  }
-  
+  /**
+   * Get the current game state
+   */
   public getGameState(): GameState {
     return this.state;
   }
   
+  /**
+   * Get the current score
+   */
   public getScore(): number {
     return this.score;
   }
   
+  /**
+   * Get the current number of lives
+   */
   public getLives(): number {
     return this.lives;
   }
   
+  /**
+   * Get the time elapsed in seconds
+   */
   public getTimeElapsed(): number {
-    return this.timeElapsed;
+    return Math.floor(this.timeElapsed);
   }
   
-  public isReady(): boolean {
-    return this.assetsLoaded;
+  /**
+   * Set up game event handlers
+   */
+  private setupEventHandlers(): void {
+    // Set up update callback
+    this.engine.onUpdate((deltaTime: number) => {
+      this.update(deltaTime);
+    });
+    
+    // Set up render callback
+    this.engine.onRender((ctx: CanvasRenderingContext2D, deltaTime: number) => {
+      this.render(ctx, deltaTime);
+    });
+  }
+  
+  /**
+   * Update game logic
+   */
+  private update(deltaTime: number): void {
+    // Only update if the game is playing
+    if (this.state !== GameState.PLAYING) return;
+    
+    // Update time elapsed
+    this.timeElapsed += deltaTime;
+    
+    // Handle player input
+    this.handleInput(deltaTime);
+    
+    // Update physics
+    this.updatePhysics(deltaTime);
+    
+    // Update animations
+    this.updateAnimations(deltaTime);
+    
+    // Check collisions
+    this.checkCollisions();
+    
+    // Update camera
+    this.updateCamera();
+    
+    // Check game over conditions
+    this.checkGameState();
+  }
+  
+  /**
+   * Render the game
+   */
+  private render(ctx: CanvasRenderingContext2D, deltaTime: number): void {
+    // Render background
+    this.renderBackground(ctx);
+    
+    // Apply camera transformation
+    ctx.save();
+    ctx.translate(-this.cameraOffset.x, -this.cameraOffset.y);
+    
+    // Render game objects
+    this.renderGameObjects(ctx);
+    
+    // Render player
+    this.renderPlayer(ctx, deltaTime);
+    
+    // Restore transformation
+    ctx.restore();
+    
+    // Render UI
+    this.renderUI(ctx);
+    
+    // Render debug info if enabled
+    if (this.debug) {
+      this.renderDebugInfo(ctx);
+    }
+  }
+  
+  /**
+   * Handle player input
+   */
+  private handleInput(deltaTime: number): void {
+    // Reset player horizontal velocity
+    this.player.velocity.x = 0;
+    
+    // Move left
+    if (this.engine.isKeyPressed('ArrowLeft') || this.engine.isKeyPressed('a')) {
+      this.player.velocity.x = -this.config.playerSpeed;
+      this.player.data.facingRight = false;
+    }
+    
+    // Move right
+    if (this.engine.isKeyPressed('ArrowRight') || this.engine.isKeyPressed('d')) {
+      this.player.velocity.x = this.config.playerSpeed;
+      this.player.data.facingRight = true;
+    }
+    
+    // Jump (only if on ground)
+    if ((this.engine.isKeyPressed('ArrowUp') || this.engine.isKeyPressed('w') || this.engine.isKeyPressed(' ')) && this.player.data.onGround) {
+      this.player.velocity.y = -this.config.jumpForce;
+      this.player.data.onGround = false;
+      this.player.data.jumping = true;
+    }
+  }
+  
+  /**
+   * Update physics for all game objects
+   */
+  private updatePhysics(deltaTime: number): void {
+    // Apply gravity to player
+    this.player.velocity.y += this.config.gravity * deltaTime;
+    
+    // Update player position
+    this.player.position.x += this.player.velocity.x * deltaTime;
+    this.player.position.y += this.player.velocity.y * deltaTime;
+    
+    // Track if player is on ground
+    this.player.data.wasOnGround = this.player.data.onGround;
+    this.player.data.onGround = false;
+    
+    // Update enemy positions
+    for (const enemy of this.enemies) {
+      if (!enemy.isActive) continue;
+      
+      // Apply gravity
+      enemy.velocity.y += this.config.gravity * deltaTime;
+      
+      // Update position
+      enemy.position.x += enemy.velocity.x * deltaTime;
+      enemy.position.y += enemy.velocity.y * deltaTime;
+      
+      // Simple AI: reverse direction at edges
+      if (enemy.data.movementTimer <= 0) {
+        enemy.velocity.x = -enemy.velocity.x;
+        enemy.data.movementTimer = enemy.data.movementInterval;
+      } else {
+        enemy.data.movementTimer -= deltaTime;
+      }
+    }
+  }
+  
+  /**
+   * Check for collisions between game objects
+   */
+  private checkCollisions(): void {
+    const playerHeight = this.player.size.height || 80;
+    const playerWidth = this.player.size.width || 50;
+    
+    // Check player-ground collisions
+    for (const ground of this.ground) {
+      if (this.checkCollision(this.player, ground)) {
+        // Position player on top of ground
+        this.player.position.y = ground.position.y - playerHeight;
+        this.player.velocity.y = 0;
+        this.player.data.onGround = true;
+        this.player.data.jumping = false;
+      }
+    }
+    
+    // Check player-platform collisions
+    for (const platform of this.platforms) {
+      const platformWidth = platform.size.width || 100;
+      
+      // Only check from above
+      if (this.player.position.y + playerHeight <= platform.position.y && 
+          this.player.position.y + playerHeight + this.player.velocity.y >= platform.position.y) {
+        
+        if (this.player.position.x + playerWidth > platform.position.x && 
+            this.player.position.x < platform.position.x + platformWidth) {
+          
+          // Position player on top of platform
+          this.player.position.y = platform.position.y - playerHeight;
+          this.player.velocity.y = 0;
+          this.player.data.onGround = true;
+          this.player.data.jumping = false;
+        }
+      }
+    }
+    
+    // Check player-collectible collisions
+    for (const collectible of this.collectibles) {
+      if (!collectible.isActive) continue;
+      
+      if (this.checkCollision(this.player, collectible)) {
+        // Collect the item
+        collectible.isActive = false;
+        this.score += collectible.type === 'coin' ? 10 : 0;
+        
+        // Handle potion (extra life)
+        if (collectible.type === 'potion') {
+          this.lives++;
+        }
+      }
+    }
+    
+    // Check player-enemy collisions
+    for (const enemy of this.enemies) {
+      if (!enemy.isActive) continue;
+      
+      if (this.checkCollision(this.player, enemy)) {
+        const playerHeight = this.player.size.height || 80;
+        
+        // Player jumps on enemy
+        if (this.player.velocity.y > 0 && 
+            this.player.position.y + playerHeight * 0.5 < enemy.position.y) {
+          enemy.isActive = false;
+          this.player.velocity.y = -300; // Bounce a bit
+          this.score += 20;
+        } else {
+          // Player gets hurt
+          this.hurtPlayer();
+        }
+      }
+    }
+    
+    // Check player-obstacle collisions
+    for (const obstacle of this.obstacles) {
+      if (!obstacle.isActive) continue;
+      
+      if (this.checkCollision(this.player, obstacle)) {
+        // Player gets hurt
+        this.hurtPlayer();
+      }
+    }
+    
+    // Check player-exit collision
+    if (this.exit.isActive && this.checkCollision(this.player, this.exit)) {
+      // Player wins
+      this.state = GameState.WIN;
+      console.log('Player won!');
+    }
+    
+    // Check if player is out of bounds
+    if (this.player.position.y > this.engine.getCanvas().height * 1.5) {
+      this.hurtPlayer();
+      this.resetPlayerPosition();
+    }
+  }
+  
+  /**
+   * Check collision between two game objects
+   */
+  private checkCollision(objA: GameObject, objB: GameObject): boolean {
+    const widthA = objA.size.width || 0;
+    const heightA = objA.size.height || 0;
+    const widthB = objB.size.width || 0;
+    const heightB = objB.size.height || 0;
+    
+    return (objA.position.x < objB.position.x + widthB &&
+            objA.position.x + widthA > objB.position.x &&
+            objA.position.y < objB.position.y + heightB &&
+            objA.position.y + heightA > objB.position.y);
+  }
+  
+  /**
+   * Update camera position based on player
+   */
+  private updateCamera(): void {
+    // Keep player centered horizontally
+    const canvas = this.engine.getCanvas();
+    const playerWidth = this.player.size.width || 50;
+    const targetX = this.player.position.x - canvas.width / 2 + playerWidth / 2;
+    
+    // Smooth camera movement
+    this.cameraOffset.x += (targetX - this.cameraOffset.x) * 0.1;
+    
+    // Clamp camera to level bounds
+    this.cameraOffset.x = Math.max(0, this.cameraOffset.x);
+  }
+  
+  /**
+   * Update all animations in the game
+   */
+  private updateAnimations(deltaTime: number): void {
+    // Update all animations in the animation dictionary
+    for (const animName in this.animations) {
+      const anim = this.animations[animName];
+      
+      // Skip paused animations
+      if (anim.paused) continue;
+      
+      // Update animation frame timer
+      anim.frameTimer += deltaTime;
+      
+      // Check if it's time to advance to the next frame
+      if (anim.frameTimer >= 1 / anim.frameRate) {
+        // Advance to next frame, looping if necessary
+        if (anim.loop || anim.currentFrame < anim.frames.length - 1) {
+          anim.currentFrame = (anim.currentFrame + 1) % anim.frames.length;
+        }
+        
+        // Reset frame timer
+        anim.frameTimer = 0;
+      }
+    }
+    
+    // Apply animations to collectibles
+    for (const collectible of this.collectibles) {
+      if (!collectible.isActive) continue;
+      
+      const collectibleAnim = this.animations[collectible.type];
+      if (collectibleAnim && collectibleAnim.frames.length > 0) {
+        collectible.sprite = collectibleAnim.frames[collectibleAnim.currentFrame];
+      }
+    }
+  }
+  
+  /**
+   * Get the current player animation based on state
+   */
+  private getPlayerAnimation(): Animation | undefined {
+    if (this.player.velocity.x !== 0) {
+      return this.animations['player_run'];
+    } else {
+      return this.animations['player_idle'];
+    }
+  }
+  
+  /**
+   * Check game state conditions
+   */
+  private checkGameState(): void {
+    // Game over condition
+    if (this.lives <= 0) {
+      this.state = GameState.GAME_OVER;
+      console.log('Game over');
+    }
+  }
+  
+  /**
+   * Render the background
+   */
+  private renderBackground(ctx: CanvasRenderingContext2D): void {
+    // Draw sky background
+    const background = this.assets['background'];
+    if (background) {
+      ctx.drawImage(background, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+  }
+  
+  /**
+   * Render all game objects
+   */
+  private renderGameObjects(ctx: CanvasRenderingContext2D): void {
+    // Render ground
+    for (const ground of this.ground) {
+      this.renderGameObject(ctx, ground);
+    }
+    
+    // Render platforms
+    for (const platform of this.platforms) {
+      this.renderGameObject(ctx, platform);
+    }
+    
+    // Render collectibles
+    for (const collectible of this.collectibles) {
+      if (collectible.isActive) {
+        this.renderGameObject(ctx, collectible);
+      }
+    }
+    
+    // Render enemies
+    for (const enemy of this.enemies) {
+      if (enemy.isActive) {
+        this.renderGameObject(ctx, enemy);
+      }
+    }
+    
+    // Render obstacles
+    for (const obstacle of this.obstacles) {
+      if (obstacle.isActive) {
+        this.renderGameObject(ctx, obstacle);
+      }
+    }
+    
+    // Render exit
+    if (this.exit.isActive) {
+      this.renderGameObject(ctx, this.exit);
+    }
+  }
+  
+  /**
+   * Render the player with current animation
+   */
+  private renderPlayer(ctx: CanvasRenderingContext2D, deltaTime: number): void {
+    const animation = this.getPlayerAnimation();
+    const width = this.player.size.width || 50;
+    const height = this.player.size.height || 80;
+    
+    if (animation && animation.frames.length > 0) {
+      const frame = animation.frames[animation.currentFrame];
+      
+      // Flip image based on facing direction
+      ctx.save();
+      if (!this.player.data.facingRight) {
+        ctx.translate(this.player.position.x + width, this.player.position.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(frame, 0, 0, width, height);
+      } else {
+        ctx.drawImage(frame, this.player.position.x, this.player.position.y, width, height);
+      }
+      ctx.restore();
+    } else {
+      // Fallback rendering
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(this.player.position.x, this.player.position.y, width, height);
+    }
+    
+    // Draw debug box
+    if (this.debug) {
+      ctx.strokeStyle = '#00FF00';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(this.player.position.x, this.player.position.y, width, height);
+    }
+  }
+  
+  /**
+   * Render a generic game object
+   */
+  private renderGameObject(ctx: CanvasRenderingContext2D, obj: GameObject): void {
+    const width = obj.size.width || 30;
+    const height = obj.size.height || 30;
+    
+    if (obj.sprite) {
+      // Draw sprite image
+      ctx.drawImage(obj.sprite, obj.position.x, obj.position.y, width, height);
+    } else {
+      // Fallback rendering with color
+      switch (obj.type) {
+        case 'ground':
+          ctx.fillStyle = '#8B4513';
+          break;
+        case 'platform':
+          ctx.fillStyle = '#A0522D';
+          break;
+        case 'coin':
+          ctx.fillStyle = '#FFD700';
+          break;
+        case 'potion':
+          ctx.fillStyle = '#FF00FF';
+          break;
+        case 'enemy':
+          ctx.fillStyle = '#FF0000';
+          break;
+        case 'obstacle':
+          ctx.fillStyle = '#808080';
+          break;
+        case 'exit':
+          ctx.fillStyle = '#00FF00';
+          break;
+        default:
+          ctx.fillStyle = '#000000';
+      }
+      
+      ctx.fillRect(obj.position.x, obj.position.y, width, height);
+    }
+    
+    // Draw debug box
+    if (this.debug) {
+      ctx.strokeStyle = '#0000FF';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(obj.position.x, obj.position.y, width, height);
+    }
+  }
+  
+  /**
+   * Render UI elements
+   */
+  private renderUI(ctx: CanvasRenderingContext2D): void {
+    // Draw score
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`Score: ${this.score}`, 10, 30);
+    
+    // Draw lives
+    ctx.fillText(`Lives: ${this.lives}`, 10, 60);
+    
+    // Draw timer
+    ctx.fillText(`Time: ${Math.floor(this.timeElapsed)}s`, 10, 90);
+    
+    // Draw game state
+    if (this.state === GameState.PAUSED) {
+      // Draw semi-transparent background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      
+      // Draw paused text
+      ctx.font = '24px Arial';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', ctx.canvas.width / 2, ctx.canvas.height / 2);
+      ctx.textAlign = 'left'; // Reset alignment
+    }
+  }
+  
+  /**
+   * Render debug information
+   */
+  private renderDebugInfo(ctx: CanvasRenderingContext2D): void {
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`Player Position: (${Math.floor(this.player.position.x)}, ${Math.floor(this.player.position.y)})`, 10, 120);
+    ctx.fillText(`Player Velocity: (${Math.floor(this.player.velocity.x)}, ${Math.floor(this.player.velocity.y)})`, 10, 140);
+    ctx.fillText(`On Ground: ${this.player.data.onGround}`, 10, 160);
+    ctx.fillText(`Camera Offset: (${Math.floor(this.cameraOffset.x)}, ${Math.floor(this.cameraOffset.y)})`, 10, 180);
+  }
+  
+  /**
+   * Hurt the player, decrease lives
+   */
+  private hurtPlayer(): void {
+    this.lives--;
+    this.player.data.invulnerable = true;
+    
+    // Reset invulnerability after a short time
+    setTimeout(() => {
+      this.player.data.invulnerable = false;
+    }, 1000);
+  }
+  
+  /**
+   * Reset player position to start point
+   */
+  private resetPlayerPosition(): void {
+    this.player.position.x = 100;
+    this.player.position.y = 200;
+    this.player.velocity.x = 0;
+    this.player.velocity.y = 0;
+  }
+  
+  /**
+   * Load game assets
+   */
+  private async loadAssets(): Promise<void> {
+    const assetsToLoad = [
+      { key: 'player_idle', src: '/assets/eden/player_idle.svg' },
+      { key: 'player_run', src: '/assets/eden/player_run.svg' },
+      { key: 'background', src: '/assets/eden/background.svg' },
+      { key: 'coin', src: '/assets/eden/coin.svg' },
+      { key: 'potion', src: '/assets/eden/potion.svg' },
+      { key: 'chest', src: '/assets/eden/chest.svg' }
+    ];
+    
+    const promises = assetsToLoad.map(asset => this.loadImage(asset.key, asset.src));
+    
+    await Promise.all(promises);
+    console.log('All assets loaded');
+  }
+  
+  /**
+   * Load a single image
+   */
+  private loadImage(key: string, src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.assets[key] = img;
+        resolve();
+      };
+      img.onerror = () => {
+        console.error(`Failed to load image: ${src}`);
+        reject();
+      };
+      img.src = src;
+    });
+  }
+  
+  /**
+   * Create animations from assets
+   * Support for multi-frame animations from sprite sheets
+   */
+  private createAnimations(): void {
+    // Create player idle animation
+    const idleImg = this.assets['player_idle'];
+    if (idleImg) {
+      // Split the sprite sheet into frames (assuming horizontal layout)
+      const framesCount = 4; // Number of frames in the animation
+      const frames: HTMLImageElement[] = [];
+      
+      // For now we're using the same image as all frames
+      // In a full implementation, we would slice the sprite sheet
+      for (let i = 0; i < framesCount; i++) {
+        frames.push(idleImg);
+      }
+      
+      this.animations['player_idle'] = {
+        frames: frames,
+        frameRate: 5,
+        loop: true,
+        currentFrame: 0,
+        frameTimer: 0,
+        name: 'player_idle',
+        paused: false
+      };
+    }
+    
+    // Create player run animation
+    const runImg = this.assets['player_run'];
+    if (runImg) {
+      // Split the sprite sheet into frames (assuming horizontal layout)
+      const framesCount = 6; // Number of frames in the run animation
+      const frames: HTMLImageElement[] = [];
+      
+      // For now we're using the same image as all frames
+      // In a full implementation, we would slice the sprite sheet
+      for (let i = 0; i < framesCount; i++) {
+        frames.push(runImg);
+      }
+      
+      this.animations['player_run'] = {
+        frames: frames,
+        frameRate: 10,
+        loop: true,
+        currentFrame: 0,
+        frameTimer: 0,
+        name: 'player_run',
+        paused: false
+      };
+    }
+    
+    // Create coin animation
+    const coinImg = this.assets['coin'];
+    if (coinImg) {
+      this.animations['coin'] = {
+        frames: [coinImg],
+        frameRate: 8,
+        loop: true,
+        currentFrame: 0,
+        frameTimer: 0,
+        name: 'coin',
+        paused: false
+      };
+    }
+    
+    // Create potion animation with subtle pulsing effect
+    const potionImg = this.assets['potion'];
+    if (potionImg) {
+      this.animations['potion'] = {
+        frames: [potionImg],
+        frameRate: 4,
+        loop: true,
+        currentFrame: 0,
+        frameTimer: 0,
+        name: 'potion',
+        paused: false
+      };
+    }
+  }
+  
+  /**
+   * Initialize the game level
+   */
+  private initializeLevel(): void {
+    const canvas = this.engine.getCanvas();
+    
+    // Create ground
+    const groundHeight = 40;
+    const groundSegments = 20;
+    const groundWidth = canvas.width / 2;
+    
+    for (let i = 0; i < groundSegments; i++) {
+      this.ground.push({
+        position: { x: i * groundWidth, y: canvas.height - groundHeight },
+        size: { x: 0, y: 0, width: groundWidth, height: groundHeight },
+        velocity: { x: 0, y: 0 },
+        type: 'ground',
+        isActive: true
+      });
+    }
+    
+    // Create platforms
+    const platformCount = 5;
+    for (let i = 0; i < platformCount; i++) {
+      this.platforms.push({
+        position: { 
+          x: 200 + i * 250 + Math.random() * 100, 
+          y: canvas.height - groundHeight - 100 - i * 50 - Math.random() * 50 
+        },
+        size: { x: 0, y: 0, width: 100 + Math.random() * 50, height: 20 },
+        velocity: { x: 0, y: 0 },
+        type: 'platform',
+        isActive: true
+      });
+    }
+    
+    // Create collectibles
+    for (let i = 0; i < this.config.collectibles; i++) {
+      // Determine if this will be a coin or potion
+      const isPotion = i % 5 === 0; // Every 5th is a potion
+      const type = isPotion ? 'potion' : 'coin';
+      const sprite = this.assets[type];
+      
+      this.collectibles.push({
+        position: {
+          x: 250 + i * 150 + Math.random() * 50,
+          y: canvas.height - groundHeight - 60 - Math.random() * 80
+        },
+        size: { x: 0, y: 0, width: 30, height: 30 },
+        velocity: { x: 0, y: 0 },
+        type,
+        sprite,
+        isActive: true
+      });
+    }
+    
+    // Create exit
+    this.exit = {
+      position: { x: (groundSegments - 2) * groundWidth, y: canvas.height - groundHeight - 50 },
+      size: { x: 0, y: 0, width: 50, height: 50 },
+      velocity: { x: 0, y: 0 },
+      type: 'exit',
+      sprite: this.assets['chest'],
+      isActive: true
+    };
+    
+    // Position player at start
+    this.resetPlayerPosition();
+  }
+  
+  /**
+   * Create player object
+   */
+  private createPlayer(): GameObject {
+    return {
+      position: { x: 100, y: 200 },
+      size: { x: 0, y: 0, width: 50, height: 80 },
+      velocity: { x: 0, y: 0 },
+      type: 'player',
+      isActive: true,
+      data: {
+        onGround: false,
+        wasOnGround: false,
+        jumping: false,
+        fallSince: 0,
+        facingRight: true,
+        invulnerable: false
+      }
+    };
+  }
+  
+  /**
+   * Create exit object
+   */
+  private createExit(): GameObject {
+    return {
+      position: { x: 0, y: 0 },
+      size: { x: 0, y: 0, width: 50, height: 50 },
+      velocity: { x: 0, y: 0 },
+      type: 'exit',
+      isActive: true
+    };
   }
 }

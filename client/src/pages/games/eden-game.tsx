@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'wouter';
 import { PixelEngine } from '../../game/pixelEngine/PixelEngine';
 import { GameWorld, GameState } from '../../game/pixelEngine/scenes/GameWorld';
 
@@ -61,7 +62,7 @@ const EdenGame: React.FC = () => {
       clearInterval(stateInterval);
       pixelEngine.stop();
     };
-  }, [gameContainerRef]);
+  }, []);
   
   // Handle start game button
   const handleStartGame = () => {
@@ -88,7 +89,7 @@ const EdenGame: React.FC = () => {
   
   return (
     <div className="flex flex-col items-center min-h-screen p-4">
-      <h1 className="text-3xl font-bold mb-4">Eden's Hollow</h1>
+      <h1 className="text-3xl font-bold mb-4">Eden's Hollow (Canvas Edition)</h1>
       
       <div className="relative w-full max-w-3xl rounded-lg overflow-hidden shadow-lg border-4 border-amber-700">
         {/* Game Canvas Container */}
@@ -134,6 +135,12 @@ const EdenGame: React.FC = () => {
             >
               {showControls ? 'Hide Controls' : 'Show Controls'}
             </button>
+
+            <Link href="/">
+              <button className="px-3 py-1 bg-red-600 rounded hover:bg-red-500">
+                Exit Game
+              </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -143,7 +150,7 @@ const EdenGame: React.FC = () => {
         <div className="mt-4 p-4 bg-amber-50 rounded-lg shadow-md max-w-3xl w-full">
           <h2 className="text-xl font-bold mb-2">How to Play</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move the character</li>
+            <li>Use <strong>Arrow Keys</strong> to move the character</li>
             <li>Press <strong>Space</strong> or <strong>Up Arrow</strong> to jump</li>
             <li>Collect coins to increase your score</li>
             <li>Find potions to gain extra lives</li>
@@ -167,12 +174,14 @@ const EdenGame: React.FC = () => {
         </div>
       )}
       
-      <style>{`
-        canvas {
-          image-rendering: pixelated;
-          image-rendering: crisp-edges;
-        }
-      `}</style>
+      <style>
+        {`
+          canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+          }
+        `}
+      </style>
     </div>
   );
 };

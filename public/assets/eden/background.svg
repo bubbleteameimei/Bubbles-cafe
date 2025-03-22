@@ -1,107 +1,33 @@
-<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel Art Background -->
   <!-- Sky -->
-  <rect width="800" height="200" fill="#87CEEB" />
-  
-  <!-- Mountains far background -->
-  <polygon points="0,200 100,120 200,180 300,100 400,160 500,110 600,170 700,130 800,200" fill="#8D6E63" />
-  
-  <!-- Mountains middle background -->
-  <polygon points="0,200 50,150 150,190 200,130 250,180 350,120 450,180 550,130 650,160 750,140 800,200" fill="#6D4C41" />
-  
-  <!-- Hills foreground -->
-  <polygon points="0,200 50,180 100,190 150,170 200,190 250,180 300,190 350,170 400,190 450,180 500,190 550,170 600,190 650,180 700,190 750,170 800,200" fill="#43A047" />
-  
-  <!-- Ground -->
-  <rect y="200" width="800" height="200" fill="#388E3C" />
+  <rect x="0" y="0" width="800" height="400" fill="#87CEEB" />
   
   <!-- Sun -->
-  <circle cx="700" cy="70" r="40" fill="#FFD54F" />
+  <circle cx="700" cy="80" r="40" fill="#FFD700" />
+  
+  <!-- Distant Mountains -->
+  <polygon points="0,250 100,180 200,220 300,150 400,200 500,170 600,240 700,180 800,250 800,400 0,400" fill="#6B8E23" />
+  
+  <!-- Closer Hills -->
+  <polygon points="0,280 50,260 100,290 150,270 200,290 250,280 300,270 350,290 400,270 450,290 500,270 550,290 600,280 650,260 700,290 750,270 800,280 800,400 0,400" fill="#8FBC8F" />
   
   <!-- Clouds -->
-  <g fill="#FFFFFF">
-    <ellipse cx="100" cy="70" rx="30" ry="20" />
-    <ellipse cx="130" cy="70" rx="20" ry="15" />
-    <ellipse cx="70" cy="70" rx="20" ry="15" />
-    
-    <ellipse cx="400" cy="50" rx="35" ry="25" />
-    <ellipse cx="435" cy="50" rx="25" ry="20" />
-    <ellipse cx="370" cy="50" rx="25" ry="20" />
-    
-    <ellipse cx="600" cy="90" rx="25" ry="15" />
-    <ellipse cx="625" cy="90" rx="20" ry="10" />
-    <ellipse cx="580" cy="90" rx="20" ry="10" />
-  </g>
+  <ellipse cx="100" cy="100" rx="50" ry="20" fill="#FFFFFF" />
+  <ellipse cx="300" cy="120" rx="40" ry="15" fill="#FFFFFF" />
+  <ellipse cx="500" cy="80" rx="60" ry="25" fill="#FFFFFF" />
   
-  <!-- Trees in background -->
-  <g>
-    <!-- Tree 1 -->
-    <rect x="100" y="170" width="10" height="30" fill="#5D4037" />
-    <polygon points="80,170 130,170 105,130" fill="#2E7D32" />
-    <polygon points="85,150 125,150 105,110" fill="#2E7D32" />
-    
-    <!-- Tree 2 -->
-    <rect x="500" y="180" width="12" height="20" fill="#5D4037" />
-    <polygon points="476,180 536,180 506,150" fill="#2E7D32" />
-    <polygon points="481,160 531,160 506,130" fill="#2E7D32" />
-    <polygon points="486,140 526,140 506,110" fill="#2E7D32" />
-    
-    <!-- Tree 3 -->
-    <rect x="300" y="175" width="8" height="25" fill="#5D4037" />
-    <polygon points="280,175 320,175 300,140" fill="#2E7D32" />
-    <polygon points="285,155 315,155 300,120" fill="#2E7D32" />
-    
-    <!-- Tree 4 -->
-    <rect x="700" y="180" width="10" height="20" fill="#5D4037" />
-    <polygon points="680,180 720,180 700,150" fill="#2E7D32" />
-    <polygon points="685,160 715,160 700,130" fill="#2E7D32" />
-  </g>
+  <!-- Trees in Distance -->
+  <rect x="150" y="240" width="10" height="30" fill="#8B4513" />
+  <circle cx="155" cy="230" r="15" fill="#006400" />
   
-  <!-- Grass tufts -->
-  <g fill="#4CAF50">
-    <path d="M50,200 L45,190 L50,195 L55,185 L60,195 L65,190 L60,200 Z" />
-    <path d="M150,200 L145,190 L150,195 L155,185 L160,195 L165,190 L160,200 Z" />
-    <path d="M250,200 L245,190 L250,195 L255,185 L260,195 L265,190 L260,200 Z" />
-    <path d="M350,200 L345,190 L350,195 L355,185 L360,195 L365,190 L360,200 Z" />
-    <path d="M450,200 L445,190 L450,195 L455,185 L460,195 L465,190 L460,200 Z" />
-    <path d="M550,200 L545,190 L550,195 L555,185 L560,195 L565,190 L560,200 Z" />
-    <path d="M650,200 L645,190 L650,195 L655,185 L660,195 L665,190 L660,200 Z" />
-    <path d="M750,200 L745,190 L750,195 L755,185 L760,195 L765,190 L760,200 Z" />
-  </g>
+  <rect x="350" y="230" width="10" height="40" fill="#8B4513" />
+  <circle cx="355" cy="220" r="20" fill="#006400" />
   
-  <!-- Foreground details -->
-  <g>
-    <!-- Rock 1 -->
-    <ellipse cx="200" cy="220" rx="15" ry="10" fill="#9E9E9E" />
-    <!-- Rock 2 -->
-    <ellipse cx="600" cy="230" rx="20" ry="12" fill="#757575" />
-    <!-- Flower patches -->
-    <g fill="#FF5722">
-      <circle cx="120" cy="220" r="3" />
-      <circle cx="130" cy="225" r="3" />
-      <circle cx="125" cy="215" r="3" />
-      
-      <circle cx="420" cy="210" r="3" />
-      <circle cx="430" cy="215" r="3" />
-      <circle cx="425" cy="220" r="3" />
-      
-      <circle cx="620" cy="220" r="3" />
-      <circle cx="630" cy="225" r="3" />
-      <circle cx="625" cy="215" r="3" />
-    </g>
-    
-    <!-- Yellow flowers -->
-    <g fill="#FFEB3B">
-      <circle cx="320" cy="220" r="3" />
-      <circle cx="330" cy="225" r="3" />
-      <circle cx="325" cy="215" r="3" />
-      
-      <circle cx="520" cy="210" r="3" />
-      <circle cx="530" cy="215" r="3" />
-      <circle cx="525" cy="220" r="3" />
-      
-      <circle cx="720" cy="220" r="3" />
-      <circle cx="730" cy="225" r="3" />
-      <circle cx="725" cy="215" r="3" />
-    </g>
-  </g>
+  <rect x="550" y="250" width="10" height="30" fill="#8B4513" />
+  <circle cx="555" cy="240" r="15" fill="#006400" />
+  
+  <rect x="650" y="240" width="10" height="40" fill="#8B4513" />
+  <circle cx="655" cy="230" r="15" fill="#006400" />
 </svg>
