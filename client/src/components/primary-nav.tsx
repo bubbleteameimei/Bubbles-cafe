@@ -23,8 +23,8 @@ export function PrimaryNav() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 -mb-1.5">
+      <div className="container flex h-12 items-center">
         <div className="mr-4 hidden md:flex">
           <button 
             onClick={() => navigate('/')} 
@@ -56,7 +56,7 @@ export function PrimaryNav() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Search component could go here */}
           </div>
-          <nav className="flex items-center -mt-1"> {/* Added negative margin-top to move buttons up */}
+          <nav className="flex items-center -mt-5 transform -translate-y-1"> {/* Increased negative margin and added transform for more vertical shift */}
             <GlobalThemeToggle className="mr-2" />
             <div className="ml-3 text-xs text-muted-foreground">
               {theme === 'dark' ? 'Dark' : 'Light'} Mode
@@ -66,7 +66,7 @@ export function PrimaryNav() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="ml-4"
+                className="ml-4 -mt-0.5" /* Added slight negative margin to button */
                 onClick={() => navigate('/settings/profile')}
               >
                 Profile
@@ -75,7 +75,7 @@ export function PrimaryNav() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="ml-4"
+                className="ml-4 -mt-0.5" /* Added slight negative margin to button */
                 onClick={() => navigate('/auth')}
               >
                 Login
