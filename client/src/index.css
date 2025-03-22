@@ -509,7 +509,7 @@ h4, h5, h6,
 }
 
 /* Tablet styles - Merged with edited responsive adjustments */
-@media (min-width: 641px) and (max-width: 1023px) {
+@media (min-width: calc(var(--breakpoint-sm) + 1px)) and (max-width: calc(var(--breakpoint-lg) - 1px)) {
   .container {
     width: 95%;
     padding: 1rem;
@@ -524,7 +524,7 @@ h4, h5, h6,
 }
 
 /* Desktop styles - Merged with edited responsive adjustments */
-@media (min-width: 1024px) {
+@media (min-width: var(--breakpoint-lg)) {
   .container {
     width: 95%;
     max-width: 1800px;
@@ -778,7 +778,7 @@ input[type="reset"],
 }
 
 /* Adjust spacing for mobile devices */
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-md)) {
   .story-content {
     font-size: calc(1rem + 0.2vw);
   }
@@ -934,7 +934,7 @@ input[type="reset"],
   margin-bottom: 0.75rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: var(--breakpoint-sm)) {
   .story-card-title {
     font-size: calc(1.1rem + 0.2vw);
     margin-bottom: 0.5rem;
