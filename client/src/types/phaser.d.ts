@@ -22,6 +22,10 @@ declare namespace Phaser {
       setDepth(value: number): this;
       setScrollFactor(x: number, y?: number): this;
       destroy(): void;
+      
+      x: number;
+      y: number;
+      alpha: number;
     }
     
     export class Graphics {
@@ -71,6 +75,17 @@ declare namespace Phaser {
       
       export class Group {
         addMultiple(entries: any[]): this;
+        add(gameObject: any, addToScene?: boolean): this;
+        getLength(): number;
+        getChildren(): any[];
+        getFirst(active?: boolean): any;
+        remove(gameObject: any, removeFromScene?: boolean): this;
+        clear(removeFromScene?: boolean): this;
+        children: any[];
+      }
+      
+      export class World {
+        enable(object: any, body?: number): this;
       }
     }
   }
@@ -83,6 +98,13 @@ declare namespace Phaser {
       widthInPixels: number;
       heightInPixels: number;
       findObject(objectLayerName: string, callback: Function): any;
+      getObjectLayer(name: string): ObjectLayer;
+      
+      // Object layers array for Tiled maps
+      objects: Array<{
+        name: string;
+        objects: Array<any>;
+      }>;
     }
     
     export class Tileset {
@@ -95,7 +117,9 @@ declare namespace Phaser {
     }
     
     export class ObjectLayer {
-      // Basic properties for type checking
+      name: string;
+      objects: any[];
+      properties: any[];
     }
   }
   
@@ -324,10 +348,12 @@ declare namespace Phaser {
   export interface TextureManager {
     exists(key: string): boolean;
     get(key: string): Texture;
+    list: Record<string, Texture>;
   }
 
   export interface Texture {
     source: { width: number; height: number }[];
+    frameTotal: number;
   }
 
   export interface TimeManager {

@@ -112,12 +112,24 @@ export default class AssetLoader {
         this.scene.load.image(key, path);
         break;
       case AssetType.SPRITESHEET:
-        // For SVG spritesheets, we need to specify frame size
-        // Default values that will be updated later
-        this.scene.load.spritesheet(key, path, {
-          frameWidth: 32,
-          frameHeight: 32,
-        });
+        // Specific sprite sheet configurations based on the asset
+        if (key === 'player') {
+          // Player sprite sheet is arranged in a 4x4 grid, 24x32 pixels per frame
+          this.scene.load.spritesheet(key, path, {
+            frameWidth: 24,
+            frameHeight: 32,
+            startFrame: 0,
+            endFrame: 15,
+            margin: 0,
+            spacing: 0
+          });
+        } else {
+          // Default for other sprite sheets
+          this.scene.load.spritesheet(key, path, {
+            frameWidth: 32,
+            frameHeight: 32,
+          });
+        }
         break;
       case AssetType.AUDIO:
         this.scene.load.audio(key, path);

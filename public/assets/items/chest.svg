@@ -1,20 +1,44 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="32" height="32" fill="none"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="32" version="1.1" viewBox="0 0 64 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Chest Closed -->
+  <g id="chest-closed">
+    <!-- Chest base -->
+    <rect x="4" y="10" width="24" height="16" rx="2" fill="#8D6E63" stroke="#5D4037" stroke-width="1"/>
+    
+    <!-- Chest lid -->
+    <path d="M2,10 C2,8 4,6 6,6 L26,6 C28,6 30,8 30,10 L2,10 Z" fill="#A1887F" stroke="#5D4037" stroke-width="1"/>
+    
+    <!-- Chest front panel -->
+    <rect x="6" y="16" width="20" height="10" rx="1" fill="#6D4C41" stroke="#5D4037" stroke-width="0.5"/>
+    
+    <!-- Chest lock -->
+    <rect x="14" y="8" width="4" height="4" rx="1" fill="#FFC107" stroke="#FFA000" stroke-width="0.5"/>
+    <circle cx="16" cy="10" r="0.8" fill="#5D4037"/>
+    
+    <!-- Wood grain texture -->
+    <path d="M6,10 L6,26 M12,10 L12,26 M18,10 L18,26 M24,10 L24,26" stroke="#5D4037" stroke-width="0.5" opacity="0.3"/>
+  </g>
   
-  <!-- Chest base (closed) -->
-  <rect x="8" y="16" width="16" height="12" fill="#8b5a2b"/> <!-- Main body -->
-  <rect x="8" y="16" width="16" height="2" fill="#6b4423"/> <!-- Top edge -->
-  <rect x="8" y="18" width="16" height="8" fill="#a57a44"/> <!-- Middle section -->
-  
-  <!-- Chest lock and details -->
-  <rect x="14" y="21" width="4" height="2" fill="#d9b258"/> <!-- Lock -->
-  <rect x="9" y="19" width="2" height="6" fill="#6b4423"/> <!-- Left detail -->
-  <rect x="21" y="19" width="2" height="6" fill="#6b4423"/> <!-- Right detail -->
-  
-  <!-- Bottom edge -->
-  <rect x="8" y="26" width="16" height="2" fill="#6b4423"/>
-  
-  <!-- Highlight -->
-  <ellipse cx="15" cy="22" rx="1" ry="1" fill="#f3e670" fill-opacity="0.7"/> <!-- Lock highlight -->
+  <!-- Chest Open -->
+  <g id="chest-open" transform="translate(32, 0)">
+    <!-- Chest base -->
+    <rect x="4" y="10" width="24" height="16" rx="2" fill="#8D6E63" stroke="#5D4037" stroke-width="1"/>
+    
+    <!-- Open lid -->
+    <path d="M2,10 L2,4 C2,2 4,2 6,2 L26,2 C28,2 30,4 30,4 L30,10 Z" fill="#A1887F" stroke="#5D4037" stroke-width="1" transform="rotate(-65, 2, 10)"/>
+    
+    <!-- Chest interior -->
+    <rect x="6" y="12" width="20" height="14" rx="1" fill="#5D4037" stroke="#4E342E" stroke-width="0.5"/>
+    
+    <!-- Chest contents glow -->
+    <ellipse cx="16" cy="18" rx="6" ry="3" fill="#FFF176" opacity="0.6">
+      <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite" />
+    </ellipse>
+    
+    <!-- Chest lock (on the lid) -->
+    <rect x="7" y="4" width="4" height="4" rx="1" fill="#FFC107" stroke="#FFA000" stroke-width="0.5" transform="rotate(-65, 2, 10)"/>
+    
+    <!-- Wood grain texture -->
+    <path d="M6,10 L6,26 M12,10 L12,26 M18,10 L18,26 M24,10 L24,26" stroke="#5D4037" stroke-width="0.5" opacity="0.3"/>
+  </g>
 </svg>

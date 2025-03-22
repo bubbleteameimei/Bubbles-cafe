@@ -13,9 +13,9 @@ export default class GameScene extends Phaser.Scene {
   private objectsLayer!: Phaser.Tilemaps.TilemapLayer;
   
   // Game items and collectibles
-  private coins!: Phaser.Physics.Arcade.Group;
-  private potions!: Phaser.Physics.Arcade.Group;
-  private chests!: Phaser.Physics.Arcade.Group;
+  private coins!: any; // Phaser.Physics.Arcade.Group with proper methods
+  private potions!: any; // Phaser.Physics.Arcade.Group with proper methods
+  private chests!: any; // Phaser.Physics.Arcade.Group with proper methods
   
   // Game state
   private score: number = 0;
@@ -58,13 +58,14 @@ export default class GameScene extends Phaser.Scene {
     // Create tilemap from JSON
     this.map = this.make.tilemap({ key: 'map' });
     
-    // Add the tileset image
-    this.tileset = this.map.addTilesetImage('main', 'tileset');
+    // Add the tileset image - name must match the 'name' property in the tileset from map.json
+    this.tileset = this.map.addTilesetImage('tileset', 'tileset');
     
-    // Create layers
+    // Create layers - these names must match exactly with the layer names in the map.json file
     this.groundLayer = this.map.createLayer('ground', this.tileset, 0, 0);
-    this.wallsLayer = this.map.createLayer('walls', this.tileset, 0, 0);
-    this.objectsLayer = this.map.createLayer('objects', this.tileset, 0, 0);
+    // We'll use the objects layer for walls since our map doesn't have a dedicated walls layer
+    this.wallsLayer = this.map.createLayer('objects', this.tileset, 0, 0);
+    this.objectsLayer = this.map.createLayer('decorations', this.tileset, 0, 0);
     
     // Set collisions for the walls layer
     this.wallsLayer.setCollisionByProperty({ collides: true });
@@ -79,85 +80,187 @@ export default class GameScene extends Phaser.Scene {
    * Create and configure the player character
    */
   private createPlayer(): void {
-    // Find player spawn position from object layer
-    const spawnPoint = this.map.findObject('objects', (obj: any) => obj.name === 'Player') || { x: 100, y: 100 };
+    // The player position is defined in the map.json "entities" array
+    // But if we can't find it, we'll use the map objects layer or a default position
+    let spawnPoint = { x: 160, y: 120 }; // Default position in middle area
+    
+    try {
+      // Try to find from object layer - using a Phaser compatible approach
+      try {
+        const objectLayers = this.map.objects;
+        if (objectLayers && objectLayers.length > 0) {
+          // Look through all object layers for player entity
+          for (const layer of objectLayers) {
+            if (layer.objects) {
+              const playerObj = layer.objects.find((obj: any) => 
+                obj.type === 'player' || obj.name === 'Player');
+              if (playerObj) {
+                spawnPoint = { x: playerObj.x, y: playerObj.y };
+                break;
+              }
+            }
+          }
+        }
+      } catch (layerError) {
+        console.warn('Error accessing map object layers:', layerError);
+      }
+    } catch (error) {
+      console.log('Using default player position, could not find player entity in map');
+    }
     
     // Create player sprite using pixelated texture
     this.player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'player_pixel');
     this.player.setDepth(30);
     
-    // Set player collision bounds
-    this.player.setSize(24, 24);
-    this.player.setOffset(4, 8);
+    // Set player collision bounds - make it slightly smaller than visual size
+    this.player.setSize(16, 20); // Smaller collision box than the 24x32 visual size
+    this.player.setOffset(4, 8); // Offset to center the collision box
     
     // Start with the player facing down
     this.player.anims.play('player_down');
+    
+    console.log('Player created at position:', spawnPoint.x, spawnPoint.y);
   }
   
   /**
    * Create collectible items throughout the level
    */
   private createItems(): void {
-    // Create groups for the various items
-    this.coins = this.physics.add.group();
-    this.potions = this.physics.add.group();
-    this.chests = this.physics.add.group();
+    // Create groups for the various items - we need to cast to any to work around 
+    // TypeScript definition issues with Phaser's Physics.Group
+    this.coins = this.physics.add.group() as any;
+    this.potions = this.physics.add.group() as any;
+    this.chests = this.physics.add.group() as any;
     
-    // Place coins
-    const coinObjects = this.map.createFromObjects('objects', { 
-      name: 'Coin',
-      key: 'coin_pixel'
-    });
+    // Keep track of item counts manually
+    let coinCount = 0;
+    let potionCount = 0;
+    let chestCount = 0;
     
-    this.coins.addMultiple(coinObjects);
-    this.physics.world.enable(coinObjects);
-    
-    coinObjects.forEach((coin: any) => {
-      coin.setDepth(25);
-      coin.setScale(0.8);
-      coin.body.setSize(20, 20);
+    try {
+      // Try to get entities from the map
+      // In the map.json file, entities are defined in a separate array
+      let entities: any[] = [];
       
-      // Add a simple bobbing animation
-      this.tweens.add({
-        targets: coin,
-        y: coin.y - 5,
-        duration: 800,
-        ease: 'Sine.easeInOut',
-        yoyo: true,
-        repeat: -1
+      try {
+        // First try accessing the entities directly from the map JSON
+        if (this.cache.json.exists('map')) {
+          const mapData = this.cache.json.get('map');
+          if (mapData.entities) {
+            entities = mapData.entities;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not access entities from map data directly');
+      }
+      
+      // If we couldn't get entities directly, try using objects from the map
+      if (entities.length === 0) {
+        try {
+          // Access object layers the Phaser way
+          const objectLayers = this.map.objects;
+          if (objectLayers && objectLayers.length > 0) {
+            // Find the 'objects' layer or use the first available layer
+            const objectsLayer = objectLayers.find((l: any) => l.name === 'objects') || objectLayers[0];
+            if (objectsLayer && objectsLayer.objects) {
+              entities = objectsLayer.objects;
+            }
+          }
+        } catch (objectError) {
+          console.warn('Could not access objects layer from map');
+        }
+      }
+      
+      // Process entities to create items
+      entities.forEach(entity => {
+        const x = entity.x;
+        const y = entity.y;
+        const type = entity.type || entity.properties?.item;
+        
+        if (type === 'coin' || entity.name === 'Coin') {
+          const coin = this.physics.add.sprite(x, y, 'coin_pixel');
+          coin.setDepth(25);
+          coin.setScale(0.8);
+          
+          if (coin.body) {
+            coin.body.setSize(20, 20);
+          }
+          
+          // Add to group and increment counter
+          this.coins.add(coin);
+          coinCount++;
+          
+          // Add a simple bobbing animation
+          this.tweens.add({
+            targets: coin,
+            y: coin.y - 5,
+            duration: 800,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1
+          });
+        } 
+        else if (type === 'potion' || entity.name === 'Potion' || entity.name === 'Health Potion') {
+          const potion = this.physics.add.sprite(x, y, 'potion_pixel');
+          potion.setDepth(25);
+          
+          if (potion.body) {
+            potion.body.setSize(20, 24);
+          }
+          
+          // Add to group and increment counter
+          this.potions.add(potion);
+          potionCount++;
+        }
+        else if (type === 'chest' || entity.name === 'Chest') {
+          const chest = this.physics.add.sprite(x, y, 'chest_pixel');
+          chest.setDepth(25);
+          
+          if (chest.body) {
+            chest.body.setSize(28, 20);
+          }
+          
+          // Add a property to track if the chest has been opened
+          (chest as any).isOpen = false;
+          
+          // Add to group and increment counter
+          this.chests.add(chest);
+          chestCount++;
+        }
       });
-    });
-    
-    // Place potions
-    const potionObjects = this.map.createFromObjects('objects', { 
-      name: 'Potion',
-      key: 'potion_pixel'
-    });
-    
-    this.potions.addMultiple(potionObjects);
-    this.physics.world.enable(potionObjects);
-    
-    potionObjects.forEach((potion: any) => {
-      potion.setDepth(25);
-      potion.body.setSize(20, 24);
-    });
-    
-    // Place chests
-    const chestObjects = this.map.createFromObjects('objects', { 
-      name: 'Chest',
-      key: 'chest_pixel'
-    });
-    
-    this.chests.addMultiple(chestObjects);
-    this.physics.world.enable(chestObjects);
-    
-    chestObjects.forEach((chest: any) => {
-      chest.setDepth(25);
-      chest.body.setSize(28, 20);
       
-      // Add a property to track if the chest has been opened
-      chest.isOpen = false;
-    });
+      // If we still don't have any items, create some manually for testing
+      if (coinCount === 0) {
+        const coin = this.physics.add.sprite(200, 200, 'coin_pixel');
+        coin.setDepth(25);
+        coin.setScale(0.8);
+        if (coin.body) coin.body.setSize(20, 20);
+        this.coins.add(coin);
+        coinCount++;
+        
+        this.tweens.add({
+          targets: coin,
+          y: coin.y - 5,
+          duration: 800,
+          ease: 'Sine.easeInOut',
+          yoyo: true,
+          repeat: -1
+        });
+      }
+      
+      if (potionCount === 0) {
+        const potion = this.physics.add.sprite(160, 120, 'potion_pixel');
+        potion.setDepth(25);
+        if (potion.body) potion.body.setSize(20, 24);
+        this.potions.add(potion);
+        potionCount++;
+      }
+      
+      console.log(`Created ${coinCount} coins, ${potionCount} potions, ${chestCount} chests`);
+      
+    } catch (error) {
+      console.error('Error creating items:', error);
+    }
   }
   
   /**

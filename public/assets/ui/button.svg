@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="32" version="1.1" viewBox="0 0 128 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Default button state -->
+  <g id="button-default">
+    <!-- Button background -->
+    <rect x="0" y="0" width="32" height="32" rx="4" fill="#3F51B5" stroke="#303F9F" stroke-width="2"/>
+    
+    <!-- Button text (gear icon) -->
+    <path d="M16,8 L16,9.5 L17.5,9.8 C17.7,10.3 17.9,10.7 18.2,11.1 L17.4,12.4 L18.5,13.5 L19.8,12.7 C20.2,13 20.6,13.2 21.1,13.4 L21.4,15 L23,15 L23.3,13.5 C23.8,13.3 24.2,13.1 24.6,12.8 L25.9,13.6 L27,12.5 L26.2,11.2 C26.5,10.8 26.7,10.4 26.9,9.9 L28.5,9.6 L28.5,8 L27,7.7 C26.8,7.2 26.6,6.8 26.3,6.4 L27.1,5.1 L26,4 L24.7,4.8 C24.3,4.5 23.9,4.3 23.4,4.1 L23.1,2.5 L21.5,2.5 L21.2,4 C20.7,4.2 20.3,4.4 19.9,4.7 L18.6,3.9 L17.5,5 L18.3,6.3 C18,6.7 17.8,7.1 17.6,7.6 L16,7.9 L16,8 Z" fill="#FFFFFF"/>
+    
+    <!-- Button highlight -->
+    <rect x="2" y="2" width="28" height="2" rx="1" fill="#7986CB" opacity="0.5"/>
+  </g>
+  
+  <!-- Hover button state -->
+  <g id="button-hover" transform="translate(32, 0)">
+    <!-- Button background -->
+    <rect x="0" y="0" width="32" height="32" rx="4" fill="#5C6BC0" stroke="#3F51B5" stroke-width="2"/>
+    
+    <!-- Button text (gear icon) -->
+    <path d="M16,8 L16,9.5 L17.5,9.8 C17.7,10.3 17.9,10.7 18.2,11.1 L17.4,12.4 L18.5,13.5 L19.8,12.7 C20.2,13 20.6,13.2 21.1,13.4 L21.4,15 L23,15 L23.3,13.5 C23.8,13.3 24.2,13.1 24.6,12.8 L25.9,13.6 L27,12.5 L26.2,11.2 C26.5,10.8 26.7,10.4 26.9,9.9 L28.5,9.6 L28.5,8 L27,7.7 C26.8,7.2 26.6,6.8 26.3,6.4 L27.1,5.1 L26,4 L24.7,4.8 C24.3,4.5 23.9,4.3 23.4,4.1 L23.1,2.5 L21.5,2.5 L21.2,4 C20.7,4.2 20.3,4.4 19.9,4.7 L18.6,3.9 L17.5,5 L18.3,6.3 C18,6.7 17.8,7.1 17.6,7.6 L16,7.9 L16,8 Z" fill="#FFFFFF"/>
+    
+    <!-- Button highlight -->
+    <rect x="2" y="2" width="28" height="2" rx="1" fill="#9FA8DA" opacity="0.5"/>
+  </g>
+  
+  <!-- Pressed button state -->
+  <g id="button-pressed" transform="translate(64, 0)">
+    <!-- Button background -->
+    <rect x="0" y="0" width="32" height="32" rx="4" fill="#303F9F" stroke="#1A237E" stroke-width="2"/>
+    
+    <!-- Button text (gear icon) -->
+    <path d="M16,8 L16,9.5 L17.5,9.8 C17.7,10.3 17.9,10.7 18.2,11.1 L17.4,12.4 L18.5,13.5 L19.8,12.7 C20.2,13 20.6,13.2 21.1,13.4 L21.4,15 L23,15 L23.3,13.5 C23.8,13.3 24.2,13.1 24.6,12.8 L25.9,13.6 L27,12.5 L26.2,11.2 C26.5,10.8 26.7,10.4 26.9,9.9 L28.5,9.6 L28.5,8 L27,7.7 C26.8,7.2 26.6,6.8 26.3,6.4 L27.1,5.1 L26,4 L24.7,4.8 C24.3,4.5 23.9,4.3 23.4,4.1 L23.1,2.5 L21.5,2.5 L21.2,4 C20.7,4.2 20.3,4.4 19.9,4.7 L18.6,3.9 L17.5,5 L18.3,6.3 C18,6.7 17.8,7.1 17.6,7.6 L16,7.9 L16,8 Z" fill="#C5CAE9"/>
+    
+    <!-- No highlight for pressed state -->
+  </g>
+  
+  <!-- Disabled button state -->
+  <g id="button-disabled" transform="translate(96, 0)">
+    <!-- Button background -->
+    <rect x="0" y="0" width="32" height="32" rx="4" fill="#9E9E9E" stroke="#757575" stroke-width="2"/>
+    
+    <!-- Button text (gear icon) -->
+    <path d="M16,8 L16,9.5 L17.5,9.8 C17.7,10.3 17.9,10.7 18.2,11.1 L17.4,12.4 L18.5,13.5 L19.8,12.7 C20.2,13 20.6,13.2 21.1,13.4 L21.4,15 L23,15 L23.3,13.5 C23.8,13.3 24.2,13.1 24.6,12.8 L25.9,13.6 L27,12.5 L26.2,11.2 C26.5,10.8 26.7,10.4 26.9,9.9 L28.5,9.6 L28.5,8 L27,7.7 C26.8,7.2 26.6,6.8 26.3,6.4 L27.1,5.1 L26,4 L24.7,4.8 C24.3,4.5 23.9,4.3 23.4,4.1 L23.1,2.5 L21.5,2.5 L21.2,4 C20.7,4.2 20.3,4.4 19.9,4.7 L18.6,3.9 L17.5,5 L18.3,6.3 C18,6.7 17.8,7.1 17.6,7.6 L16,7.9 L16,8 Z" fill="#EEEEEE" opacity="0.5"/>
+    
+    <!-- No highlight for disabled state -->
+  </g>
+</svg>

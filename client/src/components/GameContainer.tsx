@@ -60,33 +60,18 @@ export default function GameContainer({
     // Skip if no container
     if (!containerRef.current) return;
     
+    // Keep track of mounted state to avoid updates after component unmounts
+    let isMounted = true;
+    
     // Setup function to initialize the game
     const setupGame = async () => {
       try {
-        // Verify Phaser is available
-        if (typeof window === 'undefined' || (window as any).Phaser === undefined) {
-          // Load Phaser from CDN
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
-          script.async = true;
-          
-          // Create a promise that resolves when the script is loaded
-          const scriptLoadPromise = new Promise<void>((resolve, reject) => {
-            script.onload = () => {
-              console.log('Phaser loaded successfully from CDN');
-              // Make sure Phaser is globally available
-              window.Phaser = (window as any).Phaser;
-              resolve();
-            };
-            script.onerror = () => reject(new Error('Failed to load Phaser library'));
-          });
-          
-          // Add script to document
-          document.head.appendChild(script);
-          
-          // Wait for script to load
-          await scriptLoadPromise;
+        // Verify Phaser is available (it should be since we include it in index.html)
+        if (typeof window === 'undefined' || !window.Phaser) {
+          throw new Error('Phaser is not available. Please make sure it is loaded in index.html');
         }
+        
+        console.log('Using pre-loaded Phaser library');
         
         // Create Game instance
         const game = new Game({
@@ -105,25 +90,36 @@ export default function GameContainer({
           await game.initialize();
         }
         
+        // Guard against continues if component unmounted during async operations
+        if (!isMounted) return;
+        
         // Notify parent when game is ready
-        if (onGameReady) {
+        if (onGameReady && isMounted) {
           onGameReady(game);
         }
         
         // Update loading state
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       } catch (err) {
         console.error('Error initializing game:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize game');
-        setLoading(false);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to initialize game');
+          setLoading(false);
+        }
       }
     };
     
-    // Call setup function
-    setupGame();
+    // Call setup function after a short delay to ensure Phaser is loaded
+    const timerId = setTimeout(() => {
+      setupGame();
+    }, 100);
     
     // Cleanup on unmount
     return () => {
+      clearTimeout(timerId);
+      isMounted = false;
       if (gameInstanceRef.current) {
         gameInstanceRef.current.destroy();
         gameInstanceRef.current = null;

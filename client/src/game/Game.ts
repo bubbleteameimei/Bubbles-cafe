@@ -53,14 +53,14 @@ export default class Game {
   initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        // Check if Phaser is available
-        if (typeof Phaser === 'undefined') {
-          throw new Error('Phaser is not loaded. Make sure to include it in your project.');
+        // Check if Phaser is available - it should be pre-loaded in index.html
+        if (typeof window === 'undefined' || !window.Phaser) {
+          throw new Error('Phaser is not loaded. Make sure it is included in index.html.');
         }
 
         // Full game configuration with physics, etc.
         const gameConfig = {
-          type: Phaser.AUTO,
+          type: window.Phaser.AUTO,
           parent: this.config.parent,
           width: this.config.width,
           height: this.config.height,
@@ -79,14 +79,22 @@ export default class Game {
           scene: [BootScene, GameScene],
         };
 
-        // Create the game instance
-        this.game = new Phaser.Game(gameConfig);
+        // Create the game instance with window.Phaser reference
+        this.game = new window.Phaser.Game(gameConfig);
 
         // Resolve when the game is ready
         this.game.events.once('ready', () => {
           console.log('Eden\'s Hollow game initialized successfully');
           resolve();
         });
+
+        // Also resolve after a timeout in case 'ready' event doesn't fire
+        setTimeout(() => {
+          if (this.game && !this.game.destroyed) {
+            console.log('Eden\'s Hollow game initialized (timeout fallback)');
+            resolve();
+          }
+        }, 2000);
 
       } catch (error) {
         console.error('Error initializing game:', error);
