@@ -6,6 +6,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Game from '../game/Game';
 
+// Create a Phaser type declaration for TypeScript
+declare global {
+  interface Window {
+    Phaser: any;
+  }
+}
+
 // Props for the GameContainer component
 interface GameContainerProps {
   // Container ID (must be unique if multiple games on page)
@@ -33,6 +40,38 @@ interface GameContainerProps {
 }
 
 /**
+ * Load Phaser library dynamically if it's not already available
+ */
+const loadPhaserLibrary = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Check if Phaser is already loaded
+    if (window.Phaser) {
+      console.log('Phaser is already loaded');
+      resolve();
+      return;
+    }
+
+    // Create script element to load Phaser
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js';
+    script.async = true;
+    
+    // Handle script load events
+    script.onload = () => {
+      console.log('Phaser library loaded dynamically');
+      resolve();
+    };
+    
+    script.onerror = () => {
+      reject(new Error('Failed to load Phaser library'));
+    };
+    
+    // Add script to document
+    document.head.appendChild(script);
+  });
+};
+
+/**
  * Game Container Component
  * Renders a container for the Phaser game and manages its lifecycle
  */
@@ -54,11 +93,29 @@ export default function GameContainer({
   // State for loading and errors
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [phaserLoaded, setPhaserLoaded] = useState<boolean>(!!window.Phaser);
   
-  // Initialize the game on component mount
+  // First load Phaser if needed
   useEffect(() => {
-    // Skip if no container
-    if (!containerRef.current) return;
+    if (!phaserLoaded) {
+      setLoading(true);
+      
+      loadPhaserLibrary()
+        .then(() => {
+          setPhaserLoaded(true);
+        })
+        .catch((err) => {
+          console.error('Failed to load Phaser:', err);
+          setError('Failed to load Phaser game engine. Please try refreshing the page.');
+          setLoading(false);
+        });
+    }
+  }, [phaserLoaded]);
+  
+  // Initialize the game after Phaser is loaded
+  useEffect(() => {
+    // Skip if Phaser not loaded or no container
+    if (!phaserLoaded || !containerRef.current) return;
     
     // Keep track of mounted state to avoid updates after component unmounts
     let isMounted = true;
@@ -66,12 +123,12 @@ export default function GameContainer({
     // Setup function to initialize the game
     const setupGame = async () => {
       try {
-        // Verify Phaser is available (it should be since we include it in index.html)
+        // Double-check Phaser is available
         if (typeof window === 'undefined' || !window.Phaser) {
-          throw new Error('Phaser is not available. Please make sure it is loaded in index.html');
+          throw new Error('Phaser is not available even after loading. Please check browser console for errors.');
         }
         
-        console.log('Using pre-loaded Phaser library');
+        console.log('Initializing game with Phaser version:', window.Phaser.VERSION);
         
         // Create Game instance
         const game = new Game({
@@ -111,10 +168,10 @@ export default function GameContainer({
       }
     };
     
-    // Call setup function after a short delay to ensure Phaser is loaded
+    // Call setup function after a short delay to ensure Phaser is fully initialized
     const timerId = setTimeout(() => {
       setupGame();
-    }, 100);
+    }, 300);
     
     // Cleanup on unmount
     return () => {
@@ -125,7 +182,7 @@ export default function GameContainer({
         gameInstanceRef.current = null;
       }
     };
-  }, [containerId, width, height, pixelArt, backgroundColor, autoStart, onGameReady]);
+  }, [containerId, width, height, pixelArt, backgroundColor, autoStart, onGameReady, phaserLoaded]);
   
   // Handle window resize
   useEffect(() => {
@@ -162,7 +219,7 @@ export default function GameContainer({
       {loading && (
         <div className="game-loading">
           <div className="loading-spinner"></div>
-          <p>Loading Eden's Hollow...</p>
+          <p>Loading Eden's Hollow{phaserLoaded ? '...' : ' (Loading Game Engine)...'}</p>
         </div>
       )}
       

@@ -7,6 +7,13 @@
 import BootScene from './scenes/BootScene';
 import GameScene from './scenes/GameScene';
 
+// Ensure we have a type declaration for the global Phaser object
+declare global {
+  interface Window {
+    Phaser: any;
+  }
+}
+
 // Game configuration
 export interface GameConfig {
   parent: string;
@@ -37,7 +44,7 @@ const DEFAULT_CONFIG: GameConfig = {
  */
 export default class Game {
   private config: GameConfig;
-  private game: Phaser.Game | null;
+  private game: any | null; // Using any instead of Phaser.Game to avoid TypeScript errors
 
   constructor(config: Partial<GameConfig> = {}) {
     // Merge provided config with defaults
@@ -53,10 +60,12 @@ export default class Game {
   initialize(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        // Check if Phaser is available - it should be pre-loaded in index.html
+        // Check if Phaser is available
         if (typeof window === 'undefined' || !window.Phaser) {
-          throw new Error('Phaser is not loaded. Make sure it is included in index.html.');
+          throw new Error('Phaser is not loaded. Game engine is required for Eden\'s Hollow.');
         }
+
+        console.log('Creating game with Phaser version:', window.Phaser.VERSION);
 
         // Full game configuration with physics, etc.
         const gameConfig = {
@@ -80,21 +89,38 @@ export default class Game {
         };
 
         // Create the game instance with window.Phaser reference
-        this.game = new window.Phaser.Game(gameConfig);
+        try {
+          this.game = new window.Phaser.Game(gameConfig);
+          console.log('Game instance created successfully');
+        } catch (gameError) {
+          console.error('Error creating Phaser.Game instance:', gameError);
+          throw new Error('Failed to create game instance: ' + String(gameError));
+        }
 
         // Resolve when the game is ready
-        this.game.events.once('ready', () => {
-          console.log('Eden\'s Hollow game initialized successfully');
-          resolve();
-        });
+        if (this.game && this.game.events) {
+          this.game.events.once('ready', () => {
+            console.log('Eden\'s Hollow game initialized successfully (ready event)');
+            resolve();
+          });
 
-        // Also resolve after a timeout in case 'ready' event doesn't fire
+          // Also listen for boot event as backup
+          this.game.events.once('boot', () => {
+            console.log('Eden\'s Hollow game boot event fired');
+          });
+        } else {
+          console.warn('Game events not available, using timeout fallback only');
+        }
+
+        // Resolve after a timeout in case events don't fire
         setTimeout(() => {
           if (this.game && !this.game.destroyed) {
             console.log('Eden\'s Hollow game initialized (timeout fallback)');
             resolve();
+          } else if (!this.game) {
+            reject(new Error('Game failed to initialize (timeout reached and no game instance)'));
           }
-        }, 2000);
+        }, 3000); // Longer timeout for safety
 
       } catch (error) {
         console.error('Error initializing game:', error);
@@ -108,7 +134,12 @@ export default class Game {
    */
   destroy(): void {
     if (this.game) {
-      this.game.destroy(true);
+      try {
+        this.game.destroy(true);
+        console.log('Game destroyed successfully');
+      } catch (error) {
+        console.error('Error destroying game:', error);
+      }
       this.game = null;
     }
   }
@@ -120,7 +151,11 @@ export default class Game {
    */
   resize(width: number, height: number): void {
     if (this.game && this.game.scale) {
-      this.game.scale.resize(width, height);
+      try {
+        this.game.scale.resize(width, height);
+      } catch (error) {
+        console.error('Error resizing game:', error);
+      }
     }
   }
 
@@ -129,9 +164,14 @@ export default class Game {
    * @param key Scene key
    * @returns The scene instance or undefined if not found
    */
-  getScene(key: string): Phaser.Scene | undefined {
+  getScene(key: string): any | undefined {
     if (this.game && this.game.scene) {
-      return this.game.scene.getScene(key);
+      try {
+        return this.game.scene.getScene(key);
+      } catch (error) {
+        console.error('Error getting scene:', error);
+        return undefined;
+      }
     }
     return undefined;
   }
@@ -143,7 +183,11 @@ export default class Game {
    */
   startScene(key: string, data?: any): void {
     if (this.game && this.game.scene) {
-      this.game.scene.start(key, data);
+      try {
+        this.game.scene.start(key, data);
+      } catch (error) {
+        console.error('Error starting scene:', error);
+      }
     }
   }
 
