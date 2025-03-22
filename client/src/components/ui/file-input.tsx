@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 interface FileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   helperText?: string;
-  error?: string;
+  error?: string | undefined;
 }
 
 const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(

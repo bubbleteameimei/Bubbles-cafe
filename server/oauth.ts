@@ -397,4 +397,206 @@ export function setupOAuth(app: Express) {
       res.status(500).json({ error: 'Failed to update profile' });
     }
   });
+
+  // Profile image upload route
+  app.patch('/api/auth/profile-with-image', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      
+      // Create a buffer to store the file data
+      let fileData = Buffer.alloc(0);
+      let contentType = '';
+      let fileName = '';
+      let username = '';
+      let fullName = '';
+      let bio = '';
+      
+      // Define allowed file types
+      const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      // Define max file size (5MB)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024;
+      
+      // Check if the request's content type is multipart/form-data
+      if (!req.headers['content-type']?.includes('multipart/form-data')) {
+        return res.status(400).json({ error: 'Content type must be multipart/form-data' });
+      }
+      
+      // Get the boundary from the content type
+      const boundary = req.headers['content-type']
+        .split(';')[1]
+        ?.trim()
+        .split('=')[1];
+      
+      if (!boundary) {
+        return res.status(400).json({ error: 'Invalid multipart/form-data format' });
+      }
+      
+      let currentField = '';
+      let collectingFileData = false;
+      let fileDataChunks: Buffer[] = [];
+      
+      // Parse the multipart form data with improved chunk handling
+      req.on('data', (chunk) => {
+        // Convert chunk to string for header inspection
+        const chunkStr = chunk.toString();
+        
+        // Look for form field boundaries
+        if (chunkStr.includes(`--${boundary}`)) {
+          collectingFileData = false;
+          
+          // Check for field names in this chunk
+          if (chunkStr.includes('name="username"')) {
+            currentField = 'username';
+          } else if (chunkStr.includes('name="fullName"')) {
+            currentField = 'fullName';
+          } else if (chunkStr.includes('name="bio"')) {
+            currentField = 'bio';
+          } else if (chunkStr.includes('name="avatarFile"')) {
+            currentField = 'avatarFile';
+            collectingFileData = true;
+            
+            // Extract content type and filename if available
+            if (chunkStr.includes('Content-Type:')) {
+              contentType = chunkStr.split('Content-Type:')[1].split('\r\n')[0].trim();
+            }
+            
+            if (chunkStr.includes('filename=')) {
+              fileName = chunkStr.split('filename=')[1].split('\r\n')[0].trim().replace(/"/g, '');
+            }
+          }
+        }
+        
+        // Handle data based on current field
+        if (collectingFileData && currentField === 'avatarFile') {
+          // For file data, store the raw buffer for later processing
+          fileDataChunks.push(chunk);
+        } else if (currentField && !collectingFileData) {
+          // For text fields, extract the value
+          const fieldMatch = chunkStr.match(new RegExp(`name="${currentField}"[\\s\\S]*?\\r\\n\\r\\n([\\s\\S]*?)(?=\\r\\n--${boundary}|$)`));
+          if (fieldMatch && fieldMatch[1]) {
+            const value = fieldMatch[1].trim();
+            switch (currentField) {
+              case 'username':
+                username = value;
+                break;
+              case 'fullName':
+                fullName = value;
+                break;
+              case 'bio':
+                bio = value;
+                break;
+            }
+          }
+        }
+      });
+      
+      req.on('end', async () => {
+        try {
+          // Process file data if we have it
+          if (fileDataChunks.length === 0) {
+            return res.status(400).json({ error: 'No file uploaded' });
+          }
+          
+          // Combine all the file data chunks
+          fileData = Buffer.concat(fileDataChunks);
+          
+          // Extract the actual file content from the multipart data
+          // This is a simplistic approach - in production we'd use a proper parser
+          const dataStr = fileData.toString();
+          const headerEndIndex = dataStr.indexOf('\r\n\r\n');
+          if (headerEndIndex > -1) {
+            // Skip the headers
+            fileData = fileData.slice(headerEndIndex + 4);
+            
+            // Find the end boundary
+            const boundaryIndex = fileData.indexOf(`--${boundary}`);
+            if (boundaryIndex > -1) {
+              fileData = fileData.slice(0, boundaryIndex - 2); // -2 for \r\n
+            }
+          }
+          
+          // Validate the file
+          if (fileData.length === 0) {
+            return res.status(400).json({ error: 'Empty file uploaded' });
+          }
+          
+          // Check if the file size is too large (adjust for multipart overhead)
+          if (fileData.length > MAX_FILE_SIZE) {
+            return res.status(400).json({ error: 'File is too large (max 5MB)' });
+          }
+          
+          // Check file type
+          if (!ACCEPTED_IMAGE_TYPES.includes(contentType)) {
+            return res.status(400).json({ error: 'File type not supported (use .jpg, .jpeg, .png, or .webp)' });
+          }
+          
+          // Convert image to base64 for storage
+          const base64Image = `data:${contentType};base64,${fileData.toString('base64')}`;
+          
+          // Prepare the user update
+          const currentMetadata = user.metadata || {};
+          const updateData: any = {
+            metadata: {
+              ...currentMetadata,
+              photoURL: base64Image
+            }
+          };
+          
+          // Add additional form fields if provided
+          if (username && username !== user.username) {
+            // Check if username is already taken 
+            const existingUser = await storage.getUserByUsername(username);
+            if (existingUser && existingUser.id !== user.id) {
+              return res.status(400).json({ error: 'Username is already taken' });
+            }
+            updateData.username = username;
+          }
+          
+          if (fullName) {
+            updateData.metadata.displayName = fullName;
+          }
+          
+          if (bio) {
+            updateData.metadata.bio = bio;
+          }
+          
+          // Save the update
+          const updatedUser = await storage.updateUser(user.id, updateData);
+          
+          // Update session if username changed
+          if (username && username !== user.username && req.session && req.session.user) {
+            req.session.user.username = username;
+          }
+          
+          // Return success response
+          const updatedMetadata = (updatedUser.metadata || {}) as UserMetadata;
+          res.json({
+            success: true,
+            user: {
+              id: updatedUser.id,
+              username: updatedUser.username,
+              email: updatedUser.email,
+              avatar: updatedMetadata.photoURL || null,
+              fullName: updatedMetadata.displayName || null,
+              bio: updatedMetadata.bio || null,
+              isAdmin: updatedUser.isAdmin,
+              createdAt: updatedUser.createdAt
+            }
+          });
+        } catch (error) {
+          console.error('[Profile] Error processing image upload:', error);
+          res.status(500).json({ error: 'Failed to process image upload' });
+        }
+      });
+      
+      req.on('error', (error) => {
+        console.error('[Profile] Error in upload request:', error);
+        res.status(500).json({ error: 'Upload failed' });
+      });
+      
+    } catch (error) {
+      console.error('[Profile] Error in profile image upload:', error);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
 }
