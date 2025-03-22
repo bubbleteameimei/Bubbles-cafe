@@ -34,44 +34,60 @@ async function testCSRFProtection() {
     // Step 1: Get a CSRF token by making a GET request
     console.log('\n1. Requesting CSRF token from server...');
     const tokenResponse = await fetch('http://localhost:3001/health', {
-      method: 'GET'
+      method: 'GET',
+      credentials: 'include' // Important for cookies to be set
     });
     
     if (!tokenResponse.ok) {
       throw new Error(`Failed to get CSRF token: ${tokenResponse.status} ${tokenResponse.statusText}`);
     }
     
-    // Extract the CSRF token from the Set-Cookie header
-    const setCookieHeader = tokenResponse.headers.get('set-cookie');
-    if (!setCookieHeader) {
-      throw new Error('No cookies returned from server');
-    }
+    // Get the response data which now includes the CSRF token directly
+    const responseData = await tokenResponse.json();
+    console.log('Health endpoint response:', responseData);
     
-    const cookies = setCookieHeader.split(',');
-    let csrfToken = null;
+    // Get the token from the response data
+    let csrfToken = responseData.csrfToken;
     
-    // Parse each cookie to find the CSRF token
-    for (const cookie of cookies) {
-      if (cookie.includes('XSRF-TOKEN')) {
-        const tokenPart = cookie.split(';')[0];
-        const tokenValue = tokenPart.split('=')[1];
-        csrfToken = tokenValue;
-        break;
+    // As a fallback, try to extract from the Set-Cookie header
+    if (!csrfToken) {
+      console.log('Token not found in response JSON, looking in cookies...');
+      
+      const setCookieHeader = tokenResponse.headers.get('set-cookie');
+      if (!setCookieHeader) {
+        throw new Error('No cookies returned from server');
+      }
+      
+      const cookies = setCookieHeader.split(',');
+      
+      // Parse each cookie to find the CSRF token
+      for (const cookie of cookies) {
+        if (cookie.includes('XSRF-TOKEN')) {
+          const tokenPart = cookie.split(';')[0];
+          const tokenValue = tokenPart.split('=')[1];
+          csrfToken = tokenValue;
+          break;
+        }
       }
     }
     
     if (!csrfToken) {
-      throw new Error('CSRF token not found in cookies');
+      throw new Error('CSRF token not found in response or cookies');
     }
     
     console.log(`CSRF token obtained: ${csrfToken.substring(0, 10)}...`);
     
     // Also extract the session cookie for authentication
+    const setCookieHeader = tokenResponse.headers.get('set-cookie');
     let sessionCookie = null;
-    for (const cookie of cookies) {
-      if (cookie.includes('connect.sid')) {
-        sessionCookie = cookie.split(';')[0];
-        break;
+    
+    if (setCookieHeader) {
+      const cookies = setCookieHeader.split(',');
+      for (const cookie of cookies) {
+        if (cookie.includes('connect.sid')) {
+          sessionCookie = cookie.split(';')[0];
+          break;
+        }
       }
     }
     

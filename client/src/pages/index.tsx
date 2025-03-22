@@ -116,39 +116,11 @@ export default function IndexView() {
   const isLoading = allPostsQuery.isLoading || isPaginatedLoading;
   const error = allPostsQuery.error || paginatedError;
   
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-          <h2 className="text-xl font-semibold text-foreground">Loading stories...</h2>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if we have any posts from either query
+  // Always declare these variables regardless of loading state
   const hasAllPosts = allPostsQuery.data && allPostsQuery.data.length > 0;
   const hasPaginatedPosts = data?.pages && data.pages.length > 0 && data.pages[0]?.posts?.length > 0;
   
-  if (!hasAllPosts && !hasPaginatedPosts) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
-          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Use all posts query if successful, otherwise use paginated posts
+  // Initialize posts array - will be populated below if data is available
   let allPosts: Post[] = [];
   if (hasAllPosts) {
     allPosts = allPostsQuery.data;
@@ -156,15 +128,18 @@ export default function IndexView() {
     allPosts = data.pages.flatMap(page => page.posts);
   }
   
-  // Sort posts by newest first (default sorting for March 3rd version)
-  const sortedPosts = [...allPosts].sort((a: Post, b: Post) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Always initialize these variables, even if they're empty
+  const sortedPosts = [...allPosts].sort((a: Post, b: Post) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   
   // Display all posts instead of paginating
   const currentPosts = sortedPosts;
   
   // Find a featured story using actual metrics - likes, views, and performance data
+  // Always call useMemo, even if currentPosts is empty
   const featuredStory = useMemo(() => {
-    if (currentPosts.length === 0) return null;
+    if (!currentPosts || currentPosts.length === 0) return null;
     
     // Sort posts by engagement metrics (likes and views)
     // This uses actual database metrics from the posts table
@@ -204,6 +179,35 @@ export default function IndexView() {
     // Return the post with highest engagement and theme, or just the highest engagement
     return topWithTheme || sortedByEngagement[0];
   }, [currentPosts]);
+  
+  // Now handle conditional renders after all hooks have been called
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+          <h2 className="text-xl font-semibold text-foreground">Loading stories...</h2>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!hasAllPosts && !hasPaginatedPosts) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
+          <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-background">

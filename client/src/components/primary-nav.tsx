@@ -56,7 +56,7 @@ export function PrimaryNav() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Search component could go here */}
           </div>
-          <nav className="flex items-center">
+          <nav className="flex items-center -mt-1"> {/* Added negative margin-top to move buttons up */}
             <GlobalThemeToggle className="mr-2" />
             <div className="ml-3 text-xs text-muted-foreground">
               {theme === 'dark' ? 'Dark' : 'Light'} Mode

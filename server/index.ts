@@ -9,6 +9,7 @@ import { seedDatabase } from "./seed";
 import path from "path";
 import helmet from "helmet";
 import compression from "compression";
+import crypto from "crypto";
 import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
@@ -19,7 +20,7 @@ import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
-import { setCsrfToken, validateCsrfToken, csrfTokenToLocals } from "./middleware/csrf-protection";
+import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -80,9 +81,26 @@ app.use(validateCsrfToken({
 setupAuth(app);
 setupOAuth(app);
 
-// Add health check endpoint
+// Add health check endpoint with CSRF token initialization
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  // Ensure a CSRF token is set
+  if (!req.session.csrfToken) {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    req.session.csrfToken = token;
+    
+    // Set the token as a cookie for client-side access
+    res.cookie(CSRF_TOKEN_NAME, token, {
+      httpOnly: false, // Must be accessible by JavaScript
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+  }
+  
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    csrfToken: req.session.csrfToken 
+  });
 });
 
 // Basic security headers

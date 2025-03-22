@@ -109,23 +109,37 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
 
     // Ensure session exists and has a CSRF token
     if (!req.session || !req.session.csrfToken) {
+      console.warn(`CSRF validation failed: Token missing from session for ${req.method} ${req.path}`);
       return res.status(403).json({
-        error: 'CSRF token is missing from session'
+        error: 'CSRF token is missing from session',
+        code: 'CSRF_SESSION_MISSING',
+        path: req.path,
+        method: req.method
       });
     }
 
     // Get token from request
     const requestToken = getTokenFromRequest(req);
     if (!requestToken) {
+      console.warn(`CSRF validation failed: Token missing from request for ${req.method} ${req.path}`);
       return res.status(403).json({
-        error: 'CSRF token is missing from request'
+        error: 'CSRF token is missing from request',
+        code: 'CSRF_TOKEN_MISSING',
+        path: req.path,
+        method: req.method,
+        headers: Object.keys(req.headers)
       });
     }
 
     // Validate token
     if (requestToken !== req.session.csrfToken) {
+      console.warn(`CSRF validation failed: Token mismatch for ${req.method} ${req.path}`);
+      console.warn(`Expected: ${req.session.csrfToken}, Got: ${requestToken}`);
       return res.status(403).json({
-        error: 'CSRF token validation failed'
+        error: 'CSRF token validation failed',
+        code: 'CSRF_TOKEN_MISMATCH',
+        path: req.path,
+        method: req.method
       });
     }
 

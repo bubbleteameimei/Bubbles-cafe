@@ -47,14 +47,31 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
   
   try {
-    // Make a GET request to a simple endpoint to get a fresh token
-    // The server will set the CSRF cookie on the response
-    await fetch('/health', {
+    // Make a GET request to the health endpoint which returns the CSRF token
+    // The server will also set the CSRF cookie on the response
+    const response = await fetch('/health', {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
     });
     
-    // Now try to get the token from cookies
+    if (!response.ok) {
+      console.error('Failed to fetch CSRF token, server responded with:', response.status);
+      return null;
+    }
+    
+    // Get the response JSON which includes the token
+    const data = await response.json();
+    
+    // Store the token from the response
+    if (data && data.csrfToken) {
+      csrfToken = data.csrfToken;
+      return csrfToken;
+    }
+    
+    // If the server didn't include the token in the response, try to get it from cookies
     return getCsrfToken();
   } catch (error) {
     console.error('Error fetching CSRF token:', error);
