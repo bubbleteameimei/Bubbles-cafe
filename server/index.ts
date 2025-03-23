@@ -21,6 +21,7 @@ import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recomme
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
+import { setupCors } from "./cors-setup";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -34,6 +35,9 @@ let server: ReturnType<typeof createServer>;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+
+// Configure CORS for cross-domain requests when deployed on Vercel/Render
+setupCors(app);
 
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
@@ -53,8 +57,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: !isDev,
+    secure: process.env.NODE_ENV === 'production', // Only secure in production
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
   store: storage.sessionStore
@@ -92,7 +97,7 @@ app.get('/health', (req, res) => {
     res.cookie(CSRF_TOKEN_NAME, token, {
       httpOnly: false, // Must be accessible by JavaScript
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
     });
   }
   

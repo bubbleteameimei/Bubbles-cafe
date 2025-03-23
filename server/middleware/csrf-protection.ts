@@ -49,7 +49,7 @@ export function setCsrfToken(secureCookie = false) {
       res.cookie(CSRF_TOKEN_NAME, req.session.csrfToken, {
         httpOnly: false, // Needs to be accessible by JavaScript
         secure: secureCookie,
-        sameSite: 'lax'
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
       });
       return next();
     }
@@ -62,7 +62,7 @@ export function setCsrfToken(secureCookie = false) {
     res.cookie(CSRF_TOKEN_NAME, token, {
       httpOnly: false, // Needs to be accessible by JavaScript
       secure: secureCookie,
-      sameSite: 'lax'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
     });
 
     next();
