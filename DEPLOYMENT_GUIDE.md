@@ -108,6 +108,8 @@ Before moving your project from Replit to a split deployment setup, ensure you:
 Since we couldn't modify all the necessary files in this environment, you'll need to make the following changes manually before deploying:
 
 1. **Add CORS Support to the Backend**:
+   
+   **Option 1**: Quick implementation directly in `server/index.ts`:
    Add this to your `server/index.ts` file, after the imports:
    ```typescript
    import cors from 'cors';
@@ -123,6 +125,17 @@ Since we couldn't modify all the necessary files in this environment, you'll nee
      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
    }));
    ```
+   
+   **Option 2**: Use the pre-built CORS setup file:
+   ```typescript
+   // In server/index.ts, after imports
+   import { setupCors } from "./cors-setup";
+   
+   // After initializing your Express app
+   setupCors(app);
+   ```
+   
+   Make sure to update the allowed origins in `server/cors-setup.ts` with your actual Vercel frontend URL.
 
 2. **Update Session Cookie Settings**:
    In `server/index.ts`, modify the session configuration:
