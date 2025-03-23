@@ -46,10 +46,13 @@ export function getCsrfToken(): string | null {
 export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   if (csrfToken) return csrfToken;
   
+  // Get the API base URL from environment variable
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+  
   try {
     // Make a GET request to the health endpoint which returns the CSRF token
     // The server will also set the CSRF cookie on the response
-    const response = await fetch('/health', {
+    const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -143,8 +146,17 @@ export async function initCSRFProtection(): Promise<void> {
   
   // Type-safe implementation for fetch override
   window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    // Don't intercept requests to external domains
-    if (typeof input === 'string' && input.startsWith('http') && !input.includes(window.location.host)) {
+    // Get the API base URL
+    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+    
+    // For cross-domain API calls, determine if it's to our backend API
+    const isApiCall = typeof input === 'string' && 
+      ((API_BASE_URL && input.startsWith(API_BASE_URL)) || 
+       (!API_BASE_URL && !input.startsWith('http')));
+      
+    // Don't intercept requests to external domains that aren't our API
+    if (typeof input === 'string' && input.startsWith('http') && 
+        !input.includes(window.location.host) && !isApiCall) {
       return originalFetch(input, init);
     }
     

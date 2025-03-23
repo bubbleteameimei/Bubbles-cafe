@@ -7,6 +7,10 @@
  */
 import { applyCSRFToken, fetchCsrfTokenIfNeeded } from './csrf-token';
 
+// This will be set in production deployment to the URL of the backend API server
+// For local development, we leave it empty to use relative paths
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export async function apiRequest(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   endpoint: string,
@@ -26,13 +30,16 @@ export async function apiRequest(
     options.body = JSON.stringify(body);
   }
 
+  // Construct the full URL
+  const url = API_BASE_URL ? `${API_BASE_URL}${endpoint}` : endpoint;
+
   // Apply CSRF token for non-GET requests
   if (method !== 'GET') {
     // Ensure we have a fresh token first
     await fetchCsrfTokenIfNeeded();
     
     try {
-      const response = await fetch(endpoint, applyCSRFToken(options));
+      const response = await fetch(url, applyCSRFToken(options));
       
       // If we get a 403 with a specific message about CSRF, try to refresh the token and retry
       if (response.status === 403) {
@@ -45,7 +52,7 @@ export async function apiRequest(
             await fetchCsrfTokenIfNeeded();
             
             // Retry the request with a fresh token
-            return fetch(endpoint, applyCSRFToken(options));
+            return fetch(url, applyCSRFToken(options));
           }
         } catch (e) {
           // If we can't parse the error response, just return the original response
@@ -59,5 +66,5 @@ export async function apiRequest(
     }
   }
 
-  return fetch(endpoint, options);
+  return fetch(url, options);
 }
