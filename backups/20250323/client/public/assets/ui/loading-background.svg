@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pixel art style loading background -->
+  <rect width="200" height="40" rx="4" fill="#2D2D2D"/>
+  <rect x="4" y="4" width="192" height="32" rx="2" fill="#1D1D1D"/>
+  
+  <!-- Pixel borders -->
+  <rect x="4" y="4" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="192" y="4" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="4" y="32" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="192" y="32" width="4" height="4" fill="#3D3D3D"/>
+  
+  <!-- Pixel details -->
+  <rect x="12" y="12" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="20" y="12" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="176" y="12" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="184" y="12" width="4" height="4" fill="#3D3D3D"/>
+  
+  <rect x="12" y="24" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="20" y="24" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="176" y="24" width="4" height="4" fill="#3D3D3D"/>
+  <rect x="184" y="24" width="4" height="4" fill="#3D3D3D"/>
+</svg>

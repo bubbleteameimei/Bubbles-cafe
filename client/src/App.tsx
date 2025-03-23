@@ -112,6 +112,7 @@ const withSuspense = <P extends Record<string, any>>(
 import ReaderPage from './pages/reader';
 
 // Lazy load non-critical pages
+const ResponsiveDemoPage = withSuspense(React.lazy(() => import('./pages/responsive-demo')));
 const HomePage = withSuspense(React.lazy(() => import('./pages/home')));
 const StoriesPage = withSuspense(React.lazy(() => import('./pages/index')));
 const AboutPage = withSuspense(React.lazy(() => import('./pages/about')));
@@ -233,20 +234,20 @@ const AppContent = () => {
   // For all other pages, render with normal layout
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <aside className="fixed top-0 left-0 z-40 h-screen w-64 hidden lg:block overflow-hidden">
+      {/* Desktop Sidebar - optimized for larger screens */}
+      <aside className="fixed top-0 left-0 z-40 h-screen w-64 sm:w-60 md:w-64 lg:w-72 hidden lg:block overflow-hidden border-r border-border/80">
         <div className="h-full w-full">
-          <div className="h-[56px] px-4 flex items-center border-b border-border bg-background">
-            <h1 className="text-foreground font-medium text-lg">Stories</h1>
+          <div className="h-[56px] md:h-[64px] lg:h-[72px] px-4 md:px-6 flex items-center border-b border-border bg-background">
+            <h1 className="text-foreground font-medium text-lg md:text-xl lg:text-2xl">Stories</h1>
           </div>
           <SidebarNavigation onNavigate={() => {}} />
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="min-h-screen lg:ml-64">
+      {/* Main Content - responsive spacing for different device sizes */}
+      <main className="min-h-screen lg:ml-72">
         <AutoHideNavbar />
-        <div className="container mx-auto px-4 py-6 pt-20 lg:pt-6">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-8 pt-20 lg:pt-8 max-w-7xl">
           <ErrorBoundary>
             <EnhancedPageTransition>
               <Switch>
@@ -268,6 +269,8 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
+                {/* Responsive Demo Page */}
+                <Route path="/responsive-demo" component={ResponsiveDemoPage} />
                 {/* Removed test pages routes */}
                 <Route path="/bookmarks" component={BookmarksPage} />
                 <ProtectedRoute path="/profile" component={ProfilePage} />

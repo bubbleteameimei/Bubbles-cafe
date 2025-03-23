@@ -6,12 +6,39 @@ interface AutoHideNavbarProps {
   hideOnPaths?: string[];
 }
 
-// We're removing the auto-hide behavior since we want the header to stay visible
-// and scroll together with content
+/**
+ * AutoHideNavbar component - optimized for tablet, desktop, and laptop layouts
+ * 
+ * This component handles:
+ * 1. Path-based conditional rendering of navigation
+ * 2. Device-specific layout adjustments
+ * 3. Navigation visibility based on page context
+ */
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
   hideOnPaths = []
 }) => {
   const [currentPath, setCurrentPath] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Track scroll position for desktop and laptop enhancements
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      if (scrollPosition > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    // Initial check
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     // Update current path when component mounts
@@ -40,8 +67,14 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
     return null;
   }
 
-  // Return a regular navigation without animation
-  return <Navigation />;
+  // Return navigation with responsive class for device optimization
+  return (
+    <div className={`navbar-container transition-all duration-300 ${
+      isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'
+    }`}>
+      <Navigation />
+    </div>
+  );
 };
 
 export default AutoHideNavbar;

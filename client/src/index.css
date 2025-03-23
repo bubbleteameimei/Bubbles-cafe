@@ -201,49 +201,63 @@ html.dark *, html.light * {
 
   /* Dark mode class for theme toggle - Standard Dark Charcoal Theme */
   .dark {
-    --background: 0 0% 9%;             /* Deep charcoal background (#171717) */
+    --background: 0 0% 7%;             /* Darker charcoal background (#121212) */
     --foreground: 0 0% 92%;            /* Light gray text (#EAEAEA) */
-    --card: 0 0% 13%;                  /* Slightly lighter card background (#212121) */
+    --card: 0 0% 12%;                  /* Slightly lighter card background (#1E1E1E) */
     --card-foreground: 0 0% 92%;       /* Light gray text on card */
-    --popover: 0 0% 13%;               /* Same as card */
+    --popover: 0 0% 12%;               /* Same as card */
     --popover-foreground: 0 0% 92%;    /* Same as foreground */
     --primary: 209 75% 48%;            /* Keeping the same primary for brand consistency (#1E78E5) */
     --primary-foreground: 0 0% 100%;   /* White text on primary */
     --secondary: 0 0% 18%;             /* Dark gray secondary (#2E2E2E) */
     --secondary-foreground: 0 0% 92%;  /* Light gray text on secondary */
     --muted: 0 0% 16%;                 /* Muted dark background (#282828) */
-    --muted-foreground: 0 0% 70%;      /* Medium gray muted text (#B3B3B3) */
+    --muted-foreground: 0 0% 75%;      /* Medium gray muted text (#BFBFBF) - improved contrast */
     --accent: 0 0% 20%;                /* Slightly lighter accent (#333333) */
-    --accent-foreground: 0 0% 92%;     /* Light gray text on accent */
+    --accent-foreground: 0 0% 95%;     /* Light gray text on accent - better contrast (#F2F2F2) */
     --destructive: 0 72% 51%;          /* Same destructive color for consistency */
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
-    --border: 0 0% 22%;                /* Dark border (#383838) */
-    --input: 0 0% 22%;                 /* Dark input border */
+    --border: 0 0% 24%;                /* Dark border (#3D3D3D) - slightly higher contrast */
+    --input: 0 0% 24%;                 /* Dark input border - matching border */
     --ring: 209 75% 48%;               /* Same as primary */
+    
+    /* Additional dark mode variables for better readability */
+    --dark-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    --dark-elevation-1: rgba(255, 255, 255, 0.05);
+    --dark-elevation-2: rgba(255, 255, 255, 0.07);
+    --dark-elevation-3: rgba(255, 255, 255, 0.09);
+    --dark-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
   /* System color preference - only applies when JS is disabled or theme toggle not used */
   @media (prefers-color-scheme: dark) {
     :root:not(.light) {
-      --background: 0 0% 9%;             /* Deep charcoal background (#171717) */
+      --background: 0 0% 7%;             /* Darker charcoal background (#121212) */
       --foreground: 0 0% 92%;            /* Light gray text (#EAEAEA) */
-      --card: 0 0% 13%;                  /* Slightly lighter card background (#212121) */
+      --card: 0 0% 12%;                  /* Slightly lighter card background (#1E1E1E) */
       --card-foreground: 0 0% 92%;       /* Light gray text on card */
-      --popover: 0 0% 13%;               /* Same as card */
+      --popover: 0 0% 12%;               /* Same as card */
       --popover-foreground: 0 0% 92%;    /* Same as foreground */
       --primary: 209 75% 48%;            /* Keeping the same primary for brand consistency (#1E78E5) */
       --primary-foreground: 0 0% 100%;   /* White text on primary */
       --secondary: 0 0% 18%;             /* Dark gray secondary (#2E2E2E) */
       --secondary-foreground: 0 0% 92%;  /* Light gray text on secondary */
       --muted: 0 0% 16%;                 /* Muted dark background (#282828) */
-      --muted-foreground: 0 0% 70%;      /* Medium gray muted text (#B3B3B3) */
+      --muted-foreground: 0 0% 75%;      /* Medium gray muted text (#BFBFBF) - improved contrast */
       --accent: 0 0% 20%;                /* Slightly lighter accent (#333333) */
-      --accent-foreground: 0 0% 92%;     /* Light gray text on accent */
+      --accent-foreground: 0 0% 95%;     /* Light gray text on accent - better contrast (#F2F2F2) */
       --destructive: 0 72% 51%;          /* Same destructive color for consistency */
       --destructive-foreground: 0 0% 100%; /* White text on destructive */
-      --border: 0 0% 22%;                /* Dark border (#383838) */
-      --input: 0 0% 22%;                 /* Dark input border */
+      --border: 0 0% 24%;                /* Dark border (#3D3D3D) - slightly higher contrast */
+      --input: 0 0% 24%;                 /* Dark input border - matching border */
       --ring: 209 75% 48%;               /* Same as primary */
+      
+      /* Additional dark mode variables for better readability */
+      --dark-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      --dark-elevation-1: rgba(255, 255, 255, 0.05);
+      --dark-elevation-2: rgba(255, 255, 255, 0.07);
+      --dark-elevation-3: rgba(255, 255, 255, 0.09);
+      --dark-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
   }
 

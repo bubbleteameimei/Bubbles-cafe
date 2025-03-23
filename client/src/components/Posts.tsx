@@ -200,27 +200,35 @@ function Posts() {
         </div>
       )}
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 md:gap-6 lg:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
         {posts.map((post: WordPressPost) => (
-          <Card key={post.id} className="p-4">
-            <h2 className="text-xl font-bold mb-2 line-clamp-2">
+          <Card 
+            key={post.id} 
+            className="p-4 sm:p-5 md:p-6 transition-all duration-300 hover:shadow-lg hover:border-primary/30 flex flex-col"
+          >
+            <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 group hover:text-primary transition-colors">
               <Link href={`/reader/${post.slug}`}>
                 <span dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
               </Link>
             </h2>
             {post.excerpt?.rendered ? (
               <div 
-                className="text-sm text-muted-foreground mb-4 line-clamp-3"
+                className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-3 flex-grow"
                 dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
               />
             ) : (
-              <div className="text-sm text-muted-foreground mb-4">
+              <div className="text-sm sm:text-base text-muted-foreground mb-4 flex-grow">
                 No excerpt available
               </div>
             )}
-            <div className="mt-auto pt-2">
-              <Link href={`/reader/${post.slug}`}>
-                <Button variant="outline">Read story</Button>
+            <div className="mt-auto pt-2 sm:pt-3 border-t border-border/30">
+              <Link href={`/reader/${post.slug}`} className="w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  className="w-full sm:w-auto transition-all hover:bg-primary/5"
+                >
+                  Read story
+                </Button>
               </Link>
             </div>
           </Card>
