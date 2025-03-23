@@ -138,6 +138,28 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/register", authLimiter);
   
   // Use more generous rate limits for analytics endpoints
+  
+  // Health check endpoint for deployment testing
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development"
+    });
+  });
+  
+  // Public config endpoint for environment testing (safe values only)
+  app.get("/api/config/public", (_req: Request, res: Response) => {
+    res.status(200).json({
+      frontendUrl: process.env.FRONTEND_URL || "",
+      environment: process.env.NODE_ENV || "development",
+      apiVersion: "1.0.0",
+      features: {
+        oauth: true,
+        recommendations: true
+      }
+    });
+  });
   app.use("/api/analytics/vitals", analyticsLimiter);
   
   // Apply general API rate limiting (except for paths with their own limiters)

@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { getApiPath } from './asset-path';
 
 // Enhanced API error with better type checking and error categorization
 export class APIError extends Error {
@@ -107,22 +108,25 @@ export async function apiRequest<T = unknown>(
   };
 
   try {
+    // Use getApiPath to ensure proper URL formation in cross-domain setup
+    const fullUrl = url.startsWith('http') ? url : getApiPath(url);
+    
     if (import.meta.env.DEV) {
-      console.log(`API Request to ${url}`, requestOptions.method);
+      console.log(`API Request to ${fullUrl}`, requestOptions.method);
     }
     
     // Handle network errors explicitly
     const timeoutId = setTimeout(() => {
-      console.warn(`API request to ${url} is taking longer than expected`);
+      console.warn(`API request to ${fullUrl} is taking longer than expected`);
     }, 5000); // 5-second timeout warning
     
     let res: Response;
     try {
-      res = await fetch(url, requestOptions);
+      res = await fetch(fullUrl, requestOptions);
       clearTimeout(timeoutId);
     } catch (networkError) {
       clearTimeout(timeoutId);
-      console.error(`Network error for request to ${url}:`, networkError);
+      console.error(`Network error for request to ${fullUrl}:`, networkError);
       throw new APIError(
         'Network error: Cannot connect to server. Please check your internet connection.',
         undefined,
@@ -177,8 +181,11 @@ export async function apiRequest<T = unknown>(
       throw error;
     }
     
+    // Get proper URL for logging
+    const requestUrl = url.startsWith('http') ? url : getApiPath(url);
+    
     // Convert unexpected errors to APIErrors
-    console.error(`API Request failed (${url} ${options.method || 'GET'}):`, error);
+    console.error(`API Request failed (${requestUrl} ${options.method || 'GET'}):`, error);
     throw new APIError(
       error instanceof Error ? error.message : 'Unknown error occurred',
       undefined,

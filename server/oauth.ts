@@ -71,10 +71,17 @@ export function setupOAuth(app: Express) {
 
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    // Get the callback URL based on environment
+    const callbackURL = process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback';
+    
+    // In split deployment, this should be a full URL like:
+    // https://your-backend.onrender.com/api/auth/google/callback
+    console.log('[OAuth] Google callback URL:', callbackURL);
+    
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/auth/google/callback'
+      callbackURL: callbackURL
     },
       async (accessToken, refreshToken, profile: GoogleProfile, done) => {
         try {
@@ -269,7 +276,18 @@ export function setupOAuth(app: Express) {
     (req: Request, res: Response) => {
       // Log successful authentication
       console.log('[OAuth] Google authentication successful for user:', (req.user as any)?.id);
-      res.redirect('/');
+      
+      // For cross-domain setup, we need to redirect to the frontend URL
+      const frontendUrl = process.env.FRONTEND_URL || '';
+      
+      if (frontendUrl && frontendUrl !== '*') {
+        // In split deployment, redirect to the frontend URL
+        console.log('[OAuth] Redirecting to frontend URL:', frontendUrl);
+        res.redirect(`${frontendUrl}/auth/success`);
+      } else {
+        // In development or same-domain setup, redirect to the root
+        res.redirect('/');
+      }
     }
   );
 
@@ -279,7 +297,18 @@ export function setupOAuth(app: Express) {
       if (err) {
         return res.status(500).json({ error: 'Logout failed' });
       }
-      res.redirect('/');
+      
+      // For cross-domain setup, check if we need to redirect to frontend URL
+      const frontendUrl = process.env.FRONTEND_URL || '';
+      
+      if (frontendUrl && frontendUrl !== '*') {
+        // In split deployment, redirect to the frontend URL
+        console.log('[Auth] Redirecting to frontend URL after logout:', frontendUrl);
+        res.redirect(frontendUrl);
+      } else {
+        // In development or same-domain setup, redirect to the root
+        res.redirect('/');
+      }
     });
   });
 

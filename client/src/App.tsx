@@ -119,6 +119,7 @@ const ContactPage = withSuspense(React.lazy(() => import('./pages/contact')));
 const PrivacyPage = withSuspense(React.lazy(() => import('./pages/privacy')));
 const ReportBugPage = withSuspense(React.lazy(() => import('./pages/report-bug')));
 const AuthPage = withSuspense(React.lazy(() => import('./pages/auth')));
+const AuthSuccessPage = withSuspense(React.lazy(() => import('./pages/auth-success')));
 const ProfilePage = withSuspense(React.lazy(() => import('./pages/profile')));
 // Removed ContentTestPage
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
@@ -251,6 +252,7 @@ const AppContent = () => {
               <Switch>
                 {/* Auth Routes */}
                 <Route path="/auth" component={AuthPage} />
+                <Route path="/auth/success" component={AuthSuccessPage} />
                 <Route path="/signin" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />
                 <Route path="/signup" component={AuthPage} />

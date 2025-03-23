@@ -2,28 +2,31 @@ services:
   - type: web
     name: horror-stories-backend
     env: node
-    region: oregon
     plan: starter
     buildCommand: npm install && npm run build:server
-    startCommand: npm run start:server
-    healthCheckPath: /health
+    startCommand: node dist/server/index.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
-      - key: SESSION_SECRET
-        generateValue: true
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: horror-stories-db
-          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+    autoDeploy: true
 
 databases:
   - name: horror-stories-db
-    plan: starter
-    region: oregon
     databaseName: horror_stories
-    user: horror_stories_user
+    plan: starter 
+    postgresMajorVersion: 14
