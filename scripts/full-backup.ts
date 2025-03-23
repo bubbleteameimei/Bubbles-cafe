@@ -1,119 +1,94 @@
+/**
+ * Database Backup Utility
+ * 
+ * This script creates a complete backup of the PostgreSQL database
+ * that can be used for migration to external hosting like Render.
+ */
 
-import { createBackup } from './backup';
-import fs from 'fs/promises';
-import path from 'path';
 import { exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execPromise = promisify(exec);
+
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
 
 async function createFullBackup() {
+  console.log('Starting full database backup...');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  
+  // Create backups directory if it doesn't exist
+  const backupDir = path.join(projectRoot, 'backups');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+
+  // Get database connection details from environment variables
+  const {
+    PGHOST = 'localhost',
+    PGPORT = '5432',
+    PGUSER = 'postgres',
+    PGDATABASE = 'postgres',
+    PGPASSWORD
+  } = process.env;
+
+  if (!PGPASSWORD) {
+    console.error('Error: PGPASSWORD environment variable is required for database backup');
+    process.exit(1);
+  }
+
   try {
-    console.log('Starting full website backup...');
+    // Create binary dump file (recommended for complete backups)
+    const binaryBackupPath = path.join(backupDir, `backup-${timestamp}.dump`);
+    const pgDumpBinaryCmd = `pg_dump -h ${PGHOST} -p ${PGPORT} -U ${PGUSER} -d ${PGDATABASE} -F c -f ${binaryBackupPath}`;
     
-    // Create backups directory if it doesn't exist
-    const backupDir = path.join(process.cwd(), 'backups');
-    await fs.mkdir(backupDir, { recursive: true });
+    console.log('Creating binary backup...');
+    await execPromise(pgDumpBinaryCmd);
+    console.log(`✅ Binary backup created: ${binaryBackupPath}`);
     
-    // Generate timestamp for backup files
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    // Create SQL dump as alternative (for easier inspection)
+    const sqlBackupPath = path.join(projectRoot, 'backup.sql');
+    const pgDumpSqlCmd = `pg_dump -h ${PGHOST} -p ${PGPORT} -U ${PGUSER} -d ${PGDATABASE} > ${sqlBackupPath}`;
     
-    // 1. Create database backup (using existing function)
-    console.log('Creating database backup...');
-    await createBackup();
+    console.log('Creating SQL backup...');
+    await execPromise(pgDumpSqlCmd);
+    console.log(`✅ SQL backup created: ${sqlBackupPath}`);
     
-    // 2. Backup important configuration files
-    console.log('Backing up configuration files...');
-    const configBackupDir = path.join(backupDir, `config-backup-${timestamp}`);
-    await fs.mkdir(configBackupDir, { recursive: true });
+    // Create a copy in backups directory too
+    fs.copyFileSync(sqlBackupPath, path.join(backupDir, `backup-${timestamp}.sql`));
     
-    // List of important config files to backup
-    const configFiles = [
-      '.replit',
-      'package.json',
-      'tsconfig.json',
-      'tailwind.config.ts',
-      'vite.config.ts',
-      'drizzle.config.ts',
-      'theme.json'
-    ];
+    console.log('\nBackup Summary:');
+    console.log('---------------');
+    console.log(`Binary backup: ${binaryBackupPath}`);
+    console.log(`SQL backup: ${sqlBackupPath}`);
+    console.log(`SQL backup copy: ${path.join(backupDir, `backup-${timestamp}.sql`)}`);
     
-    for (const file of configFiles) {
-      try {
-        const content = await fs.readFile(path.join(process.cwd(), file), 'utf-8');
-        await fs.writeFile(path.join(configBackupDir, file), content);
-      } catch (err) {
-        console.warn(`Couldn't backup ${file}:`, err);
-      }
-    }
+    // Print file sizes
+    const binarySize = (fs.statSync(binaryBackupPath).size / (1024 * 1024)).toFixed(2);
+    const sqlSize = (fs.statSync(sqlBackupPath).size / (1024 * 1024)).toFixed(2);
+    console.log(`\nBinary backup size: ${binarySize} MB`);
+    console.log(`SQL backup size: ${sqlSize} MB`);
     
-    // 3. Backup client source code
-    console.log('Backing up client source code...');
-    const clientSrcBackupDir = path.join(backupDir, `client-src-backup-${timestamp}`);
-    await fs.mkdir(clientSrcBackupDir, { recursive: true });
-    
-    await execAsync(`cp -r ${path.join(process.cwd(), 'client/src')} ${clientSrcBackupDir}`);
-    
-    // 4. Backup server source code
-    console.log('Backing up server source code...');
-    const serverBackupDir = path.join(backupDir, `server-backup-${timestamp}`);
-    await fs.mkdir(serverBackupDir, { recursive: true });
-    
-    await execAsync(`cp -r ${path.join(process.cwd(), 'server')} ${serverBackupDir}`);
-    
-    // 5. Backup shared code
-    console.log('Backing up shared code...');
-    const sharedBackupDir = path.join(backupDir, `shared-backup-${timestamp}`);
-    await fs.mkdir(sharedBackupDir, { recursive: true });
-    
-    await execAsync(`cp -r ${path.join(process.cwd(), 'shared')} ${sharedBackupDir}`);
-    
-    // 6. Backup scripts
-    console.log('Backing up scripts...');
-    const scriptsBackupDir = path.join(backupDir, `scripts-backup-${timestamp}`);
-    await fs.mkdir(scriptsBackupDir, { recursive: true });
-    
-    await execAsync(`cp -r ${path.join(process.cwd(), 'scripts')} ${scriptsBackupDir}`);
-    
-    // Create a manifest file with backup information
-    const manifest = {
-      timestamp,
-      components: [
-        'Database (SQL dump)',
-        'Configuration files',
-        'Client source code',
-        'Server source code',
-        'Shared code',
-        'Scripts'
-      ],
-      createdAt: new Date().toISOString()
-    };
-    
-    await fs.writeFile(
-      path.join(backupDir, `backup-manifest-${timestamp}.json`),
-      JSON.stringify(manifest, null, 2)
-    );
-    
-    console.log('Full backup completed successfully!');
-    console.log(`Backup files are located in the 'backups' directory with timestamp: ${timestamp}`);
-    
-    return {
-      success: true,
-      timestamp,
-      backupLocation: backupDir
-    };
+    console.log('\n✅ Database backup completed successfully');
+    console.log('\nTo restore this backup on Render:');
+    console.log('1. Download the backup file');
+    console.log('2. Create a new PostgreSQL database on Render');
+    console.log('3. Use pg_restore to restore the binary backup:');
+    console.log('   pg_restore -h <RENDER_HOST> -p <RENDER_PORT> -U <RENDER_USER> -d <RENDER_DATABASE> -v backup.dump');
+    console.log('\nSee DATABASE_MIGRATION_GUIDE.md for detailed migration instructions');
+
   } catch (error) {
-    console.error('Backup failed:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    };
+    console.error('Error creating database backup:', error);
+    process.exit(1);
   }
 }
 
-// Run if called directly
-if (import.meta.url === new URL(process.argv[1], 'file:').href) {
-  createFullBackup();
-}
-
-export { createFullBackup };
+createFullBackup().catch(err => {
+  console.error('Unhandled error during backup:', err);
+  process.exit(1);
+});
