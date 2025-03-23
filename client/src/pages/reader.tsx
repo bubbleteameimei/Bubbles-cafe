@@ -625,9 +625,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           <ResponsiveReaderHeader
             title={currentPost.title.rendered}
             date={formattedDate}
-            readTime={readingTime}
+            readTime={getReadingTime(currentPost.content.rendered)}
             views={currentPost.views}
-            category={themeCategories.length > 0 ? themeCategories[0] : undefined}
+            category={detectedThemes.length > 0 ? detectedThemes[0] : undefined}
             deviceType={deviceType}
             authorName={currentPost.author_name}
           />
@@ -646,11 +646,22 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         }
       >
         {/* Theme categories badges */}
-        {themeCategories.length > 0 && (
+        {detectedThemes.length > 0 && (
           <div className={`flex flex-wrap gap-2 mb-6 ${deviceType === 'mobile' ? 'max-w-full overflow-x-auto pb-2' : ''}`}>
-            {themeCategories.map((theme, idx) => (
+            {detectedThemes.map((theme, idx) => (
               <Badge key={idx} variant="outline" className="flex items-center">
-                {getThemeIcon(theme)}
+                {THEME_CATEGORIES[theme]?.icon ? (
+                  <span className="mr-1">
+                    {(() => {
+                      const iconName = THEME_CATEGORIES[theme].icon;
+                      if (iconName === 'Skull') return <Skull className="h-3.5 w-3.5" />;
+                      if (iconName === 'Brain') return <Brain className="h-3.5 w-3.5" />;
+                      if (iconName === 'Pill') return <Pill className="h-3.5 w-3.5" />;
+                      if (iconName === 'Cpu') return <Cpu className="h-3.5 w-3.5" />;
+                      return <BookOpen className="h-3.5 w-3.5" />;
+                    })()}
+                  </span>
+                ) : null}
                 <span className="ml-1">{theme}</span>
               </Badge>
             ))}
@@ -931,7 +942,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             Return to Home
           </Button>
         </div>
-      </div>
+      </ResponsiveReaderLayout>
     </div>
   );
 }
