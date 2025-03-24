@@ -600,8 +600,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          onClick={() => setShowHorrorMessage(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md"
+          // Removed onClick handler to prevent closing by clicking outside
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
@@ -611,32 +611,36 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               stiffness: 300, 
               damping: 30 
             }}
-            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-red-900/50"
-            onClick={(e) => e.stopPropagation()}
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-red-900/80"
           >
-            <div className="absolute inset-0 rounded-lg bg-red-900/5 animate-pulse" />
+            <div className="absolute inset-0 rounded-lg bg-red-900/10 animate-pulse" />
             <div className="relative z-10">
-              <div className="mb-4">
+              <div className="mb-6">
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
-                  className="text-2xl font-bold text-red-900 dark:text-red-600"
+                  className="text-3xl font-bold text-red-900 dark:text-red-600"
                   intensityFactor={2.5}
                 />
               </div>
               <Button
                 variant="outline"
-                className="mt-2 border-red-900/30 bg-background hover:bg-background/90 text-foreground w-full"
+                className="mt-4 border-red-900/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
                 onClick={() => setShowHorrorMessage(false)}
               >
-                <span className="mr-2">I understand</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                  <path d="M18 6 6 18"/>
-                  <path d="m6 6 12 12"/>
-                </svg>
+                <span className="mx-auto text-lg">I understand, I'm sorry</span>
               </Button>
             </div>
           </motion.div>
         </motion.div>
+      )}
+      
+      {/* Overlay to prevent interaction with the page when horror message is shown */}
+      {showHorrorMessage && (
+        <div 
+          className="fixed inset-0 z-[999]" 
+          style={{ pointerEvents: 'all' }}
+          // This div blocks all interactions with the page behind it
+        />
       )}
       
       {/* Reading progress indicator */}

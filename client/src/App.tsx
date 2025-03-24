@@ -46,6 +46,8 @@ import SearchBar from './components/SearchBar';
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
 import { NotificationIcon } from './components/ui/notification-icon';
+// Import Silent Ping feature
+import { SilentPingProvider } from './contexts/silent-ping-context';
 import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
 import ErrorToastProvider from './components/providers/error-toast-provider';
@@ -402,18 +404,20 @@ function App() {
           <ErrorToastProvider>
             <CookieConsentProvider>
               <NotificationProvider>
-                <LoadingProvider>
-                <GlobalLoadingOverlay
-                  minimumLoadingDuration={800}
-                  debugMode={true}
-                >
-                  <GlobalLoadingRegistry />
-                  <SidebarProvider defaultOpen={true}>
-                    <AppContent />
-                  </SidebarProvider>
-                </GlobalLoadingOverlay>
-              </LoadingProvider>
-            </NotificationProvider>
+                <SilentPingProvider>
+                  <LoadingProvider>
+                  <GlobalLoadingOverlay
+                    minimumLoadingDuration={800}
+                    debugMode={true}
+                  >
+                    <GlobalLoadingRegistry />
+                    <SidebarProvider defaultOpen={true}>
+                      <AppContent />
+                    </SidebarProvider>
+                  </GlobalLoadingOverlay>
+                  </LoadingProvider>
+                </SilentPingProvider>
+              </NotificationProvider>
           </CookieConsentProvider>
           </ErrorToastProvider>
         </ThemeProvider>
