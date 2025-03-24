@@ -87,21 +87,19 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
         setShowConsentBanner(true);
         console.log('Forced cookie consent banner to show for testing page');
       } else {
-        // Normal behavior for other pages - show banner if no choice made
-        setShowConsentBanner(!hasChoice);
-        
-        // If a choice has been made, ensure we don't show the banner by storing in session
-        if (hasChoice && typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem('consentChoiceMade', 'true');
-        }
-        
-        // Check session storage to prevent showing the banner on refreshes within the same session
-        const consentChoiceMadeThisSession = 
-          typeof sessionStorage !== 'undefined' && 
-          sessionStorage.getItem('consentChoiceMade') === 'true';
-        
-        if (consentChoiceMadeThisSession) {
+        // If a choice has been made, ensure we don't show the banner
+        if (hasChoice) {
           setShowConsentBanner(false);
+          // Save in localStorage (more persistent than sessionStorage) to make choice permanent
+          localStorage.setItem('consentChoiceMade', 'true');
+        } else {
+          // Check if we've already shown the banner this session
+          const consentBannerShown = 
+            typeof localStorage !== 'undefined' && 
+            localStorage.getItem('consentChoiceMade') === 'true';
+          
+          // Only show the banner if the user hasn't seen it yet
+          setShowConsentBanner(!consentBannerShown);
         }
       }
       
@@ -113,11 +111,11 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
         if (event.key === 'cookieConsent') {
           setCookiePreferences(getCookiePreferences());
           // Important: Update the banner visibility when storage changes
-          setShowConsentBanner(!hasConsentChoice());
+          setShowConsentBanner(false);
           
-          // If consent was given, update session storage
-          if (hasConsentChoice() && typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('consentChoiceMade', 'true');
+          // If consent was given, update localStorage
+          if (hasConsentChoice()) {
+            localStorage.setItem('consentChoiceMade', 'true');
           }
         }
       };
@@ -137,6 +135,8 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       acceptAllCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
+      // Set permanent flag to prevent showing banner on refresh
+      localStorage.setItem('consentChoiceMade', 'true');
       console.log('All cookie categories accepted');
     } catch (error) {
       console.error('Error accepting all cookies:', error);
@@ -150,6 +150,8 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       clearNonEssentialCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
+      // Set permanent flag to prevent showing banner on refresh
+      localStorage.setItem('consentChoiceMade', 'true');
       console.log('Only essential cookies accepted');
     } catch (error) {
       console.error('Error accepting essential cookies only:', error);

@@ -933,7 +933,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert max-w-2xl mx-auto px-4 md:px-6 lg:px-8 pt-1"
+            className="prose dark:prose-invert mx-auto px-4 md:px-6 lg:px-8 pt-1 overflow-x-hidden w-full max-w-[80ch]"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -1037,10 +1037,11 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto"
+              className="story-content mb-8 mx-auto w-full max-w-[70ch]"
               style={{
                 whiteSpace: 'pre-wrap',
-                letterSpacing: '0.01em'
+                letterSpacing: '0.01em',
+                overflow: 'hidden'
               }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content.rendered)

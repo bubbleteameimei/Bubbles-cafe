@@ -214,6 +214,9 @@ html.dark *, html.light * {
     -moz-osx-font-smoothing: grayscale;
     scroll-padding-top: 4rem;
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling globally */
+    width: 100%;
+    max-width: 100vw;
   }
 
   body {
@@ -224,11 +227,17 @@ html.dark *, html.light * {
     animation: fadeIn 1s ease-in-out forwards;
     transition: background-color 0.3s ease, color 0.3s ease;
     padding-top: 3.5rem; /* Add top padding to account for fixed header */
+    overflow-x: hidden; /* Prevent horizontal scrolling globally */
+    width: 100%;
+    max-width: 100vw;
   }
   
   /* Main content containers should have proper spacing */
   main, .main-content, .container {
     padding-top: 1rem; /* Additional padding for inner containers */
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling in main containers */
   }
   
   /* Theme transition animation */

@@ -7,6 +7,8 @@
   padding: 0 1.5rem;
   font-family: 'Cormorant Garamond', serif;
   /* No additional padding needed here since we added it to body */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  width: 100%; /* Ensure full width within parent */
 }
 
 /* Typography improvements using literary website standards */
@@ -15,10 +17,14 @@
   line-height: 1.6; /* Match About page spacing */
   letter-spacing: 0.01em; /* Slightly increased for better text flow */
   color: var(--foreground);
-  max-width: 680px; /* Optimal reading width like The New Yorker */
+  max-width: 70ch; /* Use character width measurement instead of pixels */
   margin: 0 auto;
   font-size: var(--base-font-size, 16px); /* Use the base font size variable with fallback */
   transition: font-size 0.2s ease; /* Smooth transition when font size changes */
+  width: 100%; /* Ensure full width */
+  box-sizing: border-box; /* Include padding in width calculation */
+  overflow-wrap: break-word; /* Prevent text overflow by breaking words */
+  word-wrap: break-word; /* Fallback for older browsers */
 }
 
 .story-content p {
@@ -272,38 +278,58 @@
 @media (max-width: 768px) {
   .story-container {
     padding: 0 1rem;
-    max-width: 95%; /* More space on smaller screens */
+    max-width: 100%; /* Full width on mobile */
+    width: 100%;
+    overflow-x: hidden;
   }
   
   .story-content {
     max-width: 100%;
+    width: 100%;
     font-size: 1rem;
     line-height: 1.8; /* Improved line height for mobile */
     letter-spacing: 0.01em; /* Adjusted for mobile */
+    padding: 0 0.5rem;
+    overflow-x: hidden;
   }
   
   .story-content p {
     margin-bottom: 0.4em; /* Even more drastically reduced spacing, consistent with desktop */
     text-align: left; /* Left-aligned for easier mobile reading */
     hyphens: none; /* Disable hyphenation on mobile for clarity */
+    max-width: 100%; /* Ensure text doesn't overflow */
+    overflow-wrap: break-word;
   }
   
   .story-content h1 {
     font-size: 1.6em;
+    max-width: 100%;
   }
   
   .story-content h2 {
     font-size: 1.4em;
+    max-width: 100%;
   }
   
   .story-content h3 {
     font-size: 1.2em;
+    max-width: 100%;
   }
   
   .navigation-buttons {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
+    width: 100%;
+  }
+  
+  /* Ensure all content stays within viewport */
+  .reader-interface, 
+  .reader-page,
+  .reader-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
