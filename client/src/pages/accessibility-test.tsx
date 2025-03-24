@@ -82,9 +82,15 @@ export default function AccessibilityTestPage() {
             <Button variant="outline">Open Minimal Dialog</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="sr-only">Minimal Dialog Example</DialogTitle>
+              <DialogDescription className="sr-only">
+                This dialog demonstrates accessibility with visually hidden elements
+              </DialogDescription>
+            </DialogHeader>
             <div className="grid gap-4 py-4">
-              <p>This dialog has no explicit title or description elements.</p>
-              <p>Our enhanced components should provide screen-reader accessible elements automatically.</p>
+              <p>This dialog has visually hidden title and description elements.</p>
+              <p>They are accessible to screen readers while not visible in the UI.</p>
             </div>
             <DialogFooter>
               <Button type="submit">Confirm</Button>
@@ -126,9 +132,15 @@ export default function AccessibilityTestPage() {
             <Button variant="outline">Open Minimal Alert Dialog</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="sr-only">Minimal Alert Dialog Example</AlertDialogTitle>
+              <AlertDialogDescription className="sr-only">
+                This alert dialog demonstrates accessibility with visually hidden elements
+              </AlertDialogDescription>
+            </AlertDialogHeader>
             <div className="py-4">
-              <p>This alert dialog has no explicit title or description elements.</p>
-              <p>Our enhanced components should provide screen-reader accessible elements automatically.</p>
+              <p>This alert dialog has visually hidden title and description elements.</p>
+              <p>They are accessible to screen readers while not visible in the UI.</p>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>

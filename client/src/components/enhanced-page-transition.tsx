@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useGlobalLoadingOverlay } from './GlobalLoadingOverlay';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Define props interface with optional transitionDuration to maintain backward compatibility
 interface EnhancedPageTransitionProps {
@@ -36,6 +37,77 @@ export function EnhancedPageTransition({
   const prevLocationRef = useRef<string>(location);
   const contentRef = useRef<HTMLDivElement>(null);
   const [currentKey, setCurrentKey] = useState('page-key');
+  
+  // Determine transition variant based on route
+  const getTransitionVariant = useCallback(() => {
+    // Reader page gets a special slide transition
+    if (location.startsWith('/reader')) {
+      return {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -20 },
+        transition: { 
+          type: "tween", 
+          ease: "easeOut", 
+          duration: 0.4 
+        }
+      };
+    }
+    
+    // Admin pages get a fade and scale transition
+    if (location.startsWith('/admin')) {
+      return {
+        initial: { opacity: 0, scale: 0.98 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.98 },
+        transition: { 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30 
+        }
+      };
+    }
+    
+    // Home page gets a crossfade
+    if (location === '/') {
+      return {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { 
+          type: "tween", 
+          ease: "easeInOut", 
+          duration: 0.5 
+        }
+      };
+    }
+    
+    // Story pages (except reader) get a special treatment
+    if (location.startsWith('/stories')) {
+      return {
+        initial: { opacity: 0, scale: 0.99 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.99 },
+        transition: { 
+          type: "spring", 
+          stiffness: 250, 
+          damping: 25 
+        }
+      };
+    }
+    
+    // Default transition is a subtle fade from right
+    return {
+      initial: { opacity: 0, x: 10 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: -10 },
+      transition: { 
+        type: "tween", 
+        ease: "easeInOut", 
+        duration: 0.3 
+      }
+    };
+  }, [location]);
 
   // Function to show loading overlay
   const showLoading = useCallback(() => {
@@ -153,18 +225,64 @@ export function EnhancedPageTransition({
     }
   }, [children, onContentLoad]);
   
+  // Get the current transition variant
+  const transitionVariant = getTransitionVariant();
+  
+  // Determine if we should add staggered animations for children
+  // Only apply to certain routes that would benefit from this effect
+  const shouldAddChildAnimations = location.startsWith('/stories') || 
+                                  location === '/' || 
+                                  location.startsWith('/admin');
+  
+  // Create staggered transition variant for child animations
+  const childVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.3,
+        ease: "easeOut"
+      }
+    }),
+    exit: { opacity: 0, transition: { duration: 0.2 } }
+  };
+  
+  // Helper function to add data attributes to children for staggered animations
+  const addStaggerProps = (children: React.ReactNode): React.ReactNode => {
+    if (!shouldAddChildAnimations) return children;
+    
+    return React.Children.map(children, (child, index) => {
+      if (!React.isValidElement(child)) return child;
+      
+      return React.cloneElement(child, {
+        ...child.props,
+        'data-stagger-index': index,
+      });
+    });
+  };
+
   return (
-    <div 
-      ref={contentRef}
-      key={currentKey}
-      style={{ 
-        width: "100%", 
-        position: "relative",
-        minHeight: "100vh"
-      }}
-      data-location={location}
-    >
-      {children}
-    </div>
+    <AnimatePresence mode="wait">
+      <motion.div 
+        ref={contentRef}
+        key={currentKey}
+        style={{ 
+          width: "100%", 
+          position: "relative",
+          minHeight: "100vh"
+        }}
+        data-location={location}
+        initial={transitionVariant.initial}
+        animate={transitionVariant.animate}
+        exit={transitionVariant.exit}
+        transition={transitionVariant.transition}
+        className={shouldAddChildAnimations ? "staggered-parent" : ""}
+        data-staggered={shouldAddChildAnimations ? "true" : "false"}
+      >
+        {shouldAddChildAnimations ? addStaggerProps(children) : children}
+      </motion.div>
+    </AnimatePresence>
   );
 }

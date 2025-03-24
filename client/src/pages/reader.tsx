@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Bug, Worm
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Bug, Worm, Cloud, CloudFog
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
@@ -21,6 +21,8 @@ import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
 import ApiLoader from "@/components/api-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import MistEffect from "@/components/effects/MistEffect";
+import { MistControl } from "@/components/ui/mist-control";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +91,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
+  
+
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
@@ -346,7 +350,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const storyContentStyles = `
   .story-content {
     font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
-    /* Removed max-width constraint for immersive experience */
+    max-width: 70ch; /* Restored previous width constraint for better readability */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
@@ -578,6 +582,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           {/* Narration button */}
           <div className="flex-grow"></div>
 
+          {/* Theme toggle button removed as requested */}
+
           {/* Integrated BookmarkButton in top controls */}
           <BookmarkButton 
             postId={currentPost.id} 
@@ -608,7 +614,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.4,
               ease: [0.22, 1, 0.36, 1] 
             }}
-            className="prose dark:prose-invert max-w-none px-4 md:px-8 lg:px-12 pt-1"
+            className="prose dark:prose-invert max-w-2xl mx-auto px-4 md:px-6 lg:px-8 pt-1"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -712,7 +718,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto w-full md:w-[95%] lg:w-[90%] xl:w-[85%]"
+              className="story-content mb-8 mx-auto"
               style={{
                 whiteSpace: 'pre-wrap',
                 letterSpacing: '0.01em'

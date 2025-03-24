@@ -241,7 +241,7 @@ export default function IndexView() {
               <h2 className="text-lg sm:text-xl font-decorative">Featured Story</h2>
             </div>
             
-            <Card className="hover:shadow-lg transition-all duration-500 overflow-hidden border-[1.5px] hover:border-primary/50 bg-card/60 backdrop-blur-sm">
+            <Card className="hover:shadow-xl transition-all duration-500 overflow-hidden border-[1.5px] hover:border-primary/50 bg-card/60 backdrop-blur-sm relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-700 transform hover:scale-[1.01] transition-transform">
               <div className="md:flex">
                 <div className="md:w-2/3 p-3 sm:p-4 md:p-5">
                   <div className="flex flex-col h-full">
@@ -263,9 +263,9 @@ export default function IndexView() {
                         <div className="mb-2 sm:mb-3 md:mb-4">
                           <Badge 
                             variant="default"
-                            className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit"
+                            className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit transform hover:scale-105 transition-all duration-300 cursor-default"
                           >
-                            <Star className="h-3 w-3 mr-1" />
+                            <Star className="h-3 w-3 mr-1 animate-pulse" />
                             {typeof (featuredStory.metadata as Record<string, unknown>).themeCategory === 'string' 
                               ? ((featuredStory.metadata as Record<string, unknown>).themeCategory as string).charAt(0) + 
                                 ((featuredStory.metadata as Record<string, unknown>).themeCategory as string).slice(1).toLowerCase().replace(/_/g, ' ')
@@ -293,12 +293,12 @@ export default function IndexView() {
                       
                       <Button
                         onClick={() => navigateToReader(currentPosts.findIndex(p => p.id === featuredStory.id))}
-                        className="shadow-md hover:shadow-lg transition-all text-xs sm:text-sm h-8 sm:h-9 ml-auto"
+                        className="shadow-md hover:shadow-lg transition-all text-xs sm:text-sm h-8 sm:h-9 ml-auto overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/10 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
                         size="sm"
                       >
-                        <span className="hidden sm:inline">Read Featured Story</span>
-                        <span className="sm:hidden">Read Story</span>
-                        <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+                        <span className="relative z-10 hidden sm:inline transition-transform group-hover/btn:translate-x-0.5">Read Featured Story</span>
+                        <span className="relative z-10 sm:hidden transition-transform group-hover/btn:translate-x-0.5">Read Story</span>
+                        <ArrowRight className="relative z-10 h-3 w-3 sm:h-4 sm:w-4 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
                       </Button>
                     </div>
                   </div>
@@ -395,10 +395,10 @@ export default function IndexView() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="group story-card-container"
-                  whileHover={{ scale: 1.01 }}
+                  className="group story-card-container relative"
+                  whileHover={{ scale: 1.02 }}
                 >
-                  <Card className="h-full hover:shadow-md transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/30">
+                  <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden border-[1.5px] hover:border-primary/40 relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
                     {themeCategory && themeInfo && (
                       <div className="h-1.5 bg-primary w-full"></div>
                     )}
@@ -426,9 +426,9 @@ export default function IndexView() {
                         {themeCategory && themeInfo && (
                           <Badge 
                             variant={themeInfo.badgeVariant === "cosmic" ? "outline" : themeInfo.badgeVariant || "outline"}
-                            className="w-fit text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1"
+                            className="w-fit text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 group-hover:shadow-sm group-hover:opacity-90 transition-all duration-300"
                           >
-                            <span className="h-3 w-3 mr-1">
+                            <span className="h-3 w-3 mr-1 group-hover:rotate-12 transition-transform duration-500">
                               <Book className="h-3 w-3" />
                             </span>
                             {displayName}
@@ -441,8 +441,12 @@ export default function IndexView() {
                       <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-2 sm:mb-3 line-clamp-3 font-cormorant">
                         {excerpt}
                       </p>
-                      <div className="flex items-center text-[10px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium hover:underline">
-                        Read full story <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 group-hover:translate-x-1 transition-transform" />
+                      <div 
+                        className="flex items-center text-[10px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium relative w-fit"
+                        onClick={() => navigateToReader(globalIndex)}
+                      >
+                        <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read full story</span> 
+                        <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
 
@@ -454,11 +458,11 @@ export default function IndexView() {
                           variant="secondary"
                           size="sm"
                           onClick={() => navigateToReader(globalIndex)}
-                          className="shadow-sm hover:shadow transition-all text-[10px] sm:text-xs text-primary hover:text-primary/80 flex items-center gap-1 h-7 sm:h-8 px-1.5 sm:px-2"
+                          className="shadow-sm hover:shadow-md transition-all text-[10px] sm:text-xs text-primary hover:text-primary flex items-center gap-1 h-7 sm:h-8 px-1.5 sm:px-2 overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/5 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
                         >
-                          <span className="hidden xs:inline">Read More</span>
-                          <span className="xs:hidden">Read</span>
-                          <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
+                          <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read</span>
+                          <ArrowRight className="relative z-10 h-2.5 w-2.5 sm:h-3 sm:w-3 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
                         </Button>
                       </div>
                     </CardFooter>
