@@ -60,9 +60,9 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button 
-          variant="ghost" 
+          variant="outline" 
           size="icon" 
-          className={cn("relative", className)}
+          className={cn("relative h-9 w-9 rounded-md", className)}
           aria-label={`Notifications - ${unreadCount} unread`}
           onClick={onClick ? onClick : undefined}
           noOutline={noOutline}
@@ -88,14 +88,14 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="px-4 py-3 flex items-center justify-between border-b">
-          <h3 className="font-medium">Notifications</h3>
-          <div className="flex gap-2">
+        <div className="px-4 py-3 flex items-center border-b">
+          <h3 className="font-medium mr-auto">Notifications</h3>
+          <div className="flex gap-1">
             {unreadCount > 0 && (
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
-                className="h-8 px-2 text-xs"
+                className="h-8 px-2 text-xs rounded-md"
                 onClick={markAllAsRead}
               >
                 <CheckCheck className="h-3.5 w-3.5 mr-1" />
@@ -105,9 +105,9 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
             )}
             {notifications.length > 0 && (
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
-                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                className="h-8 px-2 text-xs text-destructive hover:text-destructive rounded-md"
                 onClick={clearNotifications}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />

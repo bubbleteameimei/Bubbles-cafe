@@ -290,11 +290,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select()
+    try {
+      // Use explicit column selection to avoid errors with columns that might not exist
+      // in some environments or database migrations
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password_hash: users.password_hash,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+        // metadata is not selected because the column doesn't exist in the db
+      })
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
-    return user;
+      return user;
+    } catch (error) {
+      console.error("Error in getUserByEmail:", error);
+      // Try a more basic approach as fallback using raw SQL
+      try {
+        const result = await pool.query(
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE email = $1 LIMIT 1",
+          [email]
+        );
+        return result.rows[0] || undefined;
+      } catch (fallbackError) {
+        console.error("Fallback error in getUserByEmail:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async getAdminByEmail(email: string): Promise<User[]> {
