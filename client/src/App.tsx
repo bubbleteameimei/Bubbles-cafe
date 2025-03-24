@@ -273,7 +273,7 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
-                <Route path="/notifications" component={NotificationsPage} />
+                {/* Removed notifications page as it's now a dropdown */}
                 {/* Responsive Demo Page */}
                 <Route path="/responsive-demo" component={ResponsiveDemoPage} />
                 {/* Removed test pages routes */}

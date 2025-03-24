@@ -34,11 +34,11 @@ export function addTestNotification(
   };
 
   const links = {
-    'info': '/notifications',
-    'success': '/notifications',
-    'warning': '/notifications',
-    'error': '/notifications',
-    'new-story': '/reader'
+    'info': '/settings/notifications',
+    'success': '/settings/notifications',
+    'warning': '/settings/notifications',
+    'error': '/settings/notifications',
+    'new-story': '/reader/nostalgia' // Using a known story slug
   };
 
   addNotification({

@@ -103,7 +103,7 @@ export default function Navigation() {
         {/* Right-side Actions - Responsive spacing */}
         <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-5 lg:space-x-6">
           <div className="-mt-4">
-            <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} noOutline={true} />
+            <NotificationIcon notifications={notifications} noOutline={true} />
           </div>
           <div className="-mt-4">
             <ThemeToggleButton noOutline={true} />
