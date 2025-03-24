@@ -102,8 +102,12 @@ export default function Navigation() {
 
         {/* Right-side Actions - Responsive spacing */}
         <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-5 lg:space-x-6">
-          <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} noOutline={true} />
-          <ThemeToggleButton noOutline={true} />
+          <div className="-mt-4">
+            <NotificationIcon notifications={notifications} onClick={() => setLocation('/notifications')} noOutline={true} />
+          </div>
+          <div className="-mt-4">
+            <ThemeToggleButton noOutline={true} />
+          </div>
           {!user ? (
             <Button
               variant="default"
@@ -111,7 +115,7 @@ export default function Navigation() {
                 setIsOpen(false);
                 setLocation("/auth");
               }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider touch-manipulation transition-all duration-150 ease-out active:scale-95 active:opacity-90 text-xs sm:text-sm md:text-base px-2 sm:px-3 md:px-4 h-8 sm:h-9 md:h-10"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider touch-manipulation transition-all duration-150 ease-out active:scale-95 active:opacity-90 text-xs sm:text-sm md:text-base px-2 sm:px-3 md:px-4 h-8 sm:h-9 md:h-10 -mt-4"
               noOutline={true}
             >
               <span className="relative">
@@ -125,7 +129,7 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setLocation('/profile')}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 mb-1"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 -mt-4"
                 aria-label="Profile"
                 noOutline={true}
               >
@@ -134,7 +138,7 @@ export default function Navigation() {
                   <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
                 </span>
               </Button>
-              <div className="absolute top-[38px] md:top-[42px] text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30">
+              <div className="absolute top-[16px] md:top-[20px] text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30">
                 {user?.username}
               </div>
             </div>

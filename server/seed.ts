@@ -18,7 +18,6 @@ async function getOrCreateAdminUser() {
       username: users.username,
       email: users.email,
       isAdmin: users.isAdmin,
-      metadata: users.metadata,
       createdAt: users.createdAt
     })
     .from(users)
@@ -31,18 +30,25 @@ async function getOrCreateAdminUser() {
 
     // Create new admin user if doesn't exist
     // Only include fields that exist in the actual database table
-    // Store user profile information in metadata
-    const [newAdmin] = await db.insert(users).values({
+    // Note: We're explicitly specifying only the columns we know exist
+    const insertData = {
       username: "admin",
       email: "vantalison@gmail.com",
       password_hash: hashedPassword,
-      isAdmin: true,
-      metadata: {
-        displayName: "Admin User",
-        photoURL: null,
-        bio: "Site Administrator"
-      }
-    }).returning();
+      isAdmin: true
+      // metadata field is missing in the actual table
+    };
+    
+    // Raw SQL with pool.query to avoid Drizzle's automatic schema mapping
+    const { pool } = await import("./db");
+    const result = await pool.query(
+      `INSERT INTO users (username, email, password_hash, is_admin, created_at) 
+       VALUES ($1, $2, $3, $4, NOW()) 
+       RETURNING id, username, email, is_admin as "isAdmin", created_at as "createdAt"`,
+      [insertData.username, insertData.email, insertData.password_hash, insertData.isAdmin]
+    );
+    
+    const newAdmin = result.rows[0] as { id: number, username: string, email: string, isAdmin: boolean, createdAt: Date };
 
     console.log("Admin user created successfully with ID:", newAdmin.id);
     return newAdmin;
@@ -124,25 +130,42 @@ async function parseWordPressXML() {
             .where(eq(posts.slug, finalSlug));
 
           if (!existingPost) {
-            const [newPost] = await db.insert(posts).values({
-              title: item.title,
-              content: cleanedContent,
-              excerpt: excerpt,
-              slug: finalSlug,
-              isSecret: false,
-              authorId: admin.id,
-              createdAt: pubDate,
-              matureContent: false,
-              readingTimeMinutes: Math.ceil(cleanedContent.split(/\s+/).length / 200)
-            }).returning();
+            // Create post with only the fields that exist in the table
+            try {
+              // Use raw SQL with pool.query to avoid schema mapping
+              const readingTime = Math.ceil(cleanedContent.split(/\s+/).length / 200);
+              const { pool } = await import("./db");
+              const result = await pool.query(
+                `INSERT INTO posts (
+                  title, content, excerpt, slug, is_secret, author_id, 
+                  created_at, mature_content, reading_time_minutes
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING id, title, slug, created_at as "createdAt"`,
+                [
+                  item.title,
+                  cleanedContent,
+                  excerpt,
+                  finalSlug,
+                  false, // isSecret
+                  admin.id,
+                  pubDate.toISOString(),
+                  false, // matureContent
+                  readingTime
+                ]
+              );
+              
+              const newPost = result.rows[0] as { id: number, title: string, slug: string, createdAt: Date };
 
-            createdCount++;
-            console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
+              createdCount++;
+              console.log(`Created post: "${item.title}" (ID: ${newPost.id}) with date: ${pubDate.toISOString()}`);
+            } catch (error) {
+              console.error(`Error creating post "${item.title}":`, error);
+            }
           } else {
             console.log(`Post "${item.title}" already exists, skipping...`);
           }
         } catch (error) {
-          console.error(`Error creating post "${item.title}":`, error);
+          console.error(`Error processing post "${item.title}":`, error);
         }
       }
     }
