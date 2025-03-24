@@ -48,13 +48,15 @@ const reportMetric = async (metric: PerformanceMetric) => {
     // Always use fetch instead of sendBeacon for now
     // This ensures proper Content-Type and payload handling
     try {
+      // Analytics endpoint is excluded from CSRF checks on server side for performance reasons
       const response = await fetch('/api/analytics/vitals', {
         method: 'POST',
         body,
         keepalive: true,
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'same-origin' // Include cookies in the request
       });
       
       if (!response.ok) {

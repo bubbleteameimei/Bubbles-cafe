@@ -78,7 +78,8 @@ app.use(validateCsrfToken({
     '/api/auth/register', 
     '/api/feedback',
     '/api/posts',
-    '/api/recommendations'
+    '/api/recommendations',
+    '/api/analytics/vitals' // Exclude analytics endpoint from CSRF checks
   ]
 }));
 

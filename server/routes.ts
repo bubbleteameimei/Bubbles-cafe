@@ -986,7 +986,7 @@ export function registerRoutes(app: Express): Server {
           value: Math.round(value * 100) / 100,
           identifier: identifier || `metric-${Date.now()}`, // Ensure we have an identifier
           navigationType: navigationType || null,
-          url: url || null,
+          url: url || 'unknown url', // Provide a default value since url is required
           userAgent: userAgent || null
         });
       } catch (storageError) {

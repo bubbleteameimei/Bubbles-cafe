@@ -5,13 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Bug, Worm, Cloud, CloudFog
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Sun, Bug, Worm, Cloud, CloudFog
 } from "lucide-react";
+import { useNightMode } from "@/hooks/use-night-mode";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
+import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "@/shared/types";
 // Import social icons directly since lazy loading was causing issues
@@ -86,8 +88,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // Theme is now managed by the useTheme hook
   const { theme, toggleTheme } = useTheme();
   
-  // Font size adjustment
+  // Font size and family adjustments
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
+  const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
+  
+  // Night mode functionality - automatic based on time of day (7pm to 6am)
+  const { isNightMode, preference: nightModePreference, updateNightModePreference } = useNightMode();
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
@@ -189,7 +195,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   useEffect(() => {
     try {
-      console.log('[Reader] Injecting content styles');
+      console.log('[Reader] Injecting content styles with font family:', fontFamily);
       const styleTag = document.createElement('style');
       styleTag.textContent = storyContentStyles;
       document.head.appendChild(styleTag);
@@ -197,7 +203,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     } catch (error) {
       console.error('[Reader] Error injecting styles:', error);
     }
-  }, []);
+  }, [fontFamily, fontSize]);
   
   // Handle reading progress
   useEffect(() => {
@@ -349,7 +355,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   const storyContentStyles = `
   .story-content {
-    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: ${availableFonts[fontFamily].family};
     max-width: 70ch; /* Restored previous width constraint for better readability */
     margin: 0 auto;
     color: hsl(var(--foreground));
@@ -365,10 +371,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
     margin-left: auto;
     margin-right: auto;
-    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: ${availableFonts[fontFamily].family};
   }
   .story-content em {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: ${availableFonts[fontFamily].family};
     font-style: italic;
     font-size: 1em;
     line-height: 1.7;
@@ -394,7 +400,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     .story-content p, .story-content .story-paragraph {
       margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
       line-height: 1.75; /* Slightly increased on mobile for readability */
-      font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+      font-family: ${availableFonts[fontFamily].family};
     }
   }
   .story-content img {
@@ -416,7 +422,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     letter-spacing: -0.02em;
     line-height: 1.3;
     position: relative;
-    font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+    font-family: ${availableFonts[fontFamily].family};
   }
   .story-content h2::before, .story-content h3::before {
     content: "";
@@ -552,7 +558,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       <div className="pt-0 pb-0 bg-background -mt-6">
         {/* Static font size controls in a prominent position */}
         <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1">
-          {/* Font size controls using the standard Button component */}
+          {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -577,6 +583,46 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               A+
               <Plus className="h-4 w-4 ml-1" />
             </Button>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                >
+                  <span className="text-xs">Font</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Font Settings</DialogTitle>
+                  <DialogDescription>
+                    Change the font style for your reading experience.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Font Style</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {Object.entries(availableFonts).map(([key, info]) => (
+                        <Button
+                          key={key}
+                          variant={fontFamily === key ? "default" : "outline"}
+                          className="justify-start h-auto py-3"
+                          onClick={() => updateFontFamily(key as FontFamilyKey)}
+                        >
+                          <div className="flex flex-col items-start">
+                            <span style={{ fontFamily: info.family }}>{info.name}</span>
+                            <span className="text-xs text-muted-foreground">{info.type}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Narration button */}

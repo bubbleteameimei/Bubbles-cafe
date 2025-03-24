@@ -43,7 +43,8 @@ import { FeedbackButton } from './components/feedback/FeedbackButton';
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
 import SearchBar from './components/SearchBar';
-import { NotificationProvider } from './components/NotificationProvider';
+// Import our notification system components
+import { NotificationProvider } from './contexts/notification-context';
 import { NotificationIcon } from './components/ui/notification-icon';
 import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
@@ -161,6 +162,7 @@ const ConnectedAccountsPage = withSuspense(React.lazy(() => import('./pages/sett
 // Removed TextToSpeechPage
 const FontSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/fonts')));
 const AccessibilitySettingsPage = withSuspense(React.lazy(() => import('./pages/settings/accessibility')));
+const NotificationsPage = withSuspense(React.lazy(() => import('./pages/notifications')));
 // Removed AccessibilityTestPage
 // DisplaySettingsPage removed
 const NotificationSettingsPage = withSuspense(React.lazy(() => import('./pages/settings/notifications')));
@@ -269,6 +271,7 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
+                <Route path="/notifications" component={NotificationsPage} />
                 {/* Responsive Demo Page */}
                 <Route path="/responsive-demo" component={ResponsiveDemoPage} />
                 {/* Removed test pages routes */}

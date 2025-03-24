@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
 import { Menu, User } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
-import { useNotifications } from "@/components/NotificationProvider";
+import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 

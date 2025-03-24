@@ -24,6 +24,53 @@ body:has(main:has([data-reader-page])) .container {
   margin-top: -8px !important; /* Pull content up closer to header */
 }
 
+/* Night mode styling */
+.night-mode {
+  --night-background: #121212;
+  --night-text: #e0e0e0;
+  --night-muted: #888888;
+  --night-border: #333333;
+  --night-blockquote-bg: rgba(255, 255, 255, 0.05);
+  --night-heading: #f0f0f0;
+  
+  background-color: var(--night-background);
+  color: var(--night-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.night-mode .story-content {
+  color: var(--night-text);
+}
+
+.night-mode .story-content p, 
+.night-mode .story-content .story-paragraph {
+  color: var(--night-text);
+}
+
+.night-mode .story-content h1,
+.night-mode .story-content h2,
+.night-mode .story-content h3 {
+  color: var(--night-heading);
+}
+
+.night-mode .story-content blockquote {
+  background-color: var(--night-blockquote-bg);
+  border-left-color: rgba(255, 255, 255, 0.2);
+}
+
+.night-mode .story-content a {
+  color: #90caf9;
+}
+
+.night-mode .story-content blockquote::before {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.night-mode .story-content ::selection {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--night-text);
+}
+
 :root {
   /* Z-Index System Variables */
   --z-background: -10;    /* Background elements below content */
@@ -1052,4 +1099,81 @@ button:hover, a:hover {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Night mode styles - specific for reader page */
+.night-mode {
+  --reader-bg: #121212;
+  --reader-text: #e8e8e8;
+  --reader-border: #333333;
+  --reader-muted: #888888;
+  --reader-primary: hsl(var(--primary) / 0.8);
+  --reader-accent: hsl(var(--primary) / 0.6);
+  --reader-blockquote-bg: rgba(255, 255, 255, 0.05);
+  --reader-blockquote-border: hsl(var(--primary) / 0.5);
+  --reader-link: hsl(var(--primary) / 0.9);
+  --reader-link-hover: hsl(var(--primary));
+  --reader-selection-bg: rgba(var(--primary), 0.3);
+  --reader-code-bg: #2a2a2a;
+  
+  background-color: var(--reader-bg) !important;
+  color: var(--reader-text) !important;
+}
+
+.night-mode h1, 
+.night-mode h2, 
+.night-mode h3, 
+.night-mode h4, 
+.night-mode h5, 
+.night-mode h6 {
+  color: var(--reader-text) !important;
+}
+
+.night-mode .story-content blockquote {
+  background-color: var(--reader-blockquote-bg) !important;
+  border-left-color: var(--reader-blockquote-border) !important;
+}
+
+.night-mode .story-content a {
+  color: var(--reader-link) !important;
+}
+
+.night-mode .story-content a:hover {
+  color: var(--reader-link-hover) !important;
+}
+
+.night-mode .story-content ::selection {
+  background-color: var(--reader-selection-bg) !important;
+  color: var(--reader-text) !important;
+}
+
+.night-mode .story-content pre, 
+.night-mode .story-content code {
+  background-color: var(--reader-code-bg) !important;
+}
+
+.night-mode hr {
+  border-color: var(--reader-border) !important;
+}
+
+.night-mode .bg-background {
+  background-color: var(--reader-bg) !important;
+}
+
+.night-mode .border-border\/30,
+.night-mode .border-border\/50,
+.night-mode .border-border\/20 {
+  border-color: var(--reader-border) !important;
+}
+
+.night-mode .text-muted-foreground {
+  color: var(--reader-muted) !important;
+}
+
+.night-mode button.bg-background {
+  background-color: #1e1e1e !important;
+}
+
+.night-mode button.bg-background:hover {
+  background-color: #2a2a2a !important;
 }

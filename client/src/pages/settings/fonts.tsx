@@ -1,36 +1,51 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFontSize } from "@/hooks/use-font-size";
+import { useFontFamily, FontFamilyKey, FONT_FAMILIES } from "@/hooks/use-font-family";
 
 export default function FontSettingsPage() {
-  const [fontSize, setFontSize] = useState(16);
-  const [fontFamily, setFontFamily] = useState("newsreader");
+  const { fontSize, updateFontSize } = useFontSize();
+  const { fontFamily, updateFontFamily, availableFonts } = useFontFamily();
+
+  // Load fonts on component mount
+  useEffect(() => {
+    // Preload all fonts for preview
+    const fontUrls = {
+      'cormorant': 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+      'merriweather': 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap',
+      'lora': 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+      'roboto': 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap',
+      'opensans': 'https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+      'literata': 'https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap',
+    };
+    
+    Object.entries(fontUrls).forEach(([font, url]) => {
+      const existingLink = document.querySelector(`link[href="${url}"]`);
+      if (!existingLink) {
+        const fontLink = document.createElement('link');
+        fontLink.rel = 'stylesheet';
+        fontLink.href = url;
+        document.head.appendChild(fontLink);
+      }
+    });
+  }, []);
 
   const handleFontSizeChange = (value: number[]) => {
-    setFontSize(value[0]);
-    // Only applying to story content via specific CSS variable
-    document.documentElement.style.setProperty('--story-font-size', `${value[0]}px`);
+    updateFontSize(value[0]);
   };
 
   const handleFontFamilyChange = (value: string) => {
-    setFontFamily(value);
-    
-    // Map the selected value to the actual font-family CSS
-    const fontFamilyValue = 
-      value === 'newsreader' ? "'Newsreader', serif" : 
-      value === 'castoro' ? "'Castoro Titling', serif" :
-      value === 'gilda' ? "'Gilda Display', serif" : 
-      "'Dancing Script', cursive";
-    
-    // Only applying to story content via specific CSS variable
-    document.documentElement.style.setProperty('--story-font-family', fontFamilyValue);
+    if (Object.keys(FONT_FAMILIES).includes(value)) {
+      updateFontFamily(value as FontFamilyKey);
+    }
   };
 
   return (
     <div className="container mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold mb-6">Typography Settings</h1>
-      <p className="text-muted-foreground mb-4">Select from our carefully curated typography system featuring Castoro Titling for headlines, Gilda Display for subheadings, Newsreader for body text, and Dancing Script for italics. These settings let you customize your reading experience.</p>
+      <p className="text-muted-foreground mb-4">Customize your reading experience with our expanded font options. Choose from a collection of carefully selected typefaces for different reading preferences, from traditional serif fonts to modern sans-serif options. Your font selections will be applied to all stories throughout the site.</p>
 
       <Card className="p-6 space-y-6">
         <div className="space-y-4">
@@ -57,10 +72,14 @@ export default function FontSettingsPage() {
               <SelectValue placeholder="Select a font" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cormorant">Cormorant Garamond (Body Text)</SelectItem>
-              <SelectItem value="castoro">Castoro Titling (H1)</SelectItem>
-              <SelectItem value="gilda">Gilda Display (H2-H3)</SelectItem>
-              <SelectItem value="dancing">Dancing Script (Italics)</SelectItem>
+              {Object.entries(availableFonts).map(([key, info]) => (
+                <SelectItem key={key} value={key}>
+                  <span className="flex items-center gap-2">
+                    <span>{info.name}</span>
+                    <span className="text-xs text-muted-foreground">({info.type})</span>
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -71,10 +90,7 @@ export default function FontSettingsPage() {
             <div
               style={{ 
                 fontSize: `${fontSize}px`, 
-                fontFamily: fontFamily === 'cormorant' ? "'Cormorant Garamond', serif" : 
-                            fontFamily === 'castoro' ? "'Castoro Titling', serif" :
-                            fontFamily === 'gilda' ? "'Gilda Display', serif" : 
-                            "'Dancing Script', cursive"
+                fontFamily: availableFonts[fontFamily as FontFamilyKey].family
               }}
               className="p-4 border rounded-md bg-muted/50"
             >

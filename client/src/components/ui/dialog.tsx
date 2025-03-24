@@ -81,32 +81,34 @@ const DialogContent = React.forwardRef<
   let contentChildren = [...childrenArray];
   
   // If no title is found and no aria-label or aria-labelledby is provided, add a title
-  if (!hasTitle && !hasAriaLabel && !hasAriaLabelledby) {
-    const srOnlyTitle = (
-      <DialogPrimitive.Title 
-        key={`title-${id}`}
-        id={defaultTitleId} 
-        className="sr-only"
-      >
-        Dialog Content
-      </DialogPrimitive.Title>
-    );
-    
+  // Always add the title for screen readers, even with aria attributes provided
+  const srOnlyTitle = (
+    <DialogPrimitive.Title 
+      key={`title-${id}`}
+      id={defaultTitleId} 
+      className="sr-only"
+    >
+      {hasTitle ? "Dialog Content" : "Dialog"}
+    </DialogPrimitive.Title>
+  );
+  
+  if (!hasTitle) {
     contentChildren = [srOnlyTitle, ...contentChildren];
   }
   
   // If no description is found and no aria-describedby is provided, add a description
-  if (!hasDescription && !hasAriaDescribedby) {
-    const srOnlyDescription = (
-      <DialogPrimitive.Description 
-        key={`desc-${id}`}
-        id={defaultDescId} 
-        className="sr-only"
-      >
-        This dialog contains additional information and actions.
-      </DialogPrimitive.Description>
-    );
-    
+  // Always add description for screen readers to resolve warnings
+  const srOnlyDescription = (
+    <DialogPrimitive.Description 
+      key={`desc-${id}`}
+      id={defaultDescId} 
+      className="sr-only"
+    >
+      {hasDescription ? "This dialog contains content and actions." : "This dialog contains additional information and actions."}
+    </DialogPrimitive.Description>
+  );
+  
+  if (!hasDescription) {
     contentChildren = [...contentChildren, srOnlyDescription];
   }
   
