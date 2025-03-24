@@ -125,27 +125,27 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-3 p-1 px-2 m-1">
-            <TabsTrigger value="all" className="text-xs px-1">
+          <TabsList className="grid w-full grid-cols-3 p-1 px-1 m-1 h-9">
+            <TabsTrigger value="all" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
               All
               {notifications.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {notifications.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="unread" className="text-xs px-1">
+            <TabsTrigger value="unread" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
               Unread
               {unreadCount > 0 && (
-                <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {unreadCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="read" className="text-xs px-1">
+            <TabsTrigger value="read" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
               Read
               {(notifications.length - unreadCount) > 0 && (
-                <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="outline" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {notifications.length - unreadCount}
                 </Badge>
               )}

@@ -1040,7 +1040,7 @@ input[type="reset"],
   background-repeat: no-repeat;
   background-attachment: fixed;
   opacity: 1;
-  z-index: var(--z-background);
+  z-index: -10; /* Force to stay behind all content, even inputs */
   pointer-events: none; /* Prevents the background from capturing clicks */
   background-color: rgba(255, 255, 255, 0.8); /* Fallback color in case the image doesn't load */
 }

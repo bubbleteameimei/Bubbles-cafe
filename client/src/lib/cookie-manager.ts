@@ -168,7 +168,25 @@ export function hasConsentChoice(): boolean {
   }
   
   try {
-    return localStorage.getItem(COOKIE_CONSENT_KEY) !== null;
+    const consentValue = localStorage.getItem(COOKIE_CONSENT_KEY);
+    
+    // Additional validation to ensure the stored value is valid JSON
+    if (consentValue) {
+      try {
+        const parsed = JSON.parse(consentValue);
+        // Verify it has the expected structure (at least one preference)
+        return (parsed && typeof parsed === 'object' && 
+                (parsed.essential !== undefined || 
+                 parsed.functional !== undefined || 
+                 parsed.analytics !== undefined));
+      } catch (parseError) {
+        console.warn('Invalid consent data in localStorage, treating as no consent');
+        // Clean up invalid data
+        localStorage.removeItem(COOKIE_CONSENT_KEY);
+        return false;
+      }
+    }
+    return false;
   } catch (error) {
     console.warn('Failed to check consent choice:', error);
     return false;

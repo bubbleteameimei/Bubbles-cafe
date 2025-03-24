@@ -95,8 +95,12 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       setCookiePreferences(getCookiePreferences());
       
       // Set up event listener for storage changes (in case other tabs update preferences)
-      const handleStorageChange = () => {
-        setCookiePreferences(getCookiePreferences());
+      const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'cookieConsent') {
+          setCookiePreferences(getCookiePreferences());
+          // Important: Update the banner visibility when storage changes
+          setShowConsentBanner(!hasConsentChoice());
+        }
       };
       
       window.addEventListener('storage', handleStorageChange);
