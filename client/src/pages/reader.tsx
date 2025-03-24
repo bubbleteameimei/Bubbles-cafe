@@ -25,6 +25,8 @@ import ApiLoader from "@/components/api-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import MistEffect from "@/components/effects/MistEffect";
 import { MistControl } from "@/components/ui/mist-control";
+import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -98,7 +100,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
-
+  // Horror easter egg - track rapid navigation
+  const [showHorrorMessage, setShowHorrorMessage] = useState(false);
+  const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
+  const skipCountRef = useRef(0);
+  const lastNavigationTimeRef = useRef(Date.now());
+  const { toast } = useToast();
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
@@ -505,6 +512,47 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   `;
 
   // Navigation functions
+  // Function to track rapid navigation and show horror Easter egg
+  const checkRapidNavigation = () => {
+    const now = Date.now();
+    const timeSinceLastNavigation = now - lastNavigationTimeRef.current;
+    
+    // Check if rapid navigation (less than 1.5 seconds between skips)
+    if (timeSinceLastNavigation < 1500) {
+      skipCountRef.current += 1;
+      
+      // After 5 rapid skips, show the horror Easter egg
+      if (skipCountRef.current >= 5 && !showHorrorMessage) {
+        console.log('[Reader] Horror Easter egg triggered after rapid navigation');
+        
+        // Use only one specific message as requested
+        const message = "I see you skipping";
+        setHorrorMessageText(message);
+        setShowHorrorMessage(true);
+        
+        // Show toast with creepy text
+        toast({
+          title: "Notice",
+          description: <CreepyTextGlitch text={message} />,
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        // Reset after showing
+        setTimeout(() => {
+          setShowHorrorMessage(false);
+          skipCountRef.current = 0;
+        }, 5000);
+      }
+    } else {
+      // If navigation is slow, gradually reduce the skip count
+      skipCountRef.current = Math.max(0, skipCountRef.current - 1);
+    }
+    
+    // Update last navigation time
+    lastNavigationTimeRef.current = now;
+  };
+
   const goToRandomStory = () => {
     if (posts.length <= 1) return;
     
@@ -513,8 +561,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       randomIndex = Math.floor(Math.random() * posts.length);
     } while (randomIndex === currentIndex);
     
+    checkRapidNavigation();
     setCurrentIndex(randomIndex);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
   };
   
   // Function to navigate to previous story
@@ -522,8 +571,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     if (posts.length <= 1 || currentIndex === 0) return;
     
     const newIndex = currentIndex - 1;
+    checkRapidNavigation();
     setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
   };
   
   // Function to navigate to next story
@@ -531,8 +581,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     if (posts.length <= 1 || currentIndex === posts.length - 1) return;
     
     const newIndex = currentIndex + 1;
+    checkRapidNavigation();
     setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
   };
   
   // Check if we're at first or last story
@@ -543,6 +594,51 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   
   return (
     <div className="relative min-h-screen bg-background reader-page" data-reader-page="true">
+      {/* Horror message modal */}
+      {showHorrorMessage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowHorrorMessage(false)}
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30 
+            }}
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-red-900/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute inset-0 rounded-lg bg-red-900/5 animate-pulse" />
+            <div className="relative z-10">
+              <div className="mb-4">
+                <CreepyTextGlitch 
+                  text={horrorMessageText} 
+                  className="text-2xl font-bold text-red-900 dark:text-red-600"
+                  intensityFactor={2.5}
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="mt-2 border-red-900/30 bg-background hover:bg-background/90 text-foreground w-full"
+                onClick={() => setShowHorrorMessage(false)}
+              >
+                <span className="mr-2">I understand</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M18 6 6 18"/>
+                  <path d="m6 6 12 12"/>
+                </svg>
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      
       {/* Reading progress indicator */}
       <div 
         className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
@@ -650,15 +746,15 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           </Button>
         </div>
       
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.article
             key={currentPost.id}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ 
-              duration: 0.4,
-              ease: [0.22, 1, 0.36, 1] 
+              duration: 0.2, // Reduced duration for faster transitions
+              ease: "easeOut" // Simpler easing for better performance
             }}
             className="prose dark:prose-invert max-w-2xl mx-auto px-4 md:px-6 lg:px-8 pt-1"
           >

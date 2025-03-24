@@ -3,12 +3,13 @@ import React, { useEffect, useState, useRef } from 'react';
 interface CreepyTextGlitchProps {
   text: string;
   className?: string;
+  intensityFactor?: number;
 }
 
 // Character pool for random replacements
 const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789¿¡§±æøåñÇçÑÆØÅ";
 
-export function CreepyTextGlitch({ text, className = "" }: CreepyTextGlitchProps) {
+export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
   const [displayStyle, setDisplayStyle] = useState<React.CSSProperties>({});
   const originalText = useRef(text);
@@ -43,8 +44,12 @@ export function CreepyTextGlitch({ text, className = "" }: CreepyTextGlitchProps
       // Clone the current text
       const newTextArray = [...textArray];
       
-      // Number of characters to glitch (between 2 and 4)
-      const glitchCount = 2 + Math.floor(Math.random() * 3);
+      // Number of characters to glitch - scales with intensity factor
+      const baseGlitchCount = 2 + Math.floor(Math.random() * 3);
+      const glitchCount = Math.min(
+        Math.floor(baseGlitchCount * intensityFactor),
+        Math.floor(textArray.length * 0.6) // Cap at 60% of text length
+      );
       const positions: number[] = [];
       
       // Select random positions to glitch
@@ -67,27 +72,27 @@ export function CreepyTextGlitch({ text, className = "" }: CreepyTextGlitchProps
         newTextArray[pos] = randomChar;
       }
       
-      // Apply a subtle style variation
+      // Apply a subtle style variation - intensity affects probability and strength
       const newStyle: React.CSSProperties = {};
       
       // Randomly add a subtle filter or transform
-      if (Math.random() < 0.3) {
-        newStyle.filter = `blur(${0.2 + Math.random() * 0.5}px)`;
+      if (Math.random() < 0.3 * intensityFactor) {
+        newStyle.filter = `blur(${0.2 + Math.random() * 0.5 * intensityFactor}px)`;
       }
       
-      if (Math.random() < 0.3) {
-        newStyle.transform = `skew(${(Math.random() - 0.5) * 2}deg)`;
+      if (Math.random() < 0.3 * intensityFactor) {
+        newStyle.transform = `skew(${(Math.random() - 0.5) * 2 * intensityFactor}deg)`;
       }
       
       // Set the glitched text and style
       setDisplayText(newTextArray.join(''));
       setDisplayStyle(newStyle);
       
-      // Schedule revert after a brief moment
+      // Schedule revert after a brief moment - more intense = faster changes
       const revertTimeout = setTimeout(() => {
         setDisplayText(originalText.current);
         setDisplayStyle({});
-      }, 80 + Math.random() * 170); // Revert after 80-250ms
+      }, Math.max(30, 80 + Math.random() * 170 / intensityFactor)); // Faster reversion with higher intensity
       
       timeoutIds.current.push(revertTimeout);
     };
@@ -120,19 +125,21 @@ export function CreepyTextGlitch({ text, className = "" }: CreepyTextGlitchProps
         const revertTextArray = [...newTextArray];
         revertTextArray[pos] = originalChar;
         setDisplayText(revertTextArray.join(''));
-      }, 80 + Math.random() * 120); // Revert after 80-200ms
+      }, Math.max(30, 80 + Math.random() * 120 / intensityFactor)); // Faster reversion with higher intensity
       
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Schedule irregular glitches
+    // Schedule irregular glitches - frequency increases with intensity
     const scheduleNext = () => {
-      // Random delay between 50ms and 800ms for next glitch
-      const nextGlitchDelay = 50 + Math.random() * 750;
+      // Random delay between glitches - reduced delay with higher intensity
+      const nextGlitchDelay = Math.max(10, (50 + Math.random() * 750) / intensityFactor);
       
       const timeout = setTimeout(() => {
-        // 1 in 5 chance of intensive glitch (multiple characters)
-        if (Math.random() < 0.2) {
+        // Chance of intensive glitch increases with intensity factor
+        const intensiveGlitchProbability = Math.min(0.2 * intensityFactor, 0.8);
+        
+        if (Math.random() < intensiveGlitchProbability) {
           intensiveGlitch();
         } else {
           glitchRandomCharacter();
