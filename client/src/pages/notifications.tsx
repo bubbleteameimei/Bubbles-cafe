@@ -39,12 +39,14 @@ export default function NotificationsPage() {
 
   return (
     <FadeInSection>
-      <div className="container max-w-4xl mx-auto py-8">
-        <div className="flex items-center mb-6">
+      {/* Responsive container with better mobile constraints */}
+      <div className="container px-4 sm:px-6 max-w-3xl mx-auto py-4 sm:py-8">
+        {/* Header section with improved mobile layout */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="mr-2 h-8 px-2" 
+            className="self-start mr-2 h-8 px-2" 
             onClick={() => setLocation('/')}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -52,7 +54,7 @@ export default function NotificationsPage() {
           </Button>
           
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">Notifications</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">Notifications</h1>
             <p className="text-muted-foreground text-sm">
               Stay updated with your story notifications
             </p>
@@ -62,18 +64,19 @@ export default function NotificationsPage() {
             variant="outline" 
             size="sm" 
             onClick={() => addTestNotification(addNotification, 'new-story')}
-            className="h-8 text-xs"
+            className="self-start sm:self-auto h-8 text-xs mt-2 sm:mt-0"
           >
             <Bell className="h-3.5 w-3.5 mr-1.5" />
             Test Notification
           </Button>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle>Your Notifications</CardTitle>
-              <div className="flex gap-2">
+        {/* Card with better mobile padding and spacing */}
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+              <CardTitle className="text-lg">Your Notifications</CardTitle>
+              <div className="flex gap-2 self-end sm:self-auto">
                 {unreadCount > 0 && (
                   <Button
                     variant="outline"
@@ -82,7 +85,8 @@ export default function NotificationsPage() {
                     className="h-8 text-xs"
                   >
                     <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
-                    Mark all read
+                    <span className="hidden sm:inline">Mark all read</span>
+                    <span className="sm:hidden">Read all</span>
                   </Button>
                 )}
                 {notifications.length > 0 && (
@@ -93,39 +97,41 @@ export default function NotificationsPage() {
                     className="h-8 text-xs text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                    Clear all
+                    <span className="hidden sm:inline">Clear all</span>
+                    <span className="sm:hidden">Clear</span>
                   </Button>
                 )}
               </div>
             </div>
             
+            {/* Tabs with better mobile design */}
             <Tabs
               defaultValue="all"
               value={activeTab}
               onValueChange={setActiveTab}
-              className="w-full"
+              className="w-full mt-3"
             >
               <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="all" className="text-xs">
+                <TabsTrigger value="all" className="text-xs px-1 sm:px-4">
                   All
                   {notifications.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                    <Badge variant="secondary" className="ml-1 sm:ml-2 h-5 px-1.5 text-[10px]">
                       {notifications.length}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="unread" className="text-xs">
+                <TabsTrigger value="unread" className="text-xs px-1 sm:px-4">
                   Unread
                   {unreadCount > 0 && (
-                    <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
+                    <Badge variant="destructive" className="ml-1 sm:ml-2 h-5 px-1.5 text-[10px]">
                       {unreadCount}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="read" className="text-xs">
+                <TabsTrigger value="read" className="text-xs px-1 sm:px-4">
                   Read
                   {(notifications.length - unreadCount) > 0 && (
-                    <Badge variant="outline" className="ml-2 h-5 px-1.5 text-[10px]">
+                    <Badge variant="outline" className="ml-1 sm:ml-2 h-5 px-1.5 text-[10px]">
                       {notifications.length - unreadCount}
                     </Badge>
                   )}
@@ -134,10 +140,11 @@ export default function NotificationsPage() {
             </Tabs>
           </CardHeader>
           
-          <CardContent>
+          {/* Notification content with better mobile layout */}
+          <CardContent className="px-3 sm:px-6 py-0">
             {filteredNotifications.length === 0 ? (
-              <div className="py-12 text-center">
-                <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground/20" />
+              <div className="py-8 sm:py-12 text-center">
+                <Bell className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground/20" />
                 <p className="text-muted-foreground">
                   {activeTab === 'all' 
                     ? "No notifications yet" 
@@ -157,13 +164,13 @@ export default function NotificationsPage() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`py-4 cursor-pointer hover:bg-muted/40 transition-colors px-4 -mx-4 ${
+                    className={`py-3 sm:py-4 cursor-pointer hover:bg-muted/40 transition-colors px-3 sm:px-4 -mx-3 sm:-mx-4 ${
                       !notification.read ? 'bg-primary/5' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 p-1.5 rounded-full ${
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className={`mt-0.5 p-1.5 rounded-full flex-shrink-0 ${
                         notification.type === 'success' ? "bg-green-100 text-green-700" :
                         notification.type === 'error' ? "bg-red-100 text-red-700" :
                         notification.type === 'warning' ? "bg-yellow-100 text-yellow-700" :
@@ -173,18 +180,18 @@ export default function NotificationsPage() {
                         {notification.type === 'success' ? <Check className="h-4 w-4" /> :
                         <Bell className="h-4 w-4" />}
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex justify-between items-start">
-                          <p className={`text-sm font-medium ${
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                          <p className={`text-sm font-medium truncate mr-1 ${
                             !notification.read ? "text-foreground" : "text-muted-foreground"
                           }`}>
                             {notification.title}
                           </p>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap sm:ml-2">
                             {format(notification.date, 'MMM d, h:mm a')}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">
                           {notification.message}
                         </p>
                         {notification.link && (

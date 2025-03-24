@@ -61,24 +61,51 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
     });
   }, [addNotification, isEnabled]);
 
-  // Schedule random silent pings
+  // Schedule random silent pings (1-2 per day)
   useEffect(() => {
     if (!isEnabled) return;
     
-    // Random delay between 5-15 minutes
-    const getRandomDelay = () => (5 + Math.floor(Math.random() * 10)) * 60 * 1000;
+    // Check if we've already shown a notification today
+    const checkAndSetLastNotification = () => {
+      // Try to get last notification timestamp from localStorage
+      try {
+        const lastPingTimeString = localStorage.getItem('lastSilentPingTime');
+        const currentTimeMs = Date.now();
+        
+        if (lastPingTimeString) {
+          const lastPingTime = parseInt(lastPingTimeString, 10);
+          const hoursSinceLastPing = (currentTimeMs - lastPingTime) / (1000 * 60 * 60);
+          
+          // If it's been less than 12 hours since the last notification, don't show another
+          if (hoursSinceLastPing < 12) {
+            console.log('[SilentPing] Last ping was less than 12 hours ago, skipping');
+            return false;
+          }
+        }
+        
+        // If we've decided to show a notification, update the timestamp
+        return true;
+      } catch (error) {
+        console.error('[SilentPing] Error checking last notification time:', error);
+        return true; // Default to allowing notification if there's an error
+      }
+    };
+    
+    // Random delay between 4-8 hours (in milliseconds)
+    const getRandomDelay = () => (4 + Math.floor(Math.random() * 4)) * 60 * 60 * 1000;
     
     let timeout: NodeJS.Timeout;
     
     const schedulePing = () => {
       timeout = setTimeout(() => {
-        // Only 1 in 3 chance of actually showing the notification
-        // This makes the behavior more unpredictable and eerie
-        if (Math.random() < 0.33) {
+        // Only show notification if time criteria is met and random chance succeeds
+        if (checkAndSetLastNotification() && Math.random() < 0.5) {
           triggerSilentPing();
+          // Record this notification time
+          localStorage.setItem('lastSilentPingTime', Date.now().toString());
         }
         
-        // Schedule the next ping
+        // Schedule the next ping attempt
         schedulePing();
       }, getRandomDelay());
     };
@@ -90,15 +117,35 @@ export function SilentPingProvider({ children }: { children: React.ReactNode }) 
     return () => clearTimeout(timeout);
   }, [isEnabled, triggerSilentPing]);
 
-  // For development/testing purposes: 
-  // Let's have a small chance of a ping happening when the user does something
+  // Minimal chance of ping happening when the user does something
+  // This provides occasional unexpected behavior but very rarely
   useEffect(() => {
     if (!isEnabled) return;
     
     const userActionListener = () => {
-      // Extremely low probability on user action (1 in 200)
-      if (Math.random() < 0.005) {
-        triggerSilentPing();
+      try {
+        // Check when the last notification was shown
+        const lastPingTimeString = localStorage.getItem('lastSilentPingTime');
+        const currentTimeMs = Date.now();
+        
+        if (lastPingTimeString) {
+          const lastPingTime = parseInt(lastPingTimeString, 10);
+          const hoursSinceLastPing = (currentTimeMs - lastPingTime) / (1000 * 60 * 60);
+          
+          // If it's been less than 12 hours, don't even consider showing a notification
+          if (hoursSinceLastPing < 12) {
+            return;
+          }
+        }
+        
+        // Extremely low probability on user action (1 in 1000)
+        // Even rarer than before to ensure we hit maximum 1-2 times per day
+        if (Math.random() < 0.001) {
+          triggerSilentPing();
+          localStorage.setItem('lastSilentPingTime', currentTimeMs.toString());
+        }
+      } catch (error) {
+        console.error('[SilentPing] Error in user action listener:', error);
       }
     };
     
