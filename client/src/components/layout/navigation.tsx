@@ -40,7 +40,7 @@ export default function Navigation() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2 lg:hidden relative overflow-hidden touch-manipulation w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20"
+                className="mr-2 lg:hidden relative overflow-hidden touch-manipulation w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 -mt-4"
                 title="Toggle navigation menu"
                 noOutline={true}
                 style={{ 
@@ -66,14 +66,14 @@ export default function Navigation() {
           {/* Logo - Responsive for all breakpoints */}
           <button 
             onClick={() => setLocation('/')} 
-            className="mr-4 md:mr-8 lg:mr-10 flex items-center space-x-2 rounded-md px-2 py-1 touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90"
+            className="mr-4 md:mr-8 lg:mr-10 flex items-center space-x-2 rounded-md px-2 py-1 touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90 -mt-4"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <span className="font-bold uppercase tracking-wider text-sm sm:text-base md:text-lg">Stories</span>
+            {/* Title removed as requested */}
           </button>
           
           {/* Desktop Navigation - Responsive tablet to desktop */}
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-4 text-xs sm:text-sm md:text-base lg:text-base font-medium">
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-4 text-xs sm:text-sm md:text-base lg:text-base font-medium -mt-4">
             {navLinks
               .filter(link => {
                 // Filter by authentication requirements

@@ -4,6 +4,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styling for reader page to reduce space between header and content */
+.reader-container {
+  padding-top: 10px !important; /* Significantly reduce the top padding */
+}
+
+/* Target routes that contain /reader */
+[href^="/reader"] ~ main .reader-container {
+  padding-top: 5px !important; /* Even more reduction for reader page */
+}
+
+/* Additional fix for reader page spacing */
+body:has(main:has([data-reader-page])) .container {
+  padding-top: 0 !important;
+}
+
+/* Reader page specific styling */
+.reader-page {
+  margin-top: -12px !important; /* Pull content up closer to header */
+}
+
+/* Stronger rules to reduce space in reader page */
+body:has(.reader-page) main {
+  padding-top: 0 !important;
+}
+
+/* Target the font controls row to move it up */
+.reader-page .pt-0.pb-0.bg-background.-mt-6 {
+  margin-top: -10px !important;
+}
+
+/* Remove excess padding in reader container */
+.reader-container {
+  padding-top: 0 !important;
+}
+
 :root {
   /* Z-Index System Variables */
   --z-background: -10;    /* Background elements below content */

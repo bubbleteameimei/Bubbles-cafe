@@ -238,7 +238,7 @@ const AppContent = () => {
       <aside className="fixed top-0 left-0 z-40 h-screen w-64 sm:w-60 md:w-64 lg:w-72 hidden lg:block overflow-hidden border-r border-border/80">
         <div className="h-full w-full">
           <div className="h-[56px] md:h-[64px] lg:h-[72px] px-4 md:px-6 flex items-center border-b border-border bg-background">
-            <h1 className="text-foreground font-medium text-lg md:text-xl lg:text-2xl">Stories</h1>
+            {/* Title removed as requested */}
           </div>
           <SidebarNavigation onNavigate={() => {}} />
         </div>
@@ -247,7 +247,7 @@ const AppContent = () => {
       {/* Main Content - responsive spacing for different device sizes */}
       <main className="min-h-screen lg:ml-72">
         <AutoHideNavbar />
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-8 pt-20 lg:pt-8 max-w-7xl">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-16 lg:pt-6 max-w-7xl reader-container">
           <ErrorBoundary>
             <EnhancedPageTransition>
               <Switch>

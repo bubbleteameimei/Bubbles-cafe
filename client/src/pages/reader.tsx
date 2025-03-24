@@ -30,15 +30,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Import responsive reader components
-import { 
-  ResponsiveReaderLayout, 
-  ResponsiveReaderControls, 
-  ResponsiveReaderHeader,
-  getDeviceType,
-  DeviceType
-} from "@/components/reader";
-
 // Import comment section directly for now to avoid lazy loading issues
 import CommentSection from "@/components/blog/comment-section";
 
@@ -355,41 +346,34 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const storyContentStyles = `
   .story-content {
     font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
+    /* Removed max-width constraint for immersive experience */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 1200px; /* Prevent content from being too wide on large screens */
-    min-height: 100vh; /* Full viewport height to fill the page */
   }
   .story-content p, .story-content .story-paragraph {
-    line-height: 1.8;  /* Improved line height for readability */
-    margin-bottom: 1.8em;  /* Enhanced paragraph spacing */
+    line-height: 1.7;  /* Improved line height for readability */
+    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
     text-align: justify;
     letter-spacing: 0.01em; /* Subtle letter spacing */
     font-kerning: normal; /* Improves kerning pairs */
     font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
-    max-width: 800px; /* Control paragraph width for readability on large screens */
-    width: 100%; /* Allow text to fill available space */
+    max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
     margin-left: auto;
     margin-right: auto;
     font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
-    font-size: clamp(16px, 2vw, 22px); /* Dynamic font sizing */
-    transition: font-size 0.3s ease;
   }
   .story-content em {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
     font-size: 1em;
-    line-height: 1.8;
+    line-height: 1.7;
     letter-spacing: 0.01em;
     font-weight: 500;
   }
-  /* Add clear paragraph separation */
+  /* Add clear paragraph separation as per user request */
   .story-content p + p {
-    margin-top: 2em;  /* Double line break effect for better spacing */
+    margin-top: 0; /* No additional top margin as we have sufficient bottom margin */
     text-indent: 0; /* No indent to maintain modern style */
   }
   /* Ensure all paragraphs have equal styling */
@@ -402,56 +386,24 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     overflow-wrap: break-word;
     hyphens: auto;
   }
-  /* iPad & tablets */
-  @media (max-width: 1024px) and (min-width: 769px) {
-    .story-content {
-      max-width: 900px;
-      padding: 20px;
-    }
-    .story-content p, .story-content .story-paragraph {
-      max-width: 650px;
-      line-height: 1.85;
-      font-size: clamp(16px, 1.8vw, 20px);
-    }
-  }
-  /* Mobile devices */
   @media (max-width: 768px) {
-    .story-content {
-      padding: 15px;
-    }
     .story-content p, .story-content .story-paragraph {
       margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
       line-height: 1.75; /* Slightly increased on mobile for readability */
       font-family: 'Cormorant Garamond', var(--font-serif, Georgia, 'Times New Roman', serif);
-      font-size: 16px;
     }
   }
   .story-content img {
     max-width: 100%;
     height: auto;
-    width: auto;
-    max-height: 80vh;
     margin: 2em auto;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-    display: block;
-    opacity: 0.95;
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
-  }
-  .story-content img.loaded {
-    opacity: 1;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
   }
   .story-content img:hover {
     transform: scale(1.01);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-  @media (max-width: 768px) {
-    .story-content img {
-      max-height: 70vh;
-      animation-duration: 0.3s;
-    }
   }
   .story-content h1, .story-content h2, .story-content h3 {
     margin-top: 1.8em;
@@ -579,38 +531,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   // The theme and toggleTheme functions are already declared at the top of the component
   
-  // Determine device type for responsive adjustments
-  const deviceType = getDeviceType();
-  
-  // Share handler for social sharing
-  const handleShare = () => {
-    console.log('[Reader] Opening share dialog');
-    // Use shareStory function instead of setShareDialogOpen
-    shareStory();
-  };
-
-  // Format date for display - already defined above
-  const formattedDisplayDate = format(new Date(currentPost.date), 'MMM d, yyyy');
-  
-  // Generate excerpt for SEO and sharing
-  const getExcerpt = (content: string, maxLength = 160) => {
-    const strippedContent = content.replace(/<[^>]+>/g, '');
-    return strippedContent.length > maxLength 
-      ? `${strippedContent.substring(0, maxLength)}...` 
-      : strippedContent;
-  };
-  
-  // Calculate reading time based on content length
-  const getReadingTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const strippedContent = content.replace(/<[^>]+>/g, '');
-    const words = strippedContent.split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} min read`;
-  };
-  
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background reader-page" data-reader-page="true">
       {/* Reading progress indicator */}
       <div 
         className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
@@ -618,55 +540,63 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         aria-hidden="true"
       />
       
-      {/* Use our responsive layout component */}
-      <ResponsiveReaderLayout
-        className="reader-container"
-        header={
-          <ResponsiveReaderHeader
-            title={currentPost.title.rendered}
-            date={formattedDate}
-            readTime={getReadingTime(currentPost.content.rendered)}
-            views={currentPost.views}
-            category={detectedThemes.length > 0 ? detectedThemes[0] : undefined}
-            deviceType={deviceType}
-            authorName={currentPost.author_name}
-          />
-        }
-        controls={
-          <ResponsiveReaderControls
-            fontSizeValue={fontSize}
-            onIncreaseFontSize={increaseFontSize}
-            onDecreaseFontSize={decreaseFontSize}
-            onShare={handleShare}
-            onBookmark={() => {
-              console.log('[Reader] Toggle bookmark for:', currentPost.id);
-            }}
-            deviceType={deviceType}
-          />
-        }
-      >
-        {/* Theme categories badges */}
-        {detectedThemes.length > 0 && (
-          <div className={`flex flex-wrap gap-2 mb-6 ${deviceType === 'mobile' ? 'max-w-full overflow-x-auto pb-2' : ''}`}>
-            {detectedThemes.map((theme, idx) => (
-              <Badge key={idx} variant="outline" className="flex items-center">
-                {THEME_CATEGORIES[theme]?.icon ? (
-                  <span className="mr-1">
-                    {(() => {
-                      const iconName = THEME_CATEGORIES[theme].icon;
-                      if (iconName === 'Skull') return <Skull className="h-3.5 w-3.5" />;
-                      if (iconName === 'Brain') return <Brain className="h-3.5 w-3.5" />;
-                      if (iconName === 'Pill') return <Pill className="h-3.5 w-3.5" />;
-                      if (iconName === 'Cpu') return <Cpu className="h-3.5 w-3.5" />;
-                      return <BookOpen className="h-3.5 w-3.5" />;
-                    })()}
-                  </span>
-                ) : null}
-                <span className="ml-1">{theme}</span>
-              </Badge>
-            ))}
+      {/* Floating pagination has been removed */}
+      
+      {/* Navigation buttons removed as requested */}
+      {/* Full width immersive reading experience */}
+
+      <div className="pt-0 pb-0 bg-background -mt-10">
+        {/* Static font size controls in a prominent position */}
+        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1">
+          {/* Font size controls using the standard Button component */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={decreaseFontSize}
+              disabled={fontSize <= 12}
+              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              aria-label="Decrease font size"
+            >
+              <Minus className="h-4 w-4 mr-1" />
+              A-
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={increaseFontSize}
+              disabled={fontSize >= 20}
+              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              aria-label="Increase font size"
+            >
+              A+
+              <Plus className="h-4 w-4 ml-1" />
+            </Button>
           </div>
-        )}
+
+          {/* Narration button */}
+          <div className="flex-grow"></div>
+
+          {/* Integrated BookmarkButton in top controls */}
+          <BookmarkButton 
+            postId={currentPost.id} 
+            variant="reader"
+            showText={false}
+            className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
+          />
+
+          {/* Text-to-speech functionality removed */}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation('/')}
+            className="h-9 px-3 bg-background hover:bg-background/80 w-32 shadow-sm"
+          >
+            Return to Home
+          </Button>
+        </div>
       
         <AnimatePresence mode="wait">
           <motion.article
@@ -678,7 +608,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.4,
               ease: [0.22, 1, 0.36, 1] 
             }}
-            className="prose dark:prose-invert max-w-none"
+            className="prose dark:prose-invert max-w-none px-4 md:px-8 lg:px-12 pt-1"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -789,7 +719,6 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content.rendered)
-                  .replace(/<img/g, '<img loading="lazy" decoding="async" onload="this.classList.add(\'loaded\')"')
               }}
             />
             
@@ -942,7 +871,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             Return to Home
           </Button>
         </div>
-      </ResponsiveReaderLayout>
+      </div>
     </div>
   );
 }
