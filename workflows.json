@@ -9,7 +9,10 @@
       "VITE_DEBUG_ENABLED": "true",
       "VITE_HOT_RELOAD": "true"
     },
-    "wait_for_port": 3001,
+    "wait_for_port": {
+      "port": 3001,
+      "timeout_seconds": 60
+    },
     "port": 3001,
     "protocol": "http",
     "onAfterCompleted": "continue", 
