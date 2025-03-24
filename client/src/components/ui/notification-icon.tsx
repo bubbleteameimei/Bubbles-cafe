@@ -60,14 +60,14 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="icon" 
-          className={cn("relative h-9 w-9 rounded-md", className)}
+          className={cn("relative h-9 w-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-out", className)}
           aria-label={`Notifications - ${unreadCount} unread`}
           onClick={onClick ? onClick : undefined}
           noOutline={noOutline}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4" strokeWidth={1.75} />
           <AnimatePresence>
             {unreadCount > 0 && (
               <motion.div

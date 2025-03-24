@@ -139,7 +139,7 @@ export default function Navigation() {
               >
                 <User className="h-5 w-5" strokeWidth={1.75} />
               </Button>
-              <div className="absolute top-[46px] right-0 text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30 whitespace-nowrap">
+              <div className="absolute top-[26px] right-[-5px] text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30 whitespace-nowrap">
                 {user?.username}
               </div>
             </div>

@@ -549,7 +549,8 @@ h4, h5, h6,
     padding: 0 0.25rem;
     font-size: calc(1rem + 0.2vw);
     line-height: 1.7;
-    max-width: none;
+    max-width: 70ch;
+    margin: 0 auto;
   }
   .story-card {
     margin: 0.5rem 0;
@@ -599,7 +600,8 @@ h4, h5, h6,
     padding: 0.75rem;
   }
   .story-content {
-    max-width: none;
+    max-width: 70ch;
+    margin: 0 auto;
     padding: 0 0.5rem;
   }
 }
@@ -615,7 +617,8 @@ h4, h5, h6,
     padding: 1rem;
   }
   .story-content {
-    max-width: none;
+    max-width: 70ch;
+    margin: 0 auto;
     padding: 0 0.75rem;
   }
 }
@@ -1039,10 +1042,10 @@ input[type="reset"],
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  opacity: 1;
-  z-index: -10; /* Force to stay behind all content, even inputs */
+  opacity: 0.85; /* Slightly reduced opacity for better overlay */
+  z-index: var(--z-background); /* Use z-index system variable */
   pointer-events: none; /* Prevents the background from capturing clicks */
-  background-color: rgba(255, 255, 255, 0.8); /* Fallback color in case the image doesn't load */
+  background-color: rgba(10, 10, 10, 0.2); /* Darker fallback */
 }
 
 img {

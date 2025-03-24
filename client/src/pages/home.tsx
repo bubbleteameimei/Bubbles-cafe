@@ -149,6 +149,8 @@ export default function Home() {
               )}
             </div>
           </div>
+          
+          {/* Footer is now handled by the App component */}
         </div>
       )}
     </>

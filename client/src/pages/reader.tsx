@@ -200,17 +200,190 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     });
   }, []);
 
+  // Create a function to generate the styles
+  const generateStoryContentStyles = () => `
+  .story-content {
+    font-family: ${availableFonts[fontFamily].family};
+    max-width: 70ch; /* Restored previous width constraint for better readability */
+    margin: 0 auto;
+    color: hsl(var(--foreground));
+    transition: color 0.3s ease, background-color 0.3s ease;
+  }
+  .story-content p, .story-content .story-paragraph {
+    line-height: 1.7;  /* Improved line height for readability */
+    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
+    text-align: justify;
+    letter-spacing: 0.01em; /* Subtle letter spacing */
+    font-kerning: normal; /* Improves kerning pairs */
+    font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
+    max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
+    margin-left: auto;
+    margin-right: auto;
+    font-family: ${availableFonts[fontFamily].family};
+  }
+  .story-content em {
+    font-family: ${availableFonts[fontFamily].family};
+    font-style: italic;
+    font-size: 1em;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    font-weight: 500;
+  }
+  /* Add clear paragraph separation as per user request */
+  .story-content p + p {
+    margin-top: 0; /* No additional top margin as we have sufficient bottom margin */
+    text-indent: 0; /* No indent to maintain modern style */
+  }
+  /* Ensure all paragraphs have equal styling */
+  .story-content p:first-of-type {
+    font-size: 1em; /* Same size as other paragraphs */
+  }
+  /* Break words properly for better readability */
+  .story-content p {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  @media (max-width: 768px) {
+    .story-content p, .story-content .story-paragraph {
+      margin-bottom: 1.5em; /* Slightly reduced on mobile but still maintaining good spacing */
+      line-height: 1.75; /* Slightly increased on mobile for readability */
+      font-family: ${availableFonts[fontFamily].family};
+    }
+  }
+  .story-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 2em auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+  }
+  .story-content img:hover {
+    transform: scale(1.01);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  .story-content h1, .story-content h2, .story-content h3 {
+    margin-top: 1.8em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    position: relative;
+    font-family: ${availableFonts[fontFamily].family};
+  }
+  .story-content h2::before, .story-content h3::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 0.5em;
+    height: 0.5em;
+    width: 0.5em;
+    background-color: hsl(var(--primary) / 0.6);
+    border-radius: 50%;
+  }
+  .story-content ul, .story-content ol {
+    margin-bottom: 1.5em;
+    padding-left: 1.8em;
+  }
+  .story-content li {
+    margin-bottom: 0.6em;
+    position: relative;
+  }
+  .story-content blockquote {
+    margin: 2em 0;
+    padding: 1.2em 1.5em 1.2em 2em;
+    border-left: 4px solid hsl(var(--primary) / 0.7);
+    font-style: italic;
+    background-color: hsl(var(--muted) / 0.5);
+    border-radius: 0.375rem;
+    position: relative;
+    font-size: 1.05em;
+    line-height: 1.7;
+  }
+  .story-content blockquote::before {
+    content: """;
+    position: absolute;
+    left: 0.5em;
+    top: 0.1em;
+    font-size: 2.5em;
+    color: hsl(var(--primary) / 0.3);
+    font-family: Georgia, serif;
+    line-height: 1;
+  }
+  .dark .story-content blockquote {
+    background-color: hsl(var(--muted) / 0.2);
+  }
+  .story-content a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease, text-decoration-thickness 0.2s ease;
+  }
+  .story-content a:hover {
+    color: hsl(var(--primary) / 0.8);
+    text-decoration-thickness: 2px;
+  }
+  /* Add subtle text selection styling */
+  .story-content ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+  /* Hide any WordPress specific elements */
+  .story-content .wp-caption,
+  .story-content .wp-caption-text,
+  .story-content .gallery-caption {
+    font-family: var(--font-sans);
+    font-size: 0.85em;
+    text-align: center;
+    color: hsl(var(--muted-foreground));
+    margin-top: -1em;
+    margin-bottom: 2em;
+  }
+  /* Improve hr styling */
+  .story-content hr {
+    margin: 3em auto;
+    height: 2px;
+    background-color: hsl(var(--border));
+    border: none;
+    width: 40%;
+    opacity: 0.6;
+  }
+  `;
+
+  // Apply styles effect
   useEffect(() => {
     try {
       console.log('[Reader] Injecting content styles with font family:', fontFamily);
       const styleTag = document.createElement('style');
-      styleTag.textContent = storyContentStyles;
+      styleTag.id = 'reader-dynamic-styles';
+      
+      // Get fresh styles every time by calling the function
+      const currentStyles = generateStoryContentStyles();
+      styleTag.textContent = currentStyles || '';
+      
+      // Remove any existing style tag with the same ID to prevent duplicates
+      const existingTag = document.getElementById('reader-dynamic-styles');
+      if (existingTag) {
+        existingTag.remove();
+      }
+      
       document.head.appendChild(styleTag);
-      return () => styleTag.remove();
+      return () => {
+        if (styleTag && styleTag.parentNode) {
+          styleTag.remove();
+        }
+      };
     } catch (error) {
       console.error('[Reader] Error injecting styles:', error);
+      // Add fallback inline styles to the content container if style injection fails
+      const contentContainer = document.querySelector('.story-content');
+      if (contentContainer) {
+        contentContainer.setAttribute('style', `font-family: ${availableFonts[fontFamily].family}; font-size: ${fontSize}px;`);
+      }
     }
-  }, [fontFamily, fontSize]);
+  }, [fontFamily, fontSize, availableFonts]);
   
   // Handle reading progress
   useEffect(() => {
@@ -360,7 +533,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     }
   ];
 
-  const storyContentStyles = `
+  const unusedStyles = `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
     max-width: 70ch; /* Restored previous width constraint for better readability */

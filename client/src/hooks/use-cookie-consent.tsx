@@ -89,6 +89,20 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       } else {
         // Normal behavior for other pages - show banner if no choice made
         setShowConsentBanner(!hasChoice);
+        
+        // If a choice has been made, ensure we don't show the banner by storing in session
+        if (hasChoice && typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('consentChoiceMade', 'true');
+        }
+        
+        // Check session storage to prevent showing the banner on refreshes within the same session
+        const consentChoiceMadeThisSession = 
+          typeof sessionStorage !== 'undefined' && 
+          sessionStorage.getItem('consentChoiceMade') === 'true';
+        
+        if (consentChoiceMadeThisSession) {
+          setShowConsentBanner(false);
+        }
       }
       
       // Initialize preferences from localStorage
@@ -100,6 +114,11 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
           setCookiePreferences(getCookiePreferences());
           // Important: Update the banner visibility when storage changes
           setShowConsentBanner(!hasConsentChoice());
+          
+          // If consent was given, update session storage
+          if (hasConsentChoice() && typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('consentChoiceMade', 'true');
+          }
         }
       };
       
