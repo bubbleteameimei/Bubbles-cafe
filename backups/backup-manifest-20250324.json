@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-03-24T20:25:06Z",
+  "components": [
+    "Database (SQL dump: backup-20250324.sql, size: 1.6M)",
+    "Configuration files (backups/config-backup-20250324/)",
+    "Client source code (backups/code-backup-20250324/client-src/)",
+    "Server source code (backups/code-backup-20250324/server/)",
+    "Shared code (backups/code-backup-20250324/shared/)",
+    "Scripts (backups/code-backup-20250324/scripts/)",
+    "Public files (backups/docs-backup-20250324/public/)",
+    "Documentation (backups/docs-backup-20250324/*.md)"
+  ],
+  "createdAt": "2025-03-24T20:25:06Z",
+  "totalSize": "714M"
+}
