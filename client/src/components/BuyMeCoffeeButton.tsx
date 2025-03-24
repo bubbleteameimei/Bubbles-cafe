@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
+  DialogHeader,
 } from "@/components/ui/dialog";
 
 export const BuyMeCoffeeButton = () => {
@@ -53,13 +54,15 @@ export const BuyMeCoffeeButton = () => {
       {/* Donation Modal - Using the Dialog component */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md text-center">
-          <DialogTitle id="donation-title" className="text-xl font-semibold text-center">
-            Would you like to support me? ☕💖
-          </DialogTitle>
-          
-          <DialogDescription id="donation-description" className="text-center">
-            Your support means the world! Every coffee keeps my creativity brewing. ✨
-          </DialogDescription>
+          <DialogHeader>
+            <DialogTitle id="donation-title" className="text-xl font-semibold text-center">
+              Would you like to support me? ☕💖
+            </DialogTitle>
+            
+            <DialogDescription id="donation-description" className="text-center">
+              Your support means the world! Every coffee keeps my creativity brewing. ✨
+            </DialogDescription>
+          </DialogHeader>
           
           <div className="mt-5">
             <motion.div
