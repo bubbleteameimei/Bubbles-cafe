@@ -545,7 +545,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-0 pb-0 bg-background -mt-10">
+      <div className="pt-0 pb-0 bg-background -mt-6">
         {/* Static font size controls in a prominent position */}
         <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1">
           {/* Font size controls using the standard Button component */}

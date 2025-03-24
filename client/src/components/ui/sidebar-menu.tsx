@@ -76,13 +76,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 pt-1 pb-0 h-full overflow-y-auto scrollbar-hide">
+    <div className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full overflow-y-auto scrollbar-hide">
 
       {/* Main Navigation */}
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
-          Navigation
-        </SidebarGroupLabel>
+      <SidebarGroup className="mt-0">
+        {/* Navigation label removed as requested */}
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -155,7 +153,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Games & Interactive Experiences */}
-      <SidebarGroup>
+      <SidebarGroup className="mt-1">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Interactive Experiences
         </SidebarGroupLabel>
@@ -179,7 +177,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
-        <SidebarGroup>
+        <SidebarGroup className="mt-1">
           <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
             Administration
           </SidebarGroupLabel>
@@ -301,7 +299,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       {/* Accessibility */}
-      <SidebarGroup>
+      <SidebarGroup className="mt-1">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Reading & Accessibility
         </SidebarGroupLabel>
@@ -359,7 +357,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup>
+      <SidebarGroup className="mt-1">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Account Settings
         </SidebarGroupLabel>
@@ -454,7 +452,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
       {/* Support & Legal */}
-      <SidebarGroup>
+      <SidebarGroup className="mt-1">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
           Support & Legal
         </SidebarGroupLabel>
@@ -555,7 +553,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Footer Buttons */}
-      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))]">
+      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-3">
         {!user ? (
           <Button
             variant="default"
