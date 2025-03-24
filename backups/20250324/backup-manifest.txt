@@ -1,0 +1,14 @@
+Backup created on Mon 24 Mar 2025 02:12:31 PM UTC
+Main directories backed up:
+- client (frontend React application)
+- server (backend Express application)
+- shared (shared types and schemas)
+- config (configuration files)
+
+Configuration files:
+total 16
+drwxr-xr-x 1 runner runner   78 Mar 24 14:12 .
+drwxr-xr-x 1 runner runner  104 Mar 24 14:12 ..
+-rw-r--r-- 1 runner runner 5247 Mar 24 14:12 package.json
+-rw-r--r-- 1 runner runner  741 Mar 24 14:12 tsconfig.json
+-rw-r--r-- 1 runner runner  756 Mar 24 14:12 vite.config.ts
