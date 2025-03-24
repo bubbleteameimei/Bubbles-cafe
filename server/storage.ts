@@ -274,19 +274,75 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select()
+    try {
+      // Use explicit column selection to avoid errors with columns that might not exist
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password_hash: users.password_hash,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      })
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
-    return user;
+      
+      // Add an empty metadata field since it doesn't exist in the DB yet
+      return {
+        ...user,
+        metadata: {}
+      };
+    } catch (error) {
+      console.error("Error in getUser:", error);
+      // Try a more basic approach as fallback using raw SQL
+      try {
+        const result = await pool.query(
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE id = $1 LIMIT 1",
+          [id]
+        );
+        return result.rows[0] || undefined;
+      } catch (fallbackError) {
+        console.error("Fallback error in getUser:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select()
+    try {
+      // Use explicit column selection to avoid errors with columns that might not exist
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password_hash: users.password_hash,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      })
       .from(users)
       .where(eq(users.username, username))
       .limit(1);
-    return user;
+      
+      // Add an empty metadata field since it doesn't exist in the DB yet
+      return {
+        ...user,
+        metadata: {}
+      };
+    } catch (error) {
+      console.error("Error in getUserByUsername:", error);
+      // Try a more basic approach as fallback using raw SQL
+      try {
+        const result = await pool.query(
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
+          [username]
+        );
+        return result.rows[0] || undefined;
+      } catch (fallbackError) {
+        console.error("Fallback error in getUserByUsername:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -300,12 +356,16 @@ export class DatabaseStorage implements IStorage {
         password_hash: users.password_hash,
         isAdmin: users.isAdmin,
         createdAt: users.createdAt
-        // metadata is not selected because the column doesn't exist in the db
       })
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
-      return user;
+      
+      // Add an empty metadata field since it doesn't exist in the DB yet
+      return {
+        ...user,
+        metadata: {}
+      };
     } catch (error) {
       console.error("Error in getUserByEmail:", error);
       // Try a more basic approach as fallback using raw SQL
@@ -323,12 +383,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAdminByEmail(email: string): Promise<User[]> {
-    return await db.select()
+    try {
+      // Use explicit column selection to avoid errors with columns that might not exist
+      const adminUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password_hash: users.password_hash,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt
+      })
       .from(users)
       .where(and(
         eq(users.email, email),
         eq(users.isAdmin, true)
       ));
+      
+      // Add empty metadata field to each user
+      return adminUsers.map(user => ({
+        ...user,
+        metadata: {}
+      }));
+    } catch (error) {
+      console.error("Error in getAdminByEmail:", error);
+      // Try a more basic approach as fallback using raw SQL
+      try {
+        const result = await pool.query(
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE email = $1 AND is_admin = true",
+          [email]
+        );
+        return result.rows || [];
+      } catch (fallbackError) {
+        console.error("Fallback error in getAdminByEmail:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {
@@ -340,19 +429,13 @@ export class DatabaseStorage implements IStorage {
       // Extract email from user or metadata
       const email = (user.metadata as any)?.email || user.email;
 
-      // Prepare user values with optional fields
+      // Prepare user values without metadata field as it doesn't exist in the database
       const userValues = {
         username: user.username,
         email, // The email is still needed as a column in the users table
         password_hash: hashedPassword,
-        isAdmin: user.isAdmin ?? false,
-        // Store profile fields in metadata since those columns don't exist in the database
-        metadata: {
-          ...(user.metadata || {}),
-          ...(user.fullName ? { displayName: user.fullName } : {}),
-          ...(user.avatar ? { photoURL: user.avatar } : {}),
-          ...(user.bio ? { bio: user.bio } : {})
-        }
+        isAdmin: user.isAdmin ?? false
+        // The metadata field doesn't exist in the database yet, so we don't include it
       };
 
       // Insert user with hashed password
@@ -382,22 +465,11 @@ export class DatabaseStorage implements IStorage {
         id: userId, 
         createdAt,
         email, // Email changes should be handled separately with verification
+        metadata, // Remove metadata as it doesn't exist in the database
         ...safeUserData 
       } = userData as any;
       
-      // If the update includes metadata, we need to merge it with existing metadata
-      if (userData.metadata) {
-        const existingUser = await this.getUser(id);
-        if (existingUser) {
-          // Deep merge metadata to preserve existing values
-          safeUserData.metadata = {
-            ...(existingUser.metadata || {}),
-            ...(userData.metadata || {})
-          };
-        }
-      }
-      
-      // Update the user
+      // Update the user with remaining safe fields
       const [updatedUser] = await db.update(users)
         .set(safeUserData)
         .where(eq(users.id, id))

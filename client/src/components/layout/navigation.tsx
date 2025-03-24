@@ -103,7 +103,11 @@ export default function Navigation() {
         {/* Right-side Actions - Responsive spacing */}
         <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-5 lg:space-x-6">
           <div className="-mt-4">
-            <NotificationIcon notifications={notifications} noOutline={true} />
+            <NotificationIcon 
+              notifications={notifications} 
+              noOutline={true} 
+              className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10" 
+            />
           </div>
           <div className="-mt-4">
             <ThemeToggleButton noOutline={true} />
@@ -124,21 +128,18 @@ export default function Navigation() {
               </span>
             </Button>
           ) : (
-            <div className="flex flex-col items-center">
+            <div className="relative">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 onClick={() => setLocation('/profile')}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 -mt-4"
+                className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 -mt-4"
                 aria-label="Profile"
                 noOutline={true}
               >
-                <span className="relative">
-                  <User className="h-4 w-4 md:h-5 md:w-5" strokeWidth={1.75} />
-                  <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
-                </span>
+                <User className="h-5 w-5" strokeWidth={1.75} />
               </Button>
-              <div className="absolute top-[16px] md:top-[20px] text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30">
+              <div className="absolute top-[46px] right-0 text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30 whitespace-nowrap">
                 {user?.username}
               </div>
             </div>
