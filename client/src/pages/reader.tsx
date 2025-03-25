@@ -781,7 +781,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
           title: "NOTICE",
-          description: <CreepyTextGlitch text={message} intensityFactor={5} />, // Maximum intensity
+          description: <CreepyTextGlitch text={message} intensityFactor={8} />, // Maximum intensity
           variant: "destructive",
           duration: 9000, // Extended duration for more psychological impact
         });
@@ -841,7 +841,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-6" data-reader-page="true">
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-3" data-reader-page="true">
       {/* Horror message modal */}
       {showHorrorMessage && (
         <motion.div
@@ -859,20 +859,20 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               stiffness: 300, 
               damping: 30 
             }}
-            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-red-900/80"
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-[#ff0000]/80"
           >
-            <div className="absolute inset-0 rounded-lg bg-red-900/10 animate-pulse" />
+            <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
             <div className="relative z-10">
               <div className="mb-6">
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
-                  className="text-4xl font-bold text-red-900 dark:text-red-700"
+                  className="text-4xl font-bold"
                   intensityFactor={8} // Maximum intensity for an extremely disturbing effect
                 />
               </div>
               <Button
                 variant="outline"
-                className="mt-4 border-red-900/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
+                className="mt-4 border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
                 onClick={() => setShowHorrorMessage(false)}
               >
                 <span className="mx-auto text-lg">I understand, I'm sorry</span>
@@ -905,7 +905,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
       <div className="pt-0 pb-0 bg-background mt-0 w-full overflow-visible">
         {/* Static font size controls in a prominent position */}
-        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-0 w-full">
+        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-0.5 border-b border-border/30 mb-0 w-full">
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1008,7 +1008,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert mx-auto px-6 md:px-6 pt-1 w-full max-w-[80ch]"
+            className="prose dark:prose-invert mx-auto px-6 md:px-6 pt-0 w-full max-w-[80ch]"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1

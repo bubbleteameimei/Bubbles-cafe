@@ -1,0 +1,28 @@
+<svg width="64" height="80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tree trunk -->
+  <rect x="24" y="40" width="16" height="40" fill="#6e4e37" />
+  
+  <!-- Trunk details -->
+  <rect x="24" y="44" width="4" height="4" fill="#5c3f29" />
+  <rect x="36" y="52" width="4" height="4" fill="#5c3f29" />
+  <rect x="28" y="64" width="4" height="4" fill="#5c3f29" />
+  <rect x="32" y="72" width="4" height="4" fill="#5c3f29" />
+  
+  <!-- Foliage base -->
+  <ellipse cx="32" cy="32" rx="28" ry="32" fill="#1e582c" />
+  
+  <!-- Foliage details - darker -->
+  <ellipse cx="22" cy="24" rx="12" ry="14" fill="#164020" />
+  <ellipse cx="42" cy="20" rx="10" ry="12" fill="#164020" />
+  <ellipse cx="32" cy="44" rx="16" ry="12" fill="#164020" />
+  
+  <!-- Foliage details - lighter -->
+  <ellipse cx="36" cy="28" rx="8" ry="10" fill="#2a6b39" />
+  <ellipse cx="24" cy="36" rx="6" ry="8" fill="#2a6b39" />
+  <ellipse cx="32" cy="16" rx="10" ry="8" fill="#2a6b39" />
+  
+  <!-- Highlights -->
+  <ellipse cx="28" cy="18" rx="3" ry="4" fill="#3a7c49" />
+  <ellipse cx="38" cy="22" rx="2" ry="3" fill="#3a7c49" />
+  <ellipse cx="32" cy="32" rx="4" ry="4" fill="#3a7c49" />
+</svg>
