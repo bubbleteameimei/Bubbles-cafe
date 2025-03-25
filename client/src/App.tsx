@@ -252,7 +252,7 @@ const AppContent = () => {
       {/* Main Content - responsive spacing for different device sizes */}
       <main className="min-h-screen lg:ml-72">
         <AutoHideNavbar />
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-16 lg:pt-6 max-w-full sm:max-w-7xl overflow-x-hidden reader-container">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-20 lg:pt-6 max-w-full sm:max-w-7xl overflow-x-hidden reader-container">
           <ErrorBoundary>
             <EnhancedPageTransition>
               <Switch>
