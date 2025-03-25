@@ -107,16 +107,24 @@ export function registerWordPressSyncRoutes(app: Express): void {
   /**
    * GET /api/wordpress/posts
    * Get a list of posts directly from WordPress
+   * Supports optional 'search' parameter and 'limit' parameter
    */
   app.get('/api/wordpress/posts', async (req: Request, res: Response) => {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const perPage = parseInt(req.query.per_page as string) || 10;
+      // With the updated requirements, we want to fetch all posts in one request
+      // We'll use a large limit value to get as many posts as possible
+      const limit = parseInt(req.query.limit as string) || 100;
+      const searchQuery = req.query.search as string || '';
       
       const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
-      const response = await fetch(
-        `${wpApiUrl}/posts?page=${page}&per_page=${perPage}&_fields=id,date,title,excerpt,slug,categories`
-      );
+      let apiUrl = `${wpApiUrl}/posts?per_page=${limit}&_fields=id,date,title,excerpt,slug,categories,status`;
+      
+      // If search query is provided, add it to the API URL
+      if (searchQuery) {
+        apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
@@ -124,10 +132,12 @@ export function registerWordPressSyncRoutes(app: Express): void {
       
       const posts = await response.json();
       
+      // Log a preview of the response data
+      log(`Response preview: ${JSON.stringify(posts.slice(0, 1))}`, 'WordPress');
+      log(`Successfully fetched ${posts.length} posts`, 'WordPress');
+      
       res.json({
         success: true,
-        page,
-        perPage,
         posts
       });
     } catch (error) {

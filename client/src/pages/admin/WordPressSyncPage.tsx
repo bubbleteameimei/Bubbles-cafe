@@ -54,10 +54,8 @@ export default function WordPressSyncPage() {
     lastSyncStatus: null
   });
   const [posts, setPosts] = useState<Post[]>([]);
-  const [page, setPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searching, setSearching] = useState<boolean>(false);
-  const [hasMore, setHasMore] = useState<boolean>(false);
   
   // Function to fetch WordPress sync status
   const fetchSyncStatus = async () => {
@@ -141,7 +139,7 @@ export default function WordPressSyncPage() {
       });
       
       // Refresh post list
-      fetchWordPressPosts(1);
+      fetchWordPressPosts();
       // Refresh sync status
       fetchSyncStatus();
     } catch (error) {
@@ -171,7 +169,7 @@ export default function WordPressSyncPage() {
         if (!data.syncInProgress) {
           clearInterval(interval);
           // Refresh the post list
-          fetchWordPressPosts(1);
+          fetchWordPressPosts();
         }
       } catch (error) {
         console.error("Error polling sync status:", error);
@@ -184,11 +182,11 @@ export default function WordPressSyncPage() {
   };
 
   // Function to fetch WordPress posts
-  const fetchWordPressPosts = async (pageNum: number, query?: string) => {
+  const fetchWordPressPosts = async (query?: string) => {
     try {
       setSearching(true);
       const queryParams = new URLSearchParams({
-        page: pageNum.toString(),
+        limit: "100", // Fetch all available posts, up to 100
         ...(query ? { search: query } : {}),
       });
       
@@ -199,8 +197,6 @@ export default function WordPressSyncPage() {
       
       const data: WordPressPostsResponse = await response.json();
       setPosts(data.posts || []);
-      setHasMore(data.hasMore || false);
-      setPage(pageNum);
     } catch (error) {
       console.error("Error fetching WordPress posts:", error);
       toast({
@@ -215,7 +211,7 @@ export default function WordPressSyncPage() {
 
   // Function to handle search
   const handleSearch = () => {
-    fetchWordPressPosts(1, searchQuery);
+    fetchWordPressPosts(searchQuery);
   };
 
   // Function to get status badge
@@ -315,7 +311,7 @@ export default function WordPressSyncPage() {
   // Load initial data
   useEffect(() => {
     fetchSyncStatus();
-    fetchWordPressPosts(1);
+    fetchWordPressPosts();
     
     // If a sync is in progress when the component mounts, start polling
     if (syncStatus.syncInProgress) {
@@ -506,33 +502,14 @@ export default function WordPressSyncPage() {
                 </table>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row items-center justify-between p-4 border-t gap-3">
-              <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                Page {page}
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchWordPressPosts(page > 1 ? page - 1 : 1, searchQuery)}
-                  disabled={page <= 1 || searching}
-                  className="flex-1 sm:flex-initial"
-                >
-                  <span className="sm:hidden">←</span>
-                  <span className="hidden sm:inline">Previous</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchWordPressPosts(page + 1, searchQuery)}
-                  disabled={!hasMore || searching}
-                  className="flex-1 sm:flex-initial"
-                >
-                  <span className="sm:hidden">→</span>
-                  <span className="hidden sm:inline">Next</span>
-                </Button>
-              </div>
-            </CardFooter>
+            {searching && (
+              <CardFooter className="flex justify-center p-4 border-t">
+                <div className="flex items-center">
+                  <Spinner size="sm" className="mr-2" />
+                  <span className="text-sm text-muted-foreground">Searching posts...</span>
+                </div>
+              </CardFooter>
+            )}
           </Card>
         </TabsContent>
         

@@ -1,29 +1,49 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import React from 'react';
 
-interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
-  size?: "sm" | "md" | "lg"
+interface SpinnerProps {
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
-export function Spinner({ size = "md", className, ...props }: SpinnerProps) {
+/**
+ * Responsive loading spinner component
+ */
+export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   const sizeClasses = {
-    sm: "h-4 w-4 border-2",
-    md: "h-6 w-6 border-2",
-    lg: "h-8 w-8 border-3"
-  }
+    xs: 'w-3 h-3 border-1',
+    sm: 'w-4 h-4 border-2',
+    md: 'w-6 h-6 border-2',
+    lg: 'w-8 h-8 border-3',
+    xl: 'w-12 h-12 border-4',
+  };
 
   return (
-    <div
-      className={cn(
-        "inline-block animate-spin rounded-full border-solid border-current border-t-transparent text-primary",
-        sizeClasses[size],
-        className
-      )}
-      {...props}
+    <div 
+      className={`inline-block animate-spin rounded-full border-solid border-primary border-r-transparent align-[-0.125em] ${sizeClasses[size]} ${className}`}
       role="status"
-      aria-label="Loading"
     >
       <span className="sr-only">Loading...</span>
     </div>
-  )
+  );
 }
+
+interface SpinnerOverlayProps {
+  message?: string;
+  className?: string;
+}
+
+/**
+ * Spinner with overlay container for loading states
+ */
+export function SpinnerOverlay({ message = 'Loading...', className = '' }: SpinnerOverlayProps) {
+  return (
+    <div className={`flex flex-col items-center justify-center py-8 ${className}`}>
+      <Spinner size="lg" />
+      {message && (
+        <p className="mt-4 text-muted-foreground text-sm">{message}</p>
+      )}
+    </div>
+  );
+}
+
+export default Spinner;

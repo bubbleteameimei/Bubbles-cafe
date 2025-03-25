@@ -1,27 +1,44 @@
-import * as React from "react";
+import React, { ReactNode } from 'react';
 
 interface PageHeaderProps {
-  heading: string;
+  title: string;
   description?: string;
-  children?: React.ReactNode;
+  actions?: ReactNode;
+  className?: string;
+  children?: ReactNode;
 }
 
+/**
+ * Page header component with mobile-responsive layout
+ * Used for section headings throughout the application
+ */
 export function PageHeader({
-  heading,
+  title,
   description,
+  actions,
+  className = '',
   children,
 }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 gap-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{heading}</h1>
-        {description && (
-          <p className="text-sm text-muted-foreground">
-            {description}
-          </p>
+    <div className={`mb-6 md:mb-8 ${className}`}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">{title}</h1>
+          {description && (
+            <p className="text-sm sm:text-base text-muted-foreground max-w-full sm:max-w-[80ch]">
+              {description}
+            </p>
+          )}
+        </div>
+        {actions && (
+          <div className="flex items-center gap-2 flex-shrink-0 mt-2 sm:mt-0">
+            {actions}
+          </div>
         )}
       </div>
-      {children && <div className="flex items-center gap-2 w-full sm:w-auto">{children}</div>}
+      {children && <div className="mt-4 sm:mt-6">{children}</div>}
     </div>
   );
 }
+
+export default PageHeader;
