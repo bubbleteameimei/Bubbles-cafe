@@ -694,8 +694,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     if (timeSinceLastNavigation < 1500) {
       skipCountRef.current += 1;
       
-      // After 5 rapid skips, show the horror Easter egg
-      if (skipCountRef.current >= 5 && !showHorrorMessage) {
+      // After 3 rapid skips, show the horror Easter egg
+      if (skipCountRef.current >= 3 && !showHorrorMessage) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
         // Use only one specific message as requested - updated with more aggressive text
@@ -704,15 +704,15 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
         
-        // Show toast with creepy text - increased intensity factor for more disturbing effect
+        // Show toast with creepy text - intensity factor: 3 for disturbing effect without being too extreme
         toast({
           title: "NOTICE",
           description: <CreepyTextGlitch text={message} intensityFactor={3} />,
           variant: "destructive",
-          duration: 7000, // Increased duration for more impact
+          duration: 7000, // 7 seconds duration - visible but not too disruptive
         });
         
-        // Reset after showing - match the increased duration for more impact
+        // Reset after showing - match the duration
         setTimeout(() => {
           setShowHorrorMessage(false);
           skipCountRef.current = 0;

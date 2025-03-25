@@ -69,10 +69,8 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
 
   // Return navigation with responsive class for device optimization
   return (
-    <div className={`navbar-container w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 fixed top-0 left-0 right-0 z-50 ${
-      isScrolled 
-        ? 'bg-background/95 backdrop-blur-md shadow-sm lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' 
-        : 'bg-background/80 backdrop-blur-sm lg:bg-transparent'
+    <div className={`navbar-container transition-all duration-300 fixed top-0 left-0 right-0 z-40 ${
+      isScrolled ? 'lg:bg-background/90 lg:backdrop-blur-md lg:shadow-md' : 'lg:bg-transparent'
     }`}>
       <Navigation />
     </div>
