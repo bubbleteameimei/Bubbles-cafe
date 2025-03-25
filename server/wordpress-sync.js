@@ -1,14 +1,13 @@
-// WordPress API Import using standard pg module
-// This script imports posts from WordPress API to our database
+/**
+ * WordPress Sync Module
+ * This module provides functionality to import posts from WordPress API
+ */
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import { db } from './db.js';
+import { log } from './vite.js';
 
 const { Pool } = pg;
-
-// Configure the database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
@@ -17,6 +16,8 @@ const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei
  * Clean HTML content from WordPress to simpler format
  */
 function cleanContent(content) {
+  if (!content) return '';
+  
   return content
     // Remove WordPress-specific elements
     .replace(/<!-- wp:([^>])*?-->/g, '')
@@ -72,17 +73,18 @@ function cleanContent(content) {
 /**
  * Get or create an admin user in the database
  */
-async function getOrCreateAdminUser() {
+async function getOrCreateAdminUser(pool) {
   try {
     // Check if admin user exists
     const existingUser = await pool.query(`
       SELECT id, username, email, is_admin
       FROM users
-      WHERE email = 'vantalison@gmail.com'
+      WHERE is_admin = true
+      LIMIT 1
     `);
 
     if (existingUser.rows.length > 0) {
-      console.log("Found admin user with ID:", existingUser.rows[0].id);
+      log(`Found admin user with ID: ${existingUser.rows[0].id}`, 'wordpress-sync');
       return existingUser.rows[0];
     }
 
@@ -90,14 +92,14 @@ async function getOrCreateAdminUser() {
     const hashedPassword = await bcrypt.hash("admin123", 12);
     const newUser = await pool.query(`
       INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
+      VALUES ('admin', 'admin@example.com', $1, true, NOW())
       RETURNING id, username, email, is_admin
     `, [hashedPassword]);
 
-    console.log("Created new admin user with ID:", newUser.rows[0].id);
+    log(`Created new admin user with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
     return newUser.rows[0];
   } catch (error) {
-    console.error("Error getting/creating admin user:", error);
+    log(`Error getting/creating admin user: ${error.message}`, 'wordpress-sync');
     throw error;
   }
 }
@@ -107,14 +109,14 @@ async function getOrCreateAdminUser() {
  */
 async function fetchWordPressPosts(page = 1, perPage = 20) {
   try {
-    console.log(`Fetching WordPress posts - page ${page}, perPage ${perPage}`);
+    log(`Fetching WordPress posts - page ${page}, perPage ${perPage}`, 'wordpress-sync');
     const response = await fetch(
       `${WP_API_URL}/posts?page=${page}&per_page=${perPage}&_fields=id,date,title,content,excerpt,slug,categories`
     );
 
     // Handle case where we've reached the end of available posts
     if (response.status === 400) {
-      console.log(`No more posts available after page ${page-1}`);
+      log(`No more posts available after page ${page-1}`, 'wordpress-sync');
       return [];
     }
 
@@ -123,13 +125,13 @@ async function fetchWordPressPosts(page = 1, perPage = 20) {
     }
 
     const posts = await response.json();
-    console.log(`Retrieved ${posts.length} posts from WordPress API`);
+    log(`Retrieved ${posts.length} posts from WordPress API`, 'wordpress-sync');
     return posts;
   } catch (error) {
-    console.error("Error fetching WordPress posts:", error);
+    log(`Error fetching WordPress posts: ${error.message}`, 'wordpress-sync');
     // Don't throw errors for pagination issues
     if (error.message && error.message.includes('400 Bad Request')) {
-      console.log("Reached the end of available posts");
+      log("Reached the end of available posts", 'wordpress-sync');
       return [];
     }
     throw error;
@@ -141,7 +143,7 @@ async function fetchWordPressPosts(page = 1, perPage = 20) {
  */
 async function fetchCategories() {
   try {
-    console.log("Fetching WordPress categories");
+    log("Fetching WordPress categories", 'wordpress-sync');
     const response = await fetch(`${WP_API_URL}/categories?per_page=100`);
     
     if (!response.ok) {
@@ -149,7 +151,7 @@ async function fetchCategories() {
     }
     
     const categories = await response.json();
-    console.log(`Retrieved ${categories.length} categories from WordPress API`);
+    log(`Retrieved ${categories.length} categories from WordPress API`, 'wordpress-sync');
     
     // Convert to a map for easier lookup
     const categoryMap = {};
@@ -159,7 +161,7 @@ async function fetchCategories() {
     
     return categoryMap;
   } catch (error) {
-    console.error("Error fetching WordPress categories:", error);
+    log(`Error fetching WordPress categories: ${error.message}`, 'wordpress-sync');
     return {}; // Return empty object if categories can't be fetched
   }
 }
@@ -167,14 +169,19 @@ async function fetchCategories() {
 /**
  * Main function to sync WordPress posts
  */
-async function syncWordPressPosts() {
+export async function syncWordPressPosts() {
   const syncId = Date.now();
   const syncStartTime = new Date().toISOString();
-  console.log(`[${syncStartTime}] Starting WordPress import (Sync #${syncId})...`);
+  log(`Starting WordPress import (Sync #${syncId})`, 'wordpress-sync');
+
+  // Configure direct database connection for better performance with complex queries
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL
+  });
 
   try {
     // Get admin user and category mapping
-    const admin = await getOrCreateAdminUser();
+    const admin = await getOrCreateAdminUser(pool);
     const categories = await fetchCategories();
     
     // Counters for summary
@@ -188,6 +195,12 @@ async function syncWordPressPosts() {
     // Paginate through all WordPress posts
     while (hasMorePosts) {
       const wpPosts = await fetchWordPressPosts(page, perPage);
+      
+      if (wpPosts.length === 0) {
+        hasMorePosts = false;
+        continue;
+      }
+      
       totalProcessed += wpPosts.length;
       
       if (wpPosts.length < perPage) {
@@ -254,7 +267,7 @@ async function syncWordPressPosts() {
             ]);
             
             created++;
-            console.log(`Created post: "${title}" (ID: ${result.rows[0].id})`);
+            log(`Created post: "${title}" (ID: ${result.rows[0].id})`, 'wordpress-sync');
           } else {
             // Update existing post
             const postId = existingPost.rows[0].id;
@@ -281,10 +294,10 @@ async function syncWordPressPosts() {
             ]);
             
             updated++;
-            console.log(`Updated post: "${title}" (ID: ${postId})`);
+            log(`Updated post: "${title}" (ID: ${postId})`, 'wordpress-sync');
           }
         } catch (error) {
-          console.error(`Error processing post "${wpPost.title?.rendered}":`, error);
+          log(`Error processing post "${wpPost.title?.rendered}": ${error.message}`, 'wordpress-sync');
         }
       }
       
@@ -302,17 +315,17 @@ async function syncWordPressPosts() {
       duration: `${(new Date(syncEndTime) - new Date(syncStartTime)) / 1000} seconds`
     };
     
-    console.log("\n=== WordPress Import Summary ===");
-    console.log(`Time: ${syncStartTime} to ${syncEndTime}`);
-    console.log(`Total posts processed: ${totalProcessed}`);
-    console.log(`Posts created: ${created}`);
-    console.log(`Posts updated: ${updated}`);
-    console.log(`Duration: ${summary.duration}`);
-    console.log("================================\n");
+    log("\n=== WordPress Import Summary ===", 'wordpress-sync');
+    log(`Time: ${syncStartTime} to ${syncEndTime}`, 'wordpress-sync');
+    log(`Total posts processed: ${totalProcessed}`, 'wordpress-sync');
+    log(`Posts created: ${created}`, 'wordpress-sync');
+    log(`Posts updated: ${updated}`, 'wordpress-sync');
+    log(`Duration: ${summary.duration}`, 'wordpress-sync');
+    log("================================\n", 'wordpress-sync');
     
     return summary;
   } catch (error) {
-    console.error("Error during WordPress sync:", error);
+    log(`Error during WordPress sync: ${error.message}`, 'wordpress-sync');
     throw error;
   } finally {
     // Close pool connection when done
@@ -320,13 +333,143 @@ async function syncWordPressPosts() {
   }
 }
 
-// Run import when script is executed directly
-syncWordPressPosts()
-  .then(summary => {
-    console.log("WordPress import completed successfully");
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error("WordPress import failed:", error);
-    process.exit(1);
+/**
+ * Run a WordPress import on a schedule (can be called from cron job)
+ * Default interval is every 6 hours
+ */
+export function setupWordPressSyncSchedule(intervalMs = 6 * 60 * 60 * 1000) {
+  log(`Setting up WordPress sync schedule (every ${intervalMs / (60 * 60 * 1000)} hours)`, 'wordpress-sync');
+  
+  // Run once at startup
+  syncWordPressPosts().catch(err => {
+    log(`Error in initial WordPress sync: ${err.message}`, 'wordpress-sync');
   });
+  
+  // Set up interval
+  const intervalId = setInterval(() => {
+    syncWordPressPosts().catch(err => {
+      log(`Error in scheduled WordPress sync: ${err.message}`, 'wordpress-sync');
+    });
+  }, intervalMs);
+  
+  return intervalId;
+}
+
+/**
+ * Handle single WordPress post sync by ID
+ */
+export async function syncSingleWordPressPost(wpPostId) {
+  // Configure direct database connection
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL
+  });
+  
+  try {
+    log(`Fetching single WordPress post ID: ${wpPostId}`, 'wordpress-sync');
+    
+    const response = await fetch(
+      `${WP_API_URL}/posts/${wpPostId}?_fields=id,date,title,content,excerpt,slug,categories`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const wpPost = await response.json();
+    const admin = await getOrCreateAdminUser(pool);
+    const categories = await fetchCategories();
+
+    const title = wpPost.title.rendered;
+    const content = cleanContent(wpPost.content.rendered);
+    const pubDate = new Date(wpPost.date);
+    const excerpt = wpPost.excerpt?.rendered
+      ? cleanContent(wpPost.excerpt.rendered).substring(0, 200) + '...'
+      : content.substring(0, 200) + '...';
+    const slug = wpPost.slug;
+    
+    // Calculate reading time
+    const wordCount = content.split(/\s+/).length;
+    const readingTimeMinutes = Math.ceil(wordCount / 200);
+    
+    // Create metadata
+    const categoryNames = wpPost.categories
+      ? wpPost.categories.map(catId => categories[catId]).filter(Boolean)
+      : [];
+      
+    const metadataObj = {
+      wordpressId: wpPost.id,
+      importSource: 'wordpress-api-single',
+      importDate: new Date().toISOString(),
+      originalWordCount: wordCount,
+      categories: categoryNames,
+      originalDate: wpPost.date
+    };
+    
+    // Check if post already exists by slug
+    const existingPost = await pool.query(`
+      SELECT id FROM posts WHERE slug = $1
+    `, [slug]);
+    
+    let result;
+    
+    if (existingPost.rows.length === 0) {
+      // Create new post
+      result = await pool.query(`
+        INSERT INTO posts (
+          title, content, excerpt, slug, author_id, 
+          is_secret, created_at, mature_content, reading_time_minutes, 
+          theme_category, metadata
+        ) VALUES (
+          $1, $2, $3, $4, $5, 
+          false, $6, false, $7, 
+          $8, $9
+        ) RETURNING id
+      `, [
+        title, 
+        content, 
+        excerpt, 
+        slug, 
+        admin.id, 
+        pubDate, 
+        readingTimeMinutes,
+        categoryNames[0] || 'General',
+        JSON.stringify(metadataObj)
+      ]);
+      
+      log(`Created post: "${title}" (ID: ${result.rows[0].id})`, 'wordpress-sync');
+      return { id: result.rows[0].id, title, action: 'created' };
+    } else {
+      // Update existing post
+      const postId = existingPost.rows[0].id;
+      await pool.query(`
+        UPDATE posts SET
+          title = $1,
+          content = $2,
+          excerpt = $3,
+          reading_time_minutes = $4,
+          theme_category = $5,
+          metadata = $6
+        WHERE id = $7
+      `, [
+        title, 
+        content, 
+        excerpt, 
+        readingTimeMinutes,
+        categoryNames[0] || 'General',
+        JSON.stringify({
+          ...metadataObj,
+          lastUpdated: new Date().toISOString()
+        }),
+        postId
+      ]);
+      
+      log(`Updated post: "${title}" (ID: ${postId})`, 'wordpress-sync');
+      return { id: postId, title, action: 'updated' };
+    }
+  } catch (error) {
+    log(`Error syncing WordPress post ${wpPostId}: ${error.message}`, 'wordpress-sync');
+    throw error;
+  } finally {
+    await pool.end();
+  }
+}
