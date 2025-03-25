@@ -9,7 +9,10 @@ import {
   CookieCategory,
   isCategoryAllowed,
   hasConsentChoice,
-  getAllCookies
+  hasConsentExpired,
+  getAllCookies,
+  COOKIE_CONSENT_KEY,
+  COOKIE_DECISION_EXPIRY_KEY
 } from '@/lib/cookie-manager';
 
 interface CookieConsentContextType {
@@ -75,31 +78,28 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
   // Set initial states when component mounts
   useEffect(() => {
     try {
-      // Check if the user has already made a choice
+      // Check if the user has already made a choice and if it's still valid
       const hasChoice = hasConsentChoice();
       console.log('Cookie consent choice detected:', hasChoice);
       
       // Only force the banner on the test page
       const isTestPage = window.location.pathname === '/cookie-test';
       if (isTestPage) {
-        localStorage.removeItem('cookieConsent');
-        localStorage.removeItem('cookie-preferences');
+        localStorage.removeItem(COOKIE_CONSENT_KEY);
+        localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
         setShowConsentBanner(true);
         console.log('Forced cookie consent banner to show for testing page');
       } else {
-        // If a choice has been made, ensure we don't show the banner
-        if (hasChoice) {
+        // Check if the consent has expired
+        if (hasConsentExpired()) {
+          console.log('Cookie consent has expired, showing banner again');
+          setShowConsentBanner(true);
+        } else if (hasChoice) {
+          // Valid choice exists, don't show banner
           setShowConsentBanner(false);
-          // Save in localStorage (more persistent than sessionStorage) to make choice permanent
-          localStorage.setItem('consentChoiceMade', 'true');
         } else {
-          // Check if we've already shown the banner this session
-          const consentBannerShown = 
-            typeof localStorage !== 'undefined' && 
-            localStorage.getItem('consentChoiceMade') === 'true';
-          
-          // Only show the banner if the user hasn't seen it yet
-          setShowConsentBanner(!consentBannerShown);
+          // No choice has been made, show the banner
+          setShowConsentBanner(true);
         }
       }
       
@@ -108,15 +108,12 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
       
       // Set up event listener for storage changes (in case other tabs update preferences)
       const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'cookieConsent') {
+        if (event.key === COOKIE_CONSENT_KEY || event.key === COOKIE_DECISION_EXPIRY_KEY) {
           setCookiePreferences(getCookiePreferences());
-          // Important: Update the banner visibility when storage changes
-          setShowConsentBanner(false);
           
-          // If consent was given, update localStorage
-          if (hasConsentChoice()) {
-            localStorage.setItem('consentChoiceMade', 'true');
-          }
+          // Update banner visibility based on consent status
+          const hasValidConsent = hasConsentChoice() && !hasConsentExpired();
+          setShowConsentBanner(!hasValidConsent);
         }
       };
       
@@ -129,30 +126,26 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
     }
   }, []);
   
-  // Accept all cookies
+  // Accept all cookies - with 3 month expiry
   const acceptAll = () => {
     try {
       acceptAllCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
-      // Set permanent flag to prevent showing banner on refresh
-      localStorage.setItem('consentChoiceMade', 'true');
-      console.log('All cookie categories accepted');
+      console.log('All cookie categories accepted with 3 month expiry');
     } catch (error) {
       console.error('Error accepting all cookies:', error);
     }
   };
   
-  // Accept only essential cookies
+  // Accept only essential cookies - with 1 week expiry
   const acceptEssentialOnly = () => {
     try {
       acceptEssentialCookiesOnly();
       clearNonEssentialCookies();
       setCookiePreferences(getCookiePreferences());
       setShowConsentBanner(false);
-      // Set permanent flag to prevent showing banner on refresh
-      localStorage.setItem('consentChoiceMade', 'true');
-      console.log('Only essential cookies accepted');
+      console.log('Only essential cookies accepted with 1 week expiry');
     } catch (error) {
       console.error('Error accepting essential cookies only:', error);
     }
@@ -206,7 +199,7 @@ export const CookieConsentProvider: React.FC<{ children: ReactNode }> = ({ child
   const cookies = getAllCookies();
   
   const value: CookieConsentContextType = {
-    consentGiven: hasConsentChoice(),
+    consentGiven: hasConsentChoice() && !hasConsentExpired(),
     showConsentBanner,
     cookiePreferences,
     acceptAll,

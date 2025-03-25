@@ -1,87 +1,24 @@
-import { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-
-const COOKIE_CONSENT_KEY = 'cookieConsent';
-const COOKIE_DECISION_EXPIRY_KEY = 'cookieConsentExpiry';
-// Cookie consent expiration periods in milliseconds
-const COOKIE_ACCEPT_EXPIRY = 90 * 24 * 60 * 60 * 1000; // 3 months
-const COOKIE_REJECT_EXPIRY = 7 * 24 * 60 * 60 * 1000;  // 1 week
+import { useCookieConsent } from "@/hooks/use-cookie-consent";
 
 export function CookieConsent() {
-  const [isVisible, setIsVisible] = useState(false);
+  // Use our enhanced cookie consent hook
+  const { showConsentBanner, acceptAll, acceptEssentialOnly } = useCookieConsent();
 
-  useEffect(() => {
-    try {
-      // Check if user has already made a choice
-      const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
-      const expiryValue = localStorage.getItem(COOKIE_DECISION_EXPIRY_KEY);
-      
-      // Check if the consent has expired
-      let hasExpired = false;
-      if (expiryValue) {
-        try {
-          const expiryDate = new Date(expiryValue);
-          const now = new Date();
-          hasExpired = now > expiryDate;
-          
-          if (hasExpired) {
-            console.log('Cookie consent has expired, clearing preferences');
-            localStorage.removeItem(COOKIE_CONSENT_KEY);
-            localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
-          }
-        } catch (parseError) {
-          console.warn('Invalid expiry date format, treating as expired:', parseError);
-          hasExpired = true;
-        }
-      }
-      
-      if (!hasConsent || hasExpired) {
-        // Only show if no choice has been made before or if it has expired
-        setIsVisible(true);
-      }
-    } catch (error) {
-      // Handle any localStorage errors
-      console.warn("Could not access localStorage for cookie consent:", error);
-      // Default to not showing the banner if there's an error
-      setIsVisible(false);
-    }
-  }, []);
+  // Return null if the banner shouldn't be shown
+  if (!showConsentBanner) return null;
 
+  // Handle accepting all cookies (3 month expiry)
   const handleAccept = () => {
-    try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-      
-      // Store the expiry date for the accept decision (3 months)
-      const expiryDate = new Date(Date.now() + COOKIE_ACCEPT_EXPIRY).toISOString();
-      localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
-      
-      console.log(`Cookie consent accepted - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
-      setIsVisible(false);
-    } catch (error) {
-      console.warn("Could not store cookie consent:", error);
-      setIsVisible(false);
-    }
+    acceptAll();
   };
 
+  // Handle accepting only essential cookies (1 week expiry)
   const handleDecline = () => {
-    try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
-      
-      // Store the expiry date for the reject decision (1 week)
-      const expiryDate = new Date(Date.now() + COOKIE_REJECT_EXPIRY).toISOString();
-      localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
-      
-      console.log(`Cookie consent rejected - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
-      setIsVisible(false);
-    } catch (error) {
-      console.warn("Could not store cookie consent:", error);
-      setIsVisible(false);
-    }
+    acceptEssentialOnly();
   };
-
-  if (!isVisible) return null;
 
   return (
     <motion.div 
@@ -126,6 +63,9 @@ export function CookieConsent() {
             <Link href="/privacy" className="underline hover:text-foreground">
               privacy policy
             </Link>.
+          </p>
+          <p className="text-xs text-muted-foreground/80">
+            Accept: won't show for 3 months • Decline: won't show for 1 week
           </p>
         </div>
 

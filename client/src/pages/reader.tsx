@@ -481,7 +481,18 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     );
   }
 
-  const formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
+  // Add error handling for date parsing to prevent "Invalid time value" errors
+  let formattedDate = '';
+  try {
+    if (currentPost.date) {
+      formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
+    } else {
+      formattedDate = 'Publication date unavailable';
+    }
+  } catch (error) {
+    console.error('[Reader] Error formatting date:', error);
+    formattedDate = 'Publication date unavailable';
+  }
   
   // Detect themes from content for categorization
   const detectedThemes = detectThemes(currentPost.content.rendered);
@@ -829,9 +840,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-0 pb-0 bg-background -mt-6">
+      <div className="pt-0 pb-0 bg-background -mt-6 w-full">
         {/* Static font size controls in a prominent position */}
-        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1">
+        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1 w-full">
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -934,7 +945,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert mx-auto px-4 md:px-6 lg:px-8 pt-1 overflow-x-hidden w-full max-w-[80ch]"
+            className="prose dark:prose-invert mx-auto px-0 pt-1 overflow-x-hidden w-full max-w-[80ch]"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -1038,7 +1049,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto w-full max-w-[70ch]"
+              className="story-content mb-8 mx-auto w-full max-w-[70ch] px-0"
               style={{
                 whiteSpace: 'pre-wrap',
                 letterSpacing: '0.01em',
