@@ -1,13 +1,11 @@
-// Simple WordPress API Import Script
+// WordPress API Import Script (CommonJS Version)
 // This script imports posts from WordPress API to our database
-import { Pool } from '@neondatabase/serverless';
-import bcrypt from 'bcryptjs';
-import * as dotenv from 'dotenv';
+const { Pool } = require('@neondatabase/serverless');
+const bcrypt = require('bcryptjs');
+const fetch = require('node-fetch');
+const ws = require('ws');
 
-// Load environment variables
-dotenv.config();
-
-// Configure the database connection
+// Configure the database connection (directly, not using server/db.ts)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
@@ -18,7 +16,7 @@ const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei
 /**
  * Clean HTML content from WordPress to simpler format
  */
-function cleanContent(content) {
+async function cleanContent(content) {
   return content
     // Remove WordPress-specific elements
     .replace(/<!-- wp:([^>])*?-->/g, '')
@@ -105,7 +103,7 @@ async function getOrCreateAdminUser() {
 }
 
 /**
- * Fetch posts from WordPress API using native fetch
+ * Fetch posts from WordPress API
  */
 async function fetchWordPressPosts(page = 1, perPage = 20) {
   try {
@@ -189,10 +187,10 @@ async function syncWordPressPosts() {
       for (const wpPost of wpPosts) {
         try {
           const title = wpPost.title.rendered;
-          const content = cleanContent(wpPost.content.rendered);
+          const content = await cleanContent(wpPost.content.rendered);
           const pubDate = new Date(wpPost.date);
           const excerpt = wpPost.excerpt?.rendered
-            ? cleanContent(wpPost.excerpt.rendered).substring(0, 200) + '...'
+            ? (await cleanContent(wpPost.excerpt.rendered)).substring(0, 200) + '...'
             : content.substring(0, 200) + '...';
           const slug = wpPost.slug;
           
@@ -305,9 +303,6 @@ async function syncWordPressPosts() {
   } catch (error) {
     console.error("Error during WordPress sync:", error);
     throw error;
-  } finally {
-    // Close pool connection when done
-    await pool.end();
   }
 }
 

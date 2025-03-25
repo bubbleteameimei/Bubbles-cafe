@@ -1,16 +1,8 @@
-// Simple WordPress API Import Script
+// WordPress API Import Script
 // This script imports posts from WordPress API to our database
-import { Pool } from '@neondatabase/serverless';
+import { db } from '../server/db.js';
 import bcrypt from 'bcryptjs';
-import * as dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
-
-// Configure the database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+import fetch from 'node-fetch';
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
@@ -18,7 +10,7 @@ const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei
 /**
  * Clean HTML content from WordPress to simpler format
  */
-function cleanContent(content) {
+async function cleanContent(content) {
   return content
     // Remove WordPress-specific elements
     .replace(/<!-- wp:([^>])*?-->/g, '')
@@ -77,7 +69,7 @@ function cleanContent(content) {
 async function getOrCreateAdminUser() {
   try {
     // Check if admin user exists
-    const existingUser = await pool.query(`
+    const existingUser = await db.execute(`
       SELECT id, username, email, is_admin
       FROM users
       WHERE email = 'vantalison@gmail.com'
@@ -90,7 +82,7 @@ async function getOrCreateAdminUser() {
 
     // Create new admin user if not exists
     const hashedPassword = await bcrypt.hash("admin123", 12);
-    const newUser = await pool.query(`
+    const newUser = await db.execute(`
       INSERT INTO users (username, email, password_hash, is_admin, created_at)
       VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
       RETURNING id, username, email, is_admin
@@ -105,7 +97,7 @@ async function getOrCreateAdminUser() {
 }
 
 /**
- * Fetch posts from WordPress API using native fetch
+ * Fetch posts from WordPress API
  */
 async function fetchWordPressPosts(page = 1, perPage = 20) {
   try {
@@ -189,10 +181,10 @@ async function syncWordPressPosts() {
       for (const wpPost of wpPosts) {
         try {
           const title = wpPost.title.rendered;
-          const content = cleanContent(wpPost.content.rendered);
+          const content = await cleanContent(wpPost.content.rendered);
           const pubDate = new Date(wpPost.date);
           const excerpt = wpPost.excerpt?.rendered
-            ? cleanContent(wpPost.excerpt.rendered).substring(0, 200) + '...'
+            ? (await cleanContent(wpPost.excerpt.rendered)).substring(0, 200) + '...'
             : content.substring(0, 200) + '...';
           const slug = wpPost.slug;
           
@@ -216,13 +208,13 @@ async function syncWordPressPosts() {
           };
           
           // Check if post already exists by slug
-          const existingPost = await pool.query(`
+          const existingPost = await db.execute(`
             SELECT id FROM posts WHERE slug = $1
           `, [slug]);
           
           if (existingPost.rows.length === 0) {
             // Create new post
-            const result = await pool.query(`
+            const result = await db.execute(`
               INSERT INTO posts (
                 title, content, excerpt, slug, author_id, 
                 is_secret, created_at, mature_content, reading_time_minutes, 
@@ -249,7 +241,7 @@ async function syncWordPressPosts() {
           } else {
             // Update existing post
             const postId = existingPost.rows[0].id;
-            await pool.query(`
+            await db.execute(`
               UPDATE posts SET
                 title = $1,
                 content = $2,
@@ -305,9 +297,6 @@ async function syncWordPressPosts() {
   } catch (error) {
     console.error("Error during WordPress sync:", error);
     throw error;
-  } finally {
-    // Close pool connection when done
-    await pool.end();
   }
 }
 
