@@ -6,11 +6,12 @@ interface CreepyTextGlitchProps {
   intensityFactor?: number;
 }
 
-// Simple character pool for glitching - only regular ASCII
-const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
+// Simple character pool for glitching - ASCII only 
+const GLITCH_CHARS = "!@#$%^&*()_+-={}|;:<>?";
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
+  const [blurActive, setBlurActive] = useState(false);
   const originalText = useRef(text);
   const timeoutIds = useRef<NodeJS.Timeout[]>([]);
   
@@ -31,100 +32,55 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     };
   }, [text, intensityFactor]);
   
-  // Schedule occasional glitches throughout the text
+  // Schedule fast, unnerving glitches
   const scheduleGlitches = () => {
     clearAllTimeouts();
     
-    // Split text by words and whitespace
-    const segments = originalText.current.split(/(\s+)/);
-    
-    // Function to glitch a word
-    const glitchWord = () => {
-      // Select a random word to glitch (not whitespace)
-      let wordIndex;
-      do {
-        wordIndex = Math.floor(Math.random() * segments.length);
-      } while (segments[wordIndex].trim() === '');
+    // Multiple character glitch for intense effect
+    const glitchMultipleChars = () => {
+      // Convert text to array for character manipulation
+      const chars = originalText.current.split('');
+      const newChars = [...chars];
       
-      // Save original word
-      const originalWord = segments[wordIndex];
+      // Number of characters to glitch (more with higher intensity)
+      const glitchCount = Math.max(1, Math.floor(chars.length * 0.3 * intensityFactor));
       
-      // Create a glitched version of the word
-      let glitchedWord = '';
-      for (let i = 0; i < originalWord.length; i++) {
-        if (Math.random() > 0.6) { // 40% chance to glitch each character
-          const randomChar = GLITCH_CHARS.charAt(
+      // Randomly replace characters
+      for (let i = 0; i < glitchCount; i++) {
+        const pos = Math.floor(Math.random() * chars.length);
+        if (chars[pos] !== ' ') { // Skip spaces
+          newChars[pos] = GLITCH_CHARS.charAt(
             Math.floor(Math.random() * GLITCH_CHARS.length)
           );
-          glitchedWord += randomChar;
-        } else {
-          glitchedWord += originalWord[i];
         }
       }
       
-      // Update the text with the glitched word
-      const newSegments = [...segments];
-      newSegments[wordIndex] = glitchedWord;
-      setDisplayText(newSegments.join(''));
-      
-      // Schedule revert back to original word
-      const revertTimeout = setTimeout(() => {
-        const revertSegments = [...newSegments];
-        revertSegments[wordIndex] = originalWord;
-        setDisplayText(revertSegments.join(''));
-      }, 50 + Math.random() * 150); // Revert after 50-200ms
-      
-      timeoutIds.current.push(revertTimeout);
-    };
-    
-    // Function to glitch an individual character
-    const glitchChar = () => {
-      // Convert text to array for character-level manipulation
-      const chars = originalText.current.split('');
-      
-      // Pick a random position in the text that isn't a space
-      let pos;
-      do {
-        pos = Math.floor(Math.random() * chars.length);
-      } while (chars[pos] === ' ');
-      
-      // Save original character
-      const originalChar = chars[pos];
-      
-      // Replace with random character
-      const randomChar = GLITCH_CHARS.charAt(
-        Math.floor(Math.random() * GLITCH_CHARS.length)
-      );
-      
-      // Update the text with the glitched character
-      const newChars = [...chars];
-      newChars[pos] = randomChar;
+      // Apply text with glitched characters
       setDisplayText(newChars.join(''));
       
-      // Schedule revert back to original character
+      // Occasionally add blur effect for more intensity
+      if (Math.random() > 0.7) {
+        setBlurActive(true);
+        setTimeout(() => setBlurActive(false), 50 + Math.random() * 50);
+      }
+      
+      // Revert quickly for fast flickering effect
+      const revertTime = Math.max(20, 40 - intensityFactor * 5);
       const revertTimeout = setTimeout(() => {
-        const revertChars = [...newChars];
-        revertChars[pos] = originalChar;
-        setDisplayText(revertChars.join(''));
-      }, 30 + Math.random() * 100); // Revert after 30-130ms for faster glitches
+        setDisplayText(originalText.current);
+      }, revertTime);
       
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Schedule periodic glitches
+    // Schedule very rapid glitches
     const scheduleNext = () => {
-      // Random delay between 50ms and 400ms for next glitch
-      const nextGlitchDelay = 50 + Math.random() * 350 / intensityFactor;
+      // Very short delay between glitches (faster with higher intensity)
+      const baseDelay = Math.max(30, 80 - (intensityFactor * 10));
+      const nextGlitchDelay = baseDelay + Math.random() * 50;
       
       const timeout = setTimeout(() => {
-        // Randomly choose between word and character glitching
-        if (Math.random() > 0.5) {
-          glitchWord();
-        } else {
-          glitchChar();
-        }
-        
-        // Continue the cycle
+        glitchMultipleChars();
         scheduleNext();
       }, nextGlitchDelay);
       
@@ -135,12 +91,27 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     scheduleNext();
   };
   
+  // Generate appropriate blur based on whether the effect is active
+  const getBlurStyle = () => {
+    if (blurActive) {
+      const blurAmount = 1 + Math.random() * 2;
+      return `blur(${blurAmount}px)`;
+    }
+    return 'none';
+  };
+  
   return (
-    <span className={`glitch-text ${className}`} 
+    <span 
+      className={`glitch-text ${className}`} 
       style={{
         position: 'relative',
         display: 'inline-block',
-        textShadow: '0.03em 0 1px rgba(255,0,0,0.4), -0.03em 0 1px rgba(0,0,255,0.4)',
+        color: '#ff0000',
+        fontFamily: "'Arial', sans-serif",
+        fontWeight: 'bold',
+        letterSpacing: '0.5px',
+        filter: getBlurStyle(),
+        transition: 'filter 0.05s ease',
       }}
     >
       {displayText}

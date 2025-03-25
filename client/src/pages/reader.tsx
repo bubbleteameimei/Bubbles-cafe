@@ -773,7 +773,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
         // Highly threatening message for maximum creepiness with subtle psychological impact
-        const message = "I SEE YOU SKIPPING";
+        const message = "I SEE YOU SKIPPING!!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
         
