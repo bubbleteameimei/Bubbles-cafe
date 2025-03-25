@@ -778,7 +778,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page" data-reader-page="true">
+    <div className="relative min-h-screen bg-background reader-page overflow-visible" data-reader-page="true">
       {/* Horror message modal */}
       {showHorrorMessage && (
         <motion.div
@@ -840,7 +840,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-0 pb-0 bg-background -mt-6 w-full">
+      <div className="pt-0 pb-0 bg-background -mt-6 w-full overflow-visible">
         {/* Static font size controls in a prominent position */}
         <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1 w-full">
           {/* Font controls using the standard Button component */}
@@ -945,7 +945,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert mx-auto px-0 pt-1 overflow-x-hidden w-full max-w-[80ch]"
+            className="prose dark:prose-invert mx-auto px-4 pt-1 w-full max-w-[80ch]"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -1049,11 +1049,13 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto w-full max-w-[70ch] px-0"
+              className="story-content mb-8 mx-auto w-full max-w-[70ch] px-4 overflow-visible"
               style={{
-                whiteSpace: 'pre-wrap',
+                whiteSpace: 'normal',
                 letterSpacing: '0.01em',
-                overflow: 'hidden'
+                overflowWrap: 'break-word',
+                wordWrap: 'break-word',
+                overflow: 'visible'
               }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content.rendered)
