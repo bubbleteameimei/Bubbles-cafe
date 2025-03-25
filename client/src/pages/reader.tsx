@@ -165,7 +165,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             const response = await fetch('/api/posts?limit=100');
             if (response.ok) {
               const data = await response.json();
-              const normalizedPosts = data.posts.map(post => ({
+              const normalizedPosts = data.posts.map((post: any) => ({
                 ...post,
                 title: {
                   rendered: post.title?.rendered || post.title || ''
@@ -200,7 +200,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           if (response.ok) {
             const data = await response.json();
             if (data.posts && data.posts.length > 0) {
-              const normalizedPosts = data.posts.map(post => ({
+              const normalizedPosts = data.posts.map((post: any) => ({
                 ...post,
                 title: {
                   rendered: post.title?.rendered || post.title || 'Story'
