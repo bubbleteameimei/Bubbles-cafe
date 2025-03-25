@@ -6,8 +6,8 @@ interface CreepyTextGlitchProps {
   intensityFactor?: number;
 }
 
-// Character pool for random replacements
-const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789¿¡§±æøåñÇçÑÆØÅ";
+// Character pool for random replacements - added more disturbing characters and symbols
+const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789¿¡§±æøåñÇçÑÆØÅ₩₸₴₽₱₦₭₲₺₼₢₣₤₧₥₮₯₫₡₠₪₨№℗®©™";
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
@@ -72,16 +72,27 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
         newTextArray[pos] = randomChar;
       }
       
-      // Apply a subtle style variation - intensity affects probability and strength
+      // Apply more intense style variations - more disturbing effects
       const newStyle: React.CSSProperties = {};
       
-      // Randomly add a subtle filter or transform
-      if (Math.random() < 0.3 * intensityFactor) {
-        newStyle.filter = `blur(${0.2 + Math.random() * 0.5 * intensityFactor}px)`;
+      // Much more aggressive visual effects
+      if (Math.random() < 0.4 * intensityFactor) {
+        newStyle.filter = `blur(${0.3 + Math.random() * 0.8 * intensityFactor}px)`;
       }
       
+      if (Math.random() < 0.4 * intensityFactor) {
+        newStyle.transform = `skew(${(Math.random() - 0.5) * 4 * intensityFactor}deg)`;
+      }
+      
+      // Add text shadow for a creepy glow effect
+      if (Math.random() < 0.5 * intensityFactor) {
+        const color = Math.random() < 0.5 ? 'rgba(255,0,0,0.8)' : 'rgba(0,0,0,0.9)';
+        newStyle.textShadow = `0 0 ${2 + Math.random() * 5}px ${color}`;
+      }
+      
+      // Occasionally invert or distort colors
       if (Math.random() < 0.3 * intensityFactor) {
-        newStyle.transform = `skew(${(Math.random() - 0.5) * 2 * intensityFactor}deg)`;
+        newStyle.filter = (newStyle.filter || '') + ` contrast(${150 + Math.random() * 150}%) invert(${Math.random() * 30}%)`;
       }
       
       // Set the glitched text and style
@@ -130,16 +141,25 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Schedule irregular glitches - frequency increases with intensity
+    // Schedule more frequent and chaotic glitches
     const scheduleNext = () => {
-      // Random delay between glitches - reduced delay with higher intensity
-      const nextGlitchDelay = Math.max(10, (50 + Math.random() * 750) / intensityFactor);
+      // Much shorter delays between glitches for a frantic effect
+      const nextGlitchDelay = Math.max(5, (30 + Math.random() * 350) / intensityFactor);
       
       const timeout = setTimeout(() => {
-        // Chance of intensive glitch increases with intensity factor
-        const intensiveGlitchProbability = Math.min(0.2 * intensityFactor, 0.8);
+        // Much higher chance of intensive glitch for a more disturbing effect
+        const intensiveGlitchProbability = Math.min(0.6 * intensityFactor, 0.9);
         
-        if (Math.random() < intensiveGlitchProbability) {
+        // Occasional "seizure" of multiple rapid glitches in sequence
+        if (Math.random() < 0.15 * intensityFactor) {
+          // Create a rapid sequence of 3-7 glitches
+          const burstCount = 3 + Math.floor(Math.random() * 4);
+          for (let i = 0; i < burstCount; i++) {
+            setTimeout(() => {
+              intensiveGlitch();
+            }, i * 60); // Very quick succession
+          }
+        } else if (Math.random() < intensiveGlitchProbability) {
           intensiveGlitch();
         } else {
           glitchRandomCharacter();

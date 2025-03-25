@@ -698,24 +698,24 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       if (skipCountRef.current >= 5 && !showHorrorMessage) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
-        // Use only one specific message as requested
-        const message = "I see you skipping";
+        // Use only one specific message as requested - updated with more aggressive text
+        const message = "I SEE YOU SKIPPING!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
         
-        // Show toast with creepy text
+        // Show toast with creepy text - increased intensity factor for more disturbing effect
         toast({
-          title: "Notice",
-          description: <CreepyTextGlitch text={message} />,
+          title: "NOTICE",
+          description: <CreepyTextGlitch text={message} intensityFactor={3} />,
           variant: "destructive",
-          duration: 5000,
+          duration: 7000, // Increased duration for more impact
         });
         
-        // Reset after showing
+        // Reset after showing - match the increased duration for more impact
         setTimeout(() => {
           setShowHorrorMessage(false);
           skipCountRef.current = 0;
-        }, 5000);
+        }, 7000);
       }
     } else {
       // If navigation is slow, gradually reduce the skip count
@@ -791,8 +791,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               <div className="mb-6">
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
-                  className="text-3xl font-bold text-red-900 dark:text-red-600"
-                  intensityFactor={2.5}
+                  className="text-4xl font-bold text-red-900 dark:text-red-700"
+                  intensityFactor={4} // Increased intensity factor for more disturbing effect
                 />
               </div>
               <Button

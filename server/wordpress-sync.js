@@ -335,10 +335,10 @@ export async function syncWordPressPosts() {
 
 /**
  * Run a WordPress import on a schedule (can be called from cron job)
- * Default interval is every 6 hours
+ * Default interval is every 5 minutes
  */
-export function setupWordPressSyncSchedule(intervalMs = 6 * 60 * 60 * 1000) {
-  log(`Setting up WordPress sync schedule (every ${intervalMs / (60 * 60 * 1000)} hours)`, 'wordpress-sync');
+export function setupWordPressSyncSchedule(intervalMs = 5 * 60 * 1000) {
+  log(`Setting up WordPress sync schedule (every ${intervalMs / (60 * 1000)} minutes)`, 'wordpress-sync');
   
   // Run once at startup
   syncWordPressPosts().catch(err => {
