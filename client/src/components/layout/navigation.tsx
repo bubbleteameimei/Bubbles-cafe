@@ -31,8 +31,8 @@ export default function Navigation() {
   ];
 
   return (
-    <header className="w-full max-w-[100vw] overflow-x-hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm z-40 relative">
-      <div className="container max-w-full sm:max-w-7xl mx-auto flex h-14 md:h-16 lg:h-18 items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8">
+    <header className="w-full max-w-[100vw] overflow-x-hidden border-b-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm z-40 relative">
+      <div className="container max-w-full sm:max-w-7xl mx-auto flex h-12 md:h-14 lg:h-16 items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8">
         {/* Mobile Menu Trigger */}
         <div className="flex items-center">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>

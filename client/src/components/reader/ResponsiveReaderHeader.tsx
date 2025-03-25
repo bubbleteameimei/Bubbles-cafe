@@ -31,9 +31,9 @@ const ResponsiveReaderHeader: React.FC<ResponsiveReaderHeaderProps> = ({
   const isMedium = deviceType === 'tablet';
   
   return (
-    <div className="reader-header-container">
+    <div className="reader-header-container -mt-6">
       {/* Top row with back button and actions */}
-      <div className="flex items-center justify-between mb-2 flex-wrap">
+      <div className="flex items-center justify-between mb-1 flex-wrap">
         <div className="flex items-center">
           <Link href="/stories">
             <a className="flex items-center mr-2 text-foreground/70 hover:text-foreground transition-colors">
@@ -59,10 +59,10 @@ const ResponsiveReaderHeader: React.FC<ResponsiveReaderHeaderProps> = ({
       <h1 
         className={`reader-title font-castoro ${
           isCompact 
-            ? 'text-xl mb-2' 
+            ? 'text-xl mb-1' 
             : isMedium 
-              ? 'text-2xl mb-3' 
-              : 'text-3xl mb-4'
+              ? 'text-2xl mb-2' 
+              : 'text-3xl mb-3'
         } leading-tight text-foreground break-words`}
       >
         {title}
@@ -72,7 +72,7 @@ const ResponsiveReaderHeader: React.FC<ResponsiveReaderHeaderProps> = ({
       <div 
         className={`reader-metadata flex ${
           isCompact ? 'flex-col items-start' : 'flex-row items-center justify-between'
-        } text-foreground/70 text-sm mb-4`}
+        } text-foreground/70 text-sm mb-2`}
       >
         <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
           {authorName && (
