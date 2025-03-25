@@ -22,7 +22,7 @@ import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import gameRoutes from './routes/game';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
-import { db } from "./db";
+import { db } from "./db-connect";
 import { desc, eq, sql } from "drizzle-orm";
 import { getPostsRecommendations } from "./test-recommendations";
 

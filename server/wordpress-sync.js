@@ -4,7 +4,7 @@
  */
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
-import { db } from './db.js';
+import { db } from './db-connect.js';
 import { log } from './vite.js';
 
 const { Pool } = pg;

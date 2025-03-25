@@ -2,7 +2,7 @@ import { storage } from "./storage";
 import { XMLParser } from "fast-xml-parser";
 import fs from "fs/promises";
 import path from "path";
-import { db } from "./db";
+import { db } from "./db-connect";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -40,7 +40,7 @@ async function getOrCreateAdminUser() {
     };
     
     // Raw SQL with pool.query to avoid Drizzle's automatic schema mapping
-    const { pool } = await import("./db");
+    const { pool } = await import("./db-connect");
     const result = await pool.query(
       `INSERT INTO users (username, email, password_hash, is_admin, created_at) 
        VALUES ($1, $2, $3, $4, NOW()) 
@@ -134,7 +134,7 @@ async function parseWordPressXML() {
             try {
               // Use raw SQL with pool.query to avoid schema mapping
               const readingTime = Math.ceil(cleanedContent.split(/\s+/).length / 200);
-              const { pool } = await import("./db");
+              const { pool } = await import("./db-connect");
               const result = await pool.query(
                 `INSERT INTO posts (
                   title, content, excerpt, slug, is_secret, author_id, 

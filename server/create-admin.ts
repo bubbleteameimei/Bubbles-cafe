@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import { pool } from "./db";
+import { pool } from "./db-connect";
 import bcrypt from "bcrypt"; // Using bcrypt to match auth.ts
 
 async function createNewAdminUser() {

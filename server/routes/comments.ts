@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { z } from 'zod';
-import { db } from '../db';
+import { db } from '../db-connect';
 import { comments, commentReactions, commentVotes, commentReplies } from '@shared/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 

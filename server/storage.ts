@@ -69,7 +69,7 @@ import {
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
 import type { CommentMetadata } from "@shared/schema";
-import { db, pool } from "./db";
+import { db, pool } from "./db-connect";
 import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
-import { db } from "./db";
+import { db } from "./db-connect"; // Using the fixed database connection module
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
@@ -130,29 +130,64 @@ app.use(helmet({
 // Create a server logger
 const serverLogger = createLogger('Server');
 
+// Import our database setup utilities
+import setupDatabase from '../scripts/setup-db';
+import pushSchema from '../scripts/db-push';
+import seedFromWordPressAPI from '../scripts/api-seed';
+
 async function startServer() {
   try {
-    serverLogger.info('Starting server', {
+    serverLogger.info('Starting server initialization', {
       environment: process.env.NODE_ENV,
       host: HOST,
       port: PORT
     });
 
-    // Check database connection first
+    // Setup database connection first
     try {
-      const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-      serverLogger.info('Database connected', { postsCount });
-  
-      if (postsCount === 0) {
-        serverLogger.info('Seeding database...');
-        await seedDatabase();
-        serverLogger.info('Database seeding completed');
+      // Ensure DATABASE_URL is properly set
+      serverLogger.info('Setting up database connection...');
+      await setupDatabase();
+      
+      // Check database connection
+      try {
+        // This may fail if tables don't exist yet
+        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
+        serverLogger.info('Database connected, tables exist', { postsCount });
+    
+        if (postsCount === 0) {
+          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
+          await seedFromWordPressAPI();
+          serverLogger.info('Database seeding from WordPress API completed');
+        }
+      } catch (tableError) {
+        serverLogger.warn('Database tables check failed, attempting to create schema', { 
+          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
+        });
+        
+        // If tables don't exist, push the schema
+        serverLogger.info('Creating database schema...');
+        await pushSchema();
+        serverLogger.info('Schema created, seeding data from WordPress API...');
+        
+        try {
+          await seedFromWordPressAPI();
+          serverLogger.info('Database seeding from WordPress API completed');
+        } catch (seedError) {
+          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
+            error: seedError instanceof Error ? seedError.message : 'Unknown error'
+          });
+          
+          // Fall back to XML seeding if WordPress API fails
+          await seedDatabase();
+          serverLogger.info('Database seeding from XML completed');
+        }
       }
-    } catch (error) {
-      serverLogger.warn('Database table check failed, will attempt to continue', { 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+    } catch (dbError) {
+      serverLogger.error('Critical database setup error', { 
+        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
       });
-      // Continue execution anyway - tables should have been created by our init script
+      throw dbError;
     }
 
     // Create server instance

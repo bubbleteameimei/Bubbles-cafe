@@ -1,5 +1,5 @@
 import { Request, Response, Express } from "express";
-import { db } from "../db";
+import { db } from "../db-connect";
 import { posts } from "@shared/schema";
 import { desc, eq, and, ne, or, sql } from "drizzle-orm";
 
