@@ -29,39 +29,6 @@
     scrollbar-width: none; /* Firefox */
   }
   
-  /* Spacing reduction for reader page - aggressive spacing reduction */
-  .reader-header-container {
-    margin-top: -5px !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Negative margin for navigation to reader content */
-  .reader-metadata {
-    margin-bottom: 0.5rem !important;
-  }
-  
-  /* Compact reader layout */
-  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-    margin-top: 1.25em !important;
-    margin-bottom: 0.75em !important;
-  }
-  
-  /* Aggressive reduction between navigation and reader */
-  .main-navigation + * {
-    margin-top: -14px !important;
-  }
-  
-  /* Target reader page specifically */
-  .main-navigation + div:has(.reader-header-container) {
-    margin-top: -16px !important;
-  }
-  
-  /* Reduce padding in reader views */
-  body > div > div > [data-reader-view="true"] {
-    padding-top: 0 !important;
-  }
-  
   ::-webkit-scrollbar {
     display: none; /* Chrome, Safari */
   }
