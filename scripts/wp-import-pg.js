@@ -1,9 +1,9 @@
-// Simple WordPress API Import Script
+// WordPress API Import using standard pg module
 // This script imports posts from WordPress API to our database
-import { Pool } from '@neondatabase/serverless';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
 
-// DATABASE_URL will be available from the server environment
+const { Pool } = pg;
 
 // Configure the database connection
 const pool = new Pool({
