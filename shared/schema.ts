@@ -52,7 +52,7 @@ export const comments = pgTable("comments", {
   postId: integer("post_id").references(() => posts.id),
   parentId: integer("parent_id"), // Remove circular reference temporarily
   userId: integer("user_id").references(() => users.id), // Optional for anonymous users
-  approved: boolean("approved").default(false).notNull(),
+  is_approved: boolean("is_approved").default(false).notNull(),
   edited: boolean("edited").default(false).notNull(),
   editedAt: timestamp("edited_at"),
   metadata: json("metadata").default({}).notNull(),
@@ -439,7 +439,9 @@ export const insertPostSchema = z.object({
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
 
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, edited: true, editedAt: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, edited: true, editedAt: true }).extend({
+  approved: z.boolean().optional()
+});
 export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({ id: true, createdAt: true });
 export const insertCommentVoteSchema = createInsertSchema(commentVotes).omit({ id: true, createdAt: true });
 

@@ -615,7 +615,7 @@ export function registerRoutes(app: Express): Server {
         postId,
         content: content.trim(),
         userId: req.user?.id || null, // Allow null for anonymous users
-        approved: true, // Auto-approve comments
+        is_approved: true, // Auto-approve comments - using is_approved instead of approved
         metadata: {
           author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
           moderated: false,
@@ -809,7 +809,7 @@ export function registerRoutes(app: Express): Server {
       // Create reply with proper metadata
       const reply = await storage.createCommentReply({
         ...replyData,
-        approved: !containsFilteredWord,
+        is_approved: !containsFilteredWord, // Using is_approved instead of approved
         metadata: {
           author: author?.trim() || 'Anonymous',
           moderated: containsFilteredWord,

@@ -821,17 +821,18 @@ export class DatabaseStorage implements IStorage {
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
     try {
-      // Use a more explicit column selection to avoid issues with missing columns
+      // Use a more explicit column selection to match actual database column names
       const commentsResult = await db.select({
         id: comments.id,
         content: comments.content,
         postId: comments.postId,
         userId: comments.userId,
-        approved: comments.approved,
+        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
         edited: comments.edited,
         editedAt: comments.editedAt,
         metadata: comments.metadata,
-        createdAt: comments.createdAt
+        createdAt: comments.createdAt,
+        parentId: comments.parentId // Include parentId in the select
       })
       .from(comments)
       .where(eq(comments.postId, postId))
@@ -839,7 +840,6 @@ export class DatabaseStorage implements IStorage {
 
       return commentsResult.map(comment => ({
         ...comment,
-        parentId: null, // Provide a default value for parentId
         createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
       }));
     } catch (error) {
@@ -856,11 +856,12 @@ export class DatabaseStorage implements IStorage {
         content: comments.content,
         postId: comments.postId,
         userId: comments.userId,
-        approved: comments.approved,
+        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
         edited: comments.edited,
         editedAt: comments.editedAt,
         metadata: comments.metadata,
-        createdAt: comments.createdAt
+        createdAt: comments.createdAt,
+        parentId: comments.parentId // Include parentId in the select
       })
       .from(comments)
       .orderBy(desc(comments.createdAt))
@@ -868,7 +869,6 @@ export class DatabaseStorage implements IStorage {
 
       return commentsResult.map(comment => ({
         ...comment,
-        parentId: null, // Provide a default value for parentId
         createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
       }));
     } catch (error) {
@@ -884,19 +884,19 @@ export class DatabaseStorage implements IStorage {
         content: comments.content,
         postId: comments.postId,
         userId: comments.userId,
-        approved: comments.approved,
+        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
         edited: comments.edited,
         editedAt: comments.editedAt,
         metadata: comments.metadata,
-        createdAt: comments.createdAt
+        createdAt: comments.createdAt,
+        parentId: comments.parentId // Include parentId in the select
       })
       .from(comments)
-      .where(eq(comments.approved, false))
+      .where(sql`comments.is_approved = false`) // Fix: use is_approved in the where clause
       .orderBy(desc(comments.createdAt));
 
       return commentsResult.map(comment => ({
         ...comment,
-        parentId: null, // Provide a default value for parentId
         createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
       }));
     } catch (error) {
@@ -967,17 +967,21 @@ export class DatabaseStorage implements IStorage {
         replyCount: 0
       };
 
-      const [newComment] = await db.insert(comments)
-        .values({
-          content: comment.content,
-          postId: comment.postId,
-          parentId: comment.parentId ?? null, // Include parentId, default to null for top-level comments
-          userId: comment.userId,
-          approved: comment.approved ?? true,
-          metadata: commentMetadata,
-          createdAt: new Date()
-        })
-        .returning();
+      // Create a direct SQL query to ensure proper column mapping
+      const result = await db.execute(sql`
+        INSERT INTO comments (content, post_id, parent_id, user_id, is_approved, metadata, created_at)
+        VALUES (
+          ${comment.content},
+          ${comment.postId},
+          ${comment.parentId ?? null},
+          ${comment.userId},
+          ${comment.is_approved !== undefined ? comment.is_approved : true},
+          ${JSON.stringify(commentMetadata)},
+          ${new Date()}
+        )
+        RETURNING *;
+      `);
+      const newComment = result.rows[0];
 
       console.log('[Storage] Comment created successfully:', newComment.id);
       return {
@@ -1284,17 +1288,21 @@ export class DatabaseStorage implements IStorage {
         replyCount: 0
       };
 
-      const [newReply] = await db.insert(comments)
-        .values({
-          content: reply.content,
-          userId: reply.userId,
-          parentId: reply.parentId,
-          postId: reply.postId,
-          approved: reply.approved ?? false,
-          metadata,
-          createdAt: new Date()
-        })
-        .returning();
+      // Create a direct SQL query to ensure proper column mapping
+      const result = await db.execute(sql`
+        INSERT INTO comments (content, post_id, parent_id, user_id, is_approved, metadata, created_at)
+        VALUES (
+          ${reply.content},
+          ${reply.postId},
+          ${reply.parentId},
+          ${reply.userId},
+          ${reply.is_approved !== undefined ? reply.is_approved : false},
+          ${JSON.stringify(metadata)},
+          ${new Date()}
+        )
+        RETURNING *;
+      `);
+      const newReply = result.rows[0];
 
       return {
         ...newReply,
