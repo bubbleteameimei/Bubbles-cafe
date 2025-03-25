@@ -20,6 +20,8 @@ import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
+import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
+import { setupWordPressSyncSchedule } from "./wordpress-sync";
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { setupCors } from "./cors-setup";
 
@@ -79,7 +81,10 @@ app.use(validateCsrfToken({
     '/api/feedback',
     '/api/posts',
     '/api/recommendations',
-    '/api/analytics/vitals' // Exclude analytics endpoint from CSRF checks
+    '/api/analytics/vitals', // Exclude analytics endpoint from CSRF checks
+    '/api/wordpress/sync',
+    '/api/wordpress/sync/status',
+    '/api/wordpress/posts'
   ]
 }));
 
@@ -175,6 +180,12 @@ async function startServer() {
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);
       
+      // Register WordPress sync routes
+      registerWordPressSyncRoutes(app);
+      
+      // Setup WordPress sync schedule (run every 6 hours)
+      setupWordPressSyncSchedule(6 * 60 * 60 * 1000);
+      
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
       
@@ -196,6 +207,12 @@ async function startServer() {
       
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);
+      
+      // Register WordPress sync routes
+      registerWordPressSyncRoutes(app);
+      
+      // Setup WordPress sync schedule (run every 6 hours)
+      setupWordPressSyncSchedule(6 * 60 * 60 * 1000);
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
