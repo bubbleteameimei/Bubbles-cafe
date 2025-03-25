@@ -772,25 +772,25 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       if (skipCountRef.current >= 3 && !showHorrorMessage) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
-        // Simple, threatening message for maximum creepiness
+        // Highly threatening message for maximum creepiness with subtle psychological impact
         const message = "I SEE YOU SKIPPING";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);
         
-        // Show toast with creepy text - using a moderate intensity factor for better legibility
-        // The CreepyTextGlitch component has been simplified for a slower, more deliberate effect
+        // Show toast with extremely creepy text using maximum intensity
+        // The CreepyTextGlitch component has been enhanced for a rapid, unnerving effect
         toast({
           title: "NOTICE",
-          description: <CreepyTextGlitch text={message} intensityFactor={2} />,
+          description: <CreepyTextGlitch text={message} intensityFactor={5} />, // Maximum intensity
           variant: "destructive",
-          duration: 7000, // 7 seconds duration - visible but not too disruptive
+          duration: 9000, // Extended duration for more psychological impact
         });
         
-        // Reset after showing - match the duration
+        // Reset after showing - match the extended toast duration
         setTimeout(() => {
           setShowHorrorMessage(false);
           skipCountRef.current = 0;
-        }, 7000);
+        }, 9000); // Extended to match the 9000ms toast duration
       }
     } else {
       // If navigation is slow, gradually reduce the skip count
@@ -867,7 +867,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
                   className="text-4xl font-bold text-red-900 dark:text-red-700"
-                  intensityFactor={4} // Increased intensity for a more disturbing effect
+                  intensityFactor={8} // Maximum intensity for an extremely disturbing effect
                 />
               </div>
               <Button

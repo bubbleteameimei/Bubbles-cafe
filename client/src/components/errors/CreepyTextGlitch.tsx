@@ -6,13 +6,13 @@ interface CreepyTextGlitchProps {
   intensityFactor?: number;
 }
 
-// More disturbing character pool for creepier glitches, with some reverse and distorted characters
-const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ΨΔΩθӜӬӪӒӘƷƩƟƔҘҖԀԄᐁᐌᑕᕉᕋᕆᕲᕤᕵᑌᑎᕠᙦᙨ̸̡̛̺̤̦̖̭͉̪̤̱̬̼̥̪̳͚̻̫̬̱̙̮̤ͭ̿͒̀̏̏ͩ͆͊͐ͭ̾͛̚̚̚ͅͅͅ";
+// Extended disturbing character pool for even creepier glitches
+const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ΨΔΩθӜӬӪӒӘƷƩƟƔҘҖԀԄᐁᐌᑕᕉᕋᕆᕲᕤᕵᑌᑎᕠᙦᙨ̸̡̺̤̦̖̭͉̪̤̱̬̼̥̪̳͚̻̫̬̱̙̮̤ͭ̿͒̀̏̏ͩ͆͊͐ͭ̾͛̚̚ͅͅЖЂҨҪѮѰѱѯҖҘҢҮҰ҂҈҉⸸";
 
 // Creepy vertical line characters for splitting text
-const VERTICAL_CUT_CHARS = "│┃┆┇┊┋╎╏║|⦙⁞";
+const VERTICAL_CUT_CHARS = "│┃┆┇┊┋╎╏║|⦙⁞┋┊╽╿╏┇┋";
 
-// Reversed characters for more disturbing effect
+// Reversed and inverted characters for more disturbing effect
 const REVERSED_TEXT_POOL = "zʎxʍʌnʇsɹbdouɯʅʞɾᴉɥƃɟǝpɔqɐZʎXʍʌՈ┴SɹQԀONWꓶꓘſIHפℲƎpƆq∀";
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
@@ -20,11 +20,15 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
   const [displayStyle, setDisplayStyle] = useState<React.CSSProperties>({});
   const originalText = useRef(text);
   const timeoutIds = useRef<NodeJS.Timeout[]>([]);
+  const animationFrameIds = useRef<number[]>([]);
   
-  // Cleanup function to clear all timeouts
+  // Cleanup function to clear all timeouts and animation frames
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach(id => clearTimeout(id));
     timeoutIds.current = [];
+    
+    animationFrameIds.current.forEach(id => cancelAnimationFrame(id));
+    animationFrameIds.current = [];
   };
   
   // Initialize and cleanup glitch effect
@@ -38,14 +42,14 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     };
   }, [text]);
   
-  // Schedule glitches with a slower, more deliberate pace
+  // Schedule glitches with increased intensity
   const scheduleGlitches = () => {
     clearAllTimeouts();
     
     // Convert text to array for easier manipulation
     const textArray = originalText.current.split('');
     
-    // Single character glitch effect - more disturbing
+    // Single character glitch effect - much more disturbing now
     const glitchSingleCharacter = () => {
       // Pick a random position in the text that isn't a space
       let pos;
@@ -56,8 +60,8 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       // Save original character
       const originalChar = textArray[pos];
       
-      // Choose glitch type based on intensity
-      const glitchType = Math.random() * intensityFactor;
+      // Apply more aggressive glitch type based on increased intensity
+      const glitchType = Math.random() * (intensityFactor * 2); // Doubled effect multiplier
       
       let randomChar;
       if (glitchType > 3) {
@@ -90,22 +94,33 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       const newStyle: React.CSSProperties = {};
       
       // More aggressive text shadow for horror feel based on intensity
-      if (Math.random() < 0.4 * intensityFactor) {
-        // More emphasis on reds for horror feel
-        const shadowColor = `rgba(${180 + Math.floor(Math.random() * 75)}, ${Math.floor(Math.random() * 20)}, ${Math.floor(Math.random() * 20)}, 0.85)`;
-        newStyle.textShadow = `0 0 ${1 + Math.random() * 3 * (intensityFactor/2)}px ${shadowColor}`;
+      if (Math.random() < 0.7 * intensityFactor) { // Increased probability
+        // More dramatic reds for horror feel - brighter, more noticeable
+        const shadowColor = `rgba(${220 + Math.floor(Math.random() * 35)}, ${Math.floor(Math.random() * 10)}, ${Math.floor(Math.random() * 10)}, 0.9)`;
+        newStyle.textShadow = `0 0 ${2 + Math.random() * 5 * intensityFactor}px ${shadowColor}`;
         
-        // Occasionally add slight skew for disorienting effect
-        if (Math.random() < 0.2 * intensityFactor) {
-          newStyle.transform = `skew(${(Math.random() - 0.5) * 2}deg)`;
+        // More frequent and dramatic transform effects
+        if (Math.random() < 0.3 * intensityFactor) {
+          // More extreme skew for a truly distorted feel
+          const skewAmount = (Math.random() - 0.5) * 5; // Increased skew amount
+          newStyle.transform = `skew(${skewAmount}deg)`;
+          
+          // Occasionally add more dramatic letter spacing
+          if (Math.random() < 0.4) {
+            newStyle.letterSpacing = `${(Math.random() - 0.5) * 3}px`;
+          }
         }
+      }
+      
+      // Add brief flicker effect for extreme glitches
+      if (Math.random() < 0.2 * intensityFactor) {
+        newStyle.opacity = 0.7 + Math.random() * 0.3;
       }
       
       setDisplayStyle(newStyle);
       
-      // Schedule revert back to original character after a longer moment
-      // Slower timing makes it more noticeable and creepy
-      const revertDelay = 200 + Math.random() * 300;
+      // More rapid revert for an unsettling strobe-like effect
+      const revertDelay = 100 + Math.random() * 150; // Faster reversion
       const revertTimeout = setTimeout(() => {
         const revertTextArray = [...newTextArray];
         revertTextArray[pos] = originalChar;
@@ -116,15 +131,16 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Multiple character glitch - for more intense moments
+    // Multiple character glitch - for more intense and disruptive moments
     const glitchMultipleCharacters = () => {
       // Clone the current text
       const newTextArray = [...textArray];
       
-      // Number of characters to glitch - keeps it limited for legibility
+      // Number of characters to glitch - increased for more dramatic effect
+      // but still maintain some legibility
       const glitchCount = Math.min(
-        Math.floor(1 + Math.random() * 2 * intensityFactor),
-        Math.floor(textArray.length * 0.3) // Cap at 30% of text length for legibility
+        Math.floor(1 + Math.random() * 3 * intensityFactor), // Increased count
+        Math.floor(textArray.length * 0.4) // Increased cap to 40% of text for more impact
       );
       
       const positions: number[] = [];
@@ -141,7 +157,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
         
         positions.push(pos);
         
-        // Get random replacement character
+        // Get random replacement character from the extended pool
         const randomChar = GLITCH_CHARS.charAt(
           Math.floor(Math.random() * GLITCH_CHARS.length)
         );
@@ -149,42 +165,91 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
         newTextArray[pos] = randomChar;
       }
       
-      // Apply subtle style variations
+      // Apply more dramatic style variations
       const newStyle: React.CSSProperties = {};
       
-      // Add text shadow for a creepy glow effect
-      if (Math.random() < 0.5) {
-        const color = `rgba(${180 + Math.floor(Math.random() * 75)}, 0, 0, 0.85)`;
-        newStyle.textShadow = `0 0 ${1 + Math.random() * 3}px ${color}`;
+      // Add text shadow for a creepy glow effect - more intense
+      if (Math.random() < 0.8) { // Increased probability
+        const color = `rgba(${220 + Math.floor(Math.random() * 35)}, 0, 0, 0.95)`;
+        newStyle.textShadow = `0 0 ${2 + Math.random() * 6}px ${color}`;
+        
+        // Add subtle blur for a more unsettling effect
+        if (Math.random() < 0.4) {
+          newStyle.filter = `blur(${0.3 + Math.random() * 0.7}px)`;
+        }
+      }
+      
+      // Occasionally shift the text slightly for a jarring effect
+      if (Math.random() < 0.3) {
+        newStyle.transform = `translateY(${(Math.random() - 0.5) * 3}px)`;
       }
       
       // Set the glitched text and style
       setDisplayText(newTextArray.join(''));
       setDisplayStyle(newStyle);
       
-      // Schedule revert after a moment - slower for more impact
+      // Schedule revert after a moment - faster for more frantic glitching
       const revertTimeout = setTimeout(() => {
         setDisplayText(originalText.current);
         setDisplayStyle({});
-      }, 400 + Math.random() * 200);
+      }, 200 + Math.random() * 150); // Faster reversion
       
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Schedule glitches at a slower, more deliberate pace
+    // Create intense flicker effect (brief change in text style)
+    const createFlickerEffect = () => {
+      const newStyle: React.CSSProperties = {};
+      
+      // Apply a rapid, dramatic style change
+      if (Math.random() < 0.5) {
+        // Dramatic color flash - blood red
+        newStyle.color = '#ff0000';
+        newStyle.textShadow = `0 0 ${3 + Math.random() * 8}px rgba(255, 0, 0, 0.9)`;
+      } else {
+        // Alternatively use stark white for high contrast
+        newStyle.color = '#ffffff';
+        newStyle.textShadow = `0 0 ${3 + Math.random() * 5}px rgba(255, 255, 255, 0.95)`;
+      }
+      
+      // Apply brief transform for disorienting effect
+      if (Math.random() < 0.3) {
+        const skewAmount = (Math.random() - 0.5) * 8;
+        newStyle.transform = `skew(${skewAmount}deg)`;
+      }
+      
+      setDisplayStyle(newStyle);
+      
+      // Reset after a very brief moment
+      const flickerDuration = 30 + Math.random() * 70; // Very quick (30-100ms)
+      const flickerTimeout = setTimeout(() => {
+        setDisplayStyle({});
+      }, flickerDuration);
+      
+      timeoutIds.current.push(flickerTimeout);
+    };
+    
+    // Schedule glitches at a more rapid, frantic pace
     const scheduleNext = () => {
-      // Longer delays between glitches for a more unsettling, deliberate effect
-      // The unpredictability of timing is part of what makes it creepy
-      const baseDelay = 800; // Base delay in milliseconds
-      const randomVariation = 1200; // Random variation added to the base
+      // More rapid glitches for a more unsettling effect
+      // The unpredictability of timing is increased
+      const baseDelay = 400; // Reduced base delay for more frequent glitches
+      const randomVariation = 800; // Still keep some variation
       const nextGlitchDelay = baseDelay + Math.random() * randomVariation;
       
       const timeout = setTimeout(() => {
-        // Higher probability of single character glitches for subtlety
-        if (Math.random() < 0.7) {
+        // Randomize effect type with weighted probabilities
+        const effectRoll = Math.random();
+        
+        if (effectRoll < 0.5) {
+          // 50% chance of single character glitches - the bread and butter
           glitchSingleCharacter();
-        } else {
+        } else if (effectRoll < 0.8) {
+          // 30% chance of multiple character glitches - more disruptive
           glitchMultipleCharacters();
+        } else {
+          // 20% chance of flicker effect - very jarring but brief
+          createFlickerEffect();
         }
         
         // Continue the cycle
