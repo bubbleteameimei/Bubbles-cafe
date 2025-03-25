@@ -793,7 +793,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 <CreepyTextGlitch 
                   text={horrorMessageText} 
                   className="text-4xl font-bold text-red-900 dark:text-red-700"
-                  intensityFactor={2} // More legible but still creepy effect
+                  intensityFactor={4} // Increased intensity for a more disturbing effect
                 />
               </div>
               <Button

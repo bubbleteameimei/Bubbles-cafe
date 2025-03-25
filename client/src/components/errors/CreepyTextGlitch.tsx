@@ -6,8 +6,14 @@ interface CreepyTextGlitchProps {
   intensityFactor?: number;
 }
 
-// Simpler character pool for more legible but still disturbing glitches
-const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789¿¡§±æøåñÇçÑÆØÅ";
+// More disturbing character pool for creepier glitches, with some reverse and distorted characters
+const GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~ΨΔΩθӜӬӪӒӘƷƩƟƔҘҖԀԄᐁᐌᑕᕉᕋᕆᕲᕤᕵᑌᑎᕠᙦᙨ̸̡̛̺̤̦̖̭͉̪̤̱̬̼̥̪̳͚̻̫̬̱̙̮̤ͭ̿͒̀̏̏ͩ͆͊͐ͭ̾͛̚̚̚ͅͅͅ";
+
+// Creepy vertical line characters for splitting text
+const VERTICAL_CUT_CHARS = "│┃┆┇┊┋╎╏║|⦙⁞";
+
+// Reversed characters for more disturbing effect
+const REVERSED_TEXT_POOL = "zʎxʍʌnʇsɹbdouɯʅʞɾᴉɥƃɟǝpɔqɐZʎXʍʌՈ┴SɹQԀONWꓶꓘſIHפℲƎpƆq∀";
 
 export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: CreepyTextGlitchProps) {
   const [displayText, setDisplayText] = useState(text);
@@ -39,7 +45,7 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     // Convert text to array for easier manipulation
     const textArray = originalText.current.split('');
     
-    // Single character glitch effect - more subtle and disturbing
+    // Single character glitch effect - more disturbing
     const glitchSingleCharacter = () => {
       // Pick a random position in the text that isn't a space
       let pos;
@@ -50,24 +56,49 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
       // Save original character
       const originalChar = textArray[pos];
       
-      // Replace with random character
-      const randomChar = GLITCH_CHARS.charAt(
-        Math.floor(Math.random() * GLITCH_CHARS.length)
-      );
+      // Choose glitch type based on intensity
+      const glitchType = Math.random() * intensityFactor;
+      
+      let randomChar;
+      if (glitchType > 3) {
+        // For higher intensity, use more extreme distorted characters
+        randomChar = GLITCH_CHARS.charAt(
+          Math.floor(Math.random() * GLITCH_CHARS.length)
+        );
+      } else if (glitchType > 2) {
+        // Use reversed characters for medium intensity
+        randomChar = REVERSED_TEXT_POOL.charAt(
+          Math.floor(Math.random() * REVERSED_TEXT_POOL.length)
+        );
+      } else if (glitchType > 1) {
+        // Vertical line cuts for low intensity
+        randomChar = VERTICAL_CUT_CHARS.charAt(
+          Math.floor(Math.random() * VERTICAL_CUT_CHARS.length)
+        );
+      } else {
+        // Random letter shift (slightly offset character)
+        const charCode = originalChar.charCodeAt(0);
+        randomChar = String.fromCharCode(charCode + (Math.random() > 0.5 ? 1 : -1));
+      }
       
       // Update the text with the glitched character
       const newTextArray = [...textArray];
       newTextArray[pos] = randomChar;
       setDisplayText(newTextArray.join(''));
       
-      // Apply subtle style variation - just enough to be unsettling
+      // Apply style variations for even creepier effect
       const newStyle: React.CSSProperties = {};
       
-      // Occasionally add subtle text shadow for a creepy effect
-      if (Math.random() < 0.3) {
+      // More aggressive text shadow for horror feel based on intensity
+      if (Math.random() < 0.4 * intensityFactor) {
         // More emphasis on reds for horror feel
-        const shadowColor = `rgba(${180 + Math.floor(Math.random() * 75)}, 0, 0, 0.7)`;
-        newStyle.textShadow = `0 0 ${1 + Math.random() * 2}px ${shadowColor}`;
+        const shadowColor = `rgba(${180 + Math.floor(Math.random() * 75)}, ${Math.floor(Math.random() * 20)}, ${Math.floor(Math.random() * 20)}, 0.85)`;
+        newStyle.textShadow = `0 0 ${1 + Math.random() * 3 * (intensityFactor/2)}px ${shadowColor}`;
+        
+        // Occasionally add slight skew for disorienting effect
+        if (Math.random() < 0.2 * intensityFactor) {
+          newStyle.transform = `skew(${(Math.random() - 0.5) * 2}deg)`;
+        }
       }
       
       setDisplayStyle(newStyle);
