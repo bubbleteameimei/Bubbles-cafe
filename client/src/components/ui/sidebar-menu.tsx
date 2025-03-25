@@ -6,7 +6,7 @@ import {
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
-  Search, Sparkles, GanttChart, GamepadIcon
+  Search, Sparkles, GanttChart, GamepadIcon, Rss
 } from "lucide-react"
 
 
@@ -287,6 +287,16 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         >
                           <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
                           <span>Bug Reports</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/wordpress-sync'}
+                          onClick={() => handleNavigation('/admin/wordpress-sync')}
+                          className={submenuItemClass}
+                        >
+                          <Rss className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>WordPress Sync</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>

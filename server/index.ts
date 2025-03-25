@@ -21,7 +21,7 @@ import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recomme
 import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
-import { setupWordPressSyncSchedule } from "./wordpress-sync";
+import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { setupCors } from "./cors-setup";
 

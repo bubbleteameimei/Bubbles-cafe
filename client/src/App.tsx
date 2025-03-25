@@ -197,6 +197,7 @@ const AdminContentModerationPage = withSuspense(React.lazy(() => import('./pages
 const AdminContentPage = withSuspense(React.lazy(() => import('./pages/admin/content')));
 const AdminDashboardPage = withSuspense(React.lazy(() => import('./pages/admin/dashboard')));
 const AdminSiteStatisticsPage = withSuspense(React.lazy(() => import('./pages/admin/site-statistics')));
+const AdminWordPressSyncPage = withSuspense(React.lazy(() => import('./pages/admin/WordPressSyncPage')));
 // const CookieTestPage = withSuspense(React.lazy(() => import('./pages/cookie-test')));
 const ResetPasswordPage = withSuspense(React.lazy(() => import('./pages/reset-password')));
 
@@ -330,6 +331,7 @@ const AppContent = () => {
                 <ProtectedRoute path="/admin/content" component={AdminContentPage} requireAdmin />
                 <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin />
                 <ProtectedRoute path="/admin/feedback-management" component={AdminFeedbackManagementPage} requireAdmin />
+                <ProtectedRoute path="/admin/wordpress-sync" component={AdminWordPressSyncPage} requireAdmin />
 
                 {/* 404 Route - Using a stable component to fix hooks ordering */}
                 <Route>

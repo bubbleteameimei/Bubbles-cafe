@@ -5,6 +5,11 @@
 
 // Cookie consent settings key in localStorage
 export const COOKIE_CONSENT_KEY = 'cookieConsent';
+export const COOKIE_DECISION_EXPIRY_KEY = 'cookieConsentExpiry';
+
+// Cookie consent expiration periods in milliseconds
+export const COOKIE_ACCEPT_EXPIRY = 90 * 24 * 60 * 60 * 1000; // 3 months
+export const COOKIE_REJECT_EXPIRY = 7 * 24 * 60 * 60 * 1000;  // 1 week
 
 // Cookie categories
 export type CookieCategory = 'essential' | 'functional' | 'analytics' | 'performance' | 'marketing';
@@ -112,7 +117,14 @@ export function acceptAllCookies(): void {
       lastUpdated: new Date().toISOString()
     };
     
+    // Set cookie preferences
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+    
+    // Store the expiry date for the accept decision (3 months)
+    const expiryDate = new Date(Date.now() + COOKIE_ACCEPT_EXPIRY).toISOString();
+    localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
+    
+    console.log(`Cookie consent accepted - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
   } catch (error) {
     console.warn('Failed to accept all cookies:', error);
   }
@@ -127,7 +139,14 @@ export function acceptEssentialCookiesOnly(): void {
   }
   
   try {
+    // Set cookie preferences
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(defaultPreferences));
+    
+    // Store the expiry date for the reject decision (1 week)
+    const expiryDate = new Date(Date.now() + COOKIE_REJECT_EXPIRY).toISOString();
+    localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
+    
+    console.log(`Cookie consent rejected - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
   } catch (error) {
     console.warn('Failed to accept essential cookies:', error);
   }
@@ -152,9 +171,102 @@ export function updateCookiePreferences(preferences: Partial<Omit<CookiePreferen
       lastUpdated: new Date().toISOString()
     };
     
+    // Update cookie preferences
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
+    
+    // Determine if this is an accept or reject overall decision
+    // If any non-essential cookie is enabled, consider it an accept decision (3 months)
+    // Otherwise, it's a reject decision (1 week)
+    const hasAcceptedNonEssential = 
+      newPreferences.functional || 
+      newPreferences.analytics || 
+      newPreferences.performance || 
+      newPreferences.marketing;
+    
+    // Set appropriate expiry based on accept/reject status
+    const expiryPeriod = hasAcceptedNonEssential ? COOKIE_ACCEPT_EXPIRY : COOKIE_REJECT_EXPIRY;
+    const expiryDate = new Date(Date.now() + expiryPeriod).toISOString();
+    localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
+    
+    console.log(`Cookie preferences updated - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
   } catch (error) {
     console.warn('Failed to update cookie preferences:', error);
+  }
+}
+
+/**
+ * Check if a consent decision has expired
+ * @returns Boolean indicating if the consent has expired
+ */
+export function hasConsentExpired(): boolean {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return true; // If we can't access localStorage, treat as expired
+  }
+  
+  try {
+    const expiryValue = localStorage.getItem(COOKIE_DECISION_EXPIRY_KEY);
+    
+    // If no expiry value, consider it expired
+    if (!expiryValue) {
+      return true;
+    }
+    
+    // Check if the expiry date is valid
+    try {
+      const expiryDate = new Date(expiryValue);
+      const now = new Date();
+      
+      // If the date is valid, check if it's in the past
+      return now > expiryDate;
+    } catch (parseError) {
+      console.warn('Invalid expiry date format, treating as expired:', parseError);
+      // Clean up invalid data
+      localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
+      return true;
+    }
+  } catch (error) {
+    console.warn('Error checking consent expiration:', error);
+    return true; // On error, treat as expired for safety
+  }
+}
+
+/**
+ * Get expiry time of consent in days remaining
+ * @returns Number of days left until consent expires, or 0 if expired/not set
+ */
+export function getConsentDaysRemaining(): number {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return 0;
+  }
+  
+  try {
+    const expiryValue = localStorage.getItem(COOKIE_DECISION_EXPIRY_KEY);
+    
+    if (!expiryValue) {
+      return 0;
+    }
+    
+    try {
+      const expiryDate = new Date(expiryValue);
+      const now = new Date();
+      
+      // If already expired, return 0
+      if (now > expiryDate) {
+        return 0;
+      }
+      
+      // Calculate days remaining
+      const msRemaining = expiryDate.getTime() - now.getTime();
+      const daysRemaining = Math.floor(msRemaining / (1000 * 60 * 60 * 24));
+      
+      return daysRemaining;
+    } catch (parseError) {
+      console.warn('Invalid expiry date format:', parseError);
+      return 0;
+    }
+  } catch (error) {
+    console.warn('Error calculating remaining consent days:', error);
+    return 0;
   }
 }
 
@@ -170,6 +282,14 @@ export function hasConsentChoice(): boolean {
   try {
     const consentValue = localStorage.getItem(COOKIE_CONSENT_KEY);
     
+    // Check if the consent has expired
+    if (hasConsentExpired()) {
+      console.log('Cookie consent has expired, clearing preferences');
+      localStorage.removeItem(COOKIE_CONSENT_KEY);
+      localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
+      return false;
+    }
+    
     // Additional validation to ensure the stored value is valid JSON
     if (consentValue) {
       try {
@@ -183,6 +303,7 @@ export function hasConsentChoice(): boolean {
         console.warn('Invalid consent data in localStorage, treating as no consent');
         // Clean up invalid data
         localStorage.removeItem(COOKIE_CONSENT_KEY);
+        localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
         return false;
       }
     }

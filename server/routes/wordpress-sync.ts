@@ -3,7 +3,7 @@
  * These routes handle WordPress content importing and synchronization
  */
 import { Express, Request, Response } from 'express';
-import { syncWordPressPosts, syncSingleWordPressPost } from '../wordpress-sync.js';
+import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
 import { log } from '../vite.js';
 
 // Track sync status
@@ -53,10 +53,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
       // Now run the actual sync (the response has already been sent)
       const result = await syncWordPressPosts();
       
-      lastSyncStatus = {
-        success: true,
-        ...result
-      };
+      lastSyncStatus = result;
       lastSyncTime = new Date().toISOString();
       
       log(`WordPress sync completed: ${result.created} created, ${result.updated} updated`, 'wordpress-sync');
@@ -90,7 +87,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
     try {
       log(`Manual sync triggered for WordPress post ID: ${postId}`, 'wordpress-sync');
       
-      const result = await syncSingleWordPressPost(postId);
+      const result = await syncSingleWordPressPost(parseInt(postId));
       
       res.json({
         success: true,
