@@ -4,6 +4,10 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 
 const COOKIE_CONSENT_KEY = 'cookieConsent';
+const COOKIE_DECISION_EXPIRY_KEY = 'cookieConsentExpiry';
+// Cookie consent expiration periods in milliseconds
+const COOKIE_ACCEPT_EXPIRY = 90 * 24 * 60 * 60 * 1000; // 3 months
+const COOKIE_REJECT_EXPIRY = 7 * 24 * 60 * 60 * 1000;  // 1 week
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
@@ -12,8 +16,29 @@ export function CookieConsent() {
     try {
       // Check if user has already made a choice
       const hasConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
-      if (!hasConsent) {
-        // Only show if no choice has been made before
+      const expiryValue = localStorage.getItem(COOKIE_DECISION_EXPIRY_KEY);
+      
+      // Check if the consent has expired
+      let hasExpired = false;
+      if (expiryValue) {
+        try {
+          const expiryDate = new Date(expiryValue);
+          const now = new Date();
+          hasExpired = now > expiryDate;
+          
+          if (hasExpired) {
+            console.log('Cookie consent has expired, clearing preferences');
+            localStorage.removeItem(COOKIE_CONSENT_KEY);
+            localStorage.removeItem(COOKIE_DECISION_EXPIRY_KEY);
+          }
+        } catch (parseError) {
+          console.warn('Invalid expiry date format, treating as expired:', parseError);
+          hasExpired = true;
+        }
+      }
+      
+      if (!hasConsent || hasExpired) {
+        // Only show if no choice has been made before or if it has expired
         setIsVisible(true);
       }
     } catch (error) {
@@ -27,6 +52,12 @@ export function CookieConsent() {
   const handleAccept = () => {
     try {
       localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+      
+      // Store the expiry date for the accept decision (3 months)
+      const expiryDate = new Date(Date.now() + COOKIE_ACCEPT_EXPIRY).toISOString();
+      localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
+      
+      console.log(`Cookie consent accepted - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
       setIsVisible(false);
     } catch (error) {
       console.warn("Could not store cookie consent:", error);
@@ -37,6 +68,12 @@ export function CookieConsent() {
   const handleDecline = () => {
     try {
       localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
+      
+      // Store the expiry date for the reject decision (1 week)
+      const expiryDate = new Date(Date.now() + COOKIE_REJECT_EXPIRY).toISOString();
+      localStorage.setItem(COOKIE_DECISION_EXPIRY_KEY, expiryDate);
+      
+      console.log(`Cookie consent rejected - will expire on ${new Date(expiryDate).toLocaleDateString()}`);
       setIsVisible(false);
     } catch (error) {
       console.warn("Could not store cookie consent:", error);

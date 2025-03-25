@@ -31,8 +31,8 @@ export default function Navigation() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-      <div className="container max-w-7xl mx-auto flex h-14 md:h-16 lg:h-18 items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 z-40 w-full max-w-[100vw] overflow-x-hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+      <div className="container max-w-full sm:max-w-7xl mx-auto flex h-14 md:h-16 lg:h-18 items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8">
         {/* Mobile Menu Trigger */}
         <div className="flex items-center">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -58,7 +58,7 @@ export default function Navigation() {
                 <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[90vw]">
+            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[85vw] overflow-y-auto">
               <SidebarNavigation onNavigate={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>

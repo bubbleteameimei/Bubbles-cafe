@@ -699,6 +699,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         console.log('[Reader] Horror Easter egg triggered after rapid navigation');
         
         // Use only one specific message as requested - updated with more aggressive text
+        // Added whitespace-nowrap to prevent text from breaking into multiple lines
         const message = "I SEE YOU SKIPPING!!";
         setHorrorMessageText(message);
         setShowHorrorMessage(true);

@@ -12,7 +12,7 @@ export function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-2">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-2 gap-4">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">{heading}</h1>
         {description && (
@@ -21,7 +21,7 @@ export function PageHeader({
           </p>
         )}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="flex items-center gap-2 w-full sm:w-auto">{children}</div>}
     </div>
   );
 }

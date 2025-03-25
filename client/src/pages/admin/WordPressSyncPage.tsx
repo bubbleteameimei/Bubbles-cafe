@@ -264,18 +264,18 @@ export default function WordPressSyncPage() {
   // Function to render sync info
   const renderSyncInfo = () => {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Last Sync Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div>{getStatusBadge()}</div>
               {syncStatus.lastSyncTime && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{formatDistanceToNow(parseISO(syncStatus.lastSyncTime), { addSuffix: true })}</span>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1 sm:mt-0">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{formatDistanceToNow(parseISO(syncStatus.lastSyncTime), { addSuffix: true })}</span>
                 </div>
               )}
             </div>
@@ -298,12 +298,12 @@ export default function WordPressSyncPage() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="sm:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">WordPress API</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm truncate">
+            <div className="text-sm truncate max-w-full">
               {syncStatus.wpApiEndpoint || "Not configured"}
             </div>
           </CardContent>
@@ -332,16 +332,16 @@ export default function WordPressSyncPage() {
         <Button
           onClick={triggerSync}
           disabled={syncStatus.syncInProgress}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 w-full sm:w-auto"
         >
           {syncStatus.syncInProgress ? (
             <>
-              <Spinner size="sm" />
+              <Spinner size="sm" className="mr-1" />
               <span>Syncing...</span>
             </>
           ) : (
             <>
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4 mr-1" />
               <span>Sync Now</span>
             </>
           )}
@@ -374,13 +374,13 @@ export default function WordPressSyncPage() {
         </TabsList>
         
         <TabsContent value="posts" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search posts..."
-                className="pl-8"
+                className="pl-8 w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -394,15 +394,64 @@ export default function WordPressSyncPage() {
               variant="outline" 
               onClick={handleSearch} 
               disabled={searching}
+              className="w-full sm:w-auto"
             >
-              {searching ? <Spinner size="sm" /> : "Search"}
+              {searching ? <Spinner size="sm" className="mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+              Search
             </Button>
           </div>
           
           <Card>
             <CardContent className="p-0">
               <div className="relative w-full overflow-auto">
-                <table className="w-full caption-bottom text-sm">
+                <div className="block md:hidden">
+                  {/* Mobile card view for small screens */}
+                  {posts.length === 0 ? (
+                    <div className="h-24 text-center text-muted-foreground p-4">
+                      {searching ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <Spinner size="md" className="mb-2" />
+                          <span>Searching...</span>
+                        </div>
+                      ) : (
+                        "No posts found"
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {posts.map((post) => (
+                        <div key={post.id} className="border rounded-md p-3 bg-card shadow-sm">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <Badge variant="outline" className="mb-1">ID: {post.id}</Badge>
+                            </div>
+                            <Badge variant={post.status === 'publish' ? 'default' : 'outline'}>
+                              {post.status || 'draft'}
+                            </Badge>
+                          </div>
+                          <div className="mb-2 font-medium" dangerouslySetInnerHTML={{ __html: post.title?.rendered || '' }}></div>
+                          <div className="flex justify-between items-center text-xs text-muted-foreground">
+                            <div>
+                              {new Date(post.date).toLocaleDateString()}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => syncSinglePost(post.id)}
+                              disabled={syncStatus.syncInProgress}
+                              className="mt-1"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                              Sync
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <table className="w-full caption-bottom text-sm hidden md:table">
                   <thead className="border-b">
                     <tr className="border-b transition-colors hover:bg-muted/50">
                       <th className="h-10 px-4 text-left align-middle font-medium">ID</th>
@@ -457,26 +506,30 @@ export default function WordPressSyncPage() {
                 </table>
               </div>
             </CardContent>
-            <CardFooter className="flex items-center justify-between p-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <CardFooter className="flex flex-col sm:flex-row items-center justify-between p-4 border-t gap-3">
+              <div className="text-sm text-muted-foreground order-2 sm:order-1">
                 Page {page}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fetchWordPressPosts(page > 1 ? page - 1 : 1, searchQuery)}
                   disabled={page <= 1 || searching}
+                  className="flex-1 sm:flex-initial"
                 >
-                  Previous
+                  <span className="sm:hidden">←</span>
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fetchWordPressPosts(page + 1, searchQuery)}
                   disabled={!hasMore || searching}
+                  className="flex-1 sm:flex-initial"
                 >
-                  Next
+                  <span className="sm:hidden">→</span>
+                  <span className="hidden sm:inline">Next</span>
                 </Button>
               </div>
             </CardFooter>

@@ -183,8 +183,8 @@ async function startServer() {
       // Register WordPress sync routes
       registerWordPressSyncRoutes(app);
       
-      // Setup WordPress sync schedule (run every 6 hours)
-      setupWordPressSyncSchedule(6 * 60 * 60 * 1000);
+      // Setup WordPress sync schedule (run every 5 minutes)
+      setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);
@@ -211,8 +211,8 @@ async function startServer() {
       // Register WordPress sync routes
       registerWordPressSyncRoutes(app);
       
-      // Setup WordPress sync schedule (run every 6 hours)
-      setupWordPressSyncSchedule(6 * 60 * 60 * 1000);
+      // Setup WordPress sync schedule (run every 5 minutes)
+      setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // We've moved the post recommendations endpoint to main routes.ts
       // registerPostRecommendationsRoutes(app);

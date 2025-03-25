@@ -4,6 +4,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global responsive design fixes */
+@layer base {
+  html, body {
+    @apply w-full min-h-screen overflow-x-hidden;
+  }
+  
+  img {
+    @apply max-w-full h-auto;
+  }
+  
+  /* Remove unwanted scrollbars */
+  * {
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  ::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+}
+
+/* Container fixes to prevent overflow */
+.container, 
+main, 
+section, 
+article, 
+div[class*="layout"], 
+div[class*="container"] {
+  @apply max-w-full overflow-hidden;
+}
+
+/* Fix for absolute positioned elements */
+.absolute {
+  @apply max-w-[100vw];
+}
+
 /* Custom styling for reader page to reduce space between header and content */
 .reader-container {
   padding-top: 10px !important; /* Significantly reduce the top padding */
