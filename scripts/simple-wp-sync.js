@@ -1,30 +1,12 @@
-import { db } from '../server/db';
-import { posts, users } from '../shared/schema';
-import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
-import fetch from 'node-fetch';
-import cron from 'node-cron';
+// A simplified version of the WordPress API sync script using JavaScript
+const { db } = require('../server/db');
+const bcrypt = require('bcryptjs');
+const fetch = require('node-fetch');
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
 
-// Interface for WordPress API response
-interface WordPressPost {
-  id: number;
-  date: string;
-  title: {
-    rendered: string;
-  };
-  content: {
-    rendered: string;
-  };
-  excerpt: {
-    rendered: string;
-  };
-  slug: string;
-}
-
-async function cleanContent(content: string): Promise<string> {
+async function cleanContent(content) {
   return content
     // Remove WordPress-specific elements
     .replace(/<!-- wp:([^>])*?-->/g, '')
@@ -62,10 +44,10 @@ async function cleanContent(content: string): Promise<string> {
     .replace(/&#039;/g, "'")
     .replace(/&#8211;/g, '–')
     .replace(/&#8212;/g, '—')
-    .replace(/&#8216;/g, '‘')
-    .replace(/&#8217;/g, '’')
-    .replace(/&#8220;/g, '“')
-    .replace(/&#8221;/g, '”')
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
     .replace(/&#8230;/g, '…')
     .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
     // Clean up whitespace
@@ -81,34 +63,28 @@ async function getOrCreateAdminUser() {
   try {
     const hashedPassword = await bcrypt.hash("admin123", 12);
     console.log("Getting admin user with email: vantalison@gmail.com");
-
-    // First try to directly query the database to check structure
-    const checkTable = await db.execute(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' 
-      AND table_name = 'users'
+    
+    // Query the database directly to get user info
+    const queryResult = await db.execute(`
+      SELECT id, username, email, is_admin
+      FROM users
+      WHERE email = 'vantalison@gmail.com'
     `);
-    
-    console.log("Available columns in users table:", checkTable.rows.map(r => r.column_name));
-    
-    const [existingAdmin] = await db.select()
-      .from(users)
-      .where(eq(users.email, "vantalison@gmail.com"));
 
-    if (existingAdmin) {
+    if (queryResult.rows.length > 0) {
+      const existingAdmin = queryResult.rows[0];
       console.log("Admin user found with ID:", existingAdmin.id);
       return existingAdmin;
     }
 
-    // Create a new admin user with only the fields that exist in the database
-    const [newAdmin] = await db.insert(users).values({
-      username: "vantalison",
-      email: "vantalison@gmail.com",
-      password_hash: hashedPassword,
-      isAdmin: true
-    }).returning();
+    // Create a new admin user with the SQL that matches the actual table structure
+    const insertResult = await db.execute(`
+      INSERT INTO users (username, email, password_hash, is_admin, created_at)
+      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
+      RETURNING id, username, email, is_admin
+    `, [hashedPassword]);
 
+    const newAdmin = insertResult.rows[0];
     console.log("Admin user created successfully with ID:", newAdmin.id);
     return newAdmin;
   } catch (error) {
@@ -117,7 +93,7 @@ async function getOrCreateAdminUser() {
   }
 }
 
-async function fetchWordPressPosts(): Promise<WordPressPost[]> {
+async function fetchWordPressPosts() {
   try {
     const syncStartTime = new Date().toISOString();
     console.log(`[${syncStartTime}] Fetching posts from WordPress API...`);
@@ -128,7 +104,7 @@ async function fetchWordPressPosts(): Promise<WordPressPost[]> {
       throw new Error(`WordPress API responded with status: ${response.status}`);
     }
 
-    const posts = await response.json() as WordPressPost[];
+    const posts = await response.json();
     console.log(`[${syncStartTime}] Retrieved ${posts.length} posts from WordPress API`);
     return posts;
   } catch (error) {
@@ -147,6 +123,18 @@ async function syncWordPressPosts() {
     const admin = await getOrCreateAdminUser();
     const wpPosts = await fetchWordPressPosts();
 
+    // Check if posts table has metadata column
+    const postsTableInfo = await db.execute(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'posts'
+    `);
+    
+    const postsColumns = postsTableInfo.rows.map(r => r.column_name);
+    console.log("Available columns in posts table:", postsColumns);
+    const hasMetadata = postsColumns.includes('metadata');
+
     let createdCount = 0;
     let updatedCount = 0;
 
@@ -161,54 +149,88 @@ async function syncWordPressPosts() {
 
         const finalSlug = wpPost.slug;
 
-        const [existingPost] = await db.select()
-          .from(posts)
-          .where(eq(posts.slug, finalSlug));
+        // Check if post exists
+        const existingPostResult = await db.execute(`
+          SELECT id FROM posts WHERE slug = $1
+        `, [finalSlug]);
 
         const wordCount = content.split(/\s+/).length;
         const readingTimeMinutes = Math.ceil(wordCount / 200);
 
-        if (!existingPost) {
-          const [newPost] = await db.insert(posts).values({
-            title: title,
-            content: content,
-            excerpt: excerpt,
-            slug: finalSlug,
-            authorId: admin.id,
-            isSecret: false,
-            createdAt: pubDate,
-            matureContent: false,
-            readingTimeMinutes,
-            metadata: {
+        if (existingPostResult.rows.length === 0) {
+          // Insert new post
+          let insertQuery = `
+            INSERT INTO posts (
+              title, content, excerpt, slug, author_id, 
+              is_secret, created_at, mature_content, reading_time_minutes
+          `;
+          
+          // Add metadata column if it exists
+          if (hasMetadata) {
+            insertQuery += `, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`;
+          } else {
+            insertQuery += `) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`;
+          }
+          
+          // Create metadata if the column exists
+          const metadataObj = {
+            originalWordCount: wordCount,
+            importSource: 'wordpress-api',
+            importDate: new Date().toISOString(),
+            wordpressId: wpPost.id,
+            syncId: syncId
+          };
+          
+          let params = [
+            title, content, excerpt, finalSlug, admin.id,
+            false, pubDate, false, readingTimeMinutes
+          ];
+          
+          // Add metadata parameter if needed
+          if (hasMetadata) {
+            params.push(JSON.stringify(metadataObj));
+          }
+          
+          const result = await db.execute(insertQuery, params);
+          const newPostId = result.rows[0].id;
+          
+          createdCount++;
+          console.log(`[Sync #${syncId}] Created post: "${title}" (ID: ${newPostId})`);
+        } else {
+          // Update existing post
+          const existingPostId = existingPostResult.rows[0].id;
+          
+          let updateQuery = `
+            UPDATE posts SET
+              title = $1,
+              content = $2,
+              excerpt = $3,
+              reading_time_minutes = $4
+          `;
+          
+          let params = [title, content, excerpt, readingTimeMinutes];
+          
+          // Add metadata update if column exists
+          if (hasMetadata) {
+            const metadataObj = {
               originalWordCount: wordCount,
               importSource: 'wordpress-api',
-              importDate: new Date().toISOString(),
+              lastSyncDate: new Date().toISOString(),
               wordpressId: wpPost.id,
               syncId: syncId
-            }
-          }).returning();
-
-          createdCount++;
-          console.log(`[Sync #${syncId}] Created post: "${title}" (ID: ${newPost.id})`);
-        } else {
-          await db.update(posts)
-            .set({
-              title: title,
-              content: content,
-              excerpt: excerpt,
-              readingTimeMinutes,
-              metadata: {
-                originalWordCount: wordCount,
-                importSource: 'wordpress-api',
-                lastSyncDate: new Date().toISOString(),
-                wordpressId: wpPost.id,
-                syncId: syncId
-              }
-            })
-            .where(eq(posts.id, existingPost.id));
-
+            };
+            
+            updateQuery += `, metadata = $5 WHERE id = $6`;
+            params.push(JSON.stringify(metadataObj), existingPostId);
+          } else {
+            updateQuery += ` WHERE id = $5`;
+            params.push(existingPostId);
+          }
+          
+          await db.execute(updateQuery, params);
+          
           updatedCount++;
-          console.log(`[Sync #${syncId}] Updated post: "${title}" (ID: ${existingPost.id})`);
+          console.log(`[Sync #${syncId}] Updated post: "${title}" (ID: ${existingPostId})`);
         }
       } catch (error) {
         console.error(`[Sync #${syncId}] Error processing WordPress post "${wpPost.title?.rendered}":`, error);
@@ -235,33 +257,13 @@ async function syncWordPressPosts() {
   }
 }
 
-// Run once immediately when script is executed
-if (process.argv[1].includes('wordpress-api-sync.ts')) {
-  console.log("Running WordPress API sync script directly...");
-  syncWordPressPosts()
-    .then(results => {
-      console.log("Sync completed successfully:", results);
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error("Sync failed:", error);
-      process.exit(1);
-    });
-}
-
-// Schedule regular syncing (default every 5 minutes)
-export function scheduleWordPressSync(cronSchedule = '*/5 * * * *') {
-  console.log(`[${new Date().toISOString()}] Scheduling WordPress sync with cron schedule: ${cronSchedule}`);
-
-  return cron.schedule(cronSchedule, async () => {
-    console.log(`[${new Date().toISOString()}] Running scheduled WordPress sync`);
-    try {
-      const results = await syncWordPressPosts();
-      console.log("Scheduled sync completed:", results);
-    } catch (error) {
-      console.error("Scheduled sync failed:", error);
-    }
+// Run when script is executed directly
+syncWordPressPosts()
+  .then(results => {
+    console.log("Sync completed successfully:", results);
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error("Sync failed:", error);
+    process.exit(1);
   });
-}
-
-export { syncWordPressPosts };
