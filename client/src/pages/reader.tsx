@@ -840,9 +840,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-0 pb-0 bg-background mt-2 w-full overflow-visible">
+      <div className="pt-0 pb-0 bg-background mt-0 w-full overflow-visible">
         {/* Static font size controls in a prominent position */}
-        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-1 w-full">
+        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-1 border-b border-border/30 mb-0 w-full">
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1049,13 +1049,18 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="story-content mb-8 mx-auto w-full max-w-[70ch] px-6 md:px-6 overflow-visible"
+              className="reader-container story-content mb-8 mx-auto w-full max-w-[700px] px-6 md:px-6 overflow-visible"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.01em',
                 overflowWrap: 'break-word',
                 wordWrap: 'break-word',
-                overflow: 'visible'
+                overflow: 'visible',
+                margin: '40px auto',
+                padding: '20px',
+                lineHeight: '1.8',
+                textAlign: 'left',
+                fontSize: '1.2rem'
               }}
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content.rendered)

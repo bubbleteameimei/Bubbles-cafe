@@ -23,7 +23,7 @@ export default function PostCard({ post, onClick }: PostCardProps) {
     if (onClick) {
       onClick();
     } else if (post.slug) {
-      setLocation(`/story/${post.slug}`);
+      setLocation(`/reader/${post.slug}`);
     }
   };
 

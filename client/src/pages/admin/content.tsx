@@ -161,7 +161,7 @@ export default function AdminContentPage() {
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() => window.location.href = `/story/${post.id}`}
+                  onClick={() => window.location.href = `/reader/${post.slug || post.id}`}
                 >
                   <Eye className="h-4 w-4" /> View
                 </Button>

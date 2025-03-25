@@ -119,7 +119,7 @@ export default function Sidebar() {
             {Array.isArray(posts) && posts.map((post) => (
               <motion.li key={post.id} variants={itemVariants}>
                 <button 
-                  onClick={() => setLocation(`/story/${post.slug || post.id}`)}
+                  onClick={() => setLocation(`/reader/${post.slug || post.id}`)}
                   className="text-muted-foreground hover:text-primary transition-colors text-left w-full line-clamp-2 hover:underline"
                 >
                   {post.title}

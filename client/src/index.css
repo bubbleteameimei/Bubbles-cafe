@@ -25,6 +25,26 @@
   }
 }
 
+/* Reader container responsive styles */
+@layer components {
+  .reader-container {
+    max-width: 700px;  /* Keeps text at a comfortable width */
+    margin: 40px auto; /* Centers the reader page */
+    padding: 20px;
+    line-height: 1.8;  /* Increases readability */
+    text-align: left;  /* Natural reading flow */
+    font-size: 1.2rem; /* Comfortable font size */
+  }
+
+  @media (max-width: 768px) {
+    .reader-container {
+      max-width: 90%;
+      padding: 15px;
+      font-size: 1rem;
+    }
+  }
+}
+
 /* Container fixes to prevent overflow */
 .container, 
 main, 

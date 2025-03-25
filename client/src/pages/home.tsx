@@ -102,7 +102,10 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="secondary"
-                    onClick={() => setLocation('/reader')}
+                    onClick={() => posts && posts.length > 0 
+                      ? navigateToStory(posts[0].slug)  // Navigate to first post if available
+                      : setLocation('/reader')          // Fallback to /reader if no posts
+                    }
                     className="text-base sm:text-lg md:text-xl h-10 sm:h-12 md:h-14 lg:h-16 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm"
                   >
                     Start Reading
@@ -119,7 +122,7 @@ export default function Home() {
                 <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 text-center space-y-2 sm:space-y-3 md:space-y-4">
                   <p className="text-xs sm:text-sm md:text-base font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
                   <div 
-                    onClick={() => navigateToStory(posts[0].slug)}
+                    onClick={() => posts[0]?.slug && navigateToStory(posts[0].slug)}
                     className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10"
                   >
                     <h2 

@@ -47,7 +47,7 @@ export default function LatestStories() {
             <div
               key={post.id}
               className="group p-4 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
-              onClick={() => setLocation(`/story/${post.slug}`)}
+              onClick={() => setLocation(`/reader/${post.slug}`)}
             >
               <h3 className="font-medium group-hover:text-primary transition-colors">
                 {post.title}
