@@ -8,7 +8,7 @@ import fetch from 'node-fetch';
 async function testAdminLogin() {
   try {
     console.log('Testing admin login with credentials:');
-    console.log('- Email: admin@bubblescafe.com');
+    console.log('- Email: vantalison@gmail.com');
     console.log('- Password: powerPUFF7');
     
     // First, make a request to get a CSRF token
@@ -42,7 +42,7 @@ async function testAdminLogin() {
         'csrf-token': csrfToken || ''
       },
       body: JSON.stringify({
-        email: 'admin@bubblescafe.com',
+        email: 'vantalison@gmail.com',
         password: 'powerPUFF7'
       })
     });

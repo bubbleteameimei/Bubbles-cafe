@@ -8,7 +8,7 @@ import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
-import { CookieConsent } from './components/ui/cookie-consent';
+import { CookieConsent } from './components/ui/cookie-consent-merged';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';

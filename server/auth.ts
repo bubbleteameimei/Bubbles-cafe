@@ -2,7 +2,7 @@ import { Express, Request, Response } from "express";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { storage } from "./storage";
-import * as bcrypt from "bcryptjs";
+import bcryptjs from "bcryptjs";
 import * as crypto from "crypto";
 import { User, InsertResetToken } from "@shared/schema";
 
@@ -62,7 +62,7 @@ export function setupAuth(app: Express) {
       }
 
       // Compare plain password with stored hash
-      const isValid = await bcrypt.compare(password, user.password_hash);
+      const isValid = await bcryptjs.compare(password, user.password_hash);
       console.log('[Auth] Password validation result:', isValid);
       console.log('[Auth] Login attempt details:', {
         email,
@@ -481,7 +481,7 @@ export function setupAuth(app: Express) {
       }
       
       // Update user's password
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const hashedPassword = await bcryptjs.hash(password, SALT_ROUNDS);
       
       await storage.updateUser(user.id, {
         password_hash: hashedPassword
