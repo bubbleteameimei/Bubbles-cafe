@@ -73,7 +73,7 @@ import { db, pool } from "./db-connect";
 import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const PostgresSessionStore = connectPg(session);
 

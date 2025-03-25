@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as LocalStrategy } from 'passport-local';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { storage } from './storage';
 import { v4 as uuidv4 } from 'uuid';
 

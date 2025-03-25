@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 import { pool } from "./db-connect";
-import bcrypt from "bcrypt"; // Using bcrypt to match auth.ts
+import bcrypt from "bcryptjs"; // Using bcryptjs to match auth.ts
 
 async function createVantalisonAdminUser() {
   try {

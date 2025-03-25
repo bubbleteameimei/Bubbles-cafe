@@ -49,19 +49,19 @@ const ResponsiveReaderControls: React.FC<ResponsiveReaderControlsProps> = ({
         }}
       >
         {/* Font size controls */}
-        <div className={`font-controls ${isCompact ? 'mb-1' : 'mb-2'} flex ${isCompact ? 'flex-col' : 'flex-row'} gap-1 backdrop-blur-sm bg-background/80 border rounded-lg shadow-md`}>
+        <div className={`font-controls ${isCompact ? 'mb-1' : 'mb-2'} flex ${isCompact ? 'flex-col' : 'flex-row'} gap-1 backdrop-blur-sm bg-background/80 border rounded-lg shadow-md overflow-visible`}>
           <Button
             size={isCompact ? 'sm' : 'default'}
             variant="ghost"
             onClick={onDecreaseFontSize}
-            className="aspect-square rounded-full hover:bg-accent"
+            className="aspect-square rounded-md hover:bg-accent/60 w-8 h-8"
             aria-label="Decrease font size"
             title="Decrease font size"
           >
             <Minus className="h-4 w-4" />
           </Button>
           
-          <div className={`font-size-display flex items-center justify-center text-xs font-medium px-1 ${isCompact ? 'py-1' : ''}`}>
+          <div className={`font-size-display flex items-center justify-center text-xs font-medium px-2 ${isCompact ? 'py-1' : ''}`}>
             {fontSizeValue}px
           </div>
           
@@ -69,7 +69,7 @@ const ResponsiveReaderControls: React.FC<ResponsiveReaderControlsProps> = ({
             size={isCompact ? 'sm' : 'default'}
             variant="ghost"
             onClick={onIncreaseFontSize}
-            className="aspect-square rounded-full hover:bg-accent"
+            className="aspect-square rounded-md hover:bg-accent/60 w-8 h-8"
             aria-label="Increase font size"
             title="Increase font size"
           >
@@ -78,35 +78,33 @@ const ResponsiveReaderControls: React.FC<ResponsiveReaderControlsProps> = ({
         </div>
         
         {/* Action buttons */}
-        <div className={`action-buttons flex ${isCompact ? 'flex-col' : 'flex-row'} gap-1`}>
+        <div className={`action-buttons flex ${isCompact ? 'flex-col' : 'flex-row'} gap-2 overflow-visible`}>
           {/* Share button */}
           {onShare && (
             <Button
-              size={isCompact ? 'sm' : 'default'}
               variant="secondary"
               onClick={onShare}
-              className={`${isCompact ? 'h-9 w-9' : 'h-10 w-10'} p-0 rounded-full shadow-md hover:shadow-lg transition-shadow`}
+              className={`${isCompact ? 'h-9 w-9' : 'h-10 w-10'} min-h-[36px] min-w-[36px] p-0 rounded-full shadow-md hover:shadow-lg transition-shadow overflow-visible`}
               aria-label="Share story"
               title="Share story"
             >
-              <Share2 className={`${isCompact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+              <Share2 className="h-4 w-4" />
             </Button>
           )}
           
           {/* Bookmark button */}
           {onBookmark && (
             <Button
-              size={isCompact ? 'sm' : 'default'}
               variant={isBookmarked ? "default" : "secondary"}
               onClick={onBookmark}
-              className={`${isCompact ? 'h-9 w-9' : 'h-10 w-10'} p-0 rounded-full shadow-md hover:shadow-lg transition-shadow`}
+              className={`${isCompact ? 'h-9 w-9' : 'h-10 w-10'} min-h-[36px] min-w-[36px] p-0 rounded-full shadow-md hover:shadow-lg transition-shadow overflow-visible`}
               aria-label={isBookmarked ? "Remove bookmark" : "Bookmark story"}
               title={isBookmarked ? "Remove bookmark" : "Bookmark story"}
             >
               {isBookmarked ? (
-                <BookmarkX className={`${isCompact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                <BookmarkX className="h-4 w-4" />
               ) : (
-                <Bookmark className={`${isCompact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                <Bookmark className="h-4 w-4" />
               )}
             </Button>
           )}

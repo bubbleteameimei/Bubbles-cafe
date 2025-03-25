@@ -51,6 +51,7 @@ const ResponsiveReaderHeader: React.FC<ResponsiveReaderHeaderProps> = ({
         
         <div className="flex items-center space-x-2">
           <ResponsiveThemeToggle deviceType={deviceType} />
+          {/* Additional actions can be added here if needed */}
         </div>
       </div>
       
