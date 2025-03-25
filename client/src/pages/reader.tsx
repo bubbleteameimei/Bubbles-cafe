@@ -143,9 +143,45 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           const response = await fetch(`/api/posts/${routeSlug}`);
           if (!response.ok) throw new Error('Failed to fetch post');
           const post = await response.json();
-          return { posts: [post], totalPages: 1, total: 1 };
+          
+          // Convert post to a format compatible with both WordPress and internal posts
+          const normalizedPost = {
+            ...post,
+            // Ensure title and content are in the expected format
+            title: {
+              rendered: post.title?.rendered || post.title || ''
+            },
+            content: {
+              rendered: post.content?.rendered || post.content || ''
+            },
+            date: post.date || post.createdAt || new Date().toISOString()
+          };
+          
+          return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
           // Otherwise fetch all posts
+          try {
+            // Try to fetch from internal API first
+            const response = await fetch('/api/posts?limit=100');
+            if (response.ok) {
+              const data = await response.json();
+              const normalizedPosts = data.posts.map(post => ({
+                ...post,
+                title: {
+                  rendered: post.title?.rendered || post.title || ''
+                },
+                content: {
+                  rendered: post.content?.rendered || post.content || ''
+                },
+                date: post.date || post.createdAt || new Date().toISOString()
+              }));
+              return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
+            }
+          } catch (err) {
+            console.log('[Reader] Error fetching from internal API, trying WordPress API');
+          }
+          
+          // Fallback to WordPress API
           const data = await fetchWordPressPosts({ page: 1, perPage: 100 });
           console.log('[Reader] Posts fetched successfully:', {
             totalPosts: data.posts?.length,
@@ -155,6 +191,32 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         }
       } catch (error) {
         console.error('[Reader] Error fetching posts:', error);
+        // Add fallback error handling here
+        console.error('[Reader] Error or no posts available:', { error, currentIndex });
+        
+        // Try to fetch any posts to show something
+        try {
+          const response = await fetch('/api/posts?limit=1');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.posts && data.posts.length > 0) {
+              const normalizedPosts = data.posts.map(post => ({
+                ...post,
+                title: {
+                  rendered: post.title?.rendered || post.title || 'Story'
+                },
+                content: {
+                  rendered: post.content?.rendered || post.content || 'Content not available.'
+                },
+                date: post.date || post.createdAt || new Date().toISOString()
+              }));
+              return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
+            }
+          }
+        } catch (fallbackError) {
+          console.error('[Reader] Fallback also failed:', fallbackError);
+        }
+        
         throw error;
       }
     },
@@ -186,7 +248,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       const currentPost = postsData.posts[currentIndex];
       console.log('[Reader] Selected post:', currentPost ? {
         id: currentPost.id,
-        title: currentPost.title.rendered,
+        title: currentPost.title?.rendered || currentPost.title || 'Story',
         date: currentPost.date
       } : 'No post found');
     }
@@ -495,7 +557,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   }
   
   // Detect themes from content for categorization
-  const detectedThemes = detectThemes(currentPost.content.rendered);
+  const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
@@ -507,9 +569,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   };
 
   const shareStory = async () => {
-    console.log('[Reader] Attempting native share:', currentPost.title.rendered);
+    const displayTitle = currentPost.title?.rendered || currentPost.title || 'Story';
+    console.log('[Reader] Attempting native share:', displayTitle);
     const shareData = {
-      title: currentPost.title.rendered,
+      title: displayTitle,
       text: "Check out this story on Bubble's Café!",
       url: window.location.href
     };
@@ -950,7 +1013,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
                 className="text-4xl md:text-5xl font-bold text-center mb-3 tracking-tight leading-tight"
-                dangerouslySetInnerHTML={{ __html: currentPost.title.rendered }}
+                dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
               />
 
               <div className="flex flex-col items-center gap-2">
@@ -1063,7 +1126,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 fontSize: '1.2rem'
               }}
               dangerouslySetInnerHTML={{
-                __html: sanitizeHtmlContent(currentPost.content.rendered)
+                __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || '')
               }}
             />
             
