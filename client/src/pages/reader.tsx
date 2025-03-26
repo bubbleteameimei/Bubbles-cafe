@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
+import useSaveReadingProgress from "@/hooks/useSaveReadingProgress";
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -99,6 +100,15 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
+  
+  // Will initialize this after data is loaded
+  const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
+  const { progress: savedProgress, forceSave } = useSaveReadingProgress({
+    slug: autoSaveSlug,
+    saveInterval: 8000, // Save every 8 seconds (reduced from 10s for better responsiveness)
+    inactivityTimeout: 2000, // Save after 2 seconds of inactivity
+    showSavedNotification: true
+  });
   
   // Horror easter egg - track rapid navigation
   const [showHorrorMessage, setShowHorrorMessage] = useState(false);
@@ -251,8 +261,15 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         title: currentPost.title?.rendered || currentPost.title || 'Story',
         date: currentPost.date
       } : 'No post found');
+      
+      // Now that we have the post data, update our slug for auto-saving
+      if (currentPost) {
+        const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
+        console.log('[Reader] Setting auto-save slug:', newSlug);
+        setAutoSaveSlug(newSlug);
+      }
     }
-  }, [currentIndex, postsData?.posts]);
+  }, [currentIndex, postsData?.posts, routeSlug]);
 
   useEffect(() => {
     console.log('[Reader] Verifying social icons:', {
@@ -447,17 +464,40 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     }
   }, [fontFamily, fontSize, availableFonts]);
   
-  // Handle reading progress
+  // Handle reading progress with visual progress bar and integration with auto-save
   useEffect(() => {
+    // Track last scroll position to avoid unnecessarily frequent updates
+    let lastScrollY = 0;
+    let lastForceUpdateTime = 0;
+    
     const handleScroll = () => {
+      const scrollY = window.scrollY;
       const totalHeight = document.body.scrollHeight - window.innerHeight;
-      const progress = (window.scrollY / totalHeight) * 100;
+      const progress = Math.min(Math.max((scrollY / totalHeight) * 100, 0), 100);
+      
+      // Update UI progress bar
       setReadingProgress(progress);
+      
+      // Force save on significant scroll change (more than 5% of page height) 
+      // but not too frequently (at most once every 3 seconds)
+      const now = Date.now();
+      const scrollDelta = Math.abs(scrollY - lastScrollY);
+      const significantScroll = scrollDelta > totalHeight * 0.05; // 5% of page height
+      
+      if (significantScroll && now - lastForceUpdateTime > 3000) {
+        lastScrollY = scrollY;
+        lastForceUpdateTime = now;
+        
+        // Call forceSave from our reading progress hook
+        if (typeof forceSave === 'function') {
+          forceSave();
+        }
+      }
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [forceSave]);
 
   // Use our ApiLoader component to handle loading state with the global context
   if (isLoading) {
