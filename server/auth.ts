@@ -61,12 +61,18 @@ export function setupAuth(app: Express) {
         return done(null, false, { message: 'Invalid email or password' });
       }
 
+      // Add safety check for undefined password_hash
+      if (!user.password_hash) {
+        console.log('[Auth] User found but password_hash is undefined');
+        return done(null, false, { message: 'Invalid email or password' });
+      }
+      
       // Compare plain password with stored hash
       const isValid = await bcryptjs.compare(password, user.password_hash);
       console.log('[Auth] Password validation result:', isValid);
       console.log('[Auth] Login attempt details:', {
         email,
-        hashedPassword: user.password_hash,
+        hashedPasswordExists: !!user.password_hash,
         isValid
       });
 
