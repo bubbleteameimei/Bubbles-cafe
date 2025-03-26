@@ -3,23 +3,23 @@ import { useEffect, useState, useRef } from 'react';
 export interface AdaptiveScrollOptions {
   enabled?: boolean;
   sensitivity?: number;
-  showIndicator?: boolean;
+  showIndicator?: boolean; // Kept for backward compatibility but no longer used
 }
 
 /**
  * Hook that implements the Multi-Speed Scroll feature
  * 
- * This hook monitors scroll events and adjusts scrolling behavior
- * based on the speed of the user's gesture:
- * - Fast flicks: amplified scrolling with momentum
- * - Slow drags: precise, gentle scrolling
+ * This hook provides a more intuitive and subtle scrolling experience:
+ * - Fast gestures are detected but amplification is minimal to avoid disorientation
+ * - Slow gestures use natural browser scrolling for predictable behavior
+ * - No visual indicators are shown to create a cleaner user experience
  */
 const useAdaptiveScroll = ({
   enabled = true,
-  sensitivity = 1.5,
-  showIndicator = true
+  sensitivity = 1.2, // Reduced sensitivity for more natural feel
+  showIndicator = false // Visual indicators disabled by default
 }: AdaptiveScrollOptions = {}) => {
-  // Current scroll type
+  // Current scroll type (still tracked internally but no longer displayed)
   const [scrollType, setScrollType] = useState<'normal' | 'fast' | 'slow'>('normal');
   // Is currently scrolling
   const [isScrolling, setIsScrolling] = useState(false);
@@ -34,7 +34,7 @@ const useAdaptiveScroll = ({
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
     
-    // Handle wheel (desktop) events
+    // Handle wheel (desktop) events with a more subtle approach
     const handleWheel = (e: WheelEvent) => {
       // Clear any previous scroll timeout
       if (scrollTimeoutRef.current) {
@@ -53,7 +53,7 @@ const useAdaptiveScroll = ({
         
         // Add to velocity history for smoothing
         velocityHistory.current.push(velocity);
-        if (velocityHistory.current.length > 5) {
+        if (velocityHistory.current.length > 3) { // Reduced history size for faster response
           velocityHistory.current.shift();
         }
         
@@ -61,41 +61,25 @@ const useAdaptiveScroll = ({
         const avgVelocity = velocityHistory.current.reduce((sum, vel) => sum + vel, 0) / 
                           velocityHistory.current.length;
         
-        // Fast scroll beyond threshold
-        if (avgVelocity > 0.5) {
-          if (scrollType !== 'fast') {
-            setScrollType('fast');
-          }
+        // Only enhance very fast scrolls (higher threshold)
+        if (avgVelocity > 0.8) {
+          setScrollType('fast');
           
-          // Apply amplified scroll for fast gestures
+          // Apply a modest amplification for fast gestures
+          // This is subtle enough that users won't be disoriented
           if (!e.defaultPrevented) {
             window.scrollBy({
               top: e.deltaY * sensitivity * direction,
-              behavior: 'auto'  // Use auto for immediate response
+              behavior: 'auto'  // Use auto for fast response
             });
             e.preventDefault();
           }
         } 
-        // Slow, precise scrolling
-        else if (avgVelocity < 0.1 && avgVelocity > 0) {
-          if (scrollType !== 'slow') {
-            setScrollType('slow');
-          }
-          
-          // Apply reduced scroll for slow gestures
-          if (!e.defaultPrevented) {
-            window.scrollBy({
-              top: e.deltaY * 0.7 * direction, // Reduced sensitivity
-              behavior: 'smooth'  // Smooth for precision
-            });
-            e.preventDefault();
-          }
-        }
-        // Normal scrolling
+        // For all other scrolling, use browser's native behavior
         else {
-          if (scrollType !== 'normal') {
-            setScrollType('normal');
-          }
+          // Still track the state for internal purposes
+          setScrollType(avgVelocity < 0.1 ? 'slow' : 'normal');
+          // But don't modify the scroll behavior
         }
         
         // Indicate scrolling is active
@@ -113,7 +97,7 @@ const useAdaptiveScroll = ({
       }, 150);
     };
     
-    // Handle touch events for mobile
+    // Handle touch events for mobile with a more subtle approach
     let touchStartY = 0;
     let touchStartTime = 0;
     
@@ -126,6 +110,8 @@ const useAdaptiveScroll = ({
     };
     
     const handleTouchMove = (e: TouchEvent) => {
+      // For touch devices, we'll track the scroll type but let the browser
+      // handle the actual scrolling for more predictable behavior
       const touchY = e.touches[0].clientY;
       const touchTime = performance.now();
       const timeDelta = touchTime - touchStartTime;
@@ -146,15 +132,13 @@ const useAdaptiveScroll = ({
         const avgVelocity = velocityHistory.current.reduce((sum, vel) => sum + vel, 0) / 
                           velocityHistory.current.length;
         
-        // Fast flick detected
-        if (avgVelocity > 0.5) {
+        // Update scroll type based on velocity
+        if (avgVelocity > 0.8) {
           setScrollType('fast');
         } 
-        // Slow drag detected
         else if (avgVelocity < 0.1) {
           setScrollType('slow');
         }
-        // Normal speed
         else {
           setScrollType('normal');
         }
@@ -179,16 +163,15 @@ const useAdaptiveScroll = ({
     };
     
     const handleTouchEnd = () => {
-      // Handle momentum scrolling for fast flicks
+      // For very fast flicks, we'll add just a subtle momentum effect
       if (scrollType === 'fast' && velocityHistory.current.length > 0) {
         const lastVelocity = velocityHistory.current[velocityHistory.current.length - 1];
         
-        // Amplify scrolling effect based on final velocity
-        const momentum = lastVelocity * 1000 * sensitivity;
-        
-        // Apply momentum scroll
-        if (momentum > 50) {
+        // Only apply modest momentum for very fast flicks
+        if (lastVelocity > 0.9) {
           const direction = touchStartY > window.innerHeight / 2 ? -1 : 1;
+          const momentum = lastVelocity * 500 * sensitivity; // Reduced multiplier
+          
           window.scrollBy({
             top: momentum * direction,
             behavior: 'smooth'
@@ -217,7 +200,7 @@ const useAdaptiveScroll = ({
         window.clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [enabled, sensitivity, scrollType]);
+  }, [enabled, sensitivity]);
   
   return {
     scrollType,

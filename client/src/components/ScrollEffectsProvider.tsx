@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import useAdaptiveScroll from '@/hooks/useAdaptiveScroll';
 import useGlobalGentleReturn from '@/hooks/useGlobalGentleReturn';
-import ScrollSpeedIndicator from '@/components/ui/ScrollSpeedIndicator';
+// Remove import of ScrollSpeedIndicator
 import '@/styles/scroll-effects.css';
 
 // Context type for scroll effects
@@ -38,7 +38,8 @@ interface ScrollEffectsProviderProps {
 
 /**
  * Provider component that manages both adaptive scroll and gentle return
- * features throughout the application
+ * features throughout the application.
+ * Visual indicators have been removed for a cleaner user experience.
  */
 export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ children }) => {
   // States for context values
@@ -51,18 +52,18 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
   
   // Initialize adaptive scroll (Multi-Speed Scroll)
   const { scrollType, isScrolling } = useAdaptiveScroll({
-    enabled: true, // Always enable this feature
-    sensitivity: 1.5,
-    showIndicator: true
+    enabled: true,
+    sensitivity: 1.2, // Reduced sensitivity for more natural feel
+    showIndicator: false // Visual indicators disabled
   });
   
   // Initialize global gentle return
   const gentleReturn = useGlobalGentleReturn({
     enabled: !isExcludedPath, // Only enable on non-excluded paths
     autoSave: true,
-    showToast: true,
+    showToast: false, // Disable toast notifications for position restoration
     maxAgeMs: 7 * 24 * 60 * 60 * 1000, // 7 days
-    highlightTarget: 'p', // CSS selector for paragraphs to highlight
+    highlightTarget: '', // Disable paragraph highlighting
     autoSaveInterval: 2000 // Save after 2 seconds of no scrolling
   });
   
@@ -83,13 +84,7 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
         wasRefresh
       }}
     >
-      {/* Render scroll speed indicator */}
-      <ScrollSpeedIndicator
-        scrollType={scrollType}
-        visible={isScrolling}
-      />
-      
-      {/* Main content */}
+      {/* Removed the scroll speed indicator */}
       {children}
     </ScrollEffectsContext.Provider>
   );
