@@ -1,0 +1,87 @@
+The current comment section is too boring and shoddily implemented. It does not encourage people to comment.
+1. Create a visually appealing comment sections that are easy to navigate and use. When designing your comment section, use HTML and CSS to create a visually appealing design that is easy to navigate. Use clear and concise language to encourage users to participate in the conversation. Consider using contrasting colors for text and background to improve legibility.
+2. Use responsive design to ensure that the comment section is accessible on all devices. Many users access websites on a variety of devices, including desktops, laptops, tablets, and smartphones. To ensure that your comment section is accessible on all devices, use responsive design techniques. This will ensure that your comment section adapts to different screen sizes and remains easy to use on any device.
+3. Add features such as reactions and comment moderation to enhance user participation and community building. Adding features such as reactions can help to promote user participation and engagement. Comment moderation tools can also be used to prevent spam and abusive comments, which can help to maintain a positive and productive community around your website.
+Best practices for user-friendly comment sections
+1. Use clean and organized code to ensure that the comment section loads quickly and is easy to maintain. Writing clean and organized code can help to ensure that your comment section loads quickly and is easy to maintain over time. This can help to improve the overall performance and reliability of your website.
+2. Use accessibility best practices to ensure that the comment section is accessible to users with disabilities. Accessibility is an important consideration when designing any website feature, including comment sections. Use best practices such as alt tags for images, ARIA labels for form fields, and keyboard navigation to ensure that your comment section is accessible to users with disabilities.
+3. Use security best practices to protect user data and prevent spam and abuse. Comment sections can be vulnerable to spam and abusive comments, which can harm the user experience and the reputation of your website. Use security best practices such as content filtering, and user authentication to protect user data and prevent spam and abuse.
+4. Use analytics tools to track user engagement and improve the user experience over time. Analytics tools such as Google Analytics can be used to track user engagement with your comment section over time. This can help you to identify trends, track user behavior, and make data-driven decisions to improve the user experience.
+
+<!-- component -->
+<div class="antialiased mx-auto max-w-screen-sm">
+  <h3 class="mb-4 text-lg font-semibold text-gray-900">Comments</h3>
+
+  <div class="space-y-4">
+
+    <div class="flex">
+      <div class="flex-shrink-0 mr-3">
+        <img class="mt-2 rounded-full w-8 h-8 sm:w-10 sm:h-10" src="https://images.unsplash.com/photo-1604426633861-11b2faead63c?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80" alt="">
+      </div>
+      <div class="flex-1 border rounded-lg px-4 py-2 sm:px-6 sm:py-4 leading-relaxed">
+        <strong>Sarah</strong> <span class="text-xs text-gray-400">3:34 PM</span>
+        <p class="text-sm">
+          Lorem ipsum dolor sit amet, consetetur sadipscing elitr,
+          sed diam nonumy eirmod tempor invidunt ut labore et dolore
+          magna aliquyam erat, sed diam voluptua.
+        </p>
+        <div class="mt-4 flex items-center">
+          <div class="flex -space-x-2 mr-2">
+            <img class="rounded-full w-6 h-6 border border-white" src="https://images.unsplash.com/photo-1554151228-14d9def656e4?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80" alt="">
+            <img class="rounded-full w-6 h-6 border border-white" src="https://images.unsplash.com/photo-1513956589380-bad6acb9b9d4?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80" alt="">
+          </div>
+          <div class="text-sm text-gray-500 font-semibold">
+            5 Replies
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex">
+      <div class="flex-shrink-0 mr-3">
+        <img class="mt-2 rounded-full w-8 h-8 sm:w-10 sm:h-10" src="https://images.unsplash.com/photo-1604426633861-11b2faead63c?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80" alt="">
+      </div>
+      <div class="flex-1 border rounded-lg px-4 py-2 sm:px-6 sm:py-4 leading-relaxed">
+        <strong>Sarah</strong> <span class="text-xs text-gray-400">3:34 PM</span>
+        <p class="text-sm">
+          Lorem ipsum dolor sit amet, consetetur sadipscing elitr,
+          sed diam nonumy eirmod tempor invidunt ut labore et dolore
+          magna aliquyam erat, sed diam voluptua.
+        </p>
+        
+        <h4 class="my-5 uppercase tracking-wide text-gray-400 font-bold text-xs">Replies</h4>
+
+        <div class="space-y-4">
+          <div class="flex">
+            <div class="flex-shrink-0 mr-3">
+              <img class="mt-3 rounded-full w-6 h-6 sm:w-8 sm:h-8" src="https://images.unsplash.com/photo-1604426633861-11b2faead63c?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80" alt="">
+            </div>
+            <div class="flex-1 bg-gray-100 rounded-lg px-4 py-2 sm:px-6 sm:py-4 leading-relaxed">
+              <strong>Sarah</strong> <span class="text-xs text-gray-400">3:34 PM</span>
+              <p class="text-xs sm:text-sm">
+                Lorem ipsum dolor sit amet, consetetur sadipscing elitr,
+                sed diam nonumy eirmod tempor invidunt ut labore et dolore
+                magna aliquyam erat, sed diam voluptua.
+              </p>
+            </div>
+          </div>
+          <div class="flex">
+            <div class="flex-shrink-0 mr-3">
+              <img class="mt-3 rounded-full w-6 h-6 sm:w-8 sm:h-8" src="https://images.unsplash.com/photo-1604426633861-11b2faead63c?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80" alt="">
+            </div>
+            <div class="flex-1 bg-gray-100 rounded-lg px-4 py-2 sm:px-6 sm:py-4 leading-relaxed">
+              <strong>Sarah</strong> <span class="text-xs text-gray-400">3:34 PM</span>
+              <p class="text-xs sm:text-sm">
+                Lorem ipsum dolor sit amet, consetetur sadipscing elitr,
+                sed diam nonumy eirmod tempor invidunt ut labore et dolore
+                magna aliquyam erat, sed diam voluptua.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+Use this as a reference or use and build on it using everything I said here, the current comment section should be referenced too or used in the final design

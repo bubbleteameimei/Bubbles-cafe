@@ -518,8 +518,19 @@ export function registerRoutes(app: Express): Server {
   // Comment routes
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
-      // Get the post first to get the numeric ID
-      const post = await storage.getPost(req.params.postId);
+      const postId = req.params.postId;
+      
+      // Check if postId is a number or a slug
+      let post;
+      if (isNaN(Number(postId))) {
+        // If it's a slug, use getPost
+        post = await storage.getPost(postId);
+      } else {
+        // If it's a number, find post by numeric ID
+        const allPosts = await storage.getPosts(1, 100);
+        post = allPosts.posts.find(p => p.id === Number(postId));
+      }
+      
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -756,8 +767,8 @@ export function registerRoutes(app: Express): Server {
       let userId = req.user?.id;
       if (!userId) {
         const ip = req.ip || '127.0.0.1';
-        const salt = await bcrypt.genSalt(5);
-        const ipHash = await bcrypt.hash(ip, salt);
+        // Create a simple hash of the IP address instead of using bcrypt
+        const ipHash = Buffer.from(ip).toString('base64');
         userId = parseInt(ipHash.replace(/\D/g, '').slice(0, 9), 10);
       }
 
