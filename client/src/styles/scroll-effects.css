@@ -1,0 +1,107 @@
+/**
+ * Scroll Effects Styles
+ * 
+ * This file contains styles for:
+ * 1. Multi-Speed Scroll indicators
+ * 2. Global Gentle Return paragraph highlighting
+ */
+
+/* Paragraph highlight for gentle return */
+.gentle-highlight {
+  animation: gentle-highlight-animation 2s ease-out;
+}
+
+@keyframes gentle-highlight-animation {
+  0%, 100% {
+    background-color: transparent;
+  }
+  20%, 40% {
+    background-color: rgba(255, 230, 0, 0.2);
+  }
+}
+
+/* Highlight target paragraphs */
+.gentle-highlight-target {
+  transition: background-color 0.3s ease;
+}
+
+/* Special visual effects for specific scroll types */
+html.fast-scrolling {
+  scroll-behavior: auto !important; /* Override for fast scrolling */
+}
+
+html.slow-scrolling {
+  scroll-behavior: smooth !important; /* Enforce smooth for slow scrolling */
+}
+
+/* Position indicator used during refresh */
+.position-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.position-indicator.visible {
+  opacity: 1;
+}
+
+/* Scroll speed indicators */
+.scroll-indicator {
+  position: fixed;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  border-radius: 3px;
+  transition: height 0.2s ease, opacity 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.scroll-indicator.visible {
+  opacity: 0.7;
+}
+
+.scroll-indicator.fast {
+  height: 120px;
+  background-color: #ef4444; /* Red */
+}
+
+.scroll-indicator.normal {
+  height: 60px;
+  background-color: #9ca3af; /* Gray */
+}
+
+.scroll-indicator.slow {
+  height: 40px;
+  background-color: #3b82f6; /* Blue */
+}
+
+/* Add some responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .scroll-indicator {
+    width: 2px;
+  }
+  
+  .scroll-indicator.fast {
+    height: 80px;
+  }
+  
+  .scroll-indicator.normal {
+    height: 40px;
+  }
+  
+  .scroll-indicator.slow {
+    height: 20px;
+  }
+}

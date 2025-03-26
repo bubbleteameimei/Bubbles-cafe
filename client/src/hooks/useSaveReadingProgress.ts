@@ -22,6 +22,14 @@ interface UseSaveReadingProgressOptions {
 /**
  * Hook to automatically save and restore reading progress
  * Enhanced with speed-based auto-save when user stops scrolling
+ * Returns positionRestored flag to indicate if the position was restored
+ * 
+ * @returns {Object} Reading progress data and methods
+ * @returns {number} progress - Current reading progress percentage
+ * @returns {Date|null} lastRead - Date of last reading activity
+ * @returns {Function} continueReading - Navigate to the story and restore position
+ * @returns {Function} forceSave - Manually trigger progress save
+ * @returns {boolean} positionRestored - Whether the reading position has been restored
  */
 const useSaveReadingProgress = ({
   slug,
@@ -117,21 +125,253 @@ const useSaveReadingProgress = ({
     // Try to get saved progress from localStorage
     const savedProgress = localStorage.getItem(`readingProgress_${slug}`);
     if (savedProgress) {
-      const parsedProgress: ReadingProgressData = JSON.parse(savedProgress);
-      setReadingProgress(parsedProgress);
+      try {
+        const parsedProgress: ReadingProgressData = JSON.parse(savedProgress);
+        setReadingProgress(parsedProgress);
 
-      // If this is the first load, restore scroll position
-      if (firstLoad) {
-        setTimeout(() => {
-          window.scrollTo({
-            top: parsedProgress.scrollPosition,
-            behavior: "smooth"
-          });
-          setFirstLoad(false);
-        }, 500); // Small delay to ensure content is rendered
+        // If this is the first load, restore scroll position with gentle animation
+        if (firstLoad) {
+          // Detect if this is likely a refresh by checking the navigation type
+          const isRefresh = window.performance && 
+                           (window.performance.navigation?.type === 1 || // Old API
+                            performance.getEntriesByType('navigation').some(
+                              nav => (nav as PerformanceNavigationTiming).type === 'reload'
+                            ));
+          
+          // Add visual indicator that position is being restored
+          const createRestorationIndicator = () => {
+            // Remove any existing indicators first
+            const existingIndicator = document.getElementById('position-restoration-indicator');
+            if (existingIndicator && existingIndicator.parentNode) {
+              existingIndicator.parentNode.removeChild(existingIndicator);
+            }
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'position-restoration-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.bottom = '20px';
+            indicator.style.right = '20px';
+            indicator.style.backgroundColor = 'hsl(var(--primary))';
+            indicator.style.color = 'hsl(var(--primary-foreground))';
+            indicator.style.padding = '8px 16px';
+            indicator.style.borderRadius = '6px';
+            indicator.style.zIndex = '9999';
+            indicator.style.fontSize = '0.85rem';
+            indicator.style.opacity = '0';
+            indicator.style.transition = 'opacity 0.3s ease-in-out';
+            indicator.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            indicator.style.pointerEvents = 'none'; // Prevent interaction
+            
+            // Choose message based on whether it's a refresh or new visit
+            indicator.textContent = isRefresh 
+              ? 'Returning to your previous position...' 
+              : 'Restoring your reading position...';
+            
+            document.body.appendChild(indicator);
+            
+            // Show with slight delay to ensure it's animated
+            setTimeout(() => {
+              indicator.style.opacity = '1';
+            }, 10);
+            
+            return indicator;
+          };
+          
+          // Perform a staged scroll with visual feedback
+          setTimeout(() => {
+            // Skip restoration for very small scroll positions (less than 100px)
+            if (parsedProgress.scrollPosition < 100) {
+              setFirstLoad(false);
+              return;
+            }
+            
+            // Create and show the indicator first
+            const indicator = createRestorationIndicator();
+            
+            // For refresh cases, use a faster transition to avoid user disorientation
+            const initialDelay = isRefresh ? 100 : 300;
+            const maxScrollDuration = isRefresh ? 800 : 1200;
+            
+            // Start with a very quick partial scroll to give immediate response
+            // For refresh, jump to a position closer to the final one
+            if (parsedProgress.scrollPosition > 500) {
+              window.scrollTo({
+                top: Math.min(
+                  isRefresh ? parsedProgress.scrollPosition * 0.7 : 500, 
+                  parsedProgress.scrollPosition * (isRefresh ? 0.7 : 0.3)
+                ),
+                behavior: "auto"
+              });
+            }
+            
+            // Then, after a brief pause, gently scroll to the actual position
+            setTimeout(() => {
+              // Calculate optimal duration based on distance (faster for small jumps, slower for big ones)
+              // Make it faster on refresh
+              const scrollDistance = Math.abs(parsedProgress.scrollPosition - window.scrollY);
+              const scrollDuration = Math.min(
+                maxScrollDuration, 
+                (isRefresh ? 200 : 300) + scrollDistance / (isRefresh ? 3 : 2)
+              );
+              
+              // Use smooth scrolling animation
+              animateScroll(parsedProgress.scrollPosition, scrollDuration, () => {
+                // Remove the indicator with a fade out
+                setTimeout(() => {
+                  indicator.style.opacity = '0';
+                  // Remove from DOM after fade out
+                  setTimeout(() => {
+                    if (indicator.parentNode) {
+                      indicator.parentNode.removeChild(indicator);
+                    }
+                  }, 300);
+                }, isRefresh ? 500 : 800);
+              });
+              
+              setFirstLoad(false);
+            }, initialDelay);
+          }, isRefresh ? 200 : 500); // Shorter initial delay for refresh
+        }
+      } catch (error) {
+        console.error("Error parsing saved reading progress:", error);
+        setFirstLoad(false);
       }
+    } else {
+      setFirstLoad(false);
     }
   }, [slug, firstLoad]);
+  
+  // Enhanced smooth scrolling animation with better easing and visual indicators
+  const animateScroll = (targetPosition: number, duration: number, callback?: () => void) => {
+    // If the distance is very small, just jump there
+    const startPosition = window.scrollY;
+    const distance = targetPosition - startPosition;
+    
+    // Optional: Add a subtle highlight at the target position
+    const addTargetHighlight = () => {
+      // Only add highlight for significant scrolls
+      if (Math.abs(distance) > window.innerHeight / 2) {
+        // Find the element closest to our target scroll position
+        const elementsAtPosition = Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6'))
+          .filter(el => {
+            const rect = el.getBoundingClientRect();
+            const elPos = window.scrollY + rect.top;
+            // Element should be within 200px of target position
+            return Math.abs(elPos - targetPosition) < 200;
+          });
+        
+        // If we found an element near the target position, highlight it briefly
+        if (elementsAtPosition.length > 0) {
+          const targetEl = elementsAtPosition[0] as HTMLElement;
+          const originalTransition = targetEl.style.transition;
+          
+          targetEl.style.transition = 'background-color 0.5s ease-in-out, color 0.3s ease';
+          targetEl.style.backgroundColor = 'rgba(var(--primary-rgb), 0.08)';
+          
+          // Remove highlight after 2.5 seconds
+          setTimeout(() => {
+            targetEl.style.backgroundColor = '';
+            targetEl.style.transition = originalTransition;
+          }, 2500);
+        }
+      }
+    };
+    
+    // For tiny distances, just jump there
+    if (Math.abs(distance) < 50) {
+      window.scrollTo(0, targetPosition);
+      addTargetHighlight(); // Still highlight the target, even for small jumps
+      if (callback) callback();
+      return;
+    }
+    
+    let startTime: number | null = null;
+    let lastPosition = startPosition;
+    let animationFrameId: number | null = null;
+    
+    // Check if the browser is having performance issues
+    const performanceObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      const longTasks = entries.filter(entry => entry.duration > 50);
+      
+      // If we have long tasks, abort the smooth scroll and jump directly
+      if (longTasks.length > 0 && animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        window.scrollTo(0, targetPosition);
+        if (callback) callback();
+      }
+    });
+    
+    try {
+      // Only observe long tasks if the browser supports it
+      if (PerformanceObserver.supportedEntryTypes.includes('longtask')) {
+        performanceObserver.observe({ entryTypes: ['longtask'] });
+      }
+    } catch (e) {
+      // Ignore errors if the browser doesn't fully support this
+      console.warn("PerformanceObserver for longtask not supported", e);
+    }
+    
+    // Better easing function: cubic bezier approximation of ease-out-cubic
+    const easeOutCubic = (t: number): number => {
+      // More natural feel for scrolling back to position
+      return 1 - Math.pow(1 - t, 3);
+    };
+    
+    // Alternative easing: easeInOutQuint (smoother than quad)
+    const easeInOutQuint = (t: number): number => {
+      return t < 0.5 
+        ? 16 * t * t * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 5) / 2;
+    };
+    
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const elapsedTime = currentTime - startTime;
+      const progress = Math.min(elapsedTime / duration, 1);
+      
+      // Choose easing based on scroll direction (down vs up)
+      const eased = distance > 0 ? easeInOutQuint(progress) : easeOutCubic(progress);
+      const nextPosition = startPosition + distance * eased;
+      
+      // Detect if the browser isn't scrolling (stuck)
+      if (progress > 0.1 && Math.abs(nextPosition - lastPosition) < 1 && Math.abs(nextPosition - targetPosition) > 10) {
+        // Browser seems stuck, jump to target
+        window.scrollTo(0, targetPosition);
+        if (callback) callback();
+        if (performanceObserver) performanceObserver.disconnect();
+        return;
+      }
+      
+      window.scrollTo(0, nextPosition);
+      lastPosition = nextPosition;
+      
+      if (elapsedTime < duration) {
+        animationFrameId = requestAnimationFrame(animation);
+      } else {
+        // Ensure we end exactly at the target position
+        window.scrollTo(0, targetPosition);
+        
+        // Apply highlight to target element 
+        if (progress === 1) addTargetHighlight();
+        
+        if (callback) callback();
+        if (performanceObserver) performanceObserver.disconnect();
+      }
+    };
+    
+    animationFrameId = requestAnimationFrame(animation);
+    
+    // Return a cleanup function
+    return () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (performanceObserver) {
+        performanceObserver.disconnect();
+      }
+    };
+  };
 
   // Set up interval to save progress periodically
   useEffect(() => {
@@ -177,7 +417,8 @@ const useSaveReadingProgress = ({
     progress: readingProgress?.percentRead || 0,
     lastRead: readingProgress?.lastRead ? new Date(readingProgress.lastRead) : null,
     continueReading,
-    forceSave
+    forceSave,
+    positionRestored: !firstLoad
   };
 };
 

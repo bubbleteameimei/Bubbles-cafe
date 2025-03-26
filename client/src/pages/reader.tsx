@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useSaveReadingProgress from "@/hooks/useSaveReadingProgress";
+import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
+import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -97,17 +99,36 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   
   // Night mode functionality - automatic based on time of day (7pm to 6am)
   const { isNightMode, preference: nightModePreference, updateNightModePreference } = useNightMode();
+  
+  // One-click distraction-free mode - toggle UI visibility with click
+  const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
 
   // Reading progress state - moved to top level with other state hooks
   const [readingProgress, setReadingProgress] = useState(0);
   
   // Will initialize this after data is loaded
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
-  const { progress: savedProgress, forceSave } = useSaveReadingProgress({
+  
+  // Detect if this is a refresh using Performance API
+  const isRefreshRef = useRef<boolean>(
+    typeof window !== 'undefined' &&
+    window.performance && 
+    ((window.performance.navigation?.type === 1) || // Old API
+     (performance.getEntriesByType('navigation').some(
+       nav => (nav as PerformanceNavigationTiming).type === 'reload'
+     )))
+  );
+  
+  // Enhanced reading progress hook with gentle position restoration
+  const { 
+    progress: savedProgress, 
+    forceSave,
+    positionRestored 
+  } = useSaveReadingProgress({
     slug: autoSaveSlug,
     saveInterval: 8000, // Save every 8 seconds (reduced from 10s for better responsiveness)
     inactivityTimeout: 2000, // Save after 2 seconds of inactivity
-    showSavedNotification: true
+    showSavedNotification: !isRefreshRef.current // Don't show toast on refresh
   });
   
   // Horror easter egg - track rapid navigation
@@ -115,6 +136,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
+  const positionRestoredRef = useRef(false);
   const { toast } = useToast();
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
@@ -270,6 +292,40 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       }
     }
   }, [currentIndex, postsData?.posts, routeSlug]);
+
+  // Effect to handle position restoration and display a notification
+  useEffect(() => {
+    // Check if position was restored and we haven't shown notification yet
+    if (positionRestored && !positionRestoredRef.current) {
+      positionRestoredRef.current = true;
+      
+      // Show toast notification only if we have made some reading progress
+      if (savedProgress > 5) {
+        // Wait a moment to ensure content is rendered
+        setTimeout(() => {
+          // For refresh, show a minimal indicator
+          if (isRefreshRef.current) {
+            toast({
+              title: "Reading Position Restored",
+              description: `You're continuing from ${Math.round(savedProgress)}%`,
+              duration: 3000,
+              variant: "default",
+              // Add a visual indicator that distinguishes this from regular saves
+              action: <RefreshCcw className="h-4 w-4 text-primary animate-spin-once" />
+            });
+          } else {
+            // Regular return toast (not from page refresh)
+            toast({
+              title: "Welcome Back",
+              description: `Restored your reading position at ${Math.round(savedProgress)}%`,
+              duration: 3000,
+              variant: "default"
+            });
+          }
+        }, 1000);
+      }
+    }
+  }, [positionRestored, savedProgress, toast, isRefreshRef]);
 
   useEffect(() => {
     console.log('[Reader] Verifying social icons:', {
@@ -881,7 +937,111 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-3" data-reader-page="true">
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-3" 
+      data-reader-page="true" 
+      data-distraction-free={isUIHidden ? "true" : "false"}>
+      
+      {/* Reader tooltip for distraction-free mode instructions */}
+      <ReaderTooltip show={showTooltip} />
+      {/* CSS for distraction-free mode transitions */}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Transitions for UI elements */
+        /* Keep the UI elements accessible but subtle in distraction-free mode */
+        .ui-fade-element {
+          transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: opacity, visibility;
+        }
+        .ui-hidden {
+          opacity: 0.15; /* Barely visible but still accessible */
+          pointer-events: auto; /* Keep interactive */
+        }
+        /* Show on hover for better UX */
+        .ui-hidden:hover {
+          opacity: 0.9;
+          transition: opacity 0.2s ease;
+        }
+        .story-content {
+          transition: max-width 0.8s ease-in-out;
+        }
+        .distraction-free-active .story-content {
+          max-width: 78ch;
+        }
+        
+        /* Only target the navigation header and not the controls in distraction-free mode */
+        .reader-page[data-distraction-free="true"] header.main-header {
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none; /* Prevent interaction with hidden header */
+          transform: translateY(-100%);
+          will-change: opacity, transform, visibility;
+        }
+        
+        /* Tiny indicator for mobile when in distraction-free mode */
+        .reader-page[data-distraction-free="true"]::after {
+          content: "↑ Tap to exit";
+          position: fixed;
+          top: 5px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: var(--background);
+          color: var(--muted-foreground);
+          font-size: 0.65rem;
+          padding: 1px 6px;
+          border-radius: 4px;
+          opacity: 0.6;
+          pointer-events: none;
+          z-index: 30;
+          border: 1px solid var(--border);
+          box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        
+        /* Ensure better mobile compatibility */
+        @media (max-width: 640px) {
+          .reader-page[data-distraction-free="true"]::after {
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            top: 3px;
+          }
+        }
+        
+        /* Only show pointer cursor on story content */
+        .reader-page .story-content {
+          cursor: pointer;
+        }
+        
+        /* Set default cursor for everything */
+        .reader-page {
+          cursor: default;
+        }
+        
+        /* Set pointer cursor only for interactive elements */
+        .reader-page button,
+        .reader-page a,
+        .reader-page [role="button"],
+        .reader-page input[type="button"],
+        .reader-page input[type="submit"] {
+          cursor: pointer;
+        }
+        
+        /* Keep the story content cursor as pointer to indicate clickable for distraction-free mode */
+        .reader-page .story-content {
+          cursor: pointer;
+        }
+        
+        /* Make interactive elements inside story content use pointer cursor */
+        .reader-page .story-content button,
+        .reader-page .story-content a,
+        .reader-page .story-content [role="button"] {
+          cursor: pointer;
+        }
+        
+        .main-header {
+          transition: opacity 0.4s ease, visibility 0.4s ease;
+          will-change: opacity, visibility;
+        }
+      `}} />
+
       {/* Horror message modal */}
       {showHorrorMessage && (
         <motion.div
@@ -931,7 +1091,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         />
       )}
       
-      {/* Reading progress indicator */}
+      {/* Reading progress indicator - always visible for user orientation */}
       <div 
         className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
         style={{ width: `${readingProgress}%`, transition: 'width 0.2s ease-out' }}
@@ -943,9 +1103,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className="pt-0 pb-0 bg-background mt-0 w-full overflow-visible">
+      <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
         {/* Static font size controls in a prominent position */}
-        <div className="flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-0.5 border-b border-border/30 mb-0 w-full">
+        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-0.5 border-b border-border/30 mb-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1057,7 +1217,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               />
 
               <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-2 rounded-full shadow-sm border border-primary/10">
+                <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-2 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Story theme icon - show primary theme if available, otherwise default to generic */}
                   {detectedThemes.length > 0 ? (
                     <div className="flex items-center gap-1.5">
@@ -1107,7 +1267,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 </div>
 
                 {/* Navigation Buttons */}
-                <div className="flex items-center justify-center mt-2 gap-2 w-full">
+                <div className={`flex items-center justify-center mt-2 gap-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Previous Button */}
                   <Button
                     variant="outline"
@@ -1163,15 +1323,17 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 padding: '20px',
                 lineHeight: '1.8',
                 textAlign: 'left',
-                fontSize: '1.2rem'
+                fontSize: '1.2rem',
+                cursor: 'pointer' // Explicitly set cursor to pointer for this element
               }}
+              onClick={toggleUI} // Only story content toggles UI
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || '')
               }}
             />
             
             {/* Simple pagination at bottom of story content - extremely compact */}
-            <div className="flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center">
+            <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
               <div className="flex items-center gap-3 bg-background/90 backdrop-blur-md border border-border/50 rounded-full py-1.5 px-3 shadow-md">
                 {/* Previous story button */}
                 <Button 
@@ -1217,11 +1379,11 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             <div className="mt-2 pt-3 border-t border-border/50">
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
-                <div className="flex justify-center w-full">
+                <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   <LikeDislike postId={currentPost.id} className="mx-auto" />
                 </div>
 
-                <div className="flex flex-col items-center gap-3">
+                <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   <p className="text-sm text-muted-foreground font-medium">✨ Loved the story? Share it or follow for more! ✨</p>
                   <div className="flex items-center gap-3">
                     {/* Native Share Button */}
@@ -1265,7 +1427,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 </div>
               </div>
 
-              {/* Comment Section with improved aesthetic styling */}
+              {/* Comment Section with improved aesthetic styling - no fading */}
               <div className="mt-10 pt-6 border-t border-border/30">
                 <div className="bg-background/50 backdrop-blur-md p-6 rounded-xl border border-border/20 shadow-lg">
                   <div className="flex flex-col gap-2 mb-6">
@@ -1309,11 +1471,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         </AnimatePresence>
 
         {/* Bottom Return to Home button */}
-        <div className="mt-12 mb-8 flex justify-center">
+        <div className={`mt-12 mb-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
             size="lg"
-            onClick={() => setLocation('/')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocation('/');
+            }}
             className="px-4 bg-background hover:bg-background/80"
           >
             Return to Home

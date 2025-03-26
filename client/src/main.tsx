@@ -1,5 +1,7 @@
 // Import preloader CSS first to ensure it takes effect immediately
 import "./styles/preloader.css";
+// Import scroll effects CSS
+import "./styles/scroll-effects.css";
 import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";

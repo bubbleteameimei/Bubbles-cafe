@@ -38,6 +38,8 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import FeedbackButton component for site-wide feedback
 import { FeedbackButton } from './components/feedback/FeedbackButton';
+// Import our scroll effects provider for multi-speed scroll and gentle return
+import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
@@ -413,9 +415,12 @@ function App() {
                     debugMode={true}
                   >
                     <GlobalLoadingRegistry />
-                    <SidebarProvider defaultOpen={true}>
-                      <AppContent />
-                    </SidebarProvider>
+                    {/* Add ScrollEffectsProvider for sitewide multi-speed scrolling and gentle return */}
+                    <ScrollEffectsProvider>
+                      <SidebarProvider defaultOpen={true}>
+                        <AppContent />
+                      </SidebarProvider>
+                    </ScrollEffectsProvider>
                   </GlobalLoadingOverlay>
                   </LoadingProvider>
                 </SilentPingProvider>
