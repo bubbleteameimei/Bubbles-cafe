@@ -174,38 +174,8 @@ const useGlobalGentleReturn = ({
             
             // Use a timeout to allow the page to fully load and render
             setTimeout(() => {
-              // Stage 1: Show a temporary visual indicator
-              if (isRefresh.current) {
-                // Create and append a temporary indicator for refreshes
-                const indicator = document.createElement('div');
-                indicator.textContent = 'Returning to your previous position...';
-                indicator.style.position = 'fixed';
-                indicator.style.top = '20px';
-                indicator.style.left = '50%';
-                indicator.style.transform = 'translateX(-50%)';
-                indicator.style.padding = '8px 16px';
-                indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                indicator.style.color = 'white';
-                indicator.style.borderRadius = '4px';
-                indicator.style.zIndex = '9999';
-                indicator.style.opacity = '0';
-                indicator.style.transition = 'opacity 0.3s ease';
-                
-                document.body.appendChild(indicator);
-                
-                // Fade in
-                setTimeout(() => {
-                  indicator.style.opacity = '1';
-                }, 10);
-                
-                // Remove after scroll completes
-                setTimeout(() => {
-                  indicator.style.opacity = '0';
-                  setTimeout(() => {
-                    document.body.removeChild(indicator);
-                  }, 300);
-                }, 2000);
-              }
+              // Visual position indicator has been removed for a cleaner user experience
+              // No temporary visual indicators are shown during position restoration
               
               // Stage 2: Perform the actual scroll
               setTimeout(() => {
@@ -216,41 +186,8 @@ const useGlobalGentleReturn = ({
                   behavior: isRefresh.current ? 'auto' : 'smooth'
                 });
                 
-                // Stage 3: Highlight the paragraph near reading position for better orientation
-                setTimeout(() => {
-                  if (highlightTarget) {
-                    try {
-                      // Find all potential elements to highlight
-                      const elements = document.querySelectorAll(highlightTarget);
-                      
-                      if (elements.length > 0) {
-                        // Find the element closest to our scroll position
-                        let closestElement = elements[0];
-                        let closestDistance = Math.abs(elements[0].getBoundingClientRect().top);
-                        
-                        for (let i = 1; i < elements.length; i++) {
-                          const distance = Math.abs(elements[i].getBoundingClientRect().top);
-                          if (distance < closestDistance) {
-                            closestElement = elements[i];
-                            closestDistance = distance;
-                          }
-                        }
-                        
-                        // Add highlight class and remove it after animation
-                        if (closestDistance < window.innerHeight / 2) {
-                          closestElement.classList.add('gentle-highlight');
-                          
-                          // Remove highlight after animation completes
-                          setTimeout(() => {
-                            closestElement.classList.remove('gentle-highlight');
-                          }, 2000);
-                        }
-                      }
-                    } catch (highlightError) {
-                      console.error('[GentleReturn] Error highlighting element:', highlightError);
-                    }
-                  }
-                }, 300);
+                // Paragraph highlight feature has been removed for a cleaner user experience
+                // No highlighting is applied to any paragraphs during position restoration
               }, isRefresh.current ? 500 : 800);
               
               if (showToast) {

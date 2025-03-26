@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import useAdaptiveScroll from '@/hooks/useAdaptiveScroll';
 import useGlobalGentleReturn from '@/hooks/useGlobalGentleReturn';
-// Remove import of ScrollSpeedIndicator
-import '@/styles/scroll-effects.css';
 
 // Context type for scroll effects
 interface ScrollEffectsContextType {
@@ -37,9 +35,8 @@ interface ScrollEffectsProviderProps {
 }
 
 /**
- * Provider component that manages both adaptive scroll and gentle return
- * features throughout the application.
- * Visual indicators have been removed for a cleaner user experience.
+ * Provider component that manages scrolling behavior throughout the application.
+ * All visual indicators have been removed for a cleaner, more intuitive experience.
  */
 export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ children }) => {
   // States for context values
@@ -50,20 +47,19 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
   const isExcludedPath = EXCLUDED_PATHS.some(path => currentPath.startsWith(path));
   
-  // Initialize adaptive scroll (Multi-Speed Scroll)
+  // Initialize adaptive scroll with standard browser behavior
   const { scrollType, isScrolling } = useAdaptiveScroll({
     enabled: true,
-    sensitivity: 1.2, // Reduced sensitivity for more natural feel
-    showIndicator: false // Visual indicators disabled
+    sensitivity: 1.0 // Standard browser sensitivity
   });
   
-  // Initialize global gentle return
+  // Initialize global gentle return with all visual indicators disabled
   const gentleReturn = useGlobalGentleReturn({
     enabled: !isExcludedPath, // Only enable on non-excluded paths
     autoSave: true,
-    showToast: false, // Disable toast notifications for position restoration
+    showToast: false, // No toast notifications
     maxAgeMs: 7 * 24 * 60 * 60 * 1000, // 7 days
-    highlightTarget: '', // Disable paragraph highlighting
+    highlightTarget: '', // No paragraph highlighting
     autoSaveInterval: 2000 // Save after 2 seconds of no scrolling
   });
   
@@ -84,7 +80,6 @@ export const ScrollEffectsProvider: React.FC<ScrollEffectsProviderProps> = ({ ch
         wasRefresh
       }}
     >
-      {/* Removed the scroll speed indicator */}
       {children}
     </ScrollEffectsContext.Provider>
   );

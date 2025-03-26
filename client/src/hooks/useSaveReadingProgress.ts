@@ -138,43 +138,15 @@ const useSaveReadingProgress = ({
                               nav => (nav as PerformanceNavigationTiming).type === 'reload'
                             ));
           
-          // Add visual indicator that position is being restored
+          // Position restoration indicator removed for cleaner UX
           const createRestorationIndicator = () => {
-            // Remove any existing indicators first
-            const existingIndicator = document.getElementById('position-restoration-indicator');
-            if (existingIndicator && existingIndicator.parentNode) {
-              existingIndicator.parentNode.removeChild(existingIndicator);
-            }
-            
-            const indicator = document.createElement('div');
-            indicator.id = 'position-restoration-indicator';
-            indicator.style.position = 'fixed';
-            indicator.style.bottom = '20px';
-            indicator.style.right = '20px';
-            indicator.style.backgroundColor = 'hsl(var(--primary))';
-            indicator.style.color = 'hsl(var(--primary-foreground))';
-            indicator.style.padding = '8px 16px';
-            indicator.style.borderRadius = '6px';
-            indicator.style.zIndex = '9999';
-            indicator.style.fontSize = '0.85rem';
-            indicator.style.opacity = '0';
-            indicator.style.transition = 'opacity 0.3s ease-in-out';
-            indicator.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-            indicator.style.pointerEvents = 'none'; // Prevent interaction
-            
-            // Choose message based on whether it's a refresh or new visit
-            indicator.textContent = isRefresh 
-              ? 'Returning to your previous position...' 
-              : 'Restoring your reading position...';
-            
-            document.body.appendChild(indicator);
-            
-            // Show with slight delay to ensure it's animated
-            setTimeout(() => {
-              indicator.style.opacity = '1';
-            }, 10);
-            
-            return indicator;
+            // Return an empty dummy object with the necessary structure to maintain compatibility
+            return {
+              style: {
+                opacity: ''
+              },
+              parentNode: null
+            };
           };
           
           // Perform a staged scroll with visual feedback
@@ -214,21 +186,11 @@ const useSaveReadingProgress = ({
                 (isRefresh ? 200 : 300) + scrollDistance / (isRefresh ? 3 : 2)
               );
               
-              // Use smooth scrolling animation
+              // Use smooth scrolling animation without visual indicators
               animateScroll(parsedProgress.scrollPosition, scrollDuration, () => {
-                // Remove the indicator with a fade out
-                setTimeout(() => {
-                  indicator.style.opacity = '0';
-                  // Remove from DOM after fade out
-                  setTimeout(() => {
-                    if (indicator.parentNode) {
-                      indicator.parentNode.removeChild(indicator);
-                    }
-                  }, 300);
-                }, isRefresh ? 500 : 800);
+                // Mark position as restored
+                setFirstLoad(false);
               });
-              
-              setFirstLoad(false);
             }, initialDelay);
           }, isRefresh ? 200 : 500); // Shorter initial delay for refresh
         }
@@ -247,34 +209,10 @@ const useSaveReadingProgress = ({
     const startPosition = window.scrollY;
     const distance = targetPosition - startPosition;
     
-    // Optional: Add a subtle highlight at the target position
+    // Target highlighting has been removed for cleaner UX
     const addTargetHighlight = () => {
-      // Only add highlight for significant scrolls
-      if (Math.abs(distance) > window.innerHeight / 2) {
-        // Find the element closest to our target scroll position
-        const elementsAtPosition = Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6'))
-          .filter(el => {
-            const rect = el.getBoundingClientRect();
-            const elPos = window.scrollY + rect.top;
-            // Element should be within 200px of target position
-            return Math.abs(elPos - targetPosition) < 200;
-          });
-        
-        // If we found an element near the target position, highlight it briefly
-        if (elementsAtPosition.length > 0) {
-          const targetEl = elementsAtPosition[0] as HTMLElement;
-          const originalTransition = targetEl.style.transition;
-          
-          targetEl.style.transition = 'background-color 0.5s ease-in-out, color 0.3s ease';
-          targetEl.style.backgroundColor = 'rgba(var(--primary-rgb), 0.08)';
-          
-          // Remove highlight after 2.5 seconds
-          setTimeout(() => {
-            targetEl.style.backgroundColor = '';
-            targetEl.style.transition = originalTransition;
-          }, 2500);
-        }
-      }
+      // No-op function for API compatibility
+      return;
     };
     
     // For tiny distances, just jump there

@@ -518,11 +518,17 @@ export function registerRoutes(app: Express): Server {
   // Comment routes
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
-      const postId = parseInt(req.params.postId);
-      const comments = await storage.getComments(postId);
+      // Get the post first to get the numeric ID
+      const post = await storage.getPost(req.params.postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      // Use the numeric post ID from the post record
+      const comments = await storage.getComments(post.id);
       res.json(comments);
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      console.error("Error in getComments:", error);
       res.status(500).json({ message: "Failed to fetch comments" });
     }
   });

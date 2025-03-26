@@ -257,9 +257,23 @@ export class DatabaseStorage implements IStorage {
     console.log('[Storage] Initializing PostgreSQL session store...');
 
     try {
-      // Initialize session store with PostgreSQL
+      // Create a compatible pool object for connect-pg-simple
+      // The issue is that connect-pg-simple expects a pg pool with query method
+      // but Neon serverless uses a different interface
+      const compatiblePool = {
+        query: async (text, params) => {
+          const client = await pool.connect();
+          try {
+            return await client.query(text, params);
+          } finally {
+            client.release();
+          }
+        }
+      };
+
+      // Initialize session store with compatible pool
       this.sessionStore = new PostgresSessionStore({
-        pool: pool,
+        pool: compatiblePool,
         createTableIfMissing: true,
         tableName: 'session',
         schemaName: 'public',
@@ -268,7 +282,10 @@ export class DatabaseStorage implements IStorage {
       console.log('[Storage] Session store initialized successfully');
     } catch (error) {
       console.error('[Storage] Failed to initialize session store:', error);
-      throw error;
+      // Provide a memory fallback for the session store to prevent app crashes
+      console.warn('[Storage] Falling back to memory session store');
+      const MemoryStore = session.MemoryStore;
+      this.sessionStore = new MemoryStore();
     }
   }
 
