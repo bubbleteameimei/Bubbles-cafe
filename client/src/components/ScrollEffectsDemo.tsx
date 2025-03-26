@@ -41,14 +41,14 @@ const ScrollEffectsDemo: React.FC = () => {
           
           <div className="flex justify-between items-center">
             <span className="font-medium">Position Restored:</span>
-            <Badge variant={isPositionRestored ? 'success' : 'outline'}>
+            <Badge variant={isPositionRestored ? 'default' : 'outline'}>
               {isPositionRestored ? 'Yes' : 'No'}
             </Badge>
           </div>
           
           <div className="flex justify-between items-center">
             <span className="font-medium">Page Refresh:</span>
-            <Badge variant={wasRefresh ? 'warning' : 'outline'}>
+            <Badge variant={wasRefresh ? 'secondary' : 'outline'}>
               {wasRefresh ? 'Yes' : 'No'}
             </Badge>
           </div>

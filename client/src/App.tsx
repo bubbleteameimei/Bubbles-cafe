@@ -118,6 +118,7 @@ import ReaderPage from './pages/reader';
 
 // Lazy load non-critical pages
 const ResponsiveDemoPage = withSuspense(React.lazy(() => import('./pages/responsive-demo')));
+const ScrollDemoPage = withSuspense(React.lazy(() => import('./pages/scroll-demo')));
 const HomePage = withSuspense(React.lazy(() => import('./pages/home')));
 const StoriesPage = withSuspense(React.lazy(() => import('./pages/index')));
 const AboutPage = withSuspense(React.lazy(() => import('./pages/about')));
@@ -277,8 +278,9 @@ const AppContent = () => {
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
                 {/* Removed notifications page as it's now a dropdown */}
-                {/* Responsive Demo Page */}
+                {/* Demo Pages */}
                 <Route path="/responsive-demo" component={ResponsiveDemoPage} />
+                <Route path="/scroll-demo" component={ScrollDemoPage} />
                 {/* Removed test pages routes */}
                 <Route path="/bookmarks" component={BookmarksPage} />
                 <ProtectedRoute path="/profile" component={ProfilePage} />
