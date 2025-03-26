@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Post } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import CommentSection from "@/components/blog/comment-section";
+import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 import { motion } from "framer-motion";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { MetaTags } from "@/components/ui/meta-tags";
@@ -70,7 +70,7 @@ export default function StoryView({ slug }: StoryViewProps) {
         </motion.article>
 
         <div className="mt-16 pt-8 border-t border-border/50">
-          <CommentSection postId={post.id} />
+          <SimpleCommentSection postId={post.id} />
         </div>
       </div>
     </div>

@@ -11,18 +11,12 @@ import {
   Loader2, 
   MessageSquare, 
   Reply, 
-  ThumbsUp, 
-  ThumbsDown, 
+  Heart,
   Calendar,
-  User,
-  Flag,
-  Heart
+  ThumbsUp
 } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import CommentReactionButtons from "./CommentReactionButtons";
 
 interface CommentMetadata {
   moderated: boolean;

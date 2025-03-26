@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
-import CommentSection from "@/components/blog/comment-section";
+import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -1461,7 +1461,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                         </Button>
                       </div>
                     }>
-                      <CommentSection postId={currentPost.id} />
+                      <SimpleCommentSection postId={currentPost.id} />
                     </ErrorBoundary>
                   </div>
                 </div>
