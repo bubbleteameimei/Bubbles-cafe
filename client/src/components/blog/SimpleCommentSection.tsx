@@ -147,28 +147,39 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       console.log('Submitting reply:', {
         content: content.trim(),
         author: replyAuthor,
-        parentId: commentId
+        parentId: commentId,
+        postId
       });
       
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      // Using the endpoint with the right format
+      const response = await fetch(`/api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Important for CSRF token
         body: JSON.stringify({
+          postId, 
           content: content.trim(),
-          author: replyAuthor,
-          parentId: commentId
+          name: replyAuthor,
+          parent_id: commentId,
+          metadata: {
+            author: replyAuthor,
+            upvotes: 0,
+            isAnonymous: !isAuthenticated,
+            originalContent: content.trim()
+          }
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || 'Failed to post reply');
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error('Failed to post reply: ' + errorData);
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
       setName("");
       setContent("");
       onCancel();
@@ -349,9 +360,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
-    queryKey: [`/api/posts/${postId}/comments`],
+    queryKey: [`/api/comments?postId=${postId}`],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`);
+      const response = await fetch(`/api/comments?postId=${postId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -368,26 +379,40 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       // Add console log to help with debugging
       console.log('Submitting comment:', {
         content: content.trim(),
-        author: commentAuthor
+        author: commentAuthor,
+        postId
       });
       
-      const response = await fetch(`/api/posts/${postId}/comments`, {
+      // Using the endpoint with the right format
+      const response = await fetch(`/api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Important for CSRF token
         body: JSON.stringify({
+          postId, 
           content: content.trim(),
-          author: commentAuthor
+          name: commentAuthor,
+          parent_id: null,
+          metadata: {
+            author: commentAuthor,
+            upvotes: 0,
+            isAnonymous: !isAuthenticated,
+            originalContent: content.trim()
+          }
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to post comment');
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error('Failed to post comment: ' + errorData);
       }
 
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+    onSuccess: (data) => {
+      console.log('Comment posted successfully:', data);
+      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
       setName("");
       setContent("");
       toast({
@@ -418,7 +443,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         throw new Error("Failed to upvote comment");
       }
       
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
     } catch (error) {
       toast({
         title: "Error",
@@ -576,10 +601,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         <div className="mb-3 pb-1 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <MessageSquare className="h-4 w-4 text-primary/70" />
-            <h3 className="text-base font-medium">Discussion</h3>
-            <Badge variant="outline" className="text-[11px] h-4.5 border-primary/20 bg-primary/5 ml-1">
-              {rootComments.length}
-            </Badge>
+            <h3 className="text-base font-medium">Discussion ({rootComments.length})</h3>
           </div>
           {isAuthenticated ? (
             <div className="text-xs text-muted-foreground">Commenting as <span className="font-medium">{user?.username}</span></div>
