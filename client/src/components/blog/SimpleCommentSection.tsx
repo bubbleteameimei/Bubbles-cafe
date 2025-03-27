@@ -147,8 +147,8 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
       const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
       
-      // Using the endpoint with the right format
-      const response = await fetch(`/api/comments`, {
+      // Using the endpoint that matches server routes for replies
+      const response = await fetch(`/api/comments/${commentId}/replies`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -156,14 +156,16 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
         },
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
-          postId, 
           content: content.trim(),
-          name: replyAuthor,
-          parent_id: commentId,
+          author: replyAuthor,
+          userId: user?.id || null,
+          parentId: commentId,
           metadata: {
             author: replyAuthor,
             upvotes: 0,
+            downvotes: 0,
             isAnonymous: !isAuthenticated,
+            moderated: false,
             originalContent: content.trim()
           }
         })
@@ -377,11 +379,15 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         body: JSON.stringify({
           content: content.trim(),
           author: commentAuthor,
-          parent_id: null,
+          userId: user?.id || null,
+          postId: postId,
+          parentId: null,
           metadata: {
             author: commentAuthor,
             upvotes: 0,
+            downvotes: 0,
             isAnonymous: !isAuthenticated,
+            moderated: false,
             originalContent: content.trim()
           }
         })
