@@ -178,7 +178,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setContent("");
       onCancel();
       toast({
@@ -213,14 +213,14 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-l border-primary/30 pl-2 mt-1 bg-muted/5 rounded-md overflow-hidden">
-      <div className="space-y-1 p-1.5">
-        <div className="flex items-center gap-1.5 mb-1">
+    <form onSubmit={handleSubmit} className="border-l border-primary/30 pl-2 mt-0.5 bg-muted/5 rounded-md overflow-hidden">
+      <div className="space-y-0.5 p-1">
+        <div className="flex items-center gap-1 mb-0.5">
           <Reply className="h-2.5 w-2.5 text-primary/70" />
           <span className="text-[10px] font-medium">Reply to this comment</span>
         </div>
         
-        <div className="flex gap-1.5">
+        <div className="flex gap-1">
           <Textarea
             ref={textareaRef}
             placeholder="Write your reply..."
@@ -231,7 +231,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
                 setPreviewMode(true);
               }
             }}
-            className="min-h-[40px] text-[10px] bg-background/80 py-1 flex-grow"
+            className="min-h-[35px] text-[10px] bg-background/80 py-1 flex-grow"
             required
           />
           
@@ -240,7 +240,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
             variant="ghost"
             size="sm"
             onClick={onCancel}
-            className="h-6 px-2 text-[10px] self-start"
+            className="h-6 px-1.5 text-[10px] self-start"
           >
             Cancel
           </Button>
@@ -285,7 +285,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
             type="submit"
             size="sm"
             disabled={replyMutation.isPending}
-            className="h-6 text-[10px] px-2"
+            className="h-5 text-[10px] px-1.5 py-0"
           >
             {replyMutation.isPending ? (
               <>
@@ -345,9 +345,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
-    queryKey: [`/api/comments?postId=${postId}`],
+    queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/comments?postId=${postId}`);
+      const response = await fetch(`/api/posts/${postId}/comments`);
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -366,8 +366,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
       const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
       
-      // Using the endpoint with the right format
-      const response = await fetch(`/api/comments`, {
+      // Using the correct endpoint format that matches server routes
+      const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -375,9 +375,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         },
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
-          postId, 
           content: content.trim(),
-          name: commentAuthor,
+          author: commentAuthor,
           parent_id: null,
           metadata: {
             author: commentAuthor,
@@ -398,7 +397,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     },
     onSuccess: (data) => {
       console.log('Comment posted successfully:', data);
-      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
       setContent("");
       toast({
         title: "Comment posted",
@@ -437,7 +436,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         throw new Error("Failed to upvote comment");
       }
       
-      queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
     } catch (error) {
       toast({
         title: "Error",
@@ -591,13 +590,13 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   return (
     <div className="antialiased mx-auto">
       <div className="border-t border-border/30 pt-4 pb-1.5">
-        <div className="mb-3 pb-1 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between">
           <h3 className="text-base font-medium">Comments ({rootComments.length})</h3>
         </div>
         {/* Comment form - ultra sleek design */}
-        <Card className="mb-3 p-2.5 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
-          <form onSubmit={handleSubmit} className="space-y-1.5">
-            <div className="grid grid-cols-1 gap-1.5">
+        <Card className="mb-2 p-2 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
+          <form onSubmit={handleSubmit} className="space-y-1">
+            <div className="grid grid-cols-1 gap-1">
               <motion.div 
                 className="flex flex-col"
                 initial={{ opacity: 0 }}
@@ -614,15 +613,15 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         setPreviewMode(true);
                       }
                     }}
-                    className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
+                    className="h-7 text-xs bg-background/80 min-h-[45px] flex-grow"
                     required
                   />
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col">
                     <Button 
                       type="submit" 
                       disabled={mutation.isPending}
                       size="sm"
-                      className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
+                      className="h-[45px] w-7 ml-1 p-0 flex items-center justify-center"
                     >
                       {mutation.isPending ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -673,16 +672,16 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       </div>
 
       {/* Comments list */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {isLoading ? (
-          <div className="flex justify-center py-3">
+          <div className="flex justify-center py-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </div>
         ) : rootComments.length > 0 ? (
           rootComments.map(comment => (
             <motion.div 
               key={comment.id} 
-              className="space-y-1.5"
+              className="space-y-1"
               initial={{ opacity: 0, y: 20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.4, type: "spring", stiffness: 100 }}
@@ -714,13 +713,13 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                 </div>
                 
                 {/* Comment body - ultra compact */}
-                <div className="px-2.5 py-1.5">
-                  <p className="text-xs text-card-foreground leading-relaxed mb-1.5">
+                <div className="px-2.5 py-1">
+                  <p className="text-xs text-card-foreground leading-relaxed mb-1">
                     {parseMentions(comment.content)}
                   </p>
                   
                   {comment.metadata.moderated && (
-                    <div className="mb-1.5 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
+                    <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
                       <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                         <AlertCircle className="h-2.5 w-2.5" />
                         <span className="font-medium">This comment was automatically moderated</span>
@@ -728,7 +727,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between mt-1.5">
+                  <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-1.5">
                       <button 
                         onClick={() => handleUpvote(comment.id)}
@@ -777,7 +776,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                     animate={{ opacity: 1, height: "auto", x: 0 }}
                     exit={{ opacity: 0, height: 0, x: -10 }}
                     transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-                    className="ml-5"
+                    className="ml-4"
                   >
                     <ReplyForm 
                       commentId={comment.id} 
@@ -791,7 +790,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               
               {/* Replies to this comment */}
               {repliesByParentId[comment.id] && repliesByParentId[comment.id].length > 0 && (
-                <div className="ml-5 space-y-1.5">
+                <div className="ml-4 space-y-1">
                   {repliesByParentId[comment.id].map(reply => (
                     <motion.div
                       key={reply.id}
