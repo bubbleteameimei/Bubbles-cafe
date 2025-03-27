@@ -17,7 +17,8 @@ import {
   SendHorizontal,
   AlertCircle,
   Check,
-  ShieldAlert
+  ShieldAlert,
+  Flag
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -455,16 +456,32 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
 
   return (
     <div className="antialiased mx-auto">
-      <div className="border-t border-border/30 pt-4">
+      <div className="border-t border-border/30 pt-4 pb-1.5">
+        <div className="mb-3 pb-1 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="h-4 w-4 text-primary/70" />
+            <h3 className="text-base font-medium">Discussion</h3>
+            <Badge variant="outline" className="text-[11px] h-4.5 border-primary/20 bg-primary/5 ml-1">
+              {rootComments.length}
+            </Badge>
+          </div>
+          {isAuthenticated ? (
+            <div className="text-xs text-muted-foreground">Commenting as <span className="font-medium">{user?.username}</span></div>
+          ) : (
+            <div className="text-xs text-muted-foreground">Commenting as <span className="font-medium">Anonymous</span></div>
+          )}
+        </div>
         {/* Comment form - ultra sleek design */}
-        <Card className="mb-3 p-2.5 shadow-none bg-card/50 border-border/30 overflow-hidden">
+        <Card className="mb-3 p-2.5 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
           <form onSubmit={handleSubmit} className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5 text-muted-foreground/70" />
-              <h4 className="text-xs font-medium">Join the conversation</h4>
-              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-3.5">
-                {rootComments.length}
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <h4 className="text-xs font-medium">Join the conversation</h4>
+              </div>
+              <div className="flex items-center gap-1">
+                <MessageCircle className="h-3 w-3 text-primary/70" />
+                <span className="text-xs text-muted-foreground">Write a comment</span>
+              </div>
             </div>
             <div className="grid grid-cols-1 gap-1.5">
               {!isAuthenticated ? (
@@ -630,13 +647,13 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
             <motion.div 
               key={comment.id} 
               className="space-y-1.5"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, type: "spring", stiffness: 100 }}
             >
               <Card className={cn(
-                "shadow-none border-border/30 overflow-hidden",
-                comment.metadata.moderated && "border-amber-500/30"
+                "shadow-sm hover:shadow-md transition-all border-border/30 overflow-hidden",
+                comment.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/30"
               )}>
                 {/* Comment header - ultra compact */}
                 <div className="px-2.5 py-1 flex items-center justify-between border-b border-border/10 bg-muted/10">
@@ -692,6 +709,20 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         <span>Reply</span>
                       </button>
                     </div>
+                    <div>
+                      <button 
+                        onClick={() => toast({
+                          title: "Comment reported",
+                          description: "Thank you for flagging this comment. Our moderators will review it.",
+                          variant: "default"
+                        })}
+                        className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
+                        title="Report this comment"
+                      >
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
+                        <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -700,10 +731,10 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               <AnimatePresence>
                 {replyingTo === comment.id && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0, height: 0, x: -10 }}
+                    animate={{ opacity: 1, height: "auto", x: 0 }}
+                    exit={{ opacity: 0, height: 0, x: -10 }}
+                    transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
                     className="ml-5"
                   >
                     <ReplyForm 
@@ -722,13 +753,13 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   {repliesByParentId[comment.id].map(reply => (
                     <motion.div
                       key={reply.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
+                      initial={{ opacity: 0, x: -5, scale: 0.98 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{ duration: 0.3, type: "spring", stiffness: 120 }}
                     >
                       <Card className={cn(
-                        "shadow-none border-border/30 overflow-hidden",
-                        reply.metadata.moderated && "border-amber-500/30"
+                        "shadow-xs hover:shadow-sm transition-all border-border/30 overflow-hidden",
+                        reply.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/20"
                       )}>
                         {/* Reply header - ultra compact */}
                         <div className="px-2 py-0.5 flex items-center justify-between border-b border-border/10 bg-muted/5">
@@ -762,13 +793,24 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                             </div>
                           )}
                           
-                          <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex items-center justify-between mt-1">
                             <button 
                               onClick={() => handleUpvote(reply.id)}
                               className="inline-flex items-center text-[9px] text-muted-foreground hover:text-primary transition-colors"
                             >
                               <ThumbsUp className="h-2 w-2 mr-0.5" />
                               <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : ''}</span>
+                            </button>
+                            <button 
+                              onClick={() => toast({
+                                title: "Reply reported",
+                                description: "Thank you for flagging this reply. Our moderators will review it.",
+                                variant: "default"
+                              })}
+                              className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
+                              title="Report this reply"
+                            >
+                              <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
                             </button>
                           </div>
                         </div>

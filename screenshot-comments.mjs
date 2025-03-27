@@ -10,7 +10,8 @@ async function captureScreenshot() {
   console.log('Launching browser to capture comment section screenshot...');
   const browser = await puppeteer.launch({ 
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: "new"
+    headless: "new",
+    executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium'
   });
   const page = await browser.newPage();
   
@@ -19,7 +20,7 @@ async function captureScreenshot() {
   
   try {
     console.log('Navigating to the story page...');
-    await page.goto('http://localhost:3001/story/nostalgia', { waitUntil: 'networkidle2' });
+    await page.goto('http://0.0.0.0:3001/story/nostalgia', { waitUntil: 'networkidle2' });
     
     // Wait for the comment section to render
     await page.waitForSelector('.antialiased', { timeout: 5000 });
