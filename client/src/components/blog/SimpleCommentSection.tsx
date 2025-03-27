@@ -16,7 +16,8 @@ import {
   MessageCircle,
   SendHorizontal,
   AlertCircle,
-  Check
+  Check,
+  ShieldAlert
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -54,9 +55,9 @@ interface ReplyFormProps {
   authorToMention?: string;
 }
 
-// Simplified moderation check for preview
-const checkModeration = (text: string): { isFlagged: boolean, moderated: string } => {
-  if (!text) return { isFlagged: false, moderated: "" };
+// Enhanced moderation check with immediate flagging
+const checkModeration = (text: string): { isFlagged: boolean, moderated: string, isUnderReview: boolean } => {
+  if (!text) return { isFlagged: false, moderated: "", isUnderReview: false };
   
   // List of words/patterns that trigger moderation
   const flaggedPatterns = [
@@ -65,10 +66,18 @@ const checkModeration = (text: string): { isFlagged: boolean, moderated: string 
     /\b(damn|hell|crap)\b/gi
   ];
   
+  // Words that trigger review
+  const reviewPatterns = [
+    /\b(kill|violent|disgusting|vile|appalling|nasty|horrible|garbage|sucks|pathetic)\b/gi,
+    /\b(scam|fraud|fake|lying|spam|trash|worst|terrible|lazy|awful)\b/gi,
+    /\b(useless|worthless|waste|ugly|offensive|sexist|racist|bigot)\b/gi
+  ];
+  
   let moderated = text;
   let isFlagged = false;
+  let isUnderReview = false;
   
-  // Check each pattern
+  // Check for immediate moderation patterns
   flaggedPatterns.forEach(pattern => {
     if (pattern.test(text)) {
       isFlagged = true;
@@ -76,7 +85,16 @@ const checkModeration = (text: string): { isFlagged: boolean, moderated: string 
     }
   });
   
-  return { isFlagged, moderated };
+  // Check for patterns that require review
+  if (!isFlagged) {
+    reviewPatterns.forEach(pattern => {
+      if (pattern.test(text)) {
+        isUnderReview = true;
+      }
+    });
+  }
+  
+  return { isFlagged, moderated, isUnderReview };
 };
 
 // Simple reply form component
@@ -91,8 +109,8 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
   // Get authentication state
   const { user, isAuthenticated, isAuthReady } = useAuth();
   
-  // Apply moderation check
-  const { isFlagged, moderated } = checkModeration(content);
+  // Apply moderation check with review flag
+  const { isFlagged, moderated, isUnderReview } = checkModeration(content);
 
   // Focus the textarea when the form appears and position cursor at the end
   useEffect(() => {
@@ -226,6 +244,24 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
           </motion.div>
         )}
         
+        {/* Under review notice for reply */}
+        {isUnderReview && !isFlagged && content.trim() !== "" && (
+          <motion.div 
+            className="px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+              <ShieldAlert className="h-2.5 w-2.5" />
+              <span className="font-medium">This reply may be placed under review</span>
+            </div>
+            <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+              Your reply contains content that might need moderator approval.
+            </p>
+          </motion.div>
+        )}
+        
         <div className="flex justify-end">
           <Button
             type="submit"
@@ -263,8 +299,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Get authentication state
   const { user, isAuthenticated, isAuthReady } = useAuth();
   
-  // Smart moderation preview
-  const { isFlagged, moderated } = checkModeration(content);
+  // Smart moderation preview with review flag
+  const { isFlagged, moderated, isUnderReview } = checkModeration(content);
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
@@ -420,20 +456,15 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   return (
     <div className="antialiased mx-auto">
       <div className="border-t border-border/30 pt-4">
-        <h3 className="mb-3 text-sm font-medium flex items-center gap-1.5">
-          <MessageSquare className="h-3.5 w-3.5" />
-          {title ? `Comments on "${title}"` : "Discussion"} 
-          <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-3.5">
-            {rootComments.length}
-          </Badge>
-        </h3>
-
         {/* Comment form - ultra sleek design */}
         <Card className="mb-3 p-2.5 shadow-none bg-card/50 border-border/30 overflow-hidden">
           <form onSubmit={handleSubmit} className="space-y-1.5">
             <div className="flex items-center gap-1.5">
-              <MessageCircle className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <MessageSquare className="h-3.5 w-3.5 text-muted-foreground/70" />
               <h4 className="text-xs font-medium">Join the conversation</h4>
+              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-3.5">
+                {rootComments.length}
+              </Badge>
             </div>
             <div className="grid grid-cols-1 gap-1.5">
               {!isAuthenticated ? (
@@ -488,6 +519,24 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         <span className="font-medium">Preview with automatic moderation:</span>
                       </div>
                       <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
+                    </motion.div>
+                  )}
+                  
+                  {/* Under review notice for anonymous */}
+                  {isUnderReview && !isFlagged && content.trim() !== "" && (
+                    <motion.div 
+                      className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <ShieldAlert className="h-2.5 w-2.5" />
+                        <span className="font-medium">This comment may be placed under review</span>
+                      </div>
+                      <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+                        Your comment contains content that might need moderator approval before being displayed to all users.
+                      </p>
                     </motion.div>
                   )}
                 </motion.div>
@@ -545,6 +594,24 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
                     </motion.div>
                   )}
+                  
+                  {/* Under review notice for authenticated */}
+                  {isUnderReview && !isFlagged && content.trim() !== "" && (
+                    <motion.div 
+                      className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <ShieldAlert className="h-2.5 w-2.5" />
+                        <span className="font-medium">This comment may be placed under review</span>
+                      </div>
+                      <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+                        Your comment contains content that might need moderator approval before being displayed to all users.
+                      </p>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </div>
@@ -600,122 +667,122 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   </p>
                   
                   {comment.metadata.moderated && (
-                    <div className="mb-1.5 px-1.5 py-1 bg-amber-500/10 rounded text-[9px] border border-amber-500/20 text-amber-600 dark:text-amber-400">
-                      <div className="flex items-center gap-1">
+                    <div className="mb-1.5 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
+                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                         <AlertCircle className="h-2.5 w-2.5" />
                         <span className="font-medium">This comment was automatically moderated</span>
                       </div>
-                      {comment.metadata.originalContent !== comment.content && (
-                        <p className="mt-0.5 text-muted-foreground line-through">
-                          {comment.metadata.originalContent}
-                        </p>
-                      )}
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between text-[10px]">
-                    <motion.button 
-                      onClick={() => handleUpvote(comment.id)}
-                      className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <ThumbsUp className={cn("h-3 w-3", comment.metadata.upvotes > 0 && "text-primary")} />
-                      <span>{comment.metadata.upvotes > 0 ? comment.metadata.upvotes : 'Like'}</span>
-                    </motion.button>
-                    
-                    <motion.button 
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Reply className="h-3 w-3" />
-                      <span>{replyingTo === comment.id ? "Cancel" : "Reply"}</span>
-                    </motion.button>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <button 
+                        onClick={() => handleUpvote(comment.id)}
+                        className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <ThumbsUp className="h-2.5 w-2.5 mr-0.5" />
+                        <span>{comment.metadata.upvotes > 0 ? comment.metadata.upvotes : ''}</span>
+                      </button>
+                      <button 
+                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                        className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors ml-2"
+                      >
+                        <Reply className="h-2.5 w-2.5 mr-0.5" />
+                        <span>Reply</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>
               
-              {/* Replies - ultra compact design */}
+              {/* Show reply form if replying to this comment */}
+              <AnimatePresence>
+                {replyingTo === comment.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="ml-5"
+                  >
+                    <ReplyForm 
+                      commentId={comment.id} 
+                      postId={postId}
+                      onCancel={() => setReplyingTo(null)}
+                      authorToMention={comment.metadata.author}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Replies to this comment */}
               {repliesByParentId[comment.id] && repliesByParentId[comment.id].length > 0 && (
-                <div className="pl-2.5 ml-1 border-l border-border/30 space-y-1">
-                  <AnimatePresence>
-                    {repliesByParentId[comment.id].map(reply => (
-                      <motion.div
-                        key={reply.id}
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Card className={cn(
-                          "shadow-none border-border/20",
-                          reply.metadata.moderated && "border-amber-500/30"
-                        )}>
-                          <div className="pl-2 pr-2.5 py-0.5 flex items-center justify-between border-b border-border/10 bg-muted/5">
-                            <div className="flex items-center gap-1">
-                              <div className="w-0.5 h-3.5 bg-primary/20 rounded-full mr-1"></div>
-                              <span className="font-medium text-[10px]">{reply.metadata.author || "Anonymous"}</span>
-                              {reply.metadata.moderated && (
-                                <div className="ml-1 flex items-center text-[8px] text-amber-500">
-                                  <AlertCircle className="h-2 w-2 mr-0.5" />
-                                  <span>Moderated</span>
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-[9px] text-muted-foreground flex items-center">
-                              {formatDate(reply.createdAt)}
-                            </span>
-                          </div>
-                          
-                          <div className="px-2.5 py-1">
-                            <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
-                              {parseMentions(reply.content)}
-                            </p>
-                            
-                            {reply.metadata.moderated && reply.metadata.originalContent !== reply.content && (
-                              <div className="mb-1 px-1 py-0.5 bg-amber-500/10 rounded text-[8px] border border-amber-500/20 text-amber-600 dark:text-amber-400">
-                                <p className="text-muted-foreground line-through">
-                                  {reply.metadata.originalContent}
-                                </p>
+                <div className="ml-5 space-y-1.5">
+                  {repliesByParentId[comment.id].map(reply => (
+                    <motion.div
+                      key={reply.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card className={cn(
+                        "shadow-none border-border/30 overflow-hidden",
+                        reply.metadata.moderated && "border-amber-500/30"
+                      )}>
+                        {/* Reply header - ultra compact */}
+                        <div className="px-2 py-0.5 flex items-center justify-between border-b border-border/10 bg-muted/5">
+                          <div className="flex items-center">
+                            <span className="font-medium text-[10px]">{reply.metadata.author || "Anonymous"}</span>
+                            {reply.metadata.moderated && (
+                              <div className="ml-2 flex items-center text-[8px] text-amber-500">
+                                <AlertCircle className="h-2 w-2 mr-0.5" />
+                                <span>Moderated</span>
                               </div>
                             )}
-                            
-                            <motion.button 
-                              onClick={() => handleUpvote(reply.id)}
-                              className="flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-primary transition-colors"
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <ThumbsUp className={cn("h-2.5 w-2.5", reply.metadata.upvotes > 0 && "text-primary")} />
-                              <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : 'Like'}</span>
-                            </motion.button>
                           </div>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                          <span className="text-[8px] text-muted-foreground flex items-center">
+                            <Calendar className="h-2 w-2 mr-0.5" />
+                            {formatDate(reply.createdAt)}
+                          </span>
+                        </div>
+                        
+                        {/* Reply body - ultra compact */}
+                        <div className="px-2 py-1">
+                          <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
+                            {parseMentions(reply.content)}
+                          </p>
+                          
+                          {reply.metadata.moderated && (
+                            <div className="mb-1 px-1 py-0.5 bg-amber-500/10 rounded-sm text-[8px] border border-amber-500/20">
+                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="h-2 w-2" />
+                                <span className="font-medium">This reply was automatically moderated</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <button 
+                              onClick={() => handleUpvote(reply.id)}
+                              className="inline-flex items-center text-[9px] text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <ThumbsUp className="h-2 w-2 mr-0.5" />
+                              <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : ''}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
                 </div>
-              )}
-              
-              {/* Reply form */}
-              {replyingTo === comment.id && (
-                <ReplyForm
-                  commentId={comment.id}
-                  postId={postId}
-                  onCancel={() => setReplyingTo(null)}
-                  authorToMention={comment.metadata.author}
-                />
               )}
             </motion.div>
           ))
         ) : (
-          <Card className="py-3 px-2.5 text-center border-border/30 shadow-none bg-muted/5">
-            <div className="flex flex-col items-center space-y-1">
-              <MessageCircle className="h-4 w-4 text-muted-foreground/40" />
-              <h4 className="text-xs font-medium">No comments yet</h4>
-              <p className="text-[10px] text-muted-foreground max-w-sm">
-                Be the first to share your thoughts on this post
-              </p>
-            </div>
-          </Card>
+          <div className="text-center py-3">
+            <p className="text-xs text-muted-foreground">No comments yet. Be the first to share your thoughts!</p>
+          </div>
         )}
       </div>
     </div>
