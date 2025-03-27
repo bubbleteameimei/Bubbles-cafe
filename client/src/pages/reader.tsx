@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
-import useSaveReadingProgress from "@/hooks/useSaveReadingProgress";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import { 
@@ -119,24 +118,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
      )))
   );
   
-  // Enhanced reading progress hook with gentle position restoration
-  const { 
-    progress: savedProgress, 
-    forceSave,
-    positionRestored 
-  } = useSaveReadingProgress({
-    slug: autoSaveSlug,
-    saveInterval: 8000, // Save every 8 seconds (reduced from 10s for better responsiveness)
-    inactivityTimeout: 2000, // Save after 2 seconds of inactivity
-    showSavedNotification: !isRefreshRef.current // Don't show toast on refresh
-  });
+  // Reading progress is now only tracked visually, without saving position
   
   // Horror easter egg - track rapid navigation
   const [showHorrorMessage, setShowHorrorMessage] = useState(false);
   const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
-  const positionRestoredRef = useRef(false);
+  // Removed positionRestoredRef as we no longer save reading position
   const { toast } = useToast();
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
@@ -293,39 +282,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     }
   }, [currentIndex, postsData?.posts, routeSlug]);
 
-  // Effect to handle position restoration and display a notification
-  useEffect(() => {
-    // Check if position was restored and we haven't shown notification yet
-    if (positionRestored && !positionRestoredRef.current) {
-      positionRestoredRef.current = true;
-      
-      // Show toast notification only if we have made some reading progress
-      if (savedProgress > 5) {
-        // Wait a moment to ensure content is rendered
-        setTimeout(() => {
-          // For refresh, show a minimal indicator
-          if (isRefreshRef.current) {
-            toast({
-              title: "Reading Position Restored",
-              description: `You're continuing from ${Math.round(savedProgress)}%`,
-              duration: 3000,
-              variant: "default",
-              // Add a visual indicator that distinguishes this from regular saves
-              action: <RefreshCcw className="h-4 w-4 text-primary animate-spin-once" />
-            });
-          } else {
-            // Regular return toast (not from page refresh)
-            toast({
-              title: "Welcome Back",
-              description: `Restored your reading position at ${Math.round(savedProgress)}%`,
-              duration: 3000,
-              variant: "default"
-            });
-          }
-        }, 1000);
-      }
-    }
-  }, [positionRestored, savedProgress, toast, isRefreshRef]);
+  // Position restoration notification has been removed as requested
 
   useEffect(() => {
     console.log('[Reader] Verifying social icons:', {
@@ -339,21 +296,20 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const generateStoryContentStyles = () => `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
-    max-width: 70ch; /* Restored previous width constraint for better readability */
+    max-width: 75ch; /* Balanced width for readability */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
+    padding: 0 1rem; /* Consistent padding */
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;  /* Improved line height for readability */
-    margin-bottom: 1.7em;  /* Restored paragraph spacing to improve readability */
+    margin-bottom: 1.7em;  /* Consistent paragraph spacing */
     text-align: justify;
-    letter-spacing: 0.01em; /* Subtle letter spacing */
+    letter-spacing: 0.012em; /* Slightly enhanced letter spacing */
     font-kerning: normal; /* Improves kerning pairs */
     font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
-    max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
-    margin-left: auto;
-    margin-right: auto;
+    max-width: none; /* Let container control width */
     font-family: ${availableFonts[fontFamily].family};
   }
   .story-content em {
@@ -520,40 +476,37 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     }
   }, [fontFamily, fontSize, availableFonts]);
   
-  // Handle reading progress with visual progress bar and integration with auto-save
+  // Handle reading progress with visual progress bar only (no position saving)
   useEffect(() => {
-    // Track last scroll position to avoid unnecessarily frequent updates
-    let lastScrollY = 0;
-    let lastForceUpdateTime = 0;
+    // Use requestAnimationFrame for smoother updates
+    let ticking = false;
+    let lastKnownScrollY = window.scrollY;
     
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const totalHeight = document.body.scrollHeight - window.innerHeight;
-      const progress = Math.min(Math.max((scrollY / totalHeight) * 100, 0), 100);
+      lastKnownScrollY = window.scrollY;
       
-      // Update UI progress bar
-      setReadingProgress(progress);
-      
-      // Force save on significant scroll change (more than 5% of page height) 
-      // but not too frequently (at most once every 3 seconds)
-      const now = Date.now();
-      const scrollDelta = Math.abs(scrollY - lastScrollY);
-      const significantScroll = scrollDelta > totalHeight * 0.05; // 5% of page height
-      
-      if (significantScroll && now - lastForceUpdateTime > 3000) {
-        lastScrollY = scrollY;
-        lastForceUpdateTime = now;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const totalHeight = document.body.scrollHeight - window.innerHeight;
+          // Avoid division by zero
+          if (totalHeight > 0) {
+            const progress = Math.min(Math.max((lastKnownScrollY / totalHeight) * 100, 0), 100);
+            setReadingProgress(progress);
+          }
+          ticking = false;
+        });
         
-        // Call forceSave from our reading progress hook
-        if (typeof forceSave === 'function') {
-          forceSave();
-        }
+        ticking = true;
       }
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial calculation
+    handleScroll();
+    
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [forceSave]);
+  }, []);
 
   // Use our ApiLoader component to handle loading state with the global context
   if (isLoading) {
@@ -1094,7 +1047,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Reading progress indicator - always visible for user orientation */}
       <div 
         className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
-        style={{ width: `${readingProgress}%`, transition: 'width 0.2s ease-out' }}
+        style={{ 
+          width: `${readingProgress}%`, 
+          transition: 'width 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'width',
+          transform: 'translateZ(0)'  // Hardware acceleration
+        }}
         aria-hidden="true"
       />
       
@@ -1312,18 +1270,19 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 mx-auto container max-w-4xl px-4 overflow-visible"
+              className="reader-container story-content mb-8 mx-auto container max-w-[75ch] px-4 overflow-visible"
               style={{
                 whiteSpace: 'normal',
-                letterSpacing: '0.01em',
+                letterSpacing: '0.012em',
                 overflowWrap: 'break-word',
                 wordWrap: 'break-word',
                 overflow: 'visible',
-                margin: '40px auto',
+                margin: '32px auto',
                 lineHeight: '1.8',
                 textAlign: 'left',
                 fontSize: '1.2rem',
-                cursor: 'pointer' // Explicitly set cursor to pointer for this element
+                cursor: 'pointer', // Explicitly set cursor to pointer for this element
+                padding: '0 1rem'
               }}
               onClick={toggleUI} // Only story content toggles UI
               dangerouslySetInnerHTML={{
