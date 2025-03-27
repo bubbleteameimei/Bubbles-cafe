@@ -1,231 +1,133 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient, UseMutationResult } from '@tanstack/react-query';
-import { z } from 'zod';
-import { apiRequest } from '@/lib/queryClient';
-import { insertUserSchema, loginSchema } from '@shared/schema';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Types
-type SelectUser = {
+interface User {
   id: number;
-  username: string;
   email: string;
+  username: string;
   isAdmin: boolean;
-  createdAt: string;
-  avatar?: string | null;
-  fullName?: string | null;
-  bio?: string | null;
-};
+  fullName?: string;
+  bio?: string;
+  avatar?: string;
+}
 
-type AuthContextType = {
-  user: SelectUser | null;
+interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isAuthReady: boolean;
   isLoading: boolean;
-  error: Error | null;
-  login: (email: string, password: string, remember?: boolean) => Promise<SelectUser | void>;
-  logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
-};
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+}
 
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof insertUserSchema>;
-
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SelectUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch current user data
-  const { data: userData, isLoading: isLoadingAuth } = useQuery({
-    queryKey: ['auth', 'status'],
-    queryFn: async () => {
-      try {
-        console.log('[Auth] Fetching auth status from server');
-        const response = await apiRequest<{ isAuthenticated: boolean; user?: SelectUser }>('/api/auth/status');
-        
-        if (response?.isAuthenticated && response?.user) {
-          console.log('[Auth] User is authenticated:', {
-            id: response.user.id,
-            username: response.user.username,
-            isAdmin: response.user.isAdmin
-          });
+  const checkAuth = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/auth/status');
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated) {
+          setUser(data.user);
         } else {
-          console.log('[Auth] User is not authenticated');
+          setUser(null);
         }
-        
-        return response;
-      } catch (error) {
-        console.error('[Auth] Error fetching auth status:', error);
-        // Log more details about the error for debugging
-        if (error instanceof Error) {
-          console.error('[Auth] Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        }
-        return { isAuthenticated: false };
-      }
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  useEffect(() => {
-    if (!isLoadingAuth) {
-      setIsLoading(false);
-      if (userData?.isAuthenticated && userData.user) {
-        setUser(userData.user);
       } else {
         setUser(null);
       }
-    }
-  }, [isLoadingAuth, userData]);
-
-  // Register mutation
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: RegisterData) => {
-      console.log('[Auth] Initiating registration request', { 
-        email: credentials.email,
-        hasUsername: !!credentials.username,
-        hasPassword: !!credentials.password 
-      });
-
-      try {
-        const response = await apiRequest<SelectUser>('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
-        
-        console.log('[Auth] Registration request successful', { userId: response.id });
-        return response;
-      } catch (error) {
-        console.error('[Auth] Registration request failed', error);
-        throw error;
-      }
-    },
-    onSuccess: (user: SelectUser) => {
-      console.log('[Auth] Registration mutation successful, updating state');
-      setUser(user);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
-    },
-    onError: (error: Error) => {
-      console.error('[Auth] Registration mutation error:', error);
-      setError(error);
-    },
-  });
-
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      console.log('[Auth] Initiating logout request');
-      
-      try {
-        await apiRequest('/api/auth/logout');
-        console.log('[Auth] Logout request successful');
-      } catch (error) {
-        console.error('[Auth] Logout request failed', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      console.log('[Auth] Logout mutation successful, clearing user state');
+    } catch (error) {
+      console.error('Auth check error:', error);
       setUser(null);
-      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
-    },
-    onError: (error: Error) => {
-      console.error('[Auth] Logout mutation error:', error);
-      setError(error);
-    },
-  });
+    } finally {
+      setIsAuthReady(true);
+      setIsLoading(false);
+    }
+  };
 
-  // Login convenience method
-  const login = useCallback(async (email: string, password: string, remember?: boolean) => {
-    console.log('[Auth] Invoking login method', { 
-      hasEmail: !!email, 
-      hasPassword: !!password,
-      remember
-    });
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
     
     try {
-      console.log('[Auth] Attempting to login');
-      
-      const response = await apiRequest<SelectUser>('/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, remember }),
+        body: JSON.stringify({ email, password }),
       });
       
-      console.log('[Auth] Login successful', { userId: response?.id });
-      setUser(response);
-      setError(null);
+      const data = await response.json();
       
-      // Force re-fetch of auth status to update UI
-      queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
-      
-      // Log the successful authentication event
-      console.log('[Auth] User authenticated successfully, updating authentication state');
-      
-      return response;
-    } catch (error) {
-      console.error('[Auth] Login failed', error);
-      
-      // Enhanced error logging
-      if (error instanceof Error) {
-        console.error('[Auth] Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-        setError(error);
-        throw error;
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
       
-      const unknownError = new Error('Login failed with an unknown error');
-      console.error('[Auth] Unknown error occurred during login');
-      setError(unknownError);
-      throw unknownError;
+      setUser(data.user);
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
-  }, [queryClient]);
+  };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        error,
-        login,
-        logoutMutation,
-        registerMutation,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const logout = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/logout');
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Logout failed');
+      }
+      
+      setUser(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
+      console.error('Logout error:', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isAuthReady,
+    isLoading,
+    error,
+    login,
+    logout,
+    checkAuth
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   
-  // Add a derived state to check if the user is authenticated
-  const isAuthenticated = !!context.user;
-  
-  // Add a method to check if auth state is fully loaded and user is authenticated
-  const isAuthReady = !context.isLoading;
-  
-  return {
-    ...context,
-    isAuthenticated,
-    isAuthReady
-  };
+  return context;
 }

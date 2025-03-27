@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 // Interfaces
 interface CommentMetadata {
@@ -47,31 +48,43 @@ interface ReplyFormProps {
   commentId: number;
   postId: number;
   onCancel: () => void;
+  authorToMention?: string;
 }
 
 // Simple reply form component
-function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
+function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormProps) {
   const [name, setName] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(authorToMention ? `@${authorToMention} ` : "");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Get authentication state
+  const { user, isAuthenticated, isAuthReady } = useAuth();
 
-  // Focus the textarea when the form appears
+  // Focus the textarea when the form appears and position cursor at the end
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
+      
+      // Position cursor at the end of the text
+      const length = textareaRef.current.value.length;
+      textareaRef.current.selectionStart = length;
+      textareaRef.current.selectionEnd = length;
     }
   }, []);
 
   const replyMutation = useMutation({
     mutationFn: async () => {
+      // Use authenticated user's username if available, otherwise use the name from input
+      const replyAuthor = isAuthenticated && user ? user.username : name.trim();
+      
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: content.trim(),
-          author: name.trim(),
+          author: replyAuthor,
           parentId: commentId
         })
       });
@@ -106,10 +119,13 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !content.trim()) {
+    // Only validate name field if user is not authenticated
+    if ((!isAuthenticated && !name.trim()) || !content.trim()) {
       toast({
         title: "Missing information",
-        description: "Please provide your name and message",
+        description: isAuthenticated 
+          ? "Please provide your message" 
+          : "Please provide your name and message",
         variant: "destructive"
       });
       return;
@@ -124,33 +140,57 @@ function ReplyForm({ commentId, postId, onCancel }: ReplyFormProps) {
         <div className="flex items-center gap-1.5 mb-1">
           <Reply className="h-2.5 w-2.5 text-primary/70" />
           <span className="text-[10px] font-medium">Reply to this comment</span>
+          {isAuthenticated && (
+            <span className="ml-1 text-[9px] text-muted-foreground">
+              as <span className="font-medium">{user?.username}</span>
+            </span>
+          )}
         </div>
+        
+        {!isAuthenticated && (
+          <div className="flex gap-1.5">
+            <Input
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-6 text-[10px] bg-background/80 flex-grow"
+              required
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              className="h-6 px-2 text-[10px]"
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
+        
         <div className="flex gap-1.5">
-          <Input
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-6 text-[10px] bg-background/80 flex-grow"
+          <Textarea
+            ref={textareaRef}
+            placeholder="Write your reply..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[40px] text-[10px] bg-background/80 py-1 flex-grow"
             required
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            className="h-6 px-2 text-[10px]"
-          >
-            Cancel
-          </Button>
+          
+          {isAuthenticated && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              className="h-6 px-2 text-[10px] self-start"
+            >
+              Cancel
+            </Button>
+          )}
         </div>
-        <Textarea
-          ref={textareaRef}
-          placeholder="Write your reply..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[40px] text-[10px] bg-background/80 py-1"
-          required
-        />
+        
         <div className="flex justify-end">
           <Button
             type="submit"
@@ -183,6 +223,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get authentication state
+  const { user, isAuthenticated, isAuthReady } = useAuth();
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
@@ -199,12 +242,15 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Post new comment
   const mutation = useMutation({
     mutationFn: async () => {
+      // Use authenticated user's username if available, otherwise use the name from input
+      const commentAuthor = isAuthenticated && user ? user.username : name.trim();
+      
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: content.trim(),
-          author: name.trim()
+          author: commentAuthor
         })
       });
 
@@ -260,10 +306,13 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !content.trim()) {
+    // Only validate name field if user is not authenticated
+    if ((!isAuthenticated && !name.trim()) || !content.trim()) {
       toast({
         title: "Missing information",
-        description: "Please provide your name and message",
+        description: isAuthenticated 
+          ? "Please provide your message" 
+          : "Please provide your name and message",
         variant: "destructive"
       });
       return;
@@ -292,6 +341,42 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
     return format(date, 'MMM d');
   };
+  
+  // Parse and highlight @mentions in text
+  const parseMentions = (text: string): React.ReactNode => {
+    if (!text) return "";
+    
+    // Regular expression to match @mentions
+    const mentionRegex = /@(\w+)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    // Find all mentions in the text
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // Add the text before the mention
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Add the mention with highlighting
+      const username = match[1];
+      parts.push(
+        <span key={`mention-${match.index}`} className="text-primary font-medium">
+          @{username}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? <>{parts}</> : text;
+  };
 
   return (
     <div className="antialiased mx-auto">
@@ -312,36 +397,65 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               <h4 className="text-xs font-medium">Join the conversation</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
-              <div className="md:col-span-1 flex">
-                <Input
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-7 text-xs bg-background/80 flex-grow"
-                  required
-                />
-              </div>
-              <div className="md:col-span-3 flex">
-                <Textarea
-                  placeholder="Share your thoughts..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
-                  required
-                />
-                <Button 
-                  type="submit" 
-                  disabled={mutation.isPending}
-                  size="sm"
-                  className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
-                >
-                  {mutation.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <SendHorizontal className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
+              {!isAuthenticated ? (
+                <>
+                  <div className="md:col-span-1 flex">
+                    <Input
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-7 text-xs bg-background/80 flex-grow"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-3 flex">
+                    <Textarea
+                      placeholder="Share your thoughts..."
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
+                      required
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={mutation.isPending}
+                      size="sm"
+                      className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
+                    >
+                      {mutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="md:col-span-4 flex">
+                  <div className="flex items-center mr-2 text-xs text-muted-foreground">
+                    <span>Posting as <span className="font-medium">{user?.username}</span></span>
+                  </div>
+                  <Textarea
+                    placeholder="Share your thoughts..."
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
+                    required
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={mutation.isPending}
+                    size="sm"
+                    className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
+                  >
+                    {mutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <SendHorizontal className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </form>
         </Card>
@@ -376,7 +490,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                 {/* Comment body - ultra compact */}
                 <div className="px-2.5 py-1.5">
                   <p className="text-xs text-card-foreground leading-relaxed mb-1.5">
-                    {comment.content}
+                    {parseMentions(comment.content)}
                   </p>
                   
                   <div className="flex items-center justify-between text-[10px]">
@@ -416,7 +530,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       
                       <div className="px-2.5 py-1">
                         <p className="text-[10px] text-card-foreground leading-relaxed mb-1">
-                          {reply.content}
+                          {parseMentions(reply.content)}
                         </p>
                         
                         <button 
@@ -438,6 +552,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   commentId={comment.id}
                   postId={postId}
                   onCancel={() => setReplyingTo(null)}
+                  authorToMention={comment.metadata.author}
                 />
               )}
             </div>
