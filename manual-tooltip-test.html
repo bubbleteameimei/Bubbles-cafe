@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reader Tooltip Alignment Test</title>
+  <script src="test-simple-tooltip.js" defer></script>
+  <script>
+    // Load the page content directly to avoid CORS issues
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Fetch the reader page
+        const response = await fetch('http://localhost:3001/reader');
+        const html = await response.text();
+        
+        // Create a temporary element to parse the HTML
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = html;
+        
+        // Extract the content we need (the body contents)
+        const bodyContent = tempElement.querySelector('body');
+        if (bodyContent) {
+          document.getElementById('reader-content').innerHTML = bodyContent.innerHTML;
+          
+          // Run the tooltip alignment check
+          setTimeout(() => {
+            checkTooltipAlignment();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Error loading reader page:', error);
+      }
+    });
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .test-info {
+      background-color: #f0f0f0;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .test-info h1 {
+      margin-top: 0;
+    }
+    .test-info code {
+      background-color: #eee;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    #reader-content {
+      /* Isolate the reader page content */
+      position: relative;
+    }
+    /* Add a reference line */
+    .center-reference {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background-color: rgba(255, 0, 0, 0.5);
+      z-index: 9999;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-info">
+    <h1>Reader Tooltip Alignment Test</h1>
+    <p>This page loads the Reader page content and tests if the tooltip is properly centered.</p>
+    <p>We're specifically checking if both the tooltip and story content use <code>max-w-4xl</code> and <code>mx-auto</code> classes.</p>
+    <p>Check the browser console for test results.</p>
+  </div>
+  
+  <div class="center-reference"></div>
+  
+  <div id="reader-content">
+    <!-- Reader page content will be loaded here -->
+    <p>Loading reader page content...</p>
+  </div>
+</body>
+</html>

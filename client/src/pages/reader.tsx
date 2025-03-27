@@ -1312,7 +1312,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 mx-auto w-full max-w-[700px] px-6 md:px-6 overflow-visible"
+              className="reader-container story-content mb-8 mx-auto container max-w-4xl px-4 overflow-visible"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.01em',
@@ -1320,7 +1320,6 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 wordWrap: 'break-word',
                 overflow: 'visible',
                 margin: '40px auto',
-                padding: '20px',
                 lineHeight: '1.8',
                 textAlign: 'left',
                 fontSize: '1.2rem',
