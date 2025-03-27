@@ -159,14 +159,14 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
           content: content.trim(),
           author: replyAuthor,
           userId: user?.id || null,
-          parentId: commentId,
+          commentId: commentId,
           metadata: {
             author: replyAuthor,
-            upvotes: 0,
-            downvotes: 0,
             isAnonymous: !isAuthenticated,
             moderated: false,
-            originalContent: content.trim()
+            originalContent: content.trim(),
+            upvotes: 0,
+            downvotes: 0
           }
         })
       });
@@ -378,18 +378,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
           content: content.trim(),
-          author: commentAuthor,
-          userId: user?.id || null,
-          postId: postId,
-          parentId: null,
-          metadata: {
-            author: commentAuthor,
-            upvotes: 0,
-            downvotes: 0,
-            isAnonymous: !isAuthenticated,
-            moderated: false,
-            originalContent: content.trim()
-          }
+          author: commentAuthor
         })
       });
 
