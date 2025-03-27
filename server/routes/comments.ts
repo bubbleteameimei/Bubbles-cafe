@@ -225,6 +225,56 @@ router.post('/:commentId/react', async (req, res) => {
   }
 });
 
+// Flag a comment
+router.post('/:commentId/flag', async (req, res) => {
+  try {
+    const schema = z.object({
+      reason: z.string().min(3, "Reason must be at least 3 characters").max(500, "Reason cannot exceed 500 characters").default("inappropriate content")
+    });
+
+    const { reason } = schema.parse(req.body);
+    const commentId = parseInt(req.params.commentId);
+    const userId = req.user?.id || 1; // Use admin user ID (1) for anonymous reports
+
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    // Check if comment exists
+    const comment = await storage.getComment(commentId);
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Create a report in the reported_content table
+    const report = await storage.reportContent({
+      contentType: 'comment',
+      contentId: commentId,
+      reporterId: userId,
+      reason,
+      status: 'pending'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Comment flagged successfully',
+      report
+    });
+  } catch (error) {
+    console.error('Error flagging comment:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Invalid flag data",
+        errors: error.errors.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        }))
+      });
+    }
+    res.status(500).json({ error: 'Failed to flag comment' });
+  }
+});
+
 // Reply to a comment
 router.post('/:commentId/replies', async (req, res) => {
   try {

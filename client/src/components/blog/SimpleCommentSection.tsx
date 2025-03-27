@@ -377,6 +377,33 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       });
     }
   };
+  
+  // Handle flagging a comment
+  const handleFlagComment = async (commentId: number) => {
+    try {
+      const response = await fetch(`/api/comments/${commentId}/flag`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "inappropriate content" })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to flag comment");
+      }
+      
+      toast({
+        title: "Comment reported",
+        description: "Thank you for flagging this comment. Our moderators will review it.",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to report comment. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -711,11 +738,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                     </div>
                     <div>
                       <button 
-                        onClick={() => toast({
-                          title: "Comment reported",
-                          description: "Thank you for flagging this comment. Our moderators will review it.",
-                          variant: "default"
-                        })}
+                        onClick={() => handleFlagComment(comment.id)}
                         className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
                         title="Report this comment"
                       >
@@ -802,11 +825,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                               <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : ''}</span>
                             </button>
                             <button 
-                              onClick={() => toast({
-                                title: "Reply reported",
-                                description: "Thank you for flagging this reply. Our moderators will review it.",
-                                variant: "default"
-                              })}
+                              onClick={() => handleFlagComment(reply.id)}
                               className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
                               title="Report this reply"
                             >
