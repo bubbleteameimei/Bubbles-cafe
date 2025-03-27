@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, subYears, subMonths } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -16,7 +16,6 @@ import {
   Minimize2,
   Reply, 
   Save,
-  ThumbsUp,
   Calendar,
   MessageCircle,
   SendHorizontal,
@@ -24,7 +23,9 @@ import {
   Check,
   ShieldAlert,
   Flag,
-  X
+  X,
+  Ghost,
+  Skull
 } from "lucide-react";
 import {
   Select,
@@ -336,7 +337,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const [commentToFlag, setCommentToFlag] = useState<number | null>(null);
   const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
   const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
-  const [sortOrder, setSortOrder] = useState<'recent' | 'active' | 'upvotes'>('active');
+  const [sortOrder, setSortOrder] = useState<'recent' | 'active'>('active');
   const [autoCollapsing, setAutoCollapsing] = useState(false);
   const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
@@ -513,6 +514,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
       const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
       
+      // Check if the content needs moderation
+      const { isFlagged, isUnderReview } = checkModeration(content);
+      
       // Using the correct endpoint format that matches server routes
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
@@ -523,7 +527,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
           content: content.trim(),
-          author: commentAuthor
+          author: commentAuthor,
+          needsModeration: isFlagged || isUnderReview,
+          moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
         })
       });
 
@@ -533,17 +539,34 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         throw new Error('Failed to post comment: ' + errorData);
       }
 
-      return response.json();
+      return {
+        data: await response.json(),
+        moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none')
+      };
     },
-    onSuccess: (data) => {
-      console.log('Comment posted successfully:', data);
+    onSuccess: (result) => {
+      console.log('Comment posted successfully:', result.data);
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+      
+      // Clear localStorage draft
+      localStorage.removeItem(`comment_draft_${postId}`);
       setContent("");
-      toast({
-        title: "Comment posted",
-        description: "Thank you for joining the conversation!",
-        variant: "default"
-      });
+      
+      // Show appropriate toast based on moderation status
+      if (result.moderationStatus === 'flagged' || result.moderationStatus === 'under_review') {
+        toast({
+          title: "Comment under review",
+          description: "Your comment contains words that need review by our team. We'll review it shortly.",
+          variant: "default",
+          duration: 7000
+        });
+      } else {
+        toast({
+          title: "Comment posted",
+          description: "Thank you for joining the conversation!",
+          variant: "default"
+        });
+      }
     },
     onError: () => {
       toast({
@@ -672,13 +695,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         const bReplies = repliesByParentId[b.id]?.length || 0;
         return bReplies - aReplies; // Higher reply count first
       });
-    } else if (sortOrder === 'upvotes') {
-      // Sort by most upvoted
-      sorted = sorted.sort((a, b) => {
-        const aUpvotes = a.metadata.upvotes || 0;
-        const bUpvotes = b.metadata.upvotes || 0;
-        return bUpvotes - aUpvotes; // Higher upvotes first
-      });
     } else {
       // Default: sort by recent
       sorted = sorted.sort((a, b) => {
@@ -698,6 +714,42 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     return commentDate < oneYearAgo;
   };
+  
+  // Random eerie messages that appear occasionally in threads
+  const unknownMessages = [
+    "I've seen what waits in the darkness. It's been watching us all along.",
+    "The words hide more than they reveal. Read between the lines.",
+    "They come at night when you're alone. Listen for the whispers.",
+    "Every story has a hidden truth. Some are better left untold.",
+    "Time is just a circle. We've been here before, and we'll be here again.",
+    "The shadows aren't empty. They're filled with forgotten memories.",
+    "Some readers never leave this place. Their stories continue without them.",
+    "I can still hear the voices from the other side of the page.",
+    "The author knows more than they're telling. Trust nothing.",
+    "What you're reading now is changing you in ways you can't perceive."
+  ];
+  
+  // Function to determine if we should show an unknown message
+  const shouldShowUnknownMessage = (): boolean => {
+    // Higher chance (75%) for testing; reduce to ~10-15% in production
+    return Math.random() < 0.75;
+  };
+  
+  // Get a random unknown message
+  const getRandomUnknownMessage = (): string => {
+    const randomIndex = Math.floor(Math.random() * unknownMessages.length);
+    return unknownMessages[randomIndex];
+  };
+  
+  // Generate random old date for unknown messages
+  const getRandomOldDate = (): Date => {
+    // Random date between 2-5 years ago
+    const yearsAgo = 2 + Math.floor(Math.random() * 3);
+    const monthsAgo = Math.floor(Math.random() * 11);
+    return subYears(subMonths(new Date(), monthsAgo), yearsAgo);
+  };
+  
+
   
   // Handle toggling comment collapse
   const toggleCollapse = (commentId: number) => {
@@ -754,7 +806,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
           <div className="flex items-center gap-2">
             <Select 
               value={sortOrder} 
-              onValueChange={(value: 'recent' | 'active' | 'upvotes') => setSortOrder(value)}
+              onValueChange={(value: 'recent' | 'active') => setSortOrder(value)}
             >
               <SelectTrigger className="h-6 text-[10px] w-[95px]">
                 <SelectValue placeholder="Sort by" />
@@ -762,7 +814,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               <SelectContent>
                 <SelectItem value="recent" className="text-xs">Most Recent</SelectItem>
                 <SelectItem value="active" className="text-xs">Most Active</SelectItem>
-                <SelectItem value="upvotes" className="text-xs">Most Upvoted</SelectItem>
               </SelectContent>
             </Select>
             
@@ -795,9 +846,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
             <div className="grid grid-cols-1 gap-1">
               <motion.div 
                 className="flex flex-col"
-                initial={{ opacity: 0 }}
+                initial={{ opacity: 0.9 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
                 <div className="flex">
                   <Textarea
@@ -832,9 +883,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                 {isFlagged && content.trim() !== "" && (
                   <motion.div 
                     className="mt-1 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
-                    initial={{ opacity: 0, height: 0 }}
+                    initial={{ opacity: 0.9, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.1 }}
                   >
                     <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <AlertCircle className="h-2.5 w-2.5" />
@@ -848,9 +899,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                 {isUnderReview && !isFlagged && content.trim() !== "" && (
                   <motion.div 
                     className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
-                    initial={{ opacity: 0, height: 0 }}
+                    initial={{ opacity: 0.9, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.1 }}
                   >
                     <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                       <ShieldAlert className="h-2.5 w-2.5" />
@@ -867,6 +918,39 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         </Card>
       </div>
 
+      {/* Unknown message from the void - appears randomly */}
+      {shouldShowUnknownMessage() && (
+        <motion.div 
+          className="mb-4 border-l-[3px] border-l-destructive/40 bg-destructive/5 rounded-sm overflow-hidden shadow-md"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <div className="px-3 py-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Ghost className="h-3.5 w-3.5 text-destructive/70" />
+              <span className="text-[10px] font-medium text-destructive/70">Unknown User</span>
+              <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0 h-3 border-destructive/30 bg-destructive/5 text-destructive/70">
+                lost
+              </Badge>
+              <span className="text-[8px] text-muted-foreground/60 ml-auto flex items-center">
+                <Calendar className="h-2.5 w-2.5 mr-0.5 text-muted-foreground/40" />
+                {formatDate(getRandomOldDate())}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground italic leading-relaxed opacity-90">
+              "{getRandomUnknownMessage()}"
+            </p>
+            <div className="flex justify-end mt-1">
+              <span className="text-[9px] text-destructive/50 flex items-center">
+                <Skull className="h-2.5 w-2.5 mr-0.5" />
+                Message from the archive
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
       {/* Comments list */}
       <div className="space-y-1">
         {isLoading ? (
@@ -878,9 +962,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
             <motion.div 
               key={comment.id} 
               className="space-y-1"
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.4, type: "spring", stiffness: 100 }}
+              initial={{ opacity: 0.9, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
             >
               <Card className={cn(
                 "shadow-sm hover:shadow-md transition-all border-border/30 overflow-hidden",
@@ -934,10 +1018,10 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   {(!(collapsedComments.includes(comment.id) || autoCollapsing)) && (
                     <motion.div 
                       className="px-2.5 py-1"
-                      initial={{ opacity: 0, height: 0 }}
+                      initial={{ opacity: 0.9, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
+                      exit={{ opacity: 0.9, height: 0 }}
+                      transition={{ duration: 0.1 }}
                     >
                       <p className="text-xs text-card-foreground leading-relaxed mb-1">
                         {parseMentions(comment.content)}
@@ -957,19 +1041,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                           <button 
                             onClick={(e) => {
                               e.stopPropagation(); // Prevent triggering collapse
-                              handleUpvote(comment.id);
-                            }}
-                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            <ThumbsUp className="h-2.5 w-2.5 mr-0.5" />
-                            <span>{comment.metadata.upvotes > 0 ? comment.metadata.upvotes : ''}</span>
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent triggering collapse
                               setReplyingTo(replyingTo === comment.id ? null : comment.id);
                             }}
-                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors ml-2"
+                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
                           >
                             <Reply className="h-2.5 w-2.5 mr-0.5" />
                             <span>Reply</span>
@@ -1008,10 +1082,10 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
               <AnimatePresence>
                 {replyingTo === comment.id && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0, x: -10 }}
-                    animate={{ opacity: 1, height: "auto", x: 0 }}
-                    exit={{ opacity: 0, height: 0, x: -10 }}
-                    transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
+                    initial={{ opacity: 0.9, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15 }}
                     className="ml-4"
                   >
                     <ReplyForm 
@@ -1030,9 +1104,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   {repliesByParentId[comment.id].map(reply => (
                     <motion.div
                       key={reply.id}
-                      initial={{ opacity: 0, x: -5, scale: 0.98 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ duration: 0.3, type: "spring", stiffness: 120 }}
+                      initial={{ opacity: 0.9, x: -2 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.15 }}
                     >
                       <Card className={cn(
                         "shadow-xs hover:shadow-sm transition-all border-border/30 overflow-hidden",
@@ -1071,13 +1145,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                           )}
                           
                           <div className="flex items-center justify-between mt-1">
-                            <button 
-                              onClick={() => handleUpvote(reply.id)}
-                              className="inline-flex items-center text-[9px] text-muted-foreground hover:text-primary transition-colors"
-                            >
-                              <ThumbsUp className="h-2 w-2 mr-0.5" />
-                              <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : ''}</span>
-                            </button>
+                            <div></div>
                             {flaggedComments.includes(reply.id) ? (
                               <span 
                                 className="inline-flex items-center text-[8px] text-muted-foreground/70"
