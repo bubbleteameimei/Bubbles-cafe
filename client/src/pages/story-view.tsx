@@ -70,6 +70,7 @@ export default function StoryView({ slug }: StoryViewProps) {
         </motion.article>
 
         <div className="mt-16 pt-8 border-t border-border/50">
+          <h3 className="text-xl font-semibold mb-4">Discussion</h3>
           <SimpleCommentSection postId={post.id} />
         </div>
       </div>

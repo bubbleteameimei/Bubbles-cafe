@@ -142,10 +142,18 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
+      // Get CSRF token from cookie
+      const cookies = document.cookie.split('; ');
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      
       // Using the endpoint with the right format
       const response = await fetch(`/api/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
           postId, 
@@ -210,16 +218,6 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
         <div className="flex items-center gap-1.5 mb-1">
           <Reply className="h-2.5 w-2.5 text-primary/70" />
           <span className="text-[10px] font-medium">Reply to this comment</span>
-          {isAuthenticated && (
-            <span className="ml-1 text-[9px] text-muted-foreground">
-              as <span className="font-medium">{user?.username}</span>
-            </span>
-          )}
-          {!isAuthenticated && (
-            <span className="ml-1 text-[9px] text-muted-foreground">
-              as <span className="font-medium">Anonymous</span>
-            </span>
-          )}
         </div>
         
         <div className="flex gap-1.5">
@@ -363,10 +361,18 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
+      // Get CSRF token from cookie
+      const cookies = document.cookie.split('; ');
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      
       // Using the endpoint with the right format
       const response = await fetch(`/api/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
         credentials: "include", // Important for CSRF token
         body: JSON.stringify({
           postId, 
@@ -412,9 +418,18 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Handle upvote
   const handleUpvote = async (commentId: number) => {
     try {
+      // Get CSRF token from cookie
+      const cookies = document.cookie.split('; ');
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      
       const response = await fetch(`/api/comments/${commentId}/vote`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        credentials: "include",
         body: JSON.stringify({ isUpvote: true })
       });
       
@@ -453,9 +468,18 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
+      // Get CSRF token from cookie
+      const cookies = document.cookie.split('; ');
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      
       const response = await fetch(`/api/comments/${commentToFlag}/flag`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        credentials: "include",
         body: JSON.stringify({ reason: "inappropriate content" })
       });
       
@@ -568,15 +592,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     <div className="antialiased mx-auto">
       <div className="border-t border-border/30 pt-4 pb-1.5">
         <div className="mb-3 pb-1 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <MessageCircle className="h-4 w-4 text-primary/70" />
-            <h3 className="text-base font-medium">Discussion ({rootComments.length})</h3>
-          </div>
-          {isAuthenticated ? (
-            <div className="text-xs text-muted-foreground">Commenting as <span className="font-medium">{user?.username}</span></div>
-          ) : (
-            <div className="text-xs text-muted-foreground">Commenting as <span className="font-medium">Anonymous</span></div>
-          )}
+          <h3 className="text-base font-medium">Comments ({rootComments.length})</h3>
         </div>
         {/* Comment form - ultra sleek design */}
         <Card className="mb-3 p-2.5 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
@@ -589,9 +605,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex">
-                  <div className="flex items-center mr-2 text-xs text-muted-foreground">
-                    <span>Posting as <span className="font-medium">{isAuthenticated ? user?.username : "Anonymous"}</span></span>
-                  </div>
                   <Textarea
                     placeholder="Share your thoughts..."
                     value={content}
