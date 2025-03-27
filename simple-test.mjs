@@ -2,11 +2,16 @@
  * Simple test script to check if our files have been updated correctly
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get current file directory for proper path resolution in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Path to the SimpleCommentSection.tsx file
-const commentSectionPath = path.resolve('client/src/components/blog/SimpleCommentSection.tsx');
+const commentSectionPath = path.resolve(__dirname, 'client/src/components/blog/SimpleCommentSection.tsx');
 
 // Check if the file exists
 if (!fs.existsSync(commentSectionPath)) {

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comment Section Test</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.5;
+      color: #333;
+    }
+    
+    h1 {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .comment-form {
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(250, 250, 250, 0.5));
+      border: 1px solid rgba(230, 230, 230, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s;
+    }
+    
+    .comment-form:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .comment-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    
+    textarea {
+      flex-grow: 1;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      min-height: 52px;
+      background-color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+    }
+    
+    button {
+      width: 28px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .user-info {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .user-name {
+      font-weight: 500;
+    }
+
+    .example-label {
+      font-weight: bold;
+      margin-top: 30px;
+      margin-bottom: 10px;
+    }
+
+    .comment {
+      background-color: white;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .comment-author {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .comment-content {
+      font-size: 14px;
+      margin: 8px 0;
+    }
+
+    .comment-actions {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h1>Comment Section Test</h1>
+  
+  <div class="example-label">Example: Anonymous User</div>
+  <div class="comment-form">
+    <div class="comment-header">
+      <div class="user-info">
+        Posting as <span class="user-name">Anonymous</span>
+      </div>
+    </div>
+    <div class="comment-input-row">
+      <textarea placeholder="Share your thoughts..."></textarea>
+      <button>→</button>
+    </div>
+  </div>
+  
+  <div class="example-label">Example: Authenticated User</div>
+  <div class="comment-form">
+    <div class="comment-header">
+      <div class="user-info">
+        Posting as <span class="user-name">TestUser123</span>
+      </div>
+    </div>
+    <div class="comment-input-row">
+      <textarea placeholder="Share your thoughts..."></textarea>
+      <button>→</button>
+    </div>
+  </div>
+
+  <div class="example-label">Example: Comments</div>
+  <div class="comment">
+    <div class="comment-author">Anonymous</div>
+    <div class="comment-content">
+      This is a test comment from an anonymous user.
+    </div>
+    <div class="comment-actions">
+      <div>
+        👍 0 • Reply
+      </div>
+      <div>
+        Flag
+      </div>
+    </div>
+  </div>
+
+  <div class="comment">
+    <div class="comment-author">TestUser123</div>
+    <div class="comment-content">
+      This is a test comment from an authenticated user.
+    </div>
+    <div class="comment-actions">
+      <div>
+        👍 2 • Reply
+      </div>
+      <div>
+        Flag
+      </div>
+    </div>
+  </div>
+</body>
+</html>

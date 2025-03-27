@@ -113,7 +113,6 @@ const checkModeration = (text: string): { isFlagged: boolean, moderated: string,
 
 // Simple reply form component
 function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormProps) {
-  const [name, setName] = useState("");
   const [content, setContent] = useState(authorToMention ? `@${authorToMention} ` : "");
   const [previewMode, setPreviewMode] = useState(false);
   const { toast } = useToast();
@@ -121,7 +120,7 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Get authentication state
-  const { user, isAuthenticated, isAuthReady } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Apply moderation check with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
@@ -140,16 +139,8 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
 
   const replyMutation = useMutation({
     mutationFn: async () => {
-      // Use authenticated user's username if available, otherwise use the name from input
-      const replyAuthor = isAuthenticated && user ? user.username : name.trim();
-      
-      // Add console log to help with debugging
-      console.log('Submitting reply:', {
-        content: content.trim(),
-        author: replyAuthor,
-        parentId: commentId,
-        postId
-      });
+      // Use authenticated user's username if available, otherwise use "Anonymous"
+      const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
       // Using the endpoint with the right format
       const response = await fetch(`/api/comments`, {
@@ -180,7 +171,6 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
-      setName("");
       setContent("");
       onCancel();
       toast({
@@ -201,13 +191,11 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Only validate name field if user is not authenticated
-    if ((!isAuthenticated && !name.trim()) || !content.trim()) {
+    // Only validate content is provided
+    if (!content.trim()) {
       toast({
         title: "Missing information",
-        description: isAuthenticated 
-          ? "Please provide your message" 
-          : "Please provide your name and message",
+        description: "Please provide a message",
         variant: "destructive"
       });
       return;
@@ -327,7 +315,6 @@ const isCommentApproved = (comment: Comment): boolean => {
 
 // Main component
 export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
-  const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -373,15 +360,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Post new comment
   const mutation = useMutation({
     mutationFn: async () => {
-      // Use authenticated user's username if available, otherwise use the name from input
-      const commentAuthor = isAuthenticated && user ? user.username : name.trim();
-      
-      // Add console log to help with debugging
-      console.log('Submitting comment:', {
-        content: content.trim(),
-        author: commentAuthor,
-        postId
-      });
+      // Use authenticated user's username if available, otherwise use "Anonymous"
+      const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
       // Using the endpoint with the right format
       const response = await fetch(`/api/comments`, {
@@ -413,7 +393,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     onSuccess: (data) => {
       console.log('Comment posted successfully:', data);
       queryClient.invalidateQueries({ queryKey: [`/api/comments?postId=${postId}`] });
-      setName("");
       setContent("");
       toast({
         title: "Comment posted",
@@ -511,27 +490,17 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted', { 
-      isAuthenticated, 
-      content: content.trim(),
-      name: name.trim(),
-      username: user?.username 
-    });
-    
-    // Only validate name field if user is not authenticated
-    if ((!isAuthenticated && !name.trim()) || !content.trim()) {
-      console.log('Validation failed');
+    // Only validate content is provided
+    if (!content.trim()) {
       toast({
         title: "Missing information",
-        description: isAuthenticated 
-          ? "Please provide your message" 
-          : "Please provide your name and message",
+        description: "Please provide a message",
         variant: "destructive"
       });
       return;
     }
     
-    console.log('Calling mutation.mutate()');
+    // Execute mutation to submit comment
     mutation.mutate();
   };
 
@@ -600,7 +569,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       <div className="border-t border-border/30 pt-4 pb-1.5">
         <div className="mb-3 pb-1 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <MessageSquare className="h-4 w-4 text-primary/70" />
+            <MessageCircle className="h-4 w-4 text-primary/70" />
             <h3 className="text-base font-medium">Discussion ({rootComments.length})</h3>
           </div>
           {isAuthenticated ? (
@@ -613,162 +582,78 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         <Card className="mb-3 p-2.5 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
           <form onSubmit={handleSubmit} className="space-y-1.5">
             <div className="grid grid-cols-1 gap-1.5">
-              {!isAuthenticated ? (
-                <motion.div 
-                  className="flex flex-col"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex items-center mb-1.5 text-xs text-muted-foreground">
-                    <span>Posting as <span className="font-medium">Anonymous</span></span>
+              <motion.div 
+                className="flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex">
+                  <div className="flex items-center mr-2 text-xs text-muted-foreground">
+                    <span>Posting as <span className="font-medium">{isAuthenticated ? user?.username : "Anonymous"}</span></span>
                   </div>
-                  
-                  <Input
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-7 text-xs bg-background/80 mb-1.5"
+                  <Textarea
+                    placeholder="Share your thoughts..."
+                    value={content}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      setContent(e.target.value);
+                      if (isFlagged && !previewMode) {
+                        setPreviewMode(true);
+                      }
+                    }}
+                    className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
                     required
                   />
-                  
-                  <div className="flex">
-                    <Textarea
-                      placeholder="Share your thoughts..."
-                      value={content}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                        setContent(e.target.value);
-                        if (isFlagged && !previewMode) {
-                          setPreviewMode(true);
-                        }
-                      }}
-                      className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
-                      required
-                    />
-                    <div className="flex flex-col gap-1">
-                      <Button 
-                        type="submit" 
-                        disabled={mutation.isPending}
-                        size="sm"
-                        className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
-                      >
-                        {mutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <SendHorizontal className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
+                  <div className="flex flex-col gap-1">
+                    <Button 
+                      type="submit" 
+                      disabled={mutation.isPending}
+                      size="sm"
+                      className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
+                    >
+                      {mutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="h-3 w-3" />
+                      )}
+                    </Button>
                   </div>
-                  
-                  {/* Moderation preview */}
-                  {isFlagged && content.trim() !== "" && (
-                    <motion.div 
-                      className="mt-1 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                        <AlertCircle className="h-2.5 w-2.5" />
-                        <span className="font-medium">Preview with automatic moderation:</span>
-                      </div>
-                      <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
-                    </motion.div>
-                  )}
-                  
-                  {/* Under review notice for anonymous */}
-                  {isUnderReview && !isFlagged && content.trim() !== "" && (
-                    <motion.div 
-                      className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                        <ShieldAlert className="h-2.5 w-2.5" />
-                        <span className="font-medium">This comment may be placed under review</span>
-                      </div>
-                      <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
-                        Your comment contains content that might need moderator approval before being displayed to all users.
-                      </p>
-                    </motion.div>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div 
-                  className="flex flex-col"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex">
-                    <div className="flex items-center mr-2 text-xs text-muted-foreground">
-                      <span>Posting as <span className="font-medium">{user?.username}</span></span>
+                </div>
+                
+                {/* Moderation preview */}
+                {isFlagged && content.trim() !== "" && (
+                  <motion.div 
+                    className="mt-1 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-2.5 w-2.5" />
+                      <span className="font-medium">Preview with automatic moderation:</span>
                     </div>
-                    <Textarea
-                      placeholder="Share your thoughts..."
-                      value={content}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                        setContent(e.target.value);
-                        if (isFlagged && !previewMode) {
-                          setPreviewMode(true);
-                        }
-                      }}
-                      className="h-7 text-xs bg-background/80 min-h-[52px] flex-grow"
-                      required
-                    />
-                    <div className="flex flex-col gap-1">
-                      <Button 
-                        type="submit" 
-                        disabled={mutation.isPending}
-                        size="sm"
-                        className="h-[52px] w-7 ml-1.5 p-0 flex items-center justify-center"
-                      >
-                        {mutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <SendHorizontal className="h-3 w-3" />
-                        )}
-                      </Button>
+                    <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
+                  </motion.div>
+                )}
+                
+                {/* Under review notice */}
+                {isUnderReview && !isFlagged && content.trim() !== "" && (
+                  <motion.div 
+                    className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <ShieldAlert className="h-2.5 w-2.5" />
+                      <span className="font-medium">This comment may be placed under review</span>
                     </div>
-                  </div>
-                  
-                  {/* Moderation preview */}
-                  {isFlagged && content.trim() !== "" && (
-                    <motion.div 
-                      className="mt-1 px-1.5 py-1 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                        <AlertCircle className="h-2.5 w-2.5" />
-                        <span className="font-medium">Preview with automatic moderation:</span>
-                      </div>
-                      <p className="mt-0.5 text-xs ml-3.5">{moderated}</p>
-                    </motion.div>
-                  )}
-                  
-                  {/* Under review notice for authenticated */}
-                  {isUnderReview && !isFlagged && content.trim() !== "" && (
-                    <motion.div 
-                      className="mt-1 px-1.5 py-1 bg-blue-500/10 rounded-sm text-[9px] border border-blue-500/20"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                        <ShieldAlert className="h-2.5 w-2.5" />
-                        <span className="font-medium">This comment may be placed under review</span>
-                      </div>
-                      <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
-                        Your comment contains content that might need moderator approval before being displayed to all users.
-                      </p>
-                    </motion.div>
-                  )}
-                </motion.div>
-              )}
+                    <p className="mt-0.5 text-[9px] ml-3.5 text-muted-foreground">
+                      Your comment contains content that might need moderator approval before being displayed to all users.
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
           </form>
         </Card>
