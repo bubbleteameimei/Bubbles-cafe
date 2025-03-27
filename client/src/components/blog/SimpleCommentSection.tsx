@@ -18,12 +18,23 @@ import {
   AlertCircle,
   Check,
   ShieldAlert,
-  Flag
+  Flag,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Interfaces
 interface CommentMetadata {
@@ -40,7 +51,9 @@ interface Comment {
   content: string;
   createdAt: Date | string;
   metadata: CommentMetadata;
-  approved: boolean;
+  // Support both field names during API transition
+  approved?: boolean;
+  is_approved?: boolean;
   parentId: number | null;
 }
 
@@ -129,6 +142,13 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise use the name from input
       const replyAuthor = isAuthenticated && user ? user.username : name.trim();
+      
+      // Add console log to help with debugging
+      console.log('Submitting reply:', {
+        content: content.trim(),
+        author: replyAuthor,
+        parentId: commentId
+      });
       
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
@@ -288,12 +308,21 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
   );
 }
 
+// Helper to check approval status, handling both field names
+const isCommentApproved = (comment: Comment): boolean => {
+  // Check both field names due to API transition
+  return comment.approved === true || comment.is_approved === true;
+};
+
 // Main component
 export default function SimpleCommentSection({ postId, title }: CommentSectionProps) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
+  const [commentToFlag, setCommentToFlag] = useState<number | null>(null);
+  const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -302,6 +331,21 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
+  
+  // Load previously flagged comments from localStorage
+  useEffect(() => {
+    const storedFlaggedComments = localStorage.getItem('flaggedComments_' + postId);
+    if (storedFlaggedComments) {
+      try {
+        const parsedComments = JSON.parse(storedFlaggedComments);
+        if (Array.isArray(parsedComments)) {
+          setFlaggedComments(parsedComments);
+        }
+      } catch (e) {
+        console.error('Error parsing flagged comments from localStorage', e);
+      }
+    }
+  }, [postId]);
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
@@ -320,6 +364,12 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     mutationFn: async () => {
       // Use authenticated user's username if available, otherwise use the name from input
       const commentAuthor = isAuthenticated && user ? user.username : name.trim();
+      
+      // Add console log to help with debugging
+      console.log('Submitting comment:', {
+        content: content.trim(),
+        author: commentAuthor
+      });
       
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
@@ -378,10 +428,28 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     }
   };
   
-  // Handle flagging a comment
-  const handleFlagComment = async (commentId: number) => {
+  // Handle opening the flag dialog
+  const openFlagDialog = (commentId: number) => {
+    // Check if comment has already been flagged
+    if (flaggedComments.includes(commentId)) {
+      toast({
+        title: "Already reported",
+        description: "You have already reported this comment. Thank you for helping keep our community safe.",
+        variant: "default"
+      });
+      return;
+    }
+    
+    setCommentToFlag(commentId);
+    setFlagDialogOpen(true);
+  };
+  
+  // Handle flag confirmation from dialog
+  const confirmFlagComment = async () => {
+    if (!commentToFlag) return;
+    
     try {
-      const response = await fetch(`/api/comments/${commentId}/flag`, {
+      const response = await fetch(`/api/comments/${commentToFlag}/flag`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "inappropriate content" })
@@ -390,6 +458,12 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       if (!response.ok) {
         throw new Error("Failed to flag comment");
       }
+      
+      // Add comment to flagged list to prevent multiple reports
+      setFlaggedComments(prev => [...prev, commentToFlag]);
+      
+      // Save flagged comments to localStorage to persist between sessions
+      localStorage.setItem('flaggedComments_' + postId, JSON.stringify([...flaggedComments, commentToFlag]));
       
       toast({
         title: "Comment reported",
@@ -402,6 +476,9 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         description: "Failed to report comment. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setFlagDialogOpen(false);
+      setCommentToFlag(null);
     }
   };
 
@@ -409,8 +486,16 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted', { 
+      isAuthenticated, 
+      content: content.trim(),
+      name: name.trim(),
+      username: user?.username 
+    });
+    
     // Only validate name field if user is not authenticated
     if ((!isAuthenticated && !name.trim()) || !content.trim()) {
+      console.log('Validation failed');
       toast({
         title: "Missing information",
         description: isAuthenticated 
@@ -421,14 +506,18 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       return;
     }
     
+    console.log('Calling mutation.mutate()');
     mutation.mutate();
   };
 
-  // Get root comments and group replies
-  const rootComments = comments.filter(comment => comment.parentId === null);
+  // Get root comments and group replies, filtering for approved comments only
+  const rootComments = comments
+    .filter(comment => comment.parentId === null)
+    .filter(comment => isCommentApproved(comment));
   
   const repliesByParentId = comments
     .filter(comment => comment.parentId !== null)
+    .filter(comment => isCommentApproved(comment))
     .reduce((groups: Record<number, Comment[]>, reply) => {
       if (reply.parentId) {
         if (!groups[reply.parentId]) {
@@ -501,15 +590,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         {/* Comment form - ultra sleek design */}
         <Card className="mb-3 p-2.5 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
           <form onSubmit={handleSubmit} className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <h4 className="text-xs font-medium">Join the conversation</h4>
-              </div>
-              <div className="flex items-center gap-1">
-                <MessageCircle className="h-3 w-3 text-primary/70" />
-                <span className="text-xs text-muted-foreground">Write a comment</span>
-              </div>
-            </div>
             <div className="grid grid-cols-1 gap-1.5">
               {!isAuthenticated ? (
                 <motion.div 
@@ -518,10 +598,19 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
+                  <div className="flex items-center mb-1.5 text-xs text-muted-foreground">
+                    <span>Posting as <span className="font-medium">Anonymous</span></span>
+                  </div>
+                  
+                  <Input
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-7 text-xs bg-background/80 mb-1.5"
+                    required
+                  />
+                  
                   <div className="flex">
-                    <div className="flex items-center mr-2 text-xs text-muted-foreground">
-                      <span>Posting as <span className="font-medium">Anonymous</span></span>
-                    </div>
                     <Textarea
                       placeholder="Share your thoughts..."
                       value={content}
@@ -737,14 +826,24 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                       </button>
                     </div>
                     <div>
-                      <button 
-                        onClick={() => handleFlagComment(comment.id)}
-                        className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
-                        title="Report this comment"
-                      >
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
-                        <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
-                      </button>
+                      {flaggedComments.includes(comment.id) ? (
+                        <span 
+                          className="inline-flex items-center text-[9px] text-muted-foreground/70"
+                          title="You've reported this comment"
+                        >
+                          <span className="mr-1 opacity-70">Reported</span>
+                          <Flag className="h-2.5 w-2.5 fill-destructive/10 text-destructive/50" />
+                        </span>
+                      ) : (
+                        <button 
+                          onClick={() => openFlagDialog(comment.id)}
+                          className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
+                          title="Report this comment"
+                        >
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
+                          <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -824,13 +923,22 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                               <ThumbsUp className="h-2 w-2 mr-0.5" />
                               <span>{reply.metadata.upvotes > 0 ? reply.metadata.upvotes : ''}</span>
                             </button>
-                            <button 
-                              onClick={() => handleFlagComment(reply.id)}
-                              className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
-                              title="Report this reply"
-                            >
-                              <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
-                            </button>
+                            {flaggedComments.includes(reply.id) ? (
+                              <span 
+                                className="inline-flex items-center text-[8px] text-muted-foreground/70"
+                                title="You've reported this reply"
+                              >
+                                <Flag className="h-2 w-2 fill-destructive/10 text-destructive/50" />
+                              </span>
+                            ) : (
+                              <button 
+                                onClick={() => openFlagDialog(reply.id)}
+                                className="inline-flex items-center text-[8px] text-muted-foreground hover:text-destructive transition-colors group"
+                                title="Report this reply"
+                              >
+                                <Flag className="h-2 w-2 group-hover:fill-destructive/10" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -846,6 +954,28 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
           </div>
         )}
       </div>
+      
+      {/* Confirmation dialog for flagging comments */}
+      <AlertDialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+        <AlertDialogContent className="max-w-[350px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Report this comment?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Are you sure you want to report this comment? This will notify our moderation team to review it for inappropriate content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-1.5">
+            <AlertDialogCancel className="text-[11px] h-7">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmFlagComment}
+              className="text-[11px] h-7 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Flag className="h-3 w-3 mr-1.5" />
+              Report Comment
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
