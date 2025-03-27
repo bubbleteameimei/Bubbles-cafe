@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,14 @@ import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { 
+  ChevronDown,
+  ChevronUp,
+  Expand,
   Loader2, 
   MessageSquare, 
+  Minimize2,
   Reply, 
+  Save,
   ThumbsUp,
   Calendar,
   MessageCircle,
@@ -21,6 +26,13 @@ import {
   Flag,
   X
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -160,13 +172,15 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
           author: replyAuthor,
           userId: user?.id || null,
           commentId: commentId,
+          parentId: commentId, // Ensure we set the parentId properly
           metadata: {
             author: replyAuthor,
             isAnonymous: !isAuthenticated,
             moderated: false,
             originalContent: content.trim(),
             upvotes: 0,
-            downvotes: 0
+            downvotes: 0,
+            replyCount: 0
           }
         })
       });
@@ -321,14 +335,145 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [commentToFlag, setCommentToFlag] = useState<number | null>(null);
   const [flaggedComments, setFlaggedComments] = useState<number[]>([]);
+  const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
+  const [sortOrder, setSortOrder] = useState<'recent' | 'active' | 'upvotes'>('active');
+  const [autoCollapsing, setAutoCollapsing] = useState(false);
+  const [autoCollapseTimeoutId, setAutoCollapseTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const mainSectionRef = useRef<HTMLDivElement>(null);
   
   // Get authentication state
   const { user, isAuthenticated, isAuthReady } = useAuth();
   
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
+  
+  // Handle upvoting comments
+  const handleUpvote = async (commentId: number) => {
+    if (!commentId) return;
+    
+    // Get the comment to update
+    const targetComment = comments.find(c => c.id === commentId);
+    if (!targetComment) return;
+    
+    // Optimistic update (increment locally first)
+    queryClient.setQueryData([`/api/posts/${postId}/comments`], (oldData: Comment[] | undefined) => {
+      if (!oldData) return [];
+      
+      return oldData.map(comment => {
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            metadata: {
+              ...comment.metadata,
+              upvotes: (comment.metadata.upvotes || 0) + 1
+            }
+          };
+        }
+        return comment;
+      });
+    });
+    
+    toast({
+      title: "Upvoted",
+      description: "Your vote has been counted!",
+      variant: "default"
+    });
+    
+    try {
+      // Get CSRF token
+      const cookies = document.cookie.split('; ');
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
+      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      
+      // Update on server
+      const response = await fetch(`/api/comments/${commentId}/vote`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        credentials: "include",
+        body: JSON.stringify({ isUpvote: true })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to upvote");
+      }
+      
+      // Refresh data with actual server state
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+    } catch (error) {
+      console.error("Error upvoting comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upvote comment. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Rollback optimistic update on error
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
+    }
+  };
+  
+  // Load previously saved draft from localStorage
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(`comment_draft_${postId}`);
+    if (savedDraft && savedDraft.trim() !== "") {
+      setContent(savedDraft);
+      toast({
+        title: "Draft restored",
+        description: "Your previous comment draft has been restored.",
+        variant: "default"
+      });
+    }
+    
+    // Set up interval to save draft while typing
+    const saveDraftInterval = setInterval(() => {
+      if (content.trim() !== "") {
+        localStorage.setItem(`comment_draft_${postId}`, content);
+      }
+    }, 3000); // Save every 3 seconds if there's content
+    
+    return () => clearInterval(saveDraftInterval);
+  }, [postId, content, toast]);
+  
+  // Setup auto-collapse on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      // Don't auto-collapse if user has manually collapsed/expanded
+      if (collapsedComments.length > 0) return;
+      
+      if (mainSectionRef.current) {
+        const rect = mainSectionRef.current.getBoundingClientRect();
+        // If the comment section is scrolled out of view (plus a buffer)
+        if (rect.top < -300) {
+          if (!autoCollapsing && !autoCollapseTimeoutId) {
+            const timeoutId = setTimeout(() => {
+              setAutoCollapsing(true);
+              toast({
+                title: "Comments minimized",
+                description: "Comments have been collapsed for a cleaner reading experience.",
+                variant: "default"
+              });
+            }, 1500);
+            setAutoCollapseTimeoutId(timeoutId);
+          }
+        } else {
+          // Cancel auto-collapse when scrolling back
+          if (autoCollapseTimeoutId) {
+            clearTimeout(autoCollapseTimeoutId);
+            setAutoCollapseTimeoutId(null);
+          }
+          setAutoCollapsing(false);
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [autoCollapsing, autoCollapseTimeoutId, collapsedComments.length, toast]);
   
   // Load previously flagged comments from localStorage
   useEffect(() => {
@@ -409,37 +554,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     }
   });
 
-  // Handle upvote
-  const handleUpvote = async (commentId: number) => {
-    try {
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
-      
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        credentials: "include",
-        body: JSON.stringify({ isUpvote: true })
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to upvote comment");
-      }
-      
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upvote comment. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+
   
   // Handle opening the flag dialog
   const openFlagDialog = (commentId: number) => {
@@ -546,6 +661,53 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     return format(date, 'MMM d');
   };
   
+  // Dynamic sorting based on activity and upvotes
+  const sortedRootComments = useMemo(() => {
+    let sorted = [...rootComments];
+    
+    if (sortOrder === 'active') {
+      // Sort by most active discussions (most replies)
+      sorted = sorted.sort((a, b) => {
+        const aReplies = repliesByParentId[a.id]?.length || 0;
+        const bReplies = repliesByParentId[b.id]?.length || 0;
+        return bReplies - aReplies; // Higher reply count first
+      });
+    } else if (sortOrder === 'upvotes') {
+      // Sort by most upvoted
+      sorted = sorted.sort((a, b) => {
+        const aUpvotes = a.metadata.upvotes || 0;
+        const bUpvotes = b.metadata.upvotes || 0;
+        return bUpvotes - aUpvotes; // Higher upvotes first
+      });
+    } else {
+      // Default: sort by recent
+      sorted = sorted.sort((a, b) => {
+        const aDate = new Date(a.createdAt);
+        const bDate = new Date(b.createdAt);
+        return bDate.getTime() - aDate.getTime(); // Most recent first
+      });
+    }
+    
+    return sorted;
+  }, [rootComments, repliesByParentId, sortOrder]);
+  
+  // Calculate if comment thread is from over a year ago (for chained comments visual)
+  const isOldThread = (comment: Comment): boolean => {
+    const commentDate = new Date(comment.createdAt);
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    return commentDate < oneYearAgo;
+  };
+  
+  // Handle toggling comment collapse
+  const toggleCollapse = (commentId: number) => {
+    setCollapsedComments(prev => 
+      prev.includes(commentId) 
+        ? prev.filter(id => id !== commentId) 
+        : [...prev, commentId]
+    );
+  };
+  
   // Parse and highlight @mentions in text
   const parseMentions = (text: string): React.ReactNode => {
     if (!text) return "";
@@ -583,10 +745,49 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   };
 
   return (
-    <div className="antialiased mx-auto">
+    <div className="antialiased mx-auto" ref={mainSectionRef}>
       <div className="border-t border-border/30 pt-4 pb-1.5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-base font-medium">Comments ({rootComments.length})</h3>
+          
+          {/* Comment controls: sorting and collapse toggle */}
+          <div className="flex items-center gap-2">
+            <Select 
+              value={sortOrder} 
+              onValueChange={(value: 'recent' | 'active' | 'upvotes') => setSortOrder(value)}
+            >
+              <SelectTrigger className="h-6 text-[10px] w-[95px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent" className="text-xs">Most Recent</SelectItem>
+                <SelectItem value="active" className="text-xs">Most Active</SelectItem>
+                <SelectItem value="upvotes" className="text-xs">Most Upvoted</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (collapsedComments.length > 0 || autoCollapsing) {
+                  // Expand all
+                  setCollapsedComments([]);
+                  setAutoCollapsing(false);
+                } else {
+                  // Collapse all
+                  setCollapsedComments(rootComments.map(c => c.id));
+                }
+              }}
+              className="h-6 px-1.5 text-[10px]"
+            >
+              {collapsedComments.length > 0 || autoCollapsing ? (
+                <><Expand className="h-3 w-3 mr-1" /> Expand All</>
+              ) : (
+                <><Minimize2 className="h-3 w-3 mr-1" /> Collapse All</>
+              )}
+            </Button>
+          </div>
         </div>
         {/* Comment form - ultra sleek design */}
         <Card className="mb-2 p-2 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
@@ -672,8 +873,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
           <div className="flex justify-center py-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </div>
-        ) : rootComments.length > 0 ? (
-          rootComments.map(comment => (
+        ) : sortedRootComments.length > 0 ? (
+          sortedRootComments.map(comment => (
             <motion.div 
               key={comment.id} 
               className="space-y-1"
@@ -683,10 +884,20 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
             >
               <Card className={cn(
                 "shadow-sm hover:shadow-md transition-all border-border/30 overflow-hidden",
-                comment.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/30"
+                comment.metadata.moderated ? "border-amber-500/30" : "hover:border-primary/30",
+                isOldThread(comment) ? "border-l-primary/30 border-l-[3px]" : ""
               )}>
-                {/* Comment header - ultra compact */}
-                <div className="px-2.5 py-1 flex items-center justify-between border-b border-border/10 bg-muted/10">
+                {/* Comment header - ultra compact and collapsible */}
+                <div 
+                  className={cn(
+                    "px-2.5 py-1 flex items-center justify-between border-b border-border/10 bg-muted/10 cursor-pointer",
+                    "hover:bg-muted/20 transition-colors"
+                  )}
+                  onClick={() => toggleCollapse(comment.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={!collapsedComments.includes(comment.id) && !autoCollapsing}
+                >
                   <div className="flex items-center">
                     <span className="font-medium text-xs">{comment.metadata.author || "Anonymous"}</span>
                     {repliesByParentId[comment.id]?.length > 0 && (
@@ -700,67 +911,97 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
                         <span>Moderated</span>
                       </div>
                     )}
+                    {isOldThread(comment) && (
+                      <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-3.5 bg-primary/5 text-primary border-primary/20">
+                        Resurrected
+                      </Badge>
+                    )}
                   </div>
-                  <span className="text-[9px] text-muted-foreground flex items-center">
-                    <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                    {formatDate(comment.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground flex items-center">
+                      <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                      {formatDate(comment.createdAt)}
+                    </span>
+                    {collapsedComments.includes(comment.id) || autoCollapsing ? 
+                      <ChevronDown className="h-3 w-3 text-muted-foreground/70" /> : 
+                      <ChevronUp className="h-3 w-3 text-muted-foreground/70" />
+                    }
+                  </div>
                 </div>
                 
-                {/* Comment body - ultra compact */}
-                <div className="px-2.5 py-1">
-                  <p className="text-xs text-card-foreground leading-relaxed mb-1">
-                    {parseMentions(comment.content)}
-                  </p>
-                  
-                  {comment.metadata.moderated && (
-                    <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
-                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                        <AlertCircle className="h-2.5 w-2.5" />
-                        <span className="font-medium">This comment was automatically moderated</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-1.5">
-                      <button 
-                        onClick={() => handleUpvote(comment.id)}
-                        className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <ThumbsUp className="h-2.5 w-2.5 mr-0.5" />
-                        <span>{comment.metadata.upvotes > 0 ? comment.metadata.upvotes : ''}</span>
-                      </button>
-                      <button 
-                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                        className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors ml-2"
-                      >
-                        <Reply className="h-2.5 w-2.5 mr-0.5" />
-                        <span>Reply</span>
-                      </button>
-                    </div>
-                    <div>
-                      {flaggedComments.includes(comment.id) ? (
-                        <span 
-                          className="inline-flex items-center text-[9px] text-muted-foreground/70"
-                          title="You've reported this comment"
-                        >
-                          <span className="mr-1 opacity-70">Reported</span>
-                          <Flag className="h-2.5 w-2.5 fill-destructive/10 text-destructive/50" />
-                        </span>
-                      ) : (
-                        <button 
-                          onClick={() => openFlagDialog(comment.id)}
-                          className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
-                          title="Report this comment"
-                        >
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
-                          <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
-                        </button>
+                {/* Comment body - ultra compact and collapsible */}
+                <AnimatePresence>
+                  {(!(collapsedComments.includes(comment.id) || autoCollapsing)) && (
+                    <motion.div 
+                      className="px-2.5 py-1"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <p className="text-xs text-card-foreground leading-relaxed mb-1">
+                        {parseMentions(comment.content)}
+                      </p>
+                      
+                      {comment.metadata.moderated && (
+                        <div className="mb-1 px-1.5 py-0.5 bg-amber-500/10 rounded-sm text-[9px] border border-amber-500/20">
+                          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-2.5 w-2.5" />
+                            <span className="font-medium">This comment was automatically moderated</span>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                </div>
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering collapse
+                              handleUpvote(comment.id);
+                            }}
+                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <ThumbsUp className="h-2.5 w-2.5 mr-0.5" />
+                            <span>{comment.metadata.upvotes > 0 ? comment.metadata.upvotes : ''}</span>
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering collapse
+                              setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                            }}
+                            className="inline-flex items-center text-[10px] text-muted-foreground hover:text-primary transition-colors ml-2"
+                          >
+                            <Reply className="h-2.5 w-2.5 mr-0.5" />
+                            <span>Reply</span>
+                          </button>
+                        </div>
+                        <div>
+                          {flaggedComments.includes(comment.id) ? (
+                            <span 
+                              className="inline-flex items-center text-[9px] text-muted-foreground/70"
+                              title="You've reported this comment"
+                            >
+                              <span className="mr-1 opacity-70">Reported</span>
+                              <Flag className="h-2.5 w-2.5 fill-destructive/10 text-destructive/50" />
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering collapse
+                                openFlagDialog(comment.id);
+                              }}
+                              className="inline-flex items-center text-[9px] text-muted-foreground hover:text-destructive transition-colors group"
+                              title="Report this comment"
+                            >
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity mr-1">Flag</span>
+                              <Flag className="h-2.5 w-2.5 group-hover:fill-destructive/10" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
               
               {/* Show reply form if replying to this comment */}
