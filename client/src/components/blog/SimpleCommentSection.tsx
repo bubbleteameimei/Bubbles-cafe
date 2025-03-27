@@ -52,7 +52,6 @@ import {
 // Interfaces
 interface CommentMetadata {
   author: string;
-  upvotes: number;
   isAnonymous: boolean;
   moderated: boolean;
   originalContent: string;
@@ -179,8 +178,6 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
             isAnonymous: !isAuthenticated,
             moderated: false,
             originalContent: content.trim(),
-            upvotes: 0,
-            downvotes: 0,
             replyCount: 0
           }
         })
@@ -350,73 +347,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
   
-  // Handle upvoting comments
-  const handleUpvote = async (commentId: number) => {
-    if (!commentId) return;
-    
-    // Get the comment to update
-    const targetComment = comments.find(c => c.id === commentId);
-    if (!targetComment) return;
-    
-    // Optimistic update (increment locally first)
-    queryClient.setQueryData([`/api/posts/${postId}/comments`], (oldData: Comment[] | undefined) => {
-      if (!oldData) return [];
-      
-      return oldData.map(comment => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            metadata: {
-              ...comment.metadata,
-              upvotes: (comment.metadata.upvotes || 0) + 1
-            }
-          };
-        }
-        return comment;
-      });
-    });
-    
-    toast({
-      title: "Upvoted",
-      description: "Your vote has been counted!",
-      variant: "default"
-    });
-    
-    try {
-      // Get CSRF token
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
-      
-      // Update on server
-      const response = await fetch(`/api/comments/${commentId}/vote`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken
-        },
-        credentials: "include",
-        body: JSON.stringify({ isUpvote: true })
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to upvote");
-      }
-      
-      // Refresh data with actual server state
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-    } catch (error) {
-      console.error("Error upvoting comment:", error);
-      toast({
-        title: "Error",
-        description: "Failed to upvote comment. Please try again.",
-        variant: "destructive"
-      });
-      
-      // Rollback optimistic update on error
-      queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] });
-    }
-  };
+  // Upvote functionality has been removed
   
   // Load previously saved draft from localStorage
   useEffect(() => {
@@ -684,7 +615,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     return format(date, 'MMM d');
   };
   
-  // Dynamic sorting based on activity and upvotes
+  // Dynamic sorting based on activity
   const sortedRootComments = useMemo(() => {
     let sorted = [...rootComments];
     
