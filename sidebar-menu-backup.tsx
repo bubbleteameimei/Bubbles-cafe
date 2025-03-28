@@ -44,10 +44,17 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const searchRef = React.useRef<HTMLDivElement>(null);
   const sidebar = useSidebar();
   
-  // Handle clicks outside of search component
+  // Handle clicks outside of search component with improved focus management
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      // Check if the click is on an input field or textarea
+      const isInputElement = (event.target as HTMLElement).tagName === 'INPUT' || 
+                             (event.target as HTMLElement).tagName === 'TEXTAREA';
+      
+      // Only reset focus if not clicking on another input element
+      if (searchRef.current && 
+          !searchRef.current.contains(event.target as Node) && 
+          !isInputElement) {
         setSearchFocused(false);
       }
     };

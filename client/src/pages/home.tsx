@@ -51,31 +51,14 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative w-full min-h-screen overflow-x-hidden flex flex-col">
-          {/* Background container with fixed positioning for homepage only */}
-          <div className="fixed inset-0 w-full h-full z-0">
-            {/* Full screen background image with fixed position */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1.2 }}
-              className="absolute inset-0"
-              style={{ 
-                backgroundImage: "url('/attached_assets/IMG_4918.jpeg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-                width: "100%",
-                height: "100%"
-              }}
-            />
-          </div>
+        <div className="relative w-screen min-h-screen overflow-x-hidden flex flex-col home-page">
+          {/* Background container removed to fix potential conflicts */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
           
-          {/* Content container with proper z-index to appear above background */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center max-w-3xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 min-h-screen">
+          {/* Content container with proper z-index to appear above background - using full width */}
+          <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center w-full mx-auto min-h-screen">
             <FadeInSection style="horror" direction="scale" duration={0.8}>
               <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLE'S</span>
@@ -88,14 +71,14 @@ export default function Home() {
           
             <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
               <FadeInSection style="glitch" direction="up" delay={0.2} duration={0.6}>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white max-w-2xl md:max-w-3xl leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
                   Each story here is a portal to the unexpected,
                   the unsettling, and the unexplained.
                 </p>
               </FadeInSection>
 
               <FadeInSection style="horror" direction="up" delay={0.3} duration={0.5}>
-                <div className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto">
+                <div className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 w-full mx-auto">
                   <Button
                     size="lg"
                     onClick={() => setLocation('/stories')}
@@ -128,7 +111,7 @@ export default function Home() {
                   <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full mx-auto p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"

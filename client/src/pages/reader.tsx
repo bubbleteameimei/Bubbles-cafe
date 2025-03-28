@@ -297,7 +297,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const generateStoryContentStyles = () => `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
-    max-width: 75ch; /* Balanced width for readability */
+    width: 100%; /* Full width instead of max-width constraint */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
@@ -648,7 +648,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const unusedStyles = `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
-    max-width: 70ch; /* Restored previous width constraint for better readability */
+    width: 100%; /* Full width instead of max-width constraint */
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
@@ -660,7 +660,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     letter-spacing: 0.01em; /* Subtle letter spacing */
     font-kerning: normal; /* Improves kerning pairs */
     font-feature-settings: "kern", "liga", "clig", "calt"; /* Typography features */
-    max-width: 80ch; /* Control paragraph width for readability while keeping immersive layout */
+    max-width: none; /* Remove width constraint for full-width layout */
     margin-left: auto;
     margin-right: auto;
     font-family: ${availableFonts[fontFamily].family};
@@ -879,7 +879,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-4 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-4 pb-8 flex flex-col w-screen"
       /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -906,10 +906,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           transition: opacity 0.2s ease;
         }
         .story-content {
-          transition: max-width 0.8s ease-in-out;
+          transition: width 0.8s ease-in-out;
         }
         .distraction-free-active .story-content {
-          max-width: 78ch;
+          width: 100%;
         }
         
         /* Only target the navigation header and not the controls in distraction-free mode */
@@ -1156,7 +1156,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert mx-auto px-6 md:px-6 pt-0 w-full max-w-[80ch]"
+            className="prose dark:prose-invert mx-auto px-6 md:px-6 pt-0 w-full max-w-none"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -1260,7 +1260,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 mx-auto container max-w-[75ch] px-4 overflow-visible flex-1"
+              className="reader-container story-content mb-8 mx-auto w-full px-4 overflow-visible flex-1"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.012em',

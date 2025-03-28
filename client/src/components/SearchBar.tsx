@@ -52,12 +52,18 @@ export const SearchBar = ({
     inputRef.current?.focus();
   };
 
-  // Click outside handler
+  // Click outside handler with improved focus management
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if we're clicking on an input element anywhere (not just in our component)
+      const isClickOnInput = (event.target as HTMLElement).tagName === 'INPUT' ||
+                            (event.target as HTMLElement).tagName === 'TEXTAREA';
+      
+      // Only hide results and blur when not clicking on another input
       if (
         searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
+        !searchContainerRef.current.contains(event.target as Node) &&
+        !isClickOnInput
       ) {
         setShowResults(false);
         setIsFocused(false);
@@ -127,7 +133,7 @@ export const SearchBar = ({
             }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className={`w-full pl-10 pr-10 py-2 bg-background border ${
+            className={`w-full pl-10 pr-10 py-2 bg-background input-solid-bg border ${
               isFocused ? "border-accent" : "border-border"
             } rounded-full text-foreground focus:outline-none focus:ring-1 focus:ring-accent transition-all`}
             initial={false}
@@ -159,7 +165,7 @@ export const SearchBar = ({
           animate={{ opacity: 1, y: 0, height: "auto" }}
           exit={{ opacity: 0, y: 10, height: 0 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-50 mt-1 w-full bg-background border border-border rounded-md shadow-lg overflow-hidden"
+          className="absolute z-50 mt-1 w-full bg-background input-solid-bg border border-border rounded-md shadow-lg overflow-hidden"
         >
           <div className="max-h-[300px] overflow-y-auto p-2">
             {searchResults.map((result) => (
