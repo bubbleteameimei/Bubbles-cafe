@@ -241,7 +241,7 @@ const AppContent = () => {
   
   // For all other pages, render with normal layout
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex flex-col">
+    <div className="relative min-h-screen overflow-hidden flex flex-col">
       {/* Desktop Sidebar - optimized for larger screens */}
       <aside className="fixed top-0 left-0 z-40 h-screen w-64 sm:w-60 md:w-64 lg:w-72 hidden lg:block overflow-hidden border-r border-border/80">
         <div className="h-full w-full">
@@ -252,10 +252,10 @@ const AppContent = () => {
         </div>
       </aside>
 
-      {/* Main Content - responsive spacing for different device sizes */}
-      <main className="min-h-screen lg:ml-72 flex-1 flex flex-col bg-transparent">
+      {/* Main Content */}
+      <main className="min-h-screen lg:ml-72 flex-1 flex flex-col bg-transparent overflow-x-hidden">
         <AutoHideNavbar />
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-20 lg:pt-6 max-w-full sm:max-w-7xl overflow-x-hidden reader-container flex-1 bg-transparent">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-20 lg:pt-6 overflow-x-hidden reader-container flex-1 bg-transparent">
           <ErrorBoundary>
             <EnhancedPageTransition>
               <Switch>

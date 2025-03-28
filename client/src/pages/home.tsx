@@ -51,13 +51,14 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative w-screen min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Background container removed to fix potential conflicts */}
+        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-background">
+          {/* Background gradient effect */}
+          <BackgroundGradient />
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
           
-          {/* Content container with proper z-index to appear above background - using full width */}
+          {/* Content container with proper z-index to appear above background */}
           <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center w-full mx-auto min-h-screen">
             <FadeInSection style="horror" direction="scale" duration={0.8}>
               <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center">

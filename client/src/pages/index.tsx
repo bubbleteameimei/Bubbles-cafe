@@ -189,7 +189,7 @@ export default function IndexView() {
   
   if (!hasAllPosts && !hasPaginatedPosts) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center overflow-x-hidden">
         <div className="text-center space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Unable to load stories</h2>
           <p className="text-muted-foreground">{error instanceof Error ? error.message : "Please try again later"}</p>
@@ -205,9 +205,11 @@ export default function IndexView() {
   }
 
   return (
-    <div className="min-h-screen w-screen bg-background flex flex-col overflow-x-hidden">
-      {/* No background image on stories page - intentionally left blank */}
-      <div className="w-full pb-12 pt-6 flex-1 mx-auto px-0 sm:px-4 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
+      {/* Background gradient for consistent styling */}
+      <BackgroundGradient />
+      {/* Content container with full width */}
+      <div className="w-full pb-12 pt-6 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
         <motion.div
           className="flex justify-end items-center mb-1 mt-0 px-4"
           initial={{ opacity: 0, y: -20 }}
