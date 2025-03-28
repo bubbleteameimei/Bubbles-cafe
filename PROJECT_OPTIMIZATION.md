@@ -4,6 +4,44 @@ This document describes the optimization scripts available to clean up and organ
 
 ## Available Scripts
 
+### Production Build Preparation
+
+```bash
+node prepare-production-build.js
+```
+
+This script prepares the application for production deployment with optimized dependencies:
+1. Creates a separate production-build directory with a clean setup
+2. Generates a production-optimized package.json
+3. Copies only necessary files for production deployment
+4. Sets up proper environment files
+5. Provides instructions for finalizing the production build
+
+### Dependency Optimization 
+
+```bash
+node optimize-dependencies.js
+```
+
+This script analyzes the project dependencies and creates a production-optimized package.json file:
+1. Identifies potentially unused dependencies
+2. Creates a production-only package.json for deployment (with devDependencies removed)
+3. Provides detailed instructions for safely deploying with reduced dependencies
+4. Does not modify existing package.json (safe to run)
+
+### Code Splitting Analysis
+
+```bash
+node implement-code-splitting.js
+```
+
+This script analyzes client-side code and suggests places to implement code splitting:
+1. Identifies components that are good candidates for lazy loading
+2. Suggests code transformations to implement React.lazy()
+3. Identifies routes that could benefit from code splitting
+4. Provides implementation guidelines and examples
+5. Does not modify code directly (suggestions only)
+
 ### Clean Project
 
 ```bash

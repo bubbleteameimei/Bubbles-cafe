@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="160" height="48" viewBox="0 0 160 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Player spritesheet with 5 frames for each direction (down, left, right, up) -->
+  
+  <!-- Down Animation Frames (5 frames) -->
+  <!-- Frame 1 (Idle) -->
+  <g transform="translate(0, 0)">
+    <!-- Body -->
+    <rect x="12" y="16" width="8" height="16" fill="#6D4C41" />
+    <!-- Head -->
+    <rect x="10" y="6" width="12" height="12" fill="#FFCC80" />
+    <!-- Eyes -->
+    <rect x="12" y="10" width="2" height="2" fill="#000000" />
+    <rect x="18" y="10" width="2" height="2" fill="#000000" />
+    <!-- Legs -->
+    <rect x="12" y="32" width="3" height="8" fill="#4E342E" />
+    <rect x="17" y="32" width="3" height="8" fill="#4E342E" />
+    <!-- Arms -->
+    <rect x="8" y="18" width="4" height="10" fill="#FFCC80" />
+    <rect x="20" y="18" width="4" height="10" fill="#FFCC80" />
+  </g>
+  
+  <!-- Frame 2 (Walking) -->
+  <g transform="translate(32, 0)">
+    <!-- Body -->
+    <rect x="12" y="16" width="8" height="16" fill="#6D4C41" />
+    <!-- Head -->
+    <rect x="10" y="6" width="12" height="12" fill="#FFCC80" />
+    <!-- Eyes -->
+    <rect x="12" y="10" width="2" height="2" fill="#000000" />
+    <rect x="18" y="10" width="2" height="2" fill="#000000" />
+    <!-- Legs (Walking pose) -->
+    <rect x="10" y="32" width="3" height="8" fill="#4E342E" />
+    <rect x="19" y="32" width="3" height="8" fill="#4E342E" />
+    <!-- Arms (Walking pose) -->
+    <rect x="7" y="19" width="4" height="10" fill="#FFCC80" />
+    <rect x="21" y="19" width="4" height="10" fill="#FFCC80" />
+  </g>
+  
+  <!-- Frame 3 (Walking) -->
+  <g transform="translate(64, 0)">
+    <!-- Body -->
+    <rect x="12" y="16" width="8" height="16" fill="#6D4C41" />
+    <!-- Head -->
+    <rect x="10" y="5" width="12" height="12" fill="#FFCC80" />
+    <!-- Eyes -->
+    <rect x="12" y="9" width="2" height="2" fill="#000000" />
+    <rect x="18" y="9" width="2" height="2" fill="#000000" />
+    <!-- Legs (Walking pose) -->
+    <rect x="12" y="32" width="3" height="8" fill="#4E342E" />
+    <rect x="17" y="32" width="3" height="8" fill="#4E342E" />
+    <!-- Arms (Walking pose) -->
+    <rect x="8" y="17" width="4" height="10" fill="#FFCC80" />
+    <rect x="20" y="17" width="4" height="10" fill="#FFCC80" />
+  </g>
+  
+  <!-- Frame 4 (Walking) -->
+  <g transform="translate(96, 0)">
+    <!-- Body -->
+    <rect x="12" y="16" width="8" height="16" fill="#6D4C41" />
+    <!-- Head -->
+    <rect x="10" y="6" width="12" height="12" fill="#FFCC80" />
+    <!-- Eyes -->
+    <rect x="12" y="10" width="2" height="2" fill="#000000" />
+    <rect x="18" y="10" width="2" height="2" fill="#000000" />
+    <!-- Legs (Walking pose) -->
+    <rect x="19" y="32" width="3" height="8" fill="#4E342E" />
+    <rect x="10" y="32" width="3" height="8" fill="#4E342E" />
+    <!-- Arms (Walking pose) -->
+    <rect x="7" y="19" width="4" height="10" fill="#FFCC80" />
+    <rect x="21" y="19" width="4" height="10" fill="#FFCC80" />
+  </g>
+  
+  <!-- Frame 5 (Walking) -->
+  <g transform="translate(128, 0)">
+    <!-- Body -->
+    <rect x="12" y="16" width="8" height="16" fill="#6D4C41" />
+    <!-- Head -->
+    <rect x="10" y="7" width="12" height="12" fill="#FFCC80" />
+    <!-- Eyes -->
+    <rect x="12" y="11" width="2" height="2" fill="#000000" />
+    <rect x="18" y="11" width="2" height="2" fill="#000000" />
+    <!-- Legs (Walking pose) -->
+    <rect x="12" y="32" width="3" height="8" fill="#4E342E" />
+    <rect x="17" y="32" width="3" height="8" fill="#4E342E" />
+    <!-- Arms (Walking pose) -->
+    <rect x="8" y="19" width="4" height="10" fill="#FFCC80" />
+    <rect x="20" y="19" width="4" height="10" fill="#FFCC80" />
+  </g>
+</svg>
