@@ -32,12 +32,11 @@ interface SearchOptions {
 // Search API endpoint with expanded capabilities
 router.get('/', async (req, res) => {
   try {
-    // Default to searching all non-admin content
+    // Default to searching all content
     const { 
       q, 
       types = 'posts,pages,comments,legal,settings', 
-      limit = '20',
-      admin = 'false'
+      limit = '20'
     } = req.query;
 
     if (!q || typeof q !== 'string') {
@@ -64,9 +63,8 @@ router.get('/', async (req, res) => {
       50
     ); // Between 1 and 50
     
-    // Check if user is admin (for admin-only content)
-    // This would normally check session, here we're just using a query param for demo
-    const isAdmin = req.session?.user?.isAdmin || (admin === 'true');
+    // No admin mode in search
+    const isAdmin = false;
     
     // Configure search options
     const searchOptions: SearchOptions = {
@@ -616,8 +614,7 @@ router.get('/', async (req, res) => {
       meta: {
         query: searchQuery,
         total: results.length,
-        types: contentTypes,
-        isAdmin: searchOptions.isAdmin
+        types: contentTypes
       } 
     });
     

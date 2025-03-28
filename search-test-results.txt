@@ -1,0 +1,141 @@
+=== SEARCH FUNCTIONALITY TEST REPORT ===
+Date: 2025-03-28T22:28:52.123Z
+
+
+
+=== TESTING QUERY: "blood" ===
+✓ Found 4 results for "blood"
+
+Results by content type:
+- post: 4 results (100%)
+
+Sample results:
+
+[1] BLOOD (post)
+    URL: /reader/1
+    Excerpt: The river tastes like blood....
+    Match Context: "The river tastes like blood...."
+
+[2] CAVE (post)
+    URL: /reader/7
+    Excerpt: It drinks up my blood faster than I can bleed....
+    Match Context: "It drinks up my blood faster than I can bleed...."
+
+=== TESTING QUERY: "shadow" ===
+✓ Found 1 results for "shadow"
+
+Results by content type:
+- post: 1 results (100%)
+
+Sample results:
+
+[1] DESCENT (post)
+    URL: /reader/20
+    Excerpt: to wait for the “light at the end of the tunnel”
+
+There’s a shadowy figure approaching you now, that...
+    Match Context: "to wait for the “light at the end of the tunnel”
+
+..."
+
+=== TESTING QUERY: "help" ===
+✓ Found 7 results for "help"
+
+Results by content type:
+- post: 6 results (86%)
+- legal: 1 results (14%)
+
+Sample results:
+
+[1] CAR (post)
+    URL: /reader/14
+    Excerpt: As I stand alone at the deserted bus stop, I can’t help but feel vulnerable and exposed in the darkn...
+    Match Context: "As I stand alone at the deserted bus stop, I can’t..."
+
+[2] Cookie Policy (legal)
+    URL: /legal/cookies
+    Excerpt: technologies on our website. 
+                     Cookies help us improve your browsing experience,...
+    Match Context: "technologies on our website. 
+                    ..."
+
+=== TESTING QUERY: "privacy" ===
+✓ Found 2 results for "privacy"
+
+Results by content type:
+- legal: 1 results (50%)
+- settings: 1 results (50%)
+
+Sample results:
+
+[1] Privacy Policy (legal)
+    URL: /legal/privacy
+    Excerpt: Our Privacy Policy outlines how we collect, use, and protect your perso...
+    Match Context: "Our Privacy Policy outlines how we collect, use, a..."
+
+[2] Account Settings (settings)
+    URL: /settings/account
+    Excerpt: ferences, update your profile information, and control your privacy settings. 
+                     ...
+    Match Context: "ferences, update your profile information, and con..."
+
+=== TESTING QUERY: "about" ===
+✓ Found 9 results for "about"
+
+Results by content type:
+- post: 7 results (78%)
+- settings: 1 results (11%)
+- legal: 1 results (11%)
+
+Sample results:
+
+[1] BLEACH (post)
+    URL: /reader/9
+    Excerpt: No one talks about the possibility of developing a sensitivity to the smell of bleach....
+    Match Context: "No one talks about the possibility of developing a..."
+
+[2] MIRROR (post)
+    URL: /reader/13
+    Excerpt: You’re blabbering on the phone with your friends, talking about things I can’t hear clearly....
+    Match Context: "You’re blabbering on the phone with your friends, ..."
+
+=== TESTING QUERY: "security" ===
+✓ Found 1 results for "security"
+
+Results by content type:
+- settings: 1 results (100%)
+
+Sample results:
+
+[1] Security Settings (settings)
+    URL: /settings/security
+    Excerpt: Enhance your account security with additional protection measures....
+    Match Context: "Enhance your account security with additional prot..."
+
+=== TESTING QUERY: "notification" ===
+✓ Found 2 results for "notification"
+
+Results by content type:
+- settings: 2 results (100%)
+
+Sample results:
+
+[1] Account Settings (settings)
+    URL: /settings/account
+    Excerpt: rom this page. 
+                     Profile visibility and notification preferences can also be adj...
+    Match Context: "rom this page. 
+                     Profile visib..."
+
+[2] Notification Settings (settings)
+    URL: /settings/notifications
+    Excerpt: Control which notifications you receive and how they are delivered....
+    Match Context: "Control which notifications you receive and how th..."
+
+=== SEARCH CONTENT TYPE SUMMARY ===
+Content types found across all queries:
+- post: 18 occurrences
+- settings: 5 occurrences
+- legal: 3 occurrences
+
+=== SEARCH FUNCTIONALITY TEST COMPLETE ===

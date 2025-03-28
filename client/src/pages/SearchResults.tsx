@@ -262,17 +262,7 @@ export default function SearchResults() {
   
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
-      <div className="flex items-center mb-10 border-b pb-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setLocation('/')}
-          className="mr-4 h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl sm:text-3xl font-bold font-serif">Search Results</h1>
-      </div>
+
       
       {/* Enhanced Search input with filters */}
       <div className="relative mb-6 max-w-3xl mx-auto">
@@ -480,13 +470,7 @@ export default function SearchResults() {
       {/* Results display */}
       {!isLoading && searchResults && (
         <>
-          <div className="mb-6 text-foreground/80 rounded-md bg-background/50 p-3 border border-border/20 shadow-sm max-w-3xl mx-auto">
-            {searchResults.results?.length === 0 ? (
-              <p className="text-center">No results found for "<span className="font-semibold text-primary/90">{searchQuery}</span>"</p>
-            ) : (
-              <p className="text-center">Found <span className="font-semibold text-primary/90">{searchResults.results?.length}</span> results for "<span className="italic">{searchQuery}</span>"</p>
-            )}
-          </div>
+
           
           <div className="grid gap-6">
             {searchResults.results?.map((result: SearchResult) => (
@@ -547,9 +531,7 @@ export default function SearchResults() {
           
           {fallbackResults.results.length > 0 ? (
             <>
-              <div className="mb-6 text-foreground/80 rounded-md bg-background/50 p-3 border border-border/20 shadow-sm max-w-3xl mx-auto">
-                <p className="text-center">Found <span className="font-semibold text-primary/90">{fallbackResults.results.length}</span> results for "<span className="italic">{searchQuery}</span>"</p>
-              </div>
+
               
               <div className="grid gap-6">
                 {fallbackResults.results.map((result: SearchResult) => (

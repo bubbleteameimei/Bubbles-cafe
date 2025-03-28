@@ -1,36 +1,51 @@
-const { execSync } = require('child_process');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-async function takeScreenshot() {
-  try {
-    console.log('Creating screenshots directory if it doesn\'t exist...');
-    const screenshotsDir = path.join(__dirname, 'screenshots');
-    if (!fs.existsSync(screenshotsDir)) {
-      fs.mkdirSync(screenshotsDir);
-    }
+// URL to capture
+const url = 'http://localhost:3001/';
+const outputPath = path.join(process.cwd(), 'mobile-layout.html');
 
-    console.log('Taking screenshot of homepage...');
-    
-    // Use curl to fetch the homepage content
-    const curlOutput = execSync('curl http://localhost:3001/').toString();
-    
-    // Write the output to a file
-    fs.writeFileSync(path.join(screenshotsDir, 'homepage.html'), curlOutput);
-    
-    // Also fetch the reader page
-    const readerOutput = execSync('curl http://localhost:3001/reader').toString();
-    fs.writeFileSync(path.join(screenshotsDir, 'reader.html'), readerOutput);
-    
-    // And the stories page
-    const storiesOutput = execSync('curl http://localhost:3001/stories').toString();
-    fs.writeFileSync(path.join(screenshotsDir, 'stories.html'), storiesOutput);
-    
-    console.log('Screenshots saved to:', screenshotsDir);
-    console.log('Content saved to HTML files for inspection.');
-  } catch (error) {
-    console.error('Error taking screenshot:', error);
-  }
-}
+console.log(`Capturing ${url} and saving to ${outputPath}...`);
 
-takeScreenshot();
+// Make a simple HTTP request to get the page content
+http.get(url, (res) => {
+  let data = '';
+  
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+  
+  res.on('end', () => {
+    // Add mobile meta viewport to properly render the page 
+    const mobileViewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">';
+    const mobileStyles = `
+    <style>
+      body { 
+        width: 375px; 
+        margin: 0 auto; 
+        border: 1px solid #ccc;
+        height: 812px;
+        overflow: auto;
+      }
+      /* Highlight the navigation elements */
+      header { 
+        border: 2px solid red !important; 
+      }
+    </style>`;
+    
+    // Insert our custom viewport and styles
+    const modifiedData = data.replace('</head>', `${mobileViewport}${mobileStyles}</head>`);
+    
+    fs.writeFile(outputPath, modifiedData, (err) => {
+      if (err) {
+        console.error('Error saving file:', err);
+      } else {
+        console.log('Saved mobile layout to:', outputPath);
+        console.log('Open this file in any browser to see the mobile layout.');
+      }
+    });
+  });
+}).on('error', (err) => {
+  console.error('Error capturing screenshot:', err);
+});

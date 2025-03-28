@@ -108,16 +108,16 @@ export default function Navigation() {
       data-device-type={deviceType}
     >
       <div className="container flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Left section with menu toggle and logo */}
-        <div className="flex items-center space-x-5">
+        {/* Left section with menu toggle only */}
+        <div className="flex items-center">
           {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
-                          transition-all duration-200 ease-in-out active:scale-95"
+                className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
+                          transition-all duration-200 ease-in-out active:scale-95 -mt-2.5"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
@@ -129,37 +129,36 @@ export default function Navigation() {
               <SidebarNavigation onNavigate={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>
+        </div>
           
-          {/* Site name/logo on mobile - no icon */}
-          <button 
-            onClick={() => setLocation('/')}
-            className="lg:hidden flex items-center font-serif font-semibold tracking-tight hover:text-foreground transition-colors duration-200"
-            aria-label="Home"
-          >
-            <span className="text-foreground/90 font-bold text-lg"></span>
-          </button>
-          
-          {/* Horizontal Nav - Desktop only */}
-          <nav className="hidden lg:flex items-center space-x-4">
-            {navLinks.map(link => (
-              <button 
-                key={link.href}
-                onClick={() => setLocation(link.href)} 
-                className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30
-                          ${location === link.href 
-                            ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
-                            : 'text-foreground/80 hover:text-foreground'}`}
-              >
-                {link.label}
-              </button>
-            ))}
-          </nav>
+        {/* Removed mobile navigation buttons as requested */}
+        <div className="lg:hidden flex-1 flex items-center justify-center">
+          {/* Empty container to maintain layout spacing */}
         </div>
         
-        {/* Center section - Enhanced Search bar (tablet and up) */}
+        {/* Horizontal Nav - Desktop only - Moved to the right */}
+        <nav className="hidden lg:flex items-center space-x-4 -mt-2">
+          {navLinks.map(link => (
+            <button 
+              key={link.href}
+              onClick={() => setLocation(link.href)} 
+              className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30
+                        ${location === link.href 
+                          ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
+                          : 'text-foreground/80 hover:text-foreground'}`}
+            >
+              {link.label}
+            </button>
+          ))}
+        </nav>
+        
+        {/* Flex spacer - pushes content to the ends */}
+        <div className="flex-1 lg:flex"></div>
+        
+        {/* Enhanced Search bar (tablet and up) - Moved far right */}
         {deviceType !== 'mobile' && (
-          <div className="flex-1 mx-8 max-w-lg hidden sm:flex items-center">
-            <div className="relative w-full group">
+          <div className="hidden sm:flex items-center -mt-2 mr-4">
+            <div className="relative w-[280px] group">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50 
                                 group-focus-within:text-primary transition-colors duration-200" />
               <input
@@ -185,16 +184,18 @@ export default function Navigation() {
           </div>
         )}
         
+        {/* No need for additional spacer since we removed the mobile nav links */}
+        
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-3">
-          {/* Mobile search button */}
+        <div className="flex items-center space-x-3 -mt-2">
+          {/* Mobile search button - moved to the right */}
           {deviceType === 'mobile' && (
             <Button
               variant="ghost"
               size="icon"
               onClick={handleMobileSearchClick}
               className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        active:scale-95"
+                        transition-all duration-150 active:scale-95 -mt-0.5"
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
