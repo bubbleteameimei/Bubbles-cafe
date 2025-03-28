@@ -29,6 +29,7 @@ import MistEffect from "@/components/effects/MistEffect";
 import { MistControl } from "@/components/ui/mist-control";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
+import BackgroundGradient from "@/components/BackgroundGradient";
 import {
   Dialog,
   DialogContent,
@@ -878,9 +879,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-1" 
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-1"
+      /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
+      
+      {/* Reader page has no background image, just clean default background */}
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />

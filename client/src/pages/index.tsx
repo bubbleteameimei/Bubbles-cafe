@@ -14,6 +14,7 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import BackgroundGradient from "@/components/BackgroundGradient";
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
 import { convertWordPressPost, type WordPressPost, fetchAllWordPressPosts } from "@/services/wordpress";
@@ -205,6 +206,8 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen w-full bg-background">
+      {/* No background image on stories page */}
+      
       <Mist className="opacity-30" />
       <div className="container pb-2 pt-0">
         <motion.div

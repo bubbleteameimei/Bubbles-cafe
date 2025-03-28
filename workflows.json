@@ -1,64 +1,10 @@
 {
-  "Start application": {
-    "command": "npm run dev",
-    "environment": {
-      "NODE_ENV": "development",
-      "PORT": "3001",
-      "HOST": "0.0.0.0",
-      "SESSION_SECRET": "dev_secret_key",
-      "VITE_DEBUG_ENABLED": "true",
-      "VITE_HOT_RELOAD": "true"
-    },
-    "wait_for_port": {
-      "port": 3001,
-      "timeout_seconds": 60
-    },
-    "port": 3001,
-    "protocol": "http",
-    "onAfterCompleted": "continue", 
-    "persistent": true,
-    "type": "web",
-    "public_address": "https://${REPL_SLUG}.${REPL_OWNER}.repl.co",
-    "ready_timeout": 30000,
-    "restart_on": [
-      "package.json",
-      "package-lock.json",
-      "client/src/**/*.{ts,tsx}",
-      "client/src/**/*.css",
-      "client/src/index.css",
-      "client/src/components/ui/cookie-consent.tsx",
-      "client/src/components/ui/cookie-consent-fixed.tsx",
-      "client/src/hooks/use-cookie-consent.tsx",
-      "client/src/lib/cookie-manager.ts",
-      "client/src/pages/cookie-test.tsx",
-      "server/**/*",
-      "shared/**/*",
-      "drizzle.config.ts",
-      ".env",
-      ".env.development",
-      ".env.production"
-    ],
-    "kill_others": true,
-    "wait_time_after_up": 5000
-  },
-  "WordPress Sync": {
-    "command": "node scripts/run-wp-sync.js",
-    "environment": {
-      "NODE_ENV": "development",
-      "DEBUG": "wordpress-sync:*"
-    },
-    "persistent": false
-  },
-  "WordPress Scheduler": {
-    "command": "npx tsx scripts/sync-scheduler.ts",
-    "environment": {
-      "NODE_ENV": "development",
-      "DEBUG": "wordpress-sync:*"
-    },
-    "persistent": true,
-    "restart_on": [
-      "scripts/sync-scheduler.ts",
-      "scripts/wordpress-api-sync.ts"
-    ]
-  }
+  "workflows": [
+    {
+      "name": "Start application",
+      "command": "npm run dev",
+      "wait_for_port": true,
+      "port": 3001
+    }
+  ]
 }
