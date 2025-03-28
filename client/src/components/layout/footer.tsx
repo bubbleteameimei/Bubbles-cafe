@@ -5,11 +5,11 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-0 sm:mt-0 md:mt-0 lg:mt-0 border-t border-gray-200 dark:border-gray-800 py-4 sm:py-6 md:py-8 lg:py-10 bg-background/95 backdrop-blur-sm shadow-lg">
+    <footer className="mt-0 sm:mt-0 md:mt-0 lg:mt-0 border-t border-gray-200 dark:border-gray-800 py-2 sm:py-2 md:py-3 lg:py-4 bg-background/95 backdrop-blur-sm shadow-lg">
       <div className="container max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex items-center space-x-2">
-            <span className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 text-center md:text-left font-medium">© Bubble's Cafe 2025. All rights reserved.</span>
+            <span className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 text-center md:text-left font-medium">© Bubble's Cafe 2022-2025. All rights reserved.</span>
           </div>
           
           <div className="flex flex-wrap justify-center md:justify-end items-center gap-3 sm:gap-4 md:gap-6 lg:gap-8">
