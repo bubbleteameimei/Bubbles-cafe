@@ -104,26 +104,28 @@ export default function Navigation() {
       className={`sticky top-0 z-40 w-full border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
-                ${scrolled ? 'shadow-sm' : ''}`}
+                ${scrolled ? 'shadow-md' : ''}`}
       data-device-type={deviceType}
     >
-      <div className="container flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle and logo */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-5">
           {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                          transition-all duration-200 ease-in-out"
+                className="lg:hidden h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
+                          transition-all duration-200 ease-in-out active:scale-95"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[85vw] overflow-y-auto">
+            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[85vw]">
+              {/* Removed menu header as requested */}
+              <div className="border-b border-border/30"></div>
               <SidebarNavigation onNavigate={() => setIsOpen(false)} />
             </SheetContent>
           </Sheet>
@@ -131,21 +133,21 @@ export default function Navigation() {
           {/* Site name/logo on mobile - no icon */}
           <button 
             onClick={() => setLocation('/')}
-            className="lg:hidden flex items-center font-semibold tracking-tight hover:text-foreground transition-colors duration-200"
+            className="lg:hidden flex items-center font-serif font-semibold tracking-tight hover:text-foreground transition-colors duration-200"
             aria-label="Home"
           >
-            <span className="text-foreground/90 font-bold">Bubble's Cafe</span>
+            <span className="text-foreground/90 font-bold text-lg"></span>
           </button>
           
           {/* Horizontal Nav - Desktop only */}
-          <nav className="hidden lg:flex items-center space-x-3">
+          <nav className="hidden lg:flex items-center space-x-4">
             {navLinks.map(link => (
               <button 
                 key={link.href}
                 onClick={() => setLocation(link.href)} 
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent/20
+                className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30
                           ${location === link.href 
-                            ? 'text-primary font-semibold bg-accent/30 border border-border/30' 
+                            ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
                             : 'text-foreground/80 hover:text-foreground'}`}
               >
                 {link.label}
@@ -154,11 +156,12 @@ export default function Navigation() {
           </nav>
         </div>
         
-        {/* Center section - Search bar (tablet and up) */}
+        {/* Center section - Enhanced Search bar (tablet and up) */}
         {deviceType !== 'mobile' && (
-          <div className="flex-1 mx-6 max-w-lg hidden sm:flex items-center">
-            <div className="relative w-full flex">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
+          <div className="flex-1 mx-8 max-w-lg hidden sm:flex items-center">
+            <div className="relative w-full group">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50 
+                                group-focus-within:text-primary transition-colors duration-200" />
               <input
                 type="search"
                 placeholder="Search for keywords..."
@@ -166,14 +169,15 @@ export default function Navigation() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 className="w-full rounded-l-md bg-accent/20 text-foreground placeholder:text-foreground/50 
-                         focus:bg-accent/30 focus:outline-none focus:ring-1 focus:ring-primary/50
-                         px-4 py-1.5 pl-10 text-sm"
+                         focus:bg-accent/30 focus:outline-none focus:ring-2 focus:ring-primary/40
+                         px-4 py-2 pl-11 text-sm transition-all duration-200
+                         group-focus-within:shadow-sm"
               />
               <Button 
-                variant="ghost" 
+                variant="default" 
                 size="sm" 
                 onClick={handleSearch}
-                className="rounded-l-none rounded-r-md h-9 text-foreground/80 hover:text-foreground hover:bg-accent/50 border-l border-border/30"
+                className="rounded-l-none rounded-r-md h-10 border-l border-border/30 shadow-sm"
               >
                 Search
               </Button>
@@ -189,7 +193,8 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={handleMobileSearchClick}
-              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+              className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        active:scale-95"
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
@@ -199,7 +204,8 @@ export default function Navigation() {
           {/* Notifications */}
           <NotificationIcon 
             notifications={notifications} 
-            className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50" 
+            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
+                      transition-all duration-150 active:scale-95" 
           />
           
           {/* Theme toggle */}
@@ -207,7 +213,8 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-150 active:scale-95"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
@@ -222,7 +229,8 @@ export default function Navigation() {
             <Button
               variant="default"
               onClick={() => setLocation("/auth")}
-              className="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider transition-all duration-150 ease-out active:scale-95 active:opacity-90"
+              className="h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider 
+                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm"
               aria-label="Sign in"
             >
               Sign In
@@ -232,7 +240,8 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation('/profile')}
-              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+              className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-150 active:scale-95"
               aria-label="Profile"
             >
               <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">

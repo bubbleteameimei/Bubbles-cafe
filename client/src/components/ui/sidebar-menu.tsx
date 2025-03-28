@@ -36,7 +36,7 @@ import {
 
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
-  const { user, logoutMutation } = useAuth();
+  const { user, logout } = useAuth();
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
@@ -80,8 +80,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
-        {/* Navigation label removed as requested */}
-        <SidebarGroupContent>
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
+          Navigation
+        </SidebarGroupLabel>
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -154,10 +156,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Games & Interactive Experiences */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
-          Interactive Experiences
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
+          Games & Interactive
         </SidebarGroupLabel>
-        <SidebarGroupContent>
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -178,10 +180,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
         <SidebarGroup className="mt-1">
-          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
             Administration
           </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="-mt-1">
             <SidebarMenu>
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
@@ -310,10 +312,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Accessibility */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
           Reading & Accessibility
         </SidebarGroupLabel>
-        <SidebarGroupContent>
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
@@ -368,10 +370,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
           Account Settings
         </SidebarGroupLabel>
-        <SidebarGroupContent>
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
@@ -463,10 +465,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Support & Legal */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))]">
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
           Support & Legal
         </SidebarGroupLabel>
-        <SidebarGroupContent>
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
@@ -580,8 +582,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             size="sm"
             className="w-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm uppercase tracking-wider px-4 py-2"
             onClick={() => {
-              if (logoutMutation) {
-                logoutMutation.mutate();
+              if (logout) {
+                logout();
               }
             }}
             aria-label="Sign out of your account"
