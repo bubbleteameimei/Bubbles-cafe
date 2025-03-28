@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import LoadingScreen from './LoadingScreen';
+import { LoadingScreen } from './ui/loading-screen';
 import { hideGlobalLoading } from '@/utils/global-loading-manager';
 
 interface ApiLoaderProps {

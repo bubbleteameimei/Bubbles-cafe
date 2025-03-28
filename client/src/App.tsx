@@ -255,7 +255,7 @@ const AppContent = () => {
       {/* Main Content */}
       <main className="min-h-screen lg:ml-72 flex-1 flex flex-col bg-transparent overflow-x-hidden">
         <AutoHideNavbar />
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-5 md:py-6 lg:py-6 pt-20 lg:pt-6 overflow-x-hidden reader-container flex-1 bg-transparent">
+        <div className="w-full pt-20 lg:pt-6 flex-1 bg-background">
           <ErrorBoundary>
             <EnhancedPageTransition>
               <Switch>

@@ -46,9 +46,14 @@
   }
   
   /* Fix for transparent backgrounds in form elements */
-  input, textarea, select, .input-field, .textarea-field, .select-field {
+  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"] {
     @apply bg-background; /* Force solid background */
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--background)) !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Ensure no transparency */
+    opacity: 1 !important;
   }
   
   /* Background color reset for specific pages */
@@ -438,7 +443,7 @@ html.dark *, html.light * {
     --destructive: 0 72% 51%;          /* Same destructive color for consistency */
     --destructive-foreground: 0 0% 100%; /* White text on destructive */
     --border: 0 0% 24%;                /* Dark border (#3D3D3D) - slightly higher contrast */
-    --input: 0 0% 24%;                 /* Dark input border - matching border */
+    --input: 0 0% 16%;                 /* Darker input background to ensure solid appearance */
     --ring: 209 75% 48%;               /* Same as primary */
     
     /* Additional dark mode variables for better readability */
@@ -446,6 +451,23 @@ html.dark *, html.light * {
     --dark-elevation-1: rgba(255, 255, 255, 0.05);
     --dark-elevation-2: rgba(255, 255, 255, 0.07);
     --dark-elevation-3: rgba(255, 255, 255, 0.09);
+  }
+  
+  /* Ensure input fields in dark mode have solid backgrounds */
+  .dark input, 
+  .dark textarea, 
+  .dark select,
+  .dark .input-field,
+  .dark .textarea-field,
+  .dark .select-field,
+  .dark [type="text"],
+  .dark [type="email"],
+  .dark [type="password"],
+  .dark [type="search"] {
+    background-color: hsl(0 0% 12%) !important; /* Solid background in dark mode */
+    color: hsl(0 0% 92%);
+    border-color: hsl(0 0% 24%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
   }
 
   /* System color preference - only applies when JS is disabled or theme toggle not used */
@@ -1194,8 +1216,17 @@ input[type="reset"],
 }
 
 /* Fix for input fields to prevent background bleed-through */
-.input-solid-bg {
-  background-color: hsl(var(--background)) !important; 
+.input-solid-bg, 
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="search"],
+input[type="number"],
+input[type="tel"],
+textarea,
+select {
+  background-color: hsl(var(--background)) !important;
+  opacity: 1 !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   z-index: var(--z-float) !important;
