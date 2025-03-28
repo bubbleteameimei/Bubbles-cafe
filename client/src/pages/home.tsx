@@ -51,9 +51,9 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative w-full min-h-screen overflow-auto bg-background/5">
+        <div className="relative w-full min-h-screen overflow-hidden">
           {/* Background container - parent element with relative positioning */}
-          <div className="relative min-h-screen w-full">
+          <div className="relative min-h-screen w-full overflow-hidden">
             {/* Full screen background image - using CSS class from index.css */}
             <motion.div 
               initial={{ opacity: 0 }}
