@@ -878,7 +878,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-3" 
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-1" 
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
@@ -1256,7 +1256,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 mx-auto container max-w-[75ch] px-4 overflow-visible"
+              className="reader-container story-content mb-4 mx-auto container max-w-[75ch] px-4 overflow-visible"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.012em',
@@ -1415,7 +1415,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         </AnimatePresence>
 
         {/* Bottom Return to Home button */}
-        <div className={`mt-12 mb-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className={`mt-4 mb-4 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
             size="lg"

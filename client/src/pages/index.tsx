@@ -206,9 +206,9 @@ export default function IndexView() {
   return (
     <div className="min-h-screen w-full bg-background">
       <Mist className="opacity-30" />
-      <div className="container pb-20 pt-4">
+      <div className="container pb-2 pt-0">
         <motion.div
-          className="flex justify-end items-center mb-2"
+          className="flex justify-end items-center mb-1 mt-0"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -225,7 +225,7 @@ export default function IndexView() {
         {/* Featured Story */}
         {featuredStory && (
           <motion.div
-            className="mb-6 sm:mb-8 md:mb-10"
+            className="mb-1 sm:mb-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -237,7 +237,7 @@ export default function IndexView() {
             
             <Card className="hover:shadow-xl transition-all duration-500 overflow-hidden border-[1.5px] hover:border-primary/50 bg-card/60 backdrop-blur-sm relative before:absolute before:inset-0 before:bg-gradient-to-t before:from-primary/10 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-700 transform hover:scale-[1.01] transition-transform">
               <div className="md:flex">
-                <div className="md:w-2/3 p-3 sm:p-4 md:p-5">
+                <div className="md:w-2/3 p-2 sm:p-3 md:p-4">
                   <div className="flex flex-col h-full">
                     <div>
                       <div className="flex justify-between items-start mb-2 sm:mb-3">
@@ -275,7 +275,7 @@ export default function IndexView() {
                         const featuredExcerpt = extractHorrorExcerpt(featuredStory.content, 300);
                         console.log(`[Featured Excerpt Debug] Generated horror excerpt: "${featuredExcerpt.substring(0, 50)}..."`);
                         return (
-                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-cormorant">
+                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-serif">
                             {featuredExcerpt}
                           </p>
                         );
@@ -307,7 +307,7 @@ export default function IndexView() {
                   </div>
                 </div>
                 
-                <div className="hidden md:block md:w-1/3 bg-card/80 p-5 border-l">
+                <div className="hidden md:block md:w-1/3 bg-card/80 p-3 sm:p-4 border-l">
                   <div className="h-full flex flex-col justify-between">
                     <div>
                       <h3 className="text-lg font-medium mb-3 font-castoro">Why We Featured This</h3>
@@ -332,7 +332,7 @@ export default function IndexView() {
         
         {/* Latest Stories Heading - Below Featured Story */}
         <motion.div
-          className="flex justify-center items-center mb-4 sm:mb-5 md:mb-6 mt-6 sm:mt-7 md:mt-8"
+          className="flex justify-center items-center mb-1 sm:mb-2 mt-1 sm:mt-1"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -365,7 +365,7 @@ export default function IndexView() {
           </motion.div>
         ) : (
           <motion.div
-            className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 md:grid-cols-2"
+            className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-1 md:grid-cols-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -410,7 +410,7 @@ export default function IndexView() {
                     {themeCategory && themeInfo && (
                       <div className="h-1.5 bg-primary w-full"></div>
                     )}
-                    <CardHeader className="p-3 sm:p-4">
+                    <CardHeader className="p-2 sm:p-3">
                       <div className="flex flex-col gap-1 sm:gap-1.5">
                         <div className="flex justify-between items-start gap-2 sm:gap-3">
                           <CardTitle
@@ -445,8 +445,8 @@ export default function IndexView() {
                       </div>
                     </CardHeader>
 
-                    <CardContent className="px-3 sm:px-4 flex-grow story-card-content">
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-2 sm:mb-3 line-clamp-3 font-cormorant">
+                    <CardContent className="px-2 sm:px-3 pt-0 pb-2 flex-grow story-card-content">
+                      <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2 sm:mb-3 line-clamp-3 font-serif">
                         {excerpt}
                       </p>
                       <div 
@@ -458,7 +458,7 @@ export default function IndexView() {
                       </div>
                     </CardContent>
 
-                    <CardFooter className="p-2 sm:p-3 mt-auto border-t">
+                    <CardFooter className="p-1.5 sm:p-2 mt-auto border-t">
                       <div className="w-full flex items-center justify-between">
                         {/* Make sure the LikeDislike component is always mounted in same order */}
                         {post && post.id && <LikeDislike key={`like-${post.id}`} postId={post.id} />}

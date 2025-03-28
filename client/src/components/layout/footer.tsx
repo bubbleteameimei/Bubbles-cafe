@@ -5,7 +5,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-6 sm:mt-8 md:mt-12 lg:mt-16 border-t border-gray-200 dark:border-gray-800 py-6 sm:py-8 md:py-10 lg:py-12 bg-background/95 backdrop-blur-sm shadow-lg">
+    <footer className="mt-0 sm:mt-0 md:mt-0 lg:mt-0 border-t border-gray-200 dark:border-gray-800 py-2 sm:py-2 md:py-3 lg:py-4 bg-background/95 backdrop-blur-sm shadow-lg">
       <div className="container max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex items-center space-x-2">
@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="hidden md:flex justify-center mt-8 lg:mt-10">
+        <div className="hidden md:flex justify-center mt-2 lg:mt-3">
           <div className="text-xs lg:text-sm text-gray-500 dark:text-gray-500 max-w-2xl text-center">
             Providing the best storytelling experience across all your devices - mobile, tablet, laptop, and desktop.
           </div>

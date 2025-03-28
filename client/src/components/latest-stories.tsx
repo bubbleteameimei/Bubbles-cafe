@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { fetchWordPressPosts, convertWordPressPost } from "@/services/wordpress";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { getExcerpt } from "@/lib/content-analysis";
+import { extractHorrorExcerpt } from "@/lib/content-analysis";
 
 export default function LatestStories() {
   const [, setLocation] = useLocation();
@@ -30,7 +30,7 @@ export default function LatestStories() {
 
   return (
     <ErrorBoundary>
-      <section className="space-y-6">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Latest Stories</h2>
           <Button
@@ -42,18 +42,18 @@ export default function LatestStories() {
           </Button>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {posts.map((post) => (
             <div
               key={post.id}
-              className="group p-4 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
+              className="group p-3 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors cursor-pointer"
               onClick={() => setLocation(`/reader/${post.slug}`)}
             >
               <h3 className="font-medium group-hover:text-primary transition-colors">
                 {post.title}
               </h3>
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                {post.content && getExcerpt(post.content)}
+              <p className="text-base sm:text-lg text-muted-foreground line-clamp-3 mt-1 font-serif leading-relaxed">
+                {post.content && extractHorrorExcerpt(post.content)}
               </p>
             </div>
           ))}

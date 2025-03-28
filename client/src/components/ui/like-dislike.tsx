@@ -187,23 +187,30 @@ export function LikeDislike({
   };
 
   return (
-    <div className={cn("mt-4 flex flex-col items-center gap-y-2", className)} data-toast-container>
+    <div className={cn(
+      variant === 'reader' ? "mt-4 flex flex-col items-center gap-y-2" : "flex items-center gap-x-3", 
+      className
+    )} data-toast-container>
       {variant === 'reader' && (
         <h3 className="text-gray-800 dark:text-white text-lg font-semibold">
           Loved this story? Let me know with a like 🥹—or a dislike if you must 😔
         </h3>
       )}
-      <div className="flex justify-center items-center gap-x-4">
+      <div className={cn(
+        "flex items-center",
+        variant === 'reader' ? "justify-center gap-x-4" : "gap-x-2"
+      )}>
         {/* Like Button - Updated to match design */}
         <button 
           type="button" 
           onClick={handleLike}
           className={cn(
-            "inline-flex items-center gap-x-2 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
-            size === 'sm' && "py-1.5 px-2.5 text-xs",
+            "inline-flex items-center gap-x-1 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
+            size === 'sm' && "py-1 px-2 text-xs",
             size === 'md' && "py-2 px-3 text-sm",
             size === 'lg' && "py-2.5 px-3.5 text-base",
-            liked && "border-primary text-primary dark:border-primary-400 dark:text-primary-400"
+            liked && "border-primary text-primary dark:border-primary-400 dark:text-primary-400",
+            variant !== 'reader' && "h-7 sm:h-8"
           )}
         >
           <svg 
@@ -211,7 +218,8 @@ export function LikeDislike({
               "shrink-0",
               size === 'sm' && "w-4 h-4",
               size === 'md' && "w-5 h-5",
-              size === 'lg' && "w-6 h-6"
+              size === 'lg' && "w-6 h-6",
+              variant !== 'reader' && "w-3.5 h-3.5"
             )}
             xmlns="http://www.w3.org/2000/svg" 
             viewBox="0 0 24 24" 
@@ -232,11 +240,12 @@ export function LikeDislike({
           type="button" 
           onClick={handleDislike}
           className={cn(
-            "inline-flex items-center gap-x-2 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
-            size === 'sm' && "py-1.5 px-2.5 text-xs",
+            "inline-flex items-center gap-x-1 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
+            size === 'sm' && "py-1 px-2 text-xs",
             size === 'md' && "py-2 px-3 text-sm",
             size === 'lg' && "py-2.5 px-3.5 text-base",
-            disliked && "border-destructive text-destructive dark:border-destructive dark:text-destructive"
+            disliked && "border-destructive text-destructive dark:border-destructive dark:text-destructive",
+            variant !== 'reader' && "h-7 sm:h-8"
           )}
         >
           <svg 
@@ -244,7 +253,8 @@ export function LikeDislike({
               "shrink-0",
               size === 'sm' && "w-4 h-4",
               size === 'md' && "w-5 h-5",
-              size === 'lg' && "w-6 h-6"
+              size === 'lg' && "w-6 h-6",
+              variant !== 'reader' && "w-3.5 h-3.5"
             )}
             xmlns="http://www.w3.org/2000/svg"  
             viewBox="0 0 24 24" 
