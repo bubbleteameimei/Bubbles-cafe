@@ -59,7 +59,8 @@ export default function Home() {
             className="bg-homepage" 
             style={{
               willChange: 'transform',
-              transform: 'translateZ(0)'
+              transform: 'translateZ(0)',
+              zIndex: -10  /* Explicitly set z-index to match CSS variable */
             }} 
           />
 

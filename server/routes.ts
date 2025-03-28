@@ -483,12 +483,29 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/posts/:slug", cacheControl(300), async (req, res) => {
+  app.get("/api/posts/:slugOrId", cacheControl(300), async (req, res) => {
     try {
-      const post = await storage.getPost(req.params.slug);
+      const slugOrId = req.params.slugOrId;
+      let post;
+      
+      // Check if the parameter is a numeric ID or a slug
+      if (/^\d+$/.test(slugOrId)) {
+        // It's a numeric ID
+        const id = parseInt(slugOrId, 10);
+        console.log(`[GET /api/posts/:slugOrId] Looking up post by ID: ${id}`);
+        post = await storage.getPostById(id);
+      } else {
+        // It's a slug
+        console.log(`[GET /api/posts/:slugOrId] Looking up post by slug: ${slugOrId}`);
+        post = await storage.getPost(slugOrId);
+      }
+      
       if (!post) {
+        console.log(`[GET /api/posts/:slugOrId] Post not found: ${slugOrId}`);
         return res.status(404).json({ message: "Post not found" });
       }
+
+      console.log(`[GET /api/posts/:slugOrId] Found post: ${post.title} (ID: ${post.id})`);
 
       // Set ETag for caching
       const etag = crypto
@@ -505,7 +522,7 @@ export function registerRoutes(app: Express): Server {
 
       res.json(post);
     } catch (error) {
-      console.error("Error fetching post:", error);
+      console.error("[GET /api/posts/:slugOrId] Error fetching post:", error);
       res.status(500).json({ message: "Failed to fetch post" });
     }
   });
@@ -526,17 +543,20 @@ export function registerRoutes(app: Express): Server {
         // If it's a slug, use getPost
         post = await storage.getPost(postId);
       } else {
-        // If it's a number, find post by numeric ID
-        const allPosts = await storage.getPosts(1, 100);
-        post = allPosts.posts.find(p => p.id === Number(postId));
+        // If it's a number, use getPostById
+        post = await storage.getPostById(Number(postId));
       }
       
       if (!post) {
+        console.log(`[GET /api/posts/:postId/comments] Post not found: ${postId}`);
         return res.status(404).json({ message: "Post not found" });
       }
       
+      console.log(`[GET /api/posts/:postId/comments] Found post: ${post.title} (ID: ${post.id})`);
+      
       // Use the numeric post ID from the post record
       const comments = await storage.getComments(post.id);
+      console.log(`[GET /api/posts/:postId/comments] Retrieved ${comments.length} comments for post ID: ${post.id}`);
       res.json(comments);
     } catch (error) {
       console.error("Error in getComments:", error);
@@ -614,9 +634,27 @@ export function registerRoutes(app: Express): Server {
   // Update the createComment function with proper metadata handling
   app.post("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
-      const postId = parseInt(req.params.postId);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: "Invalid post ID format" });
+      const postIdParam = req.params.postId;
+      let postId: number;
+      
+      // Check if postId is numeric or a slug
+      if (/^\d+$/.test(postIdParam)) {
+        postId = parseInt(postIdParam);
+        
+        // Verify the post exists
+        const post = await storage.getPostById(postId);
+        if (!post) {
+          console.log(`[POST /api/posts/:postId/comments] Post not found with ID: ${postId}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+      } else {
+        // It's a slug, we need to find the corresponding post ID
+        const post = await storage.getPost(postIdParam);
+        if (!post) {
+          console.log(`[POST /api/posts/:postId/comments] Post not found with slug: ${postIdParam}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+        postId = post.id;
       }
 
       // Simplified validation for required fields
@@ -626,6 +664,8 @@ export function registerRoutes(app: Express): Server {
           message: "Comment content is required"
         });
       }
+
+      console.log(`[POST /api/posts/:postId/comments] Creating comment for post ID: ${postId}`);
 
       // Create the comment with properly typed metadata
       const comment = await storage.createComment({
@@ -654,7 +694,29 @@ export function registerRoutes(app: Express): Server {
   // Update the like/dislike route handler
   app.post("/api/posts/:postId/reaction", async (req, res) => {
     try {
-      const postId = parseInt(req.params.postId);
+      const postIdParam = req.params.postId;
+      let postId: number;
+      
+      // Check if postId is numeric or a slug
+      if (/^\d+$/.test(postIdParam)) {
+        postId = parseInt(postIdParam);
+        
+        // Verify the post exists
+        const post = await storage.getPostById(postId);
+        if (!post) {
+          console.log(`[POST /api/posts/:postId/reaction] Post not found with ID: ${postId}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+      } else {
+        // It's a slug, we need to find the corresponding post ID
+        const post = await storage.getPost(postIdParam);
+        if (!post) {
+          console.log(`[POST /api/posts/:postId/reaction] Post not found with slug: ${postIdParam}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+        postId = post.id;
+      }
+      
       const { isLike } = req.body;
 
       console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
@@ -730,7 +792,29 @@ export function registerRoutes(app: Express): Server {
   // Add a route to get current like/dislike counts
   app.get("/api/posts/:postId/reactions", async (req, res) => {
     try {
-      const postId = parseInt(req.params.postId);
+      const postIdParam = req.params.postId;
+      let postId: number;
+      
+      // Check if postId is numeric or a slug
+      if (/^\d+$/.test(postIdParam)) {
+        postId = parseInt(postIdParam);
+        
+        // Verify the post exists
+        const post = await storage.getPostById(postId);
+        if (!post) {
+          console.log(`[GET /api/posts/:postId/reactions] Post not found with ID: ${postId}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+      } else {
+        // It's a slug, we need to find the corresponding post ID
+        const post = await storage.getPost(postIdParam);
+        if (!post) {
+          console.log(`[GET /api/posts/:postId/reactions] Post not found with slug: ${postIdParam}`);
+          return res.status(404).json({ message: "Post not found" });
+        }
+        postId = post.id;
+      }
+      
       console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
 
       const dbCounts = await storage.getPostLikeCounts(postId);

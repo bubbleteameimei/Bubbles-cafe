@@ -2618,6 +2618,33 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to update game stats');
     }
   }
+  
+  // Implementation of getPostById for fetching posts by ID
+  async getPostById(id: number): Promise<Post | undefined> {
+    try {
+      console.log(`[Storage] Fetching post by ID: ${id}`);
+      
+      const [post] = await db.select()
+        .from(postsTable)
+        .where(eq(postsTable.id, id))
+        .limit(1);
+        
+      if (!post) {
+        console.log(`[Storage] Post with ID ${id} not found`);
+        return undefined;
+      }
+      
+      console.log(`[Storage] Found post by ID: ${id}, title: ${post.title}`);
+      
+      return {
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      };
+    } catch (error) {
+      console.error('[Storage] Error in getPostById:', error);
+      throw new Error('Failed to fetch post by ID');
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

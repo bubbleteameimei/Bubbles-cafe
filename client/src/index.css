@@ -1117,9 +1117,9 @@ input[type="reset"],
   background-repeat: no-repeat;
   background-attachment: fixed;
   opacity: 0.85; /* Slightly reduced opacity for better overlay */
-  z-index: var(--z-background); /* Use z-index system variable */
+  z-index: -10; /* Explicitly set to negative value to ensure it's below other content */
   pointer-events: none; /* Prevents the background from capturing clicks */
-  background-color: rgba(10, 10, 10, 0.2); /* Darker fallback */
+  background-color: rgba(10, 10, 10, 0.8); /* Darker fallback */
 }
 
 img {

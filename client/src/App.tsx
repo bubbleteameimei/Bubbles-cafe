@@ -241,7 +241,7 @@ const AppContent = () => {
   
   // For all other pages, render with normal layout
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen bg-transparent">
       {/* Desktop Sidebar - optimized for larger screens */}
       <aside className="fixed top-0 left-0 z-40 h-screen w-64 sm:w-60 md:w-64 lg:w-72 hidden lg:block overflow-hidden border-r border-border/80">
         <div className="h-full w-full">
