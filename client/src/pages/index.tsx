@@ -205,11 +205,9 @@ export default function IndexView() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-background">
-      {/* No background image on stories page */}
-      
-      <Mist className="opacity-30" />
-      <div className="container pb-2 pt-0">
+    <div className="min-h-screen w-full bg-background flex flex-col">
+      {/* No background image on stories page - intentionally left blank */}
+      <div className="container pb-12 pt-6 flex-1 mx-auto px-4 flex flex-col">
         <motion.div
           className="flex justify-end items-center mb-1 mt-0"
           initial={{ opacity: 0, y: -20 }}

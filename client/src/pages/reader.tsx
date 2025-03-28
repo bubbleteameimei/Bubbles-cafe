@@ -879,7 +879,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-1"
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-4 pb-8 flex flex-col"
       /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -1260,7 +1260,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-4 mx-auto container max-w-[75ch] px-4 overflow-visible"
+              className="reader-container story-content mb-8 mx-auto container max-w-[75ch] px-4 overflow-visible flex-1"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.012em',

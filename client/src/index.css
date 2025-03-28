@@ -387,7 +387,6 @@ html.dark *, html.light * {
     --dark-elevation-1: rgba(255, 255, 255, 0.05);
     --dark-elevation-2: rgba(255, 255, 255, 0.07);
     --dark-elevation-3: rgba(255, 255, 255, 0.09);
-    --dark-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
   /* System color preference - only applies when JS is disabled or theme toggle not used */
@@ -418,7 +417,6 @@ html.dark *, html.light * {
       --dark-elevation-1: rgba(255, 255, 255, 0.05);
       --dark-elevation-2: rgba(255, 255, 255, 0.07);
       --dark-elevation-3: rgba(255, 255, 255, 0.09);
-      --dark-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
   }
 
@@ -502,13 +500,9 @@ h4, h5, h6,
   letter-spacing: 0.02em;
 }
 
-/* Text shadow for better visibility on image backgrounds */
+/* Text shadow for better visibility on image backgrounds - disabled per request */
 .text-shadow-xl {
-  text-shadow: 
-    0 0 5px rgba(0, 0, 0, 0.8),
-    0 0 10px rgba(0, 0, 0, 0.7),
-    0 0 15px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
 }
 
 /* Typography system for content types */
@@ -1132,39 +1126,38 @@ input[type="reset"],
   This class should only be applied to a dedicated background container element
   and not to general page elements to avoid background showing up on inputs 
 */
-.bg-homepage {
-  position: fixed; /* Fixed position to ensure full coverage */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100vh !important; /* Use viewport height for full coverage */
-  min-height: 100%; /* Minimum height to ensure coverage */
-  background-image: url('/attached_assets/IMG_4918.jpeg');
-  background-size: cover; /* Cover ensures the image fills the container */
-  background-position: center; /* Center the image */
-  background-repeat: no-repeat; /* Don't repeat the image */
-  background-color: #121212; /* Dark fallback */
-  z-index: -10; /* Keep below content */
-  pointer-events: none; /* Prevents the background from capturing clicks */
+/* Homepage specific styles - background only on homepage */
+/* We're handling this directly in the home component now */
+
+/* Background color fallback */
+body {
+  background-color: #121212;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Additional settings for mobile devices */
-@media (max-width: 768px) {
-  .bg-homepage {
-    background-attachment: scroll; /* Ensure mobile compatibility */
-    background-position: center; /* Center position */
-    background-size: cover; /* Cover the screen */
-    height: 100vh !important; /* Full viewport height */
-    min-height: 100%; /* At least 100% height */
-    width: 100%; /* Full width */
-  }
-  
-  /* Background color fallback for mobile */
-  body {
-    background-color: #121212;
-  }
+/* Ensure content containers stretch to fill viewport */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full height layout for proper spacing */
+.layout-container, 
+.page-container,
+.content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 img {
