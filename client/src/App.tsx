@@ -4,7 +4,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
-import Navigation from './components/layout/navigation';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
