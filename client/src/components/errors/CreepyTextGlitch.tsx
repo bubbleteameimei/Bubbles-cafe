@@ -40,70 +40,68 @@ export function CreepyTextGlitch({ text, className = "", intensityFactor = 1 }: 
     };
   }, [text, intensityFactor]);
   
-  // Schedule more controlled and less jarring glitches
+  // Schedule random, chaotic glitches
   const scheduleRandomGlitches = () => {
     clearAllTimeouts();
     
-    // Simplified glitch effect with more predictable behavior
-    const glitchEffect = () => {
+    // Completely random character replacement for chaotic effect
+    const randomGlitchEffect = () => {
       // Convert text to array for character manipulation
       const chars = originalText.current.split('');
       const newChars = [...chars];
       
-      // Each character has a chance to glitch, but we limit the total number of glitches
-      const maxGlitches = Math.ceil(chars.length * 0.2 * intensityFactor);
-      let glitchCount = 0;
-      
-      // Generate random positions to glitch
-      for (let i = 0; i < chars.length && glitchCount < maxGlitches; i++) {
+      // Each character has a random chance of being glitched
+      for (let i = 0; i < chars.length; i++) {
         // Skip spaces
         if (chars[i] === ' ') continue;
         
-        // Limited chance to glitch each character, creating a more controlled effect
-        if (Math.random() < 0.2) {
+        // Random chance to glitch each character - higher with more intensity
+        if (Math.random() < 0.3 * intensityFactor) {
           // Replace with a random glitch character
           newChars[i] = GLITCH_CHARS.charAt(
             Math.floor(Math.random() * GLITCH_CHARS.length)
           );
-          glitchCount++;
         }
       }
       
-      // Apply text with controlled glitched characters
+      // Apply text with randomized glitched characters
       setDisplayText(newChars.join(''));
       
-      // Subtle blur effect with consistent duration
-      if (Math.random() > 0.7) {
+      // Random blur effect - more frequent and intense with higher intensity
+      if (Math.random() > 0.6 - (intensityFactor * 0.1)) {
         setBlurActive(true);
-        const blurDuration = 80; // Consistent timing for a more stable effect
+        const blurDuration = 30 + Math.random() * 100;
         setTimeout(() => setBlurActive(false), blurDuration);
       }
       
-      // Always revert to original text after a fixed time
-      const revertTime = 120; // Consistent timing
+      // Revert to original text after a random time
+      const revertTime = 10 + Math.random() * 80; // Very random timing for unpredictability
       const revertTimeout = setTimeout(() => {
-        setDisplayText(originalText.current);
+        // Small chance to not revert, creating sustained glitches
+        if (Math.random() > 0.1) {
+          setDisplayText(originalText.current);
+        }
       }, revertTime);
       
       timeoutIds.current.push(revertTimeout);
     };
     
-    // Schedule next glitch with more predictable timing
+    // Schedule next glitch with highly variable timing
     const scheduleNext = () => {
-      // More consistent timing between glitches
-      const baseDelay = 200;
-      const variance = 100;
-      const nextGlitchDelay = baseDelay + (Math.random() * variance);
+      // Completely random timing between glitches for unpredictable effect
+      const minDelay = Math.max(10, 40 - (intensityFactor * 15));
+      const maxVariance = 100 - (intensityFactor * 20);
+      const nextGlitchDelay = minDelay + Math.random() * maxVariance;
       
       const timeout = setTimeout(() => {
-        glitchEffect();
+        randomGlitchEffect();
         scheduleNext();
       }, nextGlitchDelay);
       
       timeoutIds.current.push(timeout);
     };
     
-    // Start the more controlled cycle
+    // Start the chaotic cycle
     scheduleNext();
   };
   

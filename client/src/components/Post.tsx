@@ -1,53 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchPost } from "@/lib/wordpress-api";
+import { fetchWordPressPostBySlug } from "@/lib/wordpress-api";
 import { useParams } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-
-// Function to extract the most impactful horror line
-function extractHorrorExcerpt(content: string): string {
-  // Split content into paragraphs
-  const paragraphs = content
-    .replace(/<[^>]+>/g, '') // Remove HTML tags
-    .split(/\n+/)
-    .filter(p => p.trim().length > 0);
-
-  // Keywords that might indicate horror/intense content
-  const horrorKeywords = [
-    'blood', 'scream', 'death', 'dark', 'fear', 'horror', 'terror', 'shadow',
-    'nightmare', 'monster', 'demon', 'ghost', 'kill', 'dead', 'evil', 'haunted',
-    'sinister', 'terrifying', 'horrific', 'dread'
-  ];
-
-  // Score each paragraph based on horror keywords
-  const scoredParagraphs = paragraphs.map(paragraph => {
-    let score = 0;
-    horrorKeywords.forEach(keyword => {
-      const regex = new RegExp(keyword, 'gi');
-      const matches = (paragraph.match(regex) || []).length;
-      score += matches;
-    });
-    return { text: paragraph, score };
-  });
-
-  // Sort by score and get the highest scoring paragraph
-  scoredParagraphs.sort((a, b) => b.score - a.score);
-
-  // If no horror content found, return first paragraph
-  if (scoredParagraphs[0].score === 0) {
-    return scoredParagraphs[0].text.slice(0, 200) + '...';
-  }
-
-  // Return the most horror-intensive paragraph
-  const excerpt = scoredParagraphs[0].text;
-  return excerpt.length > 200 ? excerpt.slice(0, 200) + '...' : excerpt;
-}
+import { extractHorrorExcerpt } from "@/lib/content-analysis";
 
 function Post() {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['/api/wordpress/posts', slug],
-    queryFn: () => fetchPost(slug),
+    queryFn: () => fetchWordPressPostBySlug(slug),
   });
 
   if (isLoading) {

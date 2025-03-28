@@ -477,30 +477,18 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   }, [fontFamily, fontSize, availableFonts]);
   
   // Handle reading progress with visual progress bar only (no position saving)
+  // Using the older, simpler implementation for smoother scrolling
   useEffect(() => {
-    // Use requestAnimationFrame for smoother updates
-    let ticking = false;
-    let lastKnownScrollY = window.scrollY;
-    
     const handleScroll = () => {
-      lastKnownScrollY = window.scrollY;
-      
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const totalHeight = document.body.scrollHeight - window.innerHeight;
-          // Avoid division by zero
-          if (totalHeight > 0) {
-            const progress = Math.min(Math.max((lastKnownScrollY / totalHeight) * 100, 0), 100);
-            setReadingProgress(progress);
-          }
-          ticking = false;
-        });
-        
-        ticking = true;
+      const totalHeight = document.body.scrollHeight - window.innerHeight;
+      // Avoid division by zero
+      if (totalHeight > 0) {
+        const progress = Math.min(Math.max((window.scrollY / totalHeight) * 100, 0), 100);
+        setReadingProgress(progress);
       }
     };
     
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll);
     
     // Initial calculation
     handleScroll();
@@ -1049,9 +1037,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         className="fixed top-0 left-0 z-50 h-1 bg-primary/70"
         style={{ 
           width: `${readingProgress}%`, 
-          transition: 'width 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
-          willChange: 'width',
-          transform: 'translateZ(0)'  // Hardware acceleration
+          transition: 'width 0.2s ease-out'
         }}
         aria-hidden="true"
       />

@@ -13,8 +13,9 @@ import {
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
-import { getReadingTime, getExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
+import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
 import { convertWordPressPost, type WordPressPost, fetchAllWordPressPosts } from "@/services/wordpress";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
@@ -182,14 +183,7 @@ export default function IndexView() {
   
   // Now handle conditional renders after all hooks have been called
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-          <h2 className="text-xl font-semibold text-foreground">Loading stories...</h2>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
   
   if (!hasAllPosts && !hasPaginatedPosts) {
@@ -274,9 +268,18 @@ export default function IndexView() {
                         </div>
                       ) : null}
                       
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-cormorant">
-                        {getExcerpt(featuredStory.content, 300)}
-                      </p>
+                      {/* Feature story excerpt with debug logging */}
+                      {(() => {
+                        console.log(`[Featured Excerpt Debug] Processing featured post: ${featuredStory.title} (ID: ${featuredStory.id})`);
+                        console.log(`[Featured Excerpt Debug] Content length: ${featuredStory.content.length} characters`);
+                        const featuredExcerpt = extractHorrorExcerpt(featuredStory.content, 300);
+                        console.log(`[Featured Excerpt Debug] Generated horror excerpt: "${featuredExcerpt.substring(0, 50)}..."`);
+                        return (
+                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-3 sm:mb-4 md:mb-5 line-clamp-3 sm:line-clamp-4 font-cormorant">
+                            {featuredExcerpt}
+                          </p>
+                        );
+                      })()}
                     </div>
                     
                     <div className="flex flex-wrap justify-between items-center mt-auto">
@@ -369,7 +372,12 @@ export default function IndexView() {
           >
             {currentPosts.map((post: Post, index: number) => {
               // Extract all data processing outside the render function
-              const excerpt = getExcerpt(post.content);
+              // Add extra debug logging
+              console.log(`[Excerpt Debug] Processing post: ${post.title} (ID: ${post.id})`);
+              console.log(`[Excerpt Debug] Content length: ${post.content.length} characters`);
+              const excerpt = extractHorrorExcerpt(post.content);
+              console.log(`[Excerpt Debug] Generated horror excerpt: "${excerpt.substring(0, 50)}..."`);
+              
               const globalIndex = index; // Since we're not paginating, index is the global index
               const metadata = post.metadata || {};
               
@@ -445,7 +453,7 @@ export default function IndexView() {
                         className="flex items-center text-[10px] sm:text-xs text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium relative w-fit"
                         onClick={() => navigateToReader(globalIndex)}
                       >
-                        <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read full story</span> 
+                        <span className="relative inline-block after:absolute after:bottom-0 after:left-0 after:h-[1px] after:bg-primary after:w-0 group-hover:after:w-full after:transition-all after:duration-300 cursor-pointer">Read more</span> 
                         <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </CardContent>
@@ -461,7 +469,7 @@ export default function IndexView() {
                           className="shadow-sm hover:shadow-md transition-all text-[10px] sm:text-xs text-primary hover:text-primary flex items-center gap-1 h-7 sm:h-8 px-1.5 sm:px-2 overflow-hidden group/btn relative before:absolute before:inset-0 before:bg-primary/5 before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
                         >
                           <span className="relative z-10 hidden xs:inline transition-transform group-hover/btn:translate-x-0.5">Read More</span>
-                          <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read</span>
+                          <span className="relative z-10 xs:hidden transition-transform group-hover/btn:translate-x-0.5">Read more</span>
                           <ArrowRight className="relative z-10 h-2.5 w-2.5 sm:h-3 sm:w-3 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
                         </Button>
                       </div>

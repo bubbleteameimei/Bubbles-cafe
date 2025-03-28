@@ -417,22 +417,102 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
   try {
     if (!htmlContent) return '';
     
-    // Remove HTML tags and clean up whitespace
-    const text = htmlContent
-      .replace(/<\/?[^>]+(>|$)/g, '')  // Remove HTML tags
-      .replace(/&nbsp;/g, ' ')          // Convert &nbsp; to regular spaces
-      .replace(/\s+/g, ' ')             // Normalize whitespace
-      .trim();                          // Remove leading/trailing whitespace
+    console.log('[Excerpt] Generating excerpt for content of length:', htmlContent.length);
     
-    // Truncate to max length if needed
-    if (text.length <= maxLength) {
-      return text;
+    // Force direct implementation to ensure it works immediately
+    // Split content into paragraphs
+    const paragraphs = htmlContent
+      .replace(/<\/?[^>]+(>|$)/g, '') // Remove HTML tags
+      .replace(/&nbsp;/g, ' ')         // Convert &nbsp; to regular spaces
+      .replace(/\s+/g, ' ')            // Normalize whitespace
+      .split(/\n+/)
+      .filter(p => p.trim().length > 0);
+    
+    if (paragraphs.length === 0) return '';
+
+    // Keywords that might indicate horror/intense content
+    const horrorKeywords = [
+      'blood', 'scream', 'death', 'dark', 'fear', 'horror', 'terror', 'shadow',
+      'nightmare', 'monster', 'demon', 'ghost', 'kill', 'dead', 'evil', 'haunted',
+      'sinister', 'terrifying', 'horrific', 'dread', 'chill', 'spine', 'frightening',
+      'mysterious', 'eerie', 'strange', 'creepy', 'disturbing', 'macabre'
+    ];
+
+    // Score each paragraph based on horror keywords
+    const scoredParagraphs = paragraphs.map(paragraph => {
+      let score = 0;
+      horrorKeywords.forEach(keyword => {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        const matches = (paragraph.match(regex) || []).length;
+        score += matches;
+      });
+      return { text: paragraph, score };
+    });
+
+    // Sort by score and get the highest scoring paragraph
+    scoredParagraphs.sort((a, b) => b.score - a.score);
+    
+    console.log('[Excerpt] Found paragraphs:', paragraphs.length);
+    console.log('[Excerpt] Top paragraph score:', scoredParagraphs[0]?.score || 0);
+
+    // If no horror content found, use the most interesting paragraph (not just the first)
+    if (!scoredParagraphs[0] || scoredParagraphs[0].score === 0) {
+      console.log('[Excerpt] No horror content found, searching for interesting paragraph');
+      
+      // Choose a paragraph that's not too short and looks interesting
+      // Prefer paragraphs with quotations or interesting punctuation
+      const interestingParagraphs = paragraphs
+        .filter(p => p.length > 50)
+        .map(p => {
+          let interestScore = 0;
+          // Dialogue is interesting
+          interestScore += (p.match(/["'].*?["']/g) || []).length * 2;
+          // Questions and exclamations are interesting
+          interestScore += (p.match(/[?!]/g) || []).length;
+          // Action and sensory descriptions are interesting
+          const actionWords = ['suddenly', 'quickly', 'felt', 'saw', 'heard', 'smelled', 'touched'];
+          actionWords.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            interestScore += (p.match(regex) || []).length;
+          });
+          return { text: p, score: interestScore };
+        })
+        .sort((a, b) => b.score - a.score);
+      
+      // If we found an interesting paragraph, use it; otherwise use second paragraph if available
+      const selectedText = interestingParagraphs.length > 0 && interestingParagraphs[0].score > 0
+        ? interestingParagraphs[0].text
+        : paragraphs.length > 1 ? paragraphs[1] : paragraphs[0];
+      
+      console.log('[Excerpt] Selected text (first 40 chars):', selectedText.substring(0, 40) + '...');
+        
+      // Truncate if needed
+      if (selectedText.length <= maxLength) {
+        return selectedText;
+      }
+      
+      // Find a good breaking point
+      const truncated = selectedText.substring(0, maxLength);
+      const lastSpace = truncated.lastIndexOf(' ');
+      
+      return lastSpace > 0 
+        ? truncated.substring(0, lastSpace) + '...'
+        : truncated + '...';
+    }
+
+    // Return the most horror-intensive paragraph
+    const excerpt = scoredParagraphs[0].text;
+    console.log('[Excerpt] Selected horror paragraph (first 40 chars):', excerpt.substring(0, 40) + '...');
+    
+    // Truncate if needed with proper ending
+    if (excerpt.length <= maxLength) {
+      return excerpt;
     }
     
-    // Find a good breaking point at a sentence or paragraph end
-    const truncated = text.substring(0, maxLength);
+    // Find a good breaking point at a sentence or word end
+    const truncated = excerpt.substring(0, maxLength);
     
-    // Check for periods, question marks, or exclamation points followed by space
+    // Check for sentence end
     const sentenceEnd = Math.max(
       truncated.lastIndexOf('. '),
       truncated.lastIndexOf('? '),
@@ -452,12 +532,347 @@ export function getExcerpt(htmlContent: string, maxLength: number = 250): string
       ? truncated.substring(0, lastSpace) + '...'
       : truncated + '...';
   } catch (error) {
+    console.error('[Excerpt] Error generating excerpt:', error);
     handleError(error, {
       category: ErrorCategory.VALIDATION,
       showToast: false
     });
     
+    // Fallback to a simple excerpt in case of errors
+    if (htmlContent) {
+      const cleanText = htmlContent
+        .replace(/<\/?[^>]+(>|$)/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (cleanText.length <= maxLength) {
+        return cleanText;
+      }
+      
+      const truncated = cleanText.substring(0, maxLength);
+      const lastSpace = truncated.lastIndexOf(' ');
+      
+      return lastSpace > 0 
+        ? truncated.substring(0, lastSpace) + '...'
+        : truncated + '...';
+    }
+    
     return '';
+  }
+}
+
+/**
+ * Extract the most horror-intensive or engaging excerpt from content
+ * @param content The HTML content to extract from
+ * @param maxLength Maximum length of the excerpt
+ * @returns An engaging excerpt that highlights horror elements if present
+ */
+export function extractHorrorExcerpt(content: string, maxLength: number = 250): string {
+  try {
+    console.log(`[Horror Excerpt] Starting extraction for content of length: ${content.length}`);
+    
+    // Step 1: Clean the full content to prepare for splitting
+    const cleanedContent = content
+      .replace(/&nbsp;/g, ' ')         // Convert &nbsp; to regular spaces
+      .replace(/\s+/g, ' ');           // Normalize whitespace
+
+    // Step 2: Extract paragraphs using multiple techniques to ensure we catch all formats
+    const allParagraphs: string[] = [];
+    
+    // Method 1: Extract paragraphs inside <p> tags
+    const htmlParagraphs = cleanedContent.match(/<p[^>]*>(.*?)<\/p>/g) || [];
+    const cleanHtmlParagraphs = htmlParagraphs
+      .map(p => p.replace(/<\/?[^>]+(>|$)/g, '')) // Remove HTML tags
+      .map(p => p.trim())                         // Trim whitespace
+      .filter(p => p.length > 30);                // Only include meaningful paragraphs
+    
+    allParagraphs.push(...cleanHtmlParagraphs);
+    
+    // Method 2: Extract paragraphs from other HTML block elements
+    const blockElements = ['div', 'section', 'article', 'blockquote'];
+    
+    for (const element of blockElements) {
+      const pattern = new RegExp(`<${element}[^>]*>(.*?)<\/${element}>`, 'g');
+      const matches = cleanedContent.match(pattern) || [];
+      
+      const cleanMatches = matches
+        .map(m => m.replace(/<\/?[^>]+(>|$)/g, '')) // Remove HTML tags
+        .map(m => m.trim())                         // Trim whitespace
+        .filter(m => m.length > 30 && !cleanHtmlParagraphs.includes(m)); // Only new, meaningful paragraphs
+      
+      allParagraphs.push(...cleanMatches);
+    }
+    
+    // Method 3: Extract text not inside HTML tags
+    let nonHtmlContent = cleanedContent;
+    
+    // Remove all HTML tag contents
+    nonHtmlContent = nonHtmlContent.replace(/<[^>]*>/g, ' ');
+    
+    // Clean and split by line breaks and sentence boundaries
+    const cleanedNonHtml = nonHtmlContent
+      .trim()
+      .replace(/\s+/g, ' ');
+    
+    if (cleanedNonHtml.length > 0) {
+      // First try splitting by double line breaks (paragraphs)
+      let nonHtmlParagraphs = cleanedNonHtml
+        .split(/\n\s*\n/)
+        .map(p => p.trim())
+        .filter(p => p.length > 30);
+      
+      // If that didn't work well, try splitting by sentences
+      if (nonHtmlParagraphs.length < 2) {
+        nonHtmlParagraphs = cleanedNonHtml
+          .split(/(?<=[.!?])\s+(?=[A-Z])/)
+          .map(p => p.trim())
+          .filter(p => p.length > 30);
+      }
+      
+      // Filter out paragraphs that are duplicates of what we already found
+      const uniqueNonHtmlParagraphs = nonHtmlParagraphs.filter(
+        p => !allParagraphs.some(existing => 
+          existing.includes(p) || p.includes(existing)
+        )
+      );
+      
+      allParagraphs.push(...uniqueNonHtmlParagraphs);
+    }
+    
+    // Method 4: Fallback - if we still have no paragraphs, split the whole content into chunks
+    if (allParagraphs.length === 0) {
+      const plainText = content
+        .replace(/<\/?[^>]+(>|$)/g, '') // Remove HTML tags
+        .replace(/&nbsp;/g, ' ')        // Convert &nbsp; to spaces
+        .replace(/\s+/g, ' ')           // Normalize whitespace
+        .trim();                        // Trim whitespace
+      
+      // Split by sentence boundaries or chunks of reasonable size
+      const fallbackParagraphs: string[] = [];
+      
+      // Try sentence boundaries first
+      const sentences = plainText.split(/(?<=[.!?])\s+(?=[A-Z])/);
+      
+      // If we have reasonable sentences, use those
+      if (sentences.some(s => s.length > 40)) {
+        fallbackParagraphs.push(...sentences.filter(s => s.length > 30));
+      } else {
+        // Otherwise create chunks of approximately 100 characters at word boundaries
+        let startIdx = 0;
+        while (startIdx < plainText.length) {
+          const endIdx = Math.min(startIdx + 100, plainText.length);
+          const chunk = plainText.substring(startIdx, endIdx);
+          
+          // Find last space to break at word boundary
+          const lastSpace = chunk.lastIndexOf(' ');
+          const breakPoint = lastSpace > 0 ? startIdx + lastSpace : endIdx;
+          
+          if (breakPoint > startIdx) {
+            const paragraph = plainText.substring(startIdx, breakPoint).trim();
+            if (paragraph.length > 30) {
+              fallbackParagraphs.push(paragraph);
+            }
+          }
+          
+          startIdx = breakPoint + 1;
+        }
+      }
+      
+      allParagraphs.push(...fallbackParagraphs);
+    }
+    
+    // If we STILL have no paragraphs, just return the beginning of the content
+    if (allParagraphs.length === 0) {
+      const plainText = content
+        .replace(/<\/?[^>]+(>|$)/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+        
+      return plainText.substring(0, maxLength);
+    }
+    
+    console.log(`[Horror Excerpt] Found ${allParagraphs.length} paragraphs to analyze`);
+
+    // Step 3: Score paragraphs for horror content
+    // Enhanced horror keywords with more modern horror themes
+    const horrorKeywords = [
+      // Traditional horror
+      'blood', 'scream', 'death', 'dark', 'fear', 'horror', 'terror', 'shadow',
+      'nightmare', 'monster', 'demon', 'ghost', 'kill', 'dead', 'evil', 'haunted',
+      'sinister', 'terrifying', 'horrific', 'dread', 'chill', 'spine', 'frightening',
+      'mysterious', 'eerie', 'strange', 'creepy', 'disturbing', 'macabre', 'flesh',
+      'rot', 'decay', 'bones', 'skull', 'corpse', 'body', 'torture', 'trapped', 'void',
+      'empty', 'silence', 'whisper', 'watching', 'staring', 'eyes', 'skin', 'knife',
+      'sharp', 'pain', 'agony', 'suffer', 'madness', 'insane', 'lungs', 'breath', 'choke',
+      'throat', 'mouth', 'teeth', 'hunger', 'consume', 'devour', 'feed', 'parasite',
+      'infection', 'sick', 'disease', 'wound', 'cut', 'sliced', 'ripped', 'torn',
+      
+      // Additional horror themes
+      'paranoia', 'lurking', 'stalking', 'glitch', 'static', 'corrupted', 'twisted',
+      'broken', 'shattered', 'mirror', 'reflection', 'disappeared', 'vanished', 'missing',
+      'cursed', 'ritual', 'sacrifice', 'cult', 'worship', 'pray', 'god', 'entity',
+      'creature', 'beast', 'unholy', 'sacred', 'hallucination', 'delusion', 'reality',
+      'perception', 'memory', 'forgotten', 'lost', 'alone', 'abandoned', 'cold',
+      'frozen', 'burn', 'ashes', 'dust', 'grave', 'tomb', 'buried', 'dirt', 'earth',
+      'suffocate', 'smother', 'strangle', 'heart', 'pulse', 'beat', 'rhythm', 'stop',
+      'ended', 'forever', 'eternal', 'endless', 'nightmare', 'dream', 'wake', 'sleep'
+    ];
+
+    // Score each paragraph based on horror keywords and content patterns
+    const scoredParagraphs = allParagraphs.map(paragraph => {
+      let score = 0;
+      const lowerParagraph = paragraph.toLowerCase();
+      
+      // Basic keyword matching
+      horrorKeywords.forEach(keyword => {
+        // Using word boundary for more precise matching
+        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        const matches = (paragraph.match(regex) || []).length;
+        score += matches;
+        
+        // Give extra points for keywords at the beginning or end (often more impactful)
+        if (lowerParagraph.startsWith(keyword) || 
+            lowerParagraph.endsWith(keyword) ||
+            lowerParagraph.indexOf(` ${keyword} `) < paragraph.length / 3) {
+          score += 2;
+        }
+      });
+      
+      // Additional scoring factors for engaging content
+      
+      // Dialogue is often pivotal
+      score += (paragraph.match(/["'].*?["']/g) || []).length * 1.5;
+      
+      // Questions and exclamations indicate intensity
+      score += (paragraph.match(/[?!]/g) || []).length * 1.5;
+      
+      // Action words and sensory descriptions
+      const impactWords = ['suddenly', 'immediately', 'instantly', 'quickly', 'slowly', 'gradually',
+                          'felt', 'saw', 'heard', 'smelled', 'touched', 'realized', 'noticed',
+                          'watched', 'stared', 'glanced', 'turned', 'froze', 'stopped'];
+      
+      impactWords.forEach(word => {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        score += (paragraph.match(regex) || []).length * 0.5;
+      });
+      
+      // Length bonus for substantial paragraphs, but not too long
+      if (paragraph.length > 100 && paragraph.length < 350) {
+        score += 3;
+      }
+      
+      return { text: paragraph, score };
+    });
+
+    // Sort by score and get the highest scoring paragraphs
+    scoredParagraphs.sort((a, b) => b.score - a.score);
+    
+    // For debugging: log top 3 paragraphs and their scores
+    for (let i = 0; i < Math.min(3, scoredParagraphs.length); i++) {
+      console.log(`[Horror Excerpt] Paragraph #${i+1} (Score: ${scoredParagraphs[i].score}): "${scoredParagraphs[i].text.substring(0, 50)}..."`);
+    }
+
+    // If no horror content found in top paragraph, use the most interesting paragraph
+    if (scoredParagraphs.length > 0 && scoredParagraphs[0].score < 3) {
+      // Choose a paragraph with interesting patterns
+      const interestingParagraphs = allParagraphs
+        .filter(p => p.length > 50)
+        .map(p => {
+          let interestScore = 0;
+          
+          // Dialogue is interesting
+          interestScore += (p.match(/["'].*?["']/g) || []).length * 2;
+          
+          // Questions and exclamations are interesting
+          interestScore += (p.match(/[?!]/g) || []).length * 1.5;
+          
+          // Beginning or ending of story often has hooks
+          if (allParagraphs.indexOf(p) === 0 || allParagraphs.indexOf(p) === allParagraphs.length - 1) {
+            interestScore += 2;
+          }
+          
+          // Action and sensory descriptions are interesting
+          const actionWords = ['suddenly', 'quickly', 'felt', 'saw', 'heard', 'smelled', 'touched', 'noticed'];
+          actionWords.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            interestScore += (p.match(regex) || []).length;
+          });
+          
+          return { text: p, score: interestScore };
+        })
+        .sort((a, b) => b.score - a.score);
+      
+      // If we found an interesting paragraph, use it
+      if (interestingParagraphs.length > 0 && interestingParagraphs[0].score > 0) {
+        const selectedText = interestingParagraphs[0].text;
+        console.log(`[Horror Excerpt] Using interesting paragraph with score ${interestingParagraphs[0].score}`);
+        
+        // Truncate if needed
+        if (selectedText.length <= maxLength) {
+          return selectedText;
+        }
+        
+        // Find a good breaking point
+        const truncated = selectedText.substring(0, maxLength);
+        const lastSpace = truncated.lastIndexOf(' ');
+        
+        return lastSpace > 0 
+          ? truncated.substring(0, lastSpace) + '...'
+          : truncated + '...';
+      }
+    }
+
+    // Return the most horror-intensive paragraph
+    if (scoredParagraphs.length === 0) {
+      return content
+        .replace(/<\/?[^>]+(>|$)/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, maxLength);
+    }
+    
+    const excerpt = scoredParagraphs[0].text;
+    console.log(`[Horror Excerpt] Found best paragraph with score ${scoredParagraphs[0].score}. Excerpt: "${excerpt.substring(0, 30)}..."`);
+    
+    // Truncate if needed with proper ending
+    if (excerpt.length <= maxLength) {
+      return excerpt;
+    }
+    
+    // Find a good breaking point at a sentence or word end
+    const truncated = excerpt.substring(0, maxLength);
+    
+    // Check for sentence end
+    const sentenceEnd = Math.max(
+      truncated.lastIndexOf('. '),
+      truncated.lastIndexOf('? '),
+      truncated.lastIndexOf('! ')
+    );
+    
+    // If a sentence end is found within the last 40 characters, use it
+    if (sentenceEnd > maxLength - 40 && sentenceEnd > 0) {
+      return truncated.substring(0, sentenceEnd + 1) + '...';
+    }
+    
+    // Otherwise fall back to breaking at word boundaries
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    // Return truncated text with ellipsis
+    return lastSpace > 0 
+      ? truncated.substring(0, lastSpace) + '...'
+      : truncated + '...';
+  } catch (error) {
+    console.error('[Horror Excerpt] Error extracting horror excerpt:', error);
+    // In case of any error, return the first part of the content as a fallback
+    return content
+      .replace(/<\/?[^>]+(>|$)/g, '') // Remove HTML tags
+      .replace(/&nbsp;/g, ' ')         // Convert &nbsp; to spaces
+      .replace(/\s+/g, ' ')            // Normalize whitespace
+      .trim()                           // Trim whitespace
+      .substring(0, maxLength);         // Limit length
   }
 }
 
