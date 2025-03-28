@@ -1,8 +1,12 @@
-import { db, pool } from '../server/db-connect';
 import * as schema from '../shared/schema';
 
-// Import our database setup utility
+// Import our database connection and setup utilities
+import { initializeDatabaseConnection } from './connect-db';
 import setupDatabase from './setup-db';
+
+// We'll initialize these in the main function
+let db: any;
+let pool: any;
 
 async function pushSchema() {
   console.log('🔄 Starting database schema push...');
@@ -19,8 +23,12 @@ async function pushSchema() {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL is not set');
     }
+    
+    // Initialize database connection
+    const connection = await initializeDatabaseConnection();
+    db = connection.db;
+    pool = connection.pool;
 
-    // Use the existing db and pool from server/db.ts
     console.log('📊 Creating database tables...');
     
     // First, create extensions if they don't exist

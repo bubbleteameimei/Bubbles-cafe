@@ -1,12 +1,15 @@
-import { db } from '../server/db-connect';
 import { posts, users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import fetch from 'node-fetch';
 
-// Import our database setup utility
-import setupDatabase from './setup-db';
+// Import our database connection module
+import { initializeDatabaseConnection } from './connect-db';
 import pushSchema from './db-push';
+import setupDatabase from './setup-db';
+
+// We'll initialize db in the main function
+let db: any;
 
 // WordPress API endpoint
 const WP_API_URL = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com';
@@ -36,7 +39,7 @@ function cleanContent(content: string): string {
     .replace(/<li>(.*?)<\/li>/g, '- $1\n')
     .replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, (_, content) => {
       return content.split('\n')
-        .map(line => `> ${line.trim()}`)
+        .map((line: string) => `> ${line.trim()}`)
         .join('\n');
     })
     .replace(/<br\s*\/?>/gi, '\n')
@@ -128,7 +131,7 @@ async function fetchWordPressPosts(page = 1, perPage = 20) {
       throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
     }
 
-    const postsData = await response.json();
+    const postsData = await response.json() as any[];
     console.log(`✅ Retrieved ${postsData.length} posts from WordPress API`);
     return postsData;
   } catch (error) {
@@ -152,7 +155,7 @@ async function fetchCategories() {
       throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
     }
     
-    const categories = await response.json();
+    const categories = await response.json() as any[];
     console.log(`✅ Retrieved ${categories.length} categories from WordPress API`);
     
     // Convert to a map for easier lookup
@@ -175,8 +178,10 @@ async function seedFromWordPressAPI() {
   console.log(`🚀 Starting WordPress import (Sync #${syncId})`);
 
   try {
-    // First ensure DATABASE_URL is properly set
-    await setupDatabase();
+    // Initialize database connection first
+    console.log('🔄 Setting up database connection...');
+    const connection = await initializeDatabaseConnection();
+    db = connection.db;
     
     // Push schema to ensure tables exist
     await pushSchema();

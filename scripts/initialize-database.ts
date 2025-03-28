@@ -1,53 +1,94 @@
-import setupDatabase from './setup-db';
-import pushSchema from './db-push';
-import seedFromWordPressAPI from './api-seed';
+/**
+ * Database Initialization Script
+ * 
+ * This script:
+ * 1. Tests the database connection
+ * 2. Creates required PostgreSQL extensions (if needed)
+ * 3. Pushes the schema to the database
+ * 4. Verifies table creation
+ */
+import { initializeDatabaseConnection } from './connect-db';
+import { sql } from 'drizzle-orm';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execPromise = promisify(exec);
 
 async function initializeDatabase() {
-  console.log('🚀 Starting complete database initialization...');
-  
+  console.log('🚀 Starting database initialization...');
+
   try {
-    // Step 1: Set up database connection
-    console.log('\n📌 STEP 1: Setting up database connection');
-    const setupResult = await setupDatabase();
-    if (!setupResult) {
-      throw new Error('Failed to set up database connection');
+    // Step 1: Initialize and test database connection
+    const { pool, db } = await initializeDatabaseConnection();
+
+    // Step 2: Create necessary PostgreSQL extensions
+    console.log('🔧 Creating necessary PostgreSQL extensions...');
+    try {
+      // Using raw SQL through drizzle to create extensions if they don't exist
+      await db.execute(sql`
+        CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      `);
+      console.log('✅ PostgreSQL extensions setup complete');
+    } catch (err) {
+      console.warn('⚠️ Could not create extensions, continuing anyway:', err);
     }
-    console.log('✅ Database connection set up successfully');
-    
-    // Step 2: Push schema to database
-    console.log('\n📌 STEP 2: Creating database schema');
-    const schemaResult = await pushSchema();
-    if (!schemaResult) {
-      throw new Error('Failed to create database schema');
+
+    // Step 3: Generate migrations if they don't exist
+    console.log('📄 Checking for migrations directory...');
+    const migrationsDir = path.join(process.cwd(), 'migrations');
+    if (!fs.existsSync(migrationsDir) || fs.readdirSync(migrationsDir).length === 0) {
+      console.log('⚠️ Migrations directory not found or empty, generating migrations...');
+      try {
+        await execPromise('npx drizzle-kit generate:pg');
+        console.log('✅ Migration files generated successfully');
+      } catch (err) {
+        console.error('❌ Failed to generate migrations:', err);
+        console.log('🔄 Trying to push schema directly...');
+      }
+    } else {
+      console.log('✅ Migrations directory exists');
     }
-    console.log('✅ Database schema created successfully');
+
+    // Step 4: Push schema to database
+    console.log('🔄 Pushing schema to database...');
+    try {
+      await execPromise('npx drizzle-kit push:pg');
+      console.log('✅ Schema pushed successfully');
+    } catch (err) {
+      console.error('❌ Failed to push schema:', err);
+      process.exit(1);
+    }
+
+    // Step 5: Verify tables were created
+    console.log('🔍 Verifying table creation...');
+    const tablesResult = await db.execute(sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
     
-    // Step 3: Seed data from WordPress API
-    console.log('\n📌 STEP 3: Seeding data from WordPress API');
-    const seedResult = await seedFromWordPressAPI();
-    console.log('✅ Data seeded successfully');
-    
-    // Success!
-    console.log('\n🎉 Database initialization completed successfully!');
-    console.log('📊 Import summary:', seedResult);
-    return true;
+    if (tablesResult.rows.length > 0) {
+      console.log(`✅ Found ${tablesResult.rows.length} tables in database:`);
+      tablesResult.rows.forEach(row => {
+        console.log(`   - ${row.table_name}`);
+      });
+    } else {
+      console.error('❌ No tables found in database after schema push');
+      process.exit(1);
+    }
+
+    console.log('🎉 Database initialization complete!');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
-    return false;
+    process.exit(1);
   }
 }
 
-// Run if this file is executed directly
-if (require.main === module) {
-  initializeDatabase().then(success => {
-    if (success) {
-      console.log('✅ Database is now fully set up and ready to use');
-      process.exit(0);
-    } else {
-      console.error('❌ Database initialization failed');
-      process.exit(1);
-    }
-  });
-}
-
-export default initializeDatabase;
+// Run the initialization
+initializeDatabase().catch(err => {
+  console.error('Unhandled error:', err);
+  process.exit(1);
+});

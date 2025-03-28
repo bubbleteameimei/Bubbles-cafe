@@ -21,6 +21,7 @@ import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import gameRoutes from './routes/game';
+import searchRouter from './routes/search';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db-connect";
 import { desc, eq, sql } from "drizzle-orm";
@@ -2118,6 +2119,9 @@ Message ID: ${savedMessage.id}
   
   // Register privacy settings routes
   registerPrivacySettingsRoutes(app, storage);
+  
+  // Register search routes
+  app.use('/api/search', searchRouter);
 
   // User statistics endpoint
   app.get("/api/users/stats", isAuthenticated, async (req, res) => {

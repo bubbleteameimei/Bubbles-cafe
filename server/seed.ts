@@ -2,10 +2,13 @@ import { storage } from "./storage";
 import { XMLParser } from "fast-xml-parser";
 import fs from "fs/promises";
 import path from "path";
-import { db } from "./db-connect";
 import { posts, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { initializeDatabaseConnection } from "../scripts/connect-db";
+
+// We'll initialize db in each function
+let db: any;
 
 async function getOrCreateAdminUser() {
   try {
@@ -181,6 +184,12 @@ async function parseWordPressXML() {
 export async function seedDatabase() {
   try {
     console.log("Starting database seeding...");
+    
+    // Initialize database connection first
+    console.log('🔄 Initializing database connection...');
+    const connection = await initializeDatabaseConnection();
+    db = connection.db;
+    
     const postsCreated = await parseWordPressXML();
     console.log(`Database seeded successfully with ${postsCreated} posts!`);
     return postsCreated;

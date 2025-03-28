@@ -130,6 +130,7 @@ const AuthSuccessPage = withSuspense(React.lazy(() => import('./pages/auth-succe
 const ProfilePage = withSuspense(React.lazy(() => import('./pages/profile')));
 // Removed ContentTestPage
 const BookmarksPage = withSuspense(React.lazy(() => import('./pages/bookmarks')));
+const SearchResultsPage = withSuspense(React.lazy(() => import('./pages/SearchResults')));
 
 
 
@@ -277,6 +278,7 @@ const AppContent = () => {
                 <Route path="/contact" component={ContactPage} />
                 <Route path="/report-bug" component={ReportBugPage} />
                 <Route path="/privacy" component={PrivacyPage} />
+                <Route path="/search" component={SearchResultsPage} />
                 {/* Removed notifications page as it's now a dropdown */}
                 {/* Demo Pages */}
                 <Route path="/responsive-demo" component={ResponsiveDemoPage} />

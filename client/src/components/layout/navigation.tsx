@@ -1,61 +1,126 @@
-import { useState } from "react";
+import { useEffect, useState, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/ui/sidebar-menu";
-import { Menu, User } from "lucide-react";
+import { Menu, Search, Bell, Moon, Sun } from "lucide-react";
 import { NotificationIcon } from "@/components/ui/notification-icon";
 import { useNotifications } from "@/contexts/notification-context";
 import { useTheme } from "@/components/theme-provider";
-import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { notifications } = useNotifications();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const sidebar = useSidebar();
+  const [scrolled, setScrolled] = useState(false);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'laptop' | 'desktop'>('desktop');
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+  
+  // Effect to detect scroll position for conditional styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  // Navigation links configuration
-  const navLinks: Array<{ href: string; label: string; requireAuth?: boolean; isDev?: boolean }> = [
-    { href: '/', label: 'HOME' },
-    { href: '/stories', label: 'STORIES' },
-    { href: '/reader', label: 'READER' },
-    { href: '/community', label: 'COMMUNITY' },
-    { href: '/bookmarks', label: 'BOOKMARKS' },
-    { href: '/about', label: 'ABOUT' },
-    { href: '/contact', label: 'CONTACT' },
-    // Development-only routes
-    { href: '/test-recommendations', label: 'TEST RECS', isDev: true }
+  // Effect to detect and update device type based on screen width
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setDeviceType('mobile');
+      } else if (width >= 640 && width < 1024) {
+        setDeviceType('tablet');
+      } else if (width >= 1024 && width < 1280) {
+        setDeviceType('laptop');
+      } else {
+        setDeviceType('desktop');
+      }
+    };
+    
+    // Initial call
+    handleResize();
+    
+    // Setup resize listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup on component unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Navigation links for the nav bar
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/stories', label: 'Stories' },
+    { href: '/reader', label: 'Reader' },
+    { href: '/community', label: 'Community' },
+    { href: '/about', label: 'About' }
   ];
 
+  // Handle search functionality
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Navigate to search results page with search query
+      setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      toast({
+        title: "Searching...",
+        description: `Finding content matching: "${searchQuery.trim()}"`,
+        duration: 2000
+      });
+    }
+  };
+
+  // Handle search on enter key
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  // Handle mobile search button click
+  const handleMobileSearchClick = () => {
+    // Show a search dialog or expand the header to show search
+    const searchPrompt = prompt("Search for keywords:");
+    if (searchPrompt && searchPrompt.trim()) {
+      setLocation(`/search?q=${encodeURIComponent(searchPrompt.trim())}`);
+    }
+  };
+
   return (
-    <header className="main-header w-full max-w-[100vw] overflow-x-hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm z-40 relative pb-0 mb-0">
-      <div className="container max-w-full sm:max-w-7xl mx-auto flex h-10 md:h-12 lg:h-14 items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8">
-        {/* Mobile Menu Trigger */}
-        <div className="flex items-center">
+    <header 
+      className={`sticky top-0 z-40 w-full border-b 
+                bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
+                transition-all duration-300 ease-in-out 
+                ${scrolled ? 'shadow-sm' : ''}`}
+      data-device-type={deviceType}
+    >
+      <div className="container flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Left section with menu toggle and logo */}
+        <div className="flex items-center space-x-4">
+          {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2 lg:hidden relative overflow-hidden touch-manipulation w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 -mt-4"
-                title="Toggle navigation menu"
-                noOutline={true}
-                style={{ 
-                  transition: 'all 0.15s ease-out'
-                }}
+                className="lg:hidden h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                          transition-all duration-200 ease-in-out"
+                aria-label="Open menu"
               >
-                <Menu 
-                  className="h-5 w-5 transform transition-transform duration-150 ease-out"
-                  style={{ 
-                    willChange: 'transform',
-                    transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)'
-                  }}
-                />
-                <span className="sr-only">Toggle menu</span>
-                <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150" />
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[85vw] overflow-y-auto">
@@ -63,91 +128,117 @@ export default function Navigation() {
             </SheetContent>
           </Sheet>
           
-          {/* Logo - Responsive for all breakpoints */}
+          {/* Site name/logo on mobile - no icon */}
           <button 
-            onClick={() => setLocation('/')} 
-            className="mr-4 md:mr-8 lg:mr-10 flex items-center space-x-2 rounded-md px-2 py-1 touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90 -mt-4"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            onClick={() => setLocation('/')}
+            className="lg:hidden flex items-center font-semibold tracking-tight hover:text-foreground transition-colors duration-200"
+            aria-label="Home"
           >
-            {/* Title removed as requested */}
+            <span className="text-foreground/90 font-bold">Bubble's Cafe</span>
           </button>
           
-          {/* Desktop Navigation - Responsive tablet to desktop */}
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-4 text-xs sm:text-sm md:text-base lg:text-base font-medium -mt-4">
-            {navLinks
-              .filter(link => {
-                // Filter by authentication requirements
-                const authOk = !link.requireAuth || user;
-                // Only show dev links in development mode
-                const devOk = !link.isDev || import.meta.env.DEV;
-                return authOk && devOk;
-              })
-              .map(link => (
-                <button 
-                  key={link.href}
-                  onClick={() => setLocation(link.href)} 
-                  className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-md touch-manipulation transition-all duration-150 ease-out active:scale-[0.98] active:opacity-90 relative tracking-wider ${
-                    location === link.href 
-                      ? 'text-primary font-semibold before:absolute before:bottom-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary before:rounded-full' 
-                      : 'hover:bg-foreground/5 active:bg-foreground/10'
-                  }${link.isDev ? ' text-amber-500' : ''}`}
-                  style={{ WebkitTapHighlightColor: 'transparent' }}
-                >
-                  {link.label}
-                </button>
-              ))
-            }
+          {/* Horizontal Nav - Desktop only */}
+          <nav className="hidden lg:flex items-center space-x-3">
+            {navLinks.map(link => (
+              <button 
+                key={link.href}
+                onClick={() => setLocation(link.href)} 
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent/20
+                          ${location === link.href 
+                            ? 'text-primary font-semibold bg-accent/30 border border-border/30' 
+                            : 'text-foreground/80 hover:text-foreground'}`}
+              >
+                {link.label}
+              </button>
+            ))}
           </nav>
         </div>
-
-        {/* Right-side Actions - Responsive spacing */}
-        <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-5 lg:space-x-6">
-          <div className="-mt-4">
-            <NotificationIcon 
-              notifications={notifications} 
-              noOutline={true} 
-              className="w-9 h-9 rounded-md border border-border/30 hover:bg-accent/10" 
-            />
+        
+        {/* Center section - Search bar (tablet and up) */}
+        {deviceType !== 'mobile' && (
+          <div className="flex-1 mx-6 max-w-lg hidden sm:flex items-center">
+            <div className="relative w-full flex">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
+              <input
+                type="search"
+                placeholder="Search for keywords..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="w-full rounded-l-md bg-accent/20 text-foreground placeholder:text-foreground/50 
+                         focus:bg-accent/30 focus:outline-none focus:ring-1 focus:ring-primary/50
+                         px-4 py-1.5 pl-10 text-sm"
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleSearch}
+                className="rounded-l-none rounded-r-md h-9 text-foreground/80 hover:text-foreground hover:bg-accent/50 border-l border-border/30"
+              >
+                Search
+              </Button>
+            </div>
           </div>
-          <div className="-mt-4">
-            <ThemeToggleButton noOutline={true} />
-          </div>
+        )}
+        
+        {/* Right section - Action buttons */}
+        <div className="flex items-center space-x-3">
+          {/* Mobile search button */}
+          {deviceType === 'mobile' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleMobileSearchClick}
+              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
+          
+          {/* Notifications */}
+          <NotificationIcon 
+            notifications={notifications} 
+            className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50" 
+          />
+          
+          {/* Theme toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5 transition-all" />
+            ) : (
+              <Moon className="h-5 w-5 transition-all" />
+            )}
+          </Button>
+          
+          {/* User/Auth button - restored blue styling */}
           {!user ? (
             <Button
               variant="default"
-              onClick={() => {
-                setIsOpen(false);
-                setLocation("/auth");
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider touch-manipulation transition-all duration-150 ease-out active:scale-95 active:opacity-90 text-xs sm:text-sm md:text-base px-2 sm:px-3 md:px-4 h-8 sm:h-9 md:h-10 -mt-4"
-              noOutline={true}
+              onClick={() => setLocation("/auth")}
+              className="h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider transition-all duration-150 ease-out active:scale-95 active:opacity-90"
+              aria-label="Sign in"
             >
-              <span className="relative">
-                Sign In
-                <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
-              </span>
+              Sign In
             </Button>
           ) : (
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setLocation('/profile')}
-                  className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-md border border-border/30 hover:bg-accent/10 active:bg-accent/20 touch-manipulation transition-all duration-150 ease-out active:scale-95 -mt-4"
-                  aria-label="Profile"
-                  noOutline={true}
-                >
-                  <span className="relative">
-                    <User className="h-4 w-4 md:h-5 md:w-5" strokeWidth={1.75} />
-                    <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
-                  </span>
-                </Button>
-                <div className="absolute top-[40px] left-1/2 transform -translate-x-1/2 whitespace-nowrap text-[10px] md:text-xs font-medium text-foreground/90 uppercase tracking-wide bg-background/95 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-sm border border-border/30 z-10">
-                  {user?.username}
-                </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation('/profile')}
+              className="h-9 w-9 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50"
+              aria-label="Profile"
+            >
+              <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
               </div>
-            </div>
+            </Button>
           )}
         </div>
       </div>
