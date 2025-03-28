@@ -51,15 +51,16 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative w-full min-h-screen overflow-hidden">
+        <div className="relative w-full min-h-screen overflow-x-hidden">
           {/* Background container - parent element with relative positioning */}
-          <div className="relative min-h-screen w-full overflow-hidden">
+          <div className="relative min-h-screen w-full overflow-hidden" style={{ minHeight: "100vh" }}>
             {/* Full screen background image - using CSS class from index.css */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1.2 }}
-              className="bg-homepage" 
+              className="bg-homepage"
+              style={{ height: "100%" }}
             />
             
             {/* REMOVED: No gradient overlay */}
@@ -67,9 +68,9 @@ export default function Home() {
             {/* Content container - siblings with the background div */}
             <div className="relative z-10 flex flex-col items-center justify-start pt-4 sm:pt-6 md:pt-10 lg:pt-16 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center max-w-3xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
               <FadeInSection style="horror" direction="scale" duration={0.8}>
-                <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-foreground drop-shadow-lg flex flex-col items-center">
-                  <span>BUBBLE'S</span>
-                  <span className="mt-1 md:mt-2">CAFE</span>
+                <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white drop-shadow-xl flex flex-col items-center">
+                  <span className="text-shadow-xl">BUBBLE'S</span>
+                  <span className="mt-1 md:mt-2 text-shadow-xl">CAFE</span>
                 </h1>
               </FadeInSection>
             
@@ -78,18 +79,18 @@ export default function Home() {
             
               <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
                 <FadeInSection style="glitch" direction="up" delay={0.2} duration={0.6}>
-                  <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-foreground/90 max-w-2xl md:max-w-3xl leading-relaxed md:leading-relaxed lg:leading-relaxed drop-shadow px-2 md:px-4 font-medium">
+                  <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white max-w-2xl md:max-w-3xl leading-relaxed md:leading-relaxed lg:leading-relaxed drop-shadow-xl px-2 md:px-4 font-medium text-shadow-xl">
                     Each story here is a portal to the unexpected,
                     the unsettling, and the unexplained.
                   </p>
                 </FadeInSection>
 
                 <FadeInSection style="horror" direction="up" delay={0.3} duration={0.5}>
-                  <div className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-xs sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto">
+                  <div className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto">
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="text-lg sm:text-xl md:text-2xl h-12 sm:h-14 md:h-16 lg:h-18 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
+                      className="text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
                     >
                       Browse Stories
                       <Book className="ml-2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
@@ -101,7 +102,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="text-lg sm:text-xl md:text-2xl h-12 sm:h-14 md:h-16 lg:h-18 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
+                      className="text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
                     >
                       Start Reading
                       <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
@@ -115,16 +116,16 @@ export default function Home() {
                 
                 {posts.length > 0 && (
                   <FadeInSection style="horror" delay={0.7} duration={0.8} className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 text-center space-y-2 sm:space-y-3 md:space-y-4">
-                    <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-foreground/90 uppercase tracking-wider">Latest Story</p>
+                    <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider drop-shadow-xl text-shadow-xl">Latest Story</p>
                     <div 
                       onClick={() => setLocation('/reader')} 
-                      className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10"
+                      className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
                     >
                       <h2 
-                        className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-foreground/95 group-hover:text-primary transition-colors px-2"
+                        className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"
                         dangerouslySetInnerHTML={{ __html: posts[0]?.title?.rendered || 'Featured Story' }}
                       />
-                      <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-foreground/80 mx-auto mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
+                      <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 mx-auto mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
                         {posts[0]?.content?.rendered && (
                           <motion.span
                             initial={{ opacity: 0, y: 10 }}
@@ -139,7 +140,7 @@ export default function Home() {
                         Read full story 
                         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 group-hover:translate-x-1 transition-transform" />
                       </div>
-                      <div className="text-sm sm:text-base md:text-lg font-medium text-foreground/70 mt-3 md:mt-4">
+                      <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
                         {posts[0]?.date ? formatDate(posts[0].date) : ''}
                       </div>
                     </div>

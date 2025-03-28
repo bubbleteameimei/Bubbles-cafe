@@ -30,7 +30,7 @@ export const BuyMeCoffeeButton = () => {
         <Button
           onClick={() => setIsOpen(true)}
           aria-label="Buy me a coffee"
-          className="relative px-10 py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-2xl transition-all duration-300"
+          className="relative px-6 py-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-2xl transition-all duration-300"
           size="lg"
         >
           <motion.div
@@ -39,12 +39,12 @@ export const BuyMeCoffeeButton = () => {
             transition={{ duration: 1.2, repeat: Infinity, repeatType: "reverse" }}
             className="absolute inset-0 bg-primary-foreground/15 rounded-full"
           />
-          <span className="relative flex items-center gap-3 text-xl font-semibold">
+          <span className="relative flex items-center gap-2 text-base font-medium">
             <motion.div 
               animate={{ y: [0, -3, 0] }} 
               transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
             >
-              <Coffee className="w-6 h-6" />
+              <Coffee className="w-5 h-5" />
             </motion.div>
             Buy me a coffee
           </span>

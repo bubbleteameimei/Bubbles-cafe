@@ -502,6 +502,15 @@ h4, h5, h6,
   letter-spacing: 0.02em;
 }
 
+/* Text shadow for better visibility on image backgrounds */
+.text-shadow-xl {
+  text-shadow: 
+    0 0 5px rgba(0, 0, 0, 0.8),
+    0 0 10px rgba(0, 0, 0, 0.7),
+    0 0 15px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(0, 0, 0, 0.5);
+}
+
 /* Typography system for content types */
 /* Main Titles (H1) */
 .font-castoro {
@@ -1124,42 +1133,37 @@ input[type="reset"],
   and not to general page elements to avoid background showing up on inputs 
 */
 .bg-homepage {
-  position: fixed; /* Position fixed so it stays in place while content scrolls */
+  position: fixed; /* Fixed position to ensure full coverage */
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
-  height: 100%;
-  min-height: 100vh; /* Ensure it covers the entire viewport height */
+  height: 100vh !important; /* Use viewport height for full coverage */
+  min-height: 100%; /* Minimum height to ensure coverage */
   background-image: url('/attached_assets/IMG_4918.jpeg');
-  background-size: cover; /* Cover the entire container */
-  background-position: center center; /* Center the background */
+  background-size: cover; /* Cover ensures the image fills the container */
+  background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Don't repeat the image */
   background-color: #121212; /* Dark fallback */
   z-index: -10; /* Keep below content */
   pointer-events: none; /* Prevents the background from capturing clicks */
 }
 
-/* Additional background for mobile devices to ensure coverage */
+/* Additional settings for mobile devices */
 @media (max-width: 768px) {
   .bg-homepage {
     background-attachment: scroll; /* Ensure mobile compatibility */
-    background-position: center center; /* Center on mobile */
-    height: 100vh; /* Use viewport height on mobile */
-    min-height: 100%;
+    background-position: center; /* Center position */
+    background-size: cover; /* Cover the screen */
+    height: 100vh !important; /* Full viewport height */
+    min-height: 100%; /* At least 100% height */
+    width: 100%; /* Full width */
   }
   
-  /* Add a pseudo-element for extra coverage on mobile */
-  body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    background-color: #121212; /* Same as fallback color */
-    z-index: -11; /* Behind the background image */
+  /* Background color fallback for mobile */
+  body {
+    background-color: #121212;
   }
 }
 
