@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { useGlobalLoadingOverlay } from '@/components/GlobalLoadingOverlay';
-import { showGlobalLoading, hideGlobalLoading } from '@/components/GlobalLoadingOverlay';
+import { showLoading, hideLoading } from '../utils/unified-loading-manager';
 
 interface LoadingContextType {
   isLoading: boolean;
@@ -14,52 +13,57 @@ const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const globalLoadingContext = useGlobalLoadingOverlay();
+  const [loadId, setLoadId] = useState<string | null>(null);
 
   // Show loading state with a minimum display duration
-  const showLoading = useCallback(() => {
+  const showLoadingState = useCallback(() => {
     setIsLoading(true);
-    // Try to use context if available, otherwise use the imperative API
-    if (globalLoadingContext?.showLoadingOverlay) {
-      globalLoadingContext.showLoadingOverlay();
-    } else {
-      showGlobalLoading();
-    }
-  }, [globalLoadingContext]);
+    // Use the unified loading system
+    const id = showLoading({
+      minimumLoadTime: 800,
+      debug: true
+    });
+    setLoadId(id);
+  }, []);
 
   // Hide loading state
-  const hideLoading = useCallback(() => {
+  const hideLoadingState = useCallback(() => {
     setIsLoading(false);
-    // Try to use context if available, otherwise use the imperative API
-    if (globalLoadingContext?.hideLoadingOverlay) {
-      globalLoadingContext.hideLoadingOverlay();
-    } else {
-      hideGlobalLoading();
+    // Use the unified loading system
+    if (loadId) {
+      hideLoading(loadId);
+      setLoadId(null);
     }
-  }, [globalLoadingContext]);
+  }, [loadId]);
 
   // Utility to wrap promises with loading state
   const withLoading = useCallback(async <T,>(promise: Promise<T>): Promise<T> => {
     try {
-      showLoading();
+      showLoadingState();
       return await promise;
     } finally {
       // Add a small delay to prevent flickering for very fast operations
       setTimeout(() => {
-        hideLoading();
+        hideLoadingState();
       }, 300);
     }
-  }, [showLoading, hideLoading]);
+  }, [showLoadingState, hideLoadingState]);
 
   // Make sure loading state is reset when component unmounts
   useEffect(() => {
     return () => {
-      hideLoading();
+      hideLoadingState();
     };
-  }, [hideLoading]);
+  }, [hideLoadingState]);
 
   return (
-    <LoadingContext.Provider value={{ isLoading, setIsLoading, showLoading, hideLoading, withLoading }}>
+    <LoadingContext.Provider value={{ 
+      isLoading, 
+      setIsLoading, 
+      showLoading: showLoadingState, 
+      hideLoading: hideLoadingState, 
+      withLoading 
+    }}>
       {children}
     </LoadingContext.Provider>
   );

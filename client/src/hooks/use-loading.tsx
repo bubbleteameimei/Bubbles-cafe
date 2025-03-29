@@ -1,4 +1,3 @@
-// Import the new implementation directly
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { showLoading, hideLoading, LoadingOptions } from '../utils/unified-loading-manager';
 

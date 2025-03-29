@@ -30,14 +30,14 @@ async function takeScreenshot() {
       deviceScaleFactor: 1,
     });
     
-    console.log('Navigating to http://localhost:3001...');
-    await page.goto('http://localhost:3001', {
+    console.log('Navigating to https://3001-0-0-0-0-0-0.spock.replit.dev...');
+    await page.goto('https://3001-0-0-0-0-0-0.spock.replit.dev', {
       waitUntil: 'networkidle2',
       timeout: 30000
     });
     
     // Wait a little to ensure everything loads properly
-    await page.waitForTimeout(2000);
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     console.log('Taking screenshot...');
     await page.screenshot({ path: 'homepage-screenshot.png', fullPage: true });

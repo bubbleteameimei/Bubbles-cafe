@@ -25,12 +25,12 @@ import { Menu } from 'lucide-react';
 import { SidebarNavigation } from './components/ui/sidebar-menu';
 // Import the global loading provider
 import { LoadingProvider } from './contexts/loading-context';
-// Import ApiLoader for Suspense fallback
-import ApiLoader from './components/api-loader';
-// Import GlobalLoadingOverlay and Registry
-import { GlobalLoadingOverlay, GlobalLoadingRegistry } from './components/GlobalLoadingOverlay';
-// Import global loading manager functions
-import { hideGlobalLoading } from '@/utils/global-loading-manager';
+// Import UnifiedLoadingScreen for Suspense fallback
+import UnifiedLoadingScreen from './components/UnifiedLoadingScreen';
+// Import from unified loading system
+import { cleanupLoadingSystem } from './utils/unified-loading-manager';
+// Import unified loading manager functions
+import { hideLoading } from './utils/unified-loading-manager';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
@@ -90,14 +90,14 @@ const withSuspense = <P extends Record<string, any>>(
       >
         <React.Suspense 
           fallback={
-            <ApiLoader 
+            <UnifiedLoadingScreen 
               isLoading={true}
               minimumLoadTime={800}
               maximumLoadTime={3000} // 3 seconds maximum to prevent endless loading
               debug={true}
             >
               <div aria-hidden="true" className="h-[300px] w-full"></div>
-            </ApiLoader>
+            </UnifiedLoadingScreen>
           }
         >
           {renderSuspendedComponent()}
@@ -367,6 +367,14 @@ const AppContent = () => {
 function App() {
   usePerformanceMonitoring();
 
+  // Cleanup the loading system when component unmounts
+  useEffect(() => {
+    return () => {
+      // Cleanup loading manager resources
+      cleanupLoadingSystem();
+    };
+  }, []);
+
   // We now use the WordPress API provider for status management
   useEffect(() => {
     // Initialize WordPress sync service for auto-syncing every 5 minutes
@@ -413,18 +421,12 @@ function App() {
               <NotificationProvider>
                 <SilentPingProvider>
                   <LoadingProvider>
-                  <GlobalLoadingOverlay
-                    minimumLoadingDuration={800}
-                    debugMode={true}
-                  >
-                    <GlobalLoadingRegistry />
                     {/* Add ScrollEffectsProvider for sitewide multi-speed scrolling and gentle return */}
                     <ScrollEffectsProvider>
                       <SidebarProvider defaultOpen={true}>
                         <AppContent />
                       </SidebarProvider>
                     </ScrollEffectsProvider>
-                  </GlobalLoadingOverlay>
                   </LoadingProvider>
                 </SilentPingProvider>
               </NotificationProvider>
