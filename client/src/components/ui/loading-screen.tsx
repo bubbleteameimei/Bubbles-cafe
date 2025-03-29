@@ -2,7 +2,7 @@ import { memo, useEffect } from "react";
 import "../../styles/loading-screen.css";
 
 export const LoadingScreen = memo(() => {
-  // Ensure styles are loaded
+  // Ensure styles are loaded and disable scrolling
   useEffect(() => {
     // This ensures the CSS is always loaded and prioritized
     const linkElement = document.createElement("link");
@@ -19,23 +19,43 @@ export const LoadingScreen = memo(() => {
       document.head.appendChild(linkElement);
     }
 
+    // Disable scrolling when loading screen is shown
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     return () => {
       // Clean up when component unmounts, but check if it exists first
       const existingLink = document.getElementById("loading-screen-styles");
       if (existingLink && document.head.contains(existingLink)) {
         document.head.removeChild(existingLink);
       }
+      
+      // Restore original overflow setting
+      document.body.style.overflow = originalOverflow;
     };
   }, []);
 
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-[9999] w-[100vw] h-[100vh] left-0 top-0 right-0 bottom-0 overflow-hidden"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-md z-[999999] w-screen h-screen left-0 top-0 right-0 bottom-0 overflow-hidden"
+      style={{
+        position: 'fixed',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '100vw',
+        height: '100vh',
+        margin: '0',
+        padding: '0'
+      }}
       aria-modal="true"
       role="dialog"
     >
       {/* Loading animation */}
-      <div className="loader" aria-hidden="true">
+      <div className="loader" aria-hidden="true" style={{ position: 'relative' }}>
         <span>L</span>
         <span>O</span>
         <span>A</span>

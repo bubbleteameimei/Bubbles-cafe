@@ -131,7 +131,7 @@ export function EnhancedPageTransition({
   
   return (
     <>
-      {/* Pre-emptive Loading Screen */}
+      {/* Pre-emptive Loading Screen - shown with highest z-index */}
       {showLoading && <LoadingScreen />}
       
       {/* Content with AnimatePresence */}
