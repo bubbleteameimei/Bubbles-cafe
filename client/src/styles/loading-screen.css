@@ -1,6 +1,10 @@
+/* Enhanced Loading Screen Styles */
+
 .loader {
   display: flex;
   gap: 0.5rem;
+  position: relative;
+  z-index: 10000;
 }
 
 .loader span {
@@ -11,10 +15,11 @@
   line-height: 20px;
   transition: all 0.5s;
   letter-spacing: 0.2em;
-  color: white;
+  color: hsl(var(--foreground));
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Animation for the blurring effect */
 @keyframes blur {
   0%, 90%, 100% {
     filter: blur(0);
@@ -27,6 +32,7 @@
   }
 }
 
+/* Staggered animation delays for each letter */
 .loader span:nth-child(1) { animation-delay: 0.0s; }
 .loader span:nth-child(2) { animation-delay: 0.2s; }
 .loader span:nth-child(3) { animation-delay: 0.4s; }
@@ -34,3 +40,16 @@
 .loader span:nth-child(5) { animation-delay: 0.8s; }
 .loader span:nth-child(6) { animation-delay: 1.0s; }
 .loader span:nth-child(7) { animation-delay: 1.2s; }
+
+/* Ensure loading screen appears on top of everything */
+[role="status"][aria-live="polite"] {
+  z-index: 10000;
+}
+
+/* Dark mode color adjustments */
+@media (prefers-color-scheme: dark) {
+  .loader span {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  }
+}

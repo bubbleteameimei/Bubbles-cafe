@@ -16,8 +16,7 @@ import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
-// Import commented out as component doesn't exist yet
-// import AnimatedSidebar from './components/layout/AnimatedSidebar';
+// Using EnhancedPageTransition for smooth page transitions
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
@@ -159,7 +158,7 @@ const AppContent = () => {
   
   // For all other pages, render with normal layout
   return (
-    <div className="relative min-h-screen overflow-hidden flex flex-col">
+    <div className="relative min-h-screen flex flex-col w-full">
       {/* Desktop Sidebar - optimized for larger screens - Now hidden */}
       <aside className="hidden">
         <div className="h-full w-full">
@@ -171,9 +170,9 @@ const AppContent = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-screen flex-1 flex flex-col bg-background overflow-x-hidden w-full max-w-full">
+      <main className="min-h-screen flex-1 flex flex-col bg-background w-full">
         <AutoHideNavbar />
-        <div className="w-full pt-20 lg:pt-6 flex-1 bg-background max-w-full m-0 p-0 px-0 mx-0">
+        <div className="w-full min-w-full max-w-full pt-20 lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0">
           <ErrorBoundary>
             <Switch>
               {/* Auth Routes */}

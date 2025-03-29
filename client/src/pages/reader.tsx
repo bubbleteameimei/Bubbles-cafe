@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
+import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
@@ -301,7 +302,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
     margin: 0 auto;
     color: hsl(var(--foreground));
     transition: color 0.3s ease, background-color 0.3s ease;
-    padding: 0 1rem; /* Consistent padding */
+    padding: 0 0.5rem; /* Slight padding on both sides */
   }
   .story-content p, .story-content .story-paragraph {
     line-height: 1.7;  /* Improved line height for readability */
@@ -879,7 +880,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-4 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-2 pb-8 flex flex-col"
       /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -1051,9 +1052,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
+      <div className={`pt-0 pb-0 bg-background mt-1 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
         {/* Static font size controls in a prominent position */}
-        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-0.5 border-b border-border/30 mb-0 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-3 border-b border-border/30 mb-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1061,7 +1062,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               size="sm"
               onClick={decreaseFontSize}
               disabled={fontSize <= 12}
-              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
               aria-label="Decrease font size"
             >
               <Minus className="h-4 w-4 mr-1" />
@@ -1073,7 +1074,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               size="sm"
               onClick={increaseFontSize}
               disabled={fontSize >= 20}
-              className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
+              className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20"
               aria-label="Increase font size"
             >
               A+
@@ -1085,7 +1086,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
+                  className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
                 >
                   <span className="text-xs">Font</span>
                 </Button>
@@ -1131,7 +1132,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             postId={currentPost.id} 
             variant="reader"
             showText={false}
-            className="h-9 w-9 rounded-full bg-background hover:bg-background/80 mx-2"
+            className="h-8 w-8 rounded-full bg-background hover:bg-background/80 mx-2"
           />
 
           {/* Text-to-speech functionality removed */}
@@ -1140,7 +1141,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             variant="outline"
             size="sm"
             onClick={() => setLocation('/')}
-            className="h-9 px-3 bg-background hover:bg-background/80 w-32 shadow-sm"
+            className="h-8 px-3 bg-background hover:bg-background/80 w-32 shadow-sm"
           >
             Return to Home
           </Button>
@@ -1158,14 +1159,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             }}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
-            <div className="flex flex-col items-center mb-5 mt-2">
+            <div className="flex flex-col items-center mb-4 mt-1">
               <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-3 tracking-tight leading-tight"
+                className="text-4xl md:text-5xl font-bold text-center mb-2 tracking-tight leading-tight"
                 dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
               />
 
-              <div className="flex flex-col items-center gap-2">
-                <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-2 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+              <div className="flex flex-col items-center gap-1">
+                <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Story theme icon - show primary theme if available, otherwise default to generic */}
                   {detectedThemes.length > 0 ? (
                     <div className="flex items-center gap-1.5">
@@ -1260,19 +1261,19 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 w-full px-4 overflow-visible flex-1"
+              className="reader-container story-content mb-8 w-full overflow-visible flex-1"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.012em',
                 overflowWrap: 'break-word',
                 wordWrap: 'break-word',
                 overflow: 'visible',
-                margin: '32px 0',
+                margin: '20px 0',
                 lineHeight: '1.8',
                 textAlign: 'left',
                 fontSize: '1.2rem',
                 cursor: 'pointer', // Explicitly set cursor to pointer for this element
-                padding: '0 1rem'
+                padding: '0 0.5rem' // Slight padding on both sides
               }}
               onClick={toggleUI} // Only story content toggles UI
               dangerouslySetInnerHTML={{

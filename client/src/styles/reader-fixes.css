@@ -1,0 +1,49 @@
+/* Reader page fixes and enhancements */
+
+/* Add comfortable padding to story content */
+.reader-container.story-content {
+  padding-left: 5rem !important; /* Moderate padding on both sides */
+  padding-right: 5rem !important;
+  max-width: 100% !important; /* Ensure full width is used */
+  box-sizing: border-box !important; /* Include padding in width calculation */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: 100% !important;
+}
+
+/* Apply padding to paragraphs as well for extra measure */
+.reader-container.story-content p, 
+.reader-container.story-content .story-paragraph {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  max-width: 100% !important; /* Ensure paragraphs don't exceed container */
+}
+
+/* Adding additional padding to any div inside the content area */
+.reader-container.story-content div {
+  max-width: 100% !important;
+}
+
+/* Ensure padding stays comfortable but responsive on tablets */
+@media (max-width: 1024px) {
+  .reader-container.story-content {
+    padding-left: 4rem !important; /* Moderate padding on medium screens */
+    padding-right: 4rem !important;
+  }
+}
+
+/* Ensure padding stays sufficient but responsive on mobile */
+@media (max-width: 768px) {
+  .reader-container.story-content {
+    padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
+    padding-right: 2.5rem !important;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .reader-container.story-content {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+}

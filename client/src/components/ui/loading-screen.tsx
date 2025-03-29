@@ -2,24 +2,40 @@ import { memo, useEffect } from "react";
 import "../../styles/loading-screen.css";
 
 export const LoadingScreen = memo(() => {
-  // Import the styles when the component mounts
+  // Ensure styles are loaded
   useEffect(() => {
-    // This is to ensure the CSS is loaded
+    // This ensures the CSS is always loaded and prioritized
     const linkElement = document.createElement("link");
     linkElement.setAttribute("rel", "stylesheet");
     linkElement.setAttribute("type", "text/css");
     linkElement.setAttribute("href", "/src/styles/loading-screen.css");
-    document.head.appendChild(linkElement);
+    linkElement.setAttribute("id", "loading-screen-styles");
+    
+    // Add priority to ensure it loads quickly
+    linkElement.setAttribute("precedence", "high");
+    
+    // Only append if it doesn't already exist
+    if (!document.getElementById("loading-screen-styles")) {
+      document.head.appendChild(linkElement);
+    }
 
     return () => {
-      // Clean up when component unmounts
-      document.head.removeChild(linkElement);
+      // Clean up when component unmounts, but check if it exists first
+      const existingLink = document.getElementById("loading-screen-styles");
+      if (existingLink && document.head.contains(existingLink)) {
+        document.head.removeChild(existingLink);
+      }
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-[9999] w-screen h-screen">
-      <div className="loader">
+    <div 
+      className="fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-[9999] w-[100vw] h-[100vh] left-0 top-0 right-0 bottom-0 overflow-hidden"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Loading animation */}
+      <div className="loader" aria-hidden="true">
         <span>L</span>
         <span>O</span>
         <span>A</span>
