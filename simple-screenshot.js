@@ -1,46 +1,34 @@
 import puppeteer from 'puppeteer';
 
 async function takeScreenshot() {
-  // Launch a headless browser
+  console.log('Starting browser...');
   const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: 'new'
   });
   
   try {
-    // Open a new page
+    console.log('Opening new page...');
     const page = await browser.newPage();
     
-    // Set viewport size
-    await page.setViewport({
-      width: 1280,
-      height: 800,
-      deviceScaleFactor: 1,
-    });
+    // Set viewport to a reasonable size
+    await page.setViewport({ width: 1280, height: 800 });
     
-    // Navigate to the website
-    console.log('Navigating to homepage...');
-    await page.goto('http://localhost:3001', {
+    console.log('Navigating to localhost:3001...');
+    await page.goto('http://localhost:3001', { 
       waitUntil: 'networkidle2',
-      timeout: 60000
+      timeout: 10000
     });
     
-    // Wait for content to load
-    console.log('Waiting for content to load...');
-    await page.waitForSelector('.bg-homepage', { timeout: 10000 });
+    // Wait a bit for any animations to complete
+    await page.waitForTimeout(2000);
     
-    // Wait a moment for animations
-    await new Promise(r => setTimeout(r, 1000));
-    
-    // Take screenshot
     console.log('Taking screenshot...');
-    await page.screenshot({ path: 'homepage-screenshot.png', fullPage: true });
-    
-    console.log('Screenshot saved as homepage-screenshot.png');
+    await page.screenshot({ path: 'screenshot.jpg', fullPage: true });
+    console.log('Screenshot saved to screenshot.jpg');
   } catch (error) {
     console.error('Error taking screenshot:', error);
   } finally {
-    // Close the browser
     await browser.close();
   }
 }

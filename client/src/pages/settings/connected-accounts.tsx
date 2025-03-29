@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { SiGoogle, SiTwitter, SiGithub, SiDiscord, SiGhost } from 'react-icons/si';
+import { SiGoogle, SiGithub, SiDiscord, SiGhost } from 'react-icons/si';
+import { AiOutlineTwitter } from 'react-icons/ai';
 
 export default function ConnectedAccountsPage() {
   const [connections, setConnections] = React.useState({
@@ -53,7 +54,7 @@ export default function ConnectedAccountsPage() {
           <div className="flex items-center justify-between p-2 hover:bg-accent/50 rounded-lg transition-colors">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-accent rounded-lg">
-                <SiTwitter className="h-5 w-5" />
+                <AiOutlineTwitter className="h-5 w-5" />
               </div>
               <div>
                 <p className="font-medium">Twitter/X</p>

@@ -74,26 +74,24 @@ const SimpleLoadingComponent = React.memo(function SimpleLoading() {
 export const ErrorFallback = ErrorFallbackComponent;
 export const LoadingFallback = SimpleLoadingComponent;
 
-// Create lazy-loaded component with error boundary
+// Function to create components without lazy loading (no-op replacement)
 export function createLazyComponent<P extends object>(
   importFn: () => Promise<{ default: ComponentType<P> }>
 ): React.FC<WithRouteProps<P>> {
-  const LazyComponent = React.lazy(() =>
-    importFn().catch(error => ({
-      default: () => React.createElement(ErrorFallback, {
-        error: error instanceof Error ? error : new Error('Failed to load component')
-      })
-    }))
-  );
-
+  // This is a no-op function that exists only for backward compatibility
+  // It simply wraps the component in an error boundary without any lazy loading
   const WrappedComponent: React.FC<WithRouteProps<P>> = (props) => {
+    // This is just a placeholder that will never be used in practice
+    // since we've replaced all uses of this function with direct imports
     return React.createElement(
-      React.Suspense,
-      { fallback: React.createElement(LoadingFallback) },
-      React.createElement(LazyComponent, { ...props } as any)
+      'div',
+      null,
+      React.createElement(ErrorFallback, {
+        error: new Error('createLazyComponent is deprecated and should not be used')
+      })
     );
   };
 
-  WrappedComponent.displayName = `LazyLoaded(${importFn.name || 'Component'})`;
+  WrappedComponent.displayName = `DirectImport(${importFn.name || 'Component'})`;
   return WrappedComponent;
 }

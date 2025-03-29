@@ -1,8 +1,10 @@
-/**
- * Super simplified loading hook re-export
- * This serves as a compatibility layer with the old hooks
- */
+import { useLoading as useMinimalLoading } from '../components/minimal-loading';
 
-import { useLoading } from '../components/ui/loading-screen';
+/**
+ * Minimal loading hook that replaces all previous loading hooks
+ */
+export function useLoading() {
+  return useMinimalLoading();
+}
 
 export default useLoading;

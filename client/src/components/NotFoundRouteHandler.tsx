@@ -1,31 +1,31 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { hideGlobalLoading } from '@/utils/global-loading-manager';
 
 /**
  * NotFoundRouteHandler
  * 
  * A dedicated component for handling 404 routes to ensure consistent hook ordering.
  * This component is used as the catch-all route in App.tsx.
+ * 
+ * Note: All loading-related code has been removed from this component.
  */
-const NotFoundRouteHandler: React.FC = () => {
+const NotFoundRouteHandler: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [_, setLocation] = useLocation();
   
   // Use effect for navigation to error page
   useEffect(() => {
-    // Hide any loading indicators
-    hideGlobalLoading();
-    
-    // Navigate to the 404 error page
-    setLocation('/errors/404');
-    
-    return () => {
-      hideGlobalLoading();
-    };
-  }, [setLocation]);
+    // Navigate to the 404 error page (or just render children)
+    if (!children) {
+      setLocation('/error/404');
+    }
+  }, [setLocation, children]);
   
-  // Return null while redirecting 
-  // (using null instead of empty fragment is more semantically correct for a component that renders nothing)
+  // If children are provided, render them directly
+  if (children) {
+    return <>{children}</>;
+  }
+
+  // Otherwise return null while redirecting 
   return null;
 };
 

@@ -13,7 +13,7 @@ import {
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { useLoading } from "@/components/minimal-loading";
 import BackgroundGradient from "@/components/BackgroundGradient";
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
@@ -182,9 +182,17 @@ export default function IndexView() {
     return topWithTheme || sortedByEngagement[0];
   }, [currentPosts]);
   
+  // Use the loading hook for the global loading state
+  const { showLoading, hideLoading } = useLoading();
+  
   // Now handle conditional renders after all hooks have been called
   if (isLoading) {
-    return <LoadingScreen />;
+    // Trigger the global loading state
+    showLoading();
+    return null; // Return null since the loading is handled globally
+  } else {
+    // Hide loading when data is ready
+    hideLoading();
   }
   
   if (!hasAllPosts && !hasPaginatedPosts) {

@@ -1,4 +1,4 @@
-/* Preloader CSS - Applied immediately before any other styles 
+/* Simplified Preloader CSS - Applied immediately before any other styles 
    to prevent flash of unstyled content (FOUC) */
 
 /* Initial loading overlay */
@@ -8,14 +8,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #121212; /* Dark background matching the site theme */
+  background-color: #000000; /* Solid black background */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   opacity: 1;
-  transition: opacity 0.5s ease-out;
+  transition: opacity 0.3s ease-out;
 }
 
 .initial-loading-overlay.fade-out {
@@ -26,53 +26,24 @@
   display: none;
 }
 
-/* Loading text animation */
+/* Simple loading text */
 .loading-text {
-  font-family: 'Space Mono', monospace; /* Horror theme font */
+  font-family: monospace; /* Simple monospace font */
   font-size: 1.5rem;
-  color: #EAEAEA; /* Light gray text */
+  color: #FFFFFF; /* White text */
   margin-top: 1.5rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Animated pulse effect */
-.loading-text::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #8B0000; /* Blood red accent */
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.2;
-    transform: scaleX(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-  100% {
-    opacity: 0.2;
-    transform: scaleX(0.3);
-  }
 }
 
 /* Loading spinner */
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 3px solid rgba(166, 166, 166, 0.3); /* Matches the accent color */
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  border-top-color: #A6A6A6;
-  animation: spin 1s ease-in-out infinite;
+  border-top-color: #FFFFFF;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -89,34 +60,4 @@
 .content-visible {
   opacity: 1;
   transition: opacity 0.3s ease-in;
-}
-
-/* Glitch effect for text */
-.glitch-text {
-  position: relative;
-  animation: glitch 1s linear infinite;
-}
-
-@keyframes glitch {
-  0% {
-    text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75);
-  }
-  14% {
-    text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75);
-  }
-  15% {
-    text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75);
-  }
-  49% {
-    text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75);
-  }
-  50% {
-    text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75);
-  }
-  99% {
-    text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75);
-  }
-  100% {
-    text-shadow: -0.025em 0 0 rgba(255, 0, 0, 0.75);
-  }
 }

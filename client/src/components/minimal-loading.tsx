@@ -7,7 +7,6 @@ import { createContext, useContext } from "react";
  * without any actual loading screens or functionality.
  */
 
-// Create a simple context for loading state
 type LoadingContextType = {
   isLoading: boolean;
   showLoading: () => void;
@@ -20,29 +19,18 @@ const LoadingContext = createContext<LoadingContextType>({
   hideLoading: () => {},
 });
 
-/**
- * No-op hook that just returns the context
- */
+// Empty hook that does nothing
 export function useLoading() {
   return useContext(LoadingContext);
 }
 
-/**
- * Empty provider that just renders children
- */
+// Empty provider that just renders children
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-/**
- * No-op global API functions
- */
+// No-op global API functions
 export const showLoading = () => {};
 export const hideLoading = () => {};
 
-/**
- * Empty loading screen component that renders nothing
- */
-export const LoadingScreen = () => null;
-
-LoadingScreen.displayName = "LoadingScreen";
+export default { useLoading, LoadingProvider, showLoading, hideLoading };

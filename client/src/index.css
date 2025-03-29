@@ -46,7 +46,8 @@
   }
   
   /* Fix for transparent backgrounds in form elements */
-  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"] {
+  input, textarea, select, .input-field, .textarea-field, .select-field, [type="text"], [type="email"], [type="password"], [type="search"], 
+  .form-control, .form-input, .search-input, [class*="input"], [class*="field"], [class*="form-control"] {
     @apply bg-background; /* Force solid background */
     background-color: hsl(var(--background)) !important;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
@@ -54,6 +55,24 @@
     -webkit-backdrop-filter: none !important;
     /* Ensure no transparency */
     opacity: 1 !important;
+    /* Additional fixes for Safari */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Prevent background bleeding */
+    isolation: isolate;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Additional class for input elements that need extra opacity protection */
+  .solid-input {
+    background-color: hsl(var(--background)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-image: none !important;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 100vmax hsl(var(--background)) !important;
+    clip-path: inset(0 0 0 0) !important;
   }
   
   /* Background color reset for specific pages */
@@ -96,7 +115,7 @@
   }
 }
 
-/* Container fixes to prevent overflow */
+/* Container fixes to prevent overflow and remove black borders */
 .container, 
 main, 
 section, 
@@ -104,6 +123,15 @@ article,
 div[class*="layout"], 
 div[class*="container"] {
   @apply max-w-full overflow-hidden;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+  background-color: hsl(var(--background)) !important;
+  border: none !important;
 }
 
 /* Specific styles for homepage background - make sure it doesn't bleed into other pages */
