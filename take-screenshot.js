@@ -1,51 +1,114 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+/**
+ * Simple Screenshot Script
+ * 
+ * This script captures a screenshot of the website and saves it to screenshot.png
+ */
+import puppeteer from 'puppeteer';
 
-// URL to capture
-const url = 'http://localhost:3001/';
-const outputPath = path.join(process.cwd(), 'mobile-layout.html');
-
-console.log(`Capturing ${url} and saving to ${outputPath}...`);
-
-// Make a simple HTTP request to get the page content
-http.get(url, (res) => {
-  let data = '';
+async function takeScreenshot() {
+  console.log('Starting screenshot capture process...');
   
-  res.on('data', (chunk) => {
-    data += chunk;
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   
-  res.on('end', () => {
-    // Add mobile meta viewport to properly render the page 
-    const mobileViewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">';
-    const mobileStyles = `
-    <style>
-      body { 
-        width: 375px; 
-        margin: 0 auto; 
-        border: 1px solid #ccc;
-        height: 812px;
-        overflow: auto;
-      }
-      /* Highlight the navigation elements */
-      header { 
-        border: 2px solid red !important; 
-      }
-    </style>`;
+  try {
+    const page = await browser.newPage();
     
-    // Insert our custom viewport and styles
-    const modifiedData = data.replace('</head>', `${mobileViewport}${mobileStyles}</head>`);
-    
-    fs.writeFile(outputPath, modifiedData, (err) => {
-      if (err) {
-        console.error('Error saving file:', err);
-      } else {
-        console.log('Saved mobile layout to:', outputPath);
-        console.log('Open this file in any browser to see the mobile layout.');
-      }
+    // Set viewport size to desktop
+    await page.setViewport({
+      width: 1280,
+      height: 800,
+      deviceScaleFactor: 1,
     });
-  });
-}).on('error', (err) => {
-  console.error('Error capturing screenshot:', err);
-});
+    
+    console.log('Navigating to the website...');
+    await page.goto('http://localhost:3001/', {
+      waitUntil: 'networkidle0',
+      timeout: 30000,
+    });
+    
+    console.log('Waiting for page to stabilize...');
+    await page.waitForTimeout(2000);
+    
+    console.log('Taking screenshot...');
+    await page.screenshot({ path: 'homepage-screenshot.png', fullPage: false });
+    console.log('Screenshot saved to homepage-screenshot.png');
+    
+    // Navigate to reader page to try to trigger loading screen
+    console.log('Navigating to reader page to capture loading screen...');
+    
+    // Click on the first story if available
+    try {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 }),
+        page.click('a[href="/reader"]')
+      ]);
+    } catch (e) {
+      console.log('Navigation error, trying alternative method:', e.message);
+      await page.goto('http://localhost:3001/reader', {
+        waitUntil: 'networkidle0',
+        timeout: 15000,
+      });
+    }
+    
+    console.log('Taking screenshot of reader page...');
+    await page.screenshot({ path: 'reader-screenshot.png', fullPage: false });
+    console.log('Screenshot saved to reader-screenshot.png');
+    
+    // Now try to capture the loading screen during a transition
+    console.log('Attempting to capture loading screen during transition...');
+    
+    // Go back to homepage
+    await page.goto('http://localhost:3001/', {
+      waitUntil: 'networkidle0',
+      timeout: 15000,
+    });
+    
+    // Start watching for the loading screen element
+    await page.evaluate(() => {
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length) {
+            for (const node of mutation.addedNodes) {
+              if (node.nodeType === Node.ELEMENT_NODE && 
+                  node.querySelector && 
+                  node.querySelector('.loader')) {
+                console.log('Loading screen detected!');
+                window.__loadingDetected = true;
+              }
+            }
+          }
+        }
+      });
+      
+      observer.observe(document.body, { childList: true, subtree: true });
+      window.__loadingDetected = false;
+    });
+    
+    // Click to trigger navigation with a race condition to capture the loading screen
+    try {
+      // Navigate to reader page which should trigger loading screen
+      console.log('Clicking to navigate and capture loading screen...');
+      const loadingPromise = page.waitForFunction(() => window.__loadingDetected, { timeout: 5000 });
+      await page.click('a[href="/reader"]');
+      
+      // Try to capture the loading screen
+      await loadingPromise;
+      console.log('Loading screen detected! Taking screenshot...');
+      await page.screenshot({ path: 'loading-screen.png', fullPage: false });
+      console.log('Loading screen screenshot saved to loading-screen.png');
+    } catch (e) {
+      console.log('Failed to capture loading screen:', e.message);
+    }
+    
+  } catch (error) {
+    console.error('Error during screenshot capture:', error);
+  } finally {
+    await browser.close();
+    console.log('Screenshot capture process completed');
+  }
+}
+
+takeScreenshot().catch(console.error);

@@ -10,8 +10,7 @@ import "./index.css";
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
-// Import simplified loading system
-import { LoadingProvider } from "./components/ui/simplified-loading";
+// We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
 

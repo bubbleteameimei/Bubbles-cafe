@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { LoadingScreen } from './ui/loading-screen';
-import './transition.css'; // Will create this file for basic CSS transitions
 
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
@@ -19,16 +18,15 @@ export function EnhancedPageTransition({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   
-  // Simple page transition using just React state and CSS
+  // Simple page transition using just React state
   useEffect(() => {
     // Only trigger transition on actual location changes
     if (location !== prevLocationRef.current) {
       // Start timing for minimum loading display
       startTimeRef.current = Date.now();
       
-      // Show loading immediately and freeze scrolling
+      // Show loading immediately
       setShowLoading(true);
-      document.body.style.overflow = 'hidden';
       
       // Clear any existing timeouts
       if (timeoutRef.current) {
@@ -50,7 +48,6 @@ export function EnhancedPageTransition({
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               setShowLoading(false);
-              document.body.style.overflow = '';
               prevLocationRef.current = location;
             });
           });
@@ -66,37 +63,16 @@ export function EnhancedPageTransition({
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      document.body.style.overflow = '';
     };
   }, [location, children, minLoadingTime]);
   
   return (
-    <div 
-      className="page-transition-container"
-      style={{
-        // Critical styles for proper full-width layout
-        width: '100%',
-        minWidth: '100%',
-        maxWidth: '100vw',
-        padding: 0,
-        margin: 0,
-        overflowX: 'hidden'
-      }}
-    >
-      {/* Loading overlay - absolute positioned with high z-index */}
+    <div className="page-transition-container">
+      {/* Just use the standardized loading screen component */}
       {showLoading && <LoadingScreen />}
       
-      {/* Current page content with inline styles for full-width enforcement */}
-      <div 
-        className="page-content"
-        style={{
-          width: '100%',
-          minWidth: '100%',
-          maxWidth: '100vw',
-          margin: '0 auto',
-          padding: 0
-        }}
-      >
+      {/* Current page content */}
+      <div className="page-content">
         {currentChildren}
       </div>
     </div>

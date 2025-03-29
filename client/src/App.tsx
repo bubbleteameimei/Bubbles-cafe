@@ -23,7 +23,8 @@ import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
-// We're using our enhanced loading implementation directly in EnhancedPageTransition
+// Import our standardized loading provider
+import { LoadingProvider } from './hooks/use-loading.tsx';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
@@ -289,6 +290,7 @@ function App() {
                 <SilentPingProvider>
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
+                      <LoadingProvider>
                         <EnhancedPageTransition minLoadingTime={850}>
                           <AppContent />
                         </EnhancedPageTransition>
@@ -300,6 +302,7 @@ function App() {
                         {/* Toast notifications */}
                         <Toaster />
                         <Sonner position="bottom-left" className="fixed-sonner" />
+                      </LoadingProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
                 </SilentPingProvider>
