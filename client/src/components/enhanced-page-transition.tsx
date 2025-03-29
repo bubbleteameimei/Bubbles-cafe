@@ -1,161 +1,105 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
-import LoadingScreen from './ui/loading-screen';
+import { LoadingScreen } from './ui/loading-screen';
+import './transition.css'; // Will create this file for basic CSS transitions
 
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
-  loadingTimeout?: number;
   minLoadingTime?: number;
 }
 
 export function EnhancedPageTransition({
   children,
-  loadingTimeout = 800, // Default timeout in milliseconds
-  minLoadingTime = 600, // Minimum time to show loading screen for visual consistency
+  minLoadingTime = 850, // Minimum time to show loading screen for visual consistency
 }: EnhancedPageTransitionProps) {
   const [location] = useLocation();
   const [showLoading, setShowLoading] = useState(false);
-  const [key, setKey] = useState(location);
+  const [currentChildren, setCurrentChildren] = useState(children);
   const prevLocationRef = useRef<string>(location);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingStartTimeRef = useRef<number>(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
   
-  // Get transition variants based on route
-  const getTransitionVariants = useCallback(() => {
-    // Reader pages get a special transition
-    if (location.startsWith('/reader')) {
-      return {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -20 },
-        transition: { 
-          type: "tween", 
-          ease: "easeOut", 
-          duration: 0.4 
-        }
-      };
-    }
-    
-    // Admin pages
-    if (location.startsWith('/admin')) {
-      return {
-        initial: { opacity: 0, scale: 0.98 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.96 },
-        transition: { 
-          type: "spring", 
-          stiffness: 300, 
-          damping: 30 
-        }
-      };
-    }
-    
-    // Stories page
-    if (location.startsWith('/stories')) {
-      return {
-        initial: { opacity: 0, x: -10 },
-        animate: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: 10 },
-        transition: { 
-          type: "tween",
-          ease: "easeInOut",
-          duration: 0.3
-        }
-      };
-    }
-    
-    // Default transition for other pages
-    return {
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit: { opacity: 0 },
-      transition: { 
-        duration: 0.2 
-      }
-    };
-  }, [location]);
-  
-  // Calculate remaining loading time to ensure minimum display
-  const calculateRemainingLoadingTime = useCallback(() => {
-    const currentTime = Date.now();
-    const elapsedTime = currentTime - loadingStartTimeRef.current;
-    return Math.max(0, minLoadingTime - elapsedTime);
-  }, [minLoadingTime]);
-  
-  // Show loading screen when location changes
+  // Simple page transition using just React state and CSS
   useEffect(() => {
-    // Only trigger on actual location changes
+    // Only trigger transition on actual location changes
     if (location !== prevLocationRef.current) {
-      // Record when we started loading
-      loadingStartTimeRef.current = Date.now();
+      // Start timing for minimum loading display
+      startTimeRef.current = Date.now();
       
-      // Show loading immediately
+      // Show loading immediately and freeze scrolling
       setShowLoading(true);
+      document.body.style.overflow = 'hidden';
       
-      // Clear any existing timeout
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
+      // Clear any existing timeouts
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
       
-      // Set a timeout to update the key and hide loading
-      loadingTimeoutRef.current = setTimeout(() => {
-        const remainingTime = calculateRemainingLoadingTime();
+      // Set a timeout to switch content
+      timeoutRef.current = setTimeout(() => {
+        // Calculate how much longer we need to show the loading screen
+        const elapsed = Date.now() - startTimeRef.current;
+        const remaining = Math.max(0, minLoadingTime - elapsed);
         
-        // If we haven't shown the loading screen for long enough,
-        // wait until the minimum time has passed for visual consistency
-        if (remainingTime > 0) {
-          setTimeout(() => {
-            setKey(location);
-            setShowLoading(false);
-            prevLocationRef.current = location;
-          }, remainingTime);
-        } else {
-          setKey(location);
-          setShowLoading(false);
-          prevLocationRef.current = location;
-        }
-      }, loadingTimeout);
+        // After minimum loading time, swap in the new content 
+        setTimeout(() => {
+          // Update the child component to the new route's content
+          setCurrentChildren(children);
+          
+          // Give the DOM a moment to update before hiding loading screen
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setShowLoading(false);
+              document.body.style.overflow = '';
+              prevLocationRef.current = location;
+            });
+          });
+        }, remaining);
+      }, 50); // Small delay to ensure loading screen renders first
+    } else {
+      // If it's an initial render, just show the content
+      setCurrentChildren(children);
     }
     
-    // Clean up timeout on unmount
+    // Cleanup on unmount
     return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
+      document.body.style.overflow = '';
     };
-  }, [location, loadingTimeout, calculateRemainingLoadingTime]);
-  
-  // Get the variants for the current route
-  const variants = getTransitionVariants();
+  }, [location, children, minLoadingTime]);
   
   return (
-    <>
-      {/* Pre-emptive Loading Screen - shown with highest z-index */}
+    <div 
+      className="page-transition-container"
+      style={{
+        // Critical styles for proper full-width layout
+        width: '100%',
+        minWidth: '100%',
+        maxWidth: '100vw',
+        padding: 0,
+        margin: 0,
+        overflowX: 'hidden'
+      }}
+    >
+      {/* Loading overlay - absolute positioned with high z-index */}
       {showLoading && <LoadingScreen />}
       
-      {/* Content with AnimatePresence */}
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={key}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          variants={variants}
-          transition={variants.transition}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            minHeight: "100vh",
-            width: "100%",
-            maxWidth: "100%"
-          }}
-          className="w-full min-w-full max-w-full mx-auto"
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
-    </>
+      {/* Current page content with inline styles for full-width enforcement */}
+      <div 
+        className="page-content"
+        style={{
+          width: '100%',
+          minWidth: '100%',
+          maxWidth: '100vw',
+          margin: '0 auto',
+          padding: 0
+        }}
+      >
+        {currentChildren}
+      </div>
+    </div>
   );
 }
 

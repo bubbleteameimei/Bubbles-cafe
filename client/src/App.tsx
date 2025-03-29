@@ -16,13 +16,14 @@ import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
+// Add critical fullwidth fix stylesheet
+import './styles/fullwidth-fix.css';
 // Using EnhancedPageTransition for smooth page transitions
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
-// Import our minimal loading implementation
-import { LoadingProvider } from './components/minimal-loading';
+// We're using our enhanced loading implementation directly in EnhancedPageTransition
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
@@ -170,9 +171,11 @@ const AppContent = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-screen flex-1 flex flex-col bg-background w-full">
+      <main className="min-h-screen flex-1 flex flex-col bg-background w-full min-w-full max-w-[100vw]" 
+             style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
-        <div className="w-full min-w-full max-w-full pt-20 lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0">
+        <div className="w-full min-w-full max-w-full pt-20 lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0"
+             style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
           <ErrorBoundary>
             <Switch>
               {/* Auth Routes */}
@@ -286,8 +289,7 @@ function App() {
                 <SilentPingProvider>
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
-                      <LoadingProvider>
-                        <EnhancedPageTransition>
+                        <EnhancedPageTransition minLoadingTime={850}>
                           <AppContent />
                         </EnhancedPageTransition>
                         {/* Site-wide elements outside of the main layout */}
@@ -298,7 +300,6 @@ function App() {
                         {/* Toast notifications */}
                         <Toaster />
                         <Sonner position="bottom-left" className="fixed-sonner" />
-                      </LoadingProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
                 </SilentPingProvider>
