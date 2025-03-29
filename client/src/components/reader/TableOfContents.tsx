@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,14 +88,17 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   };
 
   return (
-    <DialogContent className="sm:max-w-md max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col">
+    <DialogContent className="sm:max-w-md h-[85vh] md:h-[90vh] flex flex-col p-6" aria-describedby="dialog-description">
       <div className="flex items-center justify-between">
-        <DialogTitle>Table of Contents</DialogTitle>
-        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full h-8 w-8">
-          <X className="h-4 w-4" />
-        </Button>
+        <DialogTitle className="text-lg font-medium">Table of Contents</DialogTitle>
+        <DialogClose asChild>
+          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </DialogClose>
       </div>
-      <DialogDescription>
+      <DialogDescription id="dialog-description">
         Browse all available stories or search for a specific title.
       </DialogDescription>
       
@@ -133,46 +136,56 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
         />
       </div>
       
-      <ScrollArea className="flex-1 mt-4 min-h-[300px] pr-4">
-        <div className="px-1 pb-8"> {/* Increased bottom padding to ensure last items are fully visible */}
-          {loading ? (
-            <div className="flex items-center justify-center h-full py-8">
-              <div className="animate-pulse text-sm text-muted-foreground">Loading stories...</div>
-            </div>
-          ) : filteredPosts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-8 text-center">
-              <div className="text-sm text-muted-foreground">No stories found matching "{searchTerm}"</div>
-              <Button variant="link" onClick={() => setSearchTerm("")}>Clear search</Button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className={`p-2 rounded-md transition-colors hover:bg-accent cursor-pointer ${
-                    post.id === currentPostId ? "bg-accent/50 font-medium" : ""
-                  }`}
-                  onClick={() => handlePostClick(post.slug)}
-                >
-                  <div className="font-medium truncate w-full">{post.title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{formatDate(post.date)}</div>
-                </div>
-              ))}
-            </div>
+      {/* Key fix: Make sure the scroll container has enough height and proper overflow behavior */}
+      <div className="flex-1 mt-4 overflow-hidden flex flex-col">
+        <ScrollArea className="flex-1 h-full pr-4" style={{ maxHeight: 'calc(85vh - 250px)' }}>
+          <div className="px-1 pb-10">
+            {filteredPosts.length === 0 && searchTerm ? (
+              <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+                <div className="text-sm text-muted-foreground">No stories found matching "{searchTerm}"</div>
+                <Button variant="link" onClick={() => setSearchTerm("")}>Clear search</Button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {filteredPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className={`p-2 rounded-md transition-colors hover:bg-accent cursor-pointer ${
+                      post.id === currentPostId ? "bg-accent/50 font-medium" : ""
+                    }`}
+                    onClick={() => handlePostClick(post.slug)}
+                  >
+                    <div className="font-medium truncate w-full">{post.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{formatDate(post.date)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+      
+      {/* Search results count */}
+      {searchTerm && (
+        <div className="text-xs text-muted-foreground py-2 flex items-center justify-center gap-1.5 border-t mt-2">
+          <BookOpen className="h-3.5 w-3.5" />
+          <span>
+            {filteredPosts.length} {filteredPosts.length === 1 ? "story" : "stories"} found
+          </span>
+          {posts.length !== filteredPosts.length && (
+            <span className="text-xs text-muted-foreground">
+              (of {posts.length} total)
+            </span>
           )}
         </div>
-      </ScrollArea>
+      )}
       
-      <div className="text-xs text-muted-foreground py-2 flex items-center justify-center gap-1.5 border-t mt-2">
-        <BookOpen className="h-3.5 w-3.5" />
-        <span>
-          {filteredPosts.length} {filteredPosts.length === 1 ? "story" : "stories"} {searchTerm ? "found" : "available"}
-        </span>
-        {searchTerm && posts.length !== filteredPosts.length && (
-          <span className="text-xs text-muted-foreground">
-            (of {posts.length} total)
-          </span>
-        )}
+      {/* Total number of stories at the bottom - fixed position */}
+      <div className="text-xs text-muted-foreground py-3 text-center border-t border-border/20 mt-auto">
+        <div className="flex items-center justify-center gap-1.5">
+          <BookOpen className="h-3.5 w-3.5 text-primary/70" />
+          <span>Total stories in library: <span className="font-medium text-primary/90">{posts.length}</span></span>
+        </div>
       </div>
     </DialogContent>
   );

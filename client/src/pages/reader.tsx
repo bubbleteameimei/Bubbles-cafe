@@ -1152,10 +1152,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3 bg-background hover:bg-background/80 shadow-sm flex items-center gap-1.5 min-w-0"
+                className="h-8 px-3 bg-background hover:bg-background/80 shadow-sm flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden"
               >
                 <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">Table of Contents</span>
+                <span className="truncate">Contents</span>
               </Button>
             </DialogTrigger>
             <TableOfContents currentPostId={currentPost.id} onClose={safeCloseDialog} />
@@ -1437,8 +1437,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           </motion.article>
         </AnimatePresence>
 
-        {/* Bottom Table of Contents button */}
-        <div className={`mt-4 mb-4 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
+        {/* Bottom Return Home button */}
+        <div className={`mt-6 mb-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
             size="lg"
