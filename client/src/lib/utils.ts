@@ -43,31 +43,8 @@ const ErrorFallbackComponent = React.memo(function ErrorFallback({
 
 // Simple loading component
 const SimpleLoadingComponent = React.memo(function SimpleLoading() {
-  return React.createElement(
-    "div", 
-    { 
-      className: "flex items-center justify-center w-full h-[50vh]" 
-    },
-    React.createElement(
-      "div", 
-      { 
-        className: "flex flex-col items-center" 
-      },
-      React.createElement(
-        "div", 
-        { 
-          className: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" 
-        }
-      ),
-      React.createElement(
-        "p", 
-        { 
-          className: "mt-4 text-muted-foreground" 
-        }, 
-        "Loading..."
-      )
-    )
-  );
+  // Return null - no loading indicator
+  return null;
 });
 
 // Export components

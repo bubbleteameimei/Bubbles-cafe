@@ -359,8 +359,8 @@ export default function IndexView() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <div className="max-w-md mx-auto">
-              <Book className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 mx-auto text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
+            <div className="w-full">
+              <Book className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-primary/40 mb-3 sm:mb-4 mt-3 sm:mt-4" />
               <h3 className="text-lg sm:text-xl font-decorative mb-2 sm:mb-3">No Stories Found</h3>
               <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 leading-relaxed px-2">
                 No stories are available at the moment. Check back soon or try refreshing the page.

@@ -1004,7 +1004,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               stiffness: 300, 
               damping: 30 
             }}
-            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-md mx-auto text-center border border-[#ff0000]/80"
+            className="relative bg-background/95 p-6 rounded-lg shadow-xl w-[90%] max-w-full text-center border border-[#ff0000]/80"
           >
             <div className="absolute inset-0 rounded-lg bg-[#ff0000]/10 animate-pulse" />
             <div className="relative z-10">
@@ -1090,7 +1090,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   <span className="text-xs">Font</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-full">
                 <DialogHeader>
                   <DialogTitle>Font Settings</DialogTitle>
                   <DialogDescription>
@@ -1156,7 +1156,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               duration: 0.2, // Reduced duration for faster transitions
               ease: "easeOut" // Simpler easing for better performance
             }}
-            className="prose dark:prose-invert mx-auto px-6 md:px-6 pt-0 w-full max-w-none"
+            className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             <div className="flex flex-col items-center mb-5 mt-2">
               <h1
@@ -1260,14 +1260,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             </div>
 
             <div
-              className="reader-container story-content mb-8 mx-auto w-full px-4 overflow-visible flex-1"
+              className="reader-container story-content mb-8 w-full px-4 overflow-visible flex-1"
               style={{
                 whiteSpace: 'normal',
                 letterSpacing: '0.012em',
                 overflowWrap: 'break-word',
                 wordWrap: 'break-word',
                 overflow: 'visible',
-                margin: '32px auto',
+                margin: '32px 0',
                 lineHeight: '1.8',
                 textAlign: 'left',
                 fontSize: '1.2rem',
@@ -1328,7 +1328,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} className="mx-auto" />
+                  <LikeDislike postId={currentPost.id} />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
