@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useNotifications } from './notification-context';
+import { useNotifications } from '../contexts/notification-context';
 
 interface SilentPingContextType {
   triggerSilentPing: () => void;
