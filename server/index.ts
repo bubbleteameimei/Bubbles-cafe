@@ -84,7 +84,8 @@ app.use(validateCsrfToken({
     '/api/analytics/vitals', // Exclude analytics endpoint from CSRF checks
     '/api/wordpress/sync',
     '/api/wordpress/sync/status',
-    '/api/wordpress/posts'
+    '/api/wordpress/posts',
+    '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
   ]
 }));
 

@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
+import TableOfContents from "@/components/reader/TableOfContents";
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Sun, Bug, Worm, Cloud, CloudFog
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Sun, Bug, Worm, Cloud, CloudFog,
+  Menu, BookText, Home
 } from "lucide-react";
 import { useNightMode } from "@/hooks/use-night-mode";
 import { motion, AnimatePresence } from "framer-motion";
@@ -119,6 +121,14 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
        nav => (nav as PerformanceNavigationTiming).type === 'reload'
      )))
   );
+  
+  // Helper function to close dialogs safely
+  const safeCloseDialog = () => {
+    const closeButton = document.querySelector('[aria-label="Close"]');
+    if (closeButton instanceof HTMLElement) {
+      closeButton.click();
+    }
+  };
   
   // Reading progress is now only tracked visually, without saving position
   
@@ -880,7 +890,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-2 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-0 pb-8 flex flex-col"
       /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -1052,9 +1062,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
       {/* Navigation buttons removed as requested */}
       {/* Full width immersive reading experience */}
 
-      <div className={`pt-0 pb-0 bg-background mt-1 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
+      <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
         {/* Static font size controls in a prominent position */}
-        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-3 border-b border-border/30 mb-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-2 border-b border-border/30 mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1088,7 +1098,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   size="sm"
                   className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 ml-2"
                 >
-                  <span className="text-xs">Font</span>
+                  <span className="text-xs uppercase">FONT</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-full">
@@ -1137,14 +1147,19 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
           {/* Text-to-speech functionality removed */}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation('/')}
-            className="h-8 px-3 bg-background hover:bg-background/80 w-32 shadow-sm"
-          >
-            Return to Home
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 bg-background hover:bg-background/80 shadow-sm flex items-center gap-1.5 min-w-0"
+              >
+                <BookText className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Table of Contents</span>
+              </Button>
+            </DialogTrigger>
+            <TableOfContents currentPostId={currentPost.id} onClose={safeCloseDialog} />
+          </Dialog>
         </div>
       
         <AnimatePresence mode="wait" initial={false}>
@@ -1159,9 +1174,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             }}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
-            <div className="flex flex-col items-center mb-4 mt-1">
+            <div className="flex flex-col items-center mb-2 mt-0">
               <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-2 tracking-tight leading-tight"
+                className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
                 dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
               />
 
@@ -1224,6 +1239,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     onClick={goToPreviousStory}
                     className="h-8 px-2 bg-background hover:bg-background/80 w-24"
                     disabled={posts.length <= 1 || isFirstStory}
+                    data-end-nav={isFirstStory}
+                    title={isFirstStory ? "This is the first story" : "Go to previous story"}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
                       <path d="m15 18-6-6 6-6"/>
@@ -1238,7 +1255,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     onClick={goToRandomStory}
                     className="h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none"
                     disabled={posts.length <= 1}
+                    data-end-nav={posts.length <= 1}
                     aria-label="Random Story"
+                    title={posts.length <= 1 ? "Need more stories to use random" : "Go to a random story"}
                   >
                     <Shuffle className="h-4 w-4" />
                   </Button>
@@ -1250,6 +1269,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     onClick={goToNextStory}
                     className="h-8 px-2 bg-background hover:bg-background/80 w-24"
                     disabled={posts.length <= 1 || isLastStory}
+                    data-end-nav={isLastStory}
+                    title={isLastStory ? "This is the last story" : "Go to next story"}
                   >
                     Next
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-1">
@@ -1268,7 +1289,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                 overflowWrap: 'break-word',
                 wordWrap: 'break-word',
                 overflow: 'visible',
-                margin: '20px 0',
+                margin: '10px 0',
                 lineHeight: '1.8',
                 textAlign: 'left',
                 fontSize: '1.2rem',
@@ -1419,7 +1440,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           </motion.article>
         </AnimatePresence>
 
-        {/* Bottom Return to Home button */}
+        {/* Bottom Table of Contents button */}
         <div className={`mt-4 mb-4 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
@@ -1428,9 +1449,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               e.stopPropagation();
               setLocation('/');
             }}
-            className="px-4 bg-background hover:bg-background/80"
+            className="px-4 bg-background hover:bg-background/80 flex items-center gap-2"
           >
-            Return to Home
+            <ChevronLeft className="h-5 w-5" />
+            <span>Return to Home</span>
           </Button>
         </div>
       </div>

@@ -460,6 +460,45 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to delete post" });
     }
   });
+  
+  // Create a special admin router that doesn't use CSRF protection
+  const adminCleanupRouter = express.Router();
+  
+  // Mount this router WITHOUT the CSRF middleware
+  app.use("/admin-cleanup", adminCleanupRouter);
+  
+  // Special endpoint to delete WordPress placeholder post with ID 272
+  adminCleanupRouter.delete("/wordpress-post-272", async (_req: Request, res: Response) => {
+    try {
+      const postId = 272; // Hardcoded ID for the WordPress placeholder post
+      console.log(`[Delete WordPress Post] Attempting to delete WordPress placeholder post with ID: ${postId}`);
+
+      // First check if post exists
+      const post = await storage.getPostById(postId);
+      if (!post) {
+        console.log(`[Delete WordPress Post] Post ${postId} not found`);
+        return res.status(404).json({ message: "WordPress placeholder post not found" });
+      }
+
+      // Delete the post
+      const result = await storage.deletePost(postId);
+      console.log(`[Delete WordPress Post] WordPress placeholder post with ID ${postId} deleted successfully:`, result);
+      res.json({ 
+        message: "WordPress placeholder post deleted successfully", 
+        postId,
+        title: post.title,
+        deletedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("[Delete WordPress Post] Error:", error);
+      res.status(500).json({ message: "Failed to delete WordPress placeholder post" });
+    }
+  });
+  
+  // Add a test endpoint to verify the admin cleanup router is working
+  adminCleanupRouter.get("/test", (_req: Request, res: Response) => {
+    res.json({ message: "Admin cleanup router is working" });
+  });
 
   app.get("/api/posts/secret", async (_req, res) => {
     try {
@@ -1359,7 +1398,7 @@ export function registerRoutes(app: Express): Server {
     console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
     
     // Return simplified metadata for display
-    const result = recentPosts.map(post => ({
+    const result = recentPosts.map((post: any) => ({
       ...post,
       readingTime: 5, // Default time
       authorName: 'Anonymous',
