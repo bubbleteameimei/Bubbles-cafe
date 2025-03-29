@@ -14,7 +14,8 @@ import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
-import PageTransition from './components/PageTransition';
+// Import our enhanced page transition component
+import { EnhancedPageTransition } from './components/enhanced-page-transition';
 // Import commented out as component doesn't exist yet
 // import AnimatedSidebar from './components/layout/AnimatedSidebar';
 import { Button } from './components/ui/button';
@@ -287,7 +288,9 @@ function App() {
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
                       <LoadingProvider>
-                        <AppContent />
+                        <EnhancedPageTransition>
+                          <AppContent />
+                        </EnhancedPageTransition>
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
                         <ScrollToTopButton />

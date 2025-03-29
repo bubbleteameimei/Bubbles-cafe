@@ -104,11 +104,12 @@ export function EnhancedPageTransition({
           exit="exit"
           variants={variants}
           transition={variants.transition}
-          style={{ 
-            height: "100%",
-            width: "100%",
-            position: "relative",
-            overflowX: "hidden"
+          style={{
+            width: "100vw",
+            maxWidth: "100%",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100vh"
           }}
         >
           {children}

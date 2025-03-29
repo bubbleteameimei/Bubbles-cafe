@@ -1,8 +1,24 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import "../../styles/loading-screen.css";
 
 export const LoadingScreen = memo(() => {
+  // Import the styles when the component mounts
+  useEffect(() => {
+    // This is to ensure the CSS is loaded
+    const linkElement = document.createElement("link");
+    linkElement.setAttribute("rel", "stylesheet");
+    linkElement.setAttribute("type", "text/css");
+    linkElement.setAttribute("href", "/src/styles/loading-screen.css");
+    document.head.appendChild(linkElement);
+
+    return () => {
+      // Clean up when component unmounts
+      document.head.removeChild(linkElement);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-[9999] w-screen h-screen">
       <div className="loader">
         <span>L</span>
         <span>O</span>
@@ -17,45 +33,6 @@ export const LoadingScreen = memo(() => {
       <div className="sr-only" role="status" aria-live="polite">
         Loading content, please wait...
       </div>
-
-      <style jsx>{`
-        .loader {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .loader span {
-          font-size: 22px;
-          font-family: 'Space Mono', monospace;
-          font-weight: 600;
-          animation: blur 2s linear infinite;
-          line-height: 20px;
-          transition: all 0.5s;
-          letter-spacing: 0.2em;
-          color: white;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
-        @keyframes blur {
-          0%, 90%, 100% {
-            filter: blur(0);
-            opacity: 1;
-          }
-          
-          50% {
-            filter: blur(5px);
-            opacity: 0.5;
-          }
-        }
-
-        .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.2s; }
-        .loader span:nth-child(3) { animation-delay: 0.4s; }
-        .loader span:nth-child(4) { animation-delay: 0.6s; }
-        .loader span:nth-child(5) { animation-delay: 0.8s; }
-        .loader span:nth-child(6) { animation-delay: 1.0s; }
-        .loader span:nth-child(7) { animation-delay: 1.2s; }
-      `}</style>
     </div>
   );
 });
