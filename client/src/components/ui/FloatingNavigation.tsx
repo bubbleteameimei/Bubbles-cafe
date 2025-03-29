@@ -85,7 +85,7 @@ export const FloatingNavigation = ({
             disabled={currentIndex === 0}
             aria-label="Previous story"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
             <span className="hidden sm:inline">Previous</span>
           </button>
 
@@ -94,7 +94,7 @@ export const FloatingNavigation = ({
             onClick={onRandom}
             aria-label="Random story"
           >
-            <Shuffle className="h-4 w-4" />
+            <Shuffle className="h-3.5 w-3.5" />
             <span className="sr-only">Random story</span>
           </button>
 
@@ -105,7 +105,7 @@ export const FloatingNavigation = ({
             aria-label="Next story"
           >
             <span className="hidden sm:inline">Next</span>
-            <ArrowRight className="h-4 w-4 ml-1" />
+            <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </button>
         </div>
       </div>

@@ -88,9 +88,9 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   };
 
   return (
-    <DialogContent className="sm:max-w-md h-[85vh] md:h-[90vh] flex flex-col p-6" aria-describedby="dialog-description">
+    <DialogContent className="sm:max-w-md h-[85vh] md:h-[90vh] flex flex-col p-6" aria-labelledby="dialog-title" aria-describedby="dialog-description">
       <div className="flex items-center justify-between">
-        <DialogTitle className="text-lg font-medium">Table of Contents</DialogTitle>
+        <DialogTitle id="dialog-title" className="text-lg font-medium">Table of Contents</DialogTitle>
         <DialogClose asChild>
           <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
             <X className="h-4 w-4" />

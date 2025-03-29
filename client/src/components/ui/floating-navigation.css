@@ -1,16 +1,16 @@
 /* Floating navigation container */
 .floating-navigation {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 24px;
+  right: 24px;
   width: auto;
   max-width: 300px;
-  padding: 0.6rem 1.2rem;
+  padding: 0.4rem 0.8rem; /* Slimmer padding */
   background-color: hsl(var(--background)/90%);
   backdrop-filter: blur(12px);
-  border-radius: 12px;
+  border-radius: 10px; /* Slightly reduced border radius */
   border: 1px solid hsl(var(--border)/40%);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 5px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 3px 8px rgba(0, 0, 0, 0.1); /* Lighter shadow */
   z-index: 50;
   display: flex;
   align-items: center;
@@ -23,14 +23,14 @@
 :root[data-theme="dark"] .floating-navigation {
   background-color: hsl(var(--background)/75%);
   border-color: hsl(var(--border)/30%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 3px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .floating-navigation:hover {
   background-color: hsl(var(--background)/95%);
   border-color: hsl(var(--border)/60%);
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.25), 0 7px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px) scale(1.02); /* Reduced hover effect */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 5px 12px rgba(0, 0, 0, 0.1);
   animation: none !important; /* Prevent animation from interrupting hover effect */
 }
 
@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.7rem; /* Reduced gap */
   width: 100%;
 }
 
@@ -46,12 +46,12 @@
 .nav-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.3rem; /* Reduced gap */
+  padding: 0.3rem 0.5rem; /* Slimmer padding */
   background-color: hsl(var(--muted)/30%);
   border-radius: 9999px;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.75rem; /* Smaller font */
   white-space: nowrap;
   user-select: none;
   transition: all 0.2s ease;
@@ -66,7 +66,7 @@
 .nav-buttons {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem; /* Reduced gap */
 }
 
 /* Individual navigation buttons */
@@ -78,9 +78,9 @@
   color: hsl(var(--foreground));
   border: 1px solid hsl(var(--border)/30%);
   border-radius: 9999px;
-  height: 2.5rem;
-  padding: 0 1rem;
-  font-size: 0.875rem;
+  height: 2.1rem; /* Reduced height */
+  padding: 0 0.8rem; /* Slimmer padding */
+  font-size: 0.8rem; /* Smaller font */
   font-weight: 500;
   transition: all 0.2s ease;
   position: relative;
@@ -104,7 +104,7 @@
 .nav-button:hover:not(.disabled) {
   background-color: hsl(var(--accent-foreground)/10%);
   color: hsl(var(--accent-foreground));
-  transform: translateY(-2px);
+  transform: translateY(-1px); /* Reduced hover effect */
   border-color: hsl(var(--accent-foreground)/30%);
 }
 
@@ -127,13 +127,16 @@
   background-color: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
   border-color: hsl(var(--accent));
+  width: 1.8rem; /* Smaller random button */
+  height: 1.8rem; /* Smaller random button */
+  padding: 0;
 }
 
 .random-button:hover {
   background-color: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
-  filter: brightness(1.1);
-  transform: translateY(-2px) scale(1.05);
+  filter: brightness(1.05); /* Reduced brightness effect */
+  transform: translateY(-1px) scale(1.03); /* Reduced transform effect */
 }
 
 .random-button:active {
@@ -174,16 +177,28 @@
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .floating-navigation {
-    padding: 0.4rem 0.8rem;
+    padding: 0.3rem 0.6rem;
+    bottom: 16px;
+    right: 16px;
   }
   
   .nav-info {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.7rem;
   }
   
   .nav-button {
-    height: 2.2rem;
-    padding: 0 0.8rem;
+    height: 1.9rem;
+    padding: 0 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .random-button {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+  
+  .nav-buttons {
+    gap: 0.25rem;
   }
 }
