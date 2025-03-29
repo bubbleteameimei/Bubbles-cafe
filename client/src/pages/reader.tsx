@@ -1237,9 +1237,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     variant="outline"
                     size="sm"
                     onClick={goToPreviousStory}
-                    className="h-8 px-2 bg-background hover:bg-background/80 w-24"
+                    className={`h-8 px-2 bg-background hover:bg-background/80 w-24 disabled:opacity-70 disabled:bg-gray-100/50 disabled:border-gray-200/50`}
                     disabled={posts.length <= 1 || isFirstStory}
-                    data-end-nav={isFirstStory}
                     title={isFirstStory ? "This is the first story" : "Go to previous story"}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
@@ -1253,9 +1252,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     variant="secondary"
                     size="sm"
                     onClick={goToRandomStory}
-                    className="h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none"
+                    className={`h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none disabled:opacity-70 disabled:bg-gray-100/50`}
                     disabled={posts.length <= 1}
-                    data-end-nav={posts.length <= 1}
                     aria-label="Random Story"
                     title={posts.length <= 1 ? "Need more stories to use random" : "Go to a random story"}
                   >
@@ -1267,9 +1265,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                     variant="outline"
                     size="sm"
                     onClick={goToNextStory}
-                    className="h-8 px-2 bg-background hover:bg-background/80 w-24"
+                    className={`h-8 px-2 bg-background hover:bg-background/80 w-24 disabled:opacity-70 disabled:bg-gray-100/50 disabled:border-gray-200/50`}
                     disabled={posts.length <= 1 || isLastStory}
-                    data-end-nav={isLastStory}
                     title={isLastStory ? "This is the last story" : "Go to next story"}
                   >
                     Next
@@ -1310,7 +1307,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
@@ -1332,7 +1329,7 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative"
+                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >

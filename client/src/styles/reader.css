@@ -358,6 +358,13 @@
   }
 }
 
+/* Navigation button styling - specifically for top nav */
+.nav-button-prev.at-boundary,
+.nav-button-next.at-boundary,
+.nav-button-random.at-boundary {
+  opacity: 0.3 !important; /* Use !important to override the Button component's default styles */
+}
+
 /* Floating navigation adjustments */
 .floating-navigation {
   position: fixed;
