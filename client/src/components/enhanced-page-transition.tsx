@@ -105,12 +105,13 @@ export function EnhancedPageTransition({
           variants={variants}
           transition={variants.transition}
           style={{
-            width: "100vw",
-            maxWidth: "100%",
+            width: "100%",
             display: "flex",
             flexDirection: "column",
-            minHeight: "100vh"
+            minHeight: "100vh",
+            overflow: "hidden"
           }}
+          className="w-full max-w-full mx-auto"
         >
           {children}
         </motion.div>

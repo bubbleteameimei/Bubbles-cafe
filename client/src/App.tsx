@@ -173,7 +173,7 @@ const AppContent = () => {
       {/* Main Content */}
       <main className="min-h-screen flex-1 flex flex-col bg-background overflow-x-hidden w-full max-w-full">
         <AutoHideNavbar />
-        <div className="w-full pt-20 lg:pt-6 flex-1 bg-background w-full max-w-full m-0 p-0 px-0 mx-0">
+        <div className="w-full pt-20 lg:pt-6 flex-1 bg-background max-w-full m-0 p-0 px-0 mx-0">
           <ErrorBoundary>
             <Switch>
               {/* Auth Routes */}
