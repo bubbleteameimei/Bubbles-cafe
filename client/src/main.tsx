@@ -10,8 +10,8 @@ import "./index.css";
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
 import { ScrollToTop } from "./components/ui/scroll-to-top";
-// Import the unified loading manager - just importing initializes it
-import "@/utils/unified-loading-manager";
+// Import simplified loading system
+import { LoadingProvider } from "./components/ui/simplified-loading";
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
 

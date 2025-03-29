@@ -1,5 +1,10 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { showLoading, hideLoading } from '../utils/unified-loading-manager';
+import React, { createContext, useContext, useCallback } from 'react';
+import { useLoading as useSimplifiedLoading } from '../components/ui/loading-screen';
+
+/**
+ * Compatibility layer for the old loading context
+ * Now using the simplified loading system
+ */
 
 interface LoadingContextType {
   isLoading: boolean;
@@ -12,56 +17,37 @@ interface LoadingContextType {
 const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadId, setLoadId] = useState<string | null>(null);
+  // Use the new simplified loading system
+  const { isLoading, showLoading, hideLoading } = useSimplifiedLoading();
 
-  // Show loading state with a minimum display duration
-  const showLoadingState = useCallback(() => {
-    setIsLoading(true);
-    // Use the unified loading system
-    const id = showLoading({
-      minimumLoadTime: 800,
-      debug: true
-    });
-    setLoadId(id);
-  }, []);
-
-  // Hide loading state
-  const hideLoadingState = useCallback(() => {
-    setIsLoading(false);
-    // Use the unified loading system
-    if (loadId) {
-      hideLoading(loadId);
-      setLoadId(null);
+  // Simple setter for compatibility
+  const setIsLoading = (loading: boolean) => {
+    if (loading) {
+      showLoading();
+    } else {
+      hideLoading();
     }
-  }, [loadId]);
+  };
 
   // Utility to wrap promises with loading state
   const withLoading = useCallback(async <T,>(promise: Promise<T>): Promise<T> => {
     try {
-      showLoadingState();
+      showLoading();
       return await promise;
     } finally {
       // Add a small delay to prevent flickering for very fast operations
       setTimeout(() => {
-        hideLoadingState();
+        hideLoading();
       }, 300);
     }
-  }, [showLoadingState, hideLoadingState]);
-
-  // Make sure loading state is reset when component unmounts
-  useEffect(() => {
-    return () => {
-      hideLoadingState();
-    };
-  }, [hideLoadingState]);
+  }, [showLoading, hideLoading]);
 
   return (
     <LoadingContext.Provider value={{ 
       isLoading, 
       setIsLoading, 
-      showLoading: showLoadingState, 
-      hideLoading: hideLoadingState, 
+      showLoading, 
+      hideLoading, 
       withLoading 
     }}>
       {children}

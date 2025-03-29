@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { LoadingOptions } from '../utils/unified-loading-manager';
-import { useLoading } from '../hooks/use-loading';
+import { useLoading } from '../components/ui/loading-screen';
 
 interface UnifiedLoadingScreenProps {
   isLoading?: boolean;
@@ -13,46 +12,25 @@ interface UnifiedLoadingScreenProps {
 }
 
 /**
- * A unified loading screen component that uses the new unified loading system
+ * A simple compatibility loading screen component
  * 
- * This component provides a drop-in replacement for the old ApiLoader component
- * while using the unified loading system behind the scenes.
+ * This component is a compatibility layer for the old loading system
  */
 const UnifiedLoadingScreen: React.FC<UnifiedLoadingScreenProps> = ({
   isLoading = false,
   children,
-  minimumLoadTime = 500,
-  showDelay = 300,
-  maximumLoadTime = 5000,
-  debug = false,
-  message,
 }) => {
   // Get the loading state and controls from the hook
-  const [loadingState, { startLoading, stopLoading }] = useLoading();
+  const { showLoading, hideLoading } = useLoading();
   
   // Handle loading state changes
   useEffect(() => {
     if (isLoading) {
-      startLoading({
-        minimumLoadTime,
-        showDelay,
-        maximumLoadTime,
-        debug,
-        message,
-      });
+      showLoading();
     } else {
-      stopLoading();
+      hideLoading();
     }
-  }, [
-    isLoading,
-    minimumLoadTime,
-    showDelay,
-    maximumLoadTime,
-    debug,
-    message,
-    startLoading,
-    stopLoading,
-  ]);
+  }, [isLoading, showLoading, hideLoading]);
   
   // Render only children since the loading screen is managed globally
   return <>{children}</>;

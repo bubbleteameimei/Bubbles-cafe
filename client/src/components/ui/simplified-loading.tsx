@@ -1,4 +1,4 @@
-import { memo, useEffect, createContext, useContext, useState } from "react";
+import { memo, useEffect, useState, createContext, useContext } from "react";
 
 /**
  * Super simplified loading screen and context
@@ -19,14 +19,15 @@ const LoadingContext = createContext<LoadingContextType>({
 });
 
 /**
- * useLoading Hook - this needs to be defined before any component that uses it
- * This helps React Fast Refresh work correctly
+ * React hook for accessing loading state
  */
 export function useLoading() {
   return useContext(LoadingContext);
 }
 
-// Export simple provider component
+/**
+ * Loading Provider Component
+ */
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,7 +42,7 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Make the loading context available globally for API compatibility
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Expose the loading context to window for compatibility with unified-loading-manager
+      // Expose the loading context to window for compatibility
       (window as any).__SIMPLIFIED_LOADING_CONTEXT__ = {
         isLoading,
         showLoading,
@@ -85,12 +86,7 @@ export const LoadingScreen = memo(() => {
 
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50" 
-      style={{ 
-        width: '100vw', 
-        height: '100vh',
-        zIndex: 9999999
-      }}
+      className="loading-overlay"
       aria-live="polite"
       role="status"
     >
@@ -110,42 +106,70 @@ export const LoadingScreen = memo(() => {
       </div>
 
       <style>{`
+        .loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100vw;
+          height: 100vh;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #000000;
+          z-index: 9999999;
+          isolation: isolate;
+        }
+
         .loader {
           display: flex;
           gap: 0.5rem;
         }
 
         .loader span {
+          display: inline-block;
           font-size: 22px;
           font-family: monospace;
           font-weight: 600;
-          animation: blur 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
           line-height: 20px;
           letter-spacing: 0.2em;
           color: white;
           text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.4);
-          opacity: 1;
-          transform: translateZ(0);
         }
 
-        .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.25s; }
-        .loader span:nth-child(3) { animation-delay: 0.5s; }
-        .loader span:nth-child(4) { animation-delay: 0.75s; }
-        .loader span:nth-child(5) { animation-delay: 1.0s; }
-        .loader span:nth-child(6) { animation-delay: 1.25s; }
-        .loader span:nth-child(7) { animation-delay: 1.5s; }
+        .loader span:nth-child(1) { animation: pulse 1.5s infinite 0.0s; }
+        .loader span:nth-child(2) { animation: pulse 1.5s infinite 0.1s; }
+        .loader span:nth-child(3) { animation: pulse 1.5s infinite 0.2s; }
+        .loader span:nth-child(4) { animation: pulse 1.5s infinite 0.3s; }
+        .loader span:nth-child(5) { animation: pulse 1.5s infinite 0.4s; }
+        .loader span:nth-child(6) { animation: pulse 1.5s infinite 0.5s; }
+        .loader span:nth-child(7) { animation: pulse 1.5s infinite 0.6s; }
 
-        @keyframes blur {
+        @keyframes pulse {
           0%, 100% {
-            filter: blur(0px);
+            transform: scale(1);
             opacity: 1;
           }
-          
           50% {
-            filter: blur(2px);
+            transform: scale(0.95);
             opacity: 0.8;
           }
+        }
+
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
         }
       `}</style>
     </div>

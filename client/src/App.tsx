@@ -9,7 +9,6 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
-import { LoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -24,13 +23,8 @@ import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
 // Import the global loading provider
-import { LoadingProvider } from './contexts/loading-context';
-// Import UnifiedLoadingScreen for Suspense fallback
-import UnifiedLoadingScreen from './components/UnifiedLoadingScreen';
-// Import from unified loading system
-import { cleanupLoadingSystem } from './utils/unified-loading-manager';
-// Import unified loading manager functions
-import { hideLoading } from './utils/unified-loading-manager';
+// Import our simplified LoadingProvider
+import { LoadingProvider, LoadingScreen } from './components/ui/loading-screen';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
@@ -90,14 +84,7 @@ const withSuspense = <P extends Record<string, any>>(
       >
         <React.Suspense 
           fallback={
-            <UnifiedLoadingScreen 
-              isLoading={true}
-              minimumLoadTime={800}
-              maximumLoadTime={3000} // 3 seconds maximum to prevent endless loading
-              debug={true}
-            >
-              <div aria-hidden="true" className="h-[300px] w-full"></div>
-            </UnifiedLoadingScreen>
+            <LoadingScreen />
           }
         >
           {renderSuspendedComponent()}
@@ -367,11 +354,11 @@ const AppContent = () => {
 function App() {
   usePerformanceMonitoring();
 
-  // Cleanup the loading system when component unmounts
+  // No need to clean up the simplified loading system
   useEffect(() => {
     return () => {
-      // Cleanup loading manager resources
-      cleanupLoadingSystem();
+      // Simple cleanup function
+      console.log("[App] App unmounted");
     };
   }, []);
 
