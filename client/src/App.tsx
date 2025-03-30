@@ -29,8 +29,8 @@ import { LoadingProvider } from './hooks/use-loading.tsx';
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
-// Import our feedback components 
-import { ConditionalFeedbackButton } from './components/feedback/ConditionalFeedbackButton';
+// Import FeedbackButton component for site-wide feedback
+import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 
@@ -280,8 +280,6 @@ function App() {
     initWordPressSync();
   }, []);
 
-  // ConditionalFeedbackButton will internally check if it should be displayed
-  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -299,8 +297,7 @@ function App() {
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
                         <ScrollToTopButton />
-                        {/* Only show FeedbackButton on the community page */}
-                        <ConditionalFeedbackButton />
+                        <FeedbackButton />
                         
                         {/* Toast notifications */}
                         <Toaster />
