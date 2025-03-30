@@ -10,7 +10,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Set to false for normal scroll-based behavior
+  // Set to false for normal scroll-based behavior 
   const forceVisible = false;
 
   useEffect(() => {
@@ -40,29 +40,30 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   const buttonStyles: React.CSSProperties = {
     position: 'fixed',
     zIndex: 9999,
-    bottom: '30px',
-    ...(position === 'bottom-right' ? { right: '30px' } : { left: '30px' }),
-    width: '50px',
-    height: '50px',
+    bottom: '25px',
+    right: position === 'bottom-right' ? '25px' : 'auto',
+    left: position === 'bottom-left' ? '25px' : 'auto',
+    width: '40px',
+    height: '40px',
     borderRadius: '50%',
-    backgroundColor: 'white',
-    color: '#333',
-    border: '2px solid #eaeaea',
+    backgroundColor: '#f5f5f5',
+    color: '#666',
+    border: '1px solid #e0e0e0',
     cursor: 'pointer',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    transition: 'opacity 0.3s, transform 0.3s',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     opacity: (isVisible || forceVisible) ? 1 : 0,
-    transform: (isVisible || forceVisible) ? 'scale(1)' : 'scale(0.8)',
+    transform: (isVisible || forceVisible) ? 'scale(1)' : 'scale(0.7)',
     pointerEvents: (isVisible || forceVisible) ? 'auto' : 'none'
   };
 
   const buttonHoverStyle: React.CSSProperties = {
-    backgroundColor: '#f5f5f5',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    transform: 'translateY(-2px)'
+    backgroundColor: '#fafafa',
+    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.12)',
+    transform: 'translateY(-1px)'
   };
 
   const [isHovered, setIsHovered] = useState(false);
@@ -80,7 +81,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       onTouchStart={() => setIsHovered(true)}
       onTouchEnd={() => setIsHovered(false)}
     >
-      <ArrowUp size={24} />
+      <ArrowUp size={18} />
     </button>
   );
 };

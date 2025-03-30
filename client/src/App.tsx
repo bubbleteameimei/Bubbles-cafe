@@ -18,8 +18,7 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
-// Import scroll-to-top styles
-import './styles/scroll-to-top.css';
+// Scroll-to-top now uses inline styles
 // Using EnhancedPageTransition for smooth page transitions
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
