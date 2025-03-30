@@ -566,8 +566,8 @@ html.dark *, html.light * {
   }
 
   /* Scroll to top button */
-  /* Removed .scroll-to-top class to fix positioning conflicts
-     Now using the ScrollToTopButton component's internal positioning */
+  /* All scroll-to-top button related CSS has been completely removed
+     as the scroll-to-top feature has been removed from the application */
 }
 
 /* Headers with specific font assignments */

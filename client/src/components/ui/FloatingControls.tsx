@@ -1,22 +1,21 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import FullscreenButton from "@/components/FullscreenButton";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
+// ScrollToTopButton import removed as the feature has been completely removed
 
 interface FloatingControlsProps {
   position?: "right" | "left";
   className?: string;
   showLabels?: boolean;
   showFullscreenButton?: boolean;
-  showScrollToTopButton?: boolean;
+  // showScrollToTopButton property removed as the feature has been completely removed
 }
 
 const FloatingControls: React.FC<FloatingControlsProps> = ({
   position = "right",
   className = "",
   showLabels = false,
-  showFullscreenButton = true,
-  showScrollToTopButton = true
+  showFullscreenButton = true
 }) => {
   // Position classes
   const positionClasses = {
@@ -40,15 +39,7 @@ const FloatingControls: React.FC<FloatingControlsProps> = ({
         </div>
       )}
       
-      {showScrollToTopButton && (
-        <div className="mt-4">
-          <ScrollToTopButton 
-            position={position === "right" ? "bottom-right" : "bottom-left"} 
-            showLabel={showLabels}
-            className="!static" 
-          />
-        </div>
-      )}
+      {/* ScrollToTopButton section removed as the feature has been completely removed */}
     </div>
   );
 };

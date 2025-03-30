@@ -11,7 +11,7 @@ import "./index.css";
 // Import the preloader script
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
-// ScrollToTop removed - using ScrollToTopButton from App.tsx instead
+// All scroll to top functionality has been completely removed from the application
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
