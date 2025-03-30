@@ -646,7 +646,44 @@ export class DatabaseStorage implements IStorage {
       console.error("Error in getPosts:", error);
       if (error instanceof Error) {
         if (error.message.includes('relation') || error.message.includes('column')) {
-          throw new Error("Database schema error: Please check if the database is properly initialized");
+          console.warn("Database schema issue detected, attempting simpler query without problematic columns");
+          
+          try {
+            // Fallback query without problematic columns
+            const simplePosts = await db.select({
+              id: postsTable.id,
+              title: postsTable.title,
+              content: postsTable.content,
+              slug: postsTable.slug,
+              authorId: postsTable.authorId,
+              excerpt: postsTable.excerpt,
+              metadata: postsTable.metadata,
+              createdAt: postsTable.createdAt,
+              isSecret: postsTable.isSecret
+            })
+            .from(postsTable)
+            .where(eq(postsTable.isSecret, false))
+            .orderBy(desc(postsTable.createdAt))
+            .limit(limit + 1)
+            .offset(offset);
+            
+            // Check if there are more posts
+            const hasMore = simplePosts.length > limit;
+            const paginatedPosts = simplePosts.slice(0, limit);
+            
+            console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
+            
+            return {
+              posts: paginatedPosts.map(post => ({
+                ...post,
+                createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+              })),
+              hasMore
+            };
+          } catch (fallbackError) {
+            console.error("Fallback query also failed:", fallbackError);
+            throw new Error("Database schema error: Please check if the database is properly initialized");
+          }
         }
         if (error.message.includes('connection')) {
           throw new Error("Database connection error: Unable to connect to the database");

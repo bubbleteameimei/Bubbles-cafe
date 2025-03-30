@@ -26,6 +26,7 @@ export const posts = pgTable("posts", {
   slug: text("slug").notNull().unique(),
   authorId: integer("author_id").references(() => users.id).notNull(),
   isSecret: boolean("is_secret").default(false).notNull(),
+  isAdminPost: boolean("is_admin_post").default(false),
   matureContent: boolean("mature_content").default(false).notNull(),
   themeCategory: text("theme_category"),
   readingTimeMinutes: integer("reading_time_minutes"),
@@ -397,6 +398,8 @@ export type User = typeof users.$inferSelect;
 export type PostMetadata = {
   isCommunityPost?: boolean;
   isApproved?: boolean;
+  isAdminPost?: boolean; // Added to explicitly mark admin posts
+  isHidden?: boolean; // Added to control visibility
   status?: 'pending' | 'approved' | 'publish';
   triggerWarnings?: string[];
   themeCategory?: string;
@@ -407,6 +410,7 @@ export type PostMetadata = {
   originalAuthor?: number;
   featuredMedia?: number;
   categories?: number[];
+  [key: string]: any; // Allow for any additional properties
 };
 
 // Update insertPostSchema to accept WordPress fields
@@ -417,12 +421,15 @@ export const insertPostSchema = z.object({
   authorId: z.number(),
   excerpt: z.string().optional(),
   isSecret: z.boolean().optional(),
+  isAdminPost: z.boolean().optional(),
   matureContent: z.boolean().optional(),
   themeCategory: z.string().optional(),
   readingTimeMinutes: z.number().optional(),
   metadata: z.object({
     isCommunityPost: z.boolean().optional(),
     isApproved: z.boolean().optional(),
+    isAdminPost: z.boolean().optional(),
+    isHidden: z.boolean().optional(),
     status: z.enum(['pending', 'approved', 'publish']).optional(),
     triggerWarnings: z.array(z.string()).optional(),
     themeCategory: z.string().optional(),

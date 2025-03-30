@@ -118,6 +118,8 @@ import CookiePolicyPage from './pages/legal/cookie-policy';
 
 // Community Pages
 import CommunityPage from './pages/community';
+import SubmitStoryPage from './pages/submit-story';
+import EditStoryPage from './pages/edit-story';
 import FeedbackPage from './pages/feedback';
 import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
 import GuidelinesPage from './pages/support/guidelines';
@@ -222,6 +224,10 @@ const AppContent = () => {
 
               {/* Community Routes */}
               <Route path="/community" component={CommunityPage} />
+              <Route path="/submit-story" component={SubmitStoryPage} />
+              <Route path="/edit-story/:id">
+                {(params) => <EditStoryPage params={params} />}
+              </Route>
               <Route path="/feedback" component={FeedbackPage} />
               <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
               <Route path="/support/guidelines" component={GuidelinesPage} />

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CommunityPostCard } from "@/components/community/community-post-card";
+import { CommunityReaderCard, ExtendedUser, ExtendedPost as CommunityReaderPost } from "@/components/community/community-reader-card";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,19 +32,15 @@ import {
   ArrowUp, 
   MessageSquare,
   Calendar,
-  EyeIcon
+  EyeIcon,
+  ListFilter
 } from "lucide-react";
 
-// Extended Post interface with UI-specific properties
-interface ExtendedPost extends Post {
-  author?: User;
-  likes: number;
-  commentCount: number;
-  views: number;
-  hasLiked?: boolean;
-  isFlagged?: boolean;
-  flagCount?: number;
-}
+// Import community reader styles
+import "@/styles/community-reader.css";
+
+// Extended Post interface with UI-specific properties - use same type as community-reader-card.tsx
+type ExtendedPost = CommunityReaderPost;
 
 // Response shape from the API
 interface PostsResponse {
@@ -64,6 +60,7 @@ export default function CommunityPage() {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [activeTab, setActiveTab] = useState("all");
+  const [view, setView] = useState<"grid" | "list">("list");
   
   // Fetch posts with filters
   const { 
@@ -72,13 +69,13 @@ export default function CommunityPage() {
     isError, 
     error, 
     refetch 
-  } = useQuery<PostsResponse>({
+  } = useQuery({
     queryKey: ['/api/posts/community', currentPage, category, sortBy, activeTab],
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
       params.append('page', String(currentPage));
-      params.append('limit', '12');
+      params.append('limit', String(view === "list" ? 6 : 12));
       
       if (category !== 'all') {
         params.append('category', category);
@@ -110,9 +107,10 @@ export default function CommunityPage() {
       
       const response = await fetch(`/api/posts/community?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch community posts');
-      return response.json();
+      const result: PostsResponse = await response.json();
+      return result;
     },
-    keepPreviousData: true
+    staleTime: 60000 // 1 minute
   });
   
   // Handle search submission
@@ -129,7 +127,12 @@ export default function CommunityPage() {
     setCurrentPage(page);
   };
   
-  const totalPages = data ? Math.ceil(data.totalPosts / 12) : 0;
+  const totalPages = data ? Math.ceil(data.totalPosts / (view === "list" ? 6 : 12)) : 0;
+
+  // Handle edit post
+  const handleEditPost = (post: ExtendedPost) => {
+    navigate(`/edit-story/${post.id}`);
+  };
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -232,17 +235,42 @@ export default function CommunityPage() {
                 </Select>
               </div>
               
-              <Button variant="outline" onClick={() => refetch()} className="flex-shrink-0" aria-label="Refresh">
-                <RefreshCcw className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant={view === "list" ? "default" : "outline"} 
+                  size="icon" 
+                  onClick={() => setView("list")}
+                  className="flex-shrink-0" 
+                  aria-label="List view"
+                >
+                  <ListFilter className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={view === "grid" ? "default" : "outline"}
+                  size="icon" 
+                  onClick={() => setView("grid")}
+                  className="flex-shrink-0" 
+                  aria-label="Grid view"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => refetch()} 
+                  className="flex-shrink-0" 
+                  aria-label="Refresh"
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
           <TabsContent value={activeTab} className="mt-0">
             {isLoading ? (
               // Loading skeleton
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array(6).fill(0).map((_, i) => (
+              <div className={view === "list" ? "space-y-6" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+                {Array(view === "list" ? 3 : 6).fill(0).map((_, i) => (
                   <div key={i} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center space-x-2">
                       <Skeleton className="h-10 w-10 rounded-full" />
@@ -292,14 +320,15 @@ export default function CommunityPage() {
                 )}
               </div>
             ) : (
-              // Post grid
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              // Posts with responsive view toggle
+              <div className={view === "list" ? "space-y-6 community-container" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
                 {filteredPosts.map((post) => (
-                  <CommunityPostCard
+                  <CommunityReaderCard
                     key={post.id}
                     post={post}
                     isAuthenticated={isAuthenticated}
-                    currentUser={user}
+                    currentUser={user as ExtendedUser}
+                    onEdit={handleEditPost}
                   />
                 ))}
               </div>

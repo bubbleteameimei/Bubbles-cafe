@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import PostEditor from "@/components/admin/post-editor";
+import SimplePostEditor from "@/components/community/simple-post-editor";
 import { Card } from "@/components/ui/card";
 
 export default function SubmitStoryPage() {
@@ -11,13 +11,11 @@ export default function SubmitStoryPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Share Your Horror Story</h1>
           <p className="text-muted-foreground">
-            Your story will be reviewed by our community moderators to ensure a safe 
-            and enjoyable space for everyone.
+            Tell your scary tale and share it with our horror community.
           </p>
         </div>
 
-        <PostEditor 
-          isCommunityPost={true}
+        <SimplePostEditor 
           onClose={() => navigate("/community")}
         />
       </Card>
