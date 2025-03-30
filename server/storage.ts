@@ -616,18 +616,91 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Posts operations
-  async getPosts(page: number = 1, limit: number = 16): Promise<{ posts: Post[], hasMore: boolean }> {
+  async getPosts(
+    page: number = 1, 
+    limit: number = 16, 
+    filters: {
+      search?: string;
+      authorId?: number;
+      isCommunityPost?: boolean;
+      isAdminPost?: boolean;
+      category?: string;
+      sort?: string;
+      order?: string;
+    } = {}
+  ): Promise<{ posts: Post[], hasMore: boolean }> {
     try {
-      console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}`);
+      console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
       const offset = (page - 1) * limit;
 
-      // Get posts for current page with increased limit
-      const posts = await db.select()
+      // Start building the query
+      let query = db.select()
         .from(postsTable)
-        .where(eq(postsTable.isSecret, false))
-        .orderBy(desc(postsTable.createdAt))
-        .limit(limit + 1) // Fetch one extra to check if there are more
-        .offset(offset);
+        .where(eq(postsTable.isSecret, false));
+      
+      // Apply filtering based on metadata for community posts
+      if (filters.authorId) {
+        query = query.where(eq(postsTable.authorId, filters.authorId));
+      }
+      
+      // Apply sorting
+      if (filters.sort && filters.order) {
+        if (filters.sort === 'date') {
+          query = query.orderBy(
+            filters.order === 'desc' ? desc(postsTable.createdAt) : postsTable.createdAt
+          );
+        } else {
+          // Default sort by creation date desc
+          query = query.orderBy(desc(postsTable.createdAt));
+        }
+      } else {
+        // Default sort by creation date desc
+        query = query.orderBy(desc(postsTable.createdAt));
+      }
+      
+      // Execute the query with limit and offset
+      query = query.limit(limit + 1).offset(offset);
+      
+      // Execute the query
+      let posts = await query;
+      
+      // Post-query filtering for metadata fields like isCommunityPost and isAdminPost
+      // This avoids database schema issues when these fields are missing
+      if (filters.isCommunityPost !== undefined || filters.isAdminPost !== undefined || filters.category) {
+        posts = posts.filter(post => {
+          const metadata = post.metadata || {};
+          
+          // Check for community post flag in metadata
+          if (filters.isCommunityPost !== undefined) {
+            const isCommunityPost = metadata.isCommunityPost === true;
+            if (isCommunityPost !== filters.isCommunityPost) return false;
+          }
+          
+          // Check for admin post flag in metadata
+          if (filters.isAdminPost !== undefined) {
+            const isAdminPost = metadata.isAdminPost === true;
+            if (isAdminPost !== filters.isAdminPost) return false;
+          }
+          
+          // Filter by category if specified
+          if (filters.category) {
+            const themeCategory = metadata.themeCategory;
+            if (themeCategory !== filters.category) return false;
+          }
+          
+          return true;
+        });
+      }
+      
+      // Apply text search filter if specified
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        posts = posts.filter(post => 
+          post.title.toLowerCase().includes(searchTerm) || 
+          post.content.toLowerCase().includes(searchTerm) ||
+          (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
+        );
+      }
 
       // Check if there are more posts
       const hasMore = posts.length > limit;
@@ -649,6 +722,9 @@ export class DatabaseStorage implements IStorage {
           console.warn("Database schema issue detected, attempting simpler query without problematic columns");
           
           try {
+            // Define offset here to avoid ReferenceError in fallback query
+            const offset = (page - 1) * limit;
+            
             // Fallback query without problematic columns
             const simplePosts = await db.select({
               id: postsTable.id,

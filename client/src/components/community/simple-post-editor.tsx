@@ -41,17 +41,21 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
     defaultValues: {
       title: '',
       content: '',
-      themeCategory: '',
+      themeCategory: 'NONE',
     },
   });
 
   // Create/update post mutation
   const { mutate: submitPost, isPending } = useMutation({
     mutationFn: async (data: PostFormValues) => {
-      // Always mark as community post
+      // Always mark as community post in the metadata
       const postData = {
         ...data,
-        isCommunityPost: true
+        metadata: {
+          isCommunityPost: true,
+          isAdminPost: false,
+          themeCategory: data.themeCategory === 'NONE' ? null : data.themeCategory
+        }
       };
       
       if (postId) {
@@ -173,7 +177,7 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                           <SelectValue placeholder="Select a horror theme" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="NONE">None</SelectItem>
                           {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
                             <SelectItem key={key} value={key}>
                               {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
