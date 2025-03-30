@@ -228,6 +228,10 @@ const AppContent = () => {
               <Route path="/edit-story/:id">
                 {(params) => <EditStoryPage params={params} />}
               </Route>
+              {/* Community Reader Route - Using the same reader component but with community flag */}
+              <Route path="/community-story/:slug">
+                {(params) => <ReaderPage params={params} isCommunityContent={true} />}
+              </Route>
               <Route path="/feedback" component={FeedbackPage} />
               <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
               <Route path="/support/guidelines" component={GuidelinesPage} />
@@ -290,11 +294,12 @@ function App() {
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
-    // Check if current page is index, reader, or community page
+    // Check if current page is index, reader, community page, or community-story
     const shouldHideButton = 
       currentPath === "/" || 
       currentPath === "/index" || 
       currentPath.startsWith("/reader") || 
+      currentPath.startsWith("/community-story") || 
       currentPath === "/community";
       
     return !shouldHideButton ? <FeedbackButton /> : null;

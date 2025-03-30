@@ -221,7 +221,14 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       const response = await fetch(`/api/posts/${post.id}/flag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ 
+          reason,
+          postId: post.id,
+          postTitle: post.title,
+          reportedAt: new Date().toISOString(),
+          reportType: 'inappropriate_content',
+          reporterName: currentUser?.username || 'Anonymous'
+        }),
       });
       
       if (!response.ok) throw new Error('Failed to flag post');
@@ -231,18 +238,33 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       setShowFlagDialog(false);
       setFlagReason('');
       
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+      // Update local state optimistically to show the post as flagged
+      queryClient.setQueryData(['/api/posts/community'], (oldData: any) => {
+        if (!oldData || !oldData.posts) return oldData;
+        
+        return {
+          ...oldData,
+          posts: oldData.posts.map((p: any) => 
+            p.id === post.id ? { ...p, isFlagged: true } : p
+          )
+        };
+      });
       
       toast({
-        title: 'Content Reported',
-        description: 'Thank you for reporting this content. Our moderators will review it.',
+        title: 'Report Submitted Successfully',
+        description: 'Thank you for keeping our community safe. Our moderation team will review this content shortly.',
+        duration: 5000,
       });
+      
+      // Refresh the data from the server
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message,
+        title: 'Report Submission Failed',
+        description: error.message || 'There was an issue submitting your report. Please try again later.',
         variant: 'destructive',
+        duration: 5000,
       });
     },
   });
@@ -294,8 +316,9 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
     setShowFlagDialog(true);
   };
   
-  // Submit flag reason
+  // Submit flag reason with enhanced validation
   const submitFlag = () => {
+    // Check if reason is provided and meets minimum length
     if (!flagReason.trim()) {
       toast({
         title: 'Reason Required',
@@ -305,12 +328,25 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       return;
     }
     
+    if (flagReason.trim().length < 10) {
+      toast({
+        title: 'More Details Needed',
+        description: 'Please provide more specific details about the issue (minimum 10 characters).',
+        variant: 'default',
+      });
+      return;
+    }
+    
+    // All validation passed, submit the report
     flagMutation.mutate(flagReason);
+    
+    // Log reporting activity for moderation purposes (no personal info)
+    console.log(`Report submitted for post ID: ${post.id}, Title: "${post.title.substring(0, 20)}..."`);
   };
   
   // Copy post link to clipboard
   const copyLink = () => {
-    const url = `${window.location.origin}/reader/${post.slug}`;
+    const url = `${window.location.origin}/community-story/${post.slug}`;
     navigator.clipboard.writeText(url).then(
       () => {
         setIsCopied(true);
@@ -337,7 +373,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       navigator.share({
         title: post.title,
         text: post.excerpt || createExcerpt(post.content),
-        url: `${window.location.origin}/reader/${post.slug}`,
+        url: `${window.location.origin}/community-story/${post.slug}`,
       }).catch(error => {
         console.error('Error sharing:', error);
       });
@@ -347,9 +383,93 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   };
   
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md mb-6 reader-card">
+    <Card 
+      className="overflow-hidden transition-all hover:shadow-md mb-6 reader-card relative cursor-pointer"
+      onClick={() => navigate(`/community-story/${post.slug}`)}
+    >
+      {/* Add a wrapper div to prevent the card click when interacting with menu */}
+      <div onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            align="end"
+            sideOffset={8}
+            className="w-[200px] bg-card p-1 shadow-lg rounded-md border border-border animate-in zoom-in-90 duration-200"
+          >
+            <DropdownMenuItem 
+              onClick={() => navigate(`/community-story/${post.slug}`)}
+              className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              <Eye className="h-4 w-4 mr-2 text-primary/70" />
+              Read Story
+            </DropdownMenuItem>
+            
+            {isAuthor && (
+              <>
+                <DropdownMenuItem 
+                  onClick={handleEditClick}
+                  className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                >
+                  <Edit className="h-4 w-4 mr-2 text-blue-500/70" />
+                  Edit Story
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleDeleteClick} 
+                  className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-destructive/10 text-destructive hover:text-destructive cursor-pointer"
+                >
+                  <Trash className="h-4 w-4 mr-2 text-destructive/70" />
+                  Delete Story
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            <DropdownMenuItem 
+              onClick={copyLink}
+              className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              {isCopied ? (
+                <Check className="h-4 w-4 mr-2 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4 mr-2 text-teal-500/70" />
+              )}
+              Copy Link
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={sharePost}
+              className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              <Share className="h-4 w-4 mr-2 text-indigo-500/70" />
+              Share
+            </DropdownMenuItem>
+            
+            {/* Always show Report Story option, but disable for author or if already reported */}
+            <DropdownMenuItem 
+              onClick={handleFlag} 
+              disabled={isAuthor || post.isFlagged}
+              className={`flex items-center rounded-sm px-3 py-2 text-sm ${
+                isAuthor ? 
+                "text-muted-foreground cursor-not-allowed" : 
+                post.isFlagged ? 
+                "text-amber-600 cursor-not-allowed" : 
+                "hover:bg-amber-50 hover:text-amber-800 text-amber-700 cursor-pointer"
+              }`}
+            >
+              <Flag className={`h-4 w-4 mr-2 ${
+                post.isFlagged ? "text-amber-600" : "text-amber-500/70"
+              }`} />
+              {post.isFlagged ? 'Reported' : 'Report Story'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10 border">
               <AvatarImage src={post.author?.avatar || ''} alt={post.author?.username || 'Author'} />
@@ -360,61 +480,11 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
               <p className="text-xs text-muted-foreground">{timeAgo}</p>
             </div>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate(`/reader/${post.slug}`)}>
-                <Eye className="h-4 w-4 mr-2" />
-                Read Story
-              </DropdownMenuItem>
-              
-              {isAuthor && (
-                <>
-                  <DropdownMenuItem onClick={handleEditClick}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Story
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDeleteClick} className="text-destructive focus:text-destructive">
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete Story
-                  </DropdownMenuItem>
-                </>
-              )}
-              
-              <DropdownMenuItem onClick={copyLink}>
-                {isCopied ? (
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4 mr-2" />
-                )}
-                Copy Link
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={sharePost}>
-                <Share className="h-4 w-4 mr-2" />
-                Share
-              </DropdownMenuItem>
-              {isAuthenticated && !isAuthor && (
-                <DropdownMenuItem onClick={handleFlag} disabled={post.isFlagged}>
-                  <Flag className="h-4 w-4 mr-2" />
-                  {post.isFlagged ? 'Reported' : 'Report Story'}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </CardHeader>
       
       <CardContent className="pb-4">
-        <CardTitle 
-          className="text-2xl mb-3 hover:text-primary cursor-pointer font-serif"
-          onClick={() => navigate(`/reader/${post.slug}`)}
-        >
+        <CardTitle className="text-2xl mb-3 font-serif">
           {post.title}
         </CardTitle>
         
@@ -451,7 +521,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
               variant="ghost" 
               size="sm" 
               className="flex items-center gap-1 px-2"
-              onClick={() => navigate(`/reader/${post.slug}#comments`)}
+              onClick={() => navigate(`/community-story/${post.slug}#comments`)}
             >
               <MessageSquare className="h-4 w-4" />
               <span>{post.commentCount}</span>
@@ -492,38 +562,73 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
         </DialogContent>
       </Dialog>
       
-      {/* Flag Dialog */}
+      {/* Enhanced Flag Dialog */}
       <Dialog open={showFlagDialog} onOpenChange={setShowFlagDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Report Content</DialogTitle>
-            <DialogDescription>
-              Please let us know why you're reporting this content. This will help our moderators review it appropriately.
+            <DialogTitle className="flex items-center text-xl">
+              <Flag className="h-5 w-5 mr-2 text-amber-500" />
+              Report Inappropriate Content
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm">
+              Please help us maintain community standards by providing details about why this content is being reported.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <textarea
-              className="w-full min-h-[100px] p-3 border rounded-md"
-              placeholder="Please explain why you're reporting this content..."
-              value={flagReason}
-              onChange={(e) => setFlagReason(e.target.value)}
-            />
+          <div className="mt-2">
+            <div className="bg-muted/40 p-3 rounded-md mb-4 border border-muted">
+              <h4 className="font-medium text-sm mb-1 text-primary/90">Reporting Content:</h4>
+              <p className="text-sm font-medium truncate">{post.title}</p>
+              <p className="text-xs text-muted-foreground mt-1">By {post.author?.username || 'Anonymous'}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="flag-reason" className="text-sm font-medium">
+                Reason for Reporting
+              </label>
+              <textarea
+                id="flag-reason"
+                className="w-full min-h-[120px] p-3 border rounded-md text-sm focus:ring-1 focus:ring-primary/30 focus:border-primary/70 transition-colors"
+                placeholder="Please provide specific details about why this content violates community guidelines..."
+                value={flagReason}
+                onChange={(e) => setFlagReason(e.target.value)}
+              />
+              {flagReason.length < 10 && flagReason.length > 0 && (
+                <p className="text-xs text-amber-600">Please provide more details (minimum 10 characters)</p>
+              )}
+              <p className="text-xs text-muted-foreground pt-1">
+                Your report will be reviewed by our moderation team. Thank you for helping maintain a positive community experience.
+              </p>
+            </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button
               variant="outline"
-              onClick={() => setShowFlagDialog(false)}
+              onClick={() => {
+                setShowFlagDialog(false);
+                setFlagReason(''); // Clear input on cancel
+              }}
+              className="border-slate-200"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={submitFlag}
-              disabled={flagMutation.isPending || !flagReason.trim()}
+              disabled={flagMutation.isPending || flagReason.length < 10}
+              className="gap-2"
             >
-              {flagMutation.isPending ? 'Submitting...' : 'Submit Report'}
+              {flagMutation.isPending ? (
+                <>
+                  <span className="animate-pulse">Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Flag className="h-4 w-4" />
+                  Submit Report
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

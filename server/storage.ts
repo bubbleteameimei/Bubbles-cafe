@@ -726,6 +726,8 @@ export class DatabaseStorage implements IStorage {
             const offset = (page - 1) * limit;
             
             // Fallback query without problematic columns
+            // Use jsonb metadata field directly when available 
+            // This is the most reliable approach as it doesn't depend on columns that might not exist
             const simplePosts = await db.select({
               id: postsTable.id,
               title: postsTable.title,
@@ -743,9 +745,48 @@ export class DatabaseStorage implements IStorage {
             .limit(limit + 1)
             .offset(offset);
             
+            // Now apply the filtering based on metadata fields
+            let filteredPosts = simplePosts;
+            
+            if (filters.isCommunityPost !== undefined || filters.isAdminPost !== undefined || filters.category) {
+              filteredPosts = simplePosts.filter(post => {
+                const metadata = post.metadata || {};
+                
+                // Check for community post flag in metadata
+                if (filters.isCommunityPost !== undefined) {
+                  const isCommunityPost = metadata.isCommunityPost === true;
+                  if (isCommunityPost !== filters.isCommunityPost) return false;
+                }
+                
+                // Check for admin post flag in metadata
+                if (filters.isAdminPost !== undefined) {
+                  const isAdminPost = metadata.isAdminPost === true;
+                  if (isAdminPost !== filters.isAdminPost) return false;
+                }
+                
+                // Filter by category if specified
+                if (filters.category) {
+                  const themeCategory = metadata.themeCategory;
+                  if (themeCategory !== filters.category) return false;
+                }
+                
+                return true;
+              });
+            }
+            
+            // Apply text search filter if specified
+            if (filters.search) {
+              const searchTerm = filters.search.toLowerCase();
+              filteredPosts = filteredPosts.filter(post => 
+                post.title.toLowerCase().includes(searchTerm) || 
+                post.content.toLowerCase().includes(searchTerm) ||
+                (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
+              );
+            }
+            
             // Check if there are more posts
-            const hasMore = simplePosts.length > limit;
-            const paginatedPosts = simplePosts.slice(0, limit);
+            const hasMore = filteredPosts.length > limit;
+            const paginatedPosts = filteredPosts.slice(0, limit);
             
             console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
             

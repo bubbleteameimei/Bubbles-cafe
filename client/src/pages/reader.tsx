@@ -84,9 +84,10 @@ const sanitizeHtmlContent = (html: string): string => {
 interface ReaderPageProps {
   slug?: string;
   params?: { slug?: string };
+  isCommunityContent?: boolean;
 }
 
-export default function ReaderPage({ slug, params }: ReaderPageProps) {
+export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
   // Log params for debugging
   console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
   // Extract slug from route params if provided
@@ -171,14 +172,16 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "posts", "reader", routeSlug],
+    queryKey: ["wordpress", "posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
-      console.log('[Reader] Fetching posts...', { routeSlug });
+      console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
       try {
         if (routeSlug) {
           // If slug is provided, fetch specific post
-          const response = await fetch(`/api/posts/${routeSlug}`);
-          if (!response.ok) throw new Error('Failed to fetch post');
+          // Use the community endpoint if this is community content
+          const endpoint = isCommunityContent ? `/api/posts/community/${routeSlug}` : `/api/posts/${routeSlug}`;
+          const response = await fetch(endpoint);
+          if (!response.ok) throw new Error(`Failed to fetch ${isCommunityContent ? 'community' : ''} post`);
           const post = await response.json();
           
           // Convert post to a format compatible with both WordPress and internal posts
@@ -233,7 +236,9 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
         
         // Try to fetch any posts to show something
         try {
-          const response = await fetch('/api/posts?limit=1');
+          // Try to fetch community posts if that's what we're looking for
+          const endpoint = isCommunityContent ? '/api/posts/community?limit=1' : '/api/posts?limit=1';
+          const response = await fetch(endpoint);
           if (response.ok) {
             const data = await response.json();
             if (data.posts && data.posts.length > 0) {
@@ -624,9 +629,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   const shareStory = async () => {
     const displayTitle = currentPost.title?.rendered || currentPost.title || 'Story';
     console.log('[Reader] Attempting native share:', displayTitle);
+    const shareText = isCommunityContent 
+      ? "Check out this community story on Bubble's Café!" 
+      : "Check out this story on Bubble's Café!";
     const shareData = {
       title: displayTitle,
-      text: "Check out this story on Bubble's Café!",
+      text: shareText,
       url: window.location.href
     };
 
@@ -1187,10 +1195,20 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             <div className="flex flex-col items-center mb-2 mt-0">
-              <h1
-                className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
-              />
+              <div className="relative flex flex-col items-center">
+                {isCommunityContent && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -top-7 bg-primary/10 text-foreground border-primary/20 mb-2"
+                  >
+                    Community Story
+                  </Badge>
+                )}
+                <h1
+                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                  dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
+                />
+              </div>
 
               <div className="flex flex-col items-center gap-1">
                 <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
