@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Padding Check</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      border: 1px solid #ff0000;
+      background-color: #f5f5f5;
+      padding: 20px;
+      margin: 20px;
+    }
+    
+    .padding-check {
+      border: 1px solid #0000ff;
+      padding: 20px;
+      background-color: #e0e0e0;
+    }
+    
+    #padding-display {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #eee;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Padding Check Tool</h1>
+    <div class="padding-check">
+      <p>This box has a blue border. The padding between the text and the border is part of this box's internal padding.</p>
+      <p>The container around this box has a red border. The space between the red and blue borders shows the container's padding.</p>
+    </div>
+    <div id="padding-display">
+      <p><strong>Container Padding:</strong> <span id="container-padding"></span></p>
+    </div>
+  </div>
+
+  <script>
+    // Get the computed style for the container
+    const container = document.querySelector('.container');
+    const computedStyle = window.getComputedStyle(container);
+    
+    // Display the padding values
+    document.getElementById('container-padding').textContent = `
+      Left: ${computedStyle.paddingLeft}, 
+      Right: ${computedStyle.paddingRight}, 
+      Top: ${computedStyle.paddingTop}, 
+      Bottom: ${computedStyle.paddingBottom}
+    `;
+  </script>
+</body>
+</html>

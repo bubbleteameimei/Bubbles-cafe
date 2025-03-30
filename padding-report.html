@@ -1,13 +1,4 @@
-/**
- * Simple HTML report to visualize padding changes.
- * This creates a visual representation of the CSS padding changes.
- */
-const fs = require('fs');
-
-function generateReport() {
-  console.log('Generating visual padding report...');
-  
-  const htmlReport = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -225,11 +216,4 @@ function generateReport() {
   </table>
   
 </body>
-</html>`;
-
-  // Write the HTML report to file
-  fs.writeFileSync('padding-report.html', htmlReport);
-  console.log('Report generated: padding-report.html');
-}
-
-generateReport();
+</html>

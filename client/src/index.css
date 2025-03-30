@@ -100,24 +100,9 @@
   }
 }
 
-/* Reader container responsive styles */
+/* Reader container responsive styles controlled by reader-fixes.css */
 @layer components {
-  .reader-container {
-    max-width: 700px;  /* Keeps text at a comfortable width */
-    margin: 40px auto; /* Centers the reader page */
-    padding: 20px;
-    line-height: 1.8;  /* Increases readability */
-    text-align: left;  /* Natural reading flow */
-    font-size: 1.2rem; /* Comfortable font size */
-  }
-
-  @media (max-width: 768px) {
-    .reader-container {
-      max-width: 90%;
-      padding: 15px;
-      font-size: 1rem;
-    }
-  }
+  /* Reader container styles moved to reader-fixes.css for better isolation */
 }
 
 /* Container fixes to prevent overflow and remove black borders */
@@ -132,11 +117,21 @@ div[class*="container"] {
   max-width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
   box-sizing: border-box !important;
   background-color: hsl(var(--background)) !important;
   border: none !important;
+}
+
+/* Exception for reader container - needs to be controlled by reader-fixes.css */
+.reader-container.story-content,
+.reader-page .reader-container,
+[data-reader-page="true"] .reader-container,
+[data-page="reader"] .reader-container {
+  /* Reset padding to allow reader-fixes.css to control it */
+  padding-left: initial !important;
+  padding-right: initial !important;
 }
 
 /* Specific styles for homepage background - make sure it doesn't bleed into other pages */
@@ -165,9 +160,13 @@ body:has(.home-page) .home-page-background {
   padding-top: 5px !important; /* Even more reduction for reader page */
 }
 
-/* Additional fix for reader page spacing */
-body:has(main:has([data-reader-page])) .container {
+/* Additional fix for reader page spacing - Container only, not story content */
+body:has(main:has([data-reader-page])) .container,
+.reader-page .container, 
+div[data-reader-page="true"] .container,
+[data-page="reader"] .container {
   padding-top: 0 !important;
+  /* Remove the padding override for left/right to allow reader-fixes.css to control this */
 }
 
 /* Reader page specific styling */
@@ -293,11 +292,21 @@ body:has(main:has([data-reader-page])) .container {
   main, .container, div[class*="container"] {
     width: 100% !important;
     max-width: 100% !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     overflow-x: hidden !important;
+  }
+  
+  /* Exception for reader container on mobile */
+  .reader-container.story-content,
+  .reader-page .reader-container,
+  [data-reader-page="true"] .reader-container,
+  [data-page="reader"] .reader-container {
+    /* Reset padding to allow reader-fixes.css to control it */
+    padding-left: initial !important;
+    padding-right: initial !important;
   }
   
   /* Prevent text field zoom on mobile */

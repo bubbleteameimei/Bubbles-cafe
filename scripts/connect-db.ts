@@ -4,28 +4,17 @@
  * This script handles explicitly initializing the database connection
  * before any database operations are performed.
  */
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../shared/schema';
-import ws from 'ws';
 import fs from 'fs';
 import path from 'path';
-
-// Set up Neon configuration
-neonConfig.webSocketConstructor = ws;
-try {
-  // @ts-ignore - These may not exist in all versions of the Neon SDK
-  neonConfig.useSecureWebSocket = true;
-  // @ts-ignore - Add additional configuration for better resilience
-  neonConfig.patchWebSocketForReconnect = true;
-} catch (configErr) {
-  console.log('Note: Some config options not available in this Neon version');
-}
 
 /**
  * Initialize database connection
  */
-export async function initializeDatabaseConnection(): Promise<{ pool: Pool, db: any }> {
+export async function initializeDatabaseConnection(): Promise<{ pool: typeof Pool, db: any }> {
   // Ensure DATABASE_URL is available
   if (!process.env.DATABASE_URL) {
     console.warn("⚠️ DATABASE_URL environment variable is not set, checking .env file...");

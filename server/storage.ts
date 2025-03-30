@@ -69,7 +69,14 @@ import {
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
 import type { CommentMetadata } from "@shared/schema";
-import { db, pool } from "./db-connect";
+import { db } from "./db";
+import pkg from 'pg';
+const { Pool } = pkg;
+
+// Create a direct pool for use with session store and SQL queries
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

@@ -1,161 +1,181 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <style data-vite-theme="" data-inject-first="">:root {
-    --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 60 4.8% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 0 84% 19%;
---primary-foreground: 8 27% 97%;
---secondary: 60 4.8% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 60 4.8% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 20 14.3% 4.1%;
---radius: 0.5rem;
-}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Layout Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      background-color: #f8f8f8;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+    }
+    
+    .content {
+      padding: 1rem;
+      background-color: white;
+      border: 1px solid #ccc;
+      margin: 1rem 0;
+    }
+    
+    .reader-container {
+      width: 100%;
+      max-width: 100%;
+      padding-left: 0;
+      padding-right: 0;
+      background-color: #f0f0f0;
+      border: 1px solid #999;
+      box-sizing: border-box;
+    }
+    
+    .reader-content {
+      padding: 1rem;
+      background-color: white;
+      border: 1px solid #ccc;
+      margin: 1rem 0;
+    }
+    
+    .measurements {
+      margin-top: 2rem;
+      padding: 1rem;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+    }
+    
+    .measurements table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .measurements th, .measurements td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    
+    .measurements th {
+      background-color: #f0f0f0;
+    }
+    
+    .info {
+      background-color: #f0f8ff;
+      padding: 10px;
+      border-left: 5px solid #0066cc;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center;">Mobile Layout Test</h1>
+  
+  <div class="info">
+    <p>This test page simulates the layout with 0.5rem padding added to containers. Resize the browser window to see how it responds on different screen sizes.</p>
+  </div>
+  
+  <h2>Standard Page (with padding)</h2>
+  <div class="container">
+    <p>This container has padding-left and padding-right of 0.5rem.</p>
+    <div class="content">
+      <h3>Content Area</h3>
+      <p>This is content inside the container. The 0.5rem padding provides a small margin on each side to prevent content from touching the edge of the screen.</p>
+    </div>
+  </div>
+  
+  <h2>Reader Page (without padding)</h2>
+  <div class="reader-container">
+    <p>This container has no left/right padding to simulate the reader page.</p>
+    <div class="reader-content">
+      <h3>Story Content</h3>
+      <p>Reader pages have no padding on the container to allow for full-width story content.</p>
+    </div>
+  </div>
+  
+  <div class="measurements">
+    <h2>Layout Measurements</h2>
+    <div id="measurements-result"></div>
+  </div>
 
-@media (prefers-color-scheme: dark) {
-  :root {
-      --background: 240 10% 3.9%;
---foreground: 0 0% 98%;
---muted: 240 3.7% 15.9%;
---muted-foreground: 240 5% 64.9%;
---popover: 240 10% 3.9%;
---popover-foreground: 0 0% 98%;
---card: 240 10% 3.9%;
---card-foreground: 0 0% 98%;
---border: 240 3.7% 15.9%;
---input: 240 3.7% 15.9%;
---primary: 0 84% 19%;
---primary-foreground: 8 27% 97%;
---secondary: 240 3.7% 15.9%;
---secondary-foreground: 0 0% 98%;
---accent: 240 3.7% 15.9%;
---accent-foreground: 0 0% 98%;
---destructive: 0 62.8% 30.6%;
---destructive-foreground: 0 0% 98%;
---ring: 240 4.9% 83.9%;
---radius: 0.5rem;
-  }
-}
-.light {
-    --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 60 4.8% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 0 84% 19%;
---primary-foreground: 8 27% 97%;
---secondary: 60 4.8% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 60 4.8% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 20 14.3% 4.1%;
---radius: 0.5rem;
-}
-.dark {
-    --background: 240 10% 3.9%;
---foreground: 0 0% 98%;
---muted: 240 3.7% 15.9%;
---muted-foreground: 240 5% 64.9%;
---popover: 240 10% 3.9%;
---popover-foreground: 0 0% 98%;
---card: 240 10% 3.9%;
---card-foreground: 0 0% 98%;
---border: 240 3.7% 15.9%;
---input: 240 3.7% 15.9%;
---primary: 0 84% 19%;
---primary-foreground: 8 27% 97%;
---secondary: 240 3.7% 15.9%;
---secondary-foreground: 0 0% 98%;
---accent: 240 3.7% 15.9%;
---accent-foreground: 0 0% 98%;
---destructive: 0 62.8% 30.6%;
---destructive-foreground: 0 0% 98%;
---ring: 240 4.9% 83.9%;
---radius: 0.5rem;
-}</style>
-
-    <script type="module">
-import { createHotContext } from "/@vite/client";
-const hot = createHotContext("/__dummy__runtime-error-plugin");
-
-function sendError(error) {
-  if (!(error instanceof Error)) {
-    error = new Error("(unknown runtime error)");
-  }
-  const serialized = {
-    message: error.message,
-    stack: error.stack,
-  };
-  hot.send("runtime-error-plugin:error", serialized);
-}
-
-window.addEventListener("error", (evt) => {
-  sendError(evt.error);
-});
-
-window.addEventListener("unhandledrejection", (evt) => {
-  sendError(evt.reason);
-});
-</script>
-
-    <script type="module">
-import RefreshRuntime from "/@react-refresh"
-RefreshRuntime.injectIntoGlobalHook(window)
-window.$RefreshReg$ = () => {}
-window.$RefreshSig$ = () => (type) => type
-window.__vite_plugin_react_preamble_installed__ = true
-</script>
-
-    <script type="module" src="/@vite/client"></script>
-
-    <meta charset="UTF-8" />
-    <meta 
-      name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
-    />
-    <title>Bubble's Cafe</title>
-    <link rel="icon" type="image/png" href="/assets/favicon.png" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="A horror-themed blog platform with advanced customization capabilities" />
-    <!-- Phaser Game Library - Local Copy -->
-    <script src="/assets/js/phaser.min.js"></script>
-    <!-- Phaser Loader Helper -->
-    <script src="/assets/js/phaser-loader.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <style>
-      body { 
-        width: 375px; 
-        margin: 0 auto; 
-        border: 1px solid #ccc;
-        height: 812px;
-        overflow: auto;
-      }
-      /* Highlight the navigation elements */
-      header { 
-        border: 2px solid red !important; 
-      }
-    </style></head>
-  <body class="min-h-screen w-full overflow-x-hidden overflow-y-auto m-0 p-0 bg-black">
-    <div id="root" class="min-h-screen w-full overflow-hidden"></div>
-    <script type="module" src="/src/main.tsx?v=iug176bhzWXB3uZzdz7Ax"></script>
-  </body>
+  <script>
+    function updateMeasurements() {
+      const standardContainer = document.querySelector('.container');
+      const readerContainer = document.querySelector('.reader-container');
+      const viewportWidth = window.innerWidth;
+      
+      const standardStyles = window.getComputedStyle(standardContainer);
+      const readerStyles = window.getComputedStyle(readerContainer);
+      
+      const standardWidth = standardContainer.offsetWidth;
+      const standardPaddingLeft = parseFloat(standardStyles.paddingLeft);
+      const standardPaddingRight = parseFloat(standardStyles.paddingRight);
+      const standardContentWidth = standardWidth - standardPaddingLeft - standardPaddingRight;
+      
+      const readerWidth = readerContainer.offsetWidth;
+      const readerPaddingLeft = parseFloat(readerStyles.paddingLeft);
+      const readerPaddingRight = parseFloat(readerStyles.paddingRight);
+      const readerContentWidth = readerWidth - readerPaddingLeft - readerPaddingRight;
+      
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Measurement</th>
+              <th>Standard Page</th>
+              <th>Reader Page</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Viewport Width</td>
+              <td colspan="2">${viewportWidth}px</td>
+            </tr>
+            <tr>
+              <td>Container Width</td>
+              <td>${standardWidth}px</td>
+              <td>${readerWidth}px</td>
+            </tr>
+            <tr>
+              <td>Padding Left</td>
+              <td>${standardPaddingLeft}px (${(standardPaddingLeft/16).toFixed(2)}rem)</td>
+              <td>${readerPaddingLeft}px (${(readerPaddingLeft/16).toFixed(2)}rem)</td>
+            </tr>
+            <tr>
+              <td>Padding Right</td>
+              <td>${standardPaddingRight}px (${(standardPaddingRight/16).toFixed(2)}rem)</td>
+              <td>${readerPaddingRight}px (${(readerPaddingRight/16).toFixed(2)}rem)</td>
+            </tr>
+            <tr>
+              <td>Content Width</td>
+              <td>${standardContentWidth}px</td>
+              <td>${readerContentWidth}px</td>
+            </tr>
+            <tr>
+              <td>Difference</td>
+              <td colspan="2">${(readerContentWidth - standardContentWidth).toFixed(2)}px</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>Note:</strong> 0.5rem = ${0.5 * 16}px at standard browser font size.</p>
+      `;
+      
+      document.getElementById('measurements-result').innerHTML = html;
+    }
+    
+    // Initial update
+    updateMeasurements();
+    
+    // Update on resize
+    window.addEventListener('resize', updateMeasurements);
+  </script>
+</body>
 </html>

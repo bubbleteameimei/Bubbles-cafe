@@ -30,13 +30,12 @@ main,
   box-sizing: border-box !important;
 }
 
-/* Reader page specific fixes */
+/* Reader page specific fixes - container only, no padding override */
 .reader-container {
   width: 100% !important;
   max-width: 750px !important;
   margin-left: auto !important;
   margin-right: auto !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
   box-sizing: border-box !important;
+  /* Padding removed to allow reader-fixes.css to control this */
 }

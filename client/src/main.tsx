@@ -2,6 +2,8 @@
 import "./styles/preloader.css";
 // Import scroll effects CSS
 import "./styles/scroll-effects.css";
+// Import reader fixes to ensure proper story content padding
+import "./styles/reader-fixes.css";
 import { createRoot } from "react-dom/client";
 import React from 'react';
 import App from "./App";

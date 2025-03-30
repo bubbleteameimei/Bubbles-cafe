@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
-import { db } from "./db-connect"; // Using the fixed database connection module
+import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
