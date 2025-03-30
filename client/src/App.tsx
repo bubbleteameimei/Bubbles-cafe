@@ -13,11 +13,13 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
-// ScrollToTopButton has been completely removed per requirements
+import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
+// Import scroll-to-top styles
+import './styles/scroll-to-top.css';
 // Using EnhancedPageTransition for smooth page transitions
 import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
@@ -51,6 +53,7 @@ import NotFoundRouteHandler from './components/NotFoundRouteHandler';
 import ReaderPage from './pages/reader';
 import ResponsiveDemoPage from './pages/responsive-demo';
 import ScrollDemoPage from './pages/scroll-demo';
+import ScrollTestPage from './pages/scroll-test';
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
 import AboutPage from './pages/about';
@@ -203,6 +206,7 @@ const AppContent = () => {
               {/* Demo Pages */}
               <Route path="/responsive-demo" component={ResponsiveDemoPage} />
               <Route path="/scroll-demo" component={ScrollDemoPage} />
+              <Route path="/scroll-test" component={ScrollTestPage} />
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
@@ -307,7 +311,7 @@ function App() {
                         </EnhancedPageTransition>
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
-                        {/* ScrollToTopButton removed completely as requested */}
+                        <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
                         {/* Conditionally show FeedbackButton */}
                         <ConditionalFeedbackButton />
                         

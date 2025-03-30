@@ -566,8 +566,8 @@ html.dark *, html.light * {
   }
 
   /* Scroll to top button */
-  /* All scroll-to-top button related CSS has been completely removed
-     as the scroll-to-top feature has been removed from the application */
+  /* Scroll-to-top button styles are now defined in scroll-to-top.css 
+     to better separate concerns and improve code organization */
 }
 
 /* Headers with specific font assignments */

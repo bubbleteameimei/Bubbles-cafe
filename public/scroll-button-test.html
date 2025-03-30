@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroll Button Test</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        
+        header {
+            background-color: #4f46e5;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        section {
+            height: 500px;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+        }
+        
+        h2 {
+            color: #4f46e5;
+        }
+        
+        /* Scroll to top button styles */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.2s;
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+        }
+        
+        .scroll-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .scroll-button:hover {
+            background-color: #4338ca;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .scroll-button svg {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Scroll Button Test Page</h1>
+        <p>Scroll down to see the button appear, then click it to return to the top</p>
+    </header>
+    
+    <main>
+        <section id="section1">
+            <h2>Section 1</h2>
+            <p>This is a test page to verify the scroll-to-top button functionality. The button should appear when you scroll down the page, and clicking it should smoothly scroll back to the top.</p>
+            <p>Keep scrolling down to see more content and test the button.</p>
+        </section>
+        
+        <section id="section2">
+            <h2>Section 2</h2>
+            <p>The scroll-to-top button should be visible now. It's positioned in the bottom-right corner of the screen.</p>
+            <p>Keep scrolling to see more content...</p>
+        </section>
+        
+        <section id="section3">
+            <h2>Section 3</h2>
+            <p>You've scrolled quite far down! The scroll-to-top button should definitely be visible now.</p>
+            <p>Try clicking it to smoothly scroll back to the top of the page.</p>
+        </section>
+        
+        <section id="section4">
+            <h2>Section 4</h2>
+            <p>This is the final section. The scroll-to-top button should be clearly visible.</p>
+            <p>Test it by clicking the button to return to the top of the page.</p>
+        </section>
+    </main>
+    
+    <!-- Scroll to top button -->
+    <div id="scrollToTop" class="scroll-to-top">
+        <button class="scroll-button" aria-label="Scroll to top">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <script>
+        // Get the scroll to top button
+        const scrollToTopButton = document.getElementById('scrollToTop');
+        
+        // Add scroll event listener
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollToTopButton.classList.add('visible');
+            } else {
+                scrollToTopButton.classList.remove('visible');
+            }
+        });
+        
+        // Add click event listener
+        scrollToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>

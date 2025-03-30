@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scroll To Top Button Test</title>
+  <style>
+    /* Basic styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    
+    header {
+      background-color: #333;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    main {
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    section {
+      margin-bottom: 3rem;
+    }
+    
+    /* Scroll to top button styles */
+    .scroll-to-top {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background-color: #4f46e5; /* primary */
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1; /* Set to 1 for testing */
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s, opacity 0.3s;
+    }
+    
+    .scroll-to-top:hover {
+      background-color: #4338ca; /* primary hover */
+    }
+    
+    .arrow-up {
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 12px solid white;
+    }
+    
+    /* Create spacer content for scrolling */
+    .spacer {
+      height: 500px;
+      background-color: #f5f5f5;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Scroll To Top Button Test</h1>
+  </header>
+  
+  <main>
+    <section>
+      <h2>Scroll down to test the button</h2>
+      <p>This page is designed to test the scroll-to-top button functionality and appearance.</p>
+    </section>
+    
+    <!-- Create multiple content sections to enable scrolling -->
+    <div class="spacer">
+      <h3>Section 1</h3>
+      <p>Scroll down to see more content and test the scroll-to-top button.</p>
+    </div>
+    
+    <div class="spacer">
+      <h3>Section 2</h3>
+      <p>Continue scrolling down to test the scroll-to-top button.</p>
+    </div>
+    
+    <div class="spacer">
+      <h3>Section 3</h3>
+      <p>Keep scrolling...</p>
+    </div>
+    
+    <div class="spacer">
+      <h3>Section 4</h3>
+      <p>Almost at the bottom...</p>
+    </div>
+    
+    <div class="spacer">
+      <h3>Section 5</h3>
+      <p>You've reached the bottom! Now test the scroll-to-top button.</p>
+    </div>
+  </main>
+  
+  <!-- Scroll to top button -->
+  <div id="scrollToTopBtn" class="scroll-to-top">
+    <div class="arrow-up"></div>
+  </div>
+  
+  <script>
+    // Get button element
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    
+    // Add click event listener
+    scrollToTopBtn.addEventListener('click', () => {
+      // Smooth scroll to top
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+    
+    // Show/hide button based on scroll position
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 300) {
+        scrollToTopBtn.style.opacity = '1';
+      } else {
+        scrollToTopBtn.style.opacity = '0';
+      }
+    });
+  </script>
+</body>
+</html>
