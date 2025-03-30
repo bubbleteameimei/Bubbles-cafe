@@ -113,8 +113,13 @@ const DialogContent = React.forwardRef<
   }
   
   // Set aria attributes properly based on what we've found
-  const finalAriaLabelledby = props['aria-labelledby'] || (hasAriaLabel ? undefined : defaultTitleId);
-  const finalAriaDescribedby = props['aria-describedby'] || defaultDescId;
+  // Only use the aria-labelledby prop if it exists and is non-empty
+  const ariaLabelledby = props['aria-labelledby'] || '';
+  const finalAriaLabelledby = ariaLabelledby.trim() !== '' ? ariaLabelledby : (hasAriaLabel ? undefined : defaultTitleId);
+  
+  // Only use the aria-describedby prop if it exists and is non-empty
+  const ariaDescribedby = props['aria-describedby'] || '';
+  const finalAriaDescribedby = ariaDescribedby.trim() !== '' ? ariaDescribedby : defaultDescId;
   
   return (
     <DialogPortal>
@@ -168,9 +173,14 @@ const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, id, ...props }, ref) => {
-  // Create an ID if none is provided
+  // Create an ID if none is provided, ensure it's a valid, non-empty string
   const generatedId = React.useId();
-  const titleId = id || `dialog-title-${generatedId}`;
+  let titleId = id || `dialog-title-${generatedId}`;
+  
+  // Ensure ID is non-empty and valid
+  if (!titleId || titleId.trim() === '') {
+    titleId = `dialog-title-${generatedId}`;
+  }
   
   return (
     <DialogPrimitive.Title
@@ -190,9 +200,14 @@ const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, id, ...props }, ref) => {
-  // Create an ID if none is provided
+  // Create an ID if none is provided, ensure it's a valid, non-empty string
   const generatedId = React.useId();
-  const descId = id || `dialog-desc-${generatedId}`;
+  let descId = id || `dialog-desc-${generatedId}`;
+  
+  // Ensure ID is non-empty and valid
+  if (!descId || descId.trim() === '') {
+    descId = `dialog-desc-${generatedId}`;
+  }
   
   return (
     <DialogPrimitive.Description
@@ -220,7 +235,7 @@ const DialogClose = React.forwardRef<
         "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         className
       )}
-      aria-label={!hasAriaLabel && childrenText ? `${childrenText}` : !hasAriaLabel ? "Close dialog" : undefined}
+      aria-label={!hasAriaLabel ? (childrenText || "Close dialog") : props['aria-label']}
       {...props}
     >
       {children}
