@@ -566,15 +566,8 @@ html.dark *, html.light * {
   }
 
   /* Scroll to top button */
-  .scroll-to-top {
-    @apply fixed bottom-5 right-5 p-3 bg-primary text-white rounded-full 
-           opacity-0 transition-opacity duration-300 cursor-pointer
-           hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50;
-  }
-
-  .scroll-to-top.show {
-    @apply opacity-100;
-  }
+  /* Removed .scroll-to-top class to fix positioning conflicts
+     Now using the ScrollToTopButton component's internal positioning */
 }
 
 /* Headers with specific font assignments */
