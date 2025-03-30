@@ -9,7 +9,6 @@ import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import FadeInSection from "../components/transitions/FadeInSection";
 import ApiLoader from "@/components/api-loader";
-import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import BackgroundGradient from "@/components/BackgroundGradient";
 
 export default function Home() {
@@ -45,8 +44,6 @@ export default function Home() {
   return (
     <>
       <ApiLoader isLoading={isLoading} />
-      {/* Feedback button only on homepage */}
-      <FeedbackButton position="bottom-left" />
       
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>

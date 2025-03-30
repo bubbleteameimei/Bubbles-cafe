@@ -270,8 +270,6 @@ const AppContent = () => {
 
 // Main App component
 function App() {
-  const [location] = useLocation();
-  
   // Setup performance monitoring
   usePerformanceMonitoring();
 
@@ -279,7 +277,20 @@ function App() {
   useEffect(() => {
     initWordPressSync();
   }, []);
-
+  
+  // Create a FeedbackButton wrapper component to handle visibility logic
+  const ConditionalFeedbackButton = () => {
+    const [currentPath] = useLocation();
+    // Check if current page is index, reader, or community page
+    const shouldHideButton = 
+      currentPath === "/" || 
+      currentPath === "/index" || 
+      currentPath.startsWith("/reader") || 
+      currentPath === "/community";
+      
+    return !shouldHideButton ? <FeedbackButton /> : null;
+  };
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -297,7 +308,8 @@ function App() {
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
                         <ScrollToTopButton />
-                        <FeedbackButton />
+                        {/* Conditionally show FeedbackButton */}
+                        <ConditionalFeedbackButton />
                         
                         {/* Toast notifications */}
                         <Toaster />
