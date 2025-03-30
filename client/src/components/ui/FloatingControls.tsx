@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import FullscreenButton from "@/components/FullscreenButton";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
+import FixedScrollToTopButton from "@/components/FixedScrollToTopButton";
 
 interface FloatingControlsProps {
   position?: "right" | "left";
@@ -42,10 +42,8 @@ const FloatingControls: React.FC<FloatingControlsProps> = ({
       
       {showScrollToTopButton && (
         <div className="mt-4">
-          <ScrollToTopButton 
-            position={position === "right" ? "bottom-right" : "bottom-left"} 
-            showLabel={showLabels}
-            className="!static" 
+          <FixedScrollToTopButton 
+            showLabel={showLabels} 
           />
         </div>
       )}

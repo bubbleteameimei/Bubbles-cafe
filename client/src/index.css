@@ -1438,3 +1438,20 @@ button:hover, a:hover {
 .night-mode button.bg-background:hover {
   background-color: #2a2a2a !important;
 }
+
+/* Force ScrollToTopButton positioning */
+.forced-bottom-right {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  z-index: 999 !important;
+}/* Absolute right position for scroll button */
+#scroll-to-top-button {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 24px !important;
+  left: auto !important;
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}

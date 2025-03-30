@@ -4,28 +4,20 @@ import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface ScrollToTopButtonProps {
+interface FixedScrollToTopButtonProps {
   threshold?: number;
   showLabel?: boolean;
-  position?: "bottom-right" | "bottom-left";
-  className?: string;
 }
 
-const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
+/**
+ * A fixed scroll-to-top button that always appears in the bottom right corner.
+ * This is a simplified version that doesn't use position prop to avoid conflicts.
+ */
+const FixedScrollToTopButton: React.FC<FixedScrollToTopButtonProps> = ({
   threshold = 300,
   showLabel = false,
-  position = "bottom-right", // Ignored - we always force bottom-right
-  className = ""
 }) => {
-  // Explicitly ignore position prop and always use bottom-right
-  position = "bottom-right";
   const [isVisible, setIsVisible] = useState(false);
-
-  // Position classes based on the position prop - responsive for different device sizes
-  const positionClasses = {
-    "bottom-right": "right-3 sm:right-4 md:right-6 lg:right-8 bottom-3 sm:bottom-4 md:bottom-6 lg:bottom-8 mb-2 mr-1",
-    "bottom-left": "left-3 sm:left-4 md:left-6 lg:left-8 bottom-3 sm:bottom-4 md:bottom-6 lg:bottom-8 mb-2 ml-1"
-  };
 
   useEffect(() => {
     // Function to handle scroll event and toggle button visibility
@@ -59,11 +51,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={cn(
-            "z-50 forced-bottom-right", // Removed Tailwind positioning classes to rely on our custom class
-            className
-          )}
-          style={{ left: 'auto !important', right: '24px !important', bottom: '24px !important' }} // Force right positioning
+          id="scroll-to-top-button"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
@@ -90,4 +78,4 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   );
 };
 
-export default ScrollToTopButton;
+export default FixedScrollToTopButton;
