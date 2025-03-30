@@ -14,11 +14,9 @@ interface ScrollToTopButtonProps {
 const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   threshold = 300,
   showLabel = false,
-  position = "bottom-right", // Ignored - we always force bottom-right
+  position = "bottom-right",
   className = ""
 }) => {
-  // Explicitly ignore position prop and always use bottom-right
-  position = "bottom-right";
   const [isVisible, setIsVisible] = useState(false);
 
   // Position classes based on the position prop - responsive for different device sizes
@@ -60,10 +58,10 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       {isVisible && (
         <motion.div
           className={cn(
-            "z-50 forced-bottom-right", // Removed Tailwind positioning classes to rely on our custom class
+            "fixed z-50",
+            positionClasses[position],
             className
           )}
-          style={{ left: 'auto !important', right: '24px !important', bottom: '24px !important' }} // Force right positioning
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
