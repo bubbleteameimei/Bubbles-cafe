@@ -11,6 +11,7 @@ import "./index.css";
 // Import the preloader script
 import { setupStylePreloader, addInitialLoadingIndicator } from "./styles/preloader";
 import { optimizeImagesForConnection } from "./utils/image-optimization";
+import { ScrollToTop } from "./components/ui/scroll-to-top";
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
@@ -60,7 +61,10 @@ const renderApp = () => {
     const rootElement = createRoot(root);
     rootElement.render(
       <React.StrictMode>
-        <App />
+        <>
+          <App />
+          <ScrollToTop />
+        </>
       </React.StrictMode>
     );
     performance.mark('react-render-end');

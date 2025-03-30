@@ -565,7 +565,16 @@ html.dark *, html.light * {
     @apply mb-4;
   }
 
-  /* Scroll to top button - now handled via ScrollToTopButton component */
+  /* Scroll to top button */
+  .scroll-to-top {
+    @apply fixed bottom-5 right-5 p-3 bg-primary text-white rounded-full 
+           opacity-0 transition-opacity duration-300 cursor-pointer
+           hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .scroll-to-top.show {
+    @apply opacity-100;
+  }
 }
 
 /* Headers with specific font assignments */

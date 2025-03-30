@@ -13,7 +13,7 @@ import { ErrorBoundary } from './components/ui/error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
-import FixedScrollToTopButton from './components/FixedScrollToTopButton';
+import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
 // Add critical fullwidth fix stylesheet
@@ -307,7 +307,7 @@ function App() {
                         </EnhancedPageTransition>
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
-                        <FixedScrollToTopButton />
+                        <ScrollToTopButton />
                         {/* Conditionally show FeedbackButton */}
                         <ConditionalFeedbackButton />
                         
