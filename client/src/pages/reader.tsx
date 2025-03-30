@@ -112,6 +112,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
   // Will initialize this after data is loaded
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
   
+  // State for dialog controls
+  const [fontDialogOpen, setFontDialogOpen] = useState(false);
+  const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
+  
   // Detect if this is a refresh using Performance API
   const isRefreshRef = useRef<boolean>(
     typeof window !== 'undefined' &&
@@ -1091,7 +1095,8 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
               <Plus className="h-4 w-4 ml-1" />
             </Button>
             
-            <Dialog>
+            {/* Font Dialog with controlled open state */}
+            <Dialog open={fontDialogOpen} onOpenChange={setFontDialogOpen}>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -1117,7 +1122,10 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
                           key={key}
                           variant={fontFamily === key ? "default" : "outline"}
                           className="justify-start h-auto py-3"
-                          onClick={() => updateFontFamily(key as FontFamilyKey)}
+                          onClick={() => {
+                            updateFontFamily(key as FontFamilyKey);
+                            setFontDialogOpen(false); // Close the dialog after changing font
+                          }}
                         >
                           <div className="flex flex-col items-start">
                             <span style={{ fontFamily: info.family }}>{info.name}</span>
@@ -1147,18 +1155,22 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
 
           {/* Text-to-speech functionality removed */}
 
-          <Dialog>
+          {/* Contents Dialog with controlled open state */}
+          <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3 bg-background hover:bg-background/80 shadow-sm flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden"
+                className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden"
               >
                 <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">Contents</span>
+                <span className="truncate text-xs uppercase">TOC</span>
               </Button>
             </DialogTrigger>
-            <TableOfContents currentPostId={currentPost.id} onClose={safeCloseDialog} />
+            <TableOfContents 
+              currentPostId={currentPost.id} 
+              onClose={() => setContentsDialogOpen(false)} 
+            />
           </Dialog>
         </div>
       
