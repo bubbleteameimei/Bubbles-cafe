@@ -14,7 +14,7 @@ interface ScrollToTopButtonProps {
 const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
   threshold = 300,
   showLabel = false,
-  position = "bottom-right",
+  position = "bottom-right", // Force bottom-right position
   className = ""
 }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -59,7 +59,7 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
         <motion.div
           className={cn(
             "fixed z-50",
-            positionClasses[position],
+            positionClasses["bottom-right"], // Force bottom-right position
             className
           )}
           initial={{ opacity: 0, scale: 0.8 }}

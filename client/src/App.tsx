@@ -307,7 +307,7 @@ function App() {
                         </EnhancedPageTransition>
                         {/* Site-wide elements outside of the main layout */}
                         <CookieConsent />
-                        <ScrollToTopButton />
+                        <ScrollToTopButton position="bottom-right" />
                         {/* Conditionally show FeedbackButton */}
                         <ConditionalFeedbackButton />
                         
