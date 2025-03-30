@@ -1159,12 +1159,12 @@ export default function ReaderPage({ slug, params }: ReaderPageProps) {
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="h-8 px-3 bg-primary/5 hover:bg-primary/10 shadow-md border-primary/20 flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden"
+                className="h-8 px-3 bg-primary hover:bg-primary/90 text-white shadow-lg flex items-center gap-1.5 min-w-0 max-w-[120px] overflow-hidden transition-all duration-200 hover:scale-105 rounded-md"
               >
                 <BookText className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate text-xs uppercase">TOC</span>
+                <span className="truncate text-xs font-semibold tracking-wide">TOC</span>
               </Button>
             </DialogTrigger>
             <TableOfContents 

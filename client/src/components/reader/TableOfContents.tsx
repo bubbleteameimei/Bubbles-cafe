@@ -92,8 +92,12 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
       <div className="flex items-center justify-between">
         <DialogTitle id="dialog-title" className="text-lg font-medium">Table of Contents</DialogTitle>
         <DialogClose asChild>
-          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full h-9 w-9 border-muted-foreground/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-110 focus:ring-2 focus:ring-primary/20 focus:ring-offset-2"
+          >
+            <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </Button>
         </DialogClose>
