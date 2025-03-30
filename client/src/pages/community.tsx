@@ -73,7 +73,7 @@ export default function CommunityPage() {
     error, 
     refetch 
   } = useQuery<PostsResponse>({
-    queryKey: ['/api/community/posts', currentPage, category, sortBy, activeTab],
+    queryKey: ['/api/posts/community', currentPage, category, sortBy, activeTab],
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
@@ -108,7 +108,7 @@ export default function CommunityPage() {
         params.append('search', searchTerm);
       }
       
-      const response = await fetch(`/api/community/posts?${params.toString()}`);
+      const response = await fetch(`/api/posts/community?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch community posts');
       return response.json();
     },
