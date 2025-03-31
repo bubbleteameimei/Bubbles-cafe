@@ -65,7 +65,6 @@ import ProfilePage from './pages/profile';
 import BookmarksPage from './pages/bookmarks';
 import SearchResultsPage from './pages/SearchResults';
 import NotificationsPage from './pages/notifications';
-import BunsPage from './pages/buns';
 
 // Settings pages
 import ProfileSettingsPage from './pages/settings/profile';
@@ -210,7 +209,6 @@ const AppContent = () => {
               <Route path="/scroll-demo" component={ScrollDemoPage} />
               <Route path="/scroll-test" component={ScrollTestPage} />
               <Route path="/bookmarks" component={BookmarksPage} />
-              <Route path="/buns" component={BunsPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
               {/* Game Routes */}
@@ -223,9 +221,7 @@ const AppContent = () => {
               <Route path="/legal/copyright" component={CopyrightPage} />
               <Route path="/legal/terms" component={TermsPage} />
               <Route path="/legal/cookie-policy" component={CookiePolicyPage} />
-              
-              {/* Special Theme Pages - Moved to above */}
-              
+
               {/* Community Routes */}
               <Route path="/community" component={CommunityPage} />
               <Route path="/submit-story" component={SubmitStoryPage} />
@@ -298,14 +294,13 @@ function App() {
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
-    // Check if current page is index, reader, community page, community-story, or buns page
+    // Check if current page is index, reader, community page, or community-story
     const shouldHideButton = 
       currentPath === "/" || 
       currentPath === "/index" || 
       currentPath.startsWith("/reader") || 
       currentPath.startsWith("/community-story") || 
-      currentPath === "/community" ||
-      currentPath === "/buns";
+      currentPath === "/community";
       
     return !shouldHideButton ? <FeedbackButton /> : null;
   };

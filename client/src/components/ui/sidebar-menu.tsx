@@ -150,20 +150,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <span>Bookmarks</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-
-            {/* Y2K-inspired buns page */}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/buns'}
-                onClick={() => handleNavigation('/buns')}
-                tooltip="Y2K Buns"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/buns')}
-                <Sparkles className="h-4 w-4" />
-                <span>Y2K Buns</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
