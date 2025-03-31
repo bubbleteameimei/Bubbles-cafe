@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CommunityReaderCard, ExtendedUser, ExtendedPost as CommunityReaderPost } from "@/components/community/community-reader-card";
+import { CategoryFilters } from "@/components/community/category-filters";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -175,25 +176,11 @@ export default function CommunityPage() {
             </form>
             
             <div className="flex gap-3">
-              <div className="w-full md:w-[180px]">
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <div className="flex items-center">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Category" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="PSYCHOLOGICAL">Psychological</SelectItem>
-                    <SelectItem value="SUPERNATURAL">Supernatural</SelectItem>
-                    <SelectItem value="TECHNOLOGICAL">Technological</SelectItem>
-                    <SelectItem value="BODY_HORROR">Body Horror</SelectItem>
-                    <SelectItem value="GOTHIC">Gothic</SelectItem>
-                    <SelectItem value="APOCALYPTIC">Apocalyptic</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Using the simplified CategoryFilters component for search */}
+              <CategoryFilters 
+                value={category} 
+                onChange={setCategory} 
+              />
               
               <div className="w-full md:w-[180px]">
                 <Select value={sortBy} onValueChange={setSortBy}>

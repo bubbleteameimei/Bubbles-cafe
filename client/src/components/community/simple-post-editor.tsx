@@ -13,16 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
-// Simplified theme categories for the community page
-const SIMPLIFIED_THEME_CATEGORIES = {
-  'PSYCHOLOGICAL': { name: 'Psychological' },
-  'SUPERNATURAL': { name: 'Supernatural' },
-  'TECHNOLOGICAL': { name: 'Technological' },
-  'BODY_HORROR': { name: 'Body Horror' },
-  'GOTHIC': { name: 'Gothic' },
-  'APOCALYPTIC': { name: 'Apocalyptic' },
-  'HORROR': { name: 'General Horror' }
-};
+import { PostFormThemeField } from '@/components/forms/PostFormThemeField';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -423,36 +414,8 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="themeCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Horror Theme</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a horror theme" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">None</SelectItem>
-                          <SelectItem value="PSYCHOLOGICAL">Psychological</SelectItem>
-                          <SelectItem value="SUPERNATURAL">Supernatural</SelectItem>
-                          <SelectItem value="TECHNOLOGICAL">Technological</SelectItem>
-                          <SelectItem value="BODY_HORROR">Body Horror</SelectItem>
-                          <SelectItem value="GOTHIC">Gothic</SelectItem>
-                          <SelectItem value="APOCALYPTIC">Apocalyptic</SelectItem>
-                          <SelectItem value="HORROR">General Horror</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Using the full theme categories field */}
+              <PostFormThemeField control={form.control} />
             </TabsContent>
             
             {/* Preview tab */}
