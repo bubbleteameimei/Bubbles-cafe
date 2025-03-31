@@ -1250,10 +1250,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <span className="truncate text-xs font-semibold tracking-wide">TOC</span>
               </Button>
             </DialogTrigger>
-            <TableOfContents 
-              currentPostId={currentPost.id} 
-              onClose={() => setContentsDialogOpen(false)} 
-            />
+            {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
+            <DialogContent aria-labelledby="toc-dialog-title" aria-describedby="toc-dialog-description">
+              <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+              <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
+              <TableOfContents 
+                currentPostId={currentPost.id} 
+                onClose={() => setContentsDialogOpen(false)} 
+              />
+            </DialogContent>
           </Dialog>
         </div>
       

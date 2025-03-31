@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,24 +88,7 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   };
 
   return (
-    <DialogContent className="sm:max-w-md h-[85vh] md:h-[90vh] flex flex-col p-6" aria-labelledby="dialog-title" aria-describedby="dialog-description">
-      <div className="flex items-center justify-between">
-        <DialogTitle id="dialog-title" className="text-lg font-medium">Table of Contents</DialogTitle>
-        <DialogClose asChild>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="rounded-full h-9 w-9 border-muted-foreground/20 hover:border-primary hover:bg-primary/10 hover:text-primary transition-all duration-200 hover:scale-110 focus:ring-2 focus:ring-primary/20 focus:ring-offset-2"
-          >
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
-          </Button>
-        </DialogClose>
-      </div>
-      <DialogDescription id="dialog-description">
-        Browse all available stories or search for a specific title.
-      </DialogDescription>
-      
+    <>
       <div className="flex gap-2 mt-2">
         <Button 
           variant="outline" 
@@ -191,6 +174,6 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
           <span>Total stories in library: <span className="font-medium text-primary/90">{posts.length}</span></span>
         </div>
       </div>
-    </DialogContent>
+    </>
   );
 }

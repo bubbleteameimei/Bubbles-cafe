@@ -110,10 +110,13 @@ const analyticsLimiter = rateLimit({
 // Import our recommendation routes
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import apiTestRoutes from './api-test';
+import testDeleteRoutes from './routes/test-delete';
 
 export function registerRoutes(app: Express): Server {
   // Register API test routes
   app.use('/api/test', apiTestRoutes);
+  // Register test delete routes - remove in production
+  app.use('/api/test-delete', testDeleteRoutes);
   // Set trust proxy before any middleware
   app.set('trust proxy', 1);
 
@@ -599,7 +602,7 @@ export function registerRoutes(app: Express): Server {
       console.log(`[Delete Post] Attempting to delete post with ID: ${postId}`);
 
       // First check if post exists
-      const post = await storage.getPost(postId.toString());
+      const post = await storage.getPostById(postId);
       if (!post) {
         console.log(`[Delete Post] Post ${postId} not found`);
         return res.status(404).json({ message: "Post not found" });
