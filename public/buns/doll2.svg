@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="200px" viewBox="0 0 100 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Pixel Doll 2</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Head -->
+        <circle fill="#FFE6F7" cx="50" cy="40" r="25"></circle>
+        
+        <!-- Hair -->
+        <path d="M50,15 C35,15 25,25 25,40 C25,45 27,47 30,48 C30,30 37,22 50,22 C63,22 70,30 70,48 C73,47 75,45 75,40 C75,25 65,15 50,15 Z" fill="#614C82"></path>
+        <path d="M30,48 C30,48 28,60 28,70 C28,80 32,80 35,80 C35,65 38,48 38,48 L30,48 Z" fill="#614C82"></path>
+        <path d="M70,48 C70,48 72,60 72,70 C72,80 68,80 65,80 C65,65 62,48 62,48 L70,48 Z" fill="#614C82"></path>
+        
+        <!-- Eyes -->
+        <circle fill="#614C82" cx="40" cy="40" r="3"></circle>
+        <circle fill="#614C82" cx="60" cy="40" r="3"></circle>
+        <circle fill="#FFFFFF" cx="39" cy="39" r="1"></circle>
+        <circle fill="#FFFFFF" cx="59" cy="39" r="1"></circle>
+        
+        <!-- Mouth -->
+        <path d="M45,50 C45,54 55,54 55,50" stroke="#FF9EC4" stroke-width="2" stroke-linecap="round"></path>
+        
+        <!-- Blush -->
+        <circle fill="#FFB0D9" cx="35" cy="45" r="3" opacity="0.6"></circle>
+        <circle fill="#FFB0D9" cx="65" cy="45" r="3" opacity="0.6"></circle>
+        
+        <!-- Neck -->
+        <rect fill="#FFE6F7" x="45" y="65" width="10" height="10"></rect>
+        
+        <!-- Blouse -->
+        <path d="M35,75 L65,75 L65,110 L35,110 Z" fill="#9ACEEB"></path>
+        <rect fill="#78C1E5" x="35" y="85" width="30" height="5"></rect>
+        <rect fill="#78C1E5" x="35" y="100" width="30" height="5"></rect>
+        
+        <!-- Skirt -->
+        <path d="M35,110 L65,110 L70,150 L30,150 Z" fill="#FFD1DC"></path>
+        <rect fill="#FFC0CB" x="35" y="125" width="30" height="5"></rect>
+        
+        <!-- Arms -->
+        <rect fill="#FFE6F7" x="25" y="75" width="10" height="25" rx="5"></rect>
+        <rect fill="#FFE6F7" x="65" y="75" width="10" height="25" rx="5"></rect>
+        
+        <!-- Legs -->
+        <rect fill="#FFE6F7" x="40" y="150" width="8" height="40"></rect>
+        <rect fill="#FFE6F7" x="52" y="150" width="8" height="40"></rect>
+        
+        <!-- Boots -->
+        <path d="M38,190 L40,190 L40,195 L50,195 L50,190 L52,190 L52,185 L38,185 Z" fill="#614C82"></path>
+        <path d="M50,190 L52,190 L52,195 L62,195 L62,190 L64,190 L64,185 L50,185 Z" fill="#614C82"></path>
+        
+        <!-- Accessories -->
+        <rect fill="#FFDF78" x="35" y="75" width="30" height="2"></rect>
+    </g>
+</svg>

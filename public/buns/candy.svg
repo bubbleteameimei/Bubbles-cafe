@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Candy Icon</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Candy Wrapper -->
+        <path d="M8,15 L32,15 L32,25 L8,25 Z" fill="#FF85E0"></path>
+        <!-- Candy Ends - Left -->
+        <path d="M5,15 C5,15 8,12 8,15 L8,25 C8,28 5,25 5,25 L5,15 Z" fill="#FFB5E8"></path>
+        <!-- Candy Ends - Right -->
+        <path d="M35,15 C35,15 32,12 32,15 L32,25 C32,28 35,25 35,25 L35,15 Z" fill="#FFB5E8"></path>
+        <!-- Candy Swirl 1 -->
+        <path d="M12,18 C12,18 18,15 22,18 C26,21 28,18 28,18" stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"></path>
+        <!-- Candy Swirl 2 -->
+        <path d="M12,22 C12,22 18,19 22,22 C26,25 28,22 28,22" stroke="#FFFFFF" stroke-width="1.5" fill="none" stroke-linecap="round"></path>
+        <!-- Candy Shine -->
+        <circle cx="14" cy="17" r="1" fill="#FFFFFF"></circle>
+    </g>
+</svg>

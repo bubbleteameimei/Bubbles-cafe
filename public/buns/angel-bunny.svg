@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Angel Bunny</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Bunny body -->
+        <ellipse fill="#FFE6F7" cx="32" cy="40" rx="20" ry="15"></ellipse>
+        
+        <!-- Bunny head -->
+        <circle fill="#FFE6F7" cx="32" cy="25" r="12"></circle>
+        
+        <!-- Ears -->
+        <path d="M26,18 C24,10 22,4 20,4 C18,4 20,12 22,18" fill="#FFE6F7"></path>
+        <path d="M38,18 C40,10 42,4 44,4 C46,4 44,12 42,18" fill="#FFE6F7"></path>
+        <path d="M26,18 C24,11 23,6 22,6 C21,6 22,12 24,18" fill="#FFD1DC"></path>
+        <path d="M38,18 C40,11 41,6 42,6 C43,6 42,12 40,18" fill="#FFD1DC"></path>
+        
+        <!-- Eyes -->
+        <circle fill="#614C82" cx="28" cy="22" r="2"></circle>
+        <circle fill="#614C82" cx="36" cy="22" r="2"></circle>
+        <circle fill="#FFFFFF" cx="27.5" cy="21.5" r="0.75"></circle>
+        <circle fill="#FFFFFF" cx="35.5" cy="21.5" r="0.75"></circle>
+        
+        <!-- Nose -->
+        <ellipse fill="#FFB0D9" cx="32" cy="25" rx="1.5" ry="1"></ellipse>
+        
+        <!-- Mouth -->
+        <path d="M30,28 C31,29 33,29 34,28" stroke="#614C82" stroke-width="0.75" stroke-linecap="round"></path>
+        
+        <!-- Blush -->
+        <circle fill="#FFB0D9" cx="26" cy="26" r="2" opacity="0.6"></circle>
+        <circle fill="#FFB0D9" cx="38" cy="26" r="2" opacity="0.6"></circle>
+        
+        <!-- Angel halo -->
+        <ellipse stroke="#FFDF78" stroke-width="2" cx="32" cy="14" rx="8" ry="2"></ellipse>
+        
+        <!-- Angel wings -->
+        <path d="M10,30 C10,25 15,20 20,25 C25,30 20,35 15,35 C10,35 10,30 10,30 Z" fill="#FFFFFF"></path>
+        <path d="M54,30 C54,25 49,20 44,25 C39,30 44,35 49,35 C54,35 54,30 54,30 Z" fill="#FFFFFF"></path>
+        
+        <!-- Heart decoration -->
+        <path d="M32,50 C32,50 28,46 26,46 C24,46 24,48 26,50 C28,52 32,55 32,55 C32,55 36,52 38,50 C40,48 40,46 38,46 C36,46 32,50 32,50 Z" fill="#FF9EC4"></path>
+        
+        <!-- Sparkles -->
+        <polygon fill="#FFDF78" points="14,14 15,17 18,18 15,19 14,22 13,19 10,18 13,17" opacity="0.8"></polygon>
+        <polygon fill="#FFDF78" points="50,14 51,17 54,18 51,19 50,22 49,19 46,18 49,17" opacity="0.8"></polygon>
+    </g>
+</svg>

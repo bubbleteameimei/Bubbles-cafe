@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Stars Background Pattern</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Small stars -->
+        <path d="M20,20 L22,27 L29,27 L23,31 L25,38 L20,34 L15,38 L17,31 L11,27 L18,27 Z" fill="#FFDF78"></path>
+        <path d="M60,40 L62,47 L69,47 L63,51 L65,58 L60,54 L55,58 L57,51 L51,47 L58,47 Z" fill="#D8B5FF"></path>
+        <path d="M100,20 L102,27 L109,27 L103,31 L105,38 L100,34 L95,38 L97,31 L91,27 L98,27 Z" fill="#FFC0CB"></path>
+        <path d="M140,40 L142,47 L149,47 L143,51 L145,58 L140,54 L135,58 L137,51 L131,47 L138,47 Z" fill="#9ACEEB"></path>
+        <path d="M180,20 L182,27 L189,27 L183,31 L185,38 L180,34 L175,38 L177,31 L171,27 L178,27 Z" fill="#FFDF78"></path>
+        
+        <path d="M20,80 L22,87 L29,87 L23,91 L25,98 L20,94 L15,98 L17,91 L11,87 L18,87 Z" fill="#D8B5FF"></path>
+        <path d="M60,100 L62,107 L69,107 L63,111 L65,118 L60,114 L55,118 L57,111 L51,107 L58,107 Z" fill="#FFDF78"></path>
+        <path d="M100,80 L102,87 L109,87 L103,91 L105,98 L100,94 L95,98 L97,91 L91,87 L98,87 Z" fill="#FFC0CB"></path>
+        <path d="M140,100 L142,107 L149,107 L143,111 L145,118 L140,114 L135,118 L137,111 L131,107 L138,107 Z" fill="#9ACEEB"></path>
+        <path d="M180,80 L182,87 L189,87 L183,91 L185,98 L180,94 L175,98 L177,91 L171,87 L178,87 Z" fill="#FFDF78"></path>
+        
+        <path d="M20,140 L22,147 L29,147 L23,151 L25,158 L20,154 L15,158 L17,151 L11,147 L18,147 Z" fill="#FFDF78"></path>
+        <path d="M60,160 L62,167 L69,167 L63,171 L65,178 L60,174 L55,178 L57,171 L51,167 L58,167 Z" fill="#D8B5FF"></path>
+        <path d="M100,140 L102,147 L109,147 L103,151 L105,158 L100,154 L95,158 L97,151 L91,147 L98,147 Z" fill="#FFC0CB"></path>
+        <path d="M140,160 L142,167 L149,167 L143,171 L145,178 L140,174 L135,178 L137,171 L131,167 L138,167 Z" fill="#9ACEEB"></path>
+        <path d="M180,140 L182,147 L189,147 L183,151 L185,158 L180,154 L175,158 L177,151 L171,147 L178,147 Z" fill="#FFDF78"></path>
+        
+        <!-- Tiny stars/dots -->
+        <circle cx="40" cy="30" r="1" fill="#FFFFFF"></circle>
+        <circle cx="80" cy="50" r="1" fill="#FFFFFF"></circle>
+        <circle cx="120" cy="30" r="1" fill="#FFFFFF"></circle>
+        <circle cx="160" cy="50" r="1" fill="#FFFFFF"></circle>
+        
+        <circle cx="40" cy="90" r="1" fill="#FFFFFF"></circle>
+        <circle cx="80" cy="110" r="1" fill="#FFFFFF"></circle>
+        <circle cx="120" cy="90" r="1" fill="#FFFFFF"></circle>
+        <circle cx="160" cy="110" r="1" fill="#FFFFFF"></circle>
+        
+        <circle cx="40" cy="150" r="1" fill="#FFFFFF"></circle>
+        <circle cx="80" cy="170" r="1" fill="#FFFFFF"></circle>
+        <circle cx="120" cy="150" r="1" fill="#FFFFFF"></circle>
+        <circle cx="160" cy="170" r="1" fill="#FFFFFF"></circle>
+    </g>
+</svg>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="10px" viewBox="0 0 400 10" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Pixel Divider</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Dotted line with hearts -->
+        <rect x="0" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="8" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="16" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="24" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="32" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M45,5 C45,7 50,9 50,5 C50,9 55,7 55,5 C55,3 50,1 50,5 C50,1 45,3 45,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="60" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="68" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="76" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="84" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="92" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M105,5 C105,7 110,9 110,5 C110,9 115,7 115,5 C115,3 110,1 110,5 C110,1 105,3 105,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="120" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="128" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="136" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="144" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="152" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M165,5 C165,7 170,9 170,5 C170,9 175,7 175,5 C175,3 170,1 170,5 C170,1 165,3 165,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="180" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="188" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="196" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="204" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="212" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M225,5 C225,7 230,9 230,5 C230,9 235,7 235,5 C235,3 230,1 230,5 C230,1 225,3 225,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="240" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="248" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="256" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="264" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="272" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M285,5 C285,7 290,9 290,5 C290,9 295,7 295,5 C295,3 290,1 290,5 C290,1 285,3 285,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="300" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="308" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="316" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="324" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="332" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        
+        <path d="M345,5 C345,7 350,9 350,5 C350,9 355,7 355,5 C355,3 350,1 350,5 C350,1 345,3 345,5 Z" fill="#FF9EC4"></path>
+        
+        <rect x="360" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="368" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="376" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="384" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+        <rect x="392" y="4" width="4" height="2" fill="#FFC0CB"></rect>
+    </g>
+</svg>

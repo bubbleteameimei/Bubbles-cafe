@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="200px" viewBox="0 0 100 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Pixel Doll 1</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Head -->
+        <circle fill="#FFE6F7" cx="50" cy="40" r="25"></circle>
+        
+        <!-- Hair -->
+        <path d="M50,15 C30,15 25,30 25,40 C25,45 30,50 32,50 C32,25 50,25 50,25 C50,25 68,25 68,50 C70,50 75,45 75,40 C75,30 70,15 50,15 Z" fill="#FFC0CB"></path>
+        <path d="M35,40 C35,40 35,65 35,70 C35,75 40,75 40,70 C40,65 40,50 40,50 L35,40 Z" fill="#FFC0CB"></path>
+        <path d="M65,40 C65,40 65,65 65,70 C65,75 60,75 60,70 C60,65 60,50 60,50 L65,40 Z" fill="#FFC0CB"></path>
+        
+        <!-- Eyes -->
+        <circle fill="#614C82" cx="40" cy="40" r="3"></circle>
+        <circle fill="#614C82" cx="60" cy="40" r="3"></circle>
+        <circle fill="#FFFFFF" cx="39" cy="39" r="1"></circle>
+        <circle fill="#FFFFFF" cx="59" cy="39" r="1"></circle>
+        
+        <!-- Mouth -->
+        <path d="M45,50 C45,52 55,52 55,50" stroke="#FF9EC4" stroke-width="2" stroke-linecap="round"></path>
+        
+        <!-- Blush -->
+        <circle fill="#FFB0D9" cx="35" cy="45" r="3" opacity="0.6"></circle>
+        <circle fill="#FFB0D9" cx="65" cy="45" r="3" opacity="0.6"></circle>
+        
+        <!-- Neck -->
+        <rect fill="#FFE6F7" x="45" y="65" width="10" height="10"></rect>
+        
+        <!-- Dress -->
+        <path d="M40,75 L60,75 L65,160 L35,160 Z" fill="#D8B5FF"></path>
+        <rect fill="#B693FF" x="40" y="90" width="20" height="5"></rect>
+        <rect fill="#B693FF" x="40" y="110" width="20" height="5"></rect>
+        <rect fill="#B693FF" x="38" y="140" width="24" height="5"></rect>
+        
+        <!-- Arms -->
+        <rect fill="#FFE6F7" x="30" y="75" width="10" height="25" rx="5"></rect>
+        <rect fill="#FFE6F7" x="60" y="75" width="10" height="25" rx="5"></rect>
+        
+        <!-- Legs -->
+        <rect fill="#FFE6F7" x="40" y="160" width="8" height="30"></rect>
+        <rect fill="#FFE6F7" x="52" y="160" width="8" height="30"></rect>
+        
+        <!-- Shoes -->
+        <rect fill="#FFC0CB" x="38" y="190" width="12" height="5" rx="2.5"></rect>
+        <rect fill="#FFC0CB" x="50" y="190" width="12" height="5" rx="2.5"></rect>
+        
+        <!-- Accessories -->
+        <rect fill="#FF9EC4" x="45" y="75" width="10" height="3"></rect>
+        <circle fill="#FFDF78" cx="50" cy="76.5" r="1.5"></circle>
+    </g>
+</svg>

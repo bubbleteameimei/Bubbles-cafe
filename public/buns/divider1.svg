@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="30px" viewBox="0 0 400 30" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Y2K Star Divider</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Left Line -->
+        <line x1="20" y1="15" x2="150" y2="15" stroke="#FFC0CB" stroke-width="2" stroke-dasharray="4,2"></line>
+        
+        <!-- Right Line -->
+        <line x1="250" y1="15" x2="380" y2="15" stroke="#FFC0CB" stroke-width="2" stroke-dasharray="4,2"></line>
+        
+        <!-- Center Star -->
+        <path d="M200,5 L203,12 L210,12 L205,17 L207,25 L200,20 L193,25 L195,17 L190,12 L197,12 Z" fill="#FFDF78"></path>
+        
+        <!-- Small Stars -->
+        <path d="M175,10 L176.5,13 L180,13 L177.5,15.5 L178.5,19 L175,17 L171.5,19 L172.5,15.5 L170,13 L173.5,13 Z" fill="#9ACEEB"></path>
+        <path d="M225,10 L226.5,13 L230,13 L227.5,15.5 L228.5,19 L225,17 L221.5,19 L222.5,15.5 L220,13 L223.5,13 Z" fill="#9ACEEB"></path>
+        
+        <!-- Sparkles -->
+        <circle fill="#FFFFFF" cx="160" cy="15" r="1.5"></circle>
+        <circle fill="#FFFFFF" cx="240" cy="15" r="1.5"></circle>
+        <circle fill="#FFFFFF" cx="140" cy="15" r="1"></circle>
+        <circle fill="#FFFFFF" cx="260" cy="15" r="1"></circle>
+    </g>
+</svg>
