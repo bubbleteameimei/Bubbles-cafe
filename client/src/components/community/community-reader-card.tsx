@@ -89,8 +89,9 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
   const formattedDate = post.updatedAt || post.createdAt;
   const timeAgo = format(new Date(formattedDate), 'MMM dd, yyyy');
   
-  // Check if the current user is the author
+  // Check if the current user is the author or admin
   const isAuthor = currentUser?.id === post.authorId;
+  const isAdmin = currentUser?.isAdmin === true;
   
   // Create excerpt from content using horror-intensive paragraph finder
   const createExcerpt = (content: string, maxLength = 150) => {
@@ -203,7 +204,9 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       
       toast({
         title: 'Story Deleted',
-        description: 'Your story has been deleted successfully.',
+        description: isAdmin && !isAuthor
+          ? 'Community story has been deleted by admin.'
+          : 'Your story has been deleted successfully.',
       });
     },
     onError: (error: Error) => {
@@ -428,6 +431,17 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
               </>
             )}
             
+            {/* Admin Delete Option - only show for admins */}
+            {isAdmin && !isAuthor && (
+              <DropdownMenuItem 
+                onClick={handleDeleteClick} 
+                className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-destructive/10 text-destructive hover:text-destructive cursor-pointer border-t border-t-muted"
+              >
+                <Trash className="h-4 w-4 mr-2 text-destructive/70" />
+                Admin: Delete Story
+              </DropdownMenuItem>
+            )}
+            
             <DropdownMenuItem 
               onClick={copyLink}
               className="flex items-center rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
@@ -539,13 +553,21 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Story</DialogTitle>
+            <DialogTitle>{isAdmin && !isAuthor ? 'Admin: Delete Community Story' : 'Delete Story'}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this story? This action cannot be undone.
+              {isAdmin && !isAuthor 
+                ? 'As an admin, you are about to delete a user-submitted community story. This action cannot be undone.'
+                : 'Are you sure you want to delete this story? This action cannot be undone.'
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
             <div className="font-medium truncate pr-2">{post.title}</div>
+            {isAdmin && !isAuthor && (
+              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                By {post.author?.username || 'Anonymous'}
+              </Badge>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>

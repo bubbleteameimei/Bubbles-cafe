@@ -830,17 +830,66 @@ export class DatabaseStorage implements IStorage {
 
   async getPost(slug: string): Promise<Post | undefined> {
     try {
-      const [post] = await db.select()
-        .from(postsTable)
-        .where(eq(postsTable.slug, slug))
-        .limit(1);
+      // Try the standard Drizzle query first
+      try {
+        const [post] = await db.select()
+          .from(postsTable)
+          .where(eq(postsTable.slug, slug))
+          .limit(1);
 
-      if (!post) return undefined;
+        if (!post) return undefined;
 
-      return {
-        ...post,
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-      };
+        return {
+          ...post,
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        };
+      } catch (queryError: any) {
+        console.log("Initial getPost query failed, trying fallback.", queryError.message);
+        
+        // If standard query fails, fall back to SQL for schema flexibility
+        if (queryError.message && (
+            queryError.message.includes("column") || 
+            queryError.message.includes("does not exist"))) {
+          console.log("Using fallback SQL query for getPost.");
+          
+          // Fallback to raw SQL query that only selects columns we know exist
+          const result = await db.execute(sql`
+            SELECT 
+              id, title, content, slug, excerpt, author_id,
+              metadata, created_at, is_secret, mature_content,
+              theme_category, reading_time_minutes,
+              likes_count, dislikes_count
+            FROM posts 
+            WHERE slug = ${slug}
+            LIMIT 1
+          `);
+          
+          const rows = result.rows;
+          if (!rows || rows.length === 0) return undefined;
+          
+          const post = rows[0];
+          
+          return {
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            authorId: post.author_id,
+            isSecret: post.is_secret || false,
+            matureContent: post.mature_content || false,
+            themeCategory: post.theme_category,
+            metadata: post.metadata || {},
+            createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
+            readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
+            likesCount: post.likes_count || 0,
+            dislikesCount: post.dislikes_count || 0
+          };
+        } else {
+          // If it's another type of error, rethrow it
+          throw queryError;
+        }
+      }
     } catch (error) {
       console.error("Error in getPost:", error);
       throw new Error("Failed to fetch post");
@@ -873,14 +922,54 @@ export class DatabaseStorage implements IStorage {
         isSecret: post.isSecret,
         themeCategory: post.themeCategory
       });
-
-      const [newPost] = await db.insert(postsTable)
-        .values({
-          ...post,
-          createdAt: new Date(),
-          readingTimeMinutes: Math.ceil(post.content.split(/\s+/).length / 200)
-        })
-        .returning();
+      
+      // Extract specific fields that we know exist in the database
+      // This avoids issues with missing columns
+      const basePost = {
+        title: post.title,
+        content: post.content,
+        slug: post.slug,
+        authorId: post.authorId,
+        excerpt: post.excerpt,
+        isSecret: post.isSecret || false,
+        metadata: post.metadata || {},
+        createdAt: new Date(),
+        readingTimeMinutes: Math.ceil(post.content.split(/\s+/).length / 200),
+        themeCategory: post.themeCategory || (post.metadata as any)?.themeCategory || null,
+        matureContent: false // Default value for mature_content
+      };
+      
+      // Use raw SQL to avoid schema mismatches, only including fields that actually exist
+      const result = await db.execute(sql`
+        INSERT INTO posts (
+          title, 
+          content, 
+          slug, 
+          author_id, 
+          excerpt, 
+          metadata, 
+          is_secret, 
+          mature_content, 
+          theme_category, 
+          created_at, 
+          reading_time_minutes
+        ) VALUES (
+          ${basePost.title}, 
+          ${basePost.content}, 
+          ${basePost.slug}, 
+          ${basePost.authorId}, 
+          ${basePost.excerpt || null}, 
+          ${JSON.stringify(basePost.metadata)}, 
+          ${basePost.isSecret || false}, 
+          ${basePost.matureContent || false}, 
+          ${basePost.themeCategory || null}, 
+          ${basePost.createdAt}, 
+          ${basePost.readingTimeMinutes}
+        )
+        RETURNING *;
+      `);
+      
+      const newPost = result.rows[0];
 
       console.log('Storage: Post created successfully:', {
         id: newPost.id,

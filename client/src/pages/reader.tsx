@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
@@ -10,7 +10,7 @@ import {
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Sun, Bug, Worm, Cloud, CloudFog,
-  Menu, BookText, Home
+  Menu, BookText, Home, Trash
 } from "lucide-react";
 import { useNightMode } from "@/hooks/use-night-mode";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +26,7 @@ import { FaTwitter, FaWordpress, FaInstagram } from 'react-icons/fa';
 import { BookmarkButton } from "@/components/ui/BookmarkButton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useTheme } from "@/components/theme-provider";
+import { useAuth } from "@/hooks/use-auth";
 import ApiLoader from "@/components/api-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import MistEffect from "@/components/effects/MistEffect";
@@ -40,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
@@ -93,6 +95,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Add authentication hook to check user role for admin actions
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = user?.isAdmin === true;
   
   // Theme is now managed by the useTheme hook
   const { theme, toggleTheme } = useTheme();
@@ -116,6 +124,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
   const [contentsDialogOpen, setContentsDialogOpen] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   // Detect if this is a refresh using Performance API
   const isRefreshRef = useRef<boolean>(
@@ -143,7 +152,38 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
   // Removed positionRestoredRef as we no longer save reading position
-  const { toast } = useToast();
+  
+  // Delete Post Mutation for admin actions
+  const deleteMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete post');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+      setShowDeleteDialog(false);
+      
+      toast({
+        title: 'Story Deleted',
+        description: 'Community story has been deleted by admin.',
+      });
+      
+      // Navigate back to the community page after deletion
+      setLocation('/community');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
@@ -1197,18 +1237,67 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
             <div className="flex flex-col items-center mb-2 mt-0">
               <div className="relative flex flex-col items-center">
                 {isCommunityContent && (
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute -top-7 bg-primary/10 text-foreground border-primary/20 mb-2"
-                  >
-                    Community Story
-                  </Badge>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-primary/10 text-foreground border-primary/20"
+                    >
+                      Community Story
+                    </Badge>
+                    {/* Add admin delete button for community stories */}
+                    {isAdmin && isCommunityContent && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash className="h-3.5 w-3.5 mr-1" />
+                        <span className="text-xs">Delete</span>
+                      </Button>
+                    )}
+                  </div>
                 )}
                 <h1
                   className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
                   dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
                 />
               </div>
+              
+              {/* Admin Delete Dialog */}
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center text-xl">
+                      <Trash className="h-5 w-5 mr-2 text-red-500" />
+                      Delete Community Story
+                    </DialogTitle>
+                    <DialogDescription className="pt-2 text-sm">
+                      As an admin, you are about to delete a user-submitted community story. This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">
+                    <div className="font-medium truncate pr-2">
+                      {currentPost.title?.rendered || currentPost.title || 'Story'}
+                    </div>
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                      Community
+                    </Badge>
+                  </div>
+                  <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                    <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => deleteMutation.mutate(currentPost.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      {deleteMutation.isPending ? 'Deleting...' : 'Delete Story'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <div className="flex flex-col items-center gap-1">
                 <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

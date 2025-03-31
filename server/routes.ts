@@ -199,16 +199,26 @@ export function registerRoutes(app: Express): Server {
       const slug = generateSlug(title);
 
       // Prepare the complete post data before validation
+      // Create proper metadata first
+      const metadata = {
+        isCommunityPost: true,
+        isAdminPost: false,
+        status: 'publish',  // Must be one of: 'pending', 'approved', 'publish'
+        source: 'community'
+      };
+      
+      console.log('[POST /api/posts/community] Metadata prepared:', metadata);
+      
       const postData = {
         title,
         content,
         slug,
-        authorId: req.user?.id || null, // Make authorId optional
-        metadata: {
-          isCommunityPost: true,
-          isApproved: true, // Auto-approve posts since we removed auth
-          status: 'approved'
-        }
+        authorId: req.user?.id || 1, // Default to admin user if not authenticated
+        excerpt: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+        themeCategory: 'horror', // Default theme for community posts
+        isSecret: false,
+        matureContent: false,
+        metadata // Use the prepared metadata object
       };
 
       console.log('[POST /api/posts/community] Post data before validation:', {
@@ -368,7 +378,10 @@ export function registerRoutes(app: Express): Server {
       
       // Verify this is a community post (via metadata)
       const metadata = post.metadata || {};
-      if (!(metadata as any).isCommunityPost) {
+      // Check if isCommunityPost flag is set in metadata
+      const isCommunityPost = (metadata as any)?.isCommunityPost === true;
+      
+      if (!isCommunityPost) {
         console.log(`[GET /api/posts/community/${slug}] Post found but is not a community post`);
         return res.status(404).json({ message: "Community post not found" });
       }
@@ -496,14 +509,24 @@ export function registerRoutes(app: Express): Server {
     try {
       // For testing purposes - create posts without authentication
       // Note: In production, this would be protected by isAuthenticated middleware
+      
+      // Extract community post flag and theme category from request
+      const isCommunityPost = req.body.metadata?.isCommunityPost || req.body.isCommunityPost || false;
+      const themeCategory = req.body.metadata?.themeCategory || req.body.themeCategory || 'HORROR';
+      
+      // Create post data object with all community flags in metadata
       const postData = insertPostSchema.parse({
         ...req.body,
         authorId: req.body.authorId || 1, // Use provided authorId or default to 1
+        // Store all flags in metadata since some DB columns might not exist
         metadata: {
           ...req.body.metadata,
-          isCommunityPost: req.body.isCommunityPost || false,
-          isApproved: true // Auto-approve posts for testing
-        }
+          isCommunityPost: isCommunityPost,
+          isAdminPost: false, // Set flag in metadata instead of column
+          isApproved: true, // Auto-approve posts for testing
+          themeCategory: themeCategory // Ensure theme is in metadata
+        },
+        themeCategory: themeCategory // Also set in the main object for column
       });
 
       console.log('Creating new post:', postData);
