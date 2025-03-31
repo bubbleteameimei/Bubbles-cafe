@@ -18,6 +18,8 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import { EnhancedPageTransition } from './components/enhanced-page-transition';
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
+// Import custom CSS for special effects
+import './styles/custom.css';
 // Scroll-to-top now uses inline styles
 // Using EnhancedPageTransition for smooth page transitions
 import { Button } from './components/ui/button';
@@ -83,6 +85,7 @@ import EdenGamePage from './pages/games/eden';
 import EdenCanvasGamePage from './pages/games/eden-game';
 import EdenGameNewPage from './pages/games/eden-game-new';
 import GameTestPage from './pages/game-test';
+import SigilPage from './pages/sigil';
 
 // Admin pages
 import AdminPage from './pages/admin';
@@ -216,6 +219,7 @@ const AppContent = () => {
               <Route path="/eden-pixelgame" component={EdenCanvasGamePage} />
               <Route path="/eden-game-new" component={EdenGameNewPage} />
               <Route path="/game-test" component={GameTestPage} />
+              <Route path="/sigil" component={SigilPage} />
 
               {/* Legal Routes */}
               <Route path="/legal/copyright" component={CopyrightPage} />

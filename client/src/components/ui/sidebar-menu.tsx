@@ -6,7 +6,7 @@ import {
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
-  Search, Sparkles, GanttChart, GamepadIcon, Rss
+  Search, Sparkles, GanttChart, GamepadIcon, Rss, Skull
 } from "lucide-react"
 
 
@@ -171,6 +171,19 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 {renderActiveIndicator('/eden-game')}
                 <GamepadIcon className="h-4 w-4" />
                 <span>Eden - Experimental Game</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location === '/sigil'}
+                onClick={() => handleNavigation('/sigil')}
+                tooltip="The Sigil"
+                className={menuItemClass}
+              >
+                {renderActiveIndicator('/sigil')}
+                <Skull className="h-4 w-4" />
+                <span>The Sigil</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
