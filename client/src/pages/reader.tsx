@@ -650,16 +650,28 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <p className="text-muted-foreground mb-4">
           Unable to load the requested story. Please try again from the home page.
         </p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            console.log('[Reader] Returning to home');
-            sessionStorage.removeItem('selectedStoryIndex');
-            setLocation('/');
-          }}
-        >
-          Return to Home
-        </Button>
+        <div className="flex gap-3 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => {
+              console.log('[Reader] Returning to home');
+              sessionStorage.removeItem('selectedStoryIndex');
+              setLocation('/');
+            }}
+          >
+            Return to Home
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              console.log('[Reader] Browsing stories');
+              sessionStorage.removeItem('selectedStoryIndex');
+              setLocation('/');
+            }}
+          >
+            Browse Stories
+          </Button>
+        </div>
       </div>
     );
   }
@@ -1583,8 +1595,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           </motion.article>
         </AnimatePresence>
 
-        {/* Bottom Return Home button */}
-        <div className={`mt-6 mb-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
+        {/* Bottom navigation buttons */}
+        <div className={`mt-6 mb-8 flex justify-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
             size="lg"
@@ -1596,6 +1608,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           >
             <ChevronLeft className="h-5 w-5" />
             <span>Return to Home</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocation('/');
+            }}
+            className="px-4 bg-background hover:bg-background/80 flex items-center gap-2"
+          >
+            <BookOpen className="h-5 w-5" />
+            <span>Browse Stories</span>
           </Button>
         </div>
       </div>

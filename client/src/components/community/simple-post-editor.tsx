@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,8 +16,24 @@ import { useAuth } from '@/hooks/use-auth';
 import { THEME_CATEGORIES } from '@/lib/content-analysis';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Info, Bold, Italic } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { 
+  Info, 
+  Bold, 
+  Italic, 
+  List, 
+  ListOrdered, 
+  Heading1, 
+  Heading2, 
+  Quote,
+  Undo,
+  HelpCircle
+} from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger, 
+} from "@/components/ui/tooltip";
 
 // Simpler form schema for community posts with lower character requirements
 const postSchema = z.object({
@@ -124,86 +140,284 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
   // Reference to the textarea element
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   
-  // Apply formatting (bold, italic) to selected text
-  const applyFormatting = (formatType: 'bold' | 'italic') => {
+  // Apply formatting to selected text
+  const applyFormatting = (formatType: 'bold' | 'italic' | 'heading1' | 'heading2' | 'list' | 'orderedList' | 'quote') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = textarea.value.substring(start, end);
-    
-    if (selectedText.length === 0) {
-      // No text selected, insert placeholder with formatting
-      const placeholder = formatType === 'bold' ? 'bold text' : 'italic text';
-      const markers = formatType === 'bold' ? '**' : '*';
-      const formattedText = `${markers}${placeholder}${markers}`;
-      
-      const currentContent = form.getValues('content');
-      const newText = currentContent.substring(0, start) + formattedText + currentContent.substring(end);
-      
-      // Update form
-      form.setValue('content', newText);
-      
-      // Focus back on textarea and select the placeholder text
-      setTimeout(() => {
-        textarea.focus();
-        const placeholderStart = start + markers.length;
-        const placeholderEnd = placeholderStart + placeholder.length;
-        textarea.setSelectionRange(placeholderStart, placeholderEnd);
-      }, 10);
-      
-      return;
-    }
-    
-    // Check if text is already formatted
-    const isAlreadyFormatted = 
-      (formatType === 'bold' && selectedText.startsWith('**') && selectedText.endsWith('**')) || 
-      (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
-       (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
-    
-    let newText = '';
     const currentContent = form.getValues('content');
+    let newText = currentContent;
     
-    if (isAlreadyFormatted) {
-      // Remove formatting
-      if (formatType === 'bold') {
-        const unformattedText = selectedText.substring(2, selectedText.length - 2);
-        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-        
-        // Update cursor position to account for removed formatting
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start, start + unformattedText.length);
-        }, 10);
-      } else {
-        const unformattedText = selectedText.substring(1, selectedText.length - 1);
-        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-        
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start, start + unformattedText.length);
-        }, 10);
+    // Function to find the start of the current line
+    const findLineStart = (text: string, position: number): number => {
+      for (let i = position; i >= 0; i--) {
+        if (text[i] === '\n') return i + 1;
       }
-    } else {
-      // Apply formatting based on type
-      if (formatType === 'bold') {
-        newText = currentContent.substring(0, start) + `**${selectedText}**` + currentContent.substring(end);
-      } else if (formatType === 'italic') {
-        newText = currentContent.substring(0, start) + `*${selectedText}*` + currentContent.substring(end);
+      return 0;
+    };
+    
+    // Get the position of the start of the current line
+    const lineStart = findLineStart(currentContent, start);
+    
+    // Handle different formatting types
+    switch (formatType) {
+      case 'bold':
+      case 'italic': {
+        if (selectedText.length === 0) {
+          // No text selected, insert placeholder with formatting
+          const placeholder = formatType === 'bold' ? 'bold text' : 'italic text';
+          const markers = formatType === 'bold' ? '**' : '*';
+          const formattedText = `${markers}${placeholder}${markers}`;
+          
+          newText = currentContent.substring(0, start) + formattedText + currentContent.substring(end);
+          
+          // Update form
+          form.setValue('content', newText);
+          
+          // Focus back on textarea and select the placeholder text
+          setTimeout(() => {
+            textarea.focus();
+            const placeholderStart = start + markers.length;
+            const placeholderEnd = placeholderStart + placeholder.length;
+            textarea.setSelectionRange(placeholderStart, placeholderEnd);
+          }, 10);
+          
+          return;
+        }
+        
+        // Check if text is already formatted
+        const isAlreadyFormatted = 
+          (formatType === 'bold' && selectedText.startsWith('**') && selectedText.endsWith('**')) || 
+          (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
+           (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
+        
+        if (isAlreadyFormatted) {
+          // Remove formatting
+          if (formatType === 'bold') {
+            const unformattedText = selectedText.substring(2, selectedText.length - 2);
+            newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
+            
+            // Update cursor position to account for removed formatting
+            setTimeout(() => {
+              textarea.focus();
+              textarea.setSelectionRange(start, start + unformattedText.length);
+            }, 10);
+          } else {
+            const unformattedText = selectedText.substring(1, selectedText.length - 1);
+            newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
+            
+            setTimeout(() => {
+              textarea.focus();
+              textarea.setSelectionRange(start, start + unformattedText.length);
+            }, 10);
+          }
+        } else {
+          // Apply formatting
+          const markers = formatType === 'bold' ? '**' : '*';
+          newText = currentContent.substring(0, start) + 
+                    `${markers}${selectedText}${markers}` + 
+                    currentContent.substring(end);
+          
+          // Focus back on textarea and keep the text selected with formatting
+          setTimeout(() => {
+            textarea.focus();
+            const markersLength = markers.length;
+            textarea.setSelectionRange(start + markersLength, end + markersLength);
+          }, 10);
+        }
+        break;
       }
       
-      // Focus back on textarea and keep the text selected with formatting
-      setTimeout(() => {
-        textarea.focus();
-        const markersLength = formatType === 'bold' ? 2 : 1;
-        textarea.setSelectionRange(start + markersLength, end + markersLength);
-      }, 10);
+      case 'heading1':
+      case 'heading2': {
+        // Get the current line text
+        const nextNewline = currentContent.indexOf('\n', lineStart);
+        const endOfLine = nextNewline > -1 ? nextNewline : currentContent.length;
+        const lineText = currentContent.substring(lineStart, endOfLine);
+        
+        // Check if line already has heading
+        const hasHeading1 = lineText.startsWith('# ');
+        const hasHeading2 = lineText.startsWith('## ');
+        
+        // Determine what to add or remove
+        if (formatType === 'heading1' && hasHeading1) {
+          // Remove heading 1
+          newText = currentContent.substring(0, lineStart) + 
+                    lineText.substring(2) + 
+                    currentContent.substring(endOfLine);
+        } else if (formatType === 'heading2' && hasHeading2) {
+          // Remove heading 2
+          newText = currentContent.substring(0, lineStart) + 
+                    lineText.substring(3) + 
+                    currentContent.substring(endOfLine);
+        } else {
+          // Remove any existing heading first
+          let cleanedLine = lineText;
+          if (hasHeading1) cleanedLine = lineText.substring(2);
+          if (hasHeading2) cleanedLine = lineText.substring(3);
+          
+          // Add the heading
+          const prefix = formatType === 'heading1' ? '# ' : '## ';
+          newText = currentContent.substring(0, lineStart) + 
+                    prefix + cleanedLine + 
+                    currentContent.substring(endOfLine);
+        }
+        
+        // Set cursor at end of line
+        setTimeout(() => {
+          textarea.focus();
+          const newLineEnd = lineStart + (newText.substring(lineStart).indexOf('\n') > -1 
+            ? newText.substring(lineStart).indexOf('\n') 
+            : newText.substring(lineStart).length);
+          textarea.setSelectionRange(newLineEnd, newLineEnd);
+        }, 10);
+        break;
+      }
+      
+      case 'list':
+      case 'orderedList': {
+        // Split selected text into lines
+        const lines = selectedText.split('\n');
+        
+        // Check if text already has list formatting
+        const listPrefix = formatType === 'list' ? '- ' : '1. ';
+        const isAlreadyList = lines.every(line => 
+          line.trim().startsWith(formatType === 'list' ? '- ' : /^\d+\.\s/.test(line.trim())));
+        
+        if (isAlreadyList) {
+          // Remove list formatting
+          const unlistedText = lines.map(line => {
+            if (formatType === 'list') {
+              return line.replace(/^-\s+/, '');
+            } else {
+              return line.replace(/^\d+\.\s+/, '');
+            }
+          }).join('\n');
+          
+          newText = currentContent.substring(0, start) + unlistedText + currentContent.substring(end);
+        } else {
+          // Add list formatting
+          const listedText = lines.map((line, index) => {
+            if (!line.trim()) return line; // Skip empty lines
+            
+            if (formatType === 'list') {
+              return `- ${line}`;
+            } else {
+              return `${index + 1}. ${line}`;
+            }
+          }).join('\n');
+          
+          newText = currentContent.substring(0, start) + listedText + currentContent.substring(end);
+        }
+        
+        // Set focus after operation
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            start, 
+            start + newText.substring(start, start + listedText.length).length
+          );
+        }, 10);
+        break;
+      }
+      
+      case 'quote': {
+        // Split selected text into lines
+        const lines = selectedText.split('\n');
+        
+        // Check if already quoted
+        const isAlreadyQuoted = lines.every(line => line.trim().startsWith('> '));
+        
+        if (isAlreadyQuoted) {
+          // Remove quote
+          const unquotedText = lines.map(line => line.replace(/^>\s+/, '')).join('\n');
+          newText = currentContent.substring(0, start) + unquotedText + currentContent.substring(end);
+        } else {
+          // Add quote
+          const quotedText = lines.map(line => {
+            if (!line.trim()) return line; // Skip empty lines
+            return `> ${line}`;
+          }).join('\n');
+          
+          newText = currentContent.substring(0, start) + quotedText + currentContent.substring(end);
+        }
+        
+        // Set focus after operation
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            start, 
+            start + newText.substring(start, start + selectedText.length * 2).length
+          );
+        }, 10);
+        break;
+      }
     }
     
-    // Update form
+    // Update form with new text
     form.setValue('content', newText);
   };
+  
+  // Add keyboard shortcuts for text formatting
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only proceed if textarea is focused
+      if (document.activeElement !== textareaRef.current) return;
+      
+      // Bold: Ctrl/Cmd + B
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        applyFormatting('bold');
+      }
+      
+      // Italic: Ctrl/Cmd + I
+      if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        applyFormatting('italic');
+      }
+      
+      // Heading 1: Ctrl/Cmd + 1
+      if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+        e.preventDefault();
+        applyFormatting('heading1');
+      }
+      
+      // Heading 2: Ctrl/Cmd + 2
+      if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+        e.preventDefault();
+        applyFormatting('heading2');
+      }
+      
+      // Unordered List: Ctrl/Cmd + U
+      if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault();
+        applyFormatting('list');
+      }
+      
+      // Ordered List: Ctrl/Cmd + O
+      if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+        e.preventDefault();
+        applyFormatting('orderedList');
+      }
+      
+      // Quote: Ctrl/Cmd + Q
+      if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
+        e.preventDefault();
+        applyFormatting('quote');
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // Remove event listener on cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -253,38 +467,195 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                   <FormItem>
                     <FormLabel>Your Story</FormLabel>
                     <div className="space-y-2">
-                      {/* Formatting toolbar */}
-                      <div className="flex flex-wrap items-center gap-2 py-2 px-3 border border-input bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 rounded-md mb-2 shadow-sm">
-                        <div className="text-xs font-medium mr-1 text-primary/80">Format Text:</div>
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8 px-3 flex gap-1 items-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200 group"
-                          onClick={() => applyFormatting('bold')}
-                        >
-                          <Bold className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                          <span className="text-xs font-medium">Bold</span>
-                        </Button>
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8 px-3 flex gap-1 items-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200 group"
-                          onClick={() => applyFormatting('italic')}
-                        >
-                          <Italic className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                          <span className="text-xs font-medium">Italic</span>
-                        </Button>
-                        <div className="text-xs text-muted-foreground mt-1 sm:mt-0 ml-0 sm:ml-auto flex flex-wrap gap-1 items-center">
-                          <span className="hidden sm:inline">Keyboard shortcuts:</span>
-                          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[10px] font-mono">
-                            Select text + B
-                          </kbd>
-                          <span className="hidden xs:inline">/</span>
-                          <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[10px] font-mono">
-                            Select text + I
-                          </kbd>
+                      {/* Enhanced Formatting toolbar */}
+                      <div className="border border-input bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 rounded-md mb-2 shadow-sm">
+                        <div className="flex flex-wrap items-center gap-2 py-2 px-3 border-b border-input">
+                          <div className="text-xs font-medium mr-1 text-primary/80">Text Style:</div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('bold')}
+                                >
+                                  <Bold className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Bold (Ctrl+B)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('italic')}
+                                >
+                                  <Italic className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Italic (Ctrl+I)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('heading1')}
+                                >
+                                  <Heading1 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Large Heading (Ctrl+1)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('heading2')}
+                                >
+                                  <Heading2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Medium Heading (Ctrl+2)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('list')}
+                                >
+                                  <List className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Bullet List (Ctrl+U)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('orderedList')}
+                                >
+                                  <ListOrdered className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Numbered List (Ctrl+O)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
+                                  onClick={() => applyFormatting('quote')}
+                                >
+                                  <Quote className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                <p className="text-xs">Block Quote (Ctrl+Q)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <div className="ml-auto">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    type="button"
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                                  >
+                                    <HelpCircle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="w-[280px]">
+                                  <p className="text-xs font-medium mb-1">Formatting Tips:</p>
+                                  <ul className="text-xs space-y-1">
+                                    <li>• Use <b>bold</b> and <i>italic</i> for emphasis</li>
+                                    <li>• Create headings to organize your story</li>
+                                    <li>• Use lists for multiple related items</li>
+                                    <li>• Block quotes for character dialogue or flashbacks</li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                        
+                        <div className="px-3 py-2 bg-slate-50/50 dark:bg-slate-800/20 text-[10px] text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                          <div className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+B</kbd>
+                            <span>Bold</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+I</kbd>
+                            <span>Italic</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+1/2</kbd>
+                            <span>Headings</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+U/O</kbd>
+                            <span>Lists</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+Q</kbd>
+                            <span>Quote</span>
+                          </div>
                         </div>
                       </div>
                       

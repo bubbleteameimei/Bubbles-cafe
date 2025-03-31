@@ -212,4 +212,4 @@ router.post('/profile-update-test', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -45,13 +45,18 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   const [notes, setNotes] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
+  // Determine which API endpoint to use based on variant
+  const apiBasePath = variant === 'reader' ? '/api/reader/bookmarks' : '/api/bookmarks';
+  
   // Query to check if post is already bookmarked
   const { data: bookmark, isLoading, error: bookmarkError } = useQuery({
-    queryKey: ['/api/bookmarks', postId],
+    queryKey: [apiBasePath, postId],
     queryFn: async () => {
-      if (!user) return null;
+      // If not in reader mode and not logged in, don't fetch
+      if (variant !== 'reader' && !user) return null;
+      
       try {
-        return await apiRequest<BookmarkData>(`/api/bookmarks/${postId}`);
+        return await apiRequest<BookmarkData>(`${apiBasePath}/${postId}`);
       } catch (error) {
         // If 404, it means not bookmarked which is normal
         if ((error as any).status === 404) {
@@ -62,7 +67,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         return null;
       }
     },
-    enabled: !!user,
+    enabled: variant === 'reader' || !!user, // Enable for reader variant regardless of login status
     // Add retry options to handle temporary connection issues
     retry: 2,
     retryDelay: 1000,
@@ -78,7 +83,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         throw new Error('Invalid post ID');
       }
       
-      return apiRequest('/api/bookmarks', {
+      return apiRequest(apiBasePath, {
         method: 'POST',
         body: JSON.stringify({
           postId,
@@ -88,8 +93,8 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
       toast({
         title: 'Bookmark added',
         description: 'This story has been added to your bookmarks.',
@@ -123,13 +128,13 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
         throw new Error('Invalid post ID for deletion');
       }
       
-      return apiRequest(`/api/bookmarks/${postId}`, {
+      return apiRequest(`${apiBasePath}/${postId}`, {
         method: 'DELETE',
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
       toast({
         title: 'Bookmark removed',
         description: 'This story has been removed from your bookmarks.',
@@ -152,7 +157,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
   // Update bookmark position (called when scrolling or changing pages)
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
-      return apiRequest(`/api/bookmarks/${postId}`, {
+      return apiRequest(`${apiBasePath}/${postId}`, {
         method: 'PATCH',
         body: JSON.stringify({
           lastPosition: position,
@@ -161,7 +166,7 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
     },
     onSuccess: () => {
       // Silent update - no toast needed
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
     },
   });
 
@@ -181,19 +186,26 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
 
   // Reader-style bookmark button
   if (variant === 'reader') {
+    // For anonymous users in reader mode - show bookmark button that works with session-based bookmarks
     if (!user) {
-      return (
+      // Use anonymous bookmark API - this will be a functional button rather than auth prompt
+      return isBookmarked ? (
         <button
-          onClick={() => {
-            toast({
-              title: 'Save for later reading',
-              description: 'Create a free account to bookmark stories and track your progress.',
-            });
-            // Navigate to auth page after a short delay
-            setTimeout(() => window.location.href = '/auth', 1500);
-          }}
+          onClick={handleRemoveBookmark}
+          className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
+          aria-label="Remove bookmark"
+          disabled={isLoading || deleteMutation.isPending}
+        >
+          <svg className="h-7 w-7 fill-current text-amber-400" viewBox="0 0 24 24">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          onClick={() => createMutation.mutate({ notes: '', tags: [] })}
           className={`h-12 w-12 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 flex items-center justify-center transition-all hover:scale-105 ${className}`}
           aria-label="Bookmark post"
+          disabled={isLoading || createMutation.isPending}
         >
           <svg className="h-7 w-7 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
@@ -446,12 +458,17 @@ export function BookmarkButton({ postId, className, variant = 'default', showTex
 export function useBookmarkPosition(postId: number) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Determine which API endpoint to use based on authentication status
+  // For anonymous users: /api/reader/bookmarks
+  // For authenticated users: /api/bookmarks
+  const apiBasePath = user ? '/api/bookmarks' : '/api/reader/bookmarks';
 
   const updatePositionMutation = useMutation({
     mutationFn: async (position: string) => {
-      // Validate inputs to prevent errors
-      if (!user || !postId || typeof postId !== 'number' || postId <= 0) {
-        console.warn('Invalid bookmark position update attempt', { user: !!user, postId });
+      // Validate postId
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        console.warn('Invalid bookmark position update attempt', { postId });
         return null;
       }
       
@@ -462,7 +479,7 @@ export function useBookmarkPosition(postId: number) {
       }
       
       try {
-        return await apiRequest(`/api/bookmarks/${postId}`, {
+        return await apiRequest(`${apiBasePath}/${postId}`, {
           method: 'PATCH',
           body: JSON.stringify({
             lastPosition: position,
@@ -476,7 +493,7 @@ export function useBookmarkPosition(postId: number) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookmarks', postId] });
+      queryClient.invalidateQueries({ queryKey: [apiBasePath, postId] });
     },
     onError: (error) => {
       // Silent error handling - just log to console without user-facing error
@@ -488,7 +505,7 @@ export function useBookmarkPosition(postId: number) {
   });
 
   const updatePosition = (position: string) => {
-    if (user && postId > 0 && position) {
+    if (postId > 0 && position) {
       try {
         updatePositionMutation.mutate(position);
       } catch (error) {

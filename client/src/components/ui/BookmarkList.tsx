@@ -48,27 +48,58 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Query to fetch all bookmarks for authenticated users
-  const { data: bookmarks = [], isLoading, error, status, fetchStatus } = useQuery({
+  const { data: authBookmarks = [], isLoading: isLoadingAuth, error: authError, status: authStatus, fetchStatus: authFetchStatus } = useQuery({
     queryKey: ['/api/bookmarks', { tag: filterTag }],
     queryFn: async () => {
       if (!user) return [];
       const url = filterTag
         ? `/api/bookmarks?tag=${encodeURIComponent(filterTag)}`
         : '/api/bookmarks';
-      console.log(`[BookmarkList] Fetching bookmarks with URL: ${url}`);
+      console.log(`[BookmarkList] Fetching authenticated bookmarks with URL: ${url}`);
       try {
         const result = await apiRequest<BookmarkWithPost[]>(url);
-        console.log(`[BookmarkList] Successfully fetched ${result.length} bookmarks`);
+        console.log(`[BookmarkList] Successfully fetched ${result.length} authenticated bookmarks`);
         return result;
       } catch (err) {
-        console.error('[BookmarkList] Error fetching bookmarks:', err);
+        console.error('[BookmarkList] Error fetching authenticated bookmarks:', err);
         throw err;
       }
     },
     enabled: !!user,
   });
   
-  // Query to fetch recommended stories for non-authenticated users
+  // Query to fetch anonymous bookmarks for non-authenticated users
+  const { 
+    data: anonymousBookmarks = [], 
+    isLoading: isLoadingAnonymous,
+    error: anonymousError,
+    status: anonymousStatus,
+    fetchStatus: anonymousFetchStatus
+  } = useQuery({
+    queryKey: ['/api/reader/bookmarks', { tag: filterTag }],
+    queryFn: async () => {
+      if (user) return []; // Skip for authenticated users
+      const url = filterTag
+        ? `/api/reader/bookmarks?tag=${encodeURIComponent(filterTag)}`
+        : '/api/reader/bookmarks';
+      console.log(`[BookmarkList] Fetching anonymous bookmarks with URL: ${url}`);
+      try {
+        // Force refetch by adding timestamp to avoid client-side caching issues
+        const result = await apiRequest<BookmarkWithPost[]>(`${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}`);
+        console.log(`[BookmarkList] Successfully fetched ${result.length} anonymous bookmarks`, result);
+        return result;
+      } catch (err) {
+        console.error('[BookmarkList] Error fetching anonymous bookmarks:', err);
+        return []; // Return empty array on error to prevent breaking UI
+      }
+    },
+    enabled: !user, // Only enabled for non-authenticated users
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 10000, // Refresh data every 10 seconds
+  });
+  
+  // Query to fetch recommended stories for non-authenticated users with no bookmarks
   const { 
     data: recommendedStories = [], 
     isLoading: isLoadingRecommended,
@@ -87,17 +118,26 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
         throw err;
       }
     },
-    enabled: !user,
+    // Only enable if user is not authenticated and there are no anonymous bookmarks
+    enabled: !user && anonymousStatus === 'success' && anonymousBookmarks.length === 0,
   });
   
   // Enhanced debug logging for loading states with more detailed information
   useEffect(() => {
-    console.log(`[BookmarkList] Loading state changed: 
-      - isLoading: ${isLoading}
-      - Status: ${status}
-      - Fetch status: ${fetchStatus}
+    console.log(`[BookmarkList] Auth loading state changed: 
+      - isLoadingAuth: ${isLoadingAuth}
+      - Status: ${authStatus}
+      - Fetch status: ${authFetchStatus}
       - Time: ${new Date().toISOString()}`);
-  }, [isLoading, status, fetchStatus]);
+  }, [isLoadingAuth, authStatus, authFetchStatus]);
+  
+  useEffect(() => {
+    console.log(`[BookmarkList] Anonymous loading state changed: 
+      - isLoadingAnonymous: ${isLoadingAnonymous}
+      - Status: ${anonymousStatus}
+      - Fetch status: ${anonymousFetchStatus}
+      - Time: ${new Date().toISOString()}`);
+  }, [isLoadingAnonymous, anonymousStatus, anonymousFetchStatus]);
   
   useEffect(() => {
     console.log(`[BookmarkList] Recommended loading state changed: 
@@ -107,8 +147,8 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       - Time: ${new Date().toISOString()}`);
   }, [isLoadingRecommended, recommendedStatus, recommendedFetchStatus]);
 
-  // Delete bookmark mutation
-  const deleteMutation = useMutation({
+  // Delete authenticated bookmark mutation
+  const deleteAuthMutation = useMutation({
     mutationFn: async (postId: number) => {
       // Validate input
       if (!postId || typeof postId !== 'number' || postId <= 0) {
@@ -127,7 +167,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       });
     },
     onError: (error) => {
-      console.error('Error removing bookmark:', error);
+      console.error('Error removing authenticated bookmark:', error);
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to remove bookmark. Please try again.';
@@ -139,6 +179,42 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
       });
     },
   });
+  
+  // Delete anonymous bookmark mutation
+  const deleteAnonymousMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      // Validate input
+      if (!postId || typeof postId !== 'number' || postId <= 0) {
+        throw new Error('Invalid post ID for anonymous bookmark deletion');
+      }
+      
+      return apiRequest(`/api/reader/bookmarks/${postId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reader/bookmarks'] });
+      toast({
+        title: 'Bookmark removed',
+        description: 'The bookmark has been removed successfully.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error removing anonymous bookmark:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to remove bookmark. Please try again.';
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Use the appropriate mutation based on user authentication status
+  const deleteMutation = user ? deleteAuthMutation : deleteAnonymousMutation;
 
   // Handle removing a bookmark
   const handleRemoveBookmark = (postId: number) => {
@@ -163,22 +239,25 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
     }
   };
 
+  // Combine authenticated and anonymous bookmarks
+  const bookmarks = user ? authBookmarks : anonymousBookmarks;
+  
   // Filter bookmarks by search query
-  const filteredBookmarks = bookmarks.filter(bookmark => {
+  const filteredBookmarks = bookmarks.filter((bookmark: BookmarkWithPost) => {
     if (!searchQuery) return true;
     
     const searchLower = searchQuery.toLowerCase();
     return (
       bookmark.post.title.toLowerCase().includes(searchLower) ||
       (bookmark.notes && bookmark.notes.toLowerCase().includes(searchLower)) ||
-      (bookmark.tags && bookmark.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      (bookmark.tags && bookmark.tags.some((tag: string) => tag.toLowerCase().includes(searchLower)))
     );
   });
 
   // Extract all unique tags from bookmarks
-  const allTags = bookmarks.reduce<string[]>((tags, bookmark) => {
+  const allTags = bookmarks.reduce<string[]>((tags: string[], bookmark: BookmarkWithPost) => {
     if (bookmark.tags && bookmark.tags.length > 0) {
-      bookmark.tags.forEach(tag => {
+      bookmark.tags.forEach((tag: string) => {
         if (!tags.includes(tag)) {
           tags.push(tag);
         }
@@ -190,8 +269,11 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   // Display a limited number of bookmarks if specified
   const displayedBookmarks = limit ? filteredBookmarks.slice(0, limit) : filteredBookmarks;
 
-  // Show recommended stories for non-authenticated users
+  // Special handling for non-authenticated users
   if (!user) {
+    // Show anonymous bookmarks if available, otherwise show recommended stories
+    const hasAnonymousBookmarks = anonymousBookmarks.length > 0;
+    
     return (
       <div className={className}>
         <div className="text-center p-6 bg-muted/20 rounded-lg border border-border/50 mb-8">
@@ -205,23 +287,98 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           </Link>
         </div>
         
-        {isLoadingRecommended ? (
+        {/* Show loading state for either anonymous bookmarks or recommended stories */}
+        {isLoadingAnonymous || isLoadingRecommended ? (
           <div className="relative min-h-[200px]">
             <ApiLoader 
               isLoading={true} 
-              message="Loading recommended stories..."
+              message={hasAnonymousBookmarks ? "Loading your bookmarks..." : "Loading recommended stories..."}
               minimumLoadTime={800}
               debug={true}
               overlayZIndex={100}
             >
               <div className="invisible">
                 <div className="h-[200px] w-full flex items-center justify-center">
-                  <span className="sr-only">Loading recommended stories...</span>
+                  <span className="sr-only">Loading content...</span>
                 </div>
               </div>
             </ApiLoader>
           </div>
+        ) : hasAnonymousBookmarks ? (
+          // Show anonymous bookmarks if available
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Your Bookmarks</h3>
+              <p className="text-xs text-muted-foreground">
+                Bookmarks are saved locally until you create an account
+              </p>
+            </div>
+            <div className="space-y-4">
+              {bookmarks.map((bookmark: BookmarkWithPost) => (
+                <Card key={bookmark.id} className="overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">
+                          <Link to={`/reader/${bookmark.post.slug}`} className="hover:underline">
+                            {bookmark.post.title}
+                          </Link>
+                        </CardTitle>
+                        <CardDescription>
+                          <div className="flex items-center text-xs mt-1 text-muted-foreground">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {format(new Date(bookmark.createdAt), 'MMM dd, yyyy')}
+                          </div>
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveBookmark(bookmark.postId)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                
+                  <CardContent className="pb-3">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {bookmark.post.excerpt}
+                    </p>
+                    
+                    {bookmark.notes && (
+                      <ScrollArea className="h-[80px] mt-2 rounded-md border p-3 bg-muted/20">
+                        <div className="text-sm text-muted-foreground min-h-[50px] w-full">{bookmark.notes}</div>
+                      </ScrollArea>
+                    )}
+                    
+                    {bookmark.tags && bookmark.tags.length > 0 && (
+                      <div className="flex items-center mt-3 flex-wrap gap-1">
+                        <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
+                        {bookmark.tags.map((tag: string) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                
+                  <CardFooter>
+                    <Link to={`/reader/${bookmark.post.slug}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Continue Reading
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
         ) : recommendedStories.length > 0 ? (
+          // Show recommended stories if no anonymous bookmarks
           <>
             <h3 className="text-xl font-semibold mb-4">Recommended Stories</h3>
             <div className="space-y-4">
@@ -269,6 +426,9 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
   }
 
   // Enhanced loading state handling with improved debugging and user feedback
+  const isLoading = user ? isLoadingAuth : isLoadingAnonymous;
+  const error = user ? authError : anonymousError;
+  
   if (isLoading) {
     return (
       <div className="relative min-h-[200px]">
@@ -278,7 +438,6 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
           minimumLoadTime={800}  
           debug={true}
           overlayZIndex={100}
-          spinnerSize={48}
         >
           <div className="invisible">
             {/* This creates proper space for the content while invisible */}
@@ -336,7 +495,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                     Clear filter <X className="h-3 w-3 ml-1" />
                   </Badge>
                 )}
-                {allTags.map(tag => (
+                {allTags.map((tag: string) => (
                   <Badge
                     key={tag}
                     variant={filterTag === tag ? "default" : "outline"}
@@ -362,7 +521,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
         </div>
       ) : (
         <div className="space-y-4">
-          {displayedBookmarks.map((bookmark) => (
+          {displayedBookmarks.map((bookmark: BookmarkWithPost) => (
             <Card key={bookmark.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
@@ -400,7 +559,7 @@ export function BookmarkList({ className, limit, showFilter = true }: BookmarkLi
                 {bookmark.tags && bookmark.tags.length > 0 && (
                   <div className="flex items-center mt-3 flex-wrap gap-1">
                     <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                    {bookmark.tags.map(tag => (
+                    {bookmark.tags.map((tag: string) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>

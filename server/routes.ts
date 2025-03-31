@@ -8,6 +8,21 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import express from 'express';
 import * as session from 'express-session';
+
+// Define session types for Express
+declare module 'express-session' {
+  interface SessionData {
+    likes: { [postId: string]: boolean };
+    anonymousBookmarks: { 
+      [postId: string]: {
+        notes: string | null;
+        tags: string[] | null;
+        lastPosition: string;
+        createdAt: string;
+      }
+    };
+  }
+}
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
 import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { z } from "zod";
@@ -94,6 +109,7 @@ const analyticsLimiter = rateLimit({
 // Update the registerRoutes function to add compression and proper caching
 // Import our recommendation routes
 import { registerRecommendationsRoutes } from "./routes/recommendations";
+import apiTestRoutes from './api-test';
 
 export function registerRoutes(app: Express): Server {
   // Register API test routes
@@ -1715,7 +1731,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Error handling middleware
-  // Bookmark API routes
+  // Bookmark API routes - Authenticated routes
   app.post("/api/bookmarks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { postId, notes, tags } = req.body;
@@ -1827,6 +1843,210 @@ export function registerRoutes(app: Express): Server {
       if ((error as Error).message === "Bookmark not found") {
         return res.status(404).json({ error: "Bookmark not found" });
       }
+      res.status(500).json({ error: "Failed to delete bookmark" });
+    }
+  });
+  
+  // Anonymous Bookmark API routes - No authentication required
+  // These routes are specifically for allowing anonymous users to bookmark in the reader view
+  
+  // Check anonymous bookmark
+  app.get("/api/reader/bookmarks/:postId", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      // Use session to store anonymous bookmarks with type assertion to avoid TS errors
+      const session = req.session as any;
+      if (!session.anonymousBookmarks) {
+        session.anonymousBookmarks = {};
+      }
+      
+      const isBookmarked = session.anonymousBookmarks[postId] ? true : false;
+      
+      if (!isBookmarked) {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      
+      const bookmark = {
+        id: 0, // Not needed for anonymous bookmarks
+        userId: 0, // Anonymous user
+        postId,
+        notes: session.anonymousBookmarks[postId].notes || null,
+        tags: session.anonymousBookmarks[postId].tags || null,
+        lastPosition: session.anonymousBookmarks[postId].lastPosition || "0",
+        createdAt: session.anonymousBookmarks[postId].createdAt || new Date().toISOString()
+      };
+      
+      res.json(bookmark);
+    } catch (error) {
+      console.error("Error fetching anonymous bookmark:", error);
+      res.status(500).json({ error: "Failed to fetch bookmark" });
+    }
+  });
+  
+  // Get all anonymous bookmarks
+  app.get("/api/reader/bookmarks", async (req: Request, res: Response) => {
+    try {
+      // Get the session
+      const session = req.session;
+      
+      // Initialize if doesn't exist
+      if (!session.anonymousBookmarks) {
+        session.anonymousBookmarks = {};
+      }
+      
+      // Filter by tag if provided in query params
+      const tagFilter = req.query.tag as string | undefined;
+      
+      // Convert session bookmarks to array format with posts data
+      const bookmarkPromises = Object.entries(session.anonymousBookmarks).map(async ([postId, bookmark]) => {
+        try {
+          // Fetch post data for this bookmark
+          const post = await storage.getPost(postId);
+          
+          if (!post) {
+            console.warn(`[Anonymous Bookmark] Post with ID ${postId} not found`);
+            return null;
+          }
+          
+          // Skip if tag filter is provided and this bookmark doesn't have the tag
+          if (tagFilter && (!bookmark.tags || !bookmark.tags.includes(tagFilter))) {
+            return null;
+          }
+          
+          return {
+            id: 0, // Not needed for anonymous bookmarks
+            userId: 0, // Anonymous user
+            postId: parseInt(postId, 10),
+            notes: bookmark.notes,
+            tags: bookmark.tags,
+            lastPosition: bookmark.lastPosition,
+            createdAt: bookmark.createdAt,
+            post
+          };
+        } catch (error) {
+          console.error(`Error fetching post ${postId} for anonymous bookmark:`, error);
+          return null;
+        }
+      });
+      
+      // Wait for all post fetch promises
+      const bookmarksWithPosts = (await Promise.all(bookmarkPromises)).filter(Boolean);
+      
+      // Sort by most recent first
+      bookmarksWithPosts.sort((a, b) => 
+        new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+      );
+      
+      res.json(bookmarksWithPosts);
+    } catch (error) {
+      console.error("Error fetching anonymous bookmarks:", error);
+      res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+
+  // Create anonymous bookmark
+  app.post("/api/reader/bookmarks", async (req: Request, res: Response) => {
+    try {
+      const { postId, notes, tags } = req.body;
+      
+      if (!postId) {
+        return res.status(400).json({ error: "Post ID is required" });
+      }
+      
+      // Initialize session storage for anonymous bookmarks if not exists
+      if (!req.session.anonymousBookmarks) {
+        req.session.anonymousBookmarks = {};
+      }
+      
+      // Store bookmark in session
+      req.session.anonymousBookmarks[postId] = {
+        notes: notes || null,
+        tags: tags || null,
+        lastPosition: "0", // Start at beginning
+        createdAt: new Date().toISOString()
+      };
+      
+      // Create response object with similar structure to authenticated bookmarks
+      const bookmark = {
+        id: 0, // Not needed for anonymous bookmarks
+        userId: 0, // Anonymous user
+        postId,
+        notes: notes || null,
+        tags: tags || null,
+        lastPosition: "0",
+        createdAt: new Date().toISOString()
+      };
+      
+      res.status(201).json(bookmark);
+    } catch (error) {
+      console.error("Error creating anonymous bookmark:", error);
+      res.status(500).json({ error: "Failed to create bookmark" });
+    }
+  });
+  
+  // Update anonymous bookmark position
+  app.patch("/api/reader/bookmarks/:postId", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { notes, tags, lastPosition } = req.body;
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      // Check if bookmark exists
+      if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      
+      // Update bookmark data
+      if (notes !== undefined) req.session.anonymousBookmarks[postId].notes = notes;
+      if (tags !== undefined) req.session.anonymousBookmarks[postId].tags = tags;
+      if (lastPosition !== undefined) req.session.anonymousBookmarks[postId].lastPosition = lastPosition;
+      
+      // Return updated bookmark
+      const bookmark = {
+        id: 0,
+        userId: 0,
+        postId,
+        notes: req.session.anonymousBookmarks[postId].notes || null,
+        tags: req.session.anonymousBookmarks[postId].tags || null,
+        lastPosition: req.session.anonymousBookmarks[postId].lastPosition || "0",
+        createdAt: req.session.anonymousBookmarks[postId].createdAt
+      };
+      
+      res.json(bookmark);
+    } catch (error) {
+      console.error("Error updating anonymous bookmark:", error);
+      res.status(500).json({ error: "Failed to update bookmark" });
+    }
+  });
+  
+  // Delete anonymous bookmark
+  app.delete("/api/reader/bookmarks/:postId", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      // Check if bookmark exists
+      if (!req.session.anonymousBookmarks || !req.session.anonymousBookmarks[postId]) {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      
+      // Delete the bookmark
+      delete req.session.anonymousBookmarks[postId];
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting anonymous bookmark:", error);
       res.status(500).json({ error: "Failed to delete bookmark" });
     }
   });
@@ -2433,6 +2653,3 @@ async function processPost(post: PostWithAnalytics): Promise<PostWithAnalytics> 
     timeOnPage: post.timeOnPage || 0
   };
 }
-
-// Register test routes for use in registerRoutes function below
-const apiTestRoutes = require('./api-test');
