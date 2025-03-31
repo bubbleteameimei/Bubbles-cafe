@@ -21,9 +21,6 @@ import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import "./auth.css";
 
-// Import user schema
-import { loginSchema } from "@shared/schema";
-
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
   const [email, setEmail] = useState("");

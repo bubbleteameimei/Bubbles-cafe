@@ -96,6 +96,8 @@ const analyticsLimiter = rateLimit({
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 
 export function registerRoutes(app: Express): Server {
+  // Register API test routes
+  app.use('/api/test', apiTestRoutes);
   // Set trust proxy before any middleware
   app.set('trust proxy', 1);
 
@@ -2431,3 +2433,6 @@ async function processPost(post: PostWithAnalytics): Promise<PostWithAnalytics> 
     timeOnPage: post.timeOnPage || 0
   };
 }
+
+// Register test routes for use in registerRoutes function below
+const apiTestRoutes = require('./api-test');

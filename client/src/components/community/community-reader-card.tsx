@@ -402,7 +402,7 @@ export function CommunityReaderCard({ post, isAuthenticated, currentUser, onEdit
           <DropdownMenuContent 
             align="end"
             sideOffset={8}
-            className="w-[200px] bg-card p-1 shadow-lg rounded-md border border-border animate-in zoom-in-90 duration-200"
+            className="w-[200px] bg-card p-1 shadow-lg rounded-md border border-border"
           >
             <DropdownMenuItem 
               onClick={() => navigate(`/community-story/${post.slug}`)}

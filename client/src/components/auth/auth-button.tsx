@@ -25,31 +25,9 @@ export function AuthButton({
   className = ''
 }: AuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, registerMutation } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  
-  // Mock registerMutation since it's not provided by useAuth
-  const registerMutation = {
-    mutateAsync: async (data: any) => {
-      // Simple implementation to handle registration directly
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-      
-      return response.json();
-    },
-    isPending: false
-  };
 
   const handleAction = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

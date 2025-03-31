@@ -57,6 +57,7 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
         metadata: {
           isCommunityPost: true,
           isAdminPost: false,
+          status: 'publish', // Explicitly set status to ensure it's published
           themeCategory: data.themeCategory === 'NONE' ? null : data.themeCategory
         }
       };
@@ -66,12 +67,14 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
         return apiRequest(`/api/posts/${postId}`, {
           method: 'PATCH',
           body: JSON.stringify(postData),
+          credentials: 'include', // Include credentials for CSRF
         });
       } else {
         // Create new post
         return apiRequest('/api/posts', {
           method: 'POST',
           body: JSON.stringify(postData),
+          credentials: 'include', // Include credentials for CSRF
         });
       }
     },

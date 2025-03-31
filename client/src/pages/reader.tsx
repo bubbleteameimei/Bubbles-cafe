@@ -156,13 +156,33 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Delete Post Mutation for admin actions
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
+      console.log(`[Reader] Attempting to delete post with ID: ${postId}`);
+      
+      const csrfToken = document.cookie.replace(/(?:(?:^|.*;\s*)XSRF-TOKEN\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+      console.log('[Reader] Using CSRF token for deletion');
+      
       const response = await fetch(`/api/posts/${postId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        credentials: 'include'
       });
       
-      if (!response.ok) throw new Error('Failed to delete post');
-      return response.json();
+      // Read response data
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error(`[Reader] Delete failed with status: ${response.status}`, data);
+        if (response.status === 401) {
+          throw new Error('Please log in to delete this story');
+        } else {
+          throw new Error(data.message || 'Failed to delete post');
+        }
+      }
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
@@ -170,7 +190,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       toast({
         title: 'Story Deleted',
-        description: 'Community story has been deleted by admin.',
+        description: isAdmin && user?.id !== currentPost?.authorId
+          ? 'Community story has been deleted by admin.'
+          : 'Your story has been deleted successfully.',
       });
       
       // Navigate back to the community page after deletion
@@ -178,11 +200,12 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
+        title: 'Delete Failed',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
-    },
+      setShowDeleteDialog(false);
+    }
   });
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
@@ -1244,8 +1267,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     >
                       Community Story
                     </Badge>
-                    {/* Add admin delete button for community stories */}
-                    {isAdmin && isCommunityContent && (
+                    {/* Show delete button for admins or post authors */}
+                    {(isAdmin || (isCommunityContent && user?.id === currentPost?.authorId)) && isCommunityContent && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1264,16 +1287,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 />
               </div>
               
-              {/* Admin Delete Dialog */}
+              {/* Story Delete Dialog */}
               <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle className="flex items-center text-xl">
                       <Trash className="h-5 w-5 mr-2 text-red-500" />
-                      Delete Community Story
+                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                        "Delete Community Story" : 
+                        "Delete Your Story"}
                     </DialogTitle>
                     <DialogDescription className="pt-2 text-sm">
-                      As an admin, you are about to delete a user-submitted community story. This action cannot be undone.
+                      {isAdmin && user?.id !== currentPost?.authorId ? 
+                        "As an admin, you are about to delete a user-submitted community story. This action cannot be undone." : 
+                        "You are about to delete your community story. This action cannot be undone."}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex items-center justify-between border p-3 rounded-md bg-muted/50 mt-2">

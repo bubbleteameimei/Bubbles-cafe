@@ -489,9 +489,11 @@ export class DatabaseStorage implements IStorage {
         id: userId, 
         createdAt,
         email, // Email changes should be handled separately with verification
-        metadata, // Remove metadata as it doesn't exist in the database
         ...safeUserData 
       } = userData as any;
+      
+      // Keep metadata for profile updates if it exists
+      // Note: metadata is a valid field in the users table
       
       // Update the user with remaining safe fields
       const [updatedUser] = await db.update(users)
