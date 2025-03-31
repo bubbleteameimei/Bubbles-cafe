@@ -201,6 +201,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1 px-2 py-1">
                     <SidebarMenuSub>
+                      {/* Dashboard - Keep as main admin page */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
                           isActive={location === '/admin/dashboard'}
@@ -211,94 +212,52 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+
+                      {/* Content Management - Merges Stories + Content + WordPress Sync */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/admin/users'}
-                          onClick={() => handleNavigation('/admin/users')}
-                          className={submenuItemClass}
-                        >
-                          <Users className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Manage Users</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/stories'}
-                          onClick={() => handleNavigation('/admin/stories')}
-                          className={submenuItemClass}
-                        >
-                          <ScrollText className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Manage Stories</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/content'}
+                          isActive={
+                            location === '/admin/stories' || 
+                            location === '/admin/content' || 
+                            location === '/admin/wordpress-sync'
+                          }
                           onClick={() => handleNavigation('/admin/content')}
                           className={submenuItemClass}
                         >
                           <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Content</span>
+                          <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+
+                      {/* User Management - Merges Users + Moderation */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/admin/content-moderation'}
-                          onClick={() => handleNavigation('/admin/content-moderation')}
+                          isActive={
+                            location === '/admin/users' || 
+                            location === '/admin/content-moderation'
+                          }
+                          onClick={() => handleNavigation('/admin/users')}
                           className={submenuItemClass}
                         >
-                          <ShieldAlert className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Moderation</span>
+                          <Users className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>User Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+
+                      {/* Insights & Reports - Merges Analytics + Statistics + Feedback + Bug Reports */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
-                          isActive={location === '/admin/analytics'}
+                          isActive={
+                            location === '/admin/analytics' || 
+                            location === '/admin/site-statistics' || 
+                            location === '/admin/feedback' || 
+                            location === '/admin/bug-reports'
+                          }
                           onClick={() => handleNavigation('/admin/analytics')}
                           className={submenuItemClass}
                         >
                           <LineChart className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Analytics</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/site-statistics'}
-                          onClick={() => handleNavigation('/admin/site-statistics')}
-                          className={submenuItemClass}
-                        >
-                          <BarChart className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Site Statistics</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/feedback'}
-                          onClick={() => handleNavigation('/admin/feedback')}
-                          className={submenuItemClass}
-                        >
-                          <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>User Feedback</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/bug-reports'}
-                          onClick={() => handleNavigation('/admin/bug-reports')}
-                          className={submenuItemClass}
-                        >
-                          <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>Bug Reports</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton
-                          isActive={location === '/admin/wordpress-sync'}
-                          onClick={() => handleNavigation('/admin/wordpress-sync')}
-                          className={submenuItemClass}
-                        >
-                          <Rss className="h-3.5 w-3.5 mr-2 opacity-70" />
-                          <span>WordPress Sync</span>
+                          <span>Insights & Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
