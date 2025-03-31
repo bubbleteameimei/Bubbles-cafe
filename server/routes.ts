@@ -204,7 +204,7 @@ export function registerRoutes(app: Express): Server {
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
     try {
-      const { title, content } = req.body;
+      const { title, content, themeCategory } = req.body;
 
       if (!title) {
         return res.status(400).json({
@@ -222,18 +222,22 @@ export function registerRoutes(app: Express): Server {
         isCommunityPost: true,
         isAdminPost: false,
         status: 'publish',  // Must be one of: 'pending', 'approved', 'publish'
-        source: 'community'
+        source: 'community',
+        themeCategory: themeCategory || 'HORROR' // Store the theme category in metadata
       };
       
       console.log('[POST /api/posts/community] Metadata prepared:', metadata);
+      
+      // Generate an excerpt from the content
+      const excerpt = content.substring(0, 150) + (content.length > 150 ? '...' : '');
       
       const postData = {
         title,
         content,
         slug,
         authorId: req.user?.id || 1, // Default to admin user if not authenticated
-        excerpt: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
-        themeCategory: 'horror', // Default theme for community posts
+        excerpt, // Use the generated excerpt
+        themeCategory: themeCategory || 'HORROR', // Use the theme from the form or default to HORROR
         isSecret: false,
         matureContent: false,
         metadata // Use the prepared metadata object

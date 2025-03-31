@@ -13,19 +13,22 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
-import { THEME_CATEGORIES } from '@/lib/content-analysis';
+// Simplified theme categories for the community page
+const SIMPLIFIED_THEME_CATEGORIES = {
+  'PSYCHOLOGICAL': { name: 'Psychological' },
+  'SUPERNATURAL': { name: 'Supernatural' },
+  'TECHNOLOGICAL': { name: 'Technological' },
+  'BODY_HORROR': { name: 'Body Horror' },
+  'GOTHIC': { name: 'Gothic' },
+  'APOCALYPTIC': { name: 'Apocalyptic' },
+  'HORROR': { name: 'General Horror' }
+};
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Info, 
   Bold, 
   Italic, 
-  List, 
-  ListOrdered, 
-  Heading1, 
-  Heading2, 
-  Quote,
-  Undo,
   HelpCircle
 } from 'lucide-react';
 import { 
@@ -40,6 +43,7 @@ const postSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters' }).max(100, { message: 'Title must be at most 100 characters' }),
   content: z.string().min(25, { message: 'Content must be at least 25 characters' }),
   themeCategory: z.string().optional(),
+  // Slug will be generated from title, not directly input by user
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -54,6 +58,9 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<string>('write');
 
+  // Get user information if available
+  const { user } = useAuth();
+  
   // Form setup with default values
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -67,9 +74,31 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
   // Create/update post mutation
   const { mutate: submitPost, isPending } = useMutation({
     mutationFn: async (data: PostFormValues) => {
+      // Generate a slug from the title
+      const generateSlug = (title: string) => {
+        return title
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with a single one
+          .trim() + '-' + Date.now().toString().slice(-4); // Add timestamp suffix to ensure uniqueness
+      };
+      
+      const slug = generateSlug(data.title);
+      
+      // Generate an excerpt from the content (first 150 characters)
+      const generateExcerpt = (content: string) => {
+        return content.slice(0, 150) + (content.length > 150 ? '...' : '');
+      };
+      
+      const excerpt = generateExcerpt(data.content);
+      
       // Always mark as community post in the metadata
       const postData = {
         ...data,
+        slug, // Add the generated slug
+        excerpt, // Add an excerpt for display in cards
+        authorId: user?.id || 1, // Use the logged-in user's ID or fallback to 1 (default user)
         metadata: {
           isCommunityPost: true,
           isAdminPost: false,
@@ -86,8 +115,8 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
           credentials: 'include', // Include credentials for CSRF
         });
       } else {
-        // Create new post
-        return apiRequest('/api/posts', {
+        // Create new post - use the community-specific endpoint
+        return apiRequest('/api/posts/community', {
           method: 'POST',
           body: JSON.stringify(postData),
           credentials: 'include', // Include credentials for CSRF
@@ -140,8 +169,8 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
   // Reference to the textarea element
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   
-  // Apply formatting to selected text
-  const applyFormatting = (formatType: 'bold' | 'italic' | 'heading1' | 'heading2' | 'list' | 'orderedList' | 'quote') => {
+  // Apply formatting to selected text - simplified to only bold and italic
+  const applyFormatting = (formatType: 'bold' | 'italic') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
@@ -151,217 +180,74 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
     const currentContent = form.getValues('content');
     let newText = currentContent;
     
-    // Function to find the start of the current line
-    const findLineStart = (text: string, position: number): number => {
-      for (let i = position; i >= 0; i--) {
-        if (text[i] === '\n') return i + 1;
-      }
-      return 0;
-    };
+    if (selectedText.length === 0) {
+      // No text selected, insert placeholder with formatting
+      const placeholder = formatType === 'bold' ? 'bold text' : 'italic text';
+      const markers = formatType === 'bold' ? '**' : '*';
+      const formattedText = `${markers}${placeholder}${markers}`;
+      
+      newText = currentContent.substring(0, start) + formattedText + currentContent.substring(end);
+      
+      // Update form
+      form.setValue('content', newText);
+      
+      // Focus back on textarea and select the placeholder text
+      setTimeout(() => {
+        textarea.focus();
+        const placeholderStart = start + markers.length;
+        const placeholderEnd = placeholderStart + placeholder.length;
+        textarea.setSelectionRange(placeholderStart, placeholderEnd);
+      }, 10);
+      
+      return;
+    }
     
-    // Get the position of the start of the current line
-    const lineStart = findLineStart(currentContent, start);
+    // Check if text is already formatted
+    const isAlreadyFormatted = 
+      (formatType === 'bold' && selectedText.startsWith('**') && selectedText.endsWith('**')) || 
+      (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
+        (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
     
-    // Handle different formatting types
-    switch (formatType) {
-      case 'bold':
-      case 'italic': {
-        if (selectedText.length === 0) {
-          // No text selected, insert placeholder with formatting
-          const placeholder = formatType === 'bold' ? 'bold text' : 'italic text';
-          const markers = formatType === 'bold' ? '**' : '*';
-          const formattedText = `${markers}${placeholder}${markers}`;
-          
-          newText = currentContent.substring(0, start) + formattedText + currentContent.substring(end);
-          
-          // Update form
-          form.setValue('content', newText);
-          
-          // Focus back on textarea and select the placeholder text
-          setTimeout(() => {
-            textarea.focus();
-            const placeholderStart = start + markers.length;
-            const placeholderEnd = placeholderStart + placeholder.length;
-            textarea.setSelectionRange(placeholderStart, placeholderEnd);
-          }, 10);
-          
-          return;
-        }
+    if (isAlreadyFormatted) {
+      // Remove formatting
+      if (formatType === 'bold') {
+        const unformattedText = selectedText.substring(2, selectedText.length - 2);
+        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
         
-        // Check if text is already formatted
-        const isAlreadyFormatted = 
-          (formatType === 'bold' && selectedText.startsWith('**') && selectedText.endsWith('**')) || 
-          (formatType === 'italic' && selectedText.startsWith('*') && selectedText.endsWith('*') && 
-           (!selectedText.startsWith('**') && !selectedText.endsWith('**')));
-        
-        if (isAlreadyFormatted) {
-          // Remove formatting
-          if (formatType === 'bold') {
-            const unformattedText = selectedText.substring(2, selectedText.length - 2);
-            newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-            
-            // Update cursor position to account for removed formatting
-            setTimeout(() => {
-              textarea.focus();
-              textarea.setSelectionRange(start, start + unformattedText.length);
-            }, 10);
-          } else {
-            const unformattedText = selectedText.substring(1, selectedText.length - 1);
-            newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
-            
-            setTimeout(() => {
-              textarea.focus();
-              textarea.setSelectionRange(start, start + unformattedText.length);
-            }, 10);
-          }
-        } else {
-          // Apply formatting
-          const markers = formatType === 'bold' ? '**' : '*';
-          newText = currentContent.substring(0, start) + 
-                    `${markers}${selectedText}${markers}` + 
-                    currentContent.substring(end);
-          
-          // Focus back on textarea and keep the text selected with formatting
-          setTimeout(() => {
-            textarea.focus();
-            const markersLength = markers.length;
-            textarea.setSelectionRange(start + markersLength, end + markersLength);
-          }, 10);
-        }
-        break;
-      }
-      
-      case 'heading1':
-      case 'heading2': {
-        // Get the current line text
-        const nextNewline = currentContent.indexOf('\n', lineStart);
-        const endOfLine = nextNewline > -1 ? nextNewline : currentContent.length;
-        const lineText = currentContent.substring(lineStart, endOfLine);
-        
-        // Check if line already has heading
-        const hasHeading1 = lineText.startsWith('# ');
-        const hasHeading2 = lineText.startsWith('## ');
-        
-        // Determine what to add or remove
-        if (formatType === 'heading1' && hasHeading1) {
-          // Remove heading 1
-          newText = currentContent.substring(0, lineStart) + 
-                    lineText.substring(2) + 
-                    currentContent.substring(endOfLine);
-        } else if (formatType === 'heading2' && hasHeading2) {
-          // Remove heading 2
-          newText = currentContent.substring(0, lineStart) + 
-                    lineText.substring(3) + 
-                    currentContent.substring(endOfLine);
-        } else {
-          // Remove any existing heading first
-          let cleanedLine = lineText;
-          if (hasHeading1) cleanedLine = lineText.substring(2);
-          if (hasHeading2) cleanedLine = lineText.substring(3);
-          
-          // Add the heading
-          const prefix = formatType === 'heading1' ? '# ' : '## ';
-          newText = currentContent.substring(0, lineStart) + 
-                    prefix + cleanedLine + 
-                    currentContent.substring(endOfLine);
-        }
-        
-        // Set cursor at end of line
+        // Update cursor position to account for removed formatting
         setTimeout(() => {
           textarea.focus();
-          const newLineEnd = lineStart + (newText.substring(lineStart).indexOf('\n') > -1 
-            ? newText.substring(lineStart).indexOf('\n') 
-            : newText.substring(lineStart).length);
-          textarea.setSelectionRange(newLineEnd, newLineEnd);
+          textarea.setSelectionRange(start, start + unformattedText.length);
         }, 10);
-        break;
-      }
-      
-      case 'list':
-      case 'orderedList': {
-        // Split selected text into lines
-        const lines = selectedText.split('\n');
+      } else {
+        const unformattedText = selectedText.substring(1, selectedText.length - 1);
+        newText = currentContent.substring(0, start) + unformattedText + currentContent.substring(end);
         
-        // Check if text already has list formatting
-        const listPrefix = formatType === 'list' ? '- ' : '1. ';
-        const isAlreadyList = lines.every(line => 
-          line.trim().startsWith(formatType === 'list' ? '- ' : /^\d+\.\s/.test(line.trim())));
-        
-        if (isAlreadyList) {
-          // Remove list formatting
-          const unlistedText = lines.map(line => {
-            if (formatType === 'list') {
-              return line.replace(/^-\s+/, '');
-            } else {
-              return line.replace(/^\d+\.\s+/, '');
-            }
-          }).join('\n');
-          
-          newText = currentContent.substring(0, start) + unlistedText + currentContent.substring(end);
-        } else {
-          // Add list formatting
-          const listedText = lines.map((line, index) => {
-            if (!line.trim()) return line; // Skip empty lines
-            
-            if (formatType === 'list') {
-              return `- ${line}`;
-            } else {
-              return `${index + 1}. ${line}`;
-            }
-          }).join('\n');
-          
-          newText = currentContent.substring(0, start) + listedText + currentContent.substring(end);
-        }
-        
-        // Set focus after operation
         setTimeout(() => {
           textarea.focus();
-          textarea.setSelectionRange(
-            start, 
-            start + newText.substring(start, start + listedText.length).length
-          );
+          textarea.setSelectionRange(start, start + unformattedText.length);
         }, 10);
-        break;
       }
+    } else {
+      // Apply formatting
+      const markers = formatType === 'bold' ? '**' : '*';
+      newText = currentContent.substring(0, start) + 
+                `${markers}${selectedText}${markers}` + 
+                currentContent.substring(end);
       
-      case 'quote': {
-        // Split selected text into lines
-        const lines = selectedText.split('\n');
-        
-        // Check if already quoted
-        const isAlreadyQuoted = lines.every(line => line.trim().startsWith('> '));
-        
-        if (isAlreadyQuoted) {
-          // Remove quote
-          const unquotedText = lines.map(line => line.replace(/^>\s+/, '')).join('\n');
-          newText = currentContent.substring(0, start) + unquotedText + currentContent.substring(end);
-        } else {
-          // Add quote
-          const quotedText = lines.map(line => {
-            if (!line.trim()) return line; // Skip empty lines
-            return `> ${line}`;
-          }).join('\n');
-          
-          newText = currentContent.substring(0, start) + quotedText + currentContent.substring(end);
-        }
-        
-        // Set focus after operation
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(
-            start, 
-            start + newText.substring(start, start + selectedText.length * 2).length
-          );
-        }, 10);
-        break;
-      }
+      // Focus back on textarea and keep the text selected with formatting
+      setTimeout(() => {
+        textarea.focus();
+        const markersLength = markers.length;
+        textarea.setSelectionRange(start + markersLength, end + markersLength);
+      }, 10);
     }
     
     // Update form with new text
     form.setValue('content', newText);
   };
   
-  // Add keyboard shortcuts for text formatting
+  // Add keyboard shortcuts for text formatting (simplified to bold and italic only)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only proceed if textarea is focused
@@ -377,36 +263,6 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
       if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
         e.preventDefault();
         applyFormatting('italic');
-      }
-      
-      // Heading 1: Ctrl/Cmd + 1
-      if ((e.ctrlKey || e.metaKey) && e.key === '1') {
-        e.preventDefault();
-        applyFormatting('heading1');
-      }
-      
-      // Heading 2: Ctrl/Cmd + 2
-      if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-        e.preventDefault();
-        applyFormatting('heading2');
-      }
-      
-      // Unordered List: Ctrl/Cmd + U
-      if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
-        e.preventDefault();
-        applyFormatting('list');
-      }
-      
-      // Ordered List: Ctrl/Cmd + O
-      if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-        e.preventDefault();
-        applyFormatting('orderedList');
-      }
-      
-      // Quote: Ctrl/Cmd + Q
-      if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
-        e.preventDefault();
-        applyFormatting('quote');
       }
     };
     
@@ -467,7 +323,7 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                   <FormItem>
                     <FormLabel>Your Story</FormLabel>
                     <div className="space-y-2">
-                      {/* Enhanced Formatting toolbar */}
+                      {/* Simplified Formatting toolbar */}
                       <div className="border border-input bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 rounded-md mb-2 shadow-sm">
                         <div className="flex flex-wrap items-center gap-2 py-2 px-3 border-b border-input">
                           <div className="text-xs font-medium mr-1 text-primary/80">Text Style:</div>
@@ -509,105 +365,6 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                             </Tooltip>
                           </TooltipProvider>
                           
-                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
-                                  onClick={() => applyFormatting('heading1')}
-                                >
-                                  <Heading1 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">Large Heading (Ctrl+1)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
-                                  onClick={() => applyFormatting('heading2')}
-                                >
-                                  <Heading2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">Medium Heading (Ctrl+2)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
-                                  onClick={() => applyFormatting('list')}
-                                >
-                                  <List className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">Bullet List (Ctrl+U)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
-                                  onClick={() => applyFormatting('orderedList')}
-                                >
-                                  <ListOrdered className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">Numbered List (Ctrl+O)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0 flex items-center justify-center hover:bg-primary/5 hover:text-primary border-slate-200 dark:border-slate-700 transition-all duration-200"
-                                  onClick={() => applyFormatting('quote')}
-                                >
-                                  <Quote className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">Block Quote (Ctrl+Q)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
                           <div className="ml-auto">
                             <TooltipProvider>
                               <Tooltip>
@@ -624,10 +381,9 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                                 <TooltipContent side="bottom" className="w-[280px]">
                                   <p className="text-xs font-medium mb-1">Formatting Tips:</p>
                                   <ul className="text-xs space-y-1">
-                                    <li>• Use <b>bold</b> and <i>italic</i> for emphasis</li>
-                                    <li>• Create headings to organize your story</li>
-                                    <li>• Use lists for multiple related items</li>
-                                    <li>• Block quotes for character dialogue or flashbacks</li>
+                                    <li>• Use <b>bold</b> for emphasis on important words</li>
+                                    <li>• Use <i>italic</i> for thoughts or subtle emphasis</li>
+                                    <li>• Combine <b><i>both</i></b> for maximum emphasis</li>
                                   </ul>
                                 </TooltipContent>
                               </Tooltip>
@@ -643,18 +399,6 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                           <div className="flex items-center gap-1">
                             <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+I</kbd>
                             <span>Italic</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+1/2</kbd>
-                            <span>Headings</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+U/O</kbd>
-                            <span>Lists</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-mono">Ctrl+Q</kbd>
-                            <span>Quote</span>
                           </div>
                         </div>
                       </div>
@@ -695,11 +439,13 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="NONE">None</SelectItem>
-                          {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
-                            <SelectItem key={key} value={key}>
-                              {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="PSYCHOLOGICAL">Psychological</SelectItem>
+                          <SelectItem value="SUPERNATURAL">Supernatural</SelectItem>
+                          <SelectItem value="TECHNOLOGICAL">Technological</SelectItem>
+                          <SelectItem value="BODY_HORROR">Body Horror</SelectItem>
+                          <SelectItem value="GOTHIC">Gothic</SelectItem>
+                          <SelectItem value="APOCALYPTIC">Apocalyptic</SelectItem>
+                          <SelectItem value="HORROR">General Horror</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
@@ -715,12 +461,92 @@ export default function SimplePostEditor({ postId, onClose }: SimplePostEditorPr
                 <div className="prose dark:prose-invert max-w-none">
                   <h1 className="text-2xl font-bold mb-6 font-serif">{form.watch('title') || 'Untitled Horror Story'}</h1>
                   <div className="font-serif text-base leading-relaxed whitespace-pre-wrap">
-                    {/* Handle basic markdown in preview with advanced processing */}
+                    {/* Enhanced markdown processing in preview */}
                     {form.watch('content')
                       // First handle double line breaks for paragraphs
                       .split('\n\n')
                       .map((paragraph, i) => {
-                        // Process markdown within each paragraph
+                        // Check if it's a heading
+                        if (paragraph.startsWith('# ')) {
+                          return (
+                            <h1 
+                              key={i}
+                              className="text-2xl font-bold mt-6 mb-4 font-serif" 
+                              dangerouslySetInnerHTML={{ 
+                                __html: paragraph.substring(2)
+                                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                  .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
+                                  .replace(/\n/g, '<br />')
+                              }}
+                            />
+                          );
+                        }
+
+                        if (paragraph.startsWith('## ')) {
+                          return (
+                            <h2 
+                              key={i}
+                              className="text-xl font-bold mt-5 mb-3 font-serif" 
+                              dangerouslySetInnerHTML={{ 
+                                __html: paragraph.substring(3)
+                                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                  .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
+                                  .replace(/\n/g, '<br />')
+                              }}
+                            />
+                          );
+                        }
+
+                        // Check if it's a list (unordered)
+                        if (paragraph.split('\n').every(line => line.trim().startsWith('- '))) {
+                          const listItems = paragraph.split('\n').map(line => {
+                            const content = line.substring(2)
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+                            return `<li>${content}</li>`;
+                          }).join('');
+
+                          return (
+                            <ul key={i} className="list-disc pl-6 mb-4 space-y-1 font-serif">
+                              <div dangerouslySetInnerHTML={{ __html: listItems }} />
+                            </ul>
+                          );
+                        }
+
+                        // Check if it's a list (ordered)
+                        if (paragraph.split('\n').every(line => /^\d+\.\s/.test(line.trim()))) {
+                          const listItems = paragraph.split('\n').map(line => {
+                            const content = line.replace(/^\d+\.\s+/, '')
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+                            return `<li>${content}</li>`;
+                          }).join('');
+
+                          return (
+                            <ol key={i} className="list-decimal pl-6 mb-4 space-y-1 font-serif">
+                              <div dangerouslySetInnerHTML={{ __html: listItems }} />
+                            </ol>
+                          );
+                        }
+
+                        // Check if it's a blockquote
+                        if (paragraph.split('\n').every(line => line.trim().startsWith('> '))) {
+                          const quoteContent = paragraph.split('\n').map(line => {
+                            return line.substring(2)
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*([^*]+?)\*/g, '<em>$1</em>');
+                          }).join('<br />');
+
+                          return (
+                            <blockquote 
+                              key={i} 
+                              className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-1 mb-4 italic font-serif text-slate-700 dark:text-slate-300"
+                              dangerouslySetInnerHTML={{ __html: quoteContent }}
+                            />
+                          );
+                        }
+                        
+                        // Regular paragraph
                         const processed = paragraph
                           // Handle bold text - non-greedy capture
                           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
