@@ -185,7 +185,34 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       return data;
     },
     onSuccess: () => {
+      // Invalidate all related queries to ensure cache is properly cleared
+      console.log('[Reader] Invalidating all related query caches');
+      
+      // Invalidate community posts list
       queryClient.invalidateQueries({ queryKey: ['/api/posts/community'] });
+      
+      // Invalidate all posts endpoint
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      
+      // Invalidate specific post endpoints
+      if (currentPost?.id) {
+        console.log(`[Reader] Invalidating specific post cache for ID: ${currentPost.id}`);
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/posts', currentPost.id.toString()]
+        });
+      }
+      
+      // Also invalidate the specific post query based on the slug
+      if (routeSlug) {
+        console.log('[Reader] Invalidating specific post cache for slug:', routeSlug);
+        queryClient.invalidateQueries({ 
+          queryKey: ["wordpress", "posts", "reader", routeSlug] 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/posts', routeSlug] 
+        });
+      }
+      
       setShowDeleteDialog(false);
       
       toast({
@@ -195,7 +222,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           : 'Your story has been deleted successfully.',
       });
       
-      // Navigate back to the community page after deletion
+      // Force navigation back to the community page after deletion
+      console.log('[Reader] Navigating back to community page');
+      // Immediate navigation to prevent page from trying to load deleted content
       setLocation('/community');
     },
     onError: (error: Error) => {
@@ -362,9 +391,31 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         const newSlug = routeSlug || (currentPost.slug || `post-${currentPost.id}`);
         console.log('[Reader] Setting auto-save slug:', newSlug);
         setAutoSaveSlug(newSlug);
+        
+        // Check if we've reloaded but the post has been deleted
+        if (routeSlug && currentPost.id && currentIndex === 0) {
+          // Verify the post exists by making a direct check using the improved endpoint
+          // that handles both slugs and IDs
+          fetch(`/api/posts/${currentPost.id}`)
+            .then(response => {
+              if (response.status === 404) {
+                console.log('[Reader] Post may have been deleted, redirecting to community page');
+                // Post might have been deleted, redirect to community page
+                // No delay to prevent showing deleted content
+                setLocation('/community');
+                toast({
+                  title: 'Post Not Available',
+                  description: 'This post is no longer available, redirecting to community page.'
+                });
+              }
+            })
+            .catch(err => {
+              console.error('[Reader] Error checking post existence:', err);
+            });
+        }
       }
     }
-  }, [currentIndex, postsData?.posts, routeSlug]);
+  }, [currentIndex, postsData?.posts, routeSlug, queryClient, setLocation, toast]);
 
   // Position restoration notification has been removed as requested
 
@@ -579,6 +630,31 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Add a useEffect hook to handle deleted posts detection on component mount
+  useEffect(() => {
+    // Only run this check if we're looking at a specific post by slug
+    if (routeSlug && !isLoading && postsData?.posts?.length === 1) {
+      const post = postsData.posts[0];
+      // Make a direct API request to verify the post still exists
+      // Use the slugOrId endpoint which handles both IDs and slugs correctly
+      fetch(`/api/posts/${post.id}`)
+        .then(response => {
+          if (response.status === 404) {
+            console.log('[Reader] Post no longer exists in the database, redirecting');
+            toast({
+              title: 'Story Unavailable',
+              description: 'This story is no longer available.'
+            });
+            // Immediate navigation to prevent the deleted content from being displayed
+            setLocation('/community');
+          }
+        })
+        .catch(error => {
+          console.error('[Reader] Error verifying post existence:', error);
+        });
+    }
+  }, [routeSlug, isLoading, postsData, setLocation, toast]);
 
   // Use our ApiLoader component to handle loading state with the global context
   if (isLoading) {

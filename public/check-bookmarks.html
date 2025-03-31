@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmarks Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 10px 0;
+      cursor: pointer;
+      background: #4a69bd;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    #output {
+      background: #f5f6fa;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      max-height: 500px;
+      overflow: auto;
+    }
+    .bookmark-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .bookmark-title {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .bookmark-meta {
+      color: #666;
+      font-size: 14px;
+    }
+    .tag {
+      display: inline-block;
+      background: #e1e5eb;
+      padding: 3px 8px;
+      border-radius: 10px;
+      margin-right: 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bookmarks API Test</h1>
+  
+  <div>
+    <h2>Authentication</h2>
+    <div>
+      <input type="email" id="email" placeholder="Email" value="vantalison@gmail.com">
+      <input type="password" id="password" placeholder="Password" value="admin123">
+      <button id="login-btn">Login</button>
+      <button id="logout-btn">Logout</button>
+    </div>
+    <div id="auth-status">Not logged in</div>
+  </div>
+  
+  <div>
+    <h2>Bookmarks</h2>
+    <button id="get-bookmarks-btn">Get Bookmarks</button>
+    <div id="bookmarks-container"></div>
+  </div>
+  
+  <h3>API Response:</h3>
+  <pre id="output">No data yet</pre>
+  
+  <script>
+    let csrfToken = '';
+    
+    // Get CSRF token
+    async function getCsrfToken() {
+      try {
+        const response = await fetch('/api/auth/csrf');
+        const data = await response.json();
+        csrfToken = data.csrfToken;
+        console.log('CSRF token:', csrfToken);
+        return csrfToken;
+      } catch (error) {
+        console.error('Error getting CSRF token:', error);
+        document.getElementById('output').textContent = 'Error getting CSRF token: ' + error.message;
+      }
+    }
+    
+    // Login
+    async function login() {
+      try {
+        if (!csrfToken) {
+          await getCsrfToken();
+        }
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        
+        if (response.ok) {
+          document.getElementById('auth-status').textContent = `Logged in as ${data.user.email}`;
+        } else {
+          document.getElementById('auth-status').textContent = 'Login failed';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        document.getElementById('output').textContent = 'Login error: ' + error.message;
+      }
+    }
+    
+    // Logout
+    async function logout() {
+      try {
+        if (!csrfToken) {
+          await getCsrfToken();
+        }
+        
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': csrfToken
+          },
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('auth-status').textContent = 'Logged out';
+      } catch (error) {
+        console.error('Logout error:', error);
+        document.getElementById('output').textContent = 'Logout error: ' + error.message;
+      }
+    }
+    
+    // Get Bookmarks
+    async function getBookmarks() {
+      try {
+        if (!csrfToken) {
+          await getCsrfToken();
+        }
+        
+        const response = await fetch('/api/bookmarks', {
+          headers: {
+            'X-CSRF-Token': csrfToken
+          },
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        
+        if (response.ok) {
+          displayBookmarks(data);
+        }
+      } catch (error) {
+        console.error('Error getting bookmarks:', error);
+        document.getElementById('output').textContent = 'Error getting bookmarks: ' + error.message;
+      }
+    }
+    
+    // Display bookmarks
+    function displayBookmarks(bookmarks) {
+      const container = document.getElementById('bookmarks-container');
+      container.innerHTML = '';
+      
+      if (!bookmarks || bookmarks.length === 0) {
+        container.innerHTML = '<p>No bookmarks found</p>';
+        return;
+      }
+      
+      bookmarks.forEach(bookmark => {
+        const bookmarkCard = document.createElement('div');
+        bookmarkCard.className = 'bookmark-card';
+        
+        const title = document.createElement('div');
+        title.className = 'bookmark-title';
+        title.textContent = bookmark.post.title;
+        
+        const meta = document.createElement('div');
+        meta.className = 'bookmark-meta';
+        meta.textContent = `Saved: ${new Date(bookmark.createdAt).toLocaleDateString()}`;
+        
+        const notes = document.createElement('div');
+        notes.textContent = bookmark.notes || 'No notes';
+        
+        const tagsContainer = document.createElement('div');
+        tagsContainer.style.marginTop = '10px';
+        
+        if (bookmark.tags && bookmark.tags.length > 0) {
+          bookmark.tags.forEach(tag => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = tag;
+            tagsContainer.appendChild(tagSpan);
+          });
+        } else {
+          tagsContainer.textContent = 'No tags';
+        }
+        
+        bookmarkCard.appendChild(title);
+        bookmarkCard.appendChild(meta);
+        bookmarkCard.appendChild(notes);
+        bookmarkCard.appendChild(tagsContainer);
+        container.appendChild(bookmarkCard);
+      });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await getCsrfToken();
+      
+      document.getElementById('login-btn').addEventListener('click', login);
+      document.getElementById('logout-btn').addEventListener('click', logout);
+      document.getElementById('get-bookmarks-btn').addEventListener('click', getBookmarks);
+    });
+  </script>
+</body>
+</html>
