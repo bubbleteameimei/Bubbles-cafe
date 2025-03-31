@@ -13,8 +13,37 @@ export let pool: any = {
 };
 export let db: any = {};
 
+// Flag to track initialization status
+let isInitialized = false;
+let initializationPromise: Promise<void>;
+
+// Function to wait for initialization to complete
+export async function waitForPoolInitialization(timeoutMs = 10000): Promise<boolean> {
+  // If already initialized, return immediately
+  if (isInitialized) return true;
+  
+  // If initialization is in progress, wait for it
+  if (initializationPromise) {
+    try {
+      await Promise.race([
+        initializationPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Pool initialization timeout')), timeoutMs)
+        )
+      ]);
+      return isInitialized;
+    } catch (error) {
+      console.error('Error waiting for pool initialization:', error);
+      return false;
+    }
+  }
+  
+  // Initialization hasn't started yet, so return false
+  return false;
+}
+
 // Self-executing async function to initialize the database connection
-(async () => {
+initializationPromise = (async () => {
   try {
     console.log('Initializing database connection for server...');
     
@@ -42,6 +71,7 @@ export let db: any = {};
     });
     
     console.log('Database connection initialized successfully');
+    isInitialized = true;
   } catch (err) {
     console.error('Critical error during database initialization:', err);
     console.error('Database operations will fail until connection is established');

@@ -23,6 +23,7 @@ import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
+import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
 
 const app = express();
@@ -157,6 +158,11 @@ async function startServer() {
         // This may fail if tables don't exist yet
         const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
         serverLogger.info('Database connected, tables exist', { postsCount });
+        
+        // Run migrations to ensure all tables defined in the schema exist
+        serverLogger.info('Running database migrations to create missing tables...');
+        await runMigrations();
+        serverLogger.info('Database migrations completed');
     
         if (postsCount === 0) {
           serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
