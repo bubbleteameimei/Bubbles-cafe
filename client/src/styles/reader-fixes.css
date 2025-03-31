@@ -4,6 +4,7 @@
 .reader-container.story-content {
   padding-left: 5rem !important; /* Moderate padding on both sides */
   padding-right: 5rem !important;
+  padding-top: 4rem !important; /* Added top padding to prevent navbar overlap */
   max-width: 100% !important; /* Ensure full width is used */
   box-sizing: border-box !important; /* Include padding in width calculation */
   margin-left: auto !important;
@@ -29,6 +30,7 @@
   .reader-container.story-content {
     padding-left: 4rem !important; /* Moderate padding on medium screens */
     padding-right: 4rem !important;
+    padding-top: 4rem !important; /* Maintain top padding for navbar clearance */
   }
 }
 
@@ -37,6 +39,7 @@
   .reader-container.story-content {
     padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
     padding-right: 2.5rem !important;
+    padding-top: 5rem !important; /* Additional top padding on mobile for navbar clearance */
   }
 }
 
@@ -45,5 +48,6 @@
   .reader-container.story-content {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
+    padding-top: 5rem !important; /* Maintain increased top padding on small screens */
   }
 }

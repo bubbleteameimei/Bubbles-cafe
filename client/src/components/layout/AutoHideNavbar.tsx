@@ -15,7 +15,8 @@ interface AutoHideNavbarProps {
  * 3. Navigation visibility based on page context
  */
 const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
-  hideOnPaths = []
+  // Updated default paths to hide on - added /reader and reader related paths
+  hideOnPaths = ['/reader', '/reader/*', '/community-story/*'] 
 }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
