@@ -1226,8 +1226,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       {/* Full width immersive reading experience */}
 
       <div className={`pt-0 pb-0 bg-background mt-0 w-full overflow-visible ${isUIHidden ? 'distraction-free-active' : ''}`}>
-        {/* Static font size controls in a prominent position */}
-        <div className={`flex justify-between items-center px-4 md:px-8 lg:px-12 z-10 py-2 border-b border-border/30 mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        {/* Static font size controls in a prominent position - reduced mobile spacing */}
+        <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-2 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
             <Button
@@ -1469,8 +1469,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   <time className="font-medium whitespace-nowrap">{formattedDate}</time>
                 </div>
 
-                {/* Navigation Buttons */}
-                <div className={`flex items-center justify-center mt-2 gap-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                {/* Navigation Buttons - reduced vertical spacing */}
+                <div className={`flex items-center justify-center mt-0.5 sm:mt-2 gap-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Previous Button */}
                   <Button
                     variant="outline"

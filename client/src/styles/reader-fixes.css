@@ -1,5 +1,18 @@
 /* Reader page fixes and enhancements */
 
+/* Improve mobile spacing between navigation and font controls */
+.navbar-container + div .reader-container {
+  margin-top: 0 !important;
+}
+
+/* Reduce spacing between UI elements on reader page */
+@media (max-width: 768px) {
+  .ui-fade-element {
+    margin-bottom: 0.25rem !important;
+  }
+
+}
+
 /* Add comfortable padding to story content */
 .reader-container.story-content {
   padding-left: 5rem !important; /* Moderate padding on both sides */
@@ -39,7 +52,7 @@
   .reader-container.story-content {
     padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
     padding-right: 2.5rem !important;
-    padding-top: 5rem !important; /* Additional top padding on mobile for navbar clearance */
+    padding-top: 3rem !important; /* Reduced top padding on mobile for better spacing */
   }
 }
 
@@ -48,6 +61,26 @@
   .reader-container.story-content {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
-    padding-top: 5rem !important; /* Maintain increased top padding on small screens */
+    padding-top: 1rem !important; /* Even more reduced top padding to bring content closer to controls */
+  }
+  
+  /* Make font control buttons more compact on mobile */
+  .reader-container button {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    height: 1.75rem !important;
+    font-size: 0.75rem !important;
+    min-height: 0 !important;
+  }
+  
+  /* Make gap between buttons smaller */
+  .reader-container .flex.items-center.gap-2 {
+    gap: 0.25rem !important;
+  }
+  
+  /* Reduce vertical space between element groups */
+  .reader-container h1 {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
   }
 }

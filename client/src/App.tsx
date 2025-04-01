@@ -179,7 +179,7 @@ const AppContent = () => {
       <main className="min-h-screen flex-1 flex flex-col bg-background w-full min-w-full max-w-[100vw]" 
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
-        <div className="w-full min-w-full max-w-full pt-20 lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0"
+        <div className={`w-full min-w-full max-w-full ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
           <ErrorBoundary>
             <Switch>
