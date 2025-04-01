@@ -1086,8 +1086,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           width: 100%;
         }
         
-        /* Only target the navigation header and not the controls in distraction-free mode */
-        .reader-page[data-distraction-free="true"] header.main-header {
+        /* Target both navigation headers in distraction-free mode */
+        .reader-page[data-distraction-free="true"] header.main-header,
+        .reader-page[data-distraction-free="true"] .navbar-container {
           opacity: 0;
           visibility: hidden;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1375,7 +1376,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                  className="text-3xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
                   dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
                 />
               </div>

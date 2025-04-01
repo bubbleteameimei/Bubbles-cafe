@@ -4,66 +4,98 @@
  * This script validates that the CSS changes to reduce space between 
  * reader header and controls in mobile view have been properly implemented.
  */
-
 import fs from 'fs';
 import path from 'path';
 
 function checkReaderCSSforMobileSpacing() {
-  console.log('Checking reader-fixes.css for mobile spacing adjustments...');
+  console.log('Checking reader mobile spacing implementation...\n');
   
-  const readerFixesPath = path.join('client', 'src', 'styles', 'reader-fixes.css');
+  // Check the reader CSS file
+  const readerCSSPath = path.join('client', 'src', 'styles', 'reader-fixes.css');
   
-  if (!fs.existsSync(readerFixesPath)) {
-    console.error('❌ reader-fixes.css file not found!');
+  if (!fs.existsSync(readerCSSPath)) {
+    console.error('❌ reader-fixes.css not found');
     return;
   }
   
-  // Read the CSS file
-  const cssContent = fs.readFileSync(readerFixesPath, 'utf8');
+  const cssContent = fs.readFileSync(readerCSSPath, 'utf8');
   
-  // Check for mobile-specific media queries
-  const hasMobileMediaQuery = cssContent.includes('@media (max-width: 640px)') || 
-                              cssContent.includes('@media (max-width: 480px)');
+  // Check for mobile media query
+  const hasMobileQuery = cssContent.includes('@media (max-width: 640px)');
   
-  if (hasMobileMediaQuery) {
-    console.log('✅ Mobile media queries found in reader-fixes.css');
+  if (hasMobileQuery) {
+    console.log('✅ Mobile media query found in reader-fixes.css');
   } else {
-    console.error('❌ No mobile media queries found in reader-fixes.css');
+    console.error('❌ Mobile media query missing in reader-fixes.css');
+  }
+  
+  // Check for reduced padding in controls
+  const hasReducedControlsPadding = cssContent.includes('padding-top: 0.25rem');
+  
+  if (hasReducedControlsPadding) {
+    console.log('✅ Reduced controls padding found in reader-fixes.css');
+  } else {
+    console.error('❌ Reduced controls padding missing in reader-fixes.css');
+  }
+  
+  // Check for adjusted top padding for navbar
+  const hasAdjustedNavbarPadding = cssContent.includes('padding-top: 3.5rem');
+  
+  if (hasAdjustedNavbarPadding) {
+    console.log('✅ Adjusted top padding for navbar found in reader-fixes.css');
+  } else {
+    console.error('❌ Adjusted top padding for navbar missing in reader-fixes.css');
+  }
+  
+  // Check for z-index fix
+  const hasZIndexFix = cssContent.includes('z-index: 50');
+  
+  if (hasZIndexFix) {
+    console.log('✅ Z-index fix for navbar found in reader-fixes.css');
+  } else {
+    console.error('❌ Z-index fix for navbar missing in reader-fixes.css');
+  }
+  
+  // Check the reader component for padding adjustments
+  const readerComponentPath = path.join('client', 'src', 'pages', 'reader.tsx');
+  
+  if (!fs.existsSync(readerComponentPath)) {
+    console.error('❌ reader.tsx not found');
     return;
   }
   
-  // Check for reduced padding in mobile view
-  const hasReducedPadding = cssContent.includes('padding-top: 3rem') || 
-                           cssContent.includes('padding-top: 0.5rem') ||
-                           cssContent.includes('padding-top: 0.25rem');
+  const readerContent = fs.readFileSync(readerComponentPath, 'utf8');
   
-  if (hasReducedPadding) {
-    console.log('✅ Reduced padding for mobile view found');
+  // Check for adjusted base padding in reader component
+  const hasBaseReaderPadding = readerContent.includes('pt-14 sm:pt-16') || 
+                              readerContent.includes('pt-14');
+  
+  if (hasBaseReaderPadding) {
+    console.log('✅ Adjusted base padding found in reader.tsx');
   } else {
-    console.error('❌ No reduced padding for mobile view found');
+    console.error('❌ Adjusted base padding missing in reader.tsx');
   }
   
-  // Check if reader page container has reduced padding in JSX
-  const readerPagePath = path.join('client', 'src', 'pages', 'reader.tsx');
-  const readerContent = fs.readFileSync(readerPagePath, 'utf8');
+  // Check for distraction-free mode navbar handling
+  const hasDistractionFreeNavbar = readerContent.includes('.navbar-container');
   
-  const hasReducedMainPadding = readerContent.includes('pt-8 sm:pt-16');
-  
-  if (hasReducedMainPadding) {
-    console.log('✅ Reader page has reduced top padding for mobile (pt-8) with desktop value preserved (sm:pt-16)');
+  if (hasDistractionFreeNavbar) {
+    console.log('✅ Navbar handling in distraction-free mode found in reader.tsx');
   } else {
-    console.error('❌ Reader page does not have properly configured responsive padding');
+    console.error('❌ Navbar handling in distraction-free mode missing in reader.tsx');
   }
   
   // Overall assessment
-  if (hasMobileMediaQuery && hasReducedPadding && hasReducedMainPadding) {
-    console.log('\n✅ All mobile spacing adjustments verified successfully!');
-    console.log('The reader page now has:');
-    console.log('- Reduced top padding on mobile devices');
-    console.log('- Compact controls spacing on small screens');
-    console.log('- Preserved desktop spacing for larger screens');
+  if (hasMobileQuery && hasReducedControlsPadding && hasAdjustedNavbarPadding && 
+      hasZIndexFix && hasBaseReaderPadding && hasDistractionFreeNavbar) {
+    console.log('\n✅ All mobile spacing adjustments are properly implemented!');
+    console.log('This will ensure:');
+    console.log('1. The navbar is visible on the reader page');
+    console.log('2. The spacing between controls and navbar is appropriate for mobile');
+    console.log('3. Elements don\'t overlap due to proper z-index and padding');
+    console.log('4. Distraction-free mode properly hides the navbar');
   } else {
-    console.error('\n❌ Some mobile spacing adjustments are missing');
+    console.error('\n❌ Some mobile spacing adjustments are missing or incomplete');
   }
 }
 
