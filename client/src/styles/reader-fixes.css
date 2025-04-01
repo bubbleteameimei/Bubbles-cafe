@@ -48,52 +48,6 @@
   .reader-container.story-content {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
-    padding-top: 3rem !important; /* Reduced top padding for mobile view */
-  }
-}
-
-/* Adjust spacing between header and controls in mobile only */
-@media (max-width: 640px) {
-  /* Target the font controls container to reduce spacing */
-  .reader-page div[class*="flex justify-between items-center"] {
-    padding-top: 0.25rem !important;
-    padding-bottom: 0.25rem !important; 
-    margin-bottom: 0 !important;
-    margin-top: -0.5rem !important; /* Further reduce top margin */
-  }
-  
-  /* Reduce spacing between controls and content */
-  .reader-page .reader-container {
-    margin-top: -0.5rem !important;
-  }
-  
-  /* Adjust the top padding of the entire reader page to accommodate the navbar */
-  .reader-page {
-    padding-top: 2.75rem !important; /* Reduced from 3.5rem to tighten spacing */
-  }
-  
-  /* Make the navbar more compact on mobile */
-  .navbar-container {
-    z-index: 50 !important;
-    min-height: 2.5rem !important; /* Smaller navbar */
-    transform: scale(0.95) !important; /* Slightly scale down the navbar */
-    transform-origin: top center !important;
-  }
-  
-  /* Adjust the navbar's internal spacing */
-  .navbar-container nav {
-    padding-top: 0.1rem !important;
-    padding-bottom: 0.1rem !important;
-  }
-  
-  /* Make font control buttons smaller and more compact */
-  .reader-page button {
-    transform: scale(0.95) !important;
-    margin-right: -0.1rem !important;
-  }
-  
-  /* Remove unnecessary vertical space */
-  .reader-page .prose {
-    margin-top: -0.5rem !important;
+    padding-top: 5rem !important; /* Maintain increased top padding on small screens */
   }
 }

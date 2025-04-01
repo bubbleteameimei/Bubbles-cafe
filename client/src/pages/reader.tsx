@@ -1053,7 +1053,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // The theme and toggleTheme functions are already declared at the top of the component
   
   return (
-    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-8 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
+    <div className="relative min-h-screen bg-background reader-page overflow-visible pt-16 sm:pt-16 md:pt-18 lg:pt-20 pb-8 flex flex-col"
       /* Added enhanced background-related styling directly here */
       data-reader-page="true" 
       data-distraction-free={isUIHidden ? "true" : "false"}>
@@ -1086,9 +1086,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           width: 100%;
         }
         
-        /* Target both navigation headers in distraction-free mode */
-        .reader-page[data-distraction-free="true"] header.main-header,
-        .reader-page[data-distraction-free="true"] .navbar-container {
+        /* Only target the navigation header and not the controls in distraction-free mode */
+        .reader-page[data-distraction-free="true"] header.main-header {
           opacity: 0;
           visibility: hidden;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1376,7 +1375,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   </div>
                 )}
                 <h1
-                  className="text-3xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
+                  className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
                   dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
                 />
               </div>

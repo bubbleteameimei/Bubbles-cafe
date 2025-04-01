@@ -3,16 +3,22 @@ import Navigation from './navigation';
 
 interface AutoHideNavbarProps {
   threshold?: number;
+  hideOnPaths?: string[];
 }
 
 /**
  * AutoHideNavbar component - optimized for tablet, desktop, and laptop layouts
  * 
  * This component handles:
- * 1. Device-specific layout adjustments
- * 2. Navigation visibility based on scroll position
+ * 1. Path-based conditional rendering of navigation
+ * 2. Device-specific layout adjustments
+ * 3. Navigation visibility based on page context
  */
-const AutoHideNavbar: React.FC<AutoHideNavbarProps> = () => {
+const AutoHideNavbar: React.FC<AutoHideNavbarProps> = ({
+  // Updated default paths to hide on - added /reader and reader related paths
+  hideOnPaths = ['/reader', '/reader/*', '/community-story/*'] 
+}) => {
+  const [currentPath, setCurrentPath] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Track scroll position for desktop and laptop enhancements
@@ -34,6 +40,33 @@ const AutoHideNavbar: React.FC<AutoHideNavbarProps> = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    // Update current path when component mounts
+    setCurrentPath(window.location.pathname);
+
+    // Listen for pathname changes
+    const handlePathnameChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePathnameChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePathnameChange);
+    };
+  }, []);
+
+  // Check if current path is in the hideOnPaths array
+  const shouldHideOnCurrentPath = hideOnPaths.some(path => 
+    currentPath === path || 
+    (path.endsWith('*') && currentPath.startsWith(path.slice(0, -1)))
+  );
+
+  // Don't render anything if we should completely hide on this path
+  if (shouldHideOnCurrentPath) {
+    return null;
+  }
 
   // Return navigation with responsive class for device optimization
   return (
