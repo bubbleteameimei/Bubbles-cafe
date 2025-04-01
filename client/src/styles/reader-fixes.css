@@ -48,6 +48,26 @@
   .reader-container.story-content {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
-    padding-top: 5rem !important; /* Maintain increased top padding on small screens */
+    padding-top: 3rem !important; /* Reduced top padding for mobile view */
+  }
+}
+
+/* Reduce top/header buttons spacing from main nav in mobile only */
+@media (max-width: 640px) {
+  /* Target the font controls container to reduce spacing */
+  .reader-page div[class*="flex justify-between items-center"] {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important; 
+    margin-bottom: 0 !important;
+  }
+  
+  /* Reduce spacing between controls and content */
+  .reader-page .reader-container {
+    margin-top: -0.5rem !important;
+  }
+  
+  /* Adjust the top padding of the entire reader page */
+  .reader-page {
+    padding-top: 0.5rem !important;
   }
 }
