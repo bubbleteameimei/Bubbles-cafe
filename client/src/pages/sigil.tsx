@@ -137,149 +137,158 @@ const SigilPage = () => {
               className="relative"
               style={{ filter: 'drop-shadow(0 0 2px rgba(40, 0, 0, 0.2))' }}
             >
-              {/* Completely redesigned, abstract sigil SVG - more like an ancient disturbing symbol */}
+              {/* Completely redesigned, truly disturbing sigil - no face-like features */}
               <svg
                 width="320"
                 height="320"
                 viewBox="0 0 300 300"
-                className="opacity-80"
+                className="opacity-90"
               >
                 <defs>
-                  {/* Subtle, dark gradient */}
-                  <radialGradient id="sigilGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" stopColor="#070707" />
-                    <stop offset="60%" stopColor="#030303" />
+                  {/* Extremely subtle, dark gradient */}
+                  <radialGradient id="darkVoid" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
+                    <stop offset="0%" stopColor="#050505" />
+                    <stop offset="70%" stopColor="#030303" />
                     <stop offset="100%" stopColor="#000000" />
                   </radialGradient>
                   
-                  {/* Very subtle glow */}
-                  <filter id="subtleGlow">
-                    <feGaussianBlur stdDeviation="1.5" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  {/* Film grain texture */}
+                  <filter id="filmGrain">
+                    <feTurbulence baseFrequency="0.65" numOctaves="3" seed="1" type="fractalNoise" result="noise" />
+                    <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.03 0" in="noise" result="grainAlpha" />
+                    <feBlend mode="multiply" in="SourceGraphic" in2="grainAlpha" />
                   </filter>
                   
-                  {/* Texture effect for aged appearance */}
-                  <filter id="noiseTexture">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" seed="3" stitchTiles="stitch" result="noise" />
-                    <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.05 0" in="noise" result="colorNoise" />
-                    <feComposite operator="in" in="colorNoise" in2="SourceGraphic" result="noisyImage" />
-                    <feBlend mode="multiply" in="noisyImage" in2="SourceGraphic" />
-                  </filter>
-                  
-                  {/* Distortion for the sigil itself */}
-                  <filter id="slightDistortion">
-                    <feTurbulence type="turbulence" baseFrequency="0.01" numOctaves="2" seed="2" result="turbulence" />
+                  {/* Subtle distortion */}
+                  <filter id="microDistortion">
+                    <feTurbulence type="turbulence" baseFrequency="0.005" numOctaves="3" seed="2" result="turbulence" />
                     <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="2" xChannelSelector="R" yChannelSelector="G" />
+                  </filter>
+                  
+                  {/* Subtle bleeding effect */}
+                  <filter id="bleed" x="-10%" y="-10%" width="120%" height="120%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="0.5" result="blur" />
+                    <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.05 0 1 0 0 0 0 0 1 0 0 0 0 0 18 -7" result="bleed" />
+                    <feBlend in="SourceGraphic" in2="bleed" mode="normal" />
                   </filter>
                 </defs>
                 
-                {/* Background */}
+                {/* Base layer - pure darkness */}
                 <rect x="0" y="0" width="300" height="300" fill="#000" />
                 
-                {/* Dark background circle */}
-                <circle cx="150" cy="150" r="140" fill="url(#sigilGradient)" filter="url(#noiseTexture)" opacity="0.95" />
+                {/* Dark background with subtle texture */}
+                <circle cx="150" cy="150" r="148" fill="url(#darkVoid)" filter="url(#filmGrain)" opacity="0.98" />
                 
-                {/* Disturbing abstract sigil - inspired by Necronomicon and ancient cave drawings */}
-                <g filter="url(#slightDistortion)">
-                  {/* Main sigil structure - asymmetrical, dissonant shape */}
-                  <motion.path
-                    d="M150,70 C180,90 200,80 210,110 C220,140 240,170 220,190 C200,210 170,220 150,200 C130,220 100,210 80,190 C60,170 80,140 90,110 C100,80 120,90 150,70 Z"
-                    fill="none"
-                    stroke="#1a0000"
-                    strokeWidth="1"
-                    opacity="0.8"
-                    animate={{ 
-                      strokeWidth: [1, 1.2, 1],
-                      opacity: [0.8, 0.9, 0.8],
+                {/* Central void/abyss with radial lines */}
+                <g>
+                  {/* Concentric rings of increasing darkness */}
+                  {[60, 45, 30, 15].map((radius, i) => (
+                    <motion.circle
+                      key={`void-${i}`}
+                      cx="150"
+                      cy="150"
+                      r={radius}
+                      fill="none"
+                      stroke={`rgba(${10-i*2}, 0, 0, 0.${4+i})`}
+                      strokeWidth="0.3"
+                      animate={{
+                        opacity: [0.4, 0.5, 0.4],
+                        r: [radius, radius+1, radius]
+                      }}
+                      transition={{
+                        duration: 12 + i,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                        delay: i * 3
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Darkness at the center */}
+                  <motion.circle
+                    cx="150"
+                    cy="150"
+                    r="8"
+                    fill="#000000"
+                    animate={{
+                      r: [8, 9, 8],
+                      opacity: [0.95, 1, 0.95]
                     }}
-                    transition={{ 
-                      duration: 10,
+                    transition={{
+                      duration: 20,
+                      repeat: Infinity,
+                      repeatType: "mirror"
+                    }}
+                  />
+                </g>
+                
+                {/* Main sigil pattern - asymmetrical and non-representational */}
+                <g filter="url(#microDistortion)">
+                  {/* Unsettling, eldritch geometry */}
+                  <motion.path
+                    d="M150,65 L170,100 L200,90 L190,120 L220,140 L190,150 L200,180 L170,170 L150,200 L130,170 L100,180 L110,150 L80,140 L110,120 L100,90 L130,100 Z"
+                    fill="none"
+                    stroke="#0f0000"
+                    strokeWidth="0.4"
+                    opacity="0.7"
+                    animate={{
+                      opacity: [0.7, 0.8, 0.7],
+                      strokeWidth: [0.4, 0.5, 0.4]
+                    }}
+                    transition={{
+                      duration: 15,
                       repeat: Infinity,
                       repeatType: "mirror"
                     }}
                   />
                   
-                  {/* Inner structure - looks almost like a non-human face or uncomfortable pattern */}
+                  {/* Broken, disturbing symmetry */}
                   <motion.path
-                    d="M150,110 C165,120 175,110 180,130 C185,150 190,160 180,170 C170,180 160,175 150,165 C140,175 130,180 120,170 C110,160 115,150 120,130 C125,110 135,120 150,110 Z"
+                    d="M150,85 L162,110 L185,102 L177,125 L197,135 L177,143 L185,165 L162,155 L150,175 L138,155 L115,165 L123,143 L103,135 L123,125 L115,102 L138,110 Z"
                     fill="none"
-                    stroke="#250000"
-                    strokeWidth="0.8"
-                    opacity="0.7"
-                    animate={{ 
-                      strokeWidth: [0.8, 1, 0.8],
-                      opacity: [0.7, 0.8, 0.7],
+                    stroke="#120000"
+                    strokeWidth="0.3"
+                    opacity="0.6"
+                    animate={{
+                      opacity: [0.6, 0.7, 0.6],
+                      strokeWidth: [0.3, 0.4, 0.3]
                     }}
-                    transition={{ 
-                      duration: 8,
+                    transition={{
+                      duration: 18,
                       repeat: Infinity,
                       repeatType: "mirror",
-                      delay: 2
+                      delay: 3
                     }}
                   />
-                  
-                  {/* A series of irregular, asymmetrical marks that create organic discomfort */}
-                  {[...Array(6)].map((_, i) => {
-                    const angle = (i * 60) * Math.PI / 180;
-                    const dist = 90 + Math.sin(i * 2) * 20;
-                    const x = 150 + dist * Math.cos(angle);
-                    const y = 150 + dist * Math.sin(angle);
-                    
-                    return (
-                      <motion.path
-                        key={`mark-${i}`}
-                        d={`M ${x} ${y} C ${x + 5} ${y - 10}, ${x + 15} ${y - 15}, ${x + 20} ${y - 5}`}
-                        stroke="#200"
-                        strokeWidth="0.7"
-                        fill="none"
-                        opacity="0.6"
-                        animate={{ 
-                          opacity: [0.6, 0.7, 0.6],
-                          strokeWidth: [0.7, 0.9, 0.7]
-                        }}
-                        transition={{ 
-                          duration: 5 + i,
-                          repeat: Infinity,
-                          repeatType: "mirror",
-                          delay: i * 1.5
-                        }}
-                      />
-                    );
-                  })}
                 </g>
                 
-                {/* Ancient script-like marks around the edges */}
-                <g opacity="0.6">
-                  {[...Array(12)].map((_, i) => {
-                    const angle = (i * 30) * Math.PI / 180;
-                    const x = 150 + 120 * Math.cos(angle);
-                    const y = 150 + 120 * Math.sin(angle);
-                    
-                    // Creates marks that look like ancient script
-                    const markPath = () => {
-                      const type = i % 4;
-                      switch(type) {
-                        case 0: return `M ${x-5} ${y} L ${x+5} ${y} M ${x} ${y-3} L ${x} ${y+3}`; // plus-like
-                        case 1: return `M ${x-6} ${y-2} L ${x+6} ${y+2} M ${x-6} ${y+2} L ${x+6} ${y-2}`; // x-like
-                        case 2: return `M ${x-5} ${y} A 5 5 0 1 0 ${x+5} ${y}`; // arc
-                        case 3: return `M ${x-4} ${y-4} L ${x+4} ${y-4} L ${x} ${y+4} Z`; // triangle
-                      }
-                      return '';
-                    };
+                {/* Irregular, asymmetrical radial lines */}
+                <g opacity="0.5">
+                  {[...Array(13)].map((_, i) => {
+                    // Irregular spacing for psychological discomfort
+                    const angle = ((i * 28) + (i % 2 === 0 ? 5 : -3)) * Math.PI / 180;
+                    const length = 100 + (i % 3) * 20;
+                    const x1 = 150;
+                    const y1 = 150;
+                    const x2 = 150 + length * Math.cos(angle);
+                    const y2 = 150 + length * Math.sin(angle);
                     
                     return (
-                      <motion.path
-                        key={`script-${i}`}
-                        d={markPath()}
-                        stroke="#150000"
-                        strokeWidth="0.6"
-                        fill="none"
-                        animate={{ 
-                          opacity: [0.4, 0.6, 0.4],
-                          strokeWidth: [0.6, 0.8, 0.6]
+                      <motion.line
+                        key={`line-${i}`}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#080000"
+                        strokeWidth="0.2"
+                        opacity="0.5"
+                        animate={{
+                          opacity: [0.5, 0.6, 0.5],
+                          strokeWidth: [0.2, 0.3, 0.2]
                         }}
-                        transition={{ 
-                          duration: 7,
+                        transition={{
+                          duration: 10 + (i % 5),
                           repeat: Infinity,
                           repeatType: "mirror",
                           delay: i * 0.7
@@ -289,193 +298,162 @@ const SigilPage = () => {
                   })}
                 </g>
                 
-                {/* Negative space "eyes" - unsettlingly human-like elements */}
+                {/* Disconnected eldritch symbols and marks */}
                 <g>
-                  {/* Left "eye" - subtly wrong placement and movement */}
-                  <g transform="translate(125, 140)">
-                    <motion.ellipse 
-                      rx="12" 
-                      ry="7" 
-                      fill="#030000" 
-                      opacity="0.8"
-                      animate={{ 
-                        rx: [12, 11, 12],
-                        ry: [7, 6, 7],
-                        opacity: [0.8, 0.9, 0.8]
-                      }}
-                      transition={{ 
-                        duration: 6,
-                        repeat: Infinity,
-                        repeatType: "mirror",
-                        repeatDelay: 2
-                      }}
-                    />
+                  {[...Array(9)].map((_, i) => {
+                    // Position symbols asymmetrically around the circle
+                    const angle = ((i * 40) + 5) * Math.PI / 180;
+                    const distance = 90 + (i % 4) * 15;
+                    const x = 150 + distance * Math.cos(angle);
+                    const y = 150 + distance * Math.sin(angle);
                     
-                    <motion.circle 
-                      r="4" 
-                      fill="#010000" 
-                      opacity="0.9"
-                      animate={{ 
-                        r: [4, 3, 4],
-                        opacity: [0.9, 1, 0.9]
-                      }}
-                      transition={{ 
-                        duration: 8,
-                        repeat: Infinity,
-                        repeatType: "mirror"
-                      }}
-                    />
+                    // Generate different eldritch symbols
+                    const getSymbolPath = () => {
+                      const size = 4 + (i % 3);
+                      switch(i % 6) {
+                        case 0: return `M${x-size},${y-size} L${x+size},${y+size} M${x-size},${y+size} L${x+size},${y-size}`; // X
+                        case 1: return `M${x},${y-size} L${x+size},${y} L${x},${y+size} L${x-size},${y} Z`; // Diamond
+                        case 2: return `M${x-size},${y} L${x},${y-size} L${x+size},${y} L${x},${y+size} Z`; // Rhombus
+                        case 3: return `M${x},${y-size} L${x+size},${y+size} L${x-size},${y+size} Z`; // Triangle
+                        case 4: return `M${x-size},${y-size} L${x+size},${y-size} L${x},${y+size} Z`; // Triangle (inverted)
+                        case 5: return `M${x-size/2},${y-size} A${size},${size} 0 1,0 ${x+size/2},${y-size} M${x-size/2},${y+size} A${size},${size} 0 1,1 ${x+size/2},${y+size}`; // Broken arcs
+                      }
+                    };
                     
-                    {/* Almost imperceptible red dot */}
-                    <motion.circle 
-                      cx="-2" 
-                      cy="-2" 
-                      r="1"
-                      fill="#200000" 
-                      opacity="0.7"
-                      animate={{ 
-                        opacity: [0.7, 0.8, 0.7]
-                      }}
-                      transition={{ 
-                        duration: 4,
-                        repeat: Infinity,
-                        repeatType: "mirror"
-                      }}
-                    />
-                  </g>
-                  
-                  {/* Right "eye" - slightly different to create dissonance */}
-                  <g transform="translate(175, 140)">
-                    <motion.ellipse 
-                      rx="11" 
-                      ry="7" 
-                      fill="#030000" 
-                      opacity="0.8"
-                      animate={{ 
-                        rx: [11, 10, 11],
-                        ry: [7, 6, 7],
-                        opacity: [0.8, 0.9, 0.8]
-                      }}
-                      transition={{ 
-                        duration: 7, // Slightly different timing creates uncanny effect
-                        repeat: Infinity,
-                        repeatType: "mirror",
-                        repeatDelay: 1.5
-                      }}
-                    />
-                    
-                    <motion.circle 
-                      r="4" 
-                      fill="#010000" 
-                      opacity="0.9"
-                      animate={{ 
-                        r: [4, 3, 4],
-                        opacity: [0.9, 1, 0.9]
-                      }}
-                      transition={{ 
-                        duration: 7.5, // Slightly different timing from other eye
-                        repeat: Infinity,
-                        repeatType: "mirror"
-                      }}
-                    />
-                    
-                    {/* Almost imperceptible red dot */}
-                    <motion.circle 
-                      cx="-2" 
-                      cy="-2" 
-                      r="1"
-                      fill="#200000" 
-                      opacity="0.7"
-                      animate={{ 
-                        opacity: [0.7, 0.8, 0.7]
-                      }}
-                      transition={{ 
-                        duration: 4.5, // Slightly out of sync with other eye
-                        repeat: Infinity,
-                        repeatType: "mirror"
-                      }}
-                    />
-                  </g>
+                    return (
+                      <motion.path
+                        key={`symbol-${i}`}
+                        d={getSymbolPath()}
+                        stroke="#0a0000"
+                        strokeWidth="0.3"
+                        fill="none"
+                        animate={{
+                          opacity: [0.6, 0.7, 0.6],
+                          strokeWidth: [0.3, 0.4, 0.3]
+                        }}
+                        transition={{
+                          duration: 15,
+                          repeat: Infinity,
+                          repeatType: "mirror",
+                          delay: i * 0.8
+                        }}
+                      />
+                    );
+                  })}
                 </g>
                 
-                {/* "Mouth" element - looks wrong and uncomfortable */}
-                <motion.path
-                  d="M130,170 C140,177 160,177 170,170 C165,183 135,183 130,170 Z"
-                  fill="#090000"
-                  opacity="0.7"
-                  animate={{ 
-                    opacity: [0.7, 0.8, 0.7],
-                    d: [
-                      "M130,170 C140,177 160,177 170,170 C165,183 135,183 130,170 Z", // closed
-                      "M130,170 C140,180 160,180 170,170 C165,185 135,185 130,170 Z", // slightly open
-                      "M130,170 C140,177 160,177 170,170 C165,183 135,183 130,170 Z"  // closed
-                    ]
-                  }}
-                  transition={{ 
-                    duration: 20,
-                    times: [0, 0.5, 1],
-                    repeat: Infinity,
-                    repeatType: "mirror",
-                    repeatDelay: 15 + Math.random() * 20
-                  }}
-                />
+                {/* Subtle disturbing details - no face-like patterns */}
+                <g>
+                  {/* Ancient symbols */}
+                  {[...Array(4)].map((_, i) => {
+                    const angle = (i * 90) * Math.PI / 180;
+                    const x = 150 + 70 * Math.cos(angle);
+                    const y = 150 + 70 * Math.sin(angle);
+                    const rotation = i * 45;
+                    
+                    return (
+                      <motion.g
+                        key={`ancient-${i}`}
+                        transform={`translate(${x}, ${y}) rotate(${rotation})`}
+                        animate={{
+                          opacity: [0.5, 0.6, 0.5]
+                        }}
+                        transition={{
+                          duration: 13 + i,
+                          repeat: Infinity,
+                          repeatType: "mirror",
+                          delay: i * 2
+                        }}
+                      >
+                        <path
+                          d="M-8,-8 L8,8 M-8,8 L8,-8 M0,-12 L0,12"
+                          stroke="#0c0000"
+                          strokeWidth="0.3"
+                          fill="none"
+                        />
+                      </motion.g>
+                    );
+                  })}
+                </g>
                 
-                {/* Uncomfortable asymmetrical details */}
-                <motion.path
-                  d="M110,160 C120,150 130,155 125,165 C120,175 100,170 110,160 Z"
-                  fill="none"
-                  stroke="#100000"
-                  strokeWidth="0.5"
-                  opacity="0.5"
-                  animate={{ 
-                    opacity: [0.5, 0.6, 0.5],
-                    strokeWidth: [0.5, 0.7, 0.5]
-                  }}
-                  transition={{ 
-                    duration: 10,
-                    repeat: Infinity,
-                    repeatType: "mirror",
-                    delay: 2
-                  }}
-                />
+                {/* Asymmetrical patterns of dots */}
+                <g>
+                  {[...Array(24)].map((_, i) => {
+                    // Create spiral arrangement
+                    const angle = (i * 15) * Math.PI / 180;
+                    const distance = 40 + i * 4;
+                    const x = 150 + distance * Math.cos(angle);
+                    const y = 150 + distance * Math.sin(angle);
+                    const size = 0.5 + (i % 4) * 0.2;
+                    
+                    return (
+                      <motion.circle
+                        key={`dot-${i}`}
+                        cx={x}
+                        cy={y}
+                        r={size}
+                        fill="#0a0000"
+                        animate={{
+                          opacity: [0.4, 0.5, 0.4],
+                          r: [size, size * 1.2, size]
+                        }}
+                        transition={{
+                          duration: 8 + (i % 7),
+                          repeat: Infinity,
+                          repeatType: "mirror",
+                          delay: i * 0.3
+                        }}
+                      />
+                    );
+                  })}
+                </g>
                 
-                <motion.path
-                  d="M190,160 C180,150 170,155 175,165 C180,175 200,170 190,160 Z"
-                  fill="none"
-                  stroke="#100000"
-                  strokeWidth="0.5"
-                  opacity="0.5"
-                  animate={{ 
-                    opacity: [0.5, 0.6, 0.5],
-                    strokeWidth: [0.5, 0.7, 0.5]
-                  }}
-                  transition={{ 
-                    duration: 12, // Different timing creates dissonance
-                    repeat: Infinity,
-                    repeatType: "mirror",
-                    delay: 3
-                  }}
-                />
-                
-                {/* Almost imperceptible "breathing" effect */}
+                {/* Subtle pulsing void at center */}
                 <motion.circle
                   cx="150"
                   cy="150"
-                  r="100"
-                  fill="none"
-                  stroke="#0a0000"
-                  strokeWidth="0.2"
-                  opacity="0.3"
-                  animate={{ 
-                    r: [100, 102, 100],
-                    opacity: [0.3, 0.4, 0.3]
+                  r="3"
+                  fill="#000000"
+                  filter="url(#bleed)"
+                  animate={{
+                    r: [3, 4, 3],
+                    opacity: [0.9, 1, 0.9]
                   }}
-                  transition={{ 
-                    duration: 6,
+                  transition={{
+                    duration: 20,
                     repeat: Infinity,
-                    repeatType: "mirror"
+                    repeatType: "mirror",
+                    ease: "easeInOut"
                   }}
                 />
+                
+                {/* Almost imperceptible bloodlike droplets */}
+                <g opacity="0.3">
+                  {[...Array(5)].map((_, i) => {
+                    const angle = (i * 72) * Math.PI / 180;
+                    const x = 150 + 100 * Math.cos(angle);
+                    const y = 150 + 20 * Math.sin(angle);
+                    
+                    return (
+                      <motion.path
+                        key={`drop-${i}`}
+                        d={`M ${x} ${y} Q ${x-1} ${y+15} ${x+2} ${y+30}`}
+                        stroke="#090000"
+                        strokeWidth="0.3"
+                        fill="none"
+                        filter="url(#bleed)"
+                        animate={{
+                          opacity: [0, 0.3, 0]
+                        }}
+                        transition={{
+                          duration: 20,
+                          repeatDelay: 15 + i * 5,
+                          repeat: Infinity
+                        }}
+                      />
+                    );
+                  })}
+                </g>
               </svg>
             </motion.div>
             
