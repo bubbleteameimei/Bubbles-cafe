@@ -73,9 +73,15 @@ import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// Create a direct pool for use with session store and SQL queries
+// Create a direct pool for use with session store and SQL queries with enhanced connection options
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 10000, // Attempt to connect for up to 10 seconds
+  maxUses: 7500, // Close and replace a connection after it has been used 7500 times (prevents memory issues)
+  allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -264,29 +270,68 @@ export class DatabaseStorage implements IStorage {
     console.log('[Storage] Initializing PostgreSQL session store...');
 
     try {
-      // Create a compatible pool object for connect-pg-simple
+      // Create a compatible pool object for connect-pg-simple with enhanced error handling
       // The issue is that connect-pg-simple expects a pg pool with query method
       // but Neon serverless uses a different interface
       const compatiblePool = {
-        query: async (text, params) => {
-          const client = await pool.connect();
-          try {
-            return await client.query(text, params);
-          } finally {
-            client.release();
-          }
+        query: async (text: string, params?: any[]) => {
+          let retries = 0;
+          const maxRetries = 3;
+          const backoffDelay = (attempt: number) => Math.min(100 * Math.pow(2, attempt), 3000);
+          
+          const executeQuery = async () => {
+            let client = null;
+            try {
+              client = await pool.connect();
+              return await client.query(text, params);
+            } catch (error: any) {
+              // Check if error is due to connection issues and can be retried
+              const isConnectionError = error && typeof error.message === 'string' && (
+                error.message.includes('Connection terminated') || 
+                error.message.includes('terminating connection') ||
+                error.message.includes('connection reset') ||
+                error.message.includes('server closed')
+              );
+                
+              if (isConnectionError && retries < maxRetries) {
+                retries++;
+                console.warn(`[Storage] Session store query attempt ${retries} failed, retrying in ${backoffDelay(retries)}ms...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay(retries)));
+                return executeQuery(); // Recursive retry with exponential backoff
+              }
+              
+              // Can't recover, rethrow
+              throw error;
+            } finally {
+              if (client) {
+                client.release();
+              }
+            }
+          };
+          
+          return executeQuery();
         }
       };
 
-      // Initialize session store with compatible pool
+      // Initialize session store with compatible pool and enhanced options
+      // Cast to any to avoid TypeScript errors with the PgPool interface
       this.sessionStore = new PostgresSessionStore({
-        pool: compatiblePool,
+        pool: compatiblePool as any,
         createTableIfMissing: true,
         tableName: 'session',
         schemaName: 'public',
-        ttl: 86400 // 1 day
+        ttl: 86400, // 1 day
+        pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes
+        errorLog: (err: Error) => console.error('[SessionStore] Error:', err)
       });
+      
       console.log('[Storage] Session store initialized successfully');
+      
+      // Register error handler for session store
+      this.sessionStore.on('error', (error: Error) => {
+        console.error('[SessionStore] Runtime error:', error);
+      });
+      
     } catch (error) {
       console.error('[Storage] Failed to initialize session store:', error);
       // Provide a memory fallback for the session store to prevent app crashes

@@ -28,8 +28,8 @@ import { setupCors } from "./cors-setup";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Use port 3000 for Replit compatibility, it expects web servers on port 3000
-const PORT = parseInt(process.env.PORT || "3000", 10); // Changed to 3000 for Replit
+// Use port 3001 to avoid conflicts with Replit's default port
+const PORT = parseInt(process.env.PORT || "3001", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
@@ -289,6 +289,11 @@ async function startServer() {
           console.log('Sent port readiness signal to process');
           serverLogger.debug('Sent port readiness signal');
         }
+        
+        // Wait for a moment to ensure the server is fully ready
+        setTimeout(() => {
+          console.log('Server is now fully ready to accept connections');
+        }, 1000);
 
         resolve();
       });
