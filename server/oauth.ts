@@ -1,28 +1,9 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
 import { storage } from './storage';
 import { v4 as uuidv4 } from 'uuid';
-
-// Define types for OAuth profiles
-interface GoogleProfile {
-  id: string;
-  displayName: string;
-  name?: {
-    familyName?: string;
-    givenName?: string;
-  };
-  emails?: Array<{
-    value: string;
-    verified?: boolean;
-  }>;
-  photos?: Array<{
-    value: string;
-  }>;
-  provider: string;
-}
 
 // Define metadata types
 interface OAuthProvider {
@@ -69,89 +50,7 @@ export function setupOAuth(app: Express) {
     }
   ));
 
-  // Google OAuth Strategy
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    // Get the callback URL based on environment
-    const callbackURL = process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback';
-    
-    // In split deployment, this should be a full URL like:
-    // https://your-backend.onrender.com/api/auth/google/callback
-    console.log('[OAuth] Google callback URL:', callbackURL);
-    
-    passport.use(new GoogleStrategy({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: callbackURL
-    },
-      async (accessToken, refreshToken, profile: GoogleProfile, done) => {
-        try {
-          // Check if user exists by email
-          let user = null;
-          if (profile.emails && profile.emails.length > 0) {
-            user = await storage.getUserByEmail(profile.emails[0].value);
-          }
-
-          if (user) {
-            // Update existing user with OAuth info if needed
-            const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
-            // Store profile data in metadata instead
-            const currentMetadata = user.metadata || {};
-            const updatedMetadata = (currentMetadata || {}) as UserMetadata;
-            const oauthData = updatedMetadata.oauth || {} as OAuthData;
-            
-            user = await storage.updateUser(user.id, {
-              metadata: {
-                ...updatedMetadata,
-                photoURL: photoUrl || updatedMetadata.photoURL,
-                displayName: profile.displayName || updatedMetadata.displayName,
-                oauth: {
-                  ...oauthData,
-                  [profile.provider]: {
-                    socialId: profile.id, // Changed from providerId to socialId for consistency
-                    lastLogin: new Date().toISOString()
-                  }
-                }
-              }
-            });
-            return done(null, user);
-          } else {
-            // Create new user with OAuth info
-            if (!profile.emails || profile.emails.length === 0) {
-              return done(new Error('No email provided by Google'));
-            }
-
-            const email = profile.emails[0].value;
-            const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
-            
-            // Generate a random secure password for OAuth users
-            const password = uuidv4();
-            const hashedPassword = await bcrypt.hash(password, 10);
-            
-            const newUser = await storage.createUser({
-              email,
-              username: email.split('@')[0] + '_' + Math.floor(Math.random() * 10000),
-              password,
-              // Remove fullName and avatar as they don't exist in the database
-              metadata: {
-                displayName: profile.displayName || undefined,
-                photoURL: photoUrl || undefined,
-                oauth: {
-                  [profile.provider]: {
-                    socialId: profile.id, // Changed from providerId to socialId for consistency
-                    lastLogin: new Date().toISOString()
-                  }
-                }
-              }
-            });
-            
-            return done(null, newUser);
-          }
-        } catch (error) {
-          return done(error);
-        }
-      }
-    ));
-  }
+  // Local authentication only - Google OAuth has been removed
 
   // Serialize and deserialize user
   passport.serializeUser((user: any, done) => {
@@ -266,30 +165,7 @@ export function setupOAuth(app: Express) {
     }
   });
   
-  // Setup Google routes
-  app.get('/api/auth/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-  }));
-
-  app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/auth' }),
-    (req: Request, res: Response) => {
-      // Log successful authentication
-      console.log('[OAuth] Google authentication successful for user:', (req.user as any)?.id);
-      
-      // For cross-domain setup, we need to redirect to the frontend URL
-      const frontendUrl = process.env.FRONTEND_URL || '';
-      
-      if (frontendUrl && frontendUrl !== '*') {
-        // In split deployment, redirect to the frontend URL
-        console.log('[OAuth] Redirecting to frontend URL:', frontendUrl);
-        res.redirect(`${frontendUrl}/auth/success`);
-      } else {
-        // In development or same-domain setup, redirect to the root
-        res.redirect('/');
-      }
-    }
-  );
+  // Google OAuth routes have been removed
 
   // Logout route
   app.get('/api/auth/logout', (req: Request, res: Response) => {

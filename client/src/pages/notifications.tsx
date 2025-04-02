@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { Check, Bell, CheckCheck, Trash2, ChevronLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { addTestNotification } from '@/utils/add-test-notification';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,16 +57,6 @@ export default function NotificationsPage() {
               Stay updated with your story notifications
             </p>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => addTestNotification(addNotification, 'new-story')}
-            className="self-start sm:self-auto h-8 text-xs mt-2 sm:mt-0"
-          >
-            <Bell className="h-3.5 w-3.5 mr-1.5" />
-            Test Notification
-          </Button>
         </div>
 
         {/* Card with better mobile padding and spacing */}

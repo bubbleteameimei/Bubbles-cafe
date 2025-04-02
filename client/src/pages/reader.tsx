@@ -20,7 +20,6 @@ import { useLocation } from "wouter";
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { useFontSize } from "@/hooks/use-font-size";
 import { useFontFamily, FontFamilyKey } from "@/hooks/use-font-family";
-import useAmbientLight from "@/hooks/use-ambient-light";
 import { detectThemes, THEME_CATEGORIES } from "@/lib/content-analysis";
 import type { ThemeCategory } from "@/shared/types";
 // Import social icons directly since lazy loading was causing issues
@@ -35,7 +34,9 @@ import MistEffect from "@/components/effects/MistEffect";
 import { MistControl } from "@/components/ui/mist-control";
 import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
-import BackgroundGradient from "@/components/BackgroundGradient";
+// Import our reader-specific gentle scroll memory hook
+import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
+
 import {
   Dialog,
   DialogContent,
@@ -114,9 +115,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Night mode functionality - automatic based on time of day (7pm to 6am)
   const { isNightMode, preference: nightModePreference, updateNightModePreference } = useNightMode();
   
-  // Auto-contrast based on ambient light detection
-  const { contrastAdjustment, autoContrastEnabled, setAutoContrastEnabled } = useAmbientLight();
-  
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
 
@@ -125,6 +123,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Will initialize this after data is loaded
   const [autoSaveSlug, setAutoSaveSlug] = useState<string>("");
+  
+  // Fixed constants for better text readability (replacing auto-contrast)
+  const DARK_TEXT_COLOR = 'rgba(255, 255, 255, 0.95)';
+  const LIGHT_TEXT_COLOR = 'rgba(0, 0, 0, 0.95)';
   
   // State for dialog controls
   const [fontDialogOpen, setFontDialogOpen] = useState(false);
@@ -367,6 +369,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     refetchOnWindowFocus: false
   });
 
+  // Initialize the reader-specific gentle scroll memory
+  // This will only work on the reader page and community-story page
+  const { positionRestored, isRefresh } = useReaderGentleScroll({
+    enabled: !isLoading && postsData?.posts && postsData.posts.length > 0,
+    slug: routeSlug || '',
+    showToast: true,
+    autoSave: true,
+    autoSaveInterval: 2000
+  });
+
   // Validate and update currentIndex when posts data changes
   useEffect(() => {
     if (postsData?.posts && postsData.posts.length > 0) {
@@ -437,21 +449,19 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   // Create a function to generate the styles
   const generateStoryContentStyles = () => {
-    // Calculate text color with contrast adjustment if auto-contrast is enabled
-    const contrastStyle = autoContrastEnabled && contrastAdjustment > 0
-      ? `color: ${theme === 'dark' 
-          ? `rgba(255, 255, 255, ${Math.min(0.95, 0.85 + (contrastAdjustment / 100) * 0.15)})` 
-          : `rgba(0, 0, 0, ${Math.min(0.95, 0.75 + (contrastAdjustment / 100) * 0.20)})`};`
-      : 'color: hsl(var(--foreground));';
+    // Use our fixed constants for better text readability
+    const textColor = theme === 'dark' 
+      ? `color: ${DARK_TEXT_COLOR};` 
+      : `color: ${LIGHT_TEXT_COLOR};`;
     
-    // Return just the main styles with the contrast adjustment
+    // Return the main styles with better text contrast for readability
     return `
   .story-content {
     font-family: ${availableFonts[fontFamily].family};
     width: 100%;
     margin: 0 auto;
     padding: 0 0.5rem;
-    ${contrastStyle}
+    ${textColor}
     transition: color 0.3s ease, background-color 0.3s ease;
   }
   .story-content p, .story-content .story-paragraph {
@@ -498,7 +508,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         contentContainer.setAttribute('style', `font-family: ${availableFonts[fontFamily].family}; font-size: ${fontSize}px;`);
       }
     }
-  }, [fontFamily, fontSize, availableFonts, autoContrastEnabled, contrastAdjustment, theme]);
+  }, [fontFamily, fontSize, availableFonts, theme]);
   
   // Handle reading progress with visual progress bar only (no position saving)
   // Using the older, simpler implementation for smoother scrolling

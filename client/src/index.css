@@ -1431,3 +1431,30 @@ button:hover, a:hover {
 .night-mode button.bg-background:hover {
   background-color: #2a2a2a !important;
 }
+
+/* Password toggle button styles */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: var(--foreground);
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+  color: var(--primary);
+}

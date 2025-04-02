@@ -15,7 +15,6 @@ import { useNotifications, Notification } from '@/contexts/notification-context'
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocation } from 'wouter';
-import { addTestNotification, testCursedNotification } from '@/utils/add-test-notification';
 import { CursedNotificationEffect, CreepyTextGlitch } from '@/components/effects/CursedNotificationEffect';
 
 export interface NotificationIconProps {
@@ -120,7 +119,7 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
           </AnimatePresence>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 relative" align="end">
+      <PopoverContent className="w-80 p-0 relative overflow-hidden" align="end">
         {/* The cursed notification effect */}
         {open && (
           <CursedNotificationEffect 
@@ -137,24 +136,24 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 px-2 text-xs rounded-md"
+                className="h-7 px-1.5 text-xs rounded-md"
                 onClick={markAllAsRead}
+                title="Mark all as read"
               >
-                <CheckCheck className="h-3.5 w-3.5 mr-1" />
-                <span className="hidden sm:inline">Mark all read</span>
-                <span className="sm:hidden">Read all</span>
+                <CheckCheck className="h-3.5 w-3.5" />
+                <span className="hidden">Mark all read</span>
               </Button>
             )}
             {notifications.length > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 px-2 text-xs text-destructive hover:text-destructive rounded-md"
+                className="h-7 px-1.5 text-xs text-destructive hover:text-destructive rounded-md"
                 onClick={clearNotifications}
+                title="Clear all notifications"
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                <span className="hidden sm:inline">Clear all</span>
-                <span className="sm:hidden">Clear</span>
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="hidden">Clear</span>
               </Button>
             )}
           </div>
@@ -167,27 +166,27 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-3 p-1 px-1 m-1 h-9">
-            <TabsTrigger value="all" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
+          <TabsList className="grid w-[calc(100%-8px)] grid-cols-3 p-1 px-1 mx-auto h-9">
+            <TabsTrigger value="all" className="text-xs px-1 py-1.5 min-h-[28px] flex items-center justify-center">
               All
               {notifications.length > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {notifications.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="unread" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
+            <TabsTrigger value="unread" className="text-xs px-1 py-1.5 min-h-[28px] flex items-center justify-center">
               Unread
               {unreadCount > 0 && (
-                <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {unreadCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="read" className="text-xs px-2 py-1.5 min-h-[28px] flex items-center justify-center">
+            <TabsTrigger value="read" className="text-xs px-1 py-1.5 min-h-[28px] flex items-center justify-center">
               Read
               {(notifications.length - unreadCount) > 0 && (
-                <Badge variant="outline" className="ml-1.5 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
+                <Badge variant="outline" className="ml-1 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center">
                   {notifications.length - unreadCount}
                 </Badge>
               )}
@@ -416,34 +415,6 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
             <Settings className="h-3.5 w-3.5 mr-1.5" />
             Settings
           </Button>
-          
-          {/* Test notification buttons - visible in development mode only */}
-          {import.meta.env.DEV && (
-            <div className="flex gap-1">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => addTestNotification(addNotification, 'new-story')}
-                className="h-7 text-[11px]"
-              >
-                <Bell className="h-3 w-3 mr-1" />
-                Test Story
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => testCursedNotification(
-                  addNotification, 
-                  setLastNotificationOpen, 
-                  setShowCursedMessage
-                )}
-                className="h-7 text-[11px] text-red-600"
-              >
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Test Cursed Effect
-              </Button>
-            </div>
-          )}
         </div>
       </PopoverContent>
     </Popover>

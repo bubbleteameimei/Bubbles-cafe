@@ -314,15 +314,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <div 
-                      role="button"
-                      tabIndex={0}
+                    <button 
+                      type="button"
                       onClick={togglePassword}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          togglePassword();
-                        }
-                      }}
                       className="password-toggle-btn"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -331,7 +325,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </div>
+                    </button>
                   </div>
                 </div>
 
@@ -363,10 +357,7 @@ export default function AuthPage() {
                   />
                 </div>
                 
-                {/* Social Login Buttons */}
-                <div className="group mt-4">
-                  <SocialLoginButtons isSignIn={true} />
-                </div>
+                {/* Social Login Buttons removed */}
 
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.
@@ -447,15 +438,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <div 
-                      role="button"
-                      tabIndex={0}
+                    <button 
+                      type="button"
                       onClick={togglePassword}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          togglePassword();
-                        }
-                      }}
                       className="password-toggle-btn"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -464,7 +449,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </div>
+                    </button>
                   </div>
 
                   {/* Password Strength Indicator */}
@@ -547,15 +532,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <div 
-                      role="button"
-                      tabIndex={0}
+                    <button 
+                      type="button"
                       onClick={toggleConfirmPassword}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          toggleConfirmPassword();
-                        }
-                      }}
                       className="password-toggle-btn"
                       aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
@@ -564,7 +543,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </div>
+                    </button>
                   </div>
                   
                   {/* Password Matching Indicator */}
@@ -600,10 +579,7 @@ export default function AuthPage() {
                   />
                 </div>
                 
-                {/* Social Login Buttons - Sign Up */}
-                <div className="group mt-4">
-                  <SocialLoginButtons isSignIn={false} />
-                </div>
+                {/* Social Login Buttons removed */}
 
                 <div className="tiny-disclaimer">
                   By continuing, you agree to our <a href="/legal/terms" className="policy-link">Terms of Service</a> and <a href="/privacy" className="policy-link">Privacy Policy</a>. This site uses cookies for authentication and analytics.

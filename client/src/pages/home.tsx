@@ -8,7 +8,7 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import ApiLoader from "@/components/api-loader";
-import BackgroundGradient from "@/components/BackgroundGradient";
+
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -48,8 +48,7 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-background">
-          {/* Background gradient effect */}
-          <BackgroundGradient />
+          {/* Background effect removed */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>

@@ -91,11 +91,12 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  // Add login endpoint with enhanced logging
+  // Add login endpoint with enhanced logging and remember me feature
   app.post("/api/auth/login", (req, res, next) => {
     console.log('[Auth] Login request received:', { 
       email: req.body.email,
       hasPassword: !!req.body.password,
+      rememberMe: !!req.body.rememberMe,
       body: JSON.stringify(req.body)
     });
 
@@ -108,12 +109,21 @@ export function setupAuth(app: Express) {
         console.log('[Auth] Login failed:', info?.message);
         return res.status(401).json({ message: info?.message || "Invalid credentials" });
       }
-      req.login(user, (err) => {
+      
+      const loginOptions: any = {};
+      
+      // If rememberMe is true, set a longer session expiration (30 days)
+      if (req.body.rememberMe) {
+        loginOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+        console.log('[Auth] Remember me enabled, setting long session expiration');
+      }
+      
+      req.login(user, loginOptions, (err) => {
         if (err) {
           console.error('[Auth] Session creation error:', err);
           return next(err);
         }
-        console.log('[Auth] Login successful:', { id: user.id, email: user.email });
+        console.log('[Auth] Login successful:', { id: user.id, email: user.email, rememberMe: !!req.body.rememberMe });
         return res.json(user);
       });
     })(req, res, next);

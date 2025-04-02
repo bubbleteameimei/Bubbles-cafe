@@ -14,7 +14,7 @@ import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
 import { useLoading } from "@/hooks/use-loading.tsx";
-import BackgroundGradient from "@/components/BackgroundGradient";
+
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";
 import { convertWordPressPost, type WordPressPost, fetchAllWordPressPosts } from "@/services/wordpress";
@@ -214,8 +214,7 @@ export default function IndexView() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden overflow-y-auto">
-      {/* Background gradient for consistent styling */}
-      <BackgroundGradient />
+      {/* Background gradient removed */}
       {/* Content container with full width */}
       <div className="w-full pb-12 pt-6 flex-1 mx-0 px-4 sm:px-6 flex flex-col">
         <motion.div
