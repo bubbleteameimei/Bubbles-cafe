@@ -371,31 +371,27 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      // Use explicit column selection to avoid errors with columns that might not exist
-      // in some environments or database migrations
+      // Now include metadata column since it exists in the database
       const [user] = await db.select({
         id: users.id,
         username: users.username,
         email: users.email,
         password_hash: users.password_hash,
         isAdmin: users.isAdmin,
+        metadata: users.metadata,
         createdAt: users.createdAt
       })
       .from(users)
       .where(eq(users.email, email))
       .limit(1);
       
-      // Add an empty metadata field since it doesn't exist in the DB yet
-      return {
-        ...user,
-        metadata: {}
-      };
+      return user;
     } catch (error) {
       console.error("Error in getUserByEmail:", error);
       // Try a more basic approach as fallback using raw SQL
       try {
         const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE email = $1 LIMIT 1",
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE email = $1 LIMIT 1",
           [email]
         );
         return result.rows[0] || undefined;
@@ -408,13 +404,14 @@ export class DatabaseStorage implements IStorage {
 
   async getAdminByEmail(email: string): Promise<User[]> {
     try {
-      // Use explicit column selection to avoid errors with columns that might not exist
+      // Now include metadata column since it exists in the database
       const adminUsers = await db.select({
         id: users.id,
         username: users.username,
         email: users.email,
         password_hash: users.password_hash,
         isAdmin: users.isAdmin,
+        metadata: users.metadata,
         createdAt: users.createdAt
       })
       .from(users)
@@ -423,17 +420,13 @@ export class DatabaseStorage implements IStorage {
         eq(users.isAdmin, true)
       ));
       
-      // Add empty metadata field to each user
-      return adminUsers.map(user => ({
-        ...user,
-        metadata: {}
-      }));
+      return adminUsers;
     } catch (error) {
       console.error("Error in getAdminByEmail:", error);
       // Try a more basic approach as fallback using raw SQL
       try {
         const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE email = $1 AND is_admin = true",
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE email = $1 AND is_admin = true",
           [email]
         );
         return result.rows || [];
@@ -453,13 +446,13 @@ export class DatabaseStorage implements IStorage {
       // Extract email from user or metadata
       const email = (user.metadata as any)?.email || user.email;
 
-      // Prepare user values without metadata field as it doesn't exist in the database
+      // Prepare user values including the metadata field
       const userValues = {
         username: user.username,
         email, // The email is still needed as a column in the users table
         password_hash: hashedPassword,
-        isAdmin: user.isAdmin ?? false
-        // The metadata field doesn't exist in the database yet, so we don't include it
+        isAdmin: user.isAdmin ?? false,
+        metadata: user.metadata || {} // Include metadata now that it exists in the database
       };
 
       // Insert user with hashed password
