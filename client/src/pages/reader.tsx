@@ -112,7 +112,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
   
-  // Night mode functionality - automatic based on time of day (7pm to 6am)
+  // Night mode functionality - system preference based, auto mode removed
   const { isNightMode, preference: nightModePreference, updateNightModePreference } = useNightMode();
   
   // One-click distraction-free mode - toggle UI visibility with click

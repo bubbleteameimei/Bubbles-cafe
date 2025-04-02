@@ -1,30 +1,32 @@
 import { useState, useEffect } from 'react';
 
-export type NightModePreference = 'light' | 'night' | 'system' | 'auto';
+export type NightModePreference = 'light' | 'night' | 'system';
 
 /**
  * Hook to manage night mode preferences
  * Night mode is specifically for reading experience, separate from the theme
- * With 'auto' setting, night mode will be activated from 7pm to 6am
+ * Auto mode and time-based activation have been removed
  */
 export function useNightMode() {
   const [preference, setPreference] = useState<NightModePreference>(() => {
     // Try to read from localStorage first
     const savedPreference = localStorage.getItem('night-mode-preference');
-    if (savedPreference && ['light', 'night', 'system', 'auto'].includes(savedPreference)) {
+    
+    // Handle legacy 'auto' setting by converting it to 'system'
+    if (savedPreference === 'auto') {
+      localStorage.setItem('night-mode-preference', 'system');
+      return 'system';
+    }
+    
+    if (savedPreference && ['light', 'night', 'system'].includes(savedPreference)) {
       return savedPreference as NightModePreference;
     }
-    // Default to auto preference (time-based)
-    return 'auto';
+    
+    // Default to system preference
+    return 'system';
   });
 
   const [isNightMode, setIsNightMode] = useState(false);
-
-  // Function to check if current time is night time (7pm to 6am)
-  const isNightTime = () => {
-    const currentHour = new Date().getHours();
-    return currentHour >= 19 || currentHour < 6; // 7pm to 6am
-  };
 
   // Function to check system dark mode preference
   const checkSystemPreference = () => {
@@ -47,8 +49,6 @@ export function useNightMode() {
       shouldEnableNightMode = false;
     } else if (preference === 'system') {
       shouldEnableNightMode = checkSystemPreference();
-    } else if (preference === 'auto') {
-      shouldEnableNightMode = isNightTime();
     }
     
     setIsNightMode(shouldEnableNightMode);
@@ -80,24 +80,6 @@ export function useNightMode() {
       
       mediaQuery.addEventListener('change', handleSystemChange);
       return () => mediaQuery.removeEventListener('change', handleSystemChange);
-    } else if (preference === 'auto') {
-      // Set up a timer to check the time every minute
-      const timeInterval = setInterval(() => {
-        const shouldBeNightMode = isNightTime();
-        if (shouldBeNightMode !== isNightMode) {
-          setIsNightMode(shouldBeNightMode);
-          const readerPage = document.querySelector('[data-reader-page="true"]');
-          if (readerPage) {
-            if (shouldBeNightMode) {
-              readerPage.classList.add('night-mode');
-            } else {
-              readerPage.classList.remove('night-mode');
-            }
-          }
-        }
-      }, 60000); // Check every minute
-      
-      return () => clearInterval(timeInterval);
     }
   }, [preference, isNightMode]);
   
