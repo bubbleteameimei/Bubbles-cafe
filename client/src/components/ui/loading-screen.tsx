@@ -3,7 +3,7 @@ import { memo } from "react";
 export const LoadingScreen = memo(() => {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
-      <div className="loader">
+      <div className="loading-text">
         <span>L</span>
         <span>O</span>
         <span>A</span>
@@ -19,16 +19,16 @@ export const LoadingScreen = memo(() => {
       </div>
 
       <style>{`
-        .loader {
+        .loading-text {
           display: flex;
           gap: 0.5rem;
         }
 
-        .loader span {
+        .loading-text span {
           font-size: 22px;
           font-family: 'Space Mono', monospace;
           font-weight: 600;
-          animation: blur 2s linear infinite;
+          animation: blurText 2s linear infinite;
           line-height: 20px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
@@ -36,15 +36,15 @@ export const LoadingScreen = memo(() => {
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.2s; }
-        .loader span:nth-child(3) { animation-delay: 0.4s; }
-        .loader span:nth-child(4) { animation-delay: 0.6s; }
-        .loader span:nth-child(5) { animation-delay: 0.8s; }
-        .loader span:nth-child(6) { animation-delay: 1.0s; }
-        .loader span:nth-child(7) { animation-delay: 1.2s; }
+        .loading-text span:nth-child(1) { animation-delay: 0.0s; }
+        .loading-text span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-text span:nth-child(3) { animation-delay: 0.4s; }
+        .loading-text span:nth-child(4) { animation-delay: 0.6s; }
+        .loading-text span:nth-child(5) { animation-delay: 0.8s; }
+        .loading-text span:nth-child(6) { animation-delay: 1.0s; }
+        .loading-text span:nth-child(7) { animation-delay: 1.2s; }
 
-        @keyframes blur {
+        @keyframes blurText {
           0% {
             filter: blur(0px);
             opacity: 1;

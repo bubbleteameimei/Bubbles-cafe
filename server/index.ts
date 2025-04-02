@@ -28,8 +28,8 @@ import { setupCors } from "./cors-setup";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Use port 3001 to avoid conflicts with Replit's default port
-const PORT = parseInt(process.env.PORT || "3001", 10);
+// Use port 3002 to avoid conflicts with other running processes
+const PORT = parseInt(process.env.PORT || "3002", 10);
 const HOST = '0.0.0.0';
 
 // Create server instance outside startServer for proper cleanup
