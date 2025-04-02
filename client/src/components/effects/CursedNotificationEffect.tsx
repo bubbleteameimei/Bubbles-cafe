@@ -12,6 +12,7 @@ interface CursedNotificationEffectProps {
 /**
  * A component that creates a disturbing, glitchy text effect for a horror-themed notification.
  * Shows a briefly glitching effect with random symbols in a scary red font with enhanced visual effects.
+ * Now uses a transparent background for less intrusive notifications.
  */
 export function CursedNotificationEffect({
   isVisible,

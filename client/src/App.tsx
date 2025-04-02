@@ -47,12 +47,16 @@ import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
 import ErrorToastProvider from './components/providers/error-toast-provider';
 import NotFoundRouteHandler from './components/NotFoundRouteHandler';
+// Import our new refresh components
+import { PullToRefresh } from './components/ui/pull-to-refresh';
+import { RefreshProvider } from './contexts/refresh-context';
 
 // Import all pages directly - no lazy loading
 import ReaderPage from './pages/reader';
 import ResponsiveDemoPage from './pages/responsive-demo';
 import ScrollDemoPage from './pages/scroll-demo';
 import ScrollTestPage from './pages/scroll-test';
+import RefreshDemoPage from './pages/refresh-demo';
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
 import AboutPage from './pages/about';
@@ -208,6 +212,7 @@ const AppContent = () => {
               <Route path="/responsive-demo" component={ResponsiveDemoPage} />
               <Route path="/scroll-demo" component={ScrollDemoPage} />
               <Route path="/scroll-test" component={ScrollTestPage} />
+              <Route path="/refresh-demo" component={RefreshDemoPage} />
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
@@ -305,6 +310,12 @@ function App() {
     return !shouldHideButton ? <FeedbackButton /> : null;
   };
   
+  // Function to handle data refresh
+  const handleDataRefresh = async () => {
+    // Invalidate all queries to refresh data
+    await queryClient.invalidateQueries();
+  };
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -316,18 +327,23 @@ function App() {
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
                       <LoadingProvider>
-                        <EnhancedPageTransition minLoadingTime={850}>
-                          <AppContent />
-                        </EnhancedPageTransition>
-                        {/* Site-wide elements outside of the main layout */}
-                        <CookieConsent />
-                        <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
-                        {/* Conditionally show FeedbackButton */}
-                        <ConditionalFeedbackButton />
-                        
-                        {/* Toast notifications */}
-                        <Toaster />
-                        <Sonner position="bottom-left" className="fixed-sonner" />
+                        <RefreshProvider>
+                          <EnhancedPageTransition minLoadingTime={850}>
+                            {/* Wrap AppContent with PullToRefresh */}
+                            <PullToRefresh onRefresh={handleDataRefresh}>
+                              <AppContent />
+                            </PullToRefresh>
+                          </EnhancedPageTransition>
+                          {/* Site-wide elements outside of the main layout */}
+                          <CookieConsent />
+                          <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
+                          {/* Conditionally show FeedbackButton */}
+                          <ConditionalFeedbackButton />
+                          
+                          {/* Toast notifications */}
+                          <Toaster />
+                          <Sonner position="bottom-left" className="fixed-sonner" />
+                        </RefreshProvider>
                       </LoadingProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
