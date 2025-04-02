@@ -75,18 +75,34 @@
   border-color: hsl(var(--primary));
 }
 
-/* Simplified password container */
-.password-input-container {
-  position: relative;
-  width: 100%;
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  z-index: 10;
+  transition: color 0.2s ease;
+  padding: 0;
+  outline: none;
 }
 
-/* Reset password input styles */
-.password-input-container .auth-input {
-  padding-right: 40px;
+.password-toggle-btn:hover,
+.password-toggle-btn:focus {
+  color: hsl(var(--foreground));
 }
 
-/* Password toggle button styles moved to index.css */
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
 
 .auth-submit-button {
   background-color: hsl(var(--primary));
