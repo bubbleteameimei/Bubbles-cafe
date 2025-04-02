@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import useReaderUIToggle from "@/hooks/use-reader-ui-toggle";
 import ReaderTooltip from "@/components/reader/ReaderTooltip";
 import TableOfContents from "@/components/reader/TableOfContents";
+import SwipeNavigation from "@/components/reader/SwipeNavigation";
 import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
@@ -151,6 +152,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const [horrorMessageText, setHorrorMessageText] = useState("Are you avoiding something?");
   const skipCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
+  
+  // Create a ref for the content container to attach swipe events
+  const contentRef = useRef<HTMLDivElement>(null);
   // Removed positionRestoredRef as we no longer save reading position
   
   // Delete Post Mutation for admin actions
@@ -631,6 +635,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+
+  
   // Add a useEffect hook to handle deleted posts detection on component mount
   useEffect(() => {
     // Only run this check if we're looking at a specific post by slug
@@ -1013,42 +1019,50 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     lastNavigationTimeRef.current = now;
   };
 
+  // These navigation function declarations need to be hoisted to avoid errors with hooks
+  // Do not use early returns that might mess with React's hooks execution order
   const goToRandomStory = () => {
-    if (posts.length <= 1) return;
-    
-    let randomIndex;
-    do {
-      randomIndex = Math.floor(Math.random() * posts.length);
-    } while (randomIndex === currentIndex);
-    
-    checkRapidNavigation();
-    setCurrentIndex(randomIndex);
-    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    // Only execute logic if we have more than one story
+    if (posts && posts.length > 1) {
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * posts.length);
+      } while (randomIndex === currentIndex);
+      
+      checkRapidNavigation();
+      setCurrentIndex(randomIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
   };
   
   // Function to navigate to previous story
   const goToPreviousStory = () => {
-    if (posts.length <= 1 || currentIndex === 0) return;
-    
-    const newIndex = currentIndex - 1;
-    checkRapidNavigation();
-    setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    // Only execute logic if we have posts and we're not at the first one
+    if (posts && posts.length > 1 && currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      checkRapidNavigation();
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
   };
   
   // Function to navigate to next story
   const goToNextStory = () => {
-    if (posts.length <= 1 || currentIndex === posts.length - 1) return;
-    
-    const newIndex = currentIndex + 1;
-    checkRapidNavigation();
-    setCurrentIndex(newIndex);
-    window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    // Only execute logic if we have posts and we're not at the last one
+    if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
+      const newIndex = currentIndex + 1;
+      checkRapidNavigation();
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
+    }
   };
   
   // Check if we're at first or last story
   const isFirstStory = currentIndex === 0;
   const isLastStory = currentIndex === posts.length - 1;
+
+  // We've moved the swipe navigation logic to a dedicated component
+  // This avoids hook execution order issues by keeping related logic in a single component
 
   // The theme and toggleTheme functions are already declared at the top of the component
   
@@ -1517,26 +1531,34 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </div>
             </div>
 
-            <div
-              className="reader-container story-content mb-8 w-full overflow-visible flex-1"
-              style={{
-                whiteSpace: 'normal',
-                letterSpacing: '0.012em',
-                overflowWrap: 'break-word',
-                wordWrap: 'break-word',
-                overflow: 'visible',
-                margin: '10px 0',
-                lineHeight: '1.8',
-                textAlign: 'left',
-                fontSize: '1.2rem',
-                cursor: 'pointer', // Explicitly set cursor to pointer for this element
-                padding: '0 0.5rem' // Slight padding on both sides
-              }}
-              onClick={toggleUI} // Only story content toggles UI
-              dangerouslySetInnerHTML={{
-                __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || '')
-              }}
-            />
+            <SwipeNavigation
+              onPrevious={goToPreviousStory}
+              onNext={goToNextStory}
+              disabled={!(posts && posts.length > 1)}
+              minSwipeDistance={70}
+            >
+              <div
+                ref={contentRef}
+                className="reader-container story-content mb-8 w-full overflow-visible flex-1"
+                style={{
+                  whiteSpace: 'normal',
+                  letterSpacing: '0.012em',
+                  overflowWrap: 'break-word',
+                  wordWrap: 'break-word',
+                  overflow: 'visible',
+                  margin: '10px 0',
+                  lineHeight: '1.8',
+                  textAlign: 'left',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer', // Explicitly set cursor to pointer for this element
+                  padding: '0 0.5rem' // Slight padding on both sides
+                }}
+                onClick={toggleUI} // Only story content toggles UI
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtmlContent(currentPost.content?.rendered || currentPost.content || '')
+                }}
+              />
+            </SwipeNavigation>
             
             {/* Simple pagination at bottom of story content - extremely compact */}
             <div className={`flex items-center justify-center gap-3 mb-6 mt-4 w-full text-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>

@@ -4,6 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useSwipeClose } from "@/hooks/use-swipe-close"
 
 const Sheet = SheetPrimitive.Root
 
@@ -54,26 +55,63 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close 
-        className="absolute right-4 top-4 flex h-3 w-3 items-center justify-center rounded-md bg-background/95 border border-border/40 opacity-80 shadow-sm touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 focus:outline-none disabled:pointer-events-none"
-        style={{ WebkitTapHighlightColor: 'transparent' }}
+>(({ side = "right", className, children, ...props }, ref) => {
+  // Create a ref for the content
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  
+  // Determine the swipe direction based on the side
+  const swipeDirection = side === 'left' ? 'left' : 'right';
+  
+  // Get the SheetClose context to access the close function
+  const close = () => {
+    // Find and trigger the close button programmatically
+    const closeButton = document.querySelector('[aria-label="Close"]') as HTMLButtonElement | null;
+    if (closeButton) {
+      closeButton.click();
+    }
+  };
+  
+  // Use the swipe-close hook with appropriate direction
+  useSwipeClose({
+    onClose: close,
+    direction: swipeDirection,
+    minSwipeDistance: 70
+  });
+  
+  // Create a merged ref that combines both the forwarded ref and our internal ref
+  const mergedRef = (node: React.ElementRef<typeof SheetPrimitive.Content> | null) => {
+    // Update the forwarded ref
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      // Cast the ref to any to avoid TypeScript read-only errors
+      (ref as any).current = node;
+    }
+  };
+  
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={mergedRef}
+        className={cn(sheetVariants({ side }), className)}
+        data-swipe-direction={swipeDirection}
+        {...props}
       >
-        <X className="h-2 w-2" strokeWidth={2} />
-        <span className="sr-only">Close</span>
-        <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+        {children}
+        <SheetPrimitive.Close 
+          className="absolute right-4 top-4 flex h-3 w-3 items-center justify-center rounded-md bg-background/95 border border-border/40 opacity-80 shadow-sm touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 focus:outline-none disabled:pointer-events-none"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          aria-label="Close"
+        >
+          <X className="h-2 w-2" strokeWidth={2} />
+          <span className="sr-only">Close</span>
+          <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({
