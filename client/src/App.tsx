@@ -83,9 +83,6 @@ import QuickSettingsPage from './pages/settings/quick-settings';
 import PreviewSettingsPage from './pages/settings/preview';
 
 // Game pages
-import EdenGamePage from './pages/games/eden';
-import EdenCanvasGamePage from './pages/games/eden-game';
-import EdenGameNewPage from './pages/games/eden-game-new';
 import GameTestPage from './pages/game-test';
 
 // Admin pages
@@ -217,9 +214,15 @@ const AppContent = () => {
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
               {/* Game Routes */}
-              <Route path="/eden-game" component={EdenGamePage} />
-              <Route path="/eden-pixelgame" component={EdenCanvasGamePage} />
-              <Route path="/eden-game-new" component={EdenGameNewPage} />
+              <Route path="/eden-game">
+                <Error404Page />
+              </Route>
+              <Route path="/eden-pixelgame">
+                <Error404Page />
+              </Route>
+              <Route path="/eden-game-new">
+                <Error404Page />
+              </Route>
               <Route path="/game-test" component={GameTestPage} />
 
               {/* Legal Routes */}

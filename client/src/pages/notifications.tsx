@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { motion } from 'framer-motion';
-import FadeInSection from '@/components/transitions/FadeInSection';
 
 export default function NotificationsPage() {
   const [location, setLocation] = useLocation();
@@ -38,7 +37,7 @@ export default function NotificationsPage() {
       : notifications.filter(n => n.read);
 
   return (
-    <FadeInSection>
+    <div>
       {/* Responsive container with better mobile constraints */}
       <div className="container px-4 sm:px-6 max-w-3xl mx-auto py-4 sm:py-8">
         {/* Header section with improved mobile layout */}
@@ -223,6 +222,6 @@ export default function NotificationsPage() {
           )}
         </Card>
       </div>
-    </FadeInSection>
+    </div>
   );
 }
