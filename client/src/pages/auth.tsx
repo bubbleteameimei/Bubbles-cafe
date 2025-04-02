@@ -20,6 +20,8 @@ import { AuthButton } from "@/components/auth/auth-button";
 import { ForgotPasswordDialog } from "@/components/auth/forgot-password";
 import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import "./auth.css";
+import "@/components/auth/auth-password-fix.css";
+import "@/components/auth/auth-reset.css"; // Special reset for auth inputs
 
 export default function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -298,14 +300,14 @@ export default function AuthPage() {
                 {/* Password Field with Toggle */}
                 <div className="group">
                   <Label htmlFor="pass" className="auth-label">Password</Label>
-                  <div className="relative">
+                  <div className="relative password-input-container">
                     <Input 
                       id="pass" 
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="auth-input pr-10"
+                      className="auth-input"
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !isLoading) {
@@ -321,9 +323,9 @@ export default function AuthPage() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye />
                       )}
                     </button>
                   </div>
@@ -422,14 +424,14 @@ export default function AuthPage() {
                 {/* Password Field with Toggle */}
                 <div className="group">
                   <Label htmlFor="pass-signup" className="auth-label">Password</Label>
-                  <div className="relative">
+                  <div className="relative password-input-container">
                     <Input 
                       id="pass-signup" 
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a password"
-                      className={`auth-input pr-10 ${password ? (passwordStrength >= 3 ? 'border-green-500' : 'border-yellow-500') : ''}`}
+                      className="auth-input"
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
@@ -445,9 +447,9 @@ export default function AuthPage() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye />
                       )}
                     </button>
                   </div>
@@ -508,22 +510,14 @@ export default function AuthPage() {
                 {/* Confirm Password Field with Toggle */}
                 <div className="group">
                   <Label htmlFor="confirm-password" className="auth-label">Confirm Password</Label>
-                  <div className="relative">
+                  <div className="relative password-input-container">
                     <Input 
                       id="confirm-password" 
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className={`auth-input pr-10 ${
-                        confirmPassword 
-                          ? (passwordsMatch === true 
-                              ? 'border-green-500' 
-                              : passwordsMatch === false 
-                                ? 'border-red-500' 
-                                : '')
-                          : ''
-                      }`}
+                      className="auth-input"
                       required
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !registerMutation.isPending && !isLoading) {
@@ -539,9 +533,9 @@ export default function AuthPage() {
                       aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye />
                       )}
                     </button>
                   </div>

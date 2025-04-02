@@ -1,0 +1,37 @@
+/* Special reset for auth inputs to prevent cross-browser styling issues */
+
+/* Basic reset for all inputs */
+input[type="text"],
+input[type="email"], 
+input[type="password"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  box-shadow: none !important;
+  border-color: hsl(var(--border)) !important;
+  background-color: hsl(var(--card)) !important;
+}
+
+/* Specific reset for password inputs to prevent black borders */
+input[type="password"] {
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: hsl(var(--border)) !important;
+  background-color: hsl(var(--card)) !important;
+  box-shadow: none !important;
+}
+
+/* Focus state fixes */
+input[type="password"]:focus {
+  border-color: hsl(var(--primary)) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Autofill style fixes for password inputs */
+input[type="password"]:-webkit-autofill,
+input[type="password"]:-webkit-autofill:hover,
+input[type="password"]:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px hsl(var(--card)) inset !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
