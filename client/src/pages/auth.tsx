@@ -314,10 +314,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
-                      type="button"
+                    <div 
                       onClick={togglePassword}
-                      className="password-toggle-btn"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
@@ -325,7 +324,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
 
@@ -438,10 +437,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
-                      type="button"
+                    <div 
                       onClick={togglePassword}
-                      className="password-toggle-btn"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
@@ -449,7 +447,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </button>
+                    </div>
                   </div>
 
                   {/* Password Strength Indicator */}
@@ -532,10 +530,9 @@ export default function AuthPage() {
                         }
                       }}
                     />
-                    <button 
-                      type="button"
+                    <div 
                       onClick={toggleConfirmPassword}
-                      className="password-toggle-btn"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                       aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? (
@@ -543,7 +540,7 @@ export default function AuthPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                    </button>
+                    </div>
                   </div>
                   
                   {/* Password Matching Indicator */}
