@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Check, CheckCheck, Trash2, ChevronDown, Settings, Filter, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -15,7 +15,8 @@ import { useNotifications, Notification } from '@/contexts/notification-context'
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocation } from 'wouter';
-import { addTestNotification } from '@/utils/add-test-notification';
+import { addTestNotification, testCursedNotification } from '@/utils/add-test-notification';
+import { CursedNotificationEffect, CreepyTextGlitch } from '@/components/effects/CursedNotificationEffect';
 
 export interface NotificationIconProps {
   className?: string;
@@ -28,14 +29,46 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('all');
+  const [showCursedMessage, setShowCursedMessage] = useState(false);
+  
   const { 
     notifications, 
     unreadCount, 
     markAsRead, 
     markAllAsRead, 
     clearNotifications,
-    addNotification
+    addNotification,
+    lastNotificationOpen,
+    setLastNotificationOpen
   } = useNotifications();
+  
+  // Check if we need to show the cursed effect when the user opens the notification panel
+  useEffect(() => {
+    if (open) {
+      // Update the last time notifications were opened
+      setLastNotificationOpen(new Date());
+      
+      // Check if there's a cursed notification to show 
+      const hasCursedNotification = notifications.some(n => n.type === 'cursed' && !n.read);
+      
+      if (hasCursedNotification) {
+        // Show the cursed effect
+        setShowCursedMessage(true);
+        
+        // Mark the cursed notification as read
+        notifications.forEach(notification => {
+          if (notification.type === 'cursed' && !notification.read) {
+            markAsRead(notification.id);
+          }
+        });
+      }
+    }
+  }, [open, notifications, markAsRead, setLastNotificationOpen]);
+
+  // Handler for when the cursed effect is complete
+  const handleCursedEffectComplete = () => {
+    setShowCursedMessage(false);
+  };
 
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
@@ -87,7 +120,16 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
           </AnimatePresence>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0 relative" align="end">
+        {/* The cursed notification effect */}
+        {open && (
+          <CursedNotificationEffect 
+            isVisible={showCursedMessage} 
+            message="" 
+            onFinish={handleCursedEffectComplete}
+            duration={2000}
+          />
+        )}
         <div className="px-4 py-3 flex items-center border-b">
           <h3 className="font-medium mr-auto">Notifications</h3>
           <div className="flex gap-1">
@@ -191,9 +233,12 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                             <p className={cn(
                               "text-sm font-medium leading-tight",
                               !notification.read && "text-foreground",
-                              notification.read && "text-muted-foreground"
+                              notification.read && "text-muted-foreground",
+                              notification.type === 'cursed' && "text-red-600"
                             )}>
-                              {notification.title}
+                              {notification.type === 'cursed' ? 
+                                <CreepyTextGlitch text="Why are you ignoring me?" intensityFactor={8} permanent={true} /> : 
+                                notification.title}
                             </p>
                             <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                               {format(notification.date, 'MMM d')}
@@ -255,8 +300,13 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                         </div>
                         <div className="flex-1 space-y-1">
                           <div className="flex justify-between items-start">
-                            <p className="text-sm font-medium leading-tight">
-                              {notification.title}
+                            <p className={cn(
+                              "text-sm font-medium leading-tight",
+                              notification.type === 'cursed' && "text-red-600"
+                            )}>
+                              {notification.type === 'cursed' ? 
+                                <CreepyTextGlitch text="Why are you ignoring me?" intensityFactor={8} permanent={true} /> : 
+                                notification.title}
                             </p>
                             <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                               {format(notification.date, 'MMM d')}
@@ -318,8 +368,13 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
                         </div>
                         <div className="flex-1 space-y-1">
                           <div className="flex justify-between items-start">
-                            <p className="text-sm font-medium leading-tight text-muted-foreground">
-                              {notification.title}
+                            <p className={cn(
+                              "text-sm font-medium leading-tight text-muted-foreground",
+                              notification.type === 'cursed' && "text-red-600/70"
+                            )}>
+                              {notification.type === 'cursed' ? 
+                                <CreepyTextGlitch text={notification.title} intensityFactor={1} /> : 
+                                notification.title}
                             </p>
                             <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                               {format(notification.date, 'MMM d')}
@@ -362,17 +417,32 @@ export function NotificationIcon({ className, onClick, noOutline }: Notification
             Settings
           </Button>
           
-          {/* Test notification button - visible in development mode only */}
+          {/* Test notification buttons - visible in development mode only */}
           {import.meta.env.DEV && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => addTestNotification(addNotification, 'new-story')}
-              className="h-7 text-[11px]"
-            >
-              <Bell className="h-3 w-3 mr-1" />
-              Test
-            </Button>
+            <div className="flex gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => addTestNotification(addNotification, 'new-story')}
+                className="h-7 text-[11px]"
+              >
+                <Bell className="h-3 w-3 mr-1" />
+                Test Story
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => testCursedNotification(
+                  addNotification, 
+                  setLastNotificationOpen, 
+                  setShowCursedMessage
+                )}
+                className="h-7 text-[11px] text-red-600"
+              >
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Test Cursed Effect
+              </Button>
+            </div>
           )}
         </div>
       </PopoverContent>

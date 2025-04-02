@@ -41,7 +41,47 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
+  const [touchStartX, setTouchStartX] = React.useState<number | null>(null);
   const sidebar = useSidebar();
+  
+  // Add swipe to close functionality
+  React.useEffect(() => {
+    // Only add touch events if mobile and sidebar is open
+    if (!sidebar?.isMobile || !sidebar?.openMobile) return;
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      setTouchStartX(e.touches[0].clientX);
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartX) return;
+      
+      const touchEndX = e.touches[0].clientX;
+      const touchDiff = touchStartX - touchEndX;
+      
+      // If swipe left (from right to left) with threshold of 50px
+      if (touchDiff > 50) {
+        sidebar.setOpenMobile(false);
+        setTouchStartX(null); // Reset touch start
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      setTouchStartX(null); // Reset touch start when touch ends
+    };
+    
+    // Add event listeners
+    document.addEventListener("touchstart", handleTouchStart);
+    document.addEventListener("touchmove", handleTouchMove);
+    document.addEventListener("touchend", handleTouchEnd);
+    
+    // Cleanup function
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [sidebar, touchStartX]); // Dependencies include sidebar and touchStartX
 
   const handleNavigation = React.useCallback((path: string) => {
     if (onNavigate) {
