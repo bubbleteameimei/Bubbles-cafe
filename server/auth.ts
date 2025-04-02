@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import bcryptjs from "bcryptjs";
 import * as crypto from "crypto";
 import { User, InsertResetToken } from "@shared/schema";
+import { emailService } from "./utils/email-service";
 
 // Extend Express.User with our User type but avoid password_hash
 declare global {
@@ -336,16 +337,32 @@ export function setupAuth(app: Express) {
       
       console.log('[Auth] Password reset token created for user:', user.id);
       
-      // In a real application, we would send an email here
-      // But for this simulation, we'll just log the token and return it
-      console.log('[Auth] Password reset token (for testing):', token);
+      // Send password reset email using our email service
+      const emailSent = await emailService.sendPasswordResetEmail(
+        user.email,
+        token,
+        user.username
+      );
       
-      return res.json({ 
+      console.log('[Auth] Password reset email sent:', emailSent);
+      
+      // For development purposes, also log the token
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth] Password reset token (for testing):', token);
+      }
+      
+      const response: any = { 
         success: true, 
         message: "If your email exists in our system, you'll receive a password reset link shortly",
-        // Including token in response only for testing - would be sent via email in production
-        token: token
-      });
+        emailSent
+      };
+      
+      // Include token in development mode for easier testing
+      if (process.env.NODE_ENV === 'development') {
+        response.token = token;
+      }
+      
+      return res.json(response);
     } catch (error) {
       console.error('[Auth] Password reset request error:', error);
       return res.status(500).json({ message: "Error processing password reset request" });

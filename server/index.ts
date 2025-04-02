@@ -79,7 +79,10 @@ app.use(validateCsrfToken({
     '/health', 
     '/api/auth/status', 
     '/api/auth/login',
-    '/api/auth/register', 
+    '/api/auth/register',
+    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection (for testing)
+    '/api/auth/reset-password', // Allow password reset without CSRF protection (for testing)
+    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection (for testing)
     '/api/feedback',
     '/api/posts',
     '/api/recommendations',

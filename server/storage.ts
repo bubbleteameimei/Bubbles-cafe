@@ -521,21 +521,33 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Updating user:', id, userData);
       
-      // Remove sensitive fields that shouldn't be directly updated
-      const { 
-        password_hash, 
-        id: userId, 
-        createdAt,
-        email, // Email changes should be handled separately with verification
-        ...safeUserData 
-      } = userData as any;
+      // Special handling for password updates (needed for reset password functionality)
+      const updateData: Record<string, any> = {};
       
-      // Keep metadata for profile updates if it exists
-      // Note: metadata is a valid field in the users table
+      // Special case for password_hash which needs direct assignment
+      if (userData.password_hash) {
+        updateData.password_hash = userData.password_hash;
+      }
       
-      // Update the user with remaining safe fields
+      // Process other fields
+      for (const [key, value] of Object.entries(userData)) {
+        // Skip these fields
+        if (['id', 'createdAt', 'email'].includes(key)) continue;
+        
+        // For all other fields, add them to update data
+        if (key !== 'password_hash') {
+          updateData[key] = value;
+        }
+      }
+      
+      // Only proceed if we have fields to update
+      if (Object.keys(updateData).length === 0) {
+        throw new Error("No valid fields to update");
+      }
+      
+      // Update the user with valid fields
       const [updatedUser] = await db.update(users)
-        .set(safeUserData)
+        .set(updateData)
         .where(eq(users.id, id))
         .returning();
       
@@ -548,7 +560,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in updateUser:", error);
       if (error instanceof Error) {
-        if (error.message === "User not found") {
+        if (error.message === "User not found" || error.message === "No valid fields to update") {
           throw error;
         }
       }

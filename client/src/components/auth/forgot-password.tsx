@@ -67,26 +67,38 @@ export function ForgotPasswordDialog() {
       
       console.log("[ForgotPassword] Password reset requested for:", email);
       
-      // For testing purposes, we'll show the token to the user
-      // In a production environment, this would be sent via email instead
+      // Set email sent state regardless of outcome (for security)
+      setEmailSent(true);
+      
+      // Check if email was actually sent 
+      if (data.emailSent === false) {
+        // Email service failed, but we still have token for testing in dev mode
+        console.log("[ForgotPassword] Email service failed but continuing with token-based flow");
+        toast({
+          title: "Email Delivery Issue",
+          description: "There was an issue delivering the email, but we'll provide you a direct link",
+          variant: "default",
+        });
+      } else {
+        // Regular success message when email was sent successfully
+        toast({
+          title: "Reset Email Sent",
+          description: "Check your inbox for instructions to reset your password",
+        });
+      }
+      
+      // In development, show token and direct link
       if (data.token) {
         console.log("[ForgotPassword] Reset token for testing:", data.token);
         
-        setEmailSent(true);
-        
-        toast({
-          title: "Reset Token Generated",
-          description: `For testing purposes, use this token: ${data.token.substring(0, 10)}...`,
-          duration: 7000,
-        });
-        
         // Navigate to reset password page with token
         const resetUrl = `/reset-password?token=${data.token}`;
-        // Show info message about the link
+        
+        // Show info message with link after a short delay
         setTimeout(() => {
           toast({
             title: "Reset Link Available",
-            description: "Click the reset link below to reset your password",
+            description: "Click the button below to reset your password",
             action: (
               <Button 
                 variant="outline" 
@@ -99,13 +111,6 @@ export function ForgotPasswordDialog() {
             duration: 10000,
           });
         }, 1000);
-      } else {
-        setEmailSent(true);
-        
-        toast({
-          title: "Reset Email Sent",
-          description: "Check your inbox for instructions to reset your password",
-        });
       }
       
       // Close the dialog after a delay
