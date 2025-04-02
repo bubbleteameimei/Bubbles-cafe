@@ -18,9 +18,21 @@ export class EmailService {
   private readonly fromEmail: string;
   
   constructor() {
-    // Set up MailerSend transporter (primary)
-    // Using different configuration for MailerSend specifically
+    // Set up Gmail as primary transporter
     this.primaryTransporter = createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.GMAIL_EMAIL || '',
+        pass: process.env.GMAIL_APP_PASSWORD || ''
+      },
+      debug: true, // Enable debug output
+      logger: true // Log information to the console
+    });
+    
+    // Set up MailerSend as fallback transporter
+    this.fallbackTransporter = createTransport({
       host: 'smtp.mailersend.net',
       port: 587,
       secure: false,
@@ -28,21 +40,8 @@ export class EmailService {
         user: 'api',
         pass: process.env.MAILERSEND_API_KEY || ''
       },
-      debug: true, // Enable debug output
-      logger: true, // Log information to the console      
       tls: {
         rejectUnauthorized: false // Allow self-signed certificates
-      }
-    });
-    
-    // Set up Gmail fallback transporter (secondary)
-    this.fallbackTransporter = createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.GMAIL_USER || '',
-        pass: process.env.GMAIL_APP_PASSWORD || ''
       }
     });
     
@@ -65,22 +64,22 @@ export class EmailService {
     };
     
     try {
-      // Try sending with MailerSend first
-      console.log('[EmailService] Attempting to send email via MailerSend');
+      // Try sending with Gmail first
+      console.log('[EmailService] Attempting to send email via Gmail');
       await this.primaryTransporter.sendMail(mailOptions);
-      console.log('[EmailService] Email sent successfully via MailerSend');
+      console.log('[EmailService] Email sent successfully via Gmail');
       return true;
     } catch (primaryError) {
-      console.error('[EmailService] MailerSend failed:', primaryError);
+      console.error('[EmailService] Gmail failed:', primaryError);
       
-      // Try Gmail as fallback
+      // Try MailerSend as fallback
       try {
-        console.log('[EmailService] Attempting to send via Gmail fallback');
+        console.log('[EmailService] Attempting to send via MailerSend fallback');
         await this.fallbackTransporter.sendMail(mailOptions);
-        console.log('[EmailService] Email sent successfully via Gmail fallback');
+        console.log('[EmailService] Email sent successfully via MailerSend fallback');
         return true;
       } catch (fallbackError) {
-        console.error('[EmailService] Gmail fallback also failed:', fallbackError);
+        console.error('[EmailService] MailerSend fallback also failed:', fallbackError);
         return false;
       }
     }
