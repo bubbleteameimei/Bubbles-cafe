@@ -90,8 +90,8 @@ export default function Navigation() {
     }
   };
 
-  // Handle mobile search button click
-  const handleMobileSearchClick = () => {
+  // Handle search button click for all devices
+  const handleSearchButtonClick = () => {
     // Show a search dialog or expand the header to show search
     const searchPrompt = prompt("Search for keywords:");
     if (searchPrompt && searchPrompt.trim()) {
@@ -155,52 +155,23 @@ export default function Navigation() {
         {/* Flex spacer - pushes content to the ends */}
         <div className="flex-1 lg:flex"></div>
         
-        {/* Enhanced Search bar (tablet and up) - Moved far right */}
-        {deviceType !== 'mobile' && (
-          <div className="hidden sm:flex items-center -mt-2 mr-4">
-            <div className="relative w-[280px] group">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50 
-                                group-focus-within:text-primary transition-colors duration-200" />
-              <input
-                type="search"
-                placeholder="Search for keywords..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                className="w-full rounded-l-md bg-accent/20 text-foreground placeholder:text-foreground/50 
-                         focus:bg-accent/30 focus:outline-none focus:ring-2 focus:ring-primary/40
-                         px-4 py-2 pl-11 text-sm transition-all duration-200
-                         group-focus-within:shadow-sm"
-              />
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={handleSearch}
-                className="rounded-l-none rounded-r-md h-10 border-l border-border/30 shadow-sm"
-              >
-                Search
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Removed Enhanced Search bar from tablet and desktop */}
         
         {/* No need for additional spacer since we removed the mobile nav links */}
         
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-3 -mt-2">
-          {/* Mobile search button - moved to the right */}
-          {deviceType === 'mobile' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleMobileSearchClick}
-              className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 -mt-0.5"
-              aria-label="Search"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-          )}
+          {/* Search button - shown on all devices */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSearchButtonClick}
+            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-150 active:scale-95 -mt-0.5"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
           
           {/* Notifications */}
           <NotificationIcon 

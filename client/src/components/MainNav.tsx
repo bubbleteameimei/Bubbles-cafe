@@ -86,38 +86,21 @@ export default function MainNav() {
           </Link>
         </div>
         
-        {/* Center section - Search bar (only on larger screens) */}
-        {deviceType !== 'mobile' && (
-          <div className="flex-1 mx-4 max-w-lg hidden sm:flex items-center relative">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
-              <input
-                type="search"
-                placeholder="Search stories..."
-                className="w-full rounded-full bg-accent/20 text-foreground placeholder:text-foreground/50 
-                          focus:bg-accent/30 focus:outline-none focus:ring-1 focus:ring-primary/50
-                          px-4 py-2 pl-10 pr-4 text-sm lg:text-base
-                          transition-all duration-200 ease-in-out
-                          dark:bg-gray-800/30 dark:focus:bg-gray-800/50"
-              />
-            </div>
-          </div>
-        )}
+        {/* Center section - Empty on all screens, removed search input */}
+        <div className="flex-1 mx-4"></div>
         
         {/* Right section - Action buttons */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Search icon on mobile only */}
-          {deviceType === 'mobile' && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-200 ease-in-out"
-              aria-label="Search"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-          )}
+          {/* Search icon on all devices */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                      transition-all duration-200 ease-in-out"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
           
           {/* Theme toggle - visible on all screen sizes */}
           <Button
