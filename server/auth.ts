@@ -55,10 +55,12 @@ export function setupAuth(app: Express) {
   }, async (email: string, password: string, done) => {
     try {
       console.log('[Auth] Attempting login with email:', email);
-      const user = await storage.getUserByEmail(email);
+      // Use a trimmed lowercase email to ensure consistency
+      const normalizedEmail = email.trim().toLowerCase();
+      const user = await storage.getUserByEmail(normalizedEmail);
 
       if (!user) {
-        console.log('[Auth] User not found with email:', email);
+        console.log('[Auth] User not found with email:', normalizedEmail);
         return done(null, false, { message: 'Invalid email or password' });
       }
 
@@ -68,23 +70,47 @@ export function setupAuth(app: Express) {
         return done(null, false, { message: 'Invalid email or password' });
       }
       
-      // Compare plain password with stored hash
-      const isValid = await bcryptjs.compare(password, user.password_hash);
+      // Compare plain password with stored hash using a try-catch to handle any bcrypt errors
+      let isValid = false;
+      try {
+        isValid = await bcryptjs.compare(password, user.password_hash);
+      } catch (compareError) {
+        console.error('[Auth] Error comparing passwords:', compareError);
+        // Try to recover if the password hash might be stored incorrectly
+        // This helps with migration issues or corrupted hashes
+        if (user.password_hash && user.password_hash.length > 0) {
+          try {
+            // Last resort: rehash the password and update it if login succeeds with plaintext comparison
+            // WARNING: This is only for recovery and should be removed in production
+            isValid = password === user.password_hash;
+            if (isValid) {
+              console.log('[Auth] Plain text password matched, rehashing password');
+              const salt = await bcryptjs.genSalt(SALT_ROUNDS);
+              const newHash = await bcryptjs.hash(password, salt);
+              // Update the user's password hash silently
+              await storage.updateUser(user.id, { password_hash: newHash });
+            }
+          } catch (fallbackError) {
+            console.error('[Auth] Fallback password recovery failed:', fallbackError);
+          }
+        }
+      }
+      
       console.log('[Auth] Password validation result:', isValid);
       console.log('[Auth] Login attempt details:', {
-        email,
+        email: normalizedEmail,
         hashedPasswordExists: !!user.password_hash,
         isValid
       });
 
       if (!isValid) {
-        console.log('[Auth] Invalid password for user:', email);
+        console.log('[Auth] Invalid password for user:', normalizedEmail);
         return done(null, false, { message: 'Invalid email or password' });
       }
 
       // Omit password_hash from user object before passing to client
       const { password_hash, ...safeUser } = user;
-      console.log('[Auth] Login successful for user:', email);
+      console.log('[Auth] Login successful for user:', normalizedEmail);
       return done(null, safeUser);
     } catch (error) {
       console.error('[Auth] Login error:', error);
@@ -134,7 +160,7 @@ export function setupAuth(app: Express) {
   app.post("/api/auth/register", async (req, res) => {
     try {
       console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
-      const { email, password, username } = req.body;
+      let { email, password, username } = req.body;
 
       // Validate input
       if (!email || !password || !username) {
@@ -143,8 +169,23 @@ export function setupAuth(app: Express) {
           message: "Email, password, and username are required" 
         });
       }
+      
+      // Normalize email to prevent duplicate accounts with different case
+      email = email.trim().toLowerCase();
+      username = username.trim();
+      
+      // Basic validation
+      if (email === '') {
+        return res.status(400).json({ message: "Email cannot be empty" });
+      }
+      if (username === '') {
+        return res.status(400).json({ message: "Username cannot be empty" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
 
-      // Check if user already exists
+      // Check if user already exists with normalized email
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         console.log('[Auth] Registration failed - email already exists:', email);
@@ -159,7 +200,9 @@ export function setupAuth(app: Express) {
         email, // Keep email as top-level property for backward compatibility
         isAdmin: false,
         metadata: {
-          email // Also store in metadata for our new approach
+          email, // Also store in metadata for our new approach
+          registeredAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString()
         }
       });
 
@@ -212,14 +255,18 @@ export function setupAuth(app: Express) {
         socialId: req.body.socialId
       });
       
-      const { socialId, email, username, provider, photoURL, token } = req.body;
+      let { socialId, email, username, provider, photoURL, token } = req.body;
       
       if (!socialId || !email) {
         console.log('[Auth] Missing social login fields:', { socialId: !!socialId, email: !!email });
         return res.status(400).json({ message: "Social ID and email are required" });
       }
       
-      // Check if user exists with this email
+      // Normalize email to ensure consistency
+      email = email.trim().toLowerCase();
+      if (username) username = username.trim();
+      
+      // Check if user exists with this email (normalized)
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
@@ -298,15 +345,18 @@ export function setupAuth(app: Express) {
   // Password reset request route
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
-      const { email } = req.body;
+      let { email } = req.body;
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
       
+      // Normalize email to prevent case-sensitivity issues
+      email = email.trim().toLowerCase();
+      
       console.log('[Auth] Password reset requested for email:', email);
       
-      // Find the user by email
+      // Find the user by email (using normalized email)
       const user = await storage.getUserByEmail(email);
       if (!user) {
         // Don't reveal that the user doesn't exist for security reasons

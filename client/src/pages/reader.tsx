@@ -10,10 +10,9 @@ import "@/styles/reader-fixes.css"; // Import custom reader fixes
 import { 
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
-  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Moon, Sun, Bug, Worm, Cloud, CloudFog,
+  Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
   Menu, BookText, Home, Trash
 } from "lucide-react";
-import { useNightMode } from "@/hooks/use-night-mode";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
 import { useLocation } from "wouter";
@@ -112,8 +111,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   const { fontSize, increaseFontSize, decreaseFontSize } = useFontSize();
   const { fontFamily, availableFonts, updateFontFamily } = useFontFamily();
   
-  // Night mode functionality - system preference based, auto mode removed
-  const { isNightMode, preference: nightModePreference, updateNightModePreference } = useNightMode();
+  // Night mode functionality has been completely removed
   
   // One-click distraction-free mode - toggle UI visibility with click
   const { isUIHidden, toggleUI, showTooltip } = useReaderUIToggle();
@@ -1352,7 +1350,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                             case 'Castle': return Castle;
                             case 'Utensils': return BookOpen; // Temporary fallback for Utensils icon
                             case 'Bug': return Bug;
-                            case 'Knife': return Moon; // Temporary fallback for Knife icon
+                            case 'Knife': return Ghost; // Temporary fallback for Knife icon
                             case 'Scan': return Cpu; // Temporary fallback for Scan icon
                             case 'AlertTriangle': return AlertTriangle;
                             case 'Copy': return RefreshCcw; // Temporary fallback for Copy icon

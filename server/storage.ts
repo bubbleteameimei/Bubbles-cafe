@@ -416,7 +416,12 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
+      // Normalize the email address to ensure case-insensitive matching
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log('[Storage] Looking up user by email:', normalizedEmail);
+      
       // Now include metadata column since it exists in the database
+      // Use LOWER() for case-insensitive comparison
       const [user] = await db.select({
         id: users.id,
         username: users.username,
@@ -427,18 +432,29 @@ export class DatabaseStorage implements IStorage {
         createdAt: users.createdAt
       })
       .from(users)
-      .where(eq(users.email, email))
+      .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
       .limit(1);
+      
+      if (user) {
+        console.log('[Storage] User found by email:', normalizedEmail);
+      } else {
+        console.log('[Storage] No user found with email:', normalizedEmail);
+      }
       
       return user;
     } catch (error) {
       console.error("Error in getUserByEmail:", error);
-      // Try a more basic approach as fallback using raw SQL
+      // Try a more basic approach as fallback using raw SQL with case-insensitive comparison
       try {
         const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE email = $1 LIMIT 1",
-          [email]
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+          [email.trim()]
         );
+        
+        if (result.rows.length > 0) {
+          console.log('[Storage] User found by email (fallback method):', email);
+        }
+        
         return result.rows[0] || undefined;
       } catch (fallbackError) {
         console.error("Fallback error in getUserByEmail:", fallbackError);
@@ -449,6 +465,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAdminByEmail(email: string): Promise<User[]> {
     try {
+      // Normalize the email address for case-insensitive matching
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log('[Storage] Looking up admin by email:', normalizedEmail);
+      
       // Now include metadata column since it exists in the database
       const adminUsers = await db.select({
         id: users.id,
@@ -461,19 +481,21 @@ export class DatabaseStorage implements IStorage {
       })
       .from(users)
       .where(and(
-        eq(users.email, email),
+        sql`LOWER(${users.email}) = ${normalizedEmail}`,
         eq(users.isAdmin, true)
       ));
       
+      console.log('[Storage] Found', adminUsers.length, 'admin users with email:', normalizedEmail);
       return adminUsers;
     } catch (error) {
       console.error("Error in getAdminByEmail:", error);
-      // Try a more basic approach as fallback using raw SQL
+      // Try a more basic approach as fallback using raw SQL with case-insensitive comparison
       try {
         const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE email = $1 AND is_admin = true",
-          [email]
+          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) AND is_admin = true",
+          [email.trim()]
         );
+        console.log('[Storage] Found', result.rows.length, 'admin users using fallback method');
         return result.rows || [];
       } catch (fallbackError) {
         console.error("Fallback error in getAdminByEmail:", fallbackError);
@@ -488,13 +510,24 @@ export class DatabaseStorage implements IStorage {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(user.password, salt);
 
-      // Extract email from user or metadata
-      const email = (user.metadata as any)?.email || user.email;
+      // Extract email from user or metadata and normalize it
+      let email = (user.metadata as any)?.email || user.email;
+      
+      // Normalize email to prevent case-sensitivity issues
+      if (email) {
+        email = email.trim().toLowerCase();
+        // Also update the metadata
+        if (user.metadata && typeof user.metadata === 'object') {
+          (user.metadata as any).email = email;
+        }
+      }
+      
+      console.log('[Storage] Creating user with email:', email);
 
       // Prepare user values including the metadata field
       const userValues = {
-        username: user.username,
-        email, // The email is still needed as a column in the users table
+        username: user.username.trim(),
+        email, // The email is now normalized
         password_hash: hashedPassword,
         isAdmin: user.isAdmin ?? false,
         metadata: user.metadata || {} // Include metadata now that it exists in the database

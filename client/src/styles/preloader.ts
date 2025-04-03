@@ -9,6 +9,8 @@
 let stylesLoaded = false;
 let initialLoadingOverlay: HTMLDivElement | null = null;
 
+// Night mode functionality has been completely removed
+
 /**
  * Mark styles as loaded and remove loading overlay
  */
@@ -26,6 +28,8 @@ function markStylesLoaded() {
       setTimeout(() => {
         initialLoadingOverlay?.remove();
         initialLoadingOverlay = null;
+        
+        // Night mode has been removed
       }, 100);
     }, 500);
   }
@@ -40,6 +44,8 @@ function markStylesLoaded() {
  */
 export function setupStylePreloader() {
   console.log('[Preloader] Setting up style preloader');
+  
+  // Night mode functionality has been removed
   
   // Hide content initially to prevent FOUC
   document.body.classList.add('content-hidden');

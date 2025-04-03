@@ -192,32 +192,7 @@
   font-weight: 600;
 }
 
-/* Dark mode adjustments - optimized for night reading comfort */
-:root[data-theme="dark"] .story-content {
-  color: var(--foreground);
-  letter-spacing: 0.015em; /* Slightly increased letter spacing for dark mode readability */
-}
-
-:root[data-theme="dark"] .story-content p {
-  color: rgba(255, 255, 255, 0.92); /* Very subtle opacity for better dark mode reading */
-}
-
-:root[data-theme="dark"] .story-content blockquote {
-  border-left-color: var(--primary);
-  color: rgba(255, 255, 255, 0.85); /* Slightly dimmer for blockquotes */
-  background-color: rgba(0, 0, 0, 0.2); /* Subtle background in dark mode */
-}
-
-:root[data-theme="dark"] .story-content blockquote::before {
-  color: var(--primary);
-  opacity: 0.2;
-}
-
-:root[data-theme="dark"] .story-content h1,
-:root[data-theme="dark"] .story-content h2,
-:root[data-theme="dark"] .story-content h3 {
-  color: white; /* Ensure headings stand out in dark mode */
-}
+/* Dark mode styling has been removed */
 
 /* Reading controls */
 .reading-controls {
