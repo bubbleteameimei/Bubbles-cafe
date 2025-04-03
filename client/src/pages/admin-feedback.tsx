@@ -31,7 +31,7 @@ export default function AdminFeedbackPage() {
   }
   
   // Redirect if not authenticated or not an admin
-  if (!authData?.authenticated || !authData?.user?.isAdmin) {
+  if (!authData?.isAuthenticated || !authData?.user?.isAdmin) {
     return <Redirect to="/login?redirect=/admin-feedback" />;
   }
   

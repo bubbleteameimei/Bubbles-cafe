@@ -63,7 +63,7 @@ export default function UserFeedbackPage() {
       }
       return response.json();
     },
-    enabled: authData?.authenticated,
+    enabled: authData?.isAuthenticated,
   });
   
   // Fetch feedback stats
@@ -76,7 +76,7 @@ export default function UserFeedbackPage() {
       }
       return response.json();
     },
-    enabled: authData?.authenticated,
+    enabled: authData?.isAuthenticated,
   });
   
   // Show loading state
@@ -89,16 +89,25 @@ export default function UserFeedbackPage() {
     );
   }
   
-  // Redirect if not authenticated
-  if (!authData?.authenticated) {
+  // No longer redirecting if not authenticated
+  // Instead we'll show appropriate UI based on authentication status
+  
+  // Check authentication status from the response
+  const isAuthenticated = authData?.isAuthenticated || false;
+  
+  // Show appropriate UI based on whether user is authenticated or not
+  const pageTitle = isAuthenticated ? "Your Feedback" : "Community Feedback";
+
+  // For non-authenticated users, redirect to login page
+  if (!isAuthenticated) {
     return <Redirect to="/login?redirect=/feedback" />;
   }
   
-  // Empty state for user feedback
-  if (!feedbackData?.feedback || feedbackData.feedback.length === 0) {
+  // Empty state for authenticated users with no feedback
+  if (feedbackData?.feedback?.length === 0) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
-        <h1 className="text-2xl font-bold mb-6">Your Feedback</h1>
+        <h1 className="text-2xl font-bold mb-6">{pageTitle}</h1>
         
         <Card className="mb-6">
           <CardHeader>
@@ -115,7 +124,6 @@ export default function UserFeedbackPage() {
               We value your opinion and would love to hear from you. 
               Your feedback helps us improve our service.
             </p>
-            
             <FeedbackForm />
           </CardContent>
         </Card>
@@ -134,55 +142,57 @@ export default function UserFeedbackPage() {
   
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Your Feedback</h1>
+      <h1 className="text-2xl font-bold mb-6">{pageTitle}</h1>
       
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardHeader className="py-4 px-4">
-            <CardTitle className="text-sm font-medium text-gray-500">Total</CardTitle>
-          </CardHeader>
-          <CardContent className="py-0 px-4">
-            <p className="text-2xl font-bold">{stats.total}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-yellow-200">
-          <CardHeader className="py-4 px-4">
-            <CardTitle className="text-sm font-medium text-yellow-600">Pending</CardTitle>
-          </CardHeader>
-          <CardContent className="py-0 px-4">
-            <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-blue-200">
-          <CardHeader className="py-4 px-4">
-            <CardTitle className="text-sm font-medium text-blue-600">Reviewed</CardTitle>
-          </CardHeader>
-          <CardContent className="py-0 px-4">
-            <p className="text-2xl font-bold text-blue-700">{stats.reviewed}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-green-200">
-          <CardHeader className="py-4 px-4">
-            <CardTitle className="text-sm font-medium text-green-600">Resolved</CardTitle>
-          </CardHeader>
-          <CardContent className="py-0 px-4">
-            <p className="text-2xl font-bold text-green-700">{stats.resolved}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-red-200">
-          <CardHeader className="py-4 px-4">
-            <CardTitle className="text-sm font-medium text-red-600">Rejected</CardTitle>
-          </CardHeader>
-          <CardContent className="py-0 px-4">
-            <p className="text-2xl font-bold text-red-700">{stats.rejected}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Summary stats - only show to authenticated users */}
+      {isAuthenticated && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <Card>
+            <CardHeader className="py-4 px-4">
+              <CardTitle className="text-sm font-medium text-gray-500">Total</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4">
+              <p className="text-2xl font-bold">{stats.total}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-yellow-200">
+            <CardHeader className="py-4 px-4">
+              <CardTitle className="text-sm font-medium text-yellow-600">Pending</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4">
+              <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-blue-200">
+            <CardHeader className="py-4 px-4">
+              <CardTitle className="text-sm font-medium text-blue-600">Reviewed</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4">
+              <p className="text-2xl font-bold text-blue-700">{stats.reviewed}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-green-200">
+            <CardHeader className="py-4 px-4">
+              <CardTitle className="text-sm font-medium text-green-600">Resolved</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4">
+              <p className="text-2xl font-bold text-green-700">{stats.resolved}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-red-200">
+            <CardHeader className="py-4 px-4">
+              <CardTitle className="text-sm font-medium text-red-600">Rejected</CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 px-4">
+              <p className="text-2xl font-bold text-red-700">{stats.rejected}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -190,8 +200,9 @@ export default function UserFeedbackPage() {
           <TabsTrigger value="new">Submit New Feedback</TabsTrigger>
         </TabsList>
         
+        {/* History tab content */}
         <TabsContent value="history" className="pt-6">
-          {isError ? (
+          {isError && (
             <Card className="border-red-200">
               <CardHeader className="bg-red-50">
                 <CardTitle className="text-red-700 flex items-center">
@@ -211,7 +222,9 @@ export default function UserFeedbackPage() {
                 </Button>
               </CardContent>
             </Card>
-          ) : (
+          )}
+          
+          {!isError && (
             <Card>
               <CardHeader>
                 <CardTitle>Your Feedback History</CardTitle>

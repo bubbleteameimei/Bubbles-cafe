@@ -3,7 +3,7 @@ import { IStorage } from '../storage';
 import { feedbackLogger } from '../utils/debug-logger';
 import { UserFeedback } from '../../shared/schema';
 
-// Middleware for checking if user is authenticated
+// Middleware for checking if user is authenticated (kept for other routes that may need it)
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (!req.session?.user) {
     return res.status(401).json({ error: 'Not authenticated' });
@@ -11,17 +11,30 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Helper to check authentication without blocking - using passport's isAuthenticated
+const checkAuthentication = (req: Request) => {
+  return {
+    isAuthenticated: req.isAuthenticated(),
+    userId: req.isAuthenticated() ? (req.user as any).id : null
+  };
+};
+
 export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
   /**
    * GET /api/user/feedback
-   * Retrieves a user's feedback submissions
+   * Retrieves a user's feedback submissions if authenticated, otherwise returns empty array
    */
-  app.get('/api/user/feedback', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback', async (req: Request, res: Response) => {
     try {
-      const userId = req.session?.user?.id;
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
+      const { isAuthenticated, userId } = checkAuthentication(req);
+      
+      // Check auth status but don't block - instead return empty data for unauthenticated users
+      if (!isAuthenticated) {
+        feedbackLogger.info('User not authenticated, returning empty feedback array');
+        return res.status(200).json({
+          feedback: [],
+          isAuthenticated: false
+        });
       }
 
       feedbackLogger.info(`Retrieving feedback for user ${userId}`);
@@ -34,7 +47,8 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
       );
       
       return res.status(200).json({
-        feedback: userFeedback
+        feedback: userFeedback,
+        isAuthenticated: true
       });
     } catch (error: any) {
       feedbackLogger.error(`Error retrieving user feedback: ${error.message}`, error);
@@ -47,14 +61,27 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
   
   /**
    * GET /api/user/feedback/stats
-   * Retrieves statistics about a user's feedback submissions
+   * Retrieves statistics about a user's feedback submissions if authenticated
+   * Otherwise returns empty stats but doesn't block access
    */
-  app.get('/api/user/feedback/stats', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback/stats', async (req: Request, res: Response) => {
     try {
-      const userId = req.session?.user?.id;
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
+      const { isAuthenticated, userId } = checkAuthentication(req);
+      
+      // If not authenticated, return empty stats rather than an error
+      if (!isAuthenticated) {
+        feedbackLogger.info('User not authenticated, returning empty feedback stats');
+        return res.status(200).json({
+          stats: {
+            total: 0,
+            pending: 0,
+            reviewed: 0,
+            resolved: 0,
+            rejected: 0,
+            responseRate: 0
+          },
+          isAuthenticated: false
+        });
       }
 
       feedbackLogger.info(`Retrieving feedback stats for user ${userId}`);
@@ -79,7 +106,8 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
       };
       
       return res.status(200).json({
-        stats
+        stats,
+        isAuthenticated: true
       });
     } catch (error: any) {
       feedbackLogger.error(`Error retrieving user feedback stats: ${error.message}`, error);
@@ -93,32 +121,58 @@ export function registerUserFeedbackRoutes(app: Express, storage: IStorage) {
   /**
    * GET /api/user/feedback/:id
    * Retrieves a specific feedback submission by ID for the authenticated user
+   * If not authenticated, returns limited feedback info for public sharing
    */
-  app.get('/api/user/feedback/:id', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/user/feedback/:id', async (req: Request, res: Response) => {
     try {
-      const userId = req.session?.user?.id;
+      const { isAuthenticated, userId } = checkAuthentication(req);
       const feedbackId = parseInt(req.params.id);
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
       
       if (isNaN(feedbackId)) {
         return res.status(400).json({ error: 'Invalid feedback ID' });
       }
 
-      feedbackLogger.info(`Retrieving specific feedback ${feedbackId} for user ${userId}`);
-      
       // Get the feedback item
       const feedback = await storage.getFeedback(feedbackId);
       
-      // Check if feedback exists and belongs to the user
-      if (!feedback || feedback.userId !== userId) {
-        return res.status(404).json({ error: 'Feedback not found or does not belong to user' });
+      // If feedback doesn't exist, return 404
+      if (!feedback) {
+        return res.status(404).json({ error: 'Feedback not found' });
       }
       
+      // Log auth info for debugging
+      feedbackLogger.info(`Auth check - isAuthenticated: ${isAuthenticated}, userId: ${userId}, feedbackUserId: ${feedback.userId}`);
+      
+      // If authenticated and feedback belongs to user, return full details
+      if (isAuthenticated && feedback.userId === userId) {
+        feedbackLogger.info(`Retrieving specific feedback ${feedbackId} for authenticated user ${userId}`);
+        
+        return res.status(200).json({
+          feedback,
+          isAuthenticated: true,
+          isOwner: true
+        });
+      }
+      
+      // For unauthenticated users or users viewing others' feedback,
+      // return limited public information
+      feedbackLogger.info(`Retrieving public feedback ${feedbackId} view`);
+      
+      // Create a limited version of the feedback for public viewing
+      const publicFeedback = {
+        id: feedback.id,
+        type: feedback.type,
+        content: feedback.content,
+        status: feedback.status,
+        category: feedback.category,
+        createdAt: feedback.createdAt,
+        // Exclude sensitive info like userAgent, screen resolution, etc.
+      };
+      
       return res.status(200).json({
-        feedback
+        feedback: publicFeedback,
+        isAuthenticated,
+        isOwner: false
       });
     } catch (error: any) {
       feedbackLogger.error(`Error retrieving specific user feedback: ${error.message}`, error);
