@@ -1,129 +1,110 @@
 /**
- * Eden's Hollow Typewriter Text Component
- * Creates a progressive text reveal effect for narrative text
- */
-
-import React, { useState, useEffect, useRef } from 'react';
-import './TypewriterText.css';
-
-interface TypewriterTextProps {
-  text: string;
-  speed?: number;
-  initialDelay?: number;
-  onComplete?: () => void;
-}
-
-/**
  * Typewriter Text Component
- * Displays text with a typewriter animation effect 
+ * 
+ * This component displays text with a typewriter effect, character by character.
+ * The speed and appearance can be affected by sanity and corruption levels.
  */
+import React, { useState, useEffect, useRef } from 'react';
+import { TypewriterTextProps } from '../types';
+import '../styles/typewriter.css';
+import { corruptText } from '../utils/gameUtils';
+
 const TypewriterText: React.FC<TypewriterTextProps> = ({
   text,
-  speed = 40,
-  initialDelay = 300,
-  onComplete
+  speed = 30,
+  onComplete,
+  className = '',
+  sanity = 100,
+  corruption = 0
 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [isComplete, setIsComplete] = useState(false);
-  const [isFastForward, setIsFastForward] = useState(false);
-  const textRef = useRef<HTMLDivElement>(null);
-  
-  // Manage the typewriter effect
+  const [displayedText, setDisplayedText] = useState<string[]>([]);
+  const [isDone, setIsDone] = useState(false);
+  const characterIndexRef = useRef(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Apply sanity effects to classes
+  const getSanityClass = () => {
+    if (sanity < 30) return 'eden-typewriter-very-low-sanity';
+    if (sanity < 60) return 'eden-typewriter-low-sanity';
+    return '';
+  };
+
+  // Apply corruption effects to classes
+  const getCorruptionClass = () => {
+    if (corruption > 70) return 'eden-typewriter-highly-corrupted';
+    if (corruption > 40) return 'eden-typewriter-corrupted';
+    return '';
+  };
+
+  // Adjust speed based on sanity
+  const getAdjustedSpeed = () => {
+    // Lower sanity = more erratic typing (sometimes faster, sometimes slower)
+    if (sanity < 30) {
+      return speed * (0.5 + Math.random());
+    }
+    if (sanity < 60) {
+      return speed * (0.75 + Math.random() * 0.5);
+    }
+    return speed;
+  };
+
+  // Apply corruption to text
+  const getProcessedText = () => {
+    if (corruption > 70) {
+      return corruptText(text, 0.3);
+    }
+    if (corruption > 40) {
+      return corruptText(text, 0.1);
+    }
+    return text;
+  };
+
+  // Effect for typewriter animation
   useEffect(() => {
-    if (text === '') {
-      setDisplayedText('');
-      setIsComplete(true);
-      return;
-    }
+    const processedText = getProcessedText();
+    characterIndexRef.current = 0;
+    setDisplayedText([]);
+    setIsDone(false);
     
-    // Reset state when text changes
-    setDisplayedText('');
-    setIsComplete(false);
-    setIsFastForward(false);
-    
-    let charIndex = 0;
-    let timeout: NodeJS.Timeout;
-    
-    // Initial delay before typing starts
-    const initialTimeout = setTimeout(() => {
-      // Start typing each character
-      const typeNextChar = () => {
-        setDisplayedText(prev => {
-          const nextText = text.substring(0, charIndex + 1);
-          charIndex++;
-          return nextText;
-        });
+    const typeNextChar = () => {
+      if (characterIndexRef.current < processedText.length) {
+        setDisplayedText(prev => [...prev, processedText[characterIndexRef.current]]);
+        characterIndexRef.current++;
         
-        // Check if typing is complete
-        if (charIndex >= text.length) {
-          setIsComplete(true);
-          if (onComplete) onComplete();
-        } else {
-          // Calculate delay for next character
-          const nextDelay = isFastForward ? 5 : getCharDelay(text[charIndex]);
-          timeout = setTimeout(typeNextChar, nextDelay);
-        }
-      };
-      
-      typeNextChar();
-    }, initialDelay);
-    
-    // Cleanup timeouts on unmount or text change
-    return () => {
-      clearTimeout(initialTimeout);
-      clearTimeout(timeout);
+        // Schedule next character with adjusted speed
+        timerRef.current = setTimeout(typeNextChar, getAdjustedSpeed());
+      } else {
+        setIsDone(true);
+        if (onComplete) onComplete();
+      }
     };
-  }, [text, speed, initialDelay, onComplete, isFastForward]);
-  
-  // Calculate delay based on character type for a more natural effect
-  const getCharDelay = (char: string): number => {
-    if (isFastForward) return 5;
     
-    // Punctuation gets longer delays
-    if ('.!?'.includes(char)) return speed * 4;
-    if (',;:'.includes(char)) return speed * 2.5;
-    if ('-—()[]{}""\''.includes(char)) return speed * 1.5;
-    if (char === '\n') return speed * 2; // Line break delay
+    // Start the typewriter effect
+    timerRef.current = setTimeout(typeNextChar, getAdjustedSpeed());
     
-    // Randomize slightly for natural feel
-    return speed * (0.8 + Math.random() * 0.4);
-  };
-  
-  // Handle user click to fast-forward
-  const handleClick = () => {
-    if (!isComplete) {
-      setIsFastForward(true);
-    }
-  };
-  
-  // If already complete, show full text
-  if (isComplete) {
-    return (
-      <div className="eden-typewriter-text eden-text-complete" ref={textRef}>
-        {text.split('\n').map((line, index) => (
-          <React.Fragment key={index}>
-            {line}
-            {index < text.split('\n').length - 1 && <br />}
-          </React.Fragment>
-        ))}
-      </div>
-    );
-  }
-  
-  // Show text as it's being typed
+    // Cleanup timer on unmount or text change
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [text, speed, onComplete, sanity, corruption]);
+
+  // Combine all the classes
+  const typewriterClass = `eden-typewriter-container ${getSanityClass()} ${getCorruptionClass()} ${className} ${isDone ? 'eden-typewriter-done' : ''}`;
+
   return (
-    <div 
-      className="eden-typewriter-text" 
-      onClick={handleClick}
-      ref={textRef}
-    >
-      {displayedText.split('\n').map((line, index) => (
-        <React.Fragment key={index}>
-          {line}
-          {index < displayedText.split('\n').length - 1 && <br />}
-        </React.Fragment>
+    <div className={typewriterClass}>
+      {displayedText.map((char, index) => (
+        <span 
+          key={index} 
+          className="eden-typewriter-char" 
+          style={{ animationDelay: `${index * 0.03}s` }}
+        >
+          {char}
+        </span>
       ))}
-      <span className="eden-cursor"></span>
+      <span className="eden-typewriter-cursor"></span>
     </div>
   );
 };

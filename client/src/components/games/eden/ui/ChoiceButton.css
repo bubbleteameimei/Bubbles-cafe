@@ -1,227 +1,286 @@
 /**
- * Eden's Hollow Choice Button Styles
+ * Eden's Hollow ChoiceButton Styles
  */
 
 .eden-choice-button {
-  position: relative;
-  padding: 0.9rem 1.5rem;
-  width: 100%;
-  background-color: rgba(40, 35, 35, 0.85);
-  border: none;
-  border-left: 4px solid #8B0000;
+  background-color: rgba(50, 40, 40, 0.8);
   color: #e0d9c1;
+  border: 1px solid rgba(139, 0, 0, 0.7);
+  border-radius: 4px;
+  padding: 0.9rem 1.2rem;
   font-family: 'IM Fell English', serif;
-  font-size: 1rem;
+  font-size: 1.05rem;
   text-align: left;
-  cursor: pointer;
+  position: relative;
   transition: all 0.3s ease;
-  border-radius: 3px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  width: 100%;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
-.eden-choice-button:hover,
+.eden-choice-button:hover, 
 .eden-choice-button:focus {
-  background-color: rgba(50, 45, 45, 0.9);
+  background-color: rgba(70, 50, 50, 0.9);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  border-color: rgba(159, 20, 20, 0.8);
 }
 
 .eden-choice-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.eden-choice-button::before {
+/* Normal state after hover */
+.eden-choice-button::after {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 0.1), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  height: 2px;
+  background: linear-gradient(to right, rgba(139, 0, 0, 0), rgba(139, 0, 0, 0.7), rgba(139, 0, 0, 0));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  transform-origin: center;
 }
 
-.eden-choice-button:hover::before,
-.eden-choice-button:focus::before {
-  opacity: 1;
-}
-
-.eden-choice-button-text {
-  flex-grow: 1;
-  margin-right: 1rem;
-  position: relative;
-  z-index: 1;
-}
-
-.eden-choice-icons {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.eden-choice-icon {
-  width: 1.2rem;
-  height: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Icon effects */
-.eden-choice-sanity-effect,
-.eden-choice-corruption-effect {
-  display: flex;
-  align-items: center;
-  font-size: 0.85rem;
-}
-
-.eden-choice-sanity-effect {
-  color: #c7a97a;
-}
-
-.eden-choice-corruption-effect {
-  color: #a96dd3;
-}
-
-/* Button variants */
-.eden-choice-button.eden-choice-insane {
-  border-left-color: #67102f;
-  background-color: rgba(43, 27, 35, 0.85);
-}
-
-.eden-choice-button.eden-choice-insane:hover,
-.eden-choice-button.eden-choice-insane:focus {
-  background-color: rgba(58, 37, 48, 0.9);
-}
-
-.eden-choice-button.eden-choice-insane::before {
-  background: linear-gradient(90deg, rgba(103, 16, 47, 0.15), transparent);
-}
-
-.eden-choice-button.eden-choice-corrupted {
-  border-left-color: #461980;
-  background-color: rgba(35, 28, 48, 0.85);
-}
-
-.eden-choice-button.eden-choice-corrupted:hover,
-.eden-choice-button.eden-choice-corrupted:focus {
-  background-color: rgba(50, 40, 69, 0.9);
-}
-
-.eden-choice-button.eden-choice-corrupted::before {
-  background: linear-gradient(90deg, rgba(70, 25, 128, 0.15), transparent);
+.eden-choice-button:hover::after,
+.eden-choice-button:focus::after {
+  transform: scaleX(1);
 }
 
 /* Disabled state */
 .eden-choice-button:disabled {
-  opacity: 0.5;
+  background-color: rgba(40, 40, 40, 0.5);
+  color: rgba(224, 217, 193, 0.5);
   cursor: not-allowed;
+  border-color: rgba(80, 80, 80, 0.5);
   transform: none;
   box-shadow: none;
 }
 
-.eden-choice-button:disabled::before {
+.eden-choice-button:disabled::after {
+  display: none;
+}
+
+/* Choice text styles */
+.eden-choice-text {
+  display: inline-block;
+  transition: text-shadow 0.3s ease;
+}
+
+/* Impact indicators */
+.eden-choice-impact-container {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
   opacity: 0;
+  transform: translateX(5px);
+  animation: eden-fade-in 0.3s forwards;
 }
 
-/* Hover effects */
-.eden-choice-button.eden-choice-corrupted:hover .eden-choice-corruption-effect,
-.eden-choice-button.eden-choice-corrupted:focus .eden-choice-corruption-effect {
-  text-shadow: 0 0 5px rgba(169, 109, 211, 0.5);
+.eden-choice-impact {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'IM Fell English SC', serif;
 }
 
-.eden-choice-button.eden-choice-insane:hover .eden-choice-sanity-effect,
-.eden-choice-button.eden-choice-insane:focus .eden-choice-sanity-effect {
-  text-shadow: 0 0 5px rgba(143, 29, 76, 0.5);
+.eden-impact-positive {
+  background-color: rgba(29, 138, 74, 0.8);
+  color: #e0e0e0;
 }
 
-/* Hidden and revealed states */
-.eden-choice-button.eden-choice-hidden {
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none;
+.eden-impact-negative {
+  background-color: rgba(139, 0, 0, 0.8);
+  color: #e0e0e0;
 }
 
-.eden-choice-button.eden-choice-revealed {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: all;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+/* Special choice types */
+.eden-choice-insane {
+  background-color: rgba(60, 30, 40, 0.8);
+  border-color: rgba(143, 29, 76, 0.7);
+  color: #e9c6d2;
 }
 
-/* Animation for appearing one by one */
-.eden-choice-button.eden-choice-revealed-delay-1 {
-  transition-delay: 0.1s;
+.eden-choice-insane:hover,
+.eden-choice-insane:focus {
+  background-color: rgba(80, 40, 50, 0.9);
+  border-color: rgba(163, 49, 96, 0.8);
 }
 
-.eden-choice-button.eden-choice-revealed-delay-2 {
-  transition-delay: 0.2s;
+.eden-choice-insane::after {
+  background: linear-gradient(to right, rgba(143, 29, 76, 0), rgba(143, 29, 76, 0.7), rgba(143, 29, 76, 0));
 }
 
-.eden-choice-button.eden-choice-revealed-delay-3 {
-  transition-delay: 0.3s;
+.eden-choice-corrupt {
+  background-color: rgba(40, 30, 60, 0.8);
+  border-color: rgba(70, 25, 128, 0.7);
+  color: #d9c6e9;
 }
 
-/* For insane or corrupted choices that have slight movement */
-@keyframes eden-choice-insane-float {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
+.eden-choice-corrupt:hover,
+.eden-choice-corrupt:focus {
+  background-color: rgba(50, 40, 70, 0.9);
+  border-color: rgba(90, 45, 148, 0.8);
+}
+
+.eden-choice-corrupt::after {
+  background: linear-gradient(to right, rgba(70, 25, 128, 0), rgba(70, 25, 128, 0.7), rgba(70, 25, 128, 0));
+}
+
+.eden-choice-special {
+  background-color: rgba(40, 50, 60, 0.8);
+  border-color: rgba(25, 70, 128, 0.7);
+  color: #c6d9e9;
+}
+
+.eden-choice-special:hover,
+.eden-choice-special:focus {
+  background-color: rgba(50, 60, 70, 0.9);
+  border-color: rgba(45, 90, 148, 0.8);
+}
+
+.eden-choice-special::after {
+  background: linear-gradient(to right, rgba(25, 70, 128, 0), rgba(25, 70, 128, 0.7), rgba(25, 70, 128, 0));
+}
+
+/* Warning effect for dangerous choices */
+.eden-choice-warning::before {
+  content: '⚠';
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: #e0d9c1;
+  opacity: 0.8;
+}
+
+.eden-choice-warning {
+  padding-left: 2rem;
+}
+
+/* Text effects for corrupted/insane choices */
+.eden-choice-text-effects {
+  display: inline-block;
+}
+
+.eden-char-corrupt {
+  display: inline-block;
+  color: #a96dd3;
+  animation: eden-char-pulse 2s infinite;
+}
+
+.eden-char-insane {
+  display: inline-block;
+  color: #8f1d4c;
+  animation: eden-char-twitch 1.5s infinite;
+}
+
+/* Animations */
+@keyframes eden-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(5px);
   }
-  25% {
-    transform: translateY(-2px) translateX(1px);
-  }
-  75% {
-    transform: translateY(1px) translateX(-1px);
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-.eden-choice-button.eden-choice-insane:hover,
-.eden-choice-button.eden-choice-corrupted:hover {
-  animation: eden-choice-insane-float 2s ease infinite;
+@keyframes eden-char-pulse {
+  0% {
+    text-shadow: 0 0 1px rgba(169, 109, 211, 0.4);
+    transform: translateY(0);
+  }
+  50% {
+    text-shadow: 0 0 4px rgba(169, 109, 211, 0.7);
+    transform: translateY(-1px);
+  }
+  100% {
+    text-shadow: 0 0 1px rgba(169, 109, 211, 0.4);
+    transform: translateY(0);
+  }
+}
+
+@keyframes eden-char-twitch {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  10% {
+    transform: translate(-1px, 1px) rotate(-1deg);
+  }
+  20% {
+    transform: translate(-1px, 0) rotate(1deg);
+  }
+  30% {
+    transform: translate(0, 1px) rotate(0deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  50% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .eden-choice-button {
-    padding: 0.8rem 1.2rem;
-    font-size: 0.95rem;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
   }
   
-  .eden-choice-icons {
-    gap: 0.6rem;
+  .eden-choice-impact {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.35rem;
   }
   
-  .eden-choice-icon {
-    width: 1.1rem;
-    height: 1.1rem;
+  .eden-choice-warning::before {
+    font-size: 0.8rem;
+    left: 0.4rem;
+  }
+  
+  .eden-choice-warning {
+    padding-left: 1.8rem;
   }
 }
 
 @media (max-width: 480px) {
   .eden-choice-button {
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
   }
   
-  .eden-choice-icons {
-    gap: 0.5rem;
+  .eden-choice-impact-container {
+    top: 0.4rem;
+    right: 0.4rem;
   }
   
-  .eden-choice-icon {
-    width: 1rem;
-    height: 1rem;
+  .eden-choice-impact {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.3rem;
   }
   
-  .eden-choice-sanity-effect,
-  .eden-choice-corruption-effect {
-    font-size: 0.8rem;
+  .eden-choice-warning::before {
+    font-size: 0.75rem;
+    left: 0.3rem;
+  }
+  
+  .eden-choice-warning {
+    padding-left: 1.6rem;
   }
 }

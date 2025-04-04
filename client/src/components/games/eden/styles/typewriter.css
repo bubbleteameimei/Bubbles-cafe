@@ -1,0 +1,120 @@
+/* Eden's Hollow Typewriter Text Styles */
+
+.eden-typewriter-container {
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+}
+
+.eden-typewriter-char {
+  display: inline-block;
+  opacity: 0;
+  animation: eden-char-appear 0.3s forwards;
+}
+
+.eden-typewriter-cursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  background-color: #e0d9c1;
+  opacity: 0.7;
+  margin-left: 0.1em;
+  animation: eden-cursor-blink 1s infinite;
+}
+
+.eden-typewriter-done .eden-typewriter-cursor {
+  display: none;
+}
+
+/* Sanity effects for text */
+.eden-typewriter-low-sanity .eden-typewriter-char {
+  animation: eden-char-appear-wobble 0.4s forwards;
+}
+
+.eden-typewriter-very-low-sanity .eden-typewriter-char {
+  animation: eden-char-appear-crazy 0.5s forwards;
+  display: inline-block;
+  transform-origin: center;
+}
+
+/* Corruption effects for text */
+.eden-typewriter-corrupted .eden-typewriter-char {
+  color: #e0c9d1;
+  text-shadow: 0 0 2px rgba(125, 74, 92, 0.7);
+}
+
+.eden-typewriter-highly-corrupted .eden-typewriter-char {
+  color: #d1a9b5;
+  text-shadow: 0 0 4px rgba(125, 74, 92, 0.9);
+  position: relative;
+}
+
+.eden-typewriter-highly-corrupted .eden-typewriter-char::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(93, 54, 69, 0.1);
+  mix-blend-mode: multiply;
+}
+
+/* Animations */
+@keyframes eden-char-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes eden-char-appear-wobble {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  60% {
+    opacity: 0.7;
+    transform: translateY(0) rotate(3deg);
+  }
+  80% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes eden-char-appear-crazy {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) rotate(5deg);
+  }
+  40% {
+    opacity: 0.5;
+    transform: translateY(-3px) rotate(-8deg);
+  }
+  70% {
+    transform: translateY(2px) rotate(3deg);
+  }
+  85% {
+    transform: translateY(-1px) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes eden-cursor-blink {
+  0%, 49% {
+    opacity: 0.7;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}

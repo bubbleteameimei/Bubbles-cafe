@@ -1,32 +1,48 @@
 /**
- * Eden's Hollow Initial Game State
- * Defines the starting state of the game
+ * Eden's Hollow Game Initial State
  */
-
-import { GameState, Player } from '../types';
+import { GameConfig, PlayerState } from '../types';
 
 /**
  * Initial player state
  */
-export const initialPlayer: Player = {
-  sanity: 100,       // Start with full sanity
-  corruption: 0,     // Start with no corruption
-  location: 'The Outskirts of Eden\'s Hollow',
-  time: 'Dusk',
-  decisions: [],     // No decisions made yet
-  flags: [],         // No flags set yet
-  inventory: []      // No items yet
+export const initialPlayerState: PlayerState = {
+  currentScene: 'intro',
+  inventory: [],
+  visitedScenes: [],
+  sanity: 100,
+  corruption: 0,
+  health: 100,
+  discovered: {},
+  relationships: {
+    'villagers': 50,
+    'mayor': 50,
+    'priest': 50
+  },
+  flags: {
+    'firstVisit': true
+  },
+  gameOver: false
 };
 
 /**
- * Initial game state
+ * Game configuration
  */
-export const initialGameState: GameState = {
-  currentSceneId: 'intro',  // Start at the intro scene
-  player: initialPlayer,
-  visitedScenes: ['intro'],  // The intro scene is considered visited
-  playTime: 0,               // Play time in seconds
-  gameWon: false,            // Game not won yet
-  gameOver: false,           // Game not over yet
-  timestamp: Date.now()      // Current timestamp
+export const gameConfig: GameConfig = {
+  title: "Eden's Hollow",
+  startScene: 'intro',
+  initialState: initialPlayerState,
+  defaultSoundVolume: 0.5,
+  defaultMusicVolume: 0.3,
+  visuals: {
+    defaultFogIntensity: 0.3,
+    textSpeed: 30,
+    useTypewriterEffect: true
+  },
+  debug: {
+    enabled: true,
+    startWithAllItems: false,
+    invincible: false,
+    showAllChoices: false
+  }
 };

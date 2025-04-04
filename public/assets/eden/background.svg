@@ -1,33 +1,78 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- Pixel Art Background -->
-  <!-- Sky -->
-  <rect x="0" y="0" width="800" height="400" fill="#87CEEB" />
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background with texture -->
+  <rect width="100%" height="100%" fill="#0a0a0a"/>
   
-  <!-- Sun -->
-  <circle cx="700" cy="80" r="40" fill="#FFD700" />
+  <!-- Noise filter for texture -->
+  <filter id="noise">
+    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0"/>
+    <feBlend mode="overlay" in="SourceGraphic" result="noisy"/>
+  </filter>
   
-  <!-- Distant Mountains -->
-  <polygon points="0,250 100,180 200,220 300,150 400,200 500,170 600,240 700,180 800,250 800,400 0,400" fill="#6B8E23" />
+  <!-- Vignette gradient -->
+  <radialGradient id="vignette" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+    <stop offset="90%" stop-color="rgba(0,0,0,0.6)" />
+    <stop offset="100%" stop-color="rgba(0,0,0,0.95)" />
+  </radialGradient>
   
-  <!-- Closer Hills -->
-  <polygon points="0,280 50,260 100,290 150,270 200,290 250,280 300,270 350,290 400,270 450,290 500,270 550,290 600,280 650,260 700,290 750,270 800,280 800,400 0,400" fill="#8FBC8F" />
+  <!-- Forest silhouette at bottom -->
+  <path d="M0,800 L0,650 
+           C30,640 50,620 80,640 
+           C110,660 130,645 150,630 
+           C170,615 190,600 210,610 
+           C230,620 250,640 270,625 
+           C290,610 310,600 330,615 
+           C350,630 370,645 390,635 
+           C410,625 430,610 450,620 
+           C470,630 490,645 510,630 
+           C530,615 550,600 570,610 
+           C590,620 610,640 630,625 
+           C650,610 670,595 690,610 
+           C710,625 730,645 750,630 
+           C770,615 790,605 810,615 
+           C830,625 850,640 870,630 
+           C890,620 910,605 930,615 
+           C950,625 970,645 990,630 
+           C1010,615 1030,600 1050,612 
+           C1070,624 1090,640 1110,630 
+           C1130,620 1150,610 1170,620 
+           C1190,630 1200,645 1200,650 
+           L1200,800 Z" 
+        fill="#0a0505" />
   
-  <!-- Clouds -->
-  <ellipse cx="100" cy="100" rx="50" ry="20" fill="#FFFFFF" />
-  <ellipse cx="300" cy="120" rx="40" ry="15" fill="#FFFFFF" />
-  <ellipse cx="500" cy="80" rx="60" ry="25" fill="#FFFFFF" />
+  <!-- Distant mountains -->
+  <path d="M0,650 
+           C50,630 100,570 150,600 
+           C200,630 250,580 300,550 
+           C350,520 400,540 450,560 
+           C500,580 550,540 600,520 
+           C650,500 700,530 750,550 
+           C800,570 850,530 900,510 
+           C950,490 1000,520 1050,540 
+           C1100,560 1150,530 1200,550 
+           L1200,650 Z" 
+        fill="#1a1212" opacity="0.8" />
   
-  <!-- Trees in Distance -->
-  <rect x="150" y="240" width="10" height="30" fill="#8B4513" />
-  <circle cx="155" cy="230" r="15" fill="#006400" />
+  <!-- Fog effect -->
+  <rect width="100%" height="100%" fill="url(#vignette)" />
   
-  <rect x="350" y="230" width="10" height="40" fill="#8B4513" />
-  <circle cx="355" cy="220" r="20" fill="#006400" />
+  <!-- Texture overlay -->
+  <rect width="100%" height="100%" filter="url(#noise)" fill="none" />
   
-  <rect x="550" y="250" width="10" height="30" fill="#8B4513" />
-  <circle cx="555" cy="240" r="15" fill="#006400" />
+  <!-- Dark red "blood moon" -->
+  <circle cx="900" cy="150" r="80" fill="#3d0909" opacity="0.5" />
+  <circle cx="900" cy="150" r="75" fill="#4d0a0a" opacity="0.2" />
   
-  <rect x="650" y="240" width="10" height="40" fill="#8B4513" />
-  <circle cx="655" cy="230" r="15" fill="#006400" />
+  <!-- Distant village lights -->
+  <circle cx="300" cy="580" r="2" fill="#ffcc66" opacity="0.4" />
+  <circle cx="320" cy="590" r="1" fill="#ffcc66" opacity="0.3" />
+  <circle cx="330" cy="585" r="1.5" fill="#ffcc66" opacity="0.2" />
+  <circle cx="360" cy="595" r="1" fill="#ffcc66" opacity="0.3" />
+  <circle cx="390" cy="588" r="1.5" fill="#ffcc66" opacity="0.25" />
+  
+  <!-- Subtle fog patches -->
+  <path d="M100,500 Q200,450 300,500 T500,500 T700,470 T900,490 T1100,460" fill="none" stroke="rgba(200,200,200,0.05)" stroke-width="60" />
+  <path d="M0,550 Q100,520 200,550 T400,540 T600,560 T800,530 T1000,550 T1200,520" fill="none" stroke="rgba(200,200,200,0.03)" stroke-width="40" />
 </svg>

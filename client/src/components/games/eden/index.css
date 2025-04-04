@@ -1,0 +1,128 @@
+/**
+ * Eden's Hollow Global Styles
+ */
+
+/* Global styles for the game container */
+.eden-game-wrapper {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Apply dark theme to body when game is active */
+.eden-body-background {
+  background-color: #0a0a0a;
+  color: #e0d9c1;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Global styles that apply to various game elements */
+.eden-hidden {
+  display: none !important;
+}
+
+.eden-fade-in {
+  animation: eden-fade-in 0.8s ease-in-out;
+}
+
+.eden-fade-out {
+  animation: eden-fade-out 0.5s ease-in-out forwards;
+}
+
+/* Other global animations used across components */
+@keyframes eden-float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes eden-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Global loading indicator */
+.eden-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+}
+
+.eden-loading-text {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.5rem;
+  color: #8B0000;
+  animation: eden-pulse-text 2s infinite;
+  text-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+}
+
+/* Fog effect overlay - can be used on various screens */
+.eden-fog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/assets/eden/fog.png');
+  background-size: cover;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 5;
+  animation: eden-fog-drift 120s linear infinite;
+}
+
+@keyframes eden-fog-drift {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Vignette effect - applies a subtle darkening around edges */
+.eden-vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .eden-loading-text {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .eden-loading-text {
+    font-size: 1rem;
+  }
+}

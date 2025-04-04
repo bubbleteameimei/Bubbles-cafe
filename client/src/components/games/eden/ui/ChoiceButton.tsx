@@ -1,87 +1,107 @@
 /**
- * Eden's Hollow Choice Button
- * Interactive button for player choices
- */
-
-import React from 'react';
-import './ChoiceButton.css';
-import { Choice } from '../types';
-
-interface ChoiceButtonProps {
-  choice: Choice;
-  onClick: (choice: Choice) => void;
-  isSanityLimited?: boolean;
-}
-
-/**
  * Choice Button Component
- * Renders a styled button for player decisions with visual cues based on the choice type
+ * 
+ * This component displays an interactive button for player choices.
+ * The appearance and animations are affected by sanity and corruption levels.
  */
-const ChoiceButton: React.FC<ChoiceButtonProps> = ({ 
-  choice, 
-  onClick,
-  isSanityLimited = false
+import React, { useState, useEffect } from 'react';
+import { ChoiceButtonProps } from '../types';
+import '../styles/choice-button.css';
+
+const ChoiceButton: React.FC<ChoiceButtonProps> = ({
+  choice,
+  onSelect,
+  disabled = false,
+  sanity,
+  corruption,
+  showTypewriterEffect = false,
+  textSpeed = 30
 }) => {
-  // Get the appropriate CSS class based on choice type
-  const getChoiceTypeClass = () => {
-    switch (choice.type) {
-      case 'rational':
-        return 'eden-choice-rational';
-      case 'emotional':
-        return 'eden-choice-emotional';
-      case 'desperate':
-        return 'eden-choice-desperate';
-      case 'corrupted':
-        return 'eden-choice-corrupted';
-      default:
-        return '';
-    }
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [displayedChars, setDisplayedChars] = useState<string[]>([]);
+  const [isFullyTyped, setIsFullyTyped] = useState(!showTypewriterEffect);
+
+  // Apply sanity effects to button
+  const getSanityClass = () => {
+    if (sanity < 30) return 'eden-choice-glitch';
+    if (sanity < 60) return 'eden-choice-low-sanity';
+    return '';
   };
-  
-  // Show "sanity locked" icon for inaccessible choices due to low sanity
-  const renderSanityLock = () => {
-    if (isSanityLimited && !choice.available) {
-      return (
-        <div className="eden-choice-sanity-lock">
-          <div className="eden-lock-icon">🔒</div>
-          <div className="eden-lock-text">Sanity too low</div>
-        </div>
-      );
-    }
-    return null;
+
+  // Apply corruption effects to button
+  const getCorruptionClass = () => {
+    if (corruption > 70) return 'eden-choice-corrupted';
+    if (corruption > 40) return 'eden-choice-corruption-touch';
+    return '';
   };
-  
-  // Handle click with confirmation for dangerous choices
+
+  // Handle choice selection
   const handleClick = () => {
-    if (choice.available) {
-      onClick(choice);
+    if (!disabled && isFullyTyped) {
+      setIsAnimating(true);
+      // Slight delay to allow the click animation to play
+      setTimeout(() => {
+        onSelect(choice);
+        setIsAnimating(false);
+      }, 200);
     }
   };
-  
+
+  // Typewriter effect for the choice text
+  useEffect(() => {
+    if (showTypewriterEffect) {
+      const text = choice.text;
+      const chars: string[] = [];
+      let currentIndex = 0;
+      
+      setDisplayedChars([]);
+      setIsFullyTyped(false);
+      
+      const typeInterval = setInterval(() => {
+        if (currentIndex < text.length) {
+          chars.push(text[currentIndex]);
+          setDisplayedChars([...chars]);
+          currentIndex++;
+        } else {
+          clearInterval(typeInterval);
+          setIsFullyTyped(true);
+        }
+      }, textSpeed);
+      
+      return () => clearInterval(typeInterval);
+    } else {
+      setDisplayedChars(choice.text.split(''));
+      setIsFullyTyped(true);
+    }
+  }, [choice.text, showTypewriterEffect, textSpeed]);
+
+  // Combine all the button classes
+  const buttonClass = `eden-choice-button 
+    ${getSanityClass()} 
+    ${getCorruptionClass()} 
+    ${isAnimating ? 'eden-choice-animating' : ''} 
+    ${disabled ? 'eden-choice-disabled' : ''}`;
+
   return (
     <button
-      className={`eden-choice-button ${getChoiceTypeClass()} ${!choice.available ? 'eden-choice-unavailable' : ''}`}
+      className={buttonClass}
       onClick={handleClick}
-      disabled={!choice.available}
-      data-choice-id={choice.id}
+      disabled={disabled || !isFullyTyped}
+      data-text={choice.text} // For glitch effect
     >
-      <div className="eden-choice-content">
-        <span className="eden-choice-text">{choice.text}</span>
-        
-        {choice.sanityEffect !== 0 && (
-          <span className={`eden-choice-effect-sanity ${choice.sanityEffect > 0 ? 'positive' : 'negative'}`}>
-            {choice.sanityEffect > 0 ? '+' : ''}{choice.sanityEffect} Sanity
+      {showTypewriterEffect ? (
+        displayedChars.map((char, index) => (
+          <span 
+            key={index}
+            className="eden-choice-text-char"
+            style={{ animationDelay: `${index * 0.03}s` }}
+          >
+            {char}
           </span>
-        )}
-        
-        {choice.corruptionEffect !== 0 && (
-          <span className={`eden-choice-effect-corruption ${choice.corruptionEffect < 0 ? 'positive' : 'negative'}`}>
-            {choice.corruptionEffect > 0 ? '+' : ''}{choice.corruptionEffect} Corruption
-          </span>
-        )}
-      </div>
-      
-      {renderSanityLock()}
+        ))
+      ) : (
+        choice.text
+      )}
     </button>
   );
 };

@@ -1,48 +1,44 @@
 /**
- * Eden's Hollow Confirmation Dialog
- * Dialog for confirming dangerous choices
- */
-
-import React from 'react';
-import './ConfirmationDialog.css';
-
-interface ConfirmationDialogProps {
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-/**
  * Confirmation Dialog Component
- * Prompts the player to confirm potentially dangerous choices
+ * 
+ * This component displays a confirmation dialog for important choices.
+ * The appearance is affected by the corruption level.
  */
+import React from 'react';
+import { ConfirmationDialogProps } from '../types';
+import '../styles/dialog.css';
+
 const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
+  title,
   message,
   onConfirm,
-  onCancel
+  onCancel,
+  isOpen,
+  corruption = 0
 }) => {
-  // Prevent clicks on the dialog from closing it (only clicking buttons should)
-  const handleDialogClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
+  if (!isOpen) return null;
+  
+  // Determine if the dialog should have corrupted styling
+  const isCorrupted = corruption > 50;
+  const dialogClass = `eden-dialog-overlay ${isCorrupted ? 'eden-dialog-corrupted' : ''}`;
+  
   return (
-    <div className="eden-confirmation-overlay" onClick={onCancel}>
-      <div className="eden-confirmation-dialog" onClick={handleDialogClick}>
-        <h3 className="eden-confirmation-title">Are you certain?</h3>
-        <p className="eden-confirmation-message">{message}</p>
-        <div className="eden-confirmation-buttons">
-          <button 
-            className="eden-confirmation-btn eden-btn-confirm" 
+    <div className={dialogClass}>
+      <div className="eden-dialog-container">
+        <h2 className="eden-dialog-title">{title}</h2>
+        <div className="eden-dialog-content">{message}</div>
+        <div className="eden-dialog-buttons">
+          <button
+            className="eden-dialog-button confirm"
             onClick={onConfirm}
           >
-            Proceed
+            Confirm
           </button>
-          <button 
-            className="eden-confirmation-btn eden-btn-cancel" 
+          <button
+            className="eden-dialog-button cancel"
             onClick={onCancel}
           >
-            Reconsider
+            Cancel
           </button>
         </div>
       </div>

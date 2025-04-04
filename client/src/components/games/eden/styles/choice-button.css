@@ -1,0 +1,217 @@
+/* Eden's Hollow Choice Button Styles */
+
+.eden-choice-button {
+  padding: 1rem;
+  background-color: #1a1212;
+  color: #e0d9c1;
+  border: 1px solid #2a1f1f;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.eden-choice-button:hover {
+  background-color: #2a1f1f;
+  border-color: #d4b483;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.eden-choice-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Effect for glitchy choices (low sanity choices) */
+.eden-choice-glitch {
+  animation: eden-glitch 1.5s infinite;
+  position: relative;
+}
+
+.eden-choice-glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: inherit;
+  clip: rect(0, 0, 0, 0);
+  background: rgba(255, 0, 0, 0.03);
+  text-shadow: 1px 0 #00f;
+  animation: eden-glitch-anim 2s infinite linear alternate-reverse;
+}
+
+.eden-choice-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: inherit;
+  clip: rect(0, 0, 0, 0);
+  background: rgba(0, 0, 255, 0.02);
+  text-shadow: -1px 0 #f00;
+  animation: eden-glitch-anim-2 1s infinite linear alternate-reverse;
+}
+
+/* Effect for corrupted choices */
+.eden-choice-corrupted {
+  background-color: #2d1a1f;
+  border-color: #5c3544;
+  color: #e0c9d1;
+  position: relative;
+}
+
+.eden-choice-corrupted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at center,
+    rgba(93, 54, 69, 0.3) 0%,
+    transparent 70%
+  );
+  animation: eden-pulse-corruption 3s infinite;
+}
+
+.eden-choice-corrupted:hover {
+  background-color: #3d2a2f;
+  border-color: #7d4a5c;
+  text-shadow: 0 0 5px rgba(168, 85, 111, 0.7);
+}
+
+/* Animations */
+@keyframes eden-glitch {
+  0% {
+    transform: skew(0deg);
+  }
+  20% {
+    transform: skew(0deg);
+  }
+  21% {
+    transform: skew(3deg);
+  }
+  23% {
+    transform: skew(0deg);
+  }
+  50% {
+    transform: skew(0deg);
+  }
+  52% {
+    transform: skew(-3deg);
+  }
+  54% {
+    transform: skew(0deg);
+  }
+  100% {
+    transform: skew(0deg);
+  }
+}
+
+@keyframes eden-glitch-anim {
+  0% {
+    clip: rect(1px, 9999px, 1px, 0);
+  }
+  10% {
+    clip: rect(1px, 9999px, 2px, 0);
+  }
+  20% {
+    clip: rect(33px, 9999px, 74px, 0);
+  }
+  30% {
+    clip: rect(18px, 9999px, 12px, 0);
+  }
+  40% {
+    clip: rect(50px, 9999px, 5px, 0);
+  }
+  50% {
+    clip: rect(40px, 9999px, 60px, 0);
+  }
+  60% {
+    clip: rect(10px, 9999px, 26px, 0);
+  }
+  70% {
+    clip: rect(56px, 9999px, 10px, 0);
+  }
+  80% {
+    clip: rect(4px, 9999px, 76px, 0);
+  }
+  90% {
+    clip: rect(22px, 9999px, 39px, 0);
+  }
+  100% {
+    clip: rect(80px, 9999px, 7px, 0);
+  }
+}
+
+@keyframes eden-glitch-anim-2 {
+  0% {
+    clip: rect(1px, 9999px, 1px, 0);
+  }
+  10% {
+    clip: rect(52px, 9999px, 22px, 0);
+  }
+  20% {
+    clip: rect(13px, 9999px, 7px, 0);
+  }
+  30% {
+    clip: rect(50px, 9999px, 42px, 0);
+  }
+  40% {
+    clip: rect(39px, 9999px, 35px, 0);
+  }
+  50% {
+    clip: rect(1px, 9999px, 60px, 0);
+  }
+  60% {
+    clip: rect(4px, 9999px, 15px, 0);
+  }
+  70% {
+    clip: rect(17px, 9999px, 24px, 0);
+  }
+  80% {
+    clip: rect(79px, 9999px, 32px, 0);
+  }
+  90% {
+    clip: rect(32px, 9999px, 12px, 0);
+  }
+  100% {
+    clip: rect(54px, 9999px, 77px, 0);
+  }
+}
+
+@keyframes eden-pulse-corruption {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Typewriter Effect */
+.eden-choice-text-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: eden-char-appear 0.3s forwards;
+}
+
+@keyframes eden-char-appear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,24 +1,29 @@
 /**
- * Eden's Hollow Game UI Styles
+ * Eden's Hollow GameUI Styles
  */
 
+/* Import fonts from Google Fonts in index.html */
+/* 'IM Fell English', serif and 'IM Fell English SC', serif */
+
 .eden-game-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background-color: #1a1717;
-  background-image: url('/assets/games/eden/background.jpg');
+  padding: 2rem;
+  background-color: #121212;
+  background-image: url('/assets/eden/background.jpg');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
-  position: relative;
-  overflow: hidden;
-  font-family: 'IM Fell English', serif;
+  background-repeat: no-repeat;
   color: #e0d9c1;
+  overflow-x: hidden;
 }
 
+/* Apply a dark overlay to the background */
 .eden-game-container::before {
   content: '';
   position: absolute;
@@ -26,309 +31,188 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(
-    circle at center,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.8) 70%,
-    rgba(0, 0, 0, 0.9) 100%
-  );
-  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 0;
 }
 
-.eden-game-content {
+/* Narrative container - where the story text appears */
+.eden-narrative-container {
+  position: relative;
   width: 100%;
   max-width: 800px;
   padding: 2rem;
-  position: relative;
-  z-index: 2;
+  border-radius: 6px;
+  background-color: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(139, 0, 0, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  backdrop-filter: blur(5px);
+  animation: eden-fade-in 0.8s ease-in-out;
 }
 
-.eden-scene-container {
-  margin-bottom: 2rem;
-}
-
-.eden-scene-title {
-  font-family: 'IM Fell English SC', serif;
-  font-size: 2.2rem;
-  color: #c7a97a;
-  margin-bottom: 1.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  text-align: center;
-}
-
-.eden-scene-description {
-  font-size: 1.1rem;
-  line-height: 1.7;
-  margin-bottom: 2.5rem;
-}
-
+/* Choices container - where the choice buttons appear */
 .eden-choices-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   margin-top: 2rem;
+  width: 100%;
+  animation: eden-slide-up 0.5s ease;
+  border-top: 1px solid rgba(139, 0, 0, 0.4);
+  padding-top: 1.5rem;
 }
 
-/* Visual effects */
-.eden-corrupted-effect .eden-scene-title {
-  color: #a96dd3;
-  text-shadow: 0 0 8px rgba(169, 109, 211, 0.4);
-}
-
-.eden-corrupted-effect .eden-scene-description {
-  color: #d9c6e9;
-}
-
-.eden-insane-effect .eden-scene-title {
-  color: #8f1d4c;
-  text-shadow: 0 0 8px rgba(143, 29, 76, 0.4);
-}
-
-.eden-insane-effect .eden-scene-description {
-  color: #e9c6d2;
-}
-
-/* Game Over Screen */
+/* Game over screen styles */
 .eden-game-over {
-  text-align: center;
-  padding: 2rem;
+  background-color: #0a0a0a;
+}
+
+.eden-game-over::before {
+  background-color: rgba(0, 0, 0, 0.85);
 }
 
 .eden-game-over-title {
   font-family: 'IM Fell English SC', serif;
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  color: #8B0000;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  animation: eden-pulse-text 3s infinite;
 }
 
-.eden-ending-corrupt .eden-game-over-title {
-  color: #a96dd3;
-  text-shadow: 0 0 10px rgba(169, 109, 211, 0.5);
-}
-
-.eden-ending-insane .eden-game-over-title {
-  color: #8f1d4c;
-  text-shadow: 0 0 10px rgba(143, 29, 76, 0.5);
-}
-
-.eden-ending-survive .eden-game-over-title {
-  color: #c7a97a;
-  text-shadow: 0 0 10px rgba(199, 169, 122, 0.5);
-}
-
-.eden-game-over-description {
-  font-size: 1.2rem;
-  line-height: 1.8;
-  margin-bottom: 2rem;
+.eden-restart-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
 }
 
 .eden-restart-button {
-  padding: 0.8rem 2rem;
   background-color: rgba(139, 0, 0, 0.8);
   color: #e0d9c1;
-  border: none;
-  font-family: 'IM Fell English', serif;
-  font-size: 1.1rem;
+  border: 1px solid rgba(159, 20, 20, 0.8);
+  border-radius: 4px;
+  padding: 0.9rem 2rem;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  border-radius: 3px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.eden-restart-button:hover,
-.eden-restart-button:focus {
-  background-color: rgba(163, 7, 7, 0.9);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+.eden-restart-button:hover {
+  background-color: rgba(159, 20, 20, 0.9);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4);
 }
 
 .eden-restart-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
 }
 
-.eden-ending-corrupt .eden-restart-button {
-  background-color: rgba(70, 25, 128, 0.8);
-}
-
-.eden-ending-corrupt .eden-restart-button:hover,
-.eden-ending-corrupt .eden-restart-button:focus {
-  background-color: rgba(90, 41, 128, 0.9);
-}
-
-.eden-ending-insane .eden-restart-button {
-  background-color: rgba(143, 29, 76, 0.8);
-}
-
-.eden-ending-insane .eden-restart-button:hover,
-.eden-ending-insane .eden-restart-button:focus {
-  background-color: rgba(168, 34, 89, 0.9);
-}
-
-/* Vignette effect that intensifies with lower sanity */
-.eden-vignette {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 3;
-  opacity: 0;
-  transition: opacity 1s ease;
-  background: radial-gradient(
-    circle at center,
-    transparent 30%,
-    rgba(0, 0, 0, 0) 60%,
-    rgba(0, 0, 0, 0.7) 100%
-  );
-}
-
-.eden-vignette.eden-vignette-light {
-  opacity: 0.3;
-}
-
-.eden-vignette.eden-vignette-medium {
-  opacity: 0.6;
-}
-
-.eden-vignette.eden-vignette-heavy {
-  opacity: 0.8;
-}
-
-.eden-vignette.eden-vignette-corrupt {
-  background: radial-gradient(
-    circle at center,
-    transparent 30%,
-    rgba(70, 25, 128, 0) 60%,
-    rgba(70, 25, 128, 0.4) 100%
-  );
-}
-
-.eden-vignette.eden-vignette-insane {
-  background: radial-gradient(
-    circle at center,
-    transparent 30%,
-    rgba(143, 29, 76, 0) 60%,
-    rgba(143, 29, 76, 0.4) 100%
-  );
-}
-
-/* Ambient visual elements */
-.eden-ambient-particles {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.2;
-}
-
-/* Audio controls */
-.eden-audio-controls {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 10;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.eden-audio-button {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background-color: rgba(30, 30, 30, 0.7);
-  border: 1px solid #c7a97a;
-  color: #e0d9c1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.eden-audio-button:hover {
-  background-color: rgba(50, 50, 50, 0.9);
-}
-
-.eden-audio-button:active {
-  transform: scale(0.95);
-}
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .eden-game-content {
-    padding: 1.5rem;
+/* Animations */
+@keyframes eden-fade-in {
+  from {
+    opacity: 0;
   }
-  
-  .eden-scene-title {
-    font-size: 1.8rem;
-    margin-bottom: 1.2rem;
+  to {
+    opacity: 1;
   }
-  
-  .eden-scene-description {
-    font-size: 1rem;
-    line-height: 1.6;
-    margin-bottom: 2rem;
+}
+
+@keyframes eden-slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes eden-pulse-text {
+  0% {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    text-shadow: 2px 2px 10px rgba(139, 0, 0, 0.7);
+  }
+  100% {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .eden-narrative-container {
+    max-width: 700px;
+    padding: 1.8rem;
   }
   
   .eden-choices-container {
-    gap: 0.8rem;
+    margin-top: 1.8rem;
+    padding-top: 1.3rem;
   }
   
   .eden-game-over-title {
     font-size: 2rem;
   }
   
-  .eden-game-over-description {
+  .eden-restart-button {
+    padding: 0.8rem 1.8rem;
     font-size: 1.1rem;
   }
 }
 
-@media (max-width: 480px) {
-  .eden-game-content {
-    padding: 1.2rem;
+@media (max-width: 768px) {
+  .eden-game-container {
+    padding: 1.5rem;
   }
   
-  .eden-scene-title {
-    font-size: 1.6rem;
-    margin-bottom: 1rem;
-  }
-  
-  .eden-scene-description {
-    font-size: 0.95rem;
-    line-height: 1.5;
-    margin-bottom: 1.5rem;
+  .eden-narrative-container {
+    max-width: 100%;
+    padding: 1.5rem;
   }
   
   .eden-choices-container {
-    gap: 0.7rem;
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
   }
   
   .eden-game-over-title {
     font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .eden-game-over-description {
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.3rem;
   }
   
   .eden-restart-button {
-    padding: 0.7rem 1.5rem;
+    padding: 0.7rem 1.6rem;
     font-size: 1rem;
   }
-  
-  .eden-audio-controls {
-    bottom: 0.7rem;
-    right: 0.7rem;
+}
+
+@media (max-width: 480px) {
+  .eden-game-container {
+    padding: 1rem;
   }
   
-  .eden-audio-button {
-    width: 2.2rem;
-    height: 2.2rem;
+  .eden-narrative-container {
+    padding: 1.2rem;
+  }
+  
+  .eden-choices-container {
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+  }
+  
+  .eden-game-over-title {
+    font-size: 1.6rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  .eden-restart-container {
+    margin-top: 1.5rem;
+  }
+  
+  .eden-restart-button {
+    padding: 0.6rem 1.4rem;
+    font-size: 0.95rem;
   }
 }
