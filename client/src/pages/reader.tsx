@@ -94,64 +94,11 @@ interface ReaderPageProps {
 export default function ReaderPage({ slug, params, isCommunityContent = false }: ReaderPageProps) {
   // Log params for debugging
   console.log('[ReaderPage] Initializing with params:', { routeSlug: params?.slug || slug, params, slug });
-  
   // Extract slug from route params if provided
   const routeSlug = params?.slug || slug;
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const prevSlugRef = useRef<string | null>(null);
-  
-  // Initialize currentIndex with validation
-  const [currentIndex, setCurrentIndex] = useState<number>(() => {
-    try {
-      const savedIndex = sessionStorage.getItem('selectedStoryIndex');
-      console.log('[Reader] Retrieved saved index:', savedIndex);
-
-      if (!savedIndex) {
-        console.log('[Reader] No saved index found, defaulting to 0');
-        return 0;
-      }
-
-      const parsedIndex = parseInt(savedIndex, 10);
-      if (isNaN(parsedIndex) || parsedIndex < 0) {
-        console.log('[Reader] Invalid saved index, defaulting to 0');
-        return 0;
-      }
-
-      return parsedIndex;
-    } catch (error) {
-      console.error('[Reader] Error reading from sessionStorage:', error);
-      return 0;
-    }
-  });
-  
-  // Add an effect to handle route slug changes
-  useEffect(() => {
-    if (routeSlug) {
-      console.log('[Reader] Route slug changed:', routeSlug);
-      
-      // Clear the current index if it's a direct navigation to a new story
-      // This ensures we're not trying to show the wrong index when loading a specific story
-      if (prevSlugRef.current !== routeSlug) {
-        setCurrentIndex(0);
-        sessionStorage.setItem('selectedStoryIndex', '0');
-      }
-      
-      // Invalidate query to force reload of data for the new slug
-      queryClient.invalidateQueries({
-        queryKey: ["wordpress", "posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"]
-      });
-      
-      // Also invalidate any API queries that might have cached data
-      queryClient.invalidateQueries({
-        queryKey: ["/api/posts", routeSlug]
-      });
-      
-      // Store current slug for comparison on next update
-      prevSlugRef.current = routeSlug;
-    }
-  }, [routeSlug, isCommunityContent, queryClient]);
   
   // Add authentication hook to check user role for admin actions
   const { user, isAuthenticated } = useAuth();
@@ -300,7 +247,29 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
 
-  // Note: currentIndex state is now declared at the top of the component
+  // Initialize currentIndex with validation
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    try {
+      const savedIndex = sessionStorage.getItem('selectedStoryIndex');
+      console.log('[Reader] Retrieved saved index:', savedIndex);
+
+      if (!savedIndex) {
+        console.log('[Reader] No saved index found, defaulting to 0');
+        return 0;
+      }
+
+      const parsedIndex = parseInt(savedIndex, 10);
+      if (isNaN(parsedIndex) || parsedIndex < 0) {
+        console.log('[Reader] Invalid saved index, defaulting to 0');
+        return 0;
+      }
+
+      return parsedIndex;
+    } catch (error) {
+      console.error('[Reader] Error reading from sessionStorage:', error);
+      return 0;
+    }
+  });
 
   const { data: postsData, isLoading, error } = useQuery({
     queryKey: ["wordpress", "posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
@@ -558,15 +527,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
-  // Debug TOC dialog state changes - placed outside of conditional renders
-  useEffect(() => {
-    console.log('[Reader] TOC dialog state changed:', contentsDialogOpen);
-    if (contentsDialogOpen && postsData && postsData.posts && currentIndex >= 0) {
-      const currentPost = postsData.posts[currentIndex];
-      console.log('[Reader] TableOfContents dialog opened with currentPostId:', currentPost?.id);
-    }
-  }, [contentsDialogOpen, currentIndex, postsData]);
 
 
   
@@ -963,44 +923,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       } while (randomIndex === currentIndex);
       
       checkRapidNavigation();
-      
-      // First update the URL to trigger data reload for the new story
-      if (posts[randomIndex]) {
-        const newSlug = posts[randomIndex].slug || `post-${posts[randomIndex].id}`;
-        console.log('[Reader] Updating URL for random story navigation:', newSlug);
-        
-        // Store the index for session storage before changing location
-        sessionStorage.setItem('selectedStoryIndex', '0'); // Always reset to 0 for direct navigation
-        
-        // Update our own ref to recognize this navigation
-        if (prevSlugRef.current !== newSlug) {
-          prevSlugRef.current = newSlug;
-        }
-        
-        // Force comprehensive cache invalidation before navigation
-        queryClient.invalidateQueries({
-          queryKey: ["wordpress", "posts", "reader", newSlug]
-        });
-        
-        // Also invalidate API queries to ensure fresh data
-        queryClient.invalidateQueries({
-          queryKey: ["/api/posts", newSlug]
-        });
-        
-        // Invalidate by post ID if available for complete cache clearance
-        if (posts[randomIndex].id) {
-          queryClient.invalidateQueries({
-            queryKey: ["/api/posts", posts[randomIndex].id.toString()]
-          });
-        }
-        
-        // Trigger URL update which will also trigger our useEffect from line 104
-        setLocation(`/reader/${newSlug}`);
-        
-        // Also update local state after URL for immediate UI reaction
-        setCurrentIndex(0); // Reset to 0 for new story
-        window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
-      }
+      setCurrentIndex(randomIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
   
@@ -1010,44 +934,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex > 0) {
       const newIndex = currentIndex - 1;
       checkRapidNavigation();
-      
-      // First update the URL to trigger data reload for the new story
-      if (posts[newIndex]) {
-        const newSlug = posts[newIndex].slug || `post-${posts[newIndex].id}`;
-        console.log('[Reader] Updating URL for previous story navigation:', newSlug);
-        
-        // Store the index for session storage before changing location
-        sessionStorage.setItem('selectedStoryIndex', '0'); // Always reset to 0 for direct navigation
-        
-        // Update our own ref to recognize this navigation
-        if (prevSlugRef.current !== newSlug) {
-          prevSlugRef.current = newSlug;
-        }
-        
-        // Force comprehensive cache invalidation before navigation
-        queryClient.invalidateQueries({
-          queryKey: ["wordpress", "posts", "reader", newSlug]
-        });
-        
-        // Also invalidate API queries to ensure fresh data
-        queryClient.invalidateQueries({
-          queryKey: ["/api/posts", newSlug]
-        });
-        
-        // Invalidate by post ID if available for complete cache clearance
-        if (posts[newIndex].id) {
-          queryClient.invalidateQueries({
-            queryKey: ["/api/posts", posts[newIndex].id.toString()]
-          });
-        }
-        
-        // Trigger URL update which will also trigger our useEffect from line 104
-        setLocation(`/reader/${newSlug}`);
-        
-        // Also update local state after URL for immediate UI reaction
-        setCurrentIndex(0); // Reset to 0 for new story
-        window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
-      }
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
   
@@ -1057,44 +945,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     if (posts && posts.length > 1 && currentIndex < posts.length - 1) {
       const newIndex = currentIndex + 1;
       checkRapidNavigation();
-      
-      // First update the URL to trigger data reload for the new story
-      if (posts[newIndex]) {
-        const newSlug = posts[newIndex].slug || `post-${posts[newIndex].id}`;
-        console.log('[Reader] Updating URL for next story navigation:', newSlug);
-        
-        // Store the index for session storage before changing location
-        sessionStorage.setItem('selectedStoryIndex', '0'); // Always reset to 0 for direct navigation
-        
-        // Update our own ref to recognize this navigation
-        if (prevSlugRef.current !== newSlug) {
-          prevSlugRef.current = newSlug;
-        }
-        
-        // Force comprehensive cache invalidation before navigation
-        queryClient.invalidateQueries({
-          queryKey: ["wordpress", "posts", "reader", newSlug]
-        });
-        
-        // Also invalidate API queries to ensure fresh data
-        queryClient.invalidateQueries({
-          queryKey: ["/api/posts", newSlug]
-        });
-        
-        // Invalidate by post ID if available for complete cache clearance
-        if (posts[newIndex].id) {
-          queryClient.invalidateQueries({
-            queryKey: ["/api/posts", posts[newIndex].id.toString()]
-          });
-        }
-        
-        // Trigger URL update which will also trigger our useEffect from line 104
-        setLocation(`/reader/${newSlug}`);
-        
-        // Also update local state after URL for immediate UI reaction
-        setCurrentIndex(0); // Reset to 0 for new story
-        window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
-      }
+      setCurrentIndex(newIndex);
+      window.scrollTo({ top: 0, behavior: 'auto' }); // Changed to auto for faster scrolling
     }
   };
   
@@ -1285,20 +1137,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div className={`flex justify-between items-center px-2 md:px-8 lg:px-12 z-10 py-0.5 sm:py-2 border-b border-border/30 mb-0 sm:mb-1 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
           {/* Font controls using the standard Button component */}
           <div className="flex items-center gap-2">
-            {/* Debug button for TOC testing - only visible in dev mode */}
-            {import.meta.env.DEV && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setContentsDialogOpen(true)}
-                className="h-8 px-3 bg-green-600/20 hover:bg-green-600/30 shadow-md border-green-600/30 text-xs"
-                aria-label="Debug TOC"
-              >
-                <BookText className="h-3.5 w-3.5 mr-1" />
-                Debug TOC
-              </Button>
-            )}
-            
             <Button
               variant="outline"
               size="sm"
@@ -1405,21 +1243,6 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               />
             </DialogContent>
           </Dialog>
-          
-          {/* Debug button for TOC functionality testing */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              console.log('[Reader] Debug TOC button clicked, current dialog state:', contentsDialogOpen);
-              console.log('[Reader] Current post ID:', currentPost?.id);
-              setContentsDialogOpen(true);
-            }}
-            className="h-8 ml-2 px-3 bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-400 border-green-500/30 shadow-md flex items-center gap-1.5"
-          >
-            <Bug className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs">Debug TOC</span>
-          </Button>
         </div>
       
         <AnimatePresence mode="wait" initial={false}>
