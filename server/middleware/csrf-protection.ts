@@ -103,7 +103,26 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     }
 
     // Skip validation for ignored paths
-    if (ignorePaths.some(path => req.path.startsWith(path))) {
+    // Get the path without the leading '/api' prefix since our routes are mounted at '/api'
+    const apiPath = req.path;
+    const relPath = req.path.replace(/^\/api/, '');
+
+    // Debug output
+    console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);
+    console.log(`Ignore paths:`, ignorePaths);
+    
+    // Check if either the full path or the relative path (without /api) matches any ignored path
+    if (
+      ignorePaths.some(path => 
+        apiPath === path || 
+        relPath === path || 
+        apiPath.startsWith(path) || 
+        relPath.startsWith(path) ||
+        // Handle special case for bypass endpoint
+        req.path.endsWith('/csrf-test-bypass')
+      )
+    ) {
+      console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
       return next();
     }
 

@@ -52,7 +52,7 @@ export async function fetchCsrfTokenIfNeeded(): Promise<string | null> {
   try {
     // Make a GET request to the health endpoint which returns the CSRF token
     // The server will also set the CSRF cookie on the response
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const response = await fetch(`${API_BASE_URL}/api/health`, {
       method: 'GET',
       credentials: 'include',
       headers: {

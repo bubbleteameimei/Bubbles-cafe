@@ -37,6 +37,7 @@ import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import gameRoutes from './routes/game';
 import searchRouter from './routes/search';
+import { setCsrfToken, csrfTokenToLocals, validateCsrfToken } from './middleware/csrf-protection';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db-connect";
 import { desc, eq, sql } from "drizzle-orm";
@@ -111,6 +112,7 @@ const analyticsLimiter = rateLimit({
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import apiTestRoutes from './api-test';
 import testDeleteRoutes from './routes/test-delete';
+import csrfTestRoutes from './routes/csrf-test';
 
 export function registerRoutes(app: Express): Server {
   // Register API test routes
@@ -153,11 +155,12 @@ export function registerRoutes(app: Express): Server {
   // Use more generous rate limits for analytics endpoints
   
   // Health check endpoint for deployment testing
-  app.get("/api/health", (_req: Request, res: Response) => {
+  app.get("/api/health", (req: Request, res: Response) => {
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || "development"
+      environment: process.env.NODE_ENV || "development",
+      csrfToken: req.session.csrfToken || null
     });
   });
   
@@ -200,9 +203,22 @@ export function registerRoutes(app: Express): Server {
   };
   app.use(session.default(sessionSettings));
   app.use(compression());
+  
+  // Setup CSRF protection after session middleware
+  app.use(setCsrfToken(app.get('env') === 'production'));
+  app.use(csrfTokenToLocals);
+  
+  // Apply CSRF validation to all POST/PUT/DELETE/PATCH requests
+  app.use('/api', validateCsrfToken({
+    // Exclude specific paths that don't need CSRF protection (such as webhooks or specific APIs)
+    ignorePaths: ['/health', '/config/public', '/csrf-test-bypass'],
+  }));
 
   // Set up auth BEFORE routes
   setupAuth(app);
+  
+  // Register CSRF test routes after CSRF middleware so bypass works
+  app.use('/api', csrfTestRoutes);
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {

@@ -124,6 +124,7 @@ import EditStoryPage from './pages/edit-story';
 import FeedbackPage from './pages/feedback';
 import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
 import GuidelinesPage from './pages/support/guidelines';
+import CsrfTestPage from './pages/csrf-test';
 
 // Preload WordPress posts immediately on app load
 preloadWordPressPosts();
@@ -243,6 +244,7 @@ const AppContent = () => {
               <Route path="/feedback" component={FeedbackPage} />
               <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
               <Route path="/support/guidelines" component={GuidelinesPage} />
+              <Route path="/csrf-test" component={CsrfTestPage} />
               
               {/* Settings Routes */}
               <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
