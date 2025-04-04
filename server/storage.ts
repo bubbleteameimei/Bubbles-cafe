@@ -554,6 +554,12 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Updating user:', id, userData);
       
+      // Get the current user first to properly handle metadata
+      const currentUser = await this.getUser(id);
+      if (!currentUser) {
+        throw new Error("User not found");
+      }
+      
       // Special handling for password updates (needed for reset password functionality)
       const updateData: Record<string, any> = {};
       
@@ -562,15 +568,27 @@ export class DatabaseStorage implements IStorage {
         updateData.password_hash = userData.password_hash;
       }
       
+      // Special handling for metadata to ensure proper merging
+      if (userData.metadata) {
+        // Get existing metadata (default to empty object if null)
+        const existingMetadata = currentUser.metadata || {};
+        
+        // Merge the existing metadata with the new metadata
+        updateData.metadata = {
+          ...existingMetadata,
+          ...userData.metadata
+        };
+        
+        console.log('[Storage] Merged metadata:', updateData.metadata);
+      }
+      
       // Process other fields
       for (const [key, value] of Object.entries(userData)) {
         // Skip these fields
-        if (['id', 'createdAt', 'email'].includes(key)) continue;
+        if (['id', 'createdAt', 'email', 'password_hash', 'metadata'].includes(key)) continue;
         
         // For all other fields, add them to update data
-        if (key !== 'password_hash') {
-          updateData[key] = value;
-        }
+        updateData[key] = value;
       }
       
       // Only proceed if we have fields to update
@@ -585,7 +603,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       if (!updatedUser) {
-        throw new Error("User not found");
+        throw new Error("User not found after update");
       }
       
       console.log('[Storage] User updated successfully:', id);
@@ -593,7 +611,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in updateUser:", error);
       if (error instanceof Error) {
-        if (error.message === "User not found" || error.message === "No valid fields to update") {
+        if (error.message.includes("User not found") || error.message === "No valid fields to update") {
           throw error;
         }
       }

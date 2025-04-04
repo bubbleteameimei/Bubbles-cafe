@@ -1,0 +1,48 @@
+{
+  "startTime": "2025-04-04T05:22:08.314Z",
+  "tests": [
+    {
+      "name": "Direct Database Test",
+      "success": true,
+      "durationMs": 231.973479,
+      "timestamp": "2025-04-04T05:22:08.548Z",
+      "details": {
+        "userId": 7,
+        "originalMetadata": {
+          "bio": "This is a test admin user",
+          "photoURL": null,
+          "testField": "This is a test value",
+          "updatedAt": "2025-04-04T05:19:35.862Z",
+          "displayName": "Admin User"
+        },
+        "newMetadataFields": {
+          "testField": "SQL test value at 2025-04-04T05:22:08.524Z",
+          "sqlUpdate": true
+        },
+        "resultMetadata": {
+          "bio": "This is a test admin user",
+          "photoURL": null,
+          "sqlUpdate": true,
+          "testField": "SQL test value at 2025-04-04T05:22:08.524Z",
+          "updatedAt": "2025-04-04T05:19:35.862Z",
+          "displayName": "Admin User"
+        }
+      }
+    },
+    {
+      "name": "API Test",
+      "success": false,
+      "durationMs": 8.866747999999973,
+      "timestamp": "2025-04-04T05:22:08.558Z",
+      "details": {
+        "userId": 7,
+        "error": "FetchError: request to http://localhost:3000/api/test/user/7 failed, reason: connect ECONNREFUSED 127.0.0.1:3000"
+      }
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1
+  }
+}
