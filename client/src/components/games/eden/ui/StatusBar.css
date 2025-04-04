@@ -1,0 +1,181 @@
+/**
+ * Eden's Hollow Status Bar Styles
+ */
+
+.eden-status-container {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.eden-status-bar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.eden-status-label {
+  font-size: 0.9rem;
+  font-family: 'IM Fell English SC', serif;
+  letter-spacing: 0.05em;
+}
+
+.eden-sanity-label {
+  color: #c7a97a;
+}
+
+.eden-corruption-label {
+  color: #a96dd3;
+}
+
+/* Status bar tracks */
+.eden-status-track {
+  width: 100%;
+  height: 12px;
+  background-color: rgba(20, 15, 15, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.eden-status-track::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.03) 12px,
+    rgba(255, 255, 255, 0.07) 12px,
+    rgba(255, 255, 255, 0.07) 24px
+  );
+  opacity: 0.2;
+}
+
+/* Progress bars */
+.eden-status-progress {
+  height: 100%;
+  transition: width 0.7s ease;
+}
+
+.eden-sanity-progress {
+  background: linear-gradient(90deg, #8B0000, #c7a97a);
+}
+
+.eden-corruption-progress {
+  background: linear-gradient(90deg, #5a2980, #a96dd3);
+}
+
+/* Status effects */
+.eden-status-container.low-sanity .eden-sanity-progress {
+  animation: eden-status-flicker 2s infinite;
+}
+
+.eden-status-container.critical-sanity .eden-sanity-progress {
+  animation: eden-status-critical-flicker 1.5s infinite;
+}
+
+.eden-status-container.high-corruption .eden-corruption-progress {
+  animation: eden-status-pulse 2s infinite;
+}
+
+.eden-status-container.critical-corruption .eden-corruption-progress {
+  animation: eden-status-critical-pulse 1.5s infinite;
+}
+
+/* Status value display */
+.eden-status-value {
+  position: absolute;
+  right: 8px;
+  top: -1px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  font-family: 'IM Fell English', serif;
+}
+
+/* Animations */
+@keyframes eden-status-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes eden-status-critical-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  70% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes eden-status-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+@keyframes eden-status-critical-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5) saturate(1.2);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .eden-status-container {
+    margin-bottom: 1.2rem;
+  }
+  
+  .eden-status-track {
+    height: 10px;
+    margin-bottom: 0.8rem;
+  }
+  
+  .eden-status-label {
+    font-size: 0.85rem;
+  }
+  
+  .eden-status-value {
+    font-size: 0.7rem;
+    right: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .eden-status-container {
+    margin-bottom: 1rem;
+  }
+  
+  .eden-status-track {
+    height: 8px;
+    margin-bottom: 0.7rem;
+  }
+  
+  .eden-status-label {
+    font-size: 0.8rem;
+  }
+  
+  .eden-status-value {
+    font-size: 0.65rem;
+    right: 5px;
+    top: -2px;
+  }
+}

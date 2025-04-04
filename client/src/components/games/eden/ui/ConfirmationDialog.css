@@ -1,0 +1,222 @@
+/**
+ * Eden's Hollow Confirmation Dialog Styles
+ */
+
+.eden-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.eden-confirmation-overlay.eden-confirmation-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.eden-confirmation-dialog {
+  background-color: rgba(30, 25, 25, 0.95);
+  border: 2px solid #8B0000;
+  border-radius: 4px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  position: relative;
+}
+
+.eden-confirmation-overlay.eden-confirmation-visible .eden-confirmation-dialog {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.eden-confirmation-title {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 1.8rem;
+  color: #c7a97a;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.eden-confirmation-message {
+  font-family: 'IM Fell English', serif;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e0d9c1;
+  margin-bottom: 2rem;
+}
+
+.eden-confirmation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.eden-confirmation-button {
+  padding: 0.8rem 1.5rem;
+  font-family: 'IM Fell English', serif;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.eden-confirmation-button:active {
+  transform: scale(0.97);
+}
+
+.eden-confirmation-button.eden-confirm {
+  background-color: rgba(139, 0, 0, 0.8);
+  color: #e0d9c1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.eden-confirmation-button.eden-confirm:hover,
+.eden-confirmation-button.eden-confirm:focus {
+  background-color: rgba(163, 7, 7, 0.9);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.eden-confirmation-button.eden-cancel {
+  background-color: rgba(60, 55, 55, 0.8);
+  color: #e0d9c1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.eden-confirmation-button.eden-cancel:hover,
+.eden-confirmation-button.eden-cancel:focus {
+  background-color: rgba(80, 75, 75, 0.9);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog variants */
+.eden-confirmation-dialog.eden-corrupted-dialog {
+  border-color: #461980;
+  background-color: rgba(30, 20, 40, 0.95);
+}
+
+.eden-confirmation-dialog.eden-corrupted-dialog .eden-confirmation-title {
+  color: #a96dd3;
+}
+
+.eden-confirmation-dialog.eden-corrupted-dialog .eden-confirmation-button.eden-confirm {
+  background-color: rgba(70, 25, 128, 0.8);
+}
+
+.eden-confirmation-dialog.eden-corrupted-dialog .eden-confirmation-button.eden-confirm:hover,
+.eden-confirmation-dialog.eden-corrupted-dialog .eden-confirmation-button.eden-confirm:focus {
+  background-color: rgba(90, 41, 128, 0.9);
+}
+
+.eden-confirmation-dialog.eden-insane-dialog {
+  border-color: #67102f;
+  background-color: rgba(40, 20, 30, 0.95);
+}
+
+.eden-confirmation-dialog.eden-insane-dialog .eden-confirmation-title {
+  color: #8f1d4c;
+}
+
+.eden-confirmation-dialog.eden-insane-dialog .eden-confirmation-button.eden-confirm {
+  background-color: rgba(103, 16, 47, 0.8);
+}
+
+.eden-confirmation-dialog.eden-insane-dialog .eden-confirmation-button.eden-confirm:hover,
+.eden-confirmation-dialog.eden-insane-dialog .eden-confirmation-button.eden-confirm:focus {
+  background-color: rgba(118, 24, 59, 0.9);
+}
+
+/* Visual effects for the dialog */
+.eden-confirmation-dialog::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    rgba(139, 0, 0, 0.05) 0%,
+    transparent 80%
+  );
+}
+
+.eden-confirmation-dialog.eden-corrupted-dialog::before {
+  background: radial-gradient(
+    circle at center,
+    rgba(70, 25, 128, 0.05) 0%,
+    transparent 80%
+  );
+}
+
+.eden-confirmation-dialog.eden-insane-dialog::before {
+  background: radial-gradient(
+    circle at center,
+    rgba(103, 16, 47, 0.05) 0%,
+    transparent 80%
+  );
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .eden-confirmation-dialog {
+    padding: 1.5rem;
+  }
+  
+  .eden-confirmation-title {
+    font-size: 1.6rem;
+    margin-bottom: 1.2rem;
+  }
+  
+  .eden-confirmation-message {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .eden-confirmation-button {
+    padding: 0.7rem 1.2rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .eden-confirmation-dialog {
+    padding: 1.2rem;
+    width: 85%;
+  }
+  
+  .eden-confirmation-title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .eden-confirmation-message {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+  
+  .eden-confirmation-buttons {
+    gap: 0.7rem;
+  }
+  
+  .eden-confirmation-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}

@@ -85,6 +85,7 @@ import PreviewSettingsPage from './pages/settings/preview';
 
 // Game pages
 import GameTestPage from './pages/game-test';
+import EdensHollowPage from './pages/games/eden';
 
 // Admin pages
 import AdminPage from './pages/admin';
@@ -217,9 +218,7 @@ const AppContent = () => {
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
               {/* Game Routes */}
-              <Route path="/eden-game">
-                <Error404Page />
-              </Route>
+              <Route path="/eden-game" component={EdensHollowPage} />
               <Route path="/eden-pixelgame">
                 <Error404Page />
               </Route>

@@ -1,0 +1,239 @@
+/**
+ * Eden's Hollow Typewriter Text Styles
+ */
+
+.eden-typewriter-container {
+  display: inline-block;
+  position: relative;
+}
+
+/* Characters that are being typed */
+.eden-typewriter-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: eden-typewriter-appear 0.2s forwards;
+}
+
+/* The blinking cursor */
+.eden-typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: #c7a97a;
+  margin-left: 2px;
+  position: relative;
+  top: 0.15em;
+  opacity: 0;
+}
+
+.eden-typewriter-cursor.eden-cursor-visible {
+  animation: eden-cursor-blink 1s infinite;
+}
+
+.eden-typewriter-cursor.eden-cursor-corrupted {
+  background-color: #a96dd3;
+  animation: eden-cursor-blink-corrupted 1s infinite;
+}
+
+.eden-typewriter-cursor.eden-cursor-insane {
+  background-color: #8f1d4c;
+  animation: eden-cursor-blink-insane 1s infinite;
+}
+
+/* Paragraph break animation */
+.eden-typewriter-break {
+  display: block;
+  height: 1.5em;
+}
+
+/* Character effects */
+.eden-typewriter-glitched {
+  animation: eden-typewriter-glitch 0.2s forwards, eden-typewriter-distort 5s infinite;
+}
+
+.eden-typewriter-corrupted {
+  color: #a96dd3;
+  text-shadow: 0 0 2px rgba(169, 109, 211, 0.5);
+  animation: eden-typewriter-appear-corrupt 0.3s forwards;
+}
+
+.eden-typewriter-insane {
+  color: #8f1d4c;
+  text-shadow: 0 0 2px rgba(143, 29, 76, 0.5);
+  animation: eden-typewriter-appear-insane 0.3s forwards;
+}
+
+/* Animation keyframes */
+@keyframes eden-typewriter-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes eden-typewriter-appear-corrupt {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) translateX(-4px);
+  }
+  70% {
+    opacity: 0.7;
+    transform: translateY(3px) translateX(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes eden-typewriter-appear-insane {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) translateX(4px);
+  }
+  70% {
+    opacity: 0.7;
+    transform: translateY(3px) translateX(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes eden-cursor-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes eden-cursor-blink-corrupted {
+  0%, 49% {
+    opacity: 1;
+    transform: translateX(0) scaleY(1);
+  }
+  50%, 100% {
+    opacity: 0.2;
+    transform: translateX(1px) scaleY(1.1);
+  }
+}
+
+@keyframes eden-cursor-blink-insane {
+  0%, 49% {
+    opacity: 1;
+    transform: translateX(0) scaleY(1);
+  }
+  50%, 100% {
+    opacity: 0.2;
+    transform: translateX(-1px) scaleY(1.1);
+  }
+}
+
+@keyframes eden-typewriter-glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+@keyframes eden-typewriter-distort {
+  0% {
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+  10% {
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+  20% {
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  70% {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+  }
+  80% {
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  100% {
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Typewriter sounds indicator */
+.eden-typewriter-sound-indicator {
+  position: fixed;
+  bottom: 4rem;
+  right: 1rem;
+  background-color: rgba(30, 30, 30, 0.7);
+  border: 1px solid #c7a97a;
+  color: #e0d9c1;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.eden-typewriter-sound-indicator.eden-sound-indicator-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Enhanced formatting */
+.eden-typewriter-bold {
+  font-weight: bold;
+}
+
+.eden-typewriter-italic {
+  font-style: italic;
+}
+
+.eden-typewriter-emphasis {
+  color: #c7a97a;
+  font-weight: bold;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .eden-typewriter-cursor {
+    height: 1.1em;
+    width: 1.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .eden-typewriter-cursor {
+    height: 1em;
+    width: 1px;
+  }
+  
+  .eden-typewriter-sound-indicator {
+    bottom: 3.5rem;
+    right: 0.8rem;
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+}
