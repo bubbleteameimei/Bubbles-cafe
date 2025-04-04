@@ -14,9 +14,15 @@ export function EnhancedPageTransition({
   const [location] = useLocation();
   const [showLoading, setShowLoading] = useState(false);
   const [currentChildren, setCurrentChildren] = useState(children);
+  const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const prevLocationRef = useRef<string>(location);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  
+  // Handler for when the loading animation completes
+  const handleAnimationComplete = () => {
+    setIsLoadingComplete(true);
+  };
   
   // Simple page transition using just React state
   useEffect(() => {
@@ -24,6 +30,9 @@ export function EnhancedPageTransition({
     if (location !== prevLocationRef.current) {
       // Start timing for minimum loading display
       startTimeRef.current = Date.now();
+      
+      // Reset loading complete flag
+      setIsLoadingComplete(false);
       
       // Show loading immediately
       setShowLoading(true);
@@ -35,15 +44,13 @@ export function EnhancedPageTransition({
       
       // Set a timeout to switch content
       timeoutRef.current = setTimeout(() => {
-        // Calculate how much longer we need to show the loading screen
-        const elapsed = Date.now() - startTimeRef.current;
-        const remaining = Math.max(0, minLoadingTime - elapsed);
+        // Update the child component to the new route's content
+        setCurrentChildren(children);
         
-        // After minimum loading time, swap in the new content 
-        setTimeout(() => {
-          // Update the child component to the new route's content
-          setCurrentChildren(children);
-          
+        // Only hide loading screen after both:
+        // 1. Animation has completed its full cycle
+        // 2. Minimum loading time has passed (for slow networks)
+        if (isLoadingComplete) {
           // Give the DOM a moment to update before hiding loading screen
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -51,8 +58,8 @@ export function EnhancedPageTransition({
               prevLocationRef.current = location;
             });
           });
-        }, remaining);
-      }, 50); // Small delay to ensure loading screen renders first
+        }
+      }, minLoadingTime); // Ensure minimum display time
     } else {
       // If it's an initial render, just show the content
       setCurrentChildren(children);
@@ -64,12 +71,32 @@ export function EnhancedPageTransition({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [location, children, minLoadingTime]);
+  }, [location, children, minLoadingTime, isLoadingComplete]);
+  
+  // Effect to handle loading animation completion
+  useEffect(() => {
+    if (isLoadingComplete && timeoutRef.current) {
+      // If min loading time has already elapsed, hide the loading screen
+      const elapsed = Date.now() - startTimeRef.current;
+      if (elapsed >= minLoadingTime) {
+        // Update the route content if needed
+        setCurrentChildren(children);
+        
+        // Hide loading screen
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setShowLoading(false);
+            prevLocationRef.current = location;
+          });
+        });
+      }
+    }
+  }, [isLoadingComplete, children, location, minLoadingTime]);
   
   return (
     <div className="page-transition-container">
-      {/* Just use the standardized loading screen component */}
-      {showLoading && <LoadingScreen />}
+      {/* Use loading screen with animation complete callback */}
+      {showLoading && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
       
       {/* Current page content */}
       <div className="page-content">
