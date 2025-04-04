@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shuffle, Search, Home, X, BookOpen } from "lucide-react";
+import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
 interface Post {
   id: number;
@@ -27,22 +28,58 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const response = await fetch('/api/posts?limit=100');
-        if (response.ok) {
-          const data = await response.json();
-          // Normalize posts to have consistent structure
-          const normalizedPosts = data.posts.map((post: any) => ({
-            id: post.id,
-            title: post.title?.rendered || post.title || 'Untitled',
-            slug: post.slug || `post-${post.id}`,
-            date: post.date || post.createdAt || new Date().toISOString()
-          }));
-          setPosts(normalizedPosts);
-        } else {
-          console.error('Failed to fetch posts');
+        console.log('[TableOfContents] Fetching all posts for TOC');
+        
+        // First try to get posts from the internal API
+        try {
+          const response = await fetch('/api/posts?limit=100');
+          if (response.ok) {
+            const data = await response.json();
+            // Normalize posts to have consistent structure
+            const normalizedPosts = data.posts.map((post: any) => ({
+              id: post.id,
+              title: post.title?.rendered || post.title || 'Untitled',
+              slug: post.slug || `post-${post.id}`,
+              date: post.date || post.createdAt || new Date().toISOString()
+            }));
+            
+            if (normalizedPosts.length > 0) {
+              console.log('[TableOfContents] Found', normalizedPosts.length, 'posts from internal API');
+              console.log('[TableOfContents] Sample posts:', normalizedPosts.slice(0, 2));
+              setPosts(normalizedPosts);
+              setLoading(false);
+              return; // Successfully loaded posts, exit the function
+            }
+          }
+        } catch (internalError) {
+          console.error('[TableOfContents] Error fetching from internal API:', internalError);
+        }
+        
+        // If internal API fetch fails or returns no posts, try WordPress API as fallback
+        try {
+          console.log('[TableOfContents] Falling back to WordPress API');
+          const wordpressData = await fetchWordPressPosts({ page: 1, perPage: 100 });
+          
+          if (wordpressData.posts && wordpressData.posts.length > 0) {
+            // Normalize WordPress posts
+            const normalizedWordPressPosts = wordpressData.posts.map((post: any) => ({
+              id: post.id,
+              title: post.title?.rendered || 'Untitled',
+              slug: post.slug || `post-${post.id}`,
+              date: post.date || new Date().toISOString()
+            }));
+            
+            console.log('[TableOfContents] Found', normalizedWordPressPosts.length, 'posts from WordPress API');
+            console.log('[TableOfContents] WordPress sample posts:', normalizedWordPressPosts.slice(0, 2));
+            setPosts(normalizedWordPressPosts);
+          } else {
+            console.warn('[TableOfContents] No posts found from WordPress API');
+          }
+        } catch (wpError) {
+          console.error('[TableOfContents] WordPress API fetch failed:', wpError);
         }
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error('[TableOfContents] Error in main fetchPosts function:', error);
       } finally {
         setLoading(false);
       }
