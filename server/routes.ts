@@ -493,8 +493,10 @@ export function registerRoutes(app: Express): Server {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
       const filter = req.query.filter as string | undefined;
+      const isAdminPost = req.query.isAdminPost === 'true' ? true : 
+                         req.query.isAdminPost === 'false' ? false : undefined;
 
-      console.log('[GET /api/posts] Request params:', { page, limit, filter });
+      console.log('[GET /api/posts] Request params:', { page, limit, filter, isAdminPost });
 
       if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
         return res.status(400).json({
@@ -502,10 +504,20 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      // Updated to explicitly exclude community posts
-      const result = await storage.getPosts(page, limit, {
+      // Set up filter options with proper handling of the isAdminPost parameter
+      const filterOptions: any = {
         isCommunityPost: false  // Only get non-community posts
-      });
+      };
+      
+      // Only add isAdminPost filter if it was explicitly set in the query
+      if (isAdminPost !== undefined) {
+        filterOptions.isAdminPost = isAdminPost;
+      }
+      
+      console.log('[GET /api/posts] Using filter options:', filterOptions);
+      
+      // Pass the filter options to storage.getPosts
+      const result = await storage.getPosts(page, limit, filterOptions);
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
       // Simplified filtering logic to ensure proper visibility

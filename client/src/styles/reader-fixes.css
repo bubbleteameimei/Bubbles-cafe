@@ -25,12 +25,78 @@
   width: 100% !important;
 }
 
+/* CRITICAL: Dark mode styling - fixes black text on black background and enhances contrast */
+html.dark .reader-container.story-content {
+  /* Text styling for better readability */
+  color: rgba(255, 255, 255, 0.95) !important; /* Match DARK_TEXT_COLOR constant in reader.tsx */
+  text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.7); /* Add subtle text shadow for better readability */
+
+  /* Background enhancement for better contrast */
+  background-color: rgba(18, 18, 18, 0.85) !important; /* Slightly lighter than pure black */
+  border-radius: 8px !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3) !important;
+  padding-bottom: 2rem !important; /* Add some bottom padding for better spacing */
+}
+
+/* Light mode text color override (for consistency) */
+html:not(.dark) .reader-container.story-content {
+  color: rgba(0, 0, 0, 0.95) !important; /* Match LIGHT_TEXT_COLOR constant in reader.tsx */
+}
+
 /* Apply padding to paragraphs as well for extra measure */
 .reader-container.story-content p, 
 .reader-container.story-content .story-paragraph {
   padding-left: 0 !important;
   padding-right: 0 !important;
   max-width: 100% !important; /* Ensure paragraphs don't exceed container */
+}
+
+/* CRITICAL: Ensure paragraphs also get the text color override for dark mode */
+html.dark .reader-container.story-content p,
+html.dark .reader-container.story-content .story-paragraph {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.7) !important; /* Match container text shadow */
+}
+
+/* Light mode text color override for paragraphs */
+html:not(.dark) .reader-container.story-content p,
+html:not(.dark) .reader-container.story-content .story-paragraph {
+  color: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Ensure links in story content are visible in dark mode */
+html.dark .reader-container.story-content a {
+  color: #6ebeff !important; /* Bright blue for dark mode */
+}
+
+/* Ensure links in story content are visible in light mode */
+html:not(.dark) .reader-container.story-content a {
+  color: #0066cc !important; /* Darker blue for light mode */
+}
+
+/* Improve title visibility in dark mode */
+html.dark .reader-page h1 {
+  color: rgba(255, 255, 255, 0.98) !important;
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 700 !important;
+}
+
+/* Additional styling for other text elements in dark mode */
+html.dark .reader-container.story-content ul li,
+html.dark .reader-container.story-content ol li,
+html.dark .reader-container.story-content blockquote,
+html.dark .reader-container.story-content code,
+html.dark .reader-container.story-content pre {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Special styling for blockquotes in dark mode */
+html.dark .reader-container.story-content blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  padding: 0.5rem 1rem !important;
+  margin: 1.5rem 0 !important;
 }
 
 /* Adding additional padding to any div inside the content area */
