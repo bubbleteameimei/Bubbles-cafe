@@ -213,12 +213,22 @@ export default function Navigation() {
               size="icon"
               onClick={() => setLocation('/profile')}
               className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95"
+                        transition-all duration-150 active:scale-95 p-0 overflow-hidden"
               aria-label="Profile"
             >
-              <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
-                {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-              </div>
+              {user.avatar ? (
+                <div className="h-full w-full overflow-hidden rounded-full">
+                  <img 
+                    src={user.avatar} 
+                    alt={`${user.username}'s avatar`}
+                    className="h-full w-full object-cover" 
+                  />
+                </div>
+              ) : (
+                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                  {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
             </Button>
           )}
         </div>

@@ -23,6 +23,17 @@ interface UserMetadata {
   [key: string]: any;
 }
 
+// Define the session user interface for type checking
+interface SessionUser {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  fullName?: string | null;
+  avatar?: string | null;
+  bio?: string | null;
+}
+
 export function setupOAuth(app: Express) {
   // Local strategy for username/password authentication
   passport.use(new LocalStrategy(
@@ -287,14 +298,38 @@ export function setupOAuth(app: Express) {
       
       // Update session with the latest user data
       if (req.session && req.session.user) {
+        const sessionUser = req.session.user as SessionUser;
+        
         // Update username if changed
         if (username && username !== user.username) {
-          req.session.user.username = username;
+          sessionUser.username = username;
         }
         
-        // Update avatar if changed
-        if (metadata && metadata.avatar && metadata.avatar !== req.session.user.avatar) {
-          req.session.user.avatar = metadata.avatar;
+        // Update metadata fields if changed
+        if (metadata) {
+          const updatedMetadata = updatedUser.metadata || {} as UserMetadata;
+          
+          // Update full name
+          if (metadata.fullName !== undefined && (updatedMetadata as UserMetadata).displayName !== sessionUser.fullName) {
+            sessionUser.fullName = (updatedMetadata as UserMetadata).displayName;
+          }
+          
+          // Update avatar
+          if (metadata.avatar !== undefined && (updatedMetadata as UserMetadata).photoURL !== sessionUser.avatar) {
+            sessionUser.avatar = (updatedMetadata as UserMetadata).photoURL;
+          }
+          
+          // Update bio
+          if (metadata.bio !== undefined && (updatedMetadata as UserMetadata).bio !== sessionUser.bio) {
+            sessionUser.bio = (updatedMetadata as UserMetadata).bio;
+          }
+          
+          console.log('[Profile] Updated session with new user data:', {
+            username: sessionUser.username,
+            fullName: sessionUser.fullName,
+            avatar: sessionUser.avatar,
+            bio: sessionUser.bio
+          });
         }
         
         // Save the session
@@ -372,8 +407,8 @@ export function setupOAuth(app: Express) {
           // Check for field names in this chunk
           if (chunkStr.includes('name="username"')) {
             currentField = 'username';
-          } else if (chunkStr.includes('name="fullName"')) {
-            currentField = 'fullName';
+          } else if (chunkStr.includes('name="displayName"')) {
+            currentField = 'displayName';
           } else if (chunkStr.includes('name="bio"')) {
             currentField = 'bio';
           } else if (chunkStr.includes('name="avatarFile"')) {
@@ -404,7 +439,7 @@ export function setupOAuth(app: Express) {
               case 'username':
                 username = value;
                 break;
-              case 'fullName':
+              case 'displayName':
                 fullName = value;
                 break;
               case 'bio':
@@ -417,7 +452,7 @@ export function setupOAuth(app: Express) {
       
       req.on('end', async () => {
         try {
-          // Process file data if we have it
+          // Ensure we have file data
           if (fileDataChunks.length === 0) {
             return res.status(400).json({ error: 'No file uploaded' });
           }
@@ -458,16 +493,25 @@ export function setupOAuth(app: Express) {
           // Convert image to base64 for storage
           const base64Image = `data:${contentType};base64,${fileData.toString('base64')}`;
           
-          // Prepare the user update
-          const currentMetadata = user.metadata || {};
-          const updateData: any = {
-            metadata: {
-              ...currentMetadata,
-              photoURL: base64Image
-            }
-          };
+          // Get the current user to properly access existing metadata
+          const currentUser = await storage.getUser(user.id);
+          if (!currentUser) {
+            return res.status(404).json({ error: 'User not found' });
+          }
           
-          // Add additional form fields if provided
+          // Extract current metadata with fallback to empty object
+          const currentMetadata = currentUser.metadata || {};
+          
+          // Instead of using updateUser directly, we'll use the DB directly
+          // to ensure metadata is properly merged (avoid production-build issue)
+          const db = storage.getDb();
+          const users = storage.getUsersTable();
+          const { eq } = storage.getDrizzleOperators();
+          
+          // Prepare update data with existing metadata as base
+          const updateData: Record<string, any> = {};
+          
+          // If username is changing, add it to update data
           if (username && username !== user.username) {
             // Check if username is already taken 
             const existingUser = await storage.getUserByUsername(username);
@@ -477,29 +521,57 @@ export function setupOAuth(app: Express) {
             updateData.username = username;
           }
           
-          if (fullName) {
-            updateData.metadata.displayName = fullName;
-          }
+          // Create merged metadata
+          const mergedMetadata = {
+            ...currentMetadata,
+            photoURL: base64Image,
+            // Only add these if they're provided
+            ...(fullName ? { displayName: fullName } : {}),
+            ...(bio ? { bio } : {})
+          };
           
-          if (bio) {
-            updateData.metadata.bio = bio;
-          }
+          // Add merged metadata to update data
+          updateData.metadata = mergedMetadata;
           
-          // Save the update
-          const updatedUser = await storage.updateUser(user.id, updateData);
+          // Perform the database update directly
+          const [updatedUser] = await db.update(users)
+            .set(updateData)
+            .where(eq(users.id, user.id))
+            .returning();
+          
+          if (!updatedUser) {
+            return res.status(500).json({ error: 'Failed to update user' });
+          }
           
           // Update session with latest user data
           if (req.session && req.session.user) {
+            const sessionUser = req.session.user as SessionUser;
+            
             // Update username if changed
             if (username && username !== user.username) {
-              req.session.user.username = username;
+              sessionUser.username = username;
             }
             
             // Update other user details in session
-            const updatedMetadata = (updatedUser.metadata || {}) as UserMetadata;
-            if (updatedMetadata.photoURL && updatedMetadata.photoURL !== req.session.user.avatar) {
-              req.session.user.avatar = updatedMetadata.photoURL;
+            sessionUser.avatar = base64Image;
+            
+            // Update full name if provided
+            if (fullName) {
+              sessionUser.fullName = fullName;
             }
+            
+            // Update bio if provided
+            if (bio) {
+              sessionUser.bio = bio;
+            }
+            
+            // Log the session update
+            console.log('[Profile] Updated session with new user data:', {
+              username: sessionUser.username,
+              fullName: sessionUser.fullName,
+              avatar: sessionUser.avatar ? 'base64_image_data' : null, // Don't log the full base64 string
+              bio: sessionUser.bio
+            });
             
             // Save the session changes
             req.session.save((err) => {
@@ -509,8 +581,8 @@ export function setupOAuth(app: Express) {
             });
           }
           
-          // Return success response
-          const updatedMetadata = (updatedUser.metadata || {}) as UserMetadata;
+          // Return success response with the updated user data
+          const updatedMetadata = updatedUser.metadata || {};
           res.json({
             success: true,
             user: {

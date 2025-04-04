@@ -36,7 +36,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export function UserProfile() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, checkAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,15 +135,18 @@ export function UserProfile() {
   // Mutation to update profile
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
+      console.log('[Profile] Updating profile with data:', data);
       const { email, avatarFile, ...otherData } = data;
       
       // If we have a file, handle it differently (upload to server)
       if (avatarFile) {
+        console.log('[Profile] Using multipart form data for avatar upload');
         const formData = new FormData();
         formData.append('username', otherData.username || '');
         formData.append('avatarFile', avatarFile);
         
-        if (otherData.fullName) formData.append('fullName', otherData.fullName);
+        // Use the same field names the server expects
+        if (otherData.fullName) formData.append('displayName', otherData.fullName);
         if (otherData.bio) formData.append('bio', otherData.bio);
         
         return apiRequest<UserProfileResponse>('/api/auth/profile-with-image', {
@@ -153,14 +156,17 @@ export function UserProfile() {
       }
       
       // Otherwise send a regular JSON update
+      console.log('[Profile] Using JSON update for profile data');
       const updateData = {
         username: otherData.username,
         metadata: {
-          fullName: otherData.fullName,
+          displayName: otherData.fullName, // Server expects displayName for fullName
           bio: otherData.bio,
-          avatar: otherData.avatar,
+          photoURL: otherData.avatar,  // Server expects photoURL for avatar
         }
       };
+      
+      console.log('[Profile] Sending update data:', updateData);
       
       return apiRequest<UserProfileResponse>('/api/auth/profile', {
         method: 'PATCH',
@@ -168,23 +174,32 @@ export function UserProfile() {
         body: JSON.stringify(updateData),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[Profile] Profile updated successfully:', data);
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been updated successfully.',
       });
+      
       // Clean up preview URL
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
       }
+      
       setFormData(prev => ({ ...prev, avatarFile: null }));
+      
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
       queryClient.invalidateQueries({ queryKey: ['auth', 'status'] });
+      
+      // Force a full auth refresh after a delay to ensure the server has processed the update
+      setTimeout(() => {
+        checkAuth();
+      }, 500);
     },
     onError: (error) => {
-      console.error('Failed to update profile:', error);
+      console.error('[Profile] Failed to update profile:', error);
       toast({
         title: 'Update Failed',
         description: 'Failed to update your profile. Please try again.',

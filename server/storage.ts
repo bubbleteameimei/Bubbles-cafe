@@ -91,6 +91,11 @@ import bcrypt from 'bcryptjs';
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
+  // System
+  getDb(): any;
+  getUsersTable(): any;
+  getDrizzleOperators(): any;
+  
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -265,6 +270,19 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+
+  // System methods for accessing DB objects directly
+  getDb() {
+    return db;
+  }
+
+  getUsersTable() {
+    return users;
+  }
+
+  getDrizzleOperators() {
+    return { eq, sql, and, or, not, like, desc, asc };
+  }
 
   constructor() {
     console.log('[Storage] Initializing PostgreSQL session store...');

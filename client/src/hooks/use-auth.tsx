@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         if (data.isAuthenticated) {
+          // Ensure we have the latest user data with all fields
+          console.log('[Auth] User authenticated:', data.user);
           setUser(data.user);
         } else {
           setUser(null);
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('[Auth] Auth check error:', error);
       setUser(null);
     } finally {
       setIsAuthReady(true);

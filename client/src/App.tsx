@@ -63,6 +63,7 @@ import AboutPage from './pages/about';
 import ContactPage from './pages/contact';
 import PrivacyPage from './pages/privacy';
 import ReportBugPage from './pages/report-bug';
+import PixelArtPage from './pages/PixelArtPage';
 import AuthPage from './pages/auth';
 import AuthSuccessPage from './pages/auth-success';
 import ProfilePage from './pages/profile';
@@ -211,6 +212,7 @@ const AppContent = () => {
               <Route path="/scroll-demo" component={ScrollDemoPage} />
               <Route path="/scroll-test" component={ScrollTestPage} />
               <Route path="/refresh-demo" component={RefreshDemoPage} />
+              <Route path="/pixel-art" component={PixelArtPage} />
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
