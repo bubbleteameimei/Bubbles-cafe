@@ -331,7 +331,7 @@ function App() {
                     <ErrorToastProvider>
                       <LoadingProvider>
                         <RefreshProvider>
-                          <EnhancedPageTransition minLoadingTime={3000}>
+                          <EnhancedPageTransition minLoadingTime={850}>
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
                               <AppContent />
