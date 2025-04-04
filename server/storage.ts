@@ -763,6 +763,11 @@ export class DatabaseStorage implements IStorage {
       if (filters.authorId) {
         query = query.where(eq(postsTable.authorId, filters.authorId));
       }
+
+      // Apply isAdminPost filter if specified
+      if (filters.isAdminPost !== undefined) {
+        query = query.where(eq(postsTable.isAdminPost, filters.isAdminPost));
+      }
       
       // Apply sorting
       if (filters.sort && filters.order) {
@@ -785,9 +790,9 @@ export class DatabaseStorage implements IStorage {
       // Execute the query
       let posts = await query;
       
-      // Post-query filtering for metadata fields like isCommunityPost and isAdminPost
+      // Post-query filtering for metadata fields like isCommunityPost
       // This avoids database schema issues when these fields are missing
-      if (filters.isCommunityPost !== undefined || filters.isAdminPost !== undefined || filters.category) {
+      if (filters.isCommunityPost !== undefined || filters.category) {
         posts = posts.filter(post => {
           const metadata = post.metadata || {};
           
@@ -795,12 +800,6 @@ export class DatabaseStorage implements IStorage {
           if (filters.isCommunityPost !== undefined) {
             const isCommunityPost = metadata.isCommunityPost === true;
             if (isCommunityPost !== filters.isCommunityPost) return false;
-          }
-          
-          // Check for admin post flag in metadata
-          if (filters.isAdminPost !== undefined) {
-            const isAdminPost = metadata.isAdminPost === true;
-            if (isAdminPost !== filters.isAdminPost) return false;
           }
           
           // Filter by category if specified
@@ -869,7 +868,7 @@ export class DatabaseStorage implements IStorage {
             // Now apply the filtering based on metadata fields
             let filteredPosts = simplePosts;
             
-            if (filters.isCommunityPost !== undefined || filters.isAdminPost !== undefined || filters.category) {
+            if (filters.isCommunityPost !== undefined || filters.category) {
               filteredPosts = simplePosts.filter(post => {
                 const metadata = post.metadata || {};
                 
@@ -877,12 +876,6 @@ export class DatabaseStorage implements IStorage {
                 if (filters.isCommunityPost !== undefined) {
                   const isCommunityPost = metadata.isCommunityPost === true;
                   if (isCommunityPost !== filters.isCommunityPost) return false;
-                }
-                
-                // Check for admin post flag in metadata
-                if (filters.isAdminPost !== undefined) {
-                  const isAdminPost = metadata.isAdminPost === true;
-                  if (isAdminPost !== filters.isAdminPost) return false;
                 }
                 
                 // Filter by category if specified
@@ -893,6 +886,37 @@ export class DatabaseStorage implements IStorage {
                 
                 return true;
               });
+            }
+            
+            // If isAdminPost filter is set, apply it separately
+            // In fallback mode, we attempt to get this from the is_admin_post column directly
+            if (filters.isAdminPost !== undefined) {
+              try {
+                // Try a direct SQL approach to check the is_admin_post column
+                const result = await db.execute(sql`
+                  SELECT id FROM posts WHERE is_admin_post = ${filters.isAdminPost}
+                `);
+                
+                const adminPostIds = result.rows.map(row => row.id);
+                
+                // Further filter the posts to those matching the admin post filter
+                if (adminPostIds.length > 0) {
+                  filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
+                } else {
+                  // If no admin posts found, and we're looking for admin posts, return empty
+                  if (filters.isAdminPost === true) {
+                    filteredPosts = [];
+                  }
+                }
+              } catch (filterError) {
+                console.warn("Failed to filter by is_admin_post column, falling back to metadata check:", filterError);
+                // Fall back to metadata check if column doesn't exist
+                filteredPosts = filteredPosts.filter(post => {
+                  const metadata = post.metadata || {};
+                  const isAdminPost = metadata.isAdminPost === true;
+                  return isAdminPost === filters.isAdminPost;
+                });
+              }
             }
             
             // Apply text search filter if specified
@@ -1070,6 +1094,7 @@ export class DatabaseStorage implements IStorage {
           excerpt, 
           metadata, 
           is_secret, 
+          is_admin_post,
           mature_content, 
           theme_category, 
           created_at, 
@@ -1082,6 +1107,7 @@ export class DatabaseStorage implements IStorage {
           ${basePost.excerpt || null}, 
           ${JSON.stringify(basePost.metadata)}, 
           ${basePost.isSecret || false}, 
+          ${post.isAdminPost || false},
           ${basePost.matureContent || false}, 
           ${basePost.themeCategory || null}, 
           ${basePost.createdAt}, 

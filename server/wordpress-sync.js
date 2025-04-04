@@ -247,11 +247,11 @@ export async function syncWordPressPosts() {
             const result = await pool.query(`
               INSERT INTO posts (
                 title, content, excerpt, slug, author_id, 
-                is_secret, created_at, mature_content, reading_time_minutes, 
+                is_secret, is_admin_post, created_at, mature_content, reading_time_minutes, 
                 theme_category, metadata
               ) VALUES (
                 $1, $2, $3, $4, $5, 
-                false, $6, false, $7, 
+                false, false, $6, false, $7, 
                 $8, $9
               ) RETURNING id
             `, [
@@ -278,8 +278,9 @@ export async function syncWordPressPosts() {
                 excerpt = $3,
                 reading_time_minutes = $4,
                 theme_category = $5,
-                metadata = $6
-              WHERE id = $7
+                metadata = $6,
+                is_admin_post = $7
+              WHERE id = $8
             `, [
               title, 
               content, 
@@ -290,6 +291,7 @@ export async function syncWordPressPosts() {
                 ...metadataObj,
                 lastUpdated: new Date().toISOString()
               }),
+              false, // WordPress posts are never admin posts
               postId
             ]);
             
@@ -417,11 +419,11 @@ export async function syncSingleWordPressPost(wpPostId) {
       result = await pool.query(`
         INSERT INTO posts (
           title, content, excerpt, slug, author_id, 
-          is_secret, created_at, mature_content, reading_time_minutes, 
+          is_secret, is_admin_post, created_at, mature_content, reading_time_minutes, 
           theme_category, metadata
         ) VALUES (
           $1, $2, $3, $4, $5, 
-          false, $6, false, $7, 
+          false, false, $6, false, $7, 
           $8, $9
         ) RETURNING id
       `, [
@@ -448,8 +450,9 @@ export async function syncSingleWordPressPost(wpPostId) {
           excerpt = $3,
           reading_time_minutes = $4,
           theme_category = $5,
-          metadata = $6
-        WHERE id = $7
+          metadata = $6,
+          is_admin_post = $7
+        WHERE id = $8
       `, [
         title, 
         content, 
@@ -460,6 +463,7 @@ export async function syncSingleWordPressPost(wpPostId) {
           ...metadataObj,
           lastUpdated: new Date().toISOString()
         }),
+        false, // WordPress posts are never admin posts
         postId
       ]);
       
