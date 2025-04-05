@@ -95,6 +95,7 @@ export interface IStorage {
   getDb(): any;
   getUsersTable(): any;
   getDrizzleOperators(): any;
+  clearCache(key: string): Promise<boolean>;
   
   // Users
   getUser(id: number): Promise<User | undefined>;
@@ -286,6 +287,19 @@ export class DatabaseStorage implements IStorage {
 
   getDrizzleOperators() {
     return { eq, sql, and, or, not, like, desc, asc };
+  }
+  
+  // Cache management
+  async clearCache(key: string): Promise<boolean> {
+    try {
+      console.log(`[Storage] Clearing cache for key: ${key}`);
+      // In a real implementation, this would clear Redis or other cache
+      // For now, we just return success since we don't have an actual cache layer
+      return true;
+    } catch (error) {
+      console.error(`[Storage] Error clearing cache for key ${key}:`, error);
+      return false;
+    }
   }
 
   constructor() {

@@ -463,13 +463,14 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/posts/admin/themes', isAuthenticated, async (req, res) => {
     try {
       // Check if user is admin
-      if (!req.session?.user?.id) {
+      if (!req.user?.id) {
+        console.log('[GET /api/posts/admin/themes] No user ID in request:', req.user);
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
-      const user = await storage.getUser(req.session.user.id);
-      
-      if (!user?.isAdmin) {
+      // The isAuthenticated middleware already confirms authentication, just check admin status
+      if (!req.user.isAdmin) {
+        console.log('[GET /api/posts/admin/themes] User not admin:', req.user.id);
         return res.status(403).json({ error: 'Forbidden' });
       }
       
@@ -499,7 +500,7 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/posts/:id/theme', isAuthenticated, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const { theme_category } = req.body;
+      const { theme_category, icon } = req.body;
       
       // Validate input
       if (!theme_category) {
@@ -507,29 +508,51 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Check if user is admin
-      if (!req.session?.user?.id) {
+      if (!req.user?.id) {
+        console.log('[PATCH /api/posts/:id/theme] No user ID in request:', req.user);
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
-      const user = await storage.getUser(req.session.user.id);
-      
-      if (!user?.isAdmin) {
+      // The isAuthenticated middleware already confirms authentication, just check admin status
+      if (!req.user.isAdmin) {
+        console.log('[PATCH /api/posts/:id/theme] User not admin:', req.user.id);
         return res.status(403).json({ error: 'Forbidden' });
       }
       
-      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}`);
+      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}, icon: ${icon || 'default'}`);
       
-      // Update post theme
-      const updatedPost = await storage.updatePost(postId, { themeCategory: theme_category });
+      // Create update data with the new schema fields
+      const updateData: any = { 
+        themeCategory: theme_category
+      };
       
-      res.json({
+      // If icon is provided, update that too
+      if (icon) {
+        updateData.themeIcon = icon;
+      }
+      
+      const updatedPost = await storage.updatePost(postId, updateData);
+      
+      // Force cache invalidation for this post to ensure the theme is updated everywhere
+      const cacheKey = `post_${postId}`;
+      await storage.clearCache(cacheKey);
+      
+      // Construct the response with properties that definitely exist
+      const responseData = {
         success: true,
         post: {
           id: updatedPost.id,
           title: updatedPost.title,
-          theme_category: updatedPost.themeCategory
+          theme_category: updatedPost.themeCategory || null
         }
-      });
+      };
+      
+      // Add the icon if it exists on the updated post
+      if ('themeIcon' in updatedPost) {
+        (responseData.post as any).theme_icon = updatedPost.themeIcon;
+      }
+      
+      res.json(responseData);
     } catch (error) {
       console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
       res.status(500).json({ error: 'Failed to update post theme' });

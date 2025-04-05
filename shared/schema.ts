@@ -29,6 +29,7 @@ export const posts = pgTable("posts", {
   isAdminPost: boolean("is_admin_post").default(false),
   matureContent: boolean("mature_content").default(false).notNull(),
   themeCategory: text("theme_category"),
+  themeIcon: text("theme_icon"),
   readingTimeMinutes: integer("reading_time_minutes"),
   likesCount: integer("likes_count").default(0),
   dislikesCount: integer("dislikes_count").default(0),
