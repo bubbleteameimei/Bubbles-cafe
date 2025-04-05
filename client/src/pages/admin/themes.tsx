@@ -315,7 +315,7 @@ export default function ThemesPage() {
                                 }}
                                 disabled={updateThemeMutation.isPending}
                               >
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger className="w-full md:w-[180px]">
                                   <SelectValue placeholder="Select a theme" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -352,18 +352,18 @@ export default function ThemesPage() {
                                     }}
                                     disabled={updateThemeMutation.isPending}
                                   >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-full md:w-[180px]">
                                       <SelectValue placeholder="Select an icon">
                                         <div className="flex items-center">
                                           {selectedIcon !== "custom" ? 
                                             (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
                                             <span className="flex items-center">
                                               {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                              <span className="ml-2">Custom: {customIconInput || 'none'}</span>
+                                              <span className="ml-2 truncate max-w-[100px]">Custom: {customIconInput || 'none'}</span>
                                             </span>
                                           }
                                           {selectedIcon !== "custom" && (
-                                            <span className="ml-2">
+                                            <span className="ml-2 truncate">
                                               {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
                                             </span>
                                           )}
@@ -396,7 +396,7 @@ export default function ThemesPage() {
                                         placeholder="Type a custom icon name"
                                         value={customIconInput}
                                         onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
-                                        className="w-[180px]"
+                                        className="w-full md:w-[180px]"
                                       />
                                       <div className="flex items-center">
                                         <span className="text-xs text-muted-foreground">Preview: </span>
@@ -468,11 +468,11 @@ export default function ThemesPage() {
                                               (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
                                               <span className="flex items-center">
                                                 {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                                <span className="ml-2">Custom: {customIconInput || 'none'}</span>
+                                                <span className="ml-2 truncate max-w-[100px]">Custom: {customIconInput || 'none'}</span>
                                               </span>
                                             }
                                             {selectedIcon !== "custom" && (
-                                              <span className="ml-2">
+                                              <span className="ml-2 truncate">
                                                 {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
                                               </span>
                                             )}

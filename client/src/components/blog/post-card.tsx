@@ -222,13 +222,13 @@ const getEngagingExcerpt = (content: string): string => {
             <div className="mt-2">
               <Badge
                 variant="default"
-                className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit"
+                className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1.5 w-fit"
               >
                 {THEME_ICONS[iconKey] ? 
                   THEME_ICONS[iconKey] :
-                  <Ghost className="h-3 w-3" />
+                  <Ghost className="h-4 w-4" />
                 }
-                {displayName}
+                <span className="whitespace-nowrap">{displayName}</span>
               </Badge>
             </div>
           )}

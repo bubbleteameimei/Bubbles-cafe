@@ -1329,7 +1329,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Dialog>
 
               <div className="flex flex-col items-center gap-1">
-                <div className={`flex items-center gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-muted-foreground backdrop-blur-sm bg-background/20 px-3 sm:px-4 py-1 rounded-full shadow-sm border border-primary/10 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Story theme icon - show primary theme if available, otherwise default to generic */}
                   {detectedThemes.length > 0 ? (
                     <div className="flex items-center gap-1.5">
@@ -1410,20 +1410,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         
                         return (
                           <>
-                            <ThemeIcon className="h-3.5 w-3.5 text-primary/80" />
-                            <span className="font-medium text-primary/80 whitespace-nowrap">{primaryTheme}</span>
+                            <ThemeIcon className="h-4 w-4 text-primary/80" />
+                            <span className="font-medium text-primary/80 whitespace-nowrap text-xs sm:text-sm">{primaryTheme}</span>
                           </>
                         );
                       })()}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      <BookOpen className="h-3.5 w-3.5 text-primary/80" />
-                      <span className="font-medium text-primary/80">Fiction</span>
+                      <BookOpen className="h-4 w-4 text-primary/80" />
+                      <span className="font-medium text-primary/80 whitespace-nowrap text-xs sm:text-sm">Fiction</span>
                     </div>
                   )}
                   <span className="text-muted-foreground/30">•</span>
-                  <time className="font-medium whitespace-nowrap">{formattedDate}</time>
+                  <time className="font-medium whitespace-nowrap text-xs sm:text-sm">{formattedDate}</time>
                 </div>
 
                 {/* Navigation Buttons - reduced vertical spacing */}
