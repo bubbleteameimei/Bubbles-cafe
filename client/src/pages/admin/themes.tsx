@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Table,
   TableHeader,
@@ -20,7 +20,7 @@ import { Pencil, Check, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import AdminLayout from '@/components/layouts/admin-layout';
+import AdminLayout from '@/components/layout/admin-layout';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { THEME_CATEGORIES } from '@shared/theme-categories';
 
@@ -102,7 +102,7 @@ export default function ThemesPage() {
     ) : [];
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Theme Management">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Theme Management</CardTitle>

@@ -31,6 +31,7 @@ const adminNavigation = [
     group: 'Content Management',
     items: [
       { name: 'Stories', href: '/admin/stories', icon: Book },
+      { name: 'Themes', href: '/admin/themes', icon: FileText },
       { name: 'WordPress Sync', href: '/admin/wordpress-sync', icon: Globe }
     ]
   },
