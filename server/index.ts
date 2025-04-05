@@ -23,6 +23,7 @@ import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
+import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
@@ -236,6 +237,9 @@ async function startServer() {
       // Register analytics routes
       registerAnalyticsRoutes(app);
       
+      // Register email service routes
+      registerEmailServiceRoutes(app);
+      
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
@@ -266,6 +270,9 @@ async function startServer() {
       
       // Register analytics routes
       registerAnalyticsRoutes(app);
+      
+      // Register email service routes
+      registerEmailServiceRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
