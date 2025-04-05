@@ -105,14 +105,28 @@ async function getOrCreateAdminUser(pool) {
 }
 
 /**
- * Fetch posts from WordPress API using native fetch
+ * Fetch posts from WordPress API using native fetch with enhanced error handling
  */
 async function fetchWordPressPosts(page = 1, perPage = 20) {
   try {
     log(`Fetching WordPress posts - page ${page}, perPage ${perPage}`, 'wordpress-sync');
+    
+    // Create a fetch request with timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    
     const response = await fetch(
-      `${WP_API_URL}/posts?page=${page}&per_page=${perPage}&_fields=id,date,title,content,excerpt,slug,categories`
-    );
+      `${WP_API_URL}/posts?page=${page}&per_page=${perPage}&_fields=id,date,title,content,excerpt,slug,categories`,
+      { 
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    ).finally(() => {
+      clearTimeout(timeoutId); // Always clear the timeout
+    });
 
     // Handle case where we've reached the end of available posts
     if (response.status === 400) {
@@ -128,6 +142,12 @@ async function fetchWordPressPosts(page = 1, perPage = 20) {
     log(`Retrieved ${posts.length} posts from WordPress API`, 'wordpress-sync');
     return posts;
   } catch (error) {
+    // Handle timeout errors specifically
+    if (error.name === 'AbortError') {
+      log(`WordPress API request timed out after 20 seconds`, 'wordpress-sync');
+      throw new Error('WordPress API request timed out');
+    }
+    
     log(`Error fetching WordPress posts: ${error.message}`, 'wordpress-sync');
     // Don't throw errors for pagination issues
     if (error.message && error.message.includes('400 Bad Request')) {
@@ -139,12 +159,28 @@ async function fetchWordPressPosts(page = 1, perPage = 20) {
 }
 
 /**
- * Fetch category information from WordPress API
+ * Fetch category information from WordPress API with enhanced error handling
  */
 async function fetchCategories() {
   try {
     log("Fetching WordPress categories", 'wordpress-sync');
-    const response = await fetch(`${WP_API_URL}/categories?per_page=100`);
+    
+    // Create a fetch request with timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    
+    const response = await fetch(
+      `${WP_API_URL}/categories?per_page=100`,
+      { 
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    ).finally(() => {
+      clearTimeout(timeoutId); // Always clear the timeout
+    });
     
     if (!response.ok) {
       throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
@@ -161,6 +197,12 @@ async function fetchCategories() {
     
     return categoryMap;
   } catch (error) {
+    // Handle timeout errors specifically
+    if (error.name === 'AbortError') {
+      log(`WordPress categories API request timed out after 20 seconds`, 'wordpress-sync');
+      return {}; // Return empty object on timeout
+    }
+    
     log(`Error fetching WordPress categories: ${error.message}`, 'wordpress-sync');
     return {}; // Return empty object if categories can't be fetched
   }
@@ -369,9 +411,22 @@ export async function syncSingleWordPressPost(wpPostId) {
   try {
     log(`Fetching single WordPress post ID: ${wpPostId}`, 'wordpress-sync');
     
+    // Create a fetch request with timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    
     const response = await fetch(
-      `${WP_API_URL}/posts/${wpPostId}?_fields=id,date,title,content,excerpt,slug,categories`
-    );
+      `${WP_API_URL}/posts/${wpPostId}?_fields=id,date,title,content,excerpt,slug,categories`,
+      { 
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    ).finally(() => {
+      clearTimeout(timeoutId); // Always clear the timeout
+    });
     
     if (!response.ok) {
       throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
@@ -471,6 +526,12 @@ export async function syncSingleWordPressPost(wpPostId) {
       return { id: postId, title, action: 'updated' };
     }
   } catch (error) {
+    // Handle timeout errors specifically
+    if (error.name === 'AbortError') {
+      log(`WordPress post API request for ID ${wpPostId} timed out after 20 seconds`, 'wordpress-sync');
+      throw new Error(`WordPress API request timed out for post ID ${wpPostId}`);
+    }
+    
     log(`Error syncing WordPress post ${wpPostId}: ${error.message}`, 'wordpress-sync');
     throw error;
   } finally {

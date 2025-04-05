@@ -225,7 +225,7 @@ export async function fetchWordPressPosts(page = 1, perPage = 100): Promise<Word
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-    }, 10000); // 10 second timeout
+    }, 20000); // 20 second timeout (increased from 10s)
     
     try {
       // Fetch with more detailed logging and timeout handling

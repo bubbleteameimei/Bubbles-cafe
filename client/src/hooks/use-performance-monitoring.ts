@@ -1,5 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals';
+// Use standard relative path since @/ alias is causing issues
+import { getCsrfToken, CSRF_HEADER_NAME } from "../lib/csrf-token";
 
 interface PerformanceMetric {
   name: string;
@@ -48,14 +50,23 @@ const reportMetric = async (metric: PerformanceMetric) => {
     // Always use fetch instead of sendBeacon for now
     // This ensures proper Content-Type and payload handling
     try {
-      // Analytics endpoint is excluded from CSRF checks on server side for performance reasons
+      // While the analytics endpoint is in the ignore list on the server, we need to use the CSRF token
+      // to avoid the server-side error that's happening due to middleware configuration
+      const token = getCsrfToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add CSRF token if available
+      if (token) {
+        headers[CSRF_HEADER_NAME] = token;
+      }
+      
       const response = await fetch('/api/analytics/vitals', {
         method: 'POST',
         body,
         keepalive: true,
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         credentials: 'same-origin' // Include cookies in the request
       });
       

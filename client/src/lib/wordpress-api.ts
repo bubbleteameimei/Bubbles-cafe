@@ -229,12 +229,12 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       const apiUrl = `${WORDPRESS_API_BASE}/posts?${params.toString()}`;
       console.log(`[WordPress] Request URL: ${apiUrl}`);
       
-      // Set up timeout handling
+      // Set up timeout handling with increased duration
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout (increased from 20s)
       
       try {
-        // Make the fetch request with timeout
+        // Make the fetch request with extended timeout
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -321,15 +321,30 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         const cacheKey = cacheUtils.getCacheKey(options);
         cacheUtils.saveToCache(cacheKey, result);
         
+        // Store the success status for UI reporting
+        localStorage.setItem('wp_sync_status', JSON.stringify({
+          status: 'success',
+          type: 'api_success',
+          message: `Successfully fetched ${result.posts.length} posts`,
+          timestamp: Date.now()
+        }));
+        
         return result;
       } catch (fetchError: any) {
         // Clear timeout if fetch fails
         clearTimeout(timeoutId);
         
-        // Handle timeout errors specifically
+        // Handle timeout errors specifically with better user feedback
         if (fetchError.name === 'AbortError') {
-          console.error(`[WordPress] Request timed out`);
-          throw new Error('API request timed out');
+          console.error(`[WordPress] Request timed out after 30 seconds`);
+          // Store the timeout status for UI reporting
+          localStorage.setItem('wp_sync_status', JSON.stringify({
+            status: 'error',
+            type: 'timeout',
+            message: 'WordPress API request timed out after 30 seconds',
+            timestamp: Date.now()
+          }));
+          throw new Error('WordPress API request timed out (30s)');
         }
         
         // Re-throw the error for the retry logic
@@ -356,6 +371,16 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
   
   // If we've exhausted retries, try the server API as fallback
   console.log(`[WordPress] Exhausted ${maxRetries} retries, using fallback`);
+  
+  // Store the retries exhausted status for UI reporting
+  localStorage.setItem('wp_sync_status', JSON.stringify({
+    status: 'warning',
+    type: 'retries_exhausted',
+    message: `Connection issues after ${maxRetries} attempts. Using cached content.`,
+    timestamp: Date.now(),
+    errorDetails: currentError?.message || 'Unknown error'
+  }));
+  
   return await fallbackToServerAPI(options, currentError);
 }
 
@@ -457,6 +482,16 @@ async function fallbackToServerAPI(options: FetchPostsOptions, error?: any) {
     console.error('[WordPress] Both primary and fallback fetches failed:');
     console.error('- Original error:', error);
     console.error('- Fallback error:', fallbackError);
+    
+    // Store the complete failure status for UI reporting
+    localStorage.setItem('wp_sync_status', JSON.stringify({
+      status: 'error',
+      type: 'complete_failure',
+      message: 'Unable to fetch content: both WordPress API and server fallback failed',
+      timestamp: Date.now(),
+      originalError: error instanceof Error ? error.message : 'Unknown error',
+      fallbackError: fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
+    }));
     
     // Format an empty response with error information
     return {
@@ -644,9 +679,9 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
     // Check endpoints in sequence until one succeeds
     for (const endpoint of endpoints) {
       try {
-        // Use a controller to implement timeout
+        // Use a controller to implement timeout (with increased duration)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased from 10s)
         
         const response = await fetch(`${WORDPRESS_API_BASE}${endpoint}`, {
           method: 'HEAD', // Use HEAD to be lightweight
@@ -664,6 +699,14 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
             available: true,
             timestamp: now,
             endpoint
+          }));
+          
+          // Also update the user-facing sync status
+          localStorage.setItem('wp_sync_status', JSON.stringify({
+            status: 'success',
+            type: 'api_available',
+            message: 'WordPress API connection established',
+            timestamp: now
           }));
           
           console.log(`[WordPress] API status check: Available (via ${endpoint})`);
@@ -685,6 +728,14 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
       timestamp: now
     }));
     
+    // Update user-facing sync status for API unavailable
+    localStorage.setItem('wp_sync_status', JSON.stringify({
+      status: 'warning',
+      type: 'api_unavailable',
+      message: 'WordPress API connection unavailable - using cached content',
+      timestamp: now
+    }));
+    
     return false;
   } catch (error) {
     console.warn('[WordPress] API status check failed:', error);
@@ -699,6 +750,15 @@ export async function checkWordPressApiStatus(): Promise<boolean> {
       available: false,
       timestamp: now,
       error: error instanceof Error ? error.message : 'Unknown error'
+    }));
+    
+    // Update user-facing sync status for API check failure
+    localStorage.setItem('wp_sync_status', JSON.stringify({
+      status: 'error',
+      type: 'api_check_error',
+      message: 'Unable to check WordPress API status - using cached content',
+      timestamp: now,
+      errorDetails: error instanceof Error ? error.message : 'Unknown error'
     }));
     
     return false;

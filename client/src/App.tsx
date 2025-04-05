@@ -30,6 +30,8 @@ import { LoadingProvider } from './hooks/use-loading.tsx';
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
 import { initWordPressSync } from './lib/wordpress-sync';
+// Import WordPress sync status component
+import { WordPressSyncStatus } from './components/wordpress-sync-status';
 // Import FeedbackButton component for site-wide feedback
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
@@ -184,6 +186,8 @@ const AppContent = () => {
         <AutoHideNavbar />
         <div className={`w-full min-w-full max-w-full ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
+          {/* Display WordPress sync status notifications */}
+          <WordPressSyncStatus />
           <ErrorBoundary>
             <Switch>
               {/* Auth Routes */}

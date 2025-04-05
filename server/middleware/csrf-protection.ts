@@ -106,20 +106,27 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     // Get the path without the leading '/api' prefix since our routes are mounted at '/api'
     const apiPath = req.path;
     const relPath = req.path.replace(/^\/api/, '');
+    const endpointPath = req.originalUrl.split('?')[0]; // Use originalUrl to handle cases where path might be rewritten
 
-    // Debug output
-    console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);
-    console.log(`Ignore paths:`, ignorePaths);
+    // Debug output only in development to avoid log flooding
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`CSRF checking path: ${req.method} ${req.path} (API relative: ${relPath})`);
+      console.log(`Ignore paths:`, ignorePaths);
+    }
     
-    // Check if either the full path or the relative path (without /api) matches any ignored path
+    // Fix: Check multiple path formats to handle various middleware configurations
     if (
       ignorePaths.some(path => 
         apiPath === path || 
         relPath === path || 
+        endpointPath === path ||
         apiPath.startsWith(path) || 
         relPath.startsWith(path) ||
+        endpointPath.startsWith(path) ||
         // Handle special case for bypass endpoint
-        req.path.endsWith('/csrf-test-bypass')
+        req.path.endsWith('/csrf-test-bypass') ||
+        // Special case for analytics endpoint that's causing issues
+        req.path.includes('/analytics/vitals')
       )
     ) {
       console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
