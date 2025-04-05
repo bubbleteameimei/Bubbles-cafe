@@ -1096,13 +1096,16 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   intensityFactor={8} // Maximum intensity for an extremely disturbing effect
                 />
               </div>
-              <Button
-                variant="outline"
-                className="mt-4 border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
-                onClick={() => setShowHorrorMessage(false)}
-              >
-                <span className="mx-auto text-lg">I understand, I'm sorry</span>
-              </Button>
+              {/* The button is wrapped in a div with no animations to keep it stable */}
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  className="border-[#ff0000]/60 bg-background hover:bg-background/90 text-foreground w-full py-6"
+                  onClick={() => setShowHorrorMessage(false)}
+                >
+                  <span className="mx-auto text-lg font-medium">I understand, I'm sorry</span>
+                </Button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -1113,7 +1116,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         <div 
           className="fixed inset-0 z-[999]" 
           style={{ pointerEvents: 'all' }}
-          // This div blocks all interactions with the page behind it
+          aria-hidden="true"
+          /* This div blocks all interactions with the page behind it */
         />
       )}
       
@@ -1245,16 +1249,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           </Dialog>
         </div>
       
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.article
+        <article
             key={currentPost.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ 
-              duration: 0.2, // Reduced duration for faster transitions
-              ease: "easeOut" // Simpler easing for better performance
-            }}
             className="prose dark:prose-invert px-6 md:px-6 pt-0 w-full max-w-none"
           >
             <div className="flex flex-col items-center mb-2 mt-0">
@@ -1588,8 +1584,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 </div>
               </div>
             </div>
-          </motion.article>
-        </AnimatePresence>
+          </article>
 
         {/* Bottom navigation buttons */}
         <div className={`mt-6 mb-8 flex justify-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
