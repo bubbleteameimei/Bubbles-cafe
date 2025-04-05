@@ -95,9 +95,7 @@ app.use(validateCsrfToken({
     '/api/wordpress/sync',
     '/api/wordpress/sync/status',
     '/api/wordpress/posts',
-    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection - GET, POST 
-    '/api/reader/bookmarks/', // Make sure the trailing slash version is also excluded
-    '/api/bookmarks', // Also exclude authenticated bookmarks API
+    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection
     '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
   ]
 }));
@@ -243,7 +241,7 @@ async function startServer() {
       // Register email service routes
       registerEmailServiceRoutes(app);
       
-      // Register bookmark routes - only once to avoid duplicates
+      // Register bookmark routes
       registerBookmarkRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)
@@ -280,7 +278,7 @@ async function startServer() {
       // Register email service routes
       registerEmailServiceRoutes(app);
       
-      // Register bookmark routes - only once to avoid duplicates
+      // Register bookmark routes
       registerBookmarkRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)

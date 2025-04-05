@@ -14,5 +14,14 @@ declare module 'express-session' {
       fullName?: string;
       bio?: string;
     };
+    anonymousBookmarks?: {
+      [postId: string]: {
+        notes: string | null;
+        tags: string[] | null;
+        lastPosition: string;
+        createdAt: string;
+      }
+    };
+    csrfToken?: string;
   }
 }

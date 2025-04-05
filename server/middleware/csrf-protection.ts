@@ -101,6 +101,12 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
     if (ignoreMethods.includes(req.method)) {
       return next();
     }
+    
+    // Skip if the bypass flag is set by another middleware
+    if ((req as any)._csrfBypassApproved === true) {
+      console.log(`CSRF validation skipped for ${req.method} ${req.path} (bypass flag set)`);
+      return next();
+    }
 
     // Skip validation for ignored paths
     // Get the path without the leading '/api' prefix since our routes are mounted at '/api'
@@ -128,7 +134,9 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         // Special cases for analytics endpoints that are exempt from CSRF
         req.path.includes('/analytics/vitals') ||
         req.path.includes('/analytics/pageview') ||
-        req.path.includes('/analytics/interaction')
+        req.path.includes('/analytics/interaction') ||
+        // Special case for reader bookmarks endpoints
+        req.path.includes('/reader/bookmarks')
       )
     ) {
       console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);
