@@ -1,216 +1,369 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "wouter";
-import { type Post } from "@shared/schema";
-import { Edit, Trash2, Eye, Loader2 } from "lucide-react";
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Eye, Edit, Trash2, Check, X, Loader2, BookOpen, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import PostEditor from "@/components/admin/post-editor";
 
-interface PostMetadata {
-  isCommunityPost?: boolean;
-  isSecret?: boolean;
-  status?: 'pending' | 'approved';
-  isApproved?: boolean;
+export interface Post {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  status: "published" | "draft" | "pending";
+  createdAt: string;
+  updatedAt: string;
+  categories: string[];
+  featuredImage?: string;
+  authorId?: string;
+  authorName?: string;
+  views: number;
+  sourceType: "wordpress" | "manual" | "community";
 }
 
-interface PostWithMetadata extends Post {
-  metadata: PostMetadata;
-}
-
-export default function AdminContentPage() {
-  const { user, isLoading: authLoading } = useAuth();
+export default function ContentPage() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [deletePostId, setDeletePostId] = useState<number | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-  const { data, isLoading } = useQuery<{ posts: PostWithMetadata[], hasMore: boolean }>({
-    queryKey: ["/api/posts"],
+  // Fetch posts with react-query
+  const { data, isLoading, isError, refetch } = useQuery<{posts: Post[], hasMore: boolean}>({
+    queryKey: ['/api/posts'],
     queryFn: async () => {
-      const response = await fetch('/api/posts?limit=50');
-      if (!response.ok) throw new Error('Failed to fetch posts');
+      const response = await fetch('/api/posts');
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
+      }
       return response.json();
     }
   });
+  
+  // Extract posts from the response
+  const posts = data?.posts || [];
 
-  const deleteMutation = useMutation({
-    mutationFn: async (postId: number) => {
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete post');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      toast({
-        title: "Post deleted",
-        description: "The post has been successfully deleted.",
-      });
-      setDeletePostId(null);
-    },
-    onError: (error: Error) => {
+  // Handle editing a post
+  const handleEdit = (post: Post) => {
+    setSelectedPost(post);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle viewing a post
+  const handleView = (post: Post) => {
+    window.open(`/reader/${post.slug}`, '_blank');
+  };
+
+  // Handle deleting a post
+  const handleDelete = (post: Post) => {
+    setSelectedPost(post);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm post deletion
+  const confirmDelete = async () => {
+    if (!selectedPost) return;
+    
+    setIsDeleteLoading(true);
+    try {
+      // For WordPress posts, we'll just hide them from the UI
+      if (selectedPost.sourceType === 'wordpress') {
+        await fetch(`/api/posts/${selectedPost.id}/hide`, {
+          method: 'PUT',
+        });
+        toast({
+          title: "Hidden from listings",
+          description: "The WordPress post has been hidden from listings. You can re-enable it in the WordPress Sync settings.",
+        });
+      } else {
+        // For manual and community posts, we can delete them completely
+        await fetch(`/api/posts/${selectedPost.id}`, {
+          method: 'DELETE',
+        });
+        toast({
+          title: "Post deleted",
+          description: "The post has been permanently deleted.",
+        });
+      }
+      
+      // Close dialog and refresh posts
+      setIsDeleteDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete post:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to delete the post. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteLoading(false);
     }
-  });
+  };
 
-  if (authLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
-        <p className="text-muted-foreground">Verifying access...</p>
-      </div>
-    );
-  }
+  // Filter and search posts
+  const filteredPosts = React.useMemo(() => {
+    if (!posts) return [];
+    
+    return posts.filter(post => {
+      // Filter by status
+      if (statusFilter !== "all" && post.status !== statusFilter) {
+        return false;
+      }
+      
+      // Filter by source
+      if (sourceFilter !== "all" && post.sourceType !== sourceFilter) {
+        return false;
+      }
+      
+      // Search by title, excerpt, or slug
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          post.title.toLowerCase().includes(query) ||
+          post.excerpt?.toLowerCase().includes(query) ||
+          post.slug.toLowerCase().includes(query)
+        );
+      }
+      
+      return true;
+    });
+  }, [posts, searchQuery, statusFilter, sourceFilter]);
 
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    return <Redirect to="/" />;
-  }
-
-  const handleDelete = async (postId: number) => {
-    try {
-      await deleteMutation.mutateAsync(postId);
-    } catch (error) {
-      console.error('Failed to delete post:', error);
-    }
+  // Handle successfully saving a post
+  const handleSaveSuccess = () => {
+    setIsEditDialogOpen(false);
+    refetch();
+    toast({
+      title: "Post updated",
+      description: "The post has been successfully updated.",
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
-        <p className="text-muted-foreground">Loading content...</p>
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-md text-red-800">
+        <h3 className="text-lg font-medium mb-2">Error Loading Posts</h3>
+        <p>Failed to load posts. Please try refreshing the page.</p>
+        <Button 
+          onClick={() => refetch()} 
+          variant="outline" 
+          className="mt-4"
+        >
+          Retry
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-bold">Content Management</h1>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => window.location.href = '/submit-story'}
-          className="flex items-center gap-2"
-        >
-          Create New Story
-        </Button>
-      </div>
-
-      <div className="grid gap-6">
-        {data?.posts.map((post) => (
-          <Card key={post.id} className="relative">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl font-bold">{post.title}</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    By {post.authorId} • Created {new Date(post.createdAt).toLocaleDateString()}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {post.metadata && (
-                    <>
-                      {post.metadata.isCommunityPost && (
-                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500">
-                          Community Post
-                        </Badge>
-                      )}
-                      {post.metadata.isSecret && (
-                        <Badge variant="secondary" className="bg-purple-500/10 text-purple-500">
-                          Secret
-                        </Badge>
-                      )}
-                      {post.metadata.status === 'pending' && (
-                        <Badge variant="secondary" className="bg-orange-500/10 text-orange-500">
-                          Pending Review
-                        </Badge>
-                      )}
-                      {post.metadata.status === 'approved' && (
-                        <Badge variant="secondary" className="bg-green-500/10 text-green-500">
-                          Approved
-                        </Badge>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground line-clamp-2">{post.excerpt}</p>
-              <div className="mt-4 flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => window.location.href = `/reader/${post.slug || post.id}`}
-                >
-                  <Eye className="h-4 w-4" /> View
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => window.location.href = `/submit-story?edit=${post.id}`}
-                >
-                  <Edit className="h-4 w-4" /> Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 text-red-500 hover:text-red-600"
-                  onClick={() => setDeletePostId(post.id)}
-                >
-                  <Trash2 className="h-4 w-4" /> Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <AlertDialog open={deletePostId !== null} onOpenChange={() => setDeletePostId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the post
-              and all associated data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-500 hover:bg-red-600"
-              onClick={() => {
-                if (deletePostId) {
-                  handleDelete(deletePostId);
-                }
-              }}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+          <CardTitle>Story Management</CardTitle>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search stories..."
+                className="px-3 py-2 bg-background border rounded-md w-full sm:w-64"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select
+              className="px-3 py-2 bg-background border rounded-md"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
             >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <option value="all">All Status</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+            </select>
+            <select
+              className="px-3 py-2 bg-background border rounded-md"
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+            >
+              <option value="all">All Sources</option>
+              <option value="wordpress">WordPress</option>
+              <option value="manual">Manual</option>
+              <option value="community">Community</option>
+            </select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPosts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No stories found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredPosts.map((post) => (
+                    <TableRow key={post.id}>
+                      <TableCell className="font-medium">{post.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          post.status === 'published' ? 'default' : 
+                          post.status === 'draft' ? 'outline' : 
+                          'secondary'
+                        }>
+                          {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          post.sourceType === 'wordpress' ? 'default' : 
+                          post.sourceType === 'manual' ? 'outline' : 
+                          'secondary'
+                        }>
+                          {post.sourceType === 'wordpress' && <ExternalLink className="h-3 w-3 mr-1 inline" />}
+                          {post.sourceType === 'manual' && <BookOpen className="h-3 w-3 mr-1 inline" />}
+                          {post.sourceType.charAt(0).toUpperCase() + post.sourceType.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {post.updatedAt ? format(new Date(post.updatedAt), 'MMM dd, yyyy') : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleView(post)}
+                            title="View Story"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(post)}
+                            title="Edit Story"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(post)}
+                            title="Delete Story"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[800px]" aria-describedby="edit-story-description">
+          <DialogHeader>
+            <DialogTitle>Edit Story</DialogTitle>
+            <DialogDescription id="edit-story-description">
+              Make changes to the story content, metadata, and settings.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPost && (
+            <PostEditor 
+              // @ts-ignore - post is defined in PostEditorProps
+              post={selectedPost} 
+              onClose={() => setIsEditDialogOpen(false)}
+              onSaveSuccess={handleSaveSuccess}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Post Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent aria-describedby="delete-story-description">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription id="delete-story-description">
+              {selectedPost?.sourceType === 'wordpress' 
+                ? "This story was imported from WordPress. It will be hidden from listings but can be re-synced later."
+                : "This action cannot be undone. The story will be permanently deleted from the system."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="font-medium">
+              Are you sure you want to {selectedPost?.sourceType === 'wordpress' ? 'hide' : 'delete'} "{selectedPost?.title}"?
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleteLoading}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleteLoading}
+            >
+              {isDeleteLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {selectedPost?.sourceType === 'wordpress' ? 'Hide' : 'Delete'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

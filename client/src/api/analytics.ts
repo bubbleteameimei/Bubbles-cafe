@@ -4,6 +4,8 @@
  * Functions for interacting with the analytics API endpoints.
  */
 
+import { ReadingTimeAnalytics } from '@/types/analytics';
+
 export interface SiteAnalytics {
   totalViews: number;
   uniqueVisitors: number;
@@ -15,6 +17,42 @@ export interface DeviceDistribution {
   desktop: number;
   mobile: number;
   tablet: number;
+}
+
+/**
+ * Fetches reading time analytics data - uses public endpoint that doesn't require authentication
+ */
+export async function getReadingTimeAnalytics(): Promise<ReadingTimeAnalytics> {
+  const response = await fetch('/api/analytics/reading-time', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch reading time analytics');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Fetches device analytics data - uses public endpoint that doesn't require authentication
+ */
+export async function getDeviceAnalytics(): Promise<any> {
+  const response = await fetch('/api/analytics/devices', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch device analytics');
+  }
+  
+  return response.json();
 }
 
 /**
@@ -122,4 +160,22 @@ export async function recordInteraction(
   } catch (error) {
     console.warn(`Failed to record ${interactionType} interaction:`, error);
   }
+}
+
+/**
+ * Fetches engagement metrics - uses public endpoint that doesn't require authentication
+ */
+export async function getEngagementMetrics(): Promise<any> {
+  const response = await fetch('/api/analytics/engagement', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch engagement metrics');
+  }
+  
+  return response.json();
 }

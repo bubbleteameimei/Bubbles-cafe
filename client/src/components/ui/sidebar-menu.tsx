@@ -259,9 +259,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           isActive={
                             location === '/admin/stories' || 
                             location === '/admin/content' || 
-                            location === '/admin/wordpress-sync'
+                            location === '/admin/wordpress-sync' ||
+                            location === '/admin/content-management'
                           }
-                          onClick={() => handleNavigation('/admin/content')}
+                          onClick={() => handleNavigation('/admin/content-management')}
                           className={submenuItemClass}
                         >
                           <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />

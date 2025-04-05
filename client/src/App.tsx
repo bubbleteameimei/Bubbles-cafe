@@ -107,6 +107,7 @@ import AdminContentPage from './pages/admin/content';
 import AdminDashboardPage from './pages/admin/dashboard';
 import AdminSiteStatisticsPage from './pages/admin/site-statistics';
 import AdminWordPressSyncPage from './pages/admin/WordPressSyncPage';
+import AdminContentManagementPage from './pages/admin/content-management';
 import ResetPasswordPage from './pages/reset-password';
 
 // Error pages
@@ -283,6 +284,7 @@ const AppContent = () => {
               <ProtectedRoute path="/admin/dashboard" component={AdminDashboardPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/site-statistics" component={AdminSiteStatisticsPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/wordpress-sync" component={AdminWordPressSyncPage} requireAdmin={true} />
+              <ProtectedRoute path="/admin/content-management" component={AdminContentManagementPage} requireAdmin={true} />
                 
               {/* 404 fallback */}
               <Route>

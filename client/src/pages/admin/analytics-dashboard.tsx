@@ -5,6 +5,8 @@ import { DeviceAnalytics } from '@/components/analytics/device-analytics'
 import { ReadingAnalytics } from '@/components/analytics/reading-analytics'
 import { useQuery } from '@tanstack/react-query'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getReadingTimeAnalytics, getEngagementMetrics } from '@/api/analytics'
+import { ReadingTimeAnalytics } from '@/types/analytics'
 import {
   Card,
   CardContent,
@@ -47,15 +49,19 @@ export default function AnalyticsDashboard() {
     returning: number;
   }
   
-  // Query for site analytics summary data
-  const { data: analyticsData, isLoading: isLoadingSite, error: siteError, refetch: refetchSite } = useQuery<SiteAnalytics>({
-    queryKey: ['/api/analytics/site', refreshKey],
+  // Use the analytics functions imported at the top of the file
+  
+  // Query for site analytics summary data - using explicit query function with correct type
+  const { data: analyticsData, isLoading: isLoadingSite, error: siteError, refetch: refetchSite } = useQuery<ReadingTimeAnalytics>({
+    queryKey: ['/api/analytics/reading-time', refreshKey],
+    queryFn: getReadingTimeAnalytics,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
   
-  // Query for user engagement data
+  // Query for user engagement data - using explicit query function
   const { data: engagementData, isLoading: isLoadingEngagement, error: engagementError, refetch: refetchEngagement } = useQuery<EngagementMetrics>({
     queryKey: ['/api/analytics/engagement', refreshKey],
+    queryFn: getEngagementMetrics,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 

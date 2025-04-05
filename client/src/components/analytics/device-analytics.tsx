@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { DeviceAnalytics as DeviceAnalyticsData, PeriodType } from '@/types/analytics'
+import { getDeviceAnalytics } from '@/api/analytics'
 import { createTypedSetState } from '@/utils/types-util'
 import { 
   Card, 
@@ -73,9 +74,10 @@ export function DeviceAnalytics() {
   const [period, setPeriod] = useState<PeriodType>('month')
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Fetch device analytics data
+  // Fetch device analytics data using explicit query function
   const { data, isLoading, error, refetch } = useQuery<DeviceAnalyticsData>({
     queryKey: ['/api/analytics/devices', period, refreshKey],
+    queryFn: getDeviceAnalytics,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 

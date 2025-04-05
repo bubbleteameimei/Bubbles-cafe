@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ReadingTimeAnalytics, TopStory, PeriodType } from '@/types/analytics'
+import { getReadingTimeAnalytics } from '@/api/analytics'
 import { createTypedSetState } from '@/utils/types-util'
 import { 
   Card, 
@@ -36,9 +37,10 @@ export function ReadingAnalytics() {
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('line')
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Fetch reading analytics data
+  // Fetch reading analytics data using explicit query function
   const { data, isLoading, error, refetch } = useQuery<ReadingTimeAnalytics>({
     queryKey: ['/api/analytics/reading-time', period, refreshKey],
+    queryFn: getReadingTimeAnalytics,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 

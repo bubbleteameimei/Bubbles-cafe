@@ -1,191 +1,185 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import MDEditor from '@uiw/react-md-editor';
-import { apiRequest } from '@/lib/queryClient';
-import { queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/hooks/use-auth';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent } from '@/components/ui/card';
-import { THEME_CATEGORIES } from '@/lib/content-analysis';
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { X, Save, Eye, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Post } from "../../pages/admin/content";
 
-// Form schema for post creation/editing
+// Define the theme categories
+const themeCategories = [
+  { id: "gothic", name: "Gothic", description: "Dark, mysterious, and atmospheric" },
+  { id: "haunted", name: "Haunted", description: "Ghosts, spirits, and supernatural phenomena" },
+  { id: "psychological", name: "Psychological", description: "Mind games, unreliable narrators, and mental horror" },
+  { id: "cosmic", name: "Cosmic Horror", description: "Lovecraftian unknown and existential dread" },
+  { id: "folk", name: "Folk Horror", description: "Rural settings, ancient rituals, and isolated communities" },
+  { id: "body", name: "Body Horror", description: "Graphic physical transformations and mutations" },
+  { id: "paranormal", name: "Paranormal", description: "Supernatural entities and phenomena" },
+  { id: "occult", name: "Occult", description: "Rituals, cults, and dark magic" },
+  { id: "monster", name: "Monster", description: "Creatures, beasts, and inhuman threats" },
+  { id: "apocalyptic", name: "Apocalyptic", description: "End of the world scenarios and aftermath" },
+  { id: "science", name: "Science Fiction Horror", description: "Technology gone wrong and alien threats" },
+  { id: "slasher", name: "Slasher", description: "Stalkers, killers, and physical violence" },
+  { id: "survival", name: "Survival Horror", description: "Isolation, limited resources, and desperate circumstances" },
+  { id: "dark-fantasy", name: "Dark Fantasy", description: "Fantastical worlds with horror elements" },
+  { id: "historical", name: "Historical Horror", description: "Horror set in specific historical periods" }
+];
+
+// Define status options
+const statusOptions = [
+  { value: "published", label: "Published" },
+  { value: "draft", label: "Draft" },
+  { value: "pending", label: "Pending Review" }
+];
+
+// Define the form schema
 const postSchema = z.object({
-  title: z.string().min(3, { message: 'Title must be at least 3 characters' }).max(100, { message: 'Title must be at most 100 characters' }),
-  content: z.string().min(50, { message: 'Content must be at least 50 characters' }),
-  summary: z.string().max(300, { message: 'Summary must be at most 300 characters' }).optional(),
-  themeCategory: z.string().optional(),
-  triggerWarnings: z.array(z.string()).optional(),
-  isCommunityPost: z.boolean().optional(),
-  isHidden: z.boolean().optional(),
-  isSecret: z.boolean().optional(),
+  title: z.string().min(3, "Title must be at least 3 characters long"),
+  slug: z.string().min(3, "Slug must be at least 3 characters long").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  excerpt: z.string().optional(),
+  content: z.string().min(10, "Content must be at least 10 characters long"),
+  status: z.enum(["published", "draft", "pending"]),
+  categories: z.array(z.string()).min(1, "Select at least one category"),
+  featuredImage: z.string().optional(),
+  allowComments: z.boolean().default(true),
+  isFeatured: z.boolean().default(false)
 });
 
-type PostFormValues = z.infer<typeof postSchema>;
+export type PostFormValues = z.infer<typeof postSchema>;
 
-interface PostEditorProps {
-  postId?: number;
-  onClose?: () => void;
-  isCommunityPost?: boolean;
+export interface PostEditorProps {
+  post?: Post;
+  onClose: () => void;
+  onSaveSuccess?: () => void;
 }
 
-export default function PostEditor({ postId, onClose, isCommunityPost = false }: PostEditorProps) {
-  const { user } = useAuth();
+export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorProps) {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>('write');
-  const [triggerWarnings, setTriggerWarnings] = useState<string[]>([]);
-  const [customTriggerWarning, setCustomTriggerWarning] = useState<string>('');
+  const [activeTab, setActiveTab] = useState("content");
+  const [isSaving, setIsSaving] = useState(false);
+  const [previewContent, setPreviewContent] = useState("");
 
-  // Common trigger warnings
-  const commonTriggerWarnings = [
-    'Violence', 'Gore', 'Death', 'Suicide', 'Self-harm', 'Sexual content',
-    'Child abuse', 'Animal cruelty', 'Drug use', 'Discrimination'
-  ];
-
-  // Form setup with default values
+  // Set up form with default values
   const form = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: '',
-      content: '',
-      summary: '',
-      themeCategory: '',
-      triggerWarnings: [],
-      isCommunityPost,
-      isHidden: false,
-      isSecret: false,
-    },
+      title: post?.title || "",
+      slug: post?.slug || "",
+      excerpt: post?.excerpt || "",
+      content: post?.content || "",
+      status: post?.status || "draft",
+      categories: post?.categories || [],
+      featuredImage: post?.featuredImage || "",
+      allowComments: true,
+      isFeatured: false
+    }
   });
 
-  // Fetch post data if editing
-  const { isLoading: isLoadingPost } = useQuery({
-    queryKey: [`/api/posts/${postId}`, postId],
-    enabled: !!postId,
-    queryFn: async () => {
-      const post = await apiRequest(`/api/posts/${postId}`);
-      if (post) {
-        // Populate form with existing post data
-        form.reset({
-          title: post.title,
-          content: post.content,
-          summary: post.summary || '',
-          themeCategory: post.metadata?.themeCategory || '',
-          triggerWarnings: post.metadata?.triggerWarnings || [],
-          isCommunityPost: post.metadata?.isCommunityPost || isCommunityPost,
-          isHidden: post.metadata?.isHidden || false,
-          isSecret: post.metadata?.isSecret || false,
-        });
-        
-        // Set trigger warnings state
-        setTriggerWarnings(post.metadata?.triggerWarnings || []);
-      }
-      return post;
-    },
+  // Watch content for preview
+  const contentValue = useWatch({
+    control: form.control,
+    name: "content",
   });
 
-  // Create/update post mutation
-  const { mutate: submitPost, isPending } = useMutation({
-    mutationFn: async (data: PostFormValues) => {
-      // Include all trigger warnings in the form data
-      data.triggerWarnings = triggerWarnings;
+  // Update preview when content changes
+  useEffect(() => {
+    setPreviewContent(contentValue || "");
+  }, [contentValue]);
+
+  // Auto-generate slug from title
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    form.setValue("title", title);
+    
+    // Only auto-generate slug if it hasn't been manually edited or is empty
+    if (!post?.slug) {
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-");
       
-      if (postId) {
-        // Update existing post
-        return apiRequest(`/api/posts/${postId}`, {
-          method: 'PATCH',
-          body: JSON.stringify(data),
-        });
-      } else {
-        // Create new post
-        return apiRequest('/api/posts', {
-          method: 'POST',
-          body: JSON.stringify(data),
-        });
-      }
-    },
-    onSuccess: (data) => {
-      // Show success message
-      toast({
-        title: postId ? 'Post updated' : 'Post created',
-        description: postId 
-          ? 'Your post has been updated successfully.' 
-          : isCommunityPost 
-            ? 'Your story has been submitted for review.'
-            : 'Your post has been created successfully.',
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      
-      // Navigate or close
-      if (onClose) {
-        onClose();
-      } else {
-        navigate(isCommunityPost ? '/community' : '/admin/posts');
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'An error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
+      form.setValue("slug", slug);
+    }
+  };
 
   // Handle form submission
-  const onSubmit = (data: PostFormValues) => {
-    submitPost(data);
-  };
-
-  // Add trigger warning
-  const addTriggerWarning = (warning: string) => {
-    if (warning && !triggerWarnings.includes(warning)) {
-      setTriggerWarnings([...triggerWarnings, warning]);
+  const onSubmit = async (data: PostFormValues) => {
+    setIsSaving(true);
+    
+    try {
+      // Determine if this is a create or update operation
+      const url = post ? `/api/posts/${post.id}` : '/api/posts';
+      const method = post ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save post');
+      }
+      
+      toast({
+        title: post ? "Post Updated" : "Post Created",
+        description: post ? "Your post has been updated successfully." : "Your post has been created successfully.",
+      });
+      
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      } else {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error saving post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
-
-  // Add custom trigger warning
-  const addCustomTriggerWarning = () => {
-    if (customTriggerWarning.trim() && !triggerWarnings.includes(customTriggerWarning.trim())) {
-      setTriggerWarnings([...triggerWarnings, customTriggerWarning.trim()]);
-      setCustomTriggerWarning('');
-    }
-  };
-
-  // Remove trigger warning
-  const removeTriggerWarning = (warning: string) => {
-    setTriggerWarnings(triggerWarnings.filter(w => w !== warning));
-  };
-
-  if (isLoadingPost) {
-    return <div className="text-center py-10">Loading post...</div>;
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Write/Preview tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full mb-6">
-          <TabsTrigger value="write" className="flex-1">Write</TabsTrigger>
-          <TabsTrigger value="preview" className="flex-1">Preview</TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
-        </TabsList>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Write tab */}
-            <TabsContent value="write" className="space-y-6">
+    <div className="space-y-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-3 mb-4">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="content" className="space-y-4">
               <FormField
                 control={form.control}
                 name="title"
@@ -194,11 +188,52 @@ export default function PostEditor({ postId, onClose, isCommunityPost = false }:
                     <FormLabel>Title</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Enter story title" 
-                        {...field}
-                        className="text-xl"
+                        placeholder="Enter post title" 
+                        {...field} 
+                        onChange={handleTitleChange}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Slug</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="enter-post-slug" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The URL-friendly version of the title.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="excerpt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Excerpt</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Brief summary of the post" 
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A short summary displayed in listings and search results.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -211,29 +246,10 @@ export default function PostEditor({ postId, onClose, isCommunityPost = false }:
                   <FormItem>
                     <FormLabel>Content</FormLabel>
                     <FormControl>
-                      <div className="min-h-[300px]">
-                        <MDEditor
-                          height={500}
-                          value={field.value}
-                          onChange={(value) => field.onChange(value || '')}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="summary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Summary</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="A brief summary of your story (optional)" 
-                        {...field}
+                      <Textarea 
+                        placeholder="Write your story content here..." 
+                        className="min-h-[300px] font-mono text-sm"
+                        {...field} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -242,176 +258,231 @@ export default function PostEditor({ postId, onClose, isCommunityPost = false }:
               />
             </TabsContent>
             
-            {/* Preview tab */}
-            <TabsContent value="preview" className="min-h-[200px]">
-              {form.watch('content') ? (
-                <div className="prose dark:prose-invert max-w-none">
-                  <h1 className="text-2xl font-bold mb-6">{form.watch('title') || 'Untitled Story'}</h1>
-                  <MDEditor.Markdown source={form.watch('content')} />
-                </div>
-              ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                  Your preview will appear here. Start writing in the Write tab.
-                </div>
-              )}
-            </TabsContent>
-            
-            {/* Settings tab */}
-            <TabsContent value="settings" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Theme category */}
-                <FormField
-                  control={form.control}
-                  name="themeCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Theme Category</FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a theme category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">None</SelectItem>
-                            {Object.entries(THEME_CATEGORIES).map(([key, value]) => (
-                              <SelectItem key={key} value={key}>
-                                {key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                {/* Settings checkboxes */}
-                {!isCommunityPost && user?.isAdmin && (
-                  <>
+            <TabsContent value="settings" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Publication Settings</CardTitle>
+                    <CardDescription>Configure how and when this post appears</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="isSecret"
+                      name="status"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Secret Story</FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Mark this as a hidden/secret story that requires unlocking
-                            </p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="isHidden"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Hidden</FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Hide this post from the main feed
-                            </p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-              
-              {/* Trigger warnings */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-lg font-medium mb-4">Trigger Warnings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {triggerWarnings.map(warning => (
-                        <Button
-                          key={warning}
-                          variant="secondary"
-                          size="sm"
-                          type="button"
-                          onClick={() => removeTriggerWarning(warning)}
-                          className="flex items-center"
-                        >
-                          {warning} <span className="ml-1">✕</span>
-                        </Button>
-                      ))}
-                      {triggerWarnings.length === 0 && (
-                        <p className="text-sm text-muted-foreground">No trigger warnings added.</p>
-                      )}
-                    </div>
-                    
-                    <div className="pt-2">
-                      <h4 className="text-sm font-medium mb-2">Common Trigger Warnings</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {commonTriggerWarnings.map(warning => (
-                          <Button
-                            key={warning}
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            onClick={() => addTriggerWarning(warning)}
-                            disabled={triggerWarnings.includes(warning)}
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
                           >
-                            {warning}
-                          </Button>
-                        ))}
-                      </div>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {statusOptions.map((status) => (
+                                <SelectItem key={status.value} value={status.value}>
+                                  {status.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Control whether the post is publicly visible.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="featuredImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Featured Image URL</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://example.com/image.jpg" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Image displayed in listings and at the top of the post.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex space-x-4">
+                      <FormField
+                        control={form.control}
+                        name="allowComments"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div>
+                              <FormLabel>Allow Comments</FormLabel>
+                              <FormDescription>
+                                Let readers leave comments on this post.
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                     </div>
                     
-                    <div className="pt-2 flex gap-2">
-                      <Input
-                        placeholder="Add custom trigger warning"
-                        value={customTriggerWarning}
-                        onChange={e => setCustomTriggerWarning(e.target.value)}
-                        className="flex-grow"
+                    <div className="flex space-x-4">
+                      <FormField
+                        control={form.control}
+                        name="isFeatured"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div>
+                              <FormLabel>Featured Story</FormLabel>
+                              <FormDescription>
+                                Highlight this story on the homepage and listings.
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
                       />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={addCustomTriggerWarning}
-                        disabled={!customTriggerWarning.trim()}
-                      >
-                        Add
-                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Theme Categories</CardTitle>
+                    <CardDescription>Select themes that best describe this story</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px] pr-4">
+                      <FormField
+                        control={form.control}
+                        name="categories"
+                        render={() => (
+                          <FormItem>
+                            <div className="space-y-2">
+                              {themeCategories.map((category) => (
+                                <FormField
+                                  key={category.id}
+                                  control={form.control}
+                                  name="categories"
+                                  render={({ field }) => {
+                                    return (
+                                      <FormItem
+                                        key={category.id}
+                                        className="flex items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm"
+                                      >
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value?.includes(category.id)}
+                                            onCheckedChange={(checked) => {
+                                              const updatedValue = checked
+                                                ? [...field.value, category.id]
+                                                : field.value?.filter(
+                                                    (value) => value !== category.id
+                                                  );
+                                              field.onChange(updatedValue);
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <div className="space-y-1">
+                                          <FormLabel className="text-base">
+                                            {category.name}
+                                          </FormLabel>
+                                          <FormDescription>
+                                            {category.description}
+                                          </FormDescription>
+                                        </div>
+                                      </FormItem>
+                                    );
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="preview" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{form.getValues().title || "Post Title"}</CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline">{form.getValues().status}</Badge>
+                    {form.getValues().categories.map((category) => (
+                      <Badge key={category} variant="secondary">
+                        {themeCategories.find(c => c.id === category)?.name || category}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose dark:prose-invert max-w-none">
+                    <div className="mb-4">
+                      {form.getValues().excerpt || "No excerpt provided."}
+                    </div>
+                    <Separator className="my-4" />
+                    <div className="whitespace-pre-wrap">
+                      {previewContent || "No content to preview."}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
-            
-            {/* Submit buttons */}
-            <div className="flex justify-end gap-4 pt-4">
-              <Button variant="outline" type="button" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Submitting...' : postId ? 'Update Story' : 'Submit Story'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </Tabs>
+          </Tabs>
+          
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-1" />
+                  Save {post ? "Changes" : "Post"}
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

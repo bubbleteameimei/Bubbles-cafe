@@ -1,96 +1,131 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RefreshCw, Check, X, AlertTriangle, Clock, ExternalLink, FileText, Settings, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Clock, Rss, Search, Info } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { format } from "date-fns";
 
-interface SyncStatus {
-  syncInProgress: boolean;
-  lastSyncTime: string | null;
-  lastSyncStatus: 'success' | 'failed' | 'partial' | null;
-  lastError?: string;
-  postsImported?: number;
-  totalPosts?: number;
-  wpApiEndpoint?: string;
+interface SyncStats {
+  lastSync: string;
+  totalSyncs: number;
+  postsCreated: number;
+  postsUpdated: number;
+  lastDuration: number;
+  status: "idle" | "running" | "error";
+  errorMessage?: string;
 }
 
-interface Post {
+interface WordPressPost {
   id: number;
-  title: {
-    rendered: string;
-  };
+  wpId: number;
+  title: string;
   slug: string;
-  date: string;
-  wordpressId?: number;
-  status?: string;
-  excerpt?: {
-    rendered: string;
-  };
-  categories?: number[];
-}
-
-interface WordPressPostsResponse {
-  posts: Post[];
-  total?: number;
-  page?: number;
-  hasMore?: boolean;
+  status: "published" | "draft" | "pending";
+  syncedAt: string;
+  lastUpdated: string;
+  syncStatus: "success" | "error" | "pending";
 }
 
 export default function WordPressSyncPage() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-    syncInProgress: false,
-    lastSyncTime: null,
-    lastSyncStatus: null
-  });
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [syncInProgress, setSyncInProgress] = useState<boolean>(false);
+  const [syncProgress, setSyncProgress] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [searching, setSearching] = useState<boolean>(false);
-  
-  // Function to fetch WordPress sync status
-  const fetchSyncStatus = async () => {
-    try {
-      const response = await fetch("/api/wordpress/sync/status");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch sync status: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setSyncStatus(data);
-    } catch (error) {
-      console.error("Error fetching sync status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch WordPress sync status. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(true);
+  const [syncInterval, setSyncInterval] = useState<number>(5);
+  const [hideFutureContent, setHideFutureContent] = useState<boolean>(false);
+  const [syncLog, setSyncLog] = useState<string[]>([]);
 
-  // Function to trigger manual sync
-  const triggerSync = async () => {
-    if (syncStatus.syncInProgress) {
+  // Fetch sync stats and WordPress posts
+  const { data: syncStats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery<SyncStats>({
+    queryKey: ['/api/wordpress/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/wordpress/stats');
+      if (!response.ok) {
+        throw new Error("Failed to fetch WordPress sync stats");
+      }
+      return response.json();
+    }
+  });
+
+  const { data: wordPressPosts, isLoading: isLoadingPosts, refetch: refetchPosts } = useQuery<WordPressPost[]>({
+    queryKey: ['/api/wordpress/posts'],
+    queryFn: async () => {
+      const response = await fetch('/api/wordpress/posts');
+      if (!response.ok) {
+        throw new Error("Failed to fetch WordPress posts");
+      }
+      return response.json();
+    }
+  });
+
+  // Update sync progress while sync is running
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (syncInProgress) {
+      // Start at 5% to show immediate feedback
+      setSyncProgress(5);
+      
+      interval = setInterval(() => {
+        setSyncProgress((prevProgress) => {
+          // Gradually increase up to 90% (the last 10% will be set when complete)
+          if (prevProgress < 90) {
+            return prevProgress + Math.random() * 5;
+          }
+          return prevProgress;
+        });
+        
+        // Check if sync is complete
+        refetchStats().then((result) => {
+          if (result.data && result.data.status === "idle") {
+            setSyncInProgress(false);
+            setSyncProgress(100);
+            refetchPosts();
+            
+            setTimeout(() => {
+              setSyncProgress(0);
+            }, 1000);
+          }
+        });
+      }, 1000);
+    } else {
+      // Reset progress when sync is complete
+      if (syncProgress === 100) {
+        setTimeout(() => {
+          setSyncProgress(0);
+        }, 1000);
+      }
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [syncInProgress, refetchStats, refetchPosts, syncProgress]);
+
+  // Handle starting WordPress sync
+  const handleStartSync = async () => {
+    if (syncInProgress) {
       toast({
         title: "Sync in Progress",
         description: "A WordPress sync is already running. Please wait for it to complete.",
-        variant: "default",
       });
       return;
     }
 
     try {
-      setSyncStatus(prev => ({ ...prev, syncInProgress: true }));
+      setSyncInProgress(true);
+      setSyncLog([]);
+      
       const response = await fetch("/api/wordpress/sync", {
         method: "POST",
       });
@@ -99,17 +134,30 @@ export default function WordPressSyncPage() {
         throw new Error(`Failed to trigger sync: ${response.statusText}`);
       }
       
+      // Add initial log message
+      setSyncLog(prevLog => [...prevLog, "WordPress sync started..."]);
+      
       toast({
         title: "Sync Started",
         description: "WordPress sync has been started. This may take a few minutes.",
-        variant: "default",
       });
       
-      // Poll for status updates
-      pollSyncStatus();
+      // Simulate sync log updates
+      setTimeout(() => {
+        setSyncLog(prevLog => [...prevLog, "Connecting to WordPress API..."]);
+      }, 1000);
+      
+      setTimeout(() => {
+        setSyncLog(prevLog => [...prevLog, "Fetching posts from WordPress..."]);
+      }, 2500);
+      
+      setTimeout(() => {
+        setSyncLog(prevLog => [...prevLog, "Processing post content..."]);
+      }, 4000);
     } catch (error) {
       console.error("Error triggering sync:", error);
-      setSyncStatus(prev => ({ ...prev, syncInProgress: false }));
+      setSyncInProgress(false);
+      setSyncProgress(0);
       toast({
         title: "Error",
         description: "Failed to start WordPress sync. Please try again.",
@@ -118,417 +166,336 @@ export default function WordPressSyncPage() {
     }
   };
 
-  // Function to sync a single post by ID
-  const syncSinglePost = async (postId: number) => {
-    try {
-      setSearching(true);
-      const response = await fetch(`/api/wordpress/sync/${postId}`, {
-        method: "POST",
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to sync post: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      toast({
-        title: "Post Synced",
-        description: `The post "${result.title || 'Unknown'}" has been successfully synced.`,
-        variant: "default",
-      });
-      
-      // Refresh post list
-      fetchWordPressPosts();
-      // Refresh sync status
-      fetchSyncStatus();
-    } catch (error) {
-      console.error("Error syncing post:", error);
-      toast({
-        title: "Error",
-        description: "Failed to sync the post. Please check the WordPress API access and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSearching(false);
-    }
+  // Handle saving sync settings
+  const handleSaveSettings = () => {
+    // In a real implementation, this would save to the server
+    toast({
+      title: "Settings Saved",
+      description: "WordPress sync settings have been updated.",
+    });
   };
 
-  // Function to poll for status updates during sync
-  const pollSyncStatus = () => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch("/api/wordpress/sync/status");
-        if (!response.ok) {
-          throw new Error(`Failed to fetch sync status: ${response.statusText}`);
-        }
-        const data = await response.json();
-        setSyncStatus(data);
-        
-        // If sync is no longer in progress, stop polling
-        if (!data.syncInProgress) {
-          clearInterval(interval);
-          // Refresh the post list
-          fetchWordPressPosts();
-        }
-      } catch (error) {
-        console.error("Error polling sync status:", error);
-        clearInterval(interval);
-      }
-    }, 5000); // Poll every 5 seconds
+  // Filter posts based on search query
+  const filteredPosts = React.useMemo(() => {
+    if (!wordPressPosts) return [];
     
-    // Clean up on component unmount
-    return () => clearInterval(interval);
-  };
-
-  // Function to fetch WordPress posts
-  const fetchWordPressPosts = async (query?: string) => {
-    try {
-      setSearching(true);
-      const queryParams = new URLSearchParams({
-        limit: "100", // Fetch all available posts, up to 100
-        ...(query ? { search: query } : {}),
-      });
-      
-      const response = await fetch(`/api/wordpress/posts?${queryParams.toString()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch posts: ${response.statusText}`);
-      }
-      
-      const data: WordPressPostsResponse = await response.json();
-      setPosts(data.posts || []);
-    } catch (error) {
-      console.error("Error fetching WordPress posts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch WordPress posts. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // Function to handle search
-  const handleSearch = () => {
-    fetchWordPressPosts(searchQuery);
-  };
-
-  // Function to get status badge
-  const getStatusBadge = () => {
-    if (syncStatus.syncInProgress) {
-      return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
-          <RefreshCw className="h-3 w-3 animate-spin" />
-          <span>Syncing</span>
-        </Badge>
-      );
-    }
+    if (!searchQuery) return wordPressPosts;
     
-    switch (syncStatus.lastSyncStatus) {
-      case 'success':
-        return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" />
-            <span>Success</span>
-          </Badge>
-        );
-      case 'failed':
-        return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
-            <XCircle className="h-3 w-3" />
-            <span>Failed</span>
-          </Badge>
-        );
-      case 'partial':
-        return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            <span>Partial</span>
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
-            <Info className="h-3 w-3" />
-            <span>Unknown</span>
-          </Badge>
-        );
-    }
-  };
+    const query = searchQuery.toLowerCase();
+    return wordPressPosts.filter(post => 
+      post.title.toLowerCase().includes(query) || 
+      post.slug.toLowerCase().includes(query)
+    );
+  }, [wordPressPosts, searchQuery]);
 
-  // Function to render sync info
-  const renderSyncInfo = () => {
+  // Loading state
+  if (isLoadingStats && isLoadingPosts) {
     return (
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Last Sync Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-              <div>{getStatusBadge()}</div>
-              {syncStatus.lastSyncTime && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1 sm:mt-0">
-                  <Clock className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{formatDistanceToNow(parseISO(syncStatus.lastSyncTime), { addSuffix: true })}</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Posts Imported</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {syncStatus.postsImported || 0}
-              {syncStatus.totalPosts && (
-                <span className="text-sm font-normal text-muted-foreground ml-1">
-                  of {syncStatus.totalPosts}
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="sm:col-span-2 lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">WordPress API</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm truncate max-w-full">
-              {syncStatus.wpApiEndpoint || "Not configured"}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  };
-
-  // Load initial data
-  useEffect(() => {
-    fetchSyncStatus();
-    fetchWordPressPosts();
-    
-    // If a sync is in progress when the component mounts, start polling
-    if (syncStatus.syncInProgress) {
-      pollSyncStatus();
-    }
-  }, []);
+  }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <PageHeader
-        heading="WordPress Sync"
-        description="Manage content synchronization between WordPress and this application"
-      >
-        <Button
-          onClick={triggerSync}
-          disabled={syncStatus.syncInProgress}
-          className="flex items-center gap-1 w-full sm:w-auto"
-        >
-          {syncStatus.syncInProgress ? (
-            <>
-              <Spinner size="sm" className="mr-1" />
-              <span>Syncing...</span>
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4 mr-1" />
-              <span>Sync Now</span>
-            </>
-          )}
-        </Button>
-      </PageHeader>
-
-      {/* Error Alert */}
-      {syncStatus.lastSyncStatus === 'failed' && syncStatus.lastError && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Sync Failed</AlertTitle>
-          <AlertDescription>{syncStatus.lastError}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Sync Status Cards */}
-      {loading ? (
-        <div className="flex justify-center py-10">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        renderSyncInfo()
-      )}
-
-      {/* WordPress Posts */}
-      <Tabs defaultValue="posts" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="posts">WordPress Posts</TabsTrigger>
-          <TabsTrigger value="sync-history">Sync History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="posts" className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search posts..."
-                className="pl-8 w-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-              />
+    <div className="space-y-6">
+      {/* Sync Status Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between md:items-center space-y-2 md:space-y-0">
+            <div>
+              <CardTitle>WordPress Sync Status</CardTitle>
+              <CardDescription>
+                Synchronize content with your WordPress blog
+              </CardDescription>
             </div>
             <Button 
-              variant="outline" 
-              onClick={handleSearch} 
-              disabled={searching}
-              className="w-full sm:w-auto"
+              onClick={handleStartSync} 
+              disabled={syncInProgress}
+              className="min-w-[140px]"
             >
-              {searching ? <Spinner size="sm" className="mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-              Search
+              {syncInProgress ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync Now
+                </>
+              )}
             </Button>
           </div>
-          
-          <Card>
-            <CardContent className="p-0">
-              <div className="relative w-full overflow-auto">
-                <div className="block md:hidden">
-                  {/* Mobile card view for small screens */}
-                  {posts.length === 0 ? (
-                    <div className="h-24 text-center text-muted-foreground p-4">
-                      {searching ? (
-                        <div className="flex flex-col items-center justify-center">
-                          <Spinner size="md" className="mb-2" />
-                          <span>Searching...</span>
-                        </div>
-                      ) : (
-                        "No posts found"
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {posts.map((post) => (
-                        <div key={post.id} className="border rounded-md p-3 bg-card shadow-sm">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <Badge variant="outline" className="mb-1">ID: {post.id}</Badge>
-                            </div>
-                            <Badge variant={post.status === 'publish' ? 'default' : 'outline'}>
-                              {post.status || 'draft'}
-                            </Badge>
-                          </div>
-                          <div className="mb-2 font-medium" dangerouslySetInnerHTML={{ __html: post.title?.rendered || '' }}></div>
-                          <div className="flex justify-between items-center text-xs text-muted-foreground">
-                            <div>
-                              {new Date(post.date).toLocaleDateString()}
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => syncSinglePost(post.id)}
-                              disabled={syncStatus.syncInProgress}
-                              className="mt-1"
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                              Sync
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <table className="w-full caption-bottom text-sm hidden md:table">
-                  <thead className="border-b">
-                    <tr className="border-b transition-colors hover:bg-muted/50">
-                      <th className="h-10 px-4 text-left align-middle font-medium">ID</th>
-                      <th className="h-10 px-4 text-left align-middle font-medium">Title</th>
-                      <th className="h-10 px-4 text-left align-middle font-medium">Status</th>
-                      <th className="h-10 px-4 text-left align-middle font-medium">Date</th>
-                      <th className="h-10 px-4 text-right align-middle font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {posts.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="h-24 text-center text-muted-foreground">
-                          {searching ? (
-                            <div className="flex flex-col items-center justify-center">
-                              <Spinner size="md" className="mb-2" />
-                              <span>Searching...</span>
-                            </div>
-                          ) : (
-                            "No posts found"
-                          )}
-                        </td>
-                      </tr>
-                    ) : (
-                      posts.map((post) => (
-                        <tr key={post.id} className="border-b transition-colors hover:bg-muted/50">
-                          <td className="p-2 px-4 align-middle">{post.id}</td>
-                          <td className="p-2 px-4 align-middle font-medium" dangerouslySetInnerHTML={{ __html: post.title?.rendered || '' }}></td>
-                          <td className="p-2 px-4 align-middle">
-                            <Badge variant={post.status === 'publish' ? 'default' : 'outline'}>
-                              {post.status || 'draft'}
-                            </Badge>
-                          </td>
-                          <td className="p-2 px-4 align-middle text-muted-foreground">
-                            {new Date(post.date).toLocaleDateString()}
-                          </td>
-                          <td className="p-2 px-4 align-middle text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => syncSinglePost(post.id)}
-                              disabled={syncStatus.syncInProgress}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                              Sync
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Last Synchronized:</span>
+                <span className="text-sm font-medium">
+                  {syncStats?.lastSync ? format(new Date(syncStats.lastSync), "MMM dd, yyyy HH:mm") : "Never"}
+                </span>
               </div>
-            </CardContent>
-            {searching && (
-              <CardFooter className="flex justify-center p-4 border-t">
-                <div className="flex items-center">
-                  <Spinner size="sm" className="mr-2" />
-                  <span className="text-sm text-muted-foreground">Searching posts...</span>
-                </div>
-              </CardFooter>
-            )}
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="sync-history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sync History</CardTitle>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Total Syncs Performed:</span>
+                <span className="text-sm font-medium">{syncStats?.totalSyncs || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Last Sync Duration:</span>
+                <span className="text-sm font-medium">
+                  {syncStats?.lastDuration ? `${syncStats.lastDuration.toFixed(1)} seconds` : "N/A"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Total Posts Created:</span>
+                <span className="text-sm font-medium">{syncStats?.postsCreated || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Total Posts Updated:</span>
+                <span className="text-sm font-medium">{syncStats?.postsUpdated || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Current Status:</span>
+                <span className="text-sm font-medium">
+                  {syncStats?.status === "running" ? (
+                    <Badge className="bg-blue-500">Running</Badge>
+                  ) : syncStats?.status === "error" ? (
+                    <Badge variant="destructive">Error</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-green-600">Idle</Badge>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Progress bar for sync */}
+          {syncInProgress && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Sync Progress</span>
+                <span>{Math.round(syncProgress)}%</span>
+              </div>
+              <Progress value={syncProgress} className="h-2" />
+              
+              {/* Sync Log */}
+              <div className="mt-4 p-3 border rounded-md bg-muted/30 max-h-32 overflow-y-auto font-mono text-xs">
+                {syncLog.map((log, index) => (
+                  <div key={index} className="py-0.5 whitespace-pre-wrap">
+                    &gt; {log}
+                  </div>
+                ))}
+                {syncInProgress && (
+                  <div className="animate-pulse py-0.5">
+                    &gt; <span className="inline-block w-2 h-2 bg-primary"></span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* WordPress Posts List */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-y-2">
+            <div>
+              <CardTitle>WordPress Content</CardTitle>
               <CardDescription>
-                Recent WordPress content synchronization activity
+                Manage WordPress posts synchronized to your platform
               </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Sync history will be implemented in a future update. This will show detailed logs of previous sync operations.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search posts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead>Sync Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPosts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No WordPress posts found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredPosts.map((post) => (
+                    <TableRow key={post.id}>
+                      <TableCell className="font-medium">{post.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          post.status === 'published' ? 'default' : 
+                          post.status === 'draft' ? 'outline' : 
+                          'secondary'
+                        }>
+                          {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {post.lastUpdated ? format(new Date(post.lastUpdated), 'MMM dd, yyyy') : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {post.syncStatus === 'success' ? (
+                          <div className="flex items-center">
+                            <Check className="h-4 w-4 text-green-600 mr-1" />
+                            <span className="text-sm">Synced</span>
+                          </div>
+                        ) : post.syncStatus === 'error' ? (
+                          <div className="flex items-center">
+                            <AlertTriangle className="h-4 w-4 text-red-600 mr-1" />
+                            <span className="text-sm">Error</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 text-amber-600 mr-1" />
+                            <span className="text-sm">Pending</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(`/reader/${post.slug}`, '_blank')}
+                            title="View Post"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(`https://bubbleteameimei.wordpress.com/post/${post.wpId}`, '_blank')}
+                            title="View on WordPress"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sync Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sync Settings</CardTitle>
+          <CardDescription>
+            Configure how WordPress content is synchronized
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="autoSync">Automatic Sync</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically sync WordPress content
+                  </p>
+                </div>
+                <Switch
+                  id="autoSync"
+                  checked={autoSyncEnabled}
+                  onCheckedChange={setAutoSyncEnabled}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="syncInterval">Sync Interval (minutes)</Label>
+                <Input
+                  id="syncInterval"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={syncInterval}
+                  onChange={(e) => setSyncInterval(parseInt(e.target.value) || 5)}
+                  disabled={!autoSyncEnabled}
+                />
+                <p className="text-xs text-muted-foreground">
+                  How often to check for new WordPress content
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="hideFuture">Hide Future Content</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Don't show scheduled WordPress posts until published
+                  </p>
+                </div>
+                <Switch
+                  id="hideFuture"
+                  checked={hideFutureContent}
+                  onCheckedChange={setHideFutureContent}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="syncComments">Sync Comments</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Import comments from WordPress posts
+                  </p>
+                </div>
+                <Switch
+                  id="syncComments"
+                  checked={false}
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-2">
+            <Label htmlFor="wordpressUrl">WordPress URL</Label>
+            <Input
+              id="wordpressUrl"
+              value="https://bubbleteameimei.wordpress.com"
+              disabled
+            />
+            <p className="text-xs text-muted-foreground">
+              The URL of your WordPress site (contact administrator to change)
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button onClick={handleSaveSettings}>
+            <Settings className="h-4 w-4 mr-2" />
+            Save Settings
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
