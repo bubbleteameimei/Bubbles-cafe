@@ -9,7 +9,7 @@ interface EnhancedPageTransitionProps {
 
 export function EnhancedPageTransition({
   children,
-  minLoadingTime = 850, // Minimum time to show loading screen for visual consistency
+  minLoadingTime = 1500, // Minimum time to show loading screen (1.5 seconds)
 }: EnhancedPageTransitionProps) {
   const [location] = useLocation();
   const [showLoading, setShowLoading] = useState(false);
