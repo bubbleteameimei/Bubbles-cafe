@@ -1,12 +1,12 @@
 /* From Uiverse.io by mobinkakei */ 
-.loader {
+.eyeball-loader {
   position: relative;
   width: 108px;
   display: flex;
   justify-content: space-between;
 }
-.loader::after,
-.loader::before {
+.eyeball-loader::after,
+.eyeball-loader::before {
   content: "";
   display: inline-block;
   width: 48px;

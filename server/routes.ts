@@ -487,10 +487,10 @@ export function registerRoutes(app: Express): Server {
       .from(posts)
       .orderBy(desc(posts.createdAt));
       
-      console.log('[GET /api/posts/admin] Retrieved posts for theme management:', allPosts.length);
+      console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', allPosts.length);
       res.json(allPosts);
     } catch (error) {
-      console.error('[GET /api/posts/admin] Error fetching admin posts:', error);
+      console.error('[GET /api/posts/admin/themes] Error fetching admin posts for theme management:', error);
       res.status(500).json({ error: 'Failed to fetch posts' });
     }
   });
@@ -2386,8 +2386,8 @@ Message ID: ${savedMessage.id}
     }
   });
   
-  // Admin API for fetching all posts with theme data
-  app.get('/api/posts/admin', async (req, res) => {
+  // Admin API for fetching all posts (for admin dashboard, not themes page)
+  app.get('/api/posts/admin', isAuthenticated, async (req, res) => {
     try {
       // Check if user is admin
       if (!req.session?.user?.id) {
@@ -2414,52 +2414,11 @@ Message ID: ${savedMessage.id}
       .from(posts)
       .orderBy(desc(posts.createdAt));
       
-      console.log('[GET /api/posts/admin] Retrieved posts for theme management:', allPosts.length);
+      console.log('[GET /api/posts/admin] Retrieved posts for admin dashboard:', allPosts.length);
       res.json(allPosts);
     } catch (error) {
-      console.error('[GET /api/posts/admin] Error fetching admin posts:', error);
+      console.error('[GET /api/posts/admin] Error fetching admin dashboard posts:', error);
       res.status(500).json({ error: 'Failed to fetch posts' });
-    }
-  });
-  
-  // API for updating post theme
-  app.patch('/api/posts/:id/theme', async (req, res) => {
-    try {
-      const postId = parseInt(req.params.id);
-      const { theme_category } = req.body;
-      
-      // Validate input
-      if (!theme_category) {
-        return res.status(400).json({ error: 'Theme category is required' });
-      }
-      
-      // Check if user is admin
-      if (!req.session?.user?.id) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      
-      const user = await storage.getUser(req.session.user.id);
-      
-      if (!user?.isAdmin) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      
-      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}`);
-      
-      // Update post theme
-      const updatedPost = await storage.updatePost(postId, { themeCategory: theme_category });
-      
-      res.json({
-        success: true,
-        post: {
-          id: updatedPost.id,
-          title: updatedPost.title,
-          theme_category: updatedPost.themeCategory
-        }
-      });
-    } catch (error) {
-      console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
-      res.status(500).json({ error: 'Failed to update post theme' });
     }
   });
 

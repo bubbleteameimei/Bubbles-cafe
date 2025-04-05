@@ -9,7 +9,7 @@ export default function NotFound() {
         <CardContent className="pt-6">
           {/* Animated eyeball loader */}
           <div className="flex justify-center mb-6">
-            <span className="loader" aria-hidden="true"></span>
+            <span className="eyeball-loader" aria-hidden="true"></span>
           </div>
           
           <div className="flex mb-4 gap-2">
