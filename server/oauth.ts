@@ -239,16 +239,19 @@ export function setupOAuth(app: Express) {
   app.get('/api/auth/profile', isAuthenticated, (req: Request, res: Response) => {
     const user = req.user as any;
     const metadata = user.metadata || {};
+    // Type assertion to avoid TypeScript errors
+    const typedMetadata = metadata as Record<string, any>;
+    
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
-      // Use metadata values since the columns don't exist in the database
-      avatar: metadata.photoURL || null,
-      fullName: metadata.displayName || null,
-      bio: metadata.bio || null
+      // Use metadata values with fallbacks for different naming conventions
+      avatar: typedMetadata.avatar || typedMetadata.photoURL || null,
+      fullName: typedMetadata.fullName || typedMetadata.displayName || null,
+      bio: typedMetadata.bio || null
     });
   });
 
@@ -257,6 +260,8 @@ export function setupOAuth(app: Express) {
     try {
       const user = req.user as any;
       const { username, metadata } = req.body;
+      
+      console.log('[Profile] Received update request with data:', { username, metadata });
       
       // Validate input
       if (username && (username.length < 3 || username.length > 30)) {
@@ -277,15 +282,38 @@ export function setupOAuth(app: Express) {
         updateData.username = username;
       }
       
-      // Handle metadata update
+      // Handle metadata update with improved logging
       if (metadata) {
         const currentMetadata = user.metadata || {};
+        console.log('[Profile] Current metadata:', currentMetadata);
+        
+        // For debugging - log the properties we'll update
+        console.log('[Profile] Updating with:', {
+          displayName: metadata.displayName || metadata.fullName,
+          photoURL: metadata.photoURL || metadata.avatar,
+          bio: metadata.bio
+        });
+        
+        // Support both naming conventions (fullName/displayName, avatar/photoURL)
         updateData.metadata = {
           ...currentMetadata,
-          displayName: metadata.fullName !== undefined ? metadata.fullName : currentMetadata.displayName,
-          photoURL: metadata.avatar !== undefined ? metadata.avatar : currentMetadata.photoURL,
+          // Handle displayName with fallback to fullName
+          displayName: metadata.displayName !== undefined ? metadata.displayName : 
+                      (metadata.fullName !== undefined ? metadata.fullName : currentMetadata.displayName),
+          // Store fullName as well (for client-side compatibility)
+          fullName: metadata.fullName !== undefined ? metadata.fullName : 
+                   (metadata.displayName !== undefined ? metadata.displayName : currentMetadata.fullName || currentMetadata.displayName),
+          // Handle photoURL with fallback to avatar
+          photoURL: metadata.photoURL !== undefined ? metadata.photoURL : 
+                   (metadata.avatar !== undefined ? metadata.avatar : currentMetadata.photoURL),
+          // Store avatar as well (for client-side compatibility)
+          avatar: metadata.avatar !== undefined ? metadata.avatar : 
+                (metadata.photoURL !== undefined ? metadata.photoURL : currentMetadata.avatar || currentMetadata.photoURL),
+          // Handle bio
           bio: metadata.bio !== undefined ? metadata.bio : currentMetadata.bio
         };
+        
+        console.log('[Profile] New merged metadata:', updateData.metadata);
       }
       
       // Only update if there are changes
@@ -294,7 +322,9 @@ export function setupOAuth(app: Express) {
       }
       
       // Save updates
+      console.log('[Profile] Sending update data to storage:', updateData);
       const updatedUser = await storage.updateUser(user.id, updateData);
+      console.log('[Profile] Storage returned updated user:', updatedUser);
       
       // Update session with the latest user data
       if (req.session && req.session.user) {
@@ -309,14 +339,26 @@ export function setupOAuth(app: Express) {
         if (metadata) {
           const updatedMetadata = updatedUser.metadata || {} as UserMetadata;
           
-          // Update full name
-          if (metadata.fullName !== undefined && (updatedMetadata as UserMetadata).displayName !== sessionUser.fullName) {
-            sessionUser.fullName = (updatedMetadata as UserMetadata).displayName;
+          // Update full name - check both field names
+          if ((metadata.fullName !== undefined || metadata.displayName !== undefined)) {
+            // Get the new value preferring fullName then displayName
+            const newFullName = (updatedMetadata as Record<string, any>).fullName || 
+                               (updatedMetadata as Record<string, any>).displayName;
+            // Only update if changed
+            if (newFullName !== sessionUser.fullName) {
+              sessionUser.fullName = newFullName;
+            }
           }
           
-          // Update avatar
-          if (metadata.avatar !== undefined && (updatedMetadata as UserMetadata).photoURL !== sessionUser.avatar) {
-            sessionUser.avatar = (updatedMetadata as UserMetadata).photoURL;
+          // Update avatar - check both field names
+          if ((metadata.avatar !== undefined || metadata.photoURL !== undefined)) {
+            // Get the new value preferring avatar then photoURL
+            const newAvatar = (updatedMetadata as Record<string, any>).avatar || 
+                             (updatedMetadata as Record<string, any>).photoURL;
+            // Only update if changed
+            if (newAvatar !== sessionUser.avatar) {
+              sessionUser.avatar = newAvatar;
+            }
           }
           
           // Update bio
@@ -336,25 +378,36 @@ export function setupOAuth(app: Express) {
         req.session.save((err) => {
           if (err) {
             console.error('[Profile] Error saving session:', err);
+          } else {
+            console.log('[Profile] Session saved successfully');
           }
         });
       }
       
-      // Return updated profile
+      // Return updated profile with improved error handling
       const updatedMetadata = updatedUser.metadata || {};
+      const safeMetadata = typeof updatedMetadata === 'object' ? updatedMetadata : {};
+      
+      // Type assertion to avoid TypeScript errors
+      const typedMetadata = safeMetadata as Record<string, any>;
+      
       res.json({
         id: updatedUser.id,
         username: updatedUser.username,
         email: updatedUser.email,
         isAdmin: updatedUser.isAdmin,
         createdAt: updatedUser.createdAt,
-        avatar: updatedMetadata && typeof updatedMetadata === 'object' && 'photoURL' in updatedMetadata ? updatedMetadata.photoURL : null,
-        fullName: updatedMetadata && typeof updatedMetadata === 'object' && 'displayName' in updatedMetadata ? updatedMetadata.displayName : null,
-        bio: updatedMetadata && typeof updatedMetadata === 'object' && 'bio' in updatedMetadata ? updatedMetadata.bio : null
+        // Support both naming conventions
+        avatar: typedMetadata.avatar || typedMetadata.photoURL || null,
+        fullName: typedMetadata.fullName || typedMetadata.displayName || null,
+        bio: typedMetadata.bio || null
       });
     } catch (error) {
       console.error('[Profile] Error updating user profile:', error);
-      res.status(500).json({ error: 'Failed to update profile' });
+      res.status(500).json({ 
+        error: 'Failed to update profile',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -525,8 +578,9 @@ export function setupOAuth(app: Express) {
           const mergedMetadata = {
             ...currentMetadata,
             photoURL: base64Image,
+            avatar: base64Image, // Add avatar for client-side compatibility
             // Only add these if they're provided
-            ...(fullName ? { displayName: fullName } : {}),
+            ...(fullName ? { displayName: fullName, fullName: fullName } : {}), // Add both displayName and fullName
             ...(bio ? { bio } : {})
           };
           
@@ -583,15 +637,20 @@ export function setupOAuth(app: Express) {
           
           // Return success response with the updated user data
           const updatedMetadata = updatedUser.metadata || {};
+          // Type assertion to avoid TypeScript errors
+          const typedMetadata = updatedMetadata as Record<string, any>;
+          
           res.json({
             success: true,
             user: {
               id: updatedUser.id,
               username: updatedUser.username,
               email: updatedUser.email,
-              avatar: updatedMetadata.photoURL || null,
-              fullName: updatedMetadata.displayName || null,
-              bio: updatedMetadata.bio || null,
+              // Prefer avatar if it exists, fall back to photoURL
+              avatar: typedMetadata.avatar || typedMetadata.photoURL || null,
+              // Prefer fullName if it exists, fall back to displayName
+              fullName: typedMetadata.fullName || typedMetadata.displayName || null,
+              bio: typedMetadata.bio || null,
               isAdmin: updatedUser.isAdmin,
               createdAt: updatedUser.createdAt
             }

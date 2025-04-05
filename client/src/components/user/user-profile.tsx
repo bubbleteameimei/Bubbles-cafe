@@ -166,6 +166,17 @@ export function UserProfile() {
         }
       };
       
+      // Also include the fields with both naming conventions to ensure compatibility
+      // Use type assertion to add properties to metadata
+      const extendedMetadata = updateData.metadata as Record<string, any>;
+      
+      if (otherData.fullName) {
+        extendedMetadata.fullName = otherData.fullName;
+      }
+      if (otherData.avatar) {
+        extendedMetadata.avatar = otherData.avatar;
+      }
+      
       console.log('[Profile] Sending update data:', updateData);
       
       return apiRequest<UserProfileResponse>('/api/auth/profile', {

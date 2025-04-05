@@ -177,7 +177,12 @@ export default function WordPressSyncPage() {
 
   // Filter posts based on search query
   const filteredPosts = React.useMemo(() => {
+    // First ensure wordPressPosts exists and is an array
     if (!wordPressPosts) return [];
+    if (!Array.isArray(wordPressPosts)) {
+      console.error('Expected wordPressPosts to be an array but got:', typeof wordPressPosts);
+      return [];
+    }
     
     if (!searchQuery) return wordPressPosts;
     
@@ -333,14 +338,15 @@ export default function WordPressSyncPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPosts.length === 0 ? (
+                {!Array.isArray(filteredPosts) || filteredPosts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No WordPress posts found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPosts.map((post) => (
+                  // Extra safety check to ensure filteredPosts is an array
+                  Array.isArray(filteredPosts) && filteredPosts.map((post) => (
                     <TableRow key={post.id}>
                       <TableCell className="font-medium">{post.title}</TableCell>
                       <TableCell>

@@ -588,7 +588,8 @@ export class DatabaseStorage implements IStorage {
   
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     try {
-      console.log('[Storage] Updating user:', id, userData);
+      console.log('[Storage] Updating user:', id);
+      console.log('[Storage] Update data received:', JSON.stringify(userData, null, 2));
       
       // Get the current user first to properly handle metadata
       const currentUser = await this.getUser(id);
@@ -608,14 +609,28 @@ export class DatabaseStorage implements IStorage {
       if (userData.metadata) {
         // Get existing metadata (default to empty object if null)
         const existingMetadata = currentUser.metadata || {};
+        console.log('[Storage] Existing metadata:', JSON.stringify(existingMetadata, null, 2));
+        console.log('[Storage] New metadata:', JSON.stringify(userData.metadata, null, 2));
         
-        // Merge the existing metadata with the new metadata
+        // Ensure both metadata objects are actual objects before merging
+        const existingMetadataObj = typeof existingMetadata === 'object' ? existingMetadata : {};
+        const newMetadataObj = typeof userData.metadata === 'object' ? userData.metadata : {};
+        
+        // Deep merge the existing metadata with the new metadata
         updateData.metadata = {
-          ...existingMetadata,
-          ...userData.metadata
+          ...existingMetadataObj,
+          ...newMetadataObj
         };
         
-        console.log('[Storage] Merged metadata:', updateData.metadata);
+        // Make sure nested properties are correctly merged
+        if (newMetadataObj.oauth && existingMetadataObj.oauth) {
+          updateData.metadata.oauth = {
+            ...existingMetadataObj.oauth,
+            ...newMetadataObj.oauth
+          };
+        }
+        
+        console.log('[Storage] Merged metadata:', JSON.stringify(updateData.metadata, null, 2));
       }
       
       // Process other fields
@@ -631,6 +646,8 @@ export class DatabaseStorage implements IStorage {
       if (Object.keys(updateData).length === 0) {
         throw new Error("No valid fields to update");
       }
+      
+      console.log('[Storage] Final update data to send to DB:', JSON.stringify(updateData, null, 2));
       
       // Update the user with valid fields
       const [updatedUser] = await db.update(users)
