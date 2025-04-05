@@ -1,217 +1,105 @@
-import { useEffect, useCallback } from 'react';
-import { onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals';
-// Use standard relative path since @/ alias is causing issues
-import { getCsrfToken, CSRF_HEADER_NAME } from "../lib/csrf-token";
+/**
+ * Performance Monitoring Hook
+ * 
+ * Custom hook to manage performance monitoring and reporting metrics
+ * to the analytics endpoints.
+ */
+import { useCallback } from 'react';
+import { submitPerformanceMetrics } from '@/api/analytics';
 
-interface PerformanceMetric {
-  name: string;
-  value: number;
-  id: string;
-  navigationType?: string;
+export function usePerformanceMonitoring() {
+  /**
+   * Record and send a performance metric to the server
+   */
+  const recordMetric = useCallback((
+    metricName: string,
+    value: number,
+    identifier: string
+  ) => {
+    try {
+      // Get navigation type if available
+      const navigationEntry = performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming;
+      const navigationType = navigationEntry?.type || 'unknown';
+      
+      // Capture user agent
+      const userAgent = window.navigator.userAgent;
+      
+      // Get current URL
+      const url = window.location.pathname + window.location.search;
+      
+      // Submit metric to server
+      submitPerformanceMetrics({
+        metricName,
+        value,
+        identifier,
+        url,
+        userAgent,
+        navigationType
+      }).catch(error => {
+        console.warn(`Failed to submit ${metricName} metric:`, error);
+      });
+    } catch (error) {
+      console.warn(`Error recording metric ${metricName}:`, error);
+    }
+  }, []);
+  
+  /**
+   * Record Navigation Timing API metrics
+   */
+  const recordNavigationTiming = useCallback((identifier: string) => {
+    try {
+      // Ensure Navigation Timing API is supported
+      if (!performance || !performance.getEntriesByType) {
+        return;
+      }
+      
+      // Get navigation timing data
+      const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (!navEntry) {
+        return;
+      }
+      
+      // Record key navigation metrics
+      if (navEntry.domContentLoadedEventEnd) {
+        recordMetric('DOMContentLoaded', navEntry.domContentLoadedEventEnd, identifier);
+      }
+      
+      if (navEntry.loadEventEnd) {
+        recordMetric('LoadComplete', navEntry.loadEventEnd, identifier);
+      }
+      
+      if (navEntry.connectEnd && navEntry.connectStart) {
+        recordMetric('ConnectionTime', navEntry.connectEnd - navEntry.connectStart, identifier);
+      }
+      
+      if (navEntry.responseEnd && navEntry.responseStart) {
+        recordMetric('ResponseTime', navEntry.responseEnd - navEntry.responseStart, identifier);
+      }
+      
+      if (navEntry.domComplete && navEntry.domInteractive) {
+        recordMetric('DOMProcessingTime', navEntry.domComplete - navEntry.domInteractive, identifier);
+      }
+    } catch (error) {
+      console.warn('Error recording navigation timing:', error);
+    }
+  }, [recordMetric]);
+  
+  /**
+   * Record a custom user interaction metric
+   */
+  const recordInteractionMetric = useCallback((
+    interactionType: string,
+    duration: number,
+    identifier: string = window.location.pathname + '-' + Date.now()
+  ) => {
+    recordMetric(`Interaction-${interactionType}`, duration, identifier);
+  }, [recordMetric]);
+  
+  return {
+    recordMetric,
+    recordNavigationTiming,
+    recordInteractionMetric
+  };
 }
 
-const reportMetric = async (metric: PerformanceMetric) => {
-  // Validate metric data before sending
-  if (!metric.name || typeof metric.value !== 'number' || isNaN(metric.value)) {
-    console.warn('[Performance] Invalid metric data:', metric);
-    return;
-  }
-
-  // Log to console in development
-  if (import.meta.env.DEV) {
-    console.log('[Performance]', {
-      name: metric.name,
-      value: Math.round(metric.value * 100) / 100,
-      id: metric.id
-    });
-  }
-
-  try {
-    // Ensure we have valid data before sending to server
-    const metricValue = typeof metric.value === 'number' && !isNaN(metric.value) 
-      ? Math.round(metric.value * 100) / 100 
-      : null;
-    
-    // Only proceed if we have valid data
-    if (!metric.name || metricValue === null) {
-      console.warn('[Performance] Skipping invalid metric:', { name: metric.name, value: metric.value });
-      return;
-    }
-    
-    const body = JSON.stringify({
-      metricName: metric.name,
-      value: metricValue,
-      identifier: metric.id || `metric-${Date.now()}`,
-      navigationType: metric.navigationType || 'navigation',
-      url: window.location.href,
-      userAgent: navigator.userAgent
-    });
-
-    // Always use fetch instead of sendBeacon for now
-    // This ensures proper Content-Type and payload handling
-    try {
-      // While the analytics endpoint is in the ignore list on the server, we need to use the CSRF token
-      // to avoid the server-side error that's happening due to middleware configuration
-      const token = getCsrfToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add CSRF token if available
-      if (token) {
-        headers[CSRF_HEADER_NAME] = token;
-      }
-      
-      const response = await fetch('/api/analytics/vitals', {
-        method: 'POST',
-        body,
-        keepalive: true,
-        headers,
-        credentials: 'same-origin' // Include cookies in the request
-      });
-      
-      if (!response.ok) {
-        console.warn('[Performance] API response not OK:', await response.text());
-      }
-    } catch (fetchError) {
-      console.error('[Performance] Fetch error:', fetchError);
-    }
-  } catch (error) {
-    console.error('[Performance] Failed to report metrics:', error);
-  }
-};
-
-export const usePerformanceMonitoring = () => {
-  const measureCoreWebVitals = useCallback(() => {
-    try {
-      onCLS((metric) => {
-        if (metric.value) {
-          reportMetric({
-            name: 'CLS',
-            value: metric.value,
-            id: metric.id
-          });
-        }
-      });
-
-      onFID((metric) => {
-        if (metric.value) {
-          reportMetric({
-            name: 'FID',
-            value: metric.value,
-            id: metric.id
-          });
-        }
-      });
-
-      onLCP((metric) => {
-        if (metric.value) {
-          reportMetric({
-            name: 'LCP',
-            value: metric.value,
-            id: metric.id
-          });
-        }
-      });
-
-      onFCP((metric) => {
-        if (metric.value) {
-          reportMetric({
-            name: 'FCP',
-            value: metric.value,
-            id: metric.id
-          });
-        }
-      });
-
-      onTTFB((metric) => {
-        if (metric.value) {
-          reportMetric({
-            name: 'TTFB',
-            value: metric.value,
-            id: metric.id
-          });
-        }
-      });
-    } catch (error) {
-      console.error('[Performance] Failed to measure Core Web Vitals:', error);
-    }
-  }, []);
-
-  const measureNavigationTiming = useCallback(() => {
-    try {
-      if (performance.getEntriesByType) {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-        if (navigation) {
-          if (navigation.responseStart && navigation.requestStart) {
-            reportMetric({
-              name: 'TTFB',
-              value: navigation.responseStart - navigation.requestStart,
-              id: 'nav-timing',
-              navigationType: navigation.type,
-            });
-          }
-
-          // Add DNS lookup time
-          if (navigation.domainLookupEnd && navigation.domainLookupStart) {
-            reportMetric({
-              name: 'DNS',
-              value: navigation.domainLookupEnd - navigation.domainLookupStart,
-              id: 'dns-timing',
-            });
-          }
-
-          // Add connection time
-          if (navigation.connectEnd && navigation.connectStart) {
-            reportMetric({
-              name: 'TCP',
-              value: navigation.connectEnd - navigation.connectStart,
-              id: 'tcp-timing',
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[Performance] Failed to measure Navigation Timing:', error);
-    }
-  }, []);
-
-  const measureResourceTiming = useCallback(() => {
-    try {
-      if (performance.getEntriesByType) {
-        const resources = performance.getEntriesByType('resource');
-        resources.forEach(resource => {
-          if (resource.name.includes(window.location.origin)) {
-            reportMetric({
-              name: 'ResourceTiming',
-              value: resource.duration,
-              id: resource.name,
-            });
-          }
-        });
-      }
-    } catch (error) {
-      console.error('[Performance] Failed to measure Resource Timing:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Start monitoring when component mounts
-    measureCoreWebVitals();
-    measureNavigationTiming();
-
-    // Measure resource timing after load
-    const handleLoad = () => {
-      measureResourceTiming();
-      // Clear resource timings to prevent memory buildup
-      performance.clearResourceTimings();
-    };
-
-    window.addEventListener('load', handleLoad);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('load', handleLoad);
-    };
-  }, [measureCoreWebVitals, measureNavigationTiming, measureResourceTiming]);
-};
+export default usePerformanceMonitoring;

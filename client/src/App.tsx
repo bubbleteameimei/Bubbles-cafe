@@ -36,6 +36,8 @@ import { WordPressSyncStatus } from './components/wordpress-sync-status';
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
 import ScrollEffectsProvider from './components/ScrollEffectsProvider';
+// Import our performance monitoring component
+import PerformanceMonitor from './components/performance-monitor';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
 import FullscreenButton from './components/FullscreenButton';
@@ -342,6 +344,8 @@ function App() {
                           <EnhancedPageTransition minLoadingTime={850}>
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
+                              {/* Add PerformanceMonitor for metrics collection */}
+                              <PerformanceMonitor />
                               <AppContent />
                             </PullToRefresh>
                           </EnhancedPageTransition>

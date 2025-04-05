@@ -1,4 +1,8 @@
-// API functions to interact with analytics endpoints
+/**
+ * Analytics API Client
+ * 
+ * Functions for interacting with the analytics API endpoints.
+ */
 
 export interface SiteAnalytics {
   totalViews: number;
@@ -17,68 +21,105 @@ export interface DeviceDistribution {
  * Fetches site-wide analytics data
  */
 export async function getSiteAnalytics(): Promise<SiteAnalytics> {
-  try {
-    const response = await fetch('/api/analytics/site');
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch analytics: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return {
-      totalViews: data.totalViews || 0,
-      uniqueVisitors: data.uniqueVisitors || 0,
-      avgReadTime: data.avgReadTime || 0,
-      bounceRate: data.bounceRate || 0
-    };
-  } catch (error) {
-    console.error('Error fetching site analytics:', error);
-    // Return default values if there's an error
-    return {
-      totalViews: 0,
-      uniqueVisitors: 0,
-      avgReadTime: 0,
-      bounceRate: 0
-    };
+  const response = await fetch('/api/analytics/site', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch site analytics');
   }
+  
+  return response.json();
 }
 
 /**
  * Fetches device distribution analytics
  */
 export async function getDeviceDistribution(): Promise<DeviceDistribution> {
-  try {
-    const response = await fetch('/api/analytics/devices');
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch device distribution: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching device distribution:', error);
-    // Return default values if there's an error
-    return {
-      desktop: 0,
-      mobile: 0,
-      tablet: 0
-    };
+  const response = await fetch('/api/analytics/devices', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch device distribution');
   }
+  
+  return response.json();
 }
 
 /**
  * Submits client-side performance metrics to the server
  */
 export async function submitPerformanceMetrics(metrics: Record<string, any>): Promise<void> {
+  const response = await fetch('/api/analytics/vitals', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(metrics),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to submit performance metrics');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Records a page view event
+ */
+export async function recordPageView(
+  path: string,
+  referrer: string = document.referrer
+): Promise<void> {
   try {
-    await fetch('/api/analytics/vitals', {
+    await fetch('/api/analytics/pageview', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(metrics)
+      body: JSON.stringify({
+        path,
+        referrer,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight,
+      }),
     });
   } catch (error) {
-    console.error('Error submitting performance metrics:', error);
+    console.warn('Failed to record page view:', error);
+  }
+}
+
+/**
+ * Records a user interaction event
+ */
+export async function recordInteraction(
+  interactionType: string,
+  details: Record<string, any> = {}
+): Promise<void> {
+  try {
+    await fetch('/api/analytics/interaction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        interactionType,
+        details,
+        timestamp: new Date().toISOString(),
+        path: window.location.pathname,
+      }),
+    });
+  } catch (error) {
+    console.warn(`Failed to record ${interactionType} interaction:`, error);
   }
 }

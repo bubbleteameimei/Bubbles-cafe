@@ -125,8 +125,10 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         endpointPath.startsWith(path) ||
         // Handle special case for bypass endpoint
         req.path.endsWith('/csrf-test-bypass') ||
-        // Special case for analytics endpoint that's causing issues
-        req.path.includes('/analytics/vitals')
+        // Special cases for analytics endpoints that are exempt from CSRF
+        req.path.includes('/analytics/vitals') ||
+        req.path.includes('/analytics/pageview') ||
+        req.path.includes('/analytics/interaction')
       )
     ) {
       console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);

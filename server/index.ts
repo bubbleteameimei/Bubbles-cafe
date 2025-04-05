@@ -22,6 +22,7 @@ import { registerUserDataExportRoutes } from "./routes/user-data-export";
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
+import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
@@ -77,6 +78,7 @@ app.use(csrfTokenToLocals);
 app.use(validateCsrfToken({
   ignorePaths: [
     '/health', 
+    '/api/health',
     '/api/auth/status', 
     '/api/auth/login',
     '/api/auth/register',
@@ -86,7 +88,8 @@ app.use(validateCsrfToken({
     '/api/feedback',
     '/api/posts',
     '/api/recommendations',
-    '/api/analytics/vitals', // Exclude analytics endpoint from CSRF checks
+    '/api/analytics', // Exclude all analytics endpoints from CSRF checks
+    '/api/analytics/vitals', // Explicitly exclude analytics/vitals endpoint 
     '/api/wordpress/sync',
     '/api/wordpress/sync/status',
     '/api/wordpress/posts',
@@ -229,6 +232,9 @@ async function startServer() {
       
       // Register WordPress sync routes
       registerWordPressSyncRoutes(app);
+
+      // Register analytics routes
+      registerAnalyticsRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
@@ -257,6 +263,9 @@ async function startServer() {
       
       // Register WordPress sync routes
       registerWordPressSyncRoutes(app);
+      
+      // Register analytics routes
+      registerAnalyticsRoutes(app);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
