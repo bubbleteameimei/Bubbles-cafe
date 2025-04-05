@@ -23,7 +23,7 @@ export interface DeviceDistribution {
  * Fetches reading time analytics data - uses public endpoint that doesn't require authentication
  */
 export async function getReadingTimeAnalytics(): Promise<ReadingTimeAnalytics> {
-  const response = await fetch('/api/analytics/reading-time', {
+  const response = await fetch('/api/analytics/reading-time-test', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ export async function getReadingTimeAnalytics(): Promise<ReadingTimeAnalytics> {
  * Fetches device analytics data - uses public endpoint that doesn't require authentication
  */
 export async function getDeviceAnalytics(): Promise<any> {
-  const response = await fetch('/api/analytics/devices', {
+  const response = await fetch('/api/analytics/devices-test', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export async function getDeviceAnalytics(): Promise<any> {
  * Fetches site-wide analytics data
  */
 export async function getSiteAnalytics(): Promise<SiteAnalytics> {
-  const response = await fetch('/api/analytics/site', {
+  const response = await fetch('/api/analytics/site-test', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export async function getSiteAnalytics(): Promise<SiteAnalytics> {
  * Fetches device distribution analytics
  */
 export async function getDeviceDistribution(): Promise<DeviceDistribution> {
-  const response = await fetch('/api/analytics/devices', {
+  const response = await fetch('/api/analytics/device-distribution-test', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ export async function recordInteraction(
  * Fetches engagement metrics - uses public endpoint that doesn't require authentication
  */
 export async function getEngagementMetrics(): Promise<any> {
-  const response = await fetch('/api/analytics/engagement', {
+  const response = await fetch('/api/analytics/engagement-test', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

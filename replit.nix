@@ -1,5 +1,16 @@
 {pkgs}: {
   deps = [
+    pkgs.pango
+    pkgs.gdk-pixbuf
+    pkgs.expat
+    pkgs.xorg.libXfixes
+    pkgs.cairo
+    pkgs.alsaLib
+    pkgs.xorg.libXScrnSaver
+    pkgs.xorg.libXtst
+    pkgs.xorg.libXdamage
+    pkgs.xorg.libXcursor
+    pkgs.xorg.libXcomposite
     pkgs.xorg.libXrandr
     pkgs.xorg.libXrender
     pkgs.xorg.libXi
