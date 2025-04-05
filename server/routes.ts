@@ -33,7 +33,7 @@ import searchRouter from './routes/search';
 import { setCsrfToken, csrfTokenToLocals, validateCsrfToken } from './middleware/csrf-protection';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db-connect";
-import { desc, eq, sql } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { getPostsRecommendations } from "./test-recommendations";
 
 // Add interfaces for analytics data
@@ -458,6 +458,83 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch community post" });
     }
   });
+  
+  // Admin API for fetching all posts with theme data for theme management
+  app.get('/api/posts/admin/themes', isAuthenticated, async (req, res) => {
+    try {
+      // Check if user is admin
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      
+      // Import from schema
+      const { posts } = await import("@shared/schema");
+      
+      // Fetch all posts with theme data
+      const allPosts = await db.select({
+        id: posts.id,
+        title: posts.title,
+        theme_category: posts.themeCategory,
+        slug: posts.slug,
+        createdAt: posts.createdAt
+      })
+      .from(posts)
+      .orderBy(desc(posts.createdAt));
+      
+      console.log('[GET /api/posts/admin] Retrieved posts for theme management:', allPosts.length);
+      res.json(allPosts);
+    } catch (error) {
+      console.error('[GET /api/posts/admin] Error fetching admin posts:', error);
+      res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+  });
+
+  // API for updating post theme
+  app.patch('/api/posts/:id/theme', isAuthenticated, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { theme_category } = req.body;
+      
+      // Validate input
+      if (!theme_category) {
+        return res.status(400).json({ error: 'Theme category is required' });
+      }
+      
+      // Check if user is admin
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      
+      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}`);
+      
+      // Update post theme
+      const updatedPost = await storage.updatePost(postId, { themeCategory: theme_category });
+      
+      res.json({
+        success: true,
+        post: {
+          id: updatedPost.id,
+          title: updatedPost.title,
+          theme_category: updatedPost.themeCategory
+        }
+      });
+    } catch (error) {
+      console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
+      res.status(500).json({ error: 'Failed to update post theme' });
+    }
+  });
 
 
 
@@ -708,6 +785,8 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to unlock secret post" });
     }
   });
+
+
 
   app.get("/api/posts/:slugOrId", cacheControl(300), async (req, res) => {
     try {
@@ -2304,6 +2383,83 @@ Message ID: ${savedMessage.id}
     } catch (error) {
       console.error("[GET /api/users/stats] Error:", error);
       res.status(500).json({ message: "Failed to fetch user statistics" });
+    }
+  });
+  
+  // Admin API for fetching all posts with theme data
+  app.get('/api/posts/admin', async (req, res) => {
+    try {
+      // Check if user is admin
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      
+      // Import from schema
+      const { posts } = await import("@shared/schema");
+      
+      // Fetch all posts with theme data
+      const allPosts = await db.select({
+        id: posts.id,
+        title: posts.title,
+        theme_category: posts.themeCategory,
+        slug: posts.slug,
+        createdAt: posts.createdAt
+      })
+      .from(posts)
+      .orderBy(desc(posts.createdAt));
+      
+      console.log('[GET /api/posts/admin] Retrieved posts for theme management:', allPosts.length);
+      res.json(allPosts);
+    } catch (error) {
+      console.error('[GET /api/posts/admin] Error fetching admin posts:', error);
+      res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+  });
+  
+  // API for updating post theme
+  app.patch('/api/posts/:id/theme', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { theme_category } = req.body;
+      
+      // Validate input
+      if (!theme_category) {
+        return res.status(400).json({ error: 'Theme category is required' });
+      }
+      
+      // Check if user is admin
+      if (!req.session?.user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      
+      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}`);
+      
+      // Update post theme
+      const updatedPost = await storage.updatePost(postId, { themeCategory: theme_category });
+      
+      res.json({
+        success: true,
+        post: {
+          id: updatedPost.id,
+          title: updatedPost.title,
+          theme_category: updatedPost.themeCategory
+        }
+      });
+    } catch (error) {
+      console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
+      res.status(500).json({ error: 'Failed to update post theme' });
     }
   });
 

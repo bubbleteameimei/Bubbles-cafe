@@ -21,7 +21,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   'Cosmic': {
     keywords: ['cosmic', 'ancient', 'cave', 'unknowable', 'madness', 'cult', 'lovecraftian', 'elder', 'cthulhu'],
     badgeVariant: 'cosmic',
-    icon: 'Skull', // Best icon for Lovecraftian/cave theme from available options
+    icon: 'Skull', // Cave is lovecraftian theme
     description: 'Cosmic horror and incomprehensible ancient entities',
     visualEffects: ['tentacles', 'fractal patterns']
   },
@@ -35,21 +35,21 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   'Technological': {
     keywords: ['technology', 'machine', 'digital', 'computer', 'ai', 'robot', 'code', 'program'],
     badgeVariant: 'technological',
-    icon: 'Cpu', // Appropriate icon for technological/machine theme
+    icon: 'Cpu', // Machine is technological theme
     description: 'Horror involving technology gone wrong',
     visualEffects: ['glitches', 'screen artifacts']
   },
   'Body Horror': {
-    keywords: ['flesh', 'mutation', 'journal', 'transformation', 'deformation', 'grotesque', 'organs', 'inside'],
+    keywords: ['flesh', 'mutation', 'journal', 'transformation', 'deformation', 'grotesque', 'organs', 'inside', 'bug'],
     badgeVariant: 'body',
-    icon: 'Bug', // Updated to Bug for body horror themes
+    icon: 'Bug', // Bug represents body horror theme
     description: 'Horror focused on the destruction or transformation of the body',
     visualEffects: ['flesh warping', 'body distortion']
   },
   'Psychopath': {
-    keywords: ['killer', 'murder', 'car', 'psychopath', 'insane', 'sadist', 'torture', 'violent'],
+    keywords: ['killer', 'murder', 'car', 'drive', 'psychopath', 'insane', 'sadist', 'torture', 'violent'],
     badgeVariant: 'psychopath',
-    icon: 'Axe',
+    icon: 'Axe', // Drive and Car are psychopath themes
     description: 'Content featuring psychopathic characters',
     visualEffects: ['sharp imagery', 'blood']
   },
@@ -77,7 +77,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   'Stalking': {
     keywords: ['stalk', 'follow', 'chase', 'watch', 'pursue', 'hunt', 'prey', 'victim'],
     badgeVariant: 'stalking',
-    icon: 'Footprints',
+    icon: 'Footprints', // Chase is stalking theme
     description: 'Stories featuring stalking or being hunted',
     visualEffects: ['shadows', 'voyeuristic']
   },
@@ -96,9 +96,9 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     visualEffects: ['mist', 'architectural decay']
   },
   'Vehicular': {
-    keywords: ['vehicle', 'car', 'drive', 'road', 'crash', 'accident', 'highway', 'journey'],
+    keywords: ['vehicle', 'road', 'crash', 'accident', 'highway', 'journey'],
     badgeVariant: 'vehicular',
-    icon: 'Car',
+    icon: 'Car', // Note: car/drive are primary Psychopath keywords, but also appear here
     description: 'Horror taking place in or involving vehicles',
     visualEffects: ['motion blur', 'headlights']
   },
@@ -122,6 +122,13 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
     icon: 'CloudRain',
     description: 'General horror stories that evoke fear and dread',
     visualEffects: ['shadows', 'darkness']
+  },
+  'Death': {
+    keywords: ['death', 'mortality', 'funeral', 'grave', 'descent', 'dying', 'afterlife', 'cemetery'],
+    badgeVariant: 'death',
+    icon: 'Skull', 
+    description: 'Horror centered around death and mortality',
+    visualEffects: ['darkness', 'fading effects']
   }
 };
 

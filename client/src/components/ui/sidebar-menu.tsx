@@ -317,6 +317,18 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+                      
+                      {/* Theme Management */}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/admin/themes'}
+                          onClick={() => handleNavigation('/admin/themes')}
+                          className={submenuItemClass}
+                        >
+                          <Palette className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <span>Theme Management</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
 
                       {/* User Management - Merges Users + Moderation */}
                       <SidebarMenuSubItem>

@@ -7,7 +7,9 @@ import {
   Users, 
   BarChart, 
   Settings, 
-  Bell 
+  Bell,
+  Tag,
+  Palette
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -25,6 +27,12 @@ export default function AdminPage() {
       description: "Manage stories and content",
       icon: Book,
       link: "/admin/posts"
+    },
+    {
+      title: "Theme Management",
+      description: "Manage post theme categories and icons",
+      icon: Palette,
+      link: "/admin/themes"
     },
     {
       title: "User Management",

@@ -6,6 +6,7 @@ import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import { db } from './db-connect.js';
 import { log } from './vite.js';
+import { determineThemeCategory as determineThemeCategoryFromShared, STORY_THEME_MAPPING } from '../shared/theme-categories.js';
 
 const { Pool } = pg;
 
@@ -68,6 +69,55 @@ function cleanContent(content) {
     .map(line => line.trim())
     .join('\n')
     .trim();
+}
+
+/**
+ * Determine theme category by analyzing title and content
+ * 
+ * This function examines post content to assign the most appropriate
+ * horror theme category based on keywords and context.
+ */
+function determineThemeCategory(title, content) {
+  // Use the shared determineThemeCategory function for consistent theme mapping across the application
+  const themeResult = determineThemeCategoryFromShared(title, content);
+  
+  // Map from our theme constants to database-friendly values
+  // This helps maintain compatibility with the existing database entries
+  // using the old theme values ('Body Horror' instead of 'BODY_HORROR')
+  const themeMapping = {
+    'DEATH': 'Death',
+    'BODY_HORROR': 'Body Horror',
+    'SUPERNATURAL': 'Supernatural',
+    'PSYCHOLOGICAL': 'Psychological',
+    'EXISTENTIAL': 'Existential',
+    'HORROR': 'Horror',
+    'STALKING': 'Stalking',
+    'CANNIBALISM': 'Cannibalism',
+    'PSYCHOPATH': 'Psychopath',
+    'DOPPELGANGER': 'Doppelgänger',
+    'VEHICULAR': 'Vehicular',
+    'PARASITE': 'Parasite',
+    'TECHNOLOGICAL': 'Technological',
+    'COSMIC': 'Cosmic',
+    'UNCANNY': 'Uncanny'
+  };
+  
+  // If we have a direct match in our mapping, use it
+  if (themeMapping[themeResult]) {
+    return themeMapping[themeResult];
+  }
+  
+  // Special case for exact title matching - this is our most reliable method
+  // Direct mapping from title to theme category for specific stories
+  const uppercaseTitle = title.toUpperCase().trim();
+  for (const [keyword, theme] of Object.entries(STORY_THEME_MAPPING)) {
+    if (uppercaseTitle === keyword) {
+      return themeMapping[theme] || theme;
+    }
+  }
+  
+  // Default case
+  return 'Horror';
 }
 
 /**
@@ -268,6 +318,9 @@ export async function syncWordPressPosts() {
           const categoryNames = wpPost.categories
             ? wpPost.categories.map(catId => categories[catId]).filter(Boolean)
             : [];
+          
+          // Determine theme category based on content and title
+          let themeCategory = determineThemeCategory(title, content);
             
           const metadataObj = {
             wordpressId: wpPost.id,
@@ -276,7 +329,8 @@ export async function syncWordPressPosts() {
             syncId: syncId,
             originalWordCount: wordCount,
             categories: categoryNames,
-            originalDate: wpPost.date
+            originalDate: wpPost.date,
+            themeCategory: themeCategory // Add detected theme
           };
           
           // Check if post already exists by slug
@@ -304,7 +358,7 @@ export async function syncWordPressPosts() {
               admin.id, 
               pubDate, 
               readingTimeMinutes,
-              categoryNames[0] || 'General', // Use first category as theme_category
+              themeCategory || categoryNames[0] || 'General', // Use detected theme if available
               JSON.stringify(metadataObj)
             ]);
             
@@ -328,7 +382,7 @@ export async function syncWordPressPosts() {
               content, 
               excerpt, 
               readingTimeMinutes,
-              categoryNames[0] || 'General',
+              themeCategory || categoryNames[0] || 'General',
               JSON.stringify({
                 ...metadataObj,
                 lastUpdated: new Date().toISOString()
@@ -448,6 +502,9 @@ export async function syncSingleWordPressPost(wpPostId) {
     const wordCount = content.split(/\s+/).length;
     const readingTimeMinutes = Math.ceil(wordCount / 200);
     
+    // Determine theme category based on content and title
+    let themeCategory = determineThemeCategory(title, content);
+    
     // Create metadata
     const categoryNames = wpPost.categories
       ? wpPost.categories.map(catId => categories[catId]).filter(Boolean)
@@ -459,7 +516,8 @@ export async function syncSingleWordPressPost(wpPostId) {
       importDate: new Date().toISOString(),
       originalWordCount: wordCount,
       categories: categoryNames,
-      originalDate: wpPost.date
+      originalDate: wpPost.date,
+      themeCategory: themeCategory // Add detected theme
     };
     
     // Check if post already exists by slug
@@ -489,7 +547,7 @@ export async function syncSingleWordPressPost(wpPostId) {
         admin.id, 
         pubDate, 
         readingTimeMinutes,
-        categoryNames[0] || 'General',
+        themeCategory || categoryNames[0] || 'General',
         JSON.stringify(metadataObj)
       ]);
       
@@ -513,7 +571,7 @@ export async function syncSingleWordPressPost(wpPostId) {
         content, 
         excerpt, 
         readingTimeMinutes,
-        categoryNames[0] || 'General',
+        themeCategory || categoryNames[0] || 'General',
         JSON.stringify({
           ...metadataObj,
           lastUpdated: new Date().toISOString()
