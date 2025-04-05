@@ -25,7 +25,7 @@ import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the decl
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
-import { setCsrfToken, validateCsrfToken, csrfTokenToLocals, CSRF_TOKEN_NAME } from "./middleware/csrf-protection";
+import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
 
@@ -72,59 +72,29 @@ app.use(session({
   store: storage.sessionStore
 }));
 
-// Setup CSRF protection
-app.use(setCsrfToken(!isDev)); // Secure cookies in production
-app.use(csrfTokenToLocals);
-
-// Apply CSRF validation after routes that don't need it
-app.use(validateCsrfToken({
+// Setup simplified CSRF protection with a single middleware
+app.use(createCsrfMiddleware({
+  // Add any additional paths to exclude beyond the defaults
   ignorePaths: [
-    '/health', 
-    '/api/health',
-    '/api/auth/status', 
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/forgot-password', // Allow password reset requests without CSRF protection (for testing)
-    '/api/auth/reset-password', // Allow password reset without CSRF protection (for testing)
-    '/api/auth/verify-reset-token', // Allow token verification without CSRF protection (for testing)
-    '/api/feedback',
-    '/api/posts',
-    '/api/recommendations',
-    '/api/analytics', // Exclude all analytics endpoints from CSRF checks
-    '/api/analytics/vitals', // Explicitly exclude analytics/vitals endpoint 
-    '/api/wordpress/sync',
-    '/api/wordpress/sync/status',
-    '/api/wordpress/posts',
-    '/api/reader/bookmarks', // Allow anonymous bookmarks without CSRF protection - GET, POST 
-    '/api/reader/bookmarks/', // Make sure the trailing slash version is also excluded
-    '/api/bookmarks', // Also exclude authenticated bookmarks API
-    '/admin-cleanup' // Special admin cleanup route that bypasses CSRF protection
-  ]
+    '/api/bookmarks',  // Authenticated bookmarks API
+    '/admin-cleanup'   // Special admin cleanup route
+  ],
+  cookie: {
+    secure: !isDev, // Secure cookies in production
+    sameSite: isDev ? 'lax' : 'none'
+  }
 }));
 
 // Setup authentication
 setupAuth(app);
 setupOAuth(app);
 
-// Add health check endpoint with CSRF token initialization
+// Add health check endpoint with CSRF token information
 app.get('/health', (req, res) => {
-  // Ensure a CSRF token is set
-  if (!req.session.csrfToken) {
-    const token = require('crypto').randomBytes(32).toString('hex');
-    req.session.csrfToken = token;
-    
-    // Set the token as a cookie for client-side access
-    res.cookie(CSRF_TOKEN_NAME, token, {
-      httpOnly: false, // Must be accessible by JavaScript
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Required for cross-domain cookies
-    });
-  }
-  
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    csrfToken: req.session.csrfToken 
+    csrfToken: req.session.csrfToken || 'not set'
   });
 });
 

@@ -62,50 +62,42 @@ anonymousBookmarkRouter.get('/', async (req: Request, res: Response) => {
       req.session.anonymousBookmarks = {};
     }
     
+    console.log('[Anonymous Bookmarks] Session bookmarks:', req.session.anonymousBookmarks);
+    
+    // If there are no bookmarks, return an empty array immediately
+    if (Object.keys(req.session.anonymousBookmarks).length === 0) {
+      return res.json([]);
+    }
+    
     // Filter by tag if provided in query params
     const tagFilter = req.query.tag as string | undefined;
     
-    // Convert session bookmarks to array format with posts data
-    const bookmarkPromises = Object.entries(req.session.anonymousBookmarks).map(async ([postId, bookmark]) => {
-      try {
-        // Fetch post data for this bookmark
-        const post = await storage.getPost(postId);
-        
-        if (!post) {
-          console.warn(`[Anonymous Bookmark] Post with ID ${postId} not found`);
-          return null;
-        }
-        
-        // Skip if tag filter is provided and this bookmark doesn't have the tag
-        if (tagFilter && (!bookmark.tags || !bookmark.tags.includes(tagFilter))) {
-          return null;
-        }
-        
-        return {
-          id: 0, // Not needed for anonymous bookmarks
-          userId: 0, // Anonymous user
-          postId: parseInt(postId, 10),
-          notes: bookmark.notes,
-          tags: bookmark.tags,
-          lastPosition: bookmark.lastPosition,
-          createdAt: bookmark.createdAt,
-          post
-        };
-      } catch (error) {
-        console.error(`Error fetching post ${postId} for anonymous bookmark:`, error);
+    // For each bookmark in the session, create a bookmark object
+    const bookmarks = Object.entries(req.session.anonymousBookmarks).map(([postId, bookmark]) => {
+      // Skip if tag filter is provided and this bookmark doesn't have the tag
+      if (tagFilter && (!bookmark.tags || !bookmark.tags.includes(tagFilter))) {
         return null;
       }
-    });
-    
-    // Wait for all post fetch promises
-    const bookmarksWithPosts = (await Promise.all(bookmarkPromises)).filter(Boolean);
+      
+      // Return a simplified bookmark object without the post data
+      // This makes the anonymous bookmarks API match the behavior of the authenticated bookmarks API
+      return {
+        id: 0, // Not needed for anonymous bookmarks
+        userId: 0, // Anonymous user
+        postId: parseInt(postId, 10),
+        notes: bookmark.notes,
+        tags: bookmark.tags,
+        lastPosition: bookmark.lastPosition || "0",
+        createdAt: bookmark.createdAt
+      };
+    }).filter(Boolean);
     
     // Sort by most recent first
-    bookmarksWithPosts.sort((a, b) => 
+    bookmarks.sort((a, b) => 
       new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
     );
     
-    res.json(bookmarksWithPosts);
+    res.json(bookmarks);
   } catch (error) {
     console.error("Error fetching anonymous bookmarks:", error);
     res.status(500).json({ error: "Failed to fetch bookmarks" });

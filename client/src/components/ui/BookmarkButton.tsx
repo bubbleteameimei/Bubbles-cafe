@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { applyCSRFToken } from '@/lib/csrf-token';
 import { useAuth } from '@/hooks/use-auth';
 import { Bookmark, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
