@@ -21,7 +21,7 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   'Cosmic': {
     keywords: ['cosmic', 'ancient', 'cave', 'unknowable', 'madness', 'cult', 'lovecraftian', 'elder', 'cthulhu'],
     badgeVariant: 'cosmic',
-    icon: 'Skull',
+    icon: 'Skull', // Best icon for Lovecraftian/cave theme from available options
     description: 'Cosmic horror and incomprehensible ancient entities',
     visualEffects: ['tentacles', 'fractal patterns']
   },
@@ -35,14 +35,14 @@ export const THEME_CATEGORIES: Record<ThemeCategory, ThemeInfo> = {
   'Technological': {
     keywords: ['technology', 'machine', 'digital', 'computer', 'ai', 'robot', 'code', 'program'],
     badgeVariant: 'technological',
-    icon: 'Cpu',
+    icon: 'Cpu', // Appropriate icon for technological/machine theme
     description: 'Horror involving technology gone wrong',
     visualEffects: ['glitches', 'screen artifacts']
   },
   'Body Horror': {
     keywords: ['flesh', 'mutation', 'journal', 'transformation', 'deformation', 'grotesque', 'organs', 'inside'],
     badgeVariant: 'body',
-    icon: 'Dna',
+    icon: 'Bug', // Updated to Bug for body horror themes
     description: 'Horror focused on the destruction or transformation of the body',
     visualEffects: ['flesh warping', 'body distortion']
   },
