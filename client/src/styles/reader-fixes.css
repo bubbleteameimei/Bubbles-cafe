@@ -72,6 +72,87 @@ html.dark .reader-page h1 {
   font-weight: 700 !important;
 }
 
+/* Improve close button contrast in dark mode */
+html.dark [aria-label="Close"] {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(50, 50, 50, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+html.dark [aria-label="Close"]:hover {
+  color: white !important;
+  background-color: rgba(80, 80, 80, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Improve Table of Contents dialog in dark mode */
+html.dark [aria-labelledby="toc-dialog-title"] {
+  background-color: rgba(30, 30, 30, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] [aria-describedby="toc-dialog-description"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Improve search input styling in dark mode */
+html.dark [aria-labelledby="toc-dialog-title"] input[type="search"] {
+  background-color: rgba(25, 25, 25, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] input[type="search"]:focus {
+  background-color: rgba(30, 30, 30, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Improve story items in the list for better visibility */
+html.dark [aria-labelledby="toc-dialog-title"] .rounded-md {
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] .rounded-md:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Improve Table of Contents dialog buttons in dark mode */
+html.dark [aria-labelledby="toc-dialog-title"] button {
+  transition: all 0.15s ease-in-out !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] button[variant="outline"],
+html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:first-child {
+  background-color: rgba(50, 50, 50, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] button[variant="outline"]:hover,
+html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:first-child:hover {
+  background-color: rgba(70, 70, 70, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] button[variant="secondary"],
+html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:last-child {
+  background-color: rgba(60, 60, 60, 0.9) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark [aria-labelledby="toc-dialog-title"] button[variant="secondary"]:hover,
+html.dark [aria-labelledby="toc-dialog-title"] .flex.gap-2 > button:last-child:hover {
+  background-color: rgba(80, 80, 80, 0.95) !important;
+  transform: translateY(-1px) !important;
+}
+
 /* Additional styling for other text elements in dark mode */
 html.dark .reader-container.story-content ul li,
 html.dark .reader-container.story-content ol li,
@@ -108,7 +189,20 @@ html.dark .reader-container.story-content blockquote {
   .reader-container.story-content {
     padding-left: 2.5rem !important; /* Reduced but still good padding on mobile */
     padding-right: 2.5rem !important;
-    padding-top: 3rem !important; /* Reduced top padding on mobile for better spacing */
+    padding-top: 3.5rem !important; /* Increased top padding to fix spacing with navigation */
+  }
+  
+  /* Improve spacing between nav and content on tablets */
+  .navbar-container + div .reader-controls-container {
+    margin-top: 1.25rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  /* Improve font controls layout on tablets */
+  .font-control-tooltip {
+    max-width: 90% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 
@@ -117,7 +211,7 @@ html.dark .reader-container.story-content blockquote {
   .reader-container.story-content {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
-    padding-top: 1rem !important; /* Even more reduced top padding to bring content closer to controls */
+    padding-top: 2.5rem !important; /* Increased top padding to fix spacing with navigation */
   }
   
   /* Make font control buttons more compact on mobile */
@@ -136,7 +230,23 @@ html.dark .reader-container.story-content blockquote {
   
   /* Reduce vertical space between element groups */
   .reader-container h1 {
-    margin-top: 0.5rem !important;
-    margin-bottom: 0.5rem !important;
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  /* Fix spacing with navbar on small screens */
+  .navbar-container + div .reader-controls-container {
+    margin-top: 1rem !important;
+  }
+  
+  /* Fix tooltip alignment on mobile */
+  .font-control-tooltip {
+    left: 50% !important; 
+    transform: translateX(-50%) !important;
+    width: 90% !important;
+    max-width: 280px !important;
+    margin-top: 5px !important;
+    position: absolute !important;
+    text-align: center !important;
   }
 }

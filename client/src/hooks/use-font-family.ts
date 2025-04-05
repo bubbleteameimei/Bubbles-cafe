@@ -107,8 +107,28 @@ export function useFontFamily() {
       }
       .story-content p, 
       .story-content li,
-      .story-content div:not(.not-content) {
+      .story-content div:not(.not-content),
+      .story-content span,
+      .story-content em,
+      .story-content i,
+      .story-content b,
+      .story-content strong,
+      .story-content blockquote,
+      .story-content h1,
+      .story-content h2,
+      .story-content h3,
+      .story-content h4,
+      .story-content h5,
+      .story-content h6 {
         font-family: ${FONT_FAMILIES[fontFamily].family} !important;
+      }
+      
+      /* Specifically target italic elements to ensure they use the selected font's italic style */
+      .story-content em,
+      .story-content i,
+      .story-content *[style*="font-style: italic"] {
+        font-family: ${FONT_FAMILIES[fontFamily].family} !important;
+        font-style: italic !important;
       }
     `;
     
