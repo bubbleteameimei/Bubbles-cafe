@@ -19,7 +19,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Pencil, Check, Loader2, AlertCircle, Skull, Brain, Ghost, Eye, Scissors, 
   Clock, Footprints, Utensils, Car, UserPlus, Bug, Cpu, Globe, AlertTriangle, 
-  Scan, Castle, Copy, CloudRain, Hourglass, Axe
+  Scan, Castle, Copy, CloudRain, Hourglass, Axe, Cloud, Heart, Droplets, 
+  Wind, ScanFace, Tally4, Sparkles, Syringe, Flame, Zap
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +50,17 @@ const THEME_ICONS: Record<string, React.ReactNode> = {
   'castle': <Castle className="h-4 w-4" />,
   'copy': <Copy className="h-4 w-4" />,
   'clock': <Clock className="h-4 w-4" />,
-  'cloud-rain': <CloudRain className="h-4 w-4" />
+  'cloud-rain': <CloudRain className="h-4 w-4" />,
+  'alien': <Zap className="h-4 w-4" />,
+  'cloud': <Cloud className="h-4 w-4" />,
+  'droplets': <Droplets className="h-4 w-4" />,
+  'sparkles': <Sparkles className="h-4 w-4" />,
+  'syringe': <Syringe className="h-4 w-4" />,
+  'wind': <Wind className="h-4 w-4" />,
+  'scanface': <ScanFace className="h-4 w-4" />,
+  'tally4': <Tally4 className="h-4 w-4" />,
+  'heart': <Heart className="h-4 w-4" />,
+  'flame': <Flame className="h-4 w-4" />
 };
 
 // Available icon options for selection
@@ -73,7 +84,17 @@ const ICON_OPTIONS = [
   { value: 'castle', label: 'Castle' },
   { value: 'copy', label: 'Copy' },
   { value: 'clock', label: 'Clock' },
-  { value: 'cloud-rain', label: 'Rain' }
+  { value: 'cloud-rain', label: 'Rain' },
+  { value: 'alien', label: 'Alien' },
+  { value: 'cloud', label: 'Cloud' },
+  { value: 'droplets', label: 'Droplets' },
+  { value: 'sparkles', label: 'Sparkles' },
+  { value: 'syringe', label: 'Syringe' },
+  { value: 'wind', label: 'Wind' },
+  { value: 'scanface', label: 'Scan Face' },
+  { value: 'tally4', label: 'Ritual Marks' },
+  { value: 'heart', label: 'Heart' },
+  { value: 'flame', label: 'Flame' }
 ];
 
 export default function ThemesPage() {
@@ -82,6 +103,8 @@ export default function ThemesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedTheme, setSelectedTheme] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
+  const [customIconInput, setCustomIconInput] = useState('');
+  const [showCustomIconInput, setShowCustomIconInput] = useState(false);
 
   interface Post {
     id: number;
@@ -107,13 +130,15 @@ export default function ThemesPage() {
 
   // Mutation for updating a post's theme
   const updateThemeMutation = useMutation({
-    mutationFn: async ({ id, theme }: { id: number; theme: string }) => {
+    mutationFn: async ({ id, theme, icon }: { id: number; theme: string; icon?: string }) => {
+      // If icon is provided, use it; otherwise, use the selectedIcon state
+      const iconToSend = icon || selectedIcon;
       return apiRequest(`/api/posts/${id}/theme`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ theme_category: theme, icon: selectedIcon }),
+        body: JSON.stringify({ theme_category: theme, icon: iconToSend }),
       });
     },
     onSuccess: () => {
@@ -147,12 +172,27 @@ export default function ThemesPage() {
     // Set the default icon based on the theme
     const themeInfo = THEME_CATEGORIES[currentTheme as keyof typeof THEME_CATEGORIES];
     setSelectedIcon(themeInfo?.icon || 'eye');
+    
+    // Reset custom icon input state when editing a different post
+    setShowCustomIconInput(false);
+    setCustomIconInput('');
   };
 
   // Handler for saving the theme change
   const handleSave = (id: number) => {
     if (selectedTheme) {
-      updateThemeMutation.mutate({ id, theme: selectedTheme });
+      // If using custom icon input, use that value instead of the selected icon
+      const iconToUse = showCustomIconInput && customIconInput ? customIconInput : selectedIcon;
+      updateThemeMutation.mutate({ id, theme: selectedTheme, icon: iconToUse });
+    }
+  };
+  
+  // Handle custom icon input toggle
+  const toggleCustomIconInput = () => {
+    setShowCustomIconInput(!showCustomIconInput);
+    if (!showCustomIconInput) {
+      // When enabling custom input, keep the current icon as default
+      setCustomIconInput(selectedIcon);
     }
   };
 
@@ -262,32 +302,61 @@ export default function ThemesPage() {
                           
                           <TableCell className="hidden md:table-cell">
                             {editingId === post.id ? (
-                              <Select
-                                value={selectedIcon}
-                                onValueChange={setSelectedIcon}
-                                disabled={updateThemeMutation.isPending}
-                              >
-                                <SelectTrigger className="w-[150px]">
-                                  <SelectValue placeholder="Select an icon">
+                              <div className="space-y-2">
+                                {!showCustomIconInput ? (
+                                  <Select
+                                    value={selectedIcon}
+                                    onValueChange={setSelectedIcon}
+                                    disabled={updateThemeMutation.isPending}
+                                  >
+                                    <SelectTrigger className="w-[150px]">
+                                      <SelectValue placeholder="Select an icon">
+                                        <div className="flex items-center">
+                                          {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                          <span className="ml-2">
+                                            {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                          </span>
+                                        </div>
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {ICON_OPTIONS.map((icon) => (
+                                        <SelectItem key={icon.value} value={icon.value}>
+                                          <div className="flex items-center">
+                                            {THEME_ICONS[icon.value]}
+                                            <span className="ml-2">{icon.label}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <Input
+                                      placeholder="Custom icon name"
+                                      value={customIconInput}
+                                      onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
+                                      className="w-[150px]"
+                                    />
                                     <div className="flex items-center">
-                                      {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                      <span className="ml-2">
-                                        {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                      <span className="text-xs text-muted-foreground">Preview: </span>
+                                      <span className="ml-2 flex items-center">
+                                        {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                        <span className="ml-1">{customIconInput || 'eye'}</span>
                                       </span>
                                     </div>
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ICON_OPTIONS.map((icon) => (
-                                    <SelectItem key={icon.value} value={icon.value}>
-                                      <div className="flex items-center">
-                                        {THEME_ICONS[icon.value]}
-                                        <span className="ml-2">{icon.label}</span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                  </div>
+                                )}
+                                
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={toggleCustomIconInput}
+                                  className="text-xs"
+                                >
+                                  {showCustomIconInput ? "Use Preset Icon" : "Use Custom Icon"}
+                                </Button>
+                              </div>
                             ) : (
                               <div className="flex items-center">
                                 {THEME_ICONS[themeIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
@@ -324,32 +393,59 @@ export default function ThemesPage() {
                                     </SelectContent>
                                   </Select>
                                   
-                                  <Select
-                                    value={selectedIcon}
-                                    onValueChange={setSelectedIcon}
-                                    disabled={updateThemeMutation.isPending}
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select an icon">
-                                        <div className="flex items-center">
-                                          {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                          <span className="ml-2">
-                                            {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
-                                          </span>
-                                        </div>
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {ICON_OPTIONS.map((icon) => (
-                                        <SelectItem key={icon.value} value={icon.value}>
+                                  {!showCustomIconInput ? (
+                                    <Select
+                                      value={selectedIcon}
+                                      onValueChange={setSelectedIcon}
+                                      disabled={updateThemeMutation.isPending}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select an icon">
                                           <div className="flex items-center">
-                                            {THEME_ICONS[icon.value]}
-                                            <span className="ml-2">{icon.label}</span>
+                                            {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                            <span className="ml-2">
+                                              {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                            </span>
                                           </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {ICON_OPTIONS.map((icon) => (
+                                          <SelectItem key={icon.value} value={icon.value}>
+                                            <div className="flex items-center">
+                                              {THEME_ICONS[icon.value]}
+                                              <span className="ml-2">{icon.label}</span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      <Input
+                                        placeholder="Custom icon name"
+                                        value={customIconInput}
+                                        onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
+                                        className="w-full"
+                                      />
+                                      <div className="flex items-center">
+                                        <span className="text-xs text-muted-foreground">Preview: </span>
+                                        <span className="ml-2 flex items-center">
+                                          {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                          <span className="ml-1">{customIconInput || 'eye'}</span>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={toggleCustomIconInput}
+                                    className="text-xs w-full mt-1"
+                                  >
+                                    {showCustomIconInput ? "Use Preset Icon" : "Use Custom Icon"}
+                                  </Button>
                                 </div>
                                 
                                 <Button

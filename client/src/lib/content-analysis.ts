@@ -980,6 +980,89 @@ export function detectThemes(content: string): ThemeCategory[] {
   }
 }
 
+/**
+ * Calculate the intensity/horror level of content based on keywords and patterns
+ * Returns a value from 1-5 representing horror intensity
+ */
+export function calculateIntensity(content: string): number {
+  try {
+    if (!content) return 1;
+    
+    // Clean the content for analysis
+    const lowerContent = content.toLowerCase()
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+    
+    // Horror keywords with different intensity levels
+    const severeHorrorKeywords = [
+      'blood', 'gore', 'slaughter', 'mutilate', 'dismember', 'eviscerate', 
+      'corpse', 'viscera', 'entrails', 'disembowel', 'decapitate',
+      'torture', 'agony', 'excruciating', 'scream', 'shriek', 'howl',
+      'terror', 'horrific', 'nightmarish', 'hellish', 'abomination'
+    ];
+    
+    const moderateHorrorKeywords = [
+      'death', 'dead', 'kill', 'murder', 'stab', 'wound', 'cut',
+      'haunt', 'demon', 'monster', 'creature', 'beast', 'parasite',
+      'fear', 'dread', 'horror', 'terrify', 'panic', 'shock',
+      'evil', 'sinister', 'malevolent', 'darkness', 'shadow'
+    ];
+    
+    const mildHorrorKeywords = [
+      'strange', 'weird', 'odd', 'unusual', 'mysterious', 'unknown',
+      'creepy', 'eerie', 'spooky', 'scary', 'frightening', 'unsettling',
+      'disturb', 'uncomfortable', 'nervous', 'anxious', 'worry', 'concern',
+      'chill', 'cold', 'shiver', 'tremble', 'shake', 'unease'
+    ];
+    
+    // Count occurrences of horror keywords
+    let severeCount = 0;
+    let moderateCount = 0;  
+    let mildCount = 0;
+    
+    severeHorrorKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const matches = lowerContent.match(regex);
+      if (matches) severeCount += matches.length;
+    });
+    
+    moderateHorrorKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const matches = lowerContent.match(regex);
+      if (matches) moderateCount += matches.length;
+    });
+    
+    mildHorrorKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const matches = lowerContent.match(regex);
+      if (matches) mildCount += matches.length;
+    });
+    
+    // Calculate weighted score
+    const wordCount = lowerContent.split(/\s+/).length;
+    const contentLength = Math.max(50, Math.min(wordCount, 1000)); // Normalize for very short/long content
+    
+    const densityFactor = 200; // Arbitrary factor for scaling
+    
+    const severeDensity = (severeCount * 3) / contentLength * densityFactor;
+    const moderateDensity = (moderateCount * 2) / contentLength * densityFactor;
+    const mildDensity = mildCount / contentLength * densityFactor;
+    
+    const totalScore = severeDensity + moderateDensity + mildDensity;
+    
+    // Map score to 1-5 scale
+    if (totalScore >= 15) return 5;
+    if (totalScore >= 10) return 4;
+    if (totalScore >= 6) return 3;
+    if (totalScore >= 3) return 2;
+    return 1;
+  } catch (error) {
+    console.error('Error calculating intensity:', error);
+    return 1; // Default to lowest intensity on error
+  }
+}
+
 export function calculateContentSimilarity(text1: string, text2: string): number {
   try {
     // Simple implementation using Jaccard similarity

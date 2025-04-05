@@ -61,11 +61,47 @@ export const THEME_CATEGORIES = {
   },
   COSMIC: { 
     label: "Cosmic/Lovecraftian",
-    icon: "globe" 
+    icon: "alien" 
   },
   UNCANNY: { 
     label: "Uncanny",
     icon: "doll" 
+  },
+  ELEMENTAL: {
+    label: "Elemental",
+    icon: "cloud"
+  },
+  AQUATIC: {
+    label: "Aquatic",
+    icon: "droplets"
+  },
+  RITUAL: {
+    label: "Ritual",
+    icon: "sparkles"
+  },
+  MEDICAL: {
+    label: "Medical",
+    icon: "syringe"
+  },
+  HAUNTING: {
+    label: "Haunting",
+    icon: "wind"
+  },
+  IDENTITY: {
+    label: "Identity",
+    icon: "scanface"
+  },
+  OCCULT: {
+    label: "Occult",
+    icon: "tally4"
+  },
+  PASSION: {
+    label: "Passion",
+    icon: "heart"
+  },
+  INFERNAL: {
+    label: "Infernal",
+    icon: "flame"
   }
 };
 

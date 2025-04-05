@@ -1,11 +1,58 @@
+import React from "react";
 import { motion } from "framer-motion";
 import { type Post } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Bug as Worm, Skull, Brain, Pill, Cpu, Dna, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge } from "lucide-react";
+import { Bug, Skull, Brain, Pill, Cpu, Dna, Ghost, Footprints, Castle, Radiation, UserMinus2, Anchor, AlertTriangle, Building, Clock, Moon, Timer, Gauge, Scissors, Hourglass, Utensils, Axe, Car, Bot, Eye, Zap, Flame, Cloud, Droplets, Heart, Wind, ScanFace, Tally4, Sparkles, Syringe, Globe, Scan, CloudRain, Copy, UserPlus } from "lucide-react";
 import { detectThemes, calculateIntensity, getReadingTime, THEME_CATEGORIES } from "@/lib/content-analysis";
+
+// Icon mapping to consistently handle case-insensitive icon names across the application
+const THEME_ICONS: Record<string, React.ReactNode> = {
+  'skull': <Skull className="h-4 w-4" />,
+  'brain': <Brain className="h-4 w-4" />,
+  'ghost': <Ghost className="h-4 w-4" />,
+  'eye': <Eye className="h-4 w-4" />,
+  'pill': <Pill className="h-4 w-4" />,
+  'cpu': <Cpu className="h-4 w-4" />,
+  'dna': <Dna className="h-4 w-4" />,
+  'radiation': <Radiation className="h-4 w-4" />,
+  'anchor': <Anchor className="h-4 w-4" />,
+  'userminus2': <UserMinus2 className="h-4 w-4" />,
+  'building': <Building className="h-4 w-4" />,
+  'scissors': <Scissors className="h-4 w-4" />,
+  'hourglass': <Hourglass className="h-4 w-4" />,
+  'footprints': <Footprints className="h-4 w-4" />,
+  'castle': <Castle className="h-4 w-4" />,
+  'utensils': <Utensils className="h-4 w-4" />,
+  'axe': <Axe className="h-4 w-4" />,
+  'car': <Car className="h-4 w-4" />,
+  'bot': <Bot className="h-4 w-4" />,
+  'alien': <Zap className="h-4 w-4" />,
+  'zap': <Zap className="h-4 w-4" />,
+  'cloud': <Cloud className="h-4 w-4" />,
+  'droplets': <Droplets className="h-4 w-4" />,
+  'heart': <Heart className="h-4 w-4" />,
+  'wind': <Wind className="h-4 w-4" />,
+  'scanface': <ScanFace className="h-4 w-4" />,
+  'tally4': <Tally4 className="h-4 w-4" />,
+  'sparkles': <Sparkles className="h-4 w-4" />,
+  'syringe': <Syringe className="h-4 w-4" />,
+  'flame': <Flame className="h-4 w-4" />,
+  'bug': <Bug className="h-4 w-4" />,
+  'moon': <Moon className="h-4 w-4" />,
+  'alerttriangle': <AlertTriangle className="h-4 w-4" />,
+  'doll': <AlertTriangle className="h-4 w-4" />,
+  'globe': <Globe className="h-4 w-4" />,
+  'scan': <Scan className="h-4 w-4" />,
+  'copy': <Copy className="h-4 w-4" />,
+  'user-plus': <UserPlus className="h-4 w-4" />,
+  'userplus': <UserPlus className="h-4 w-4" />,
+  'cloud-rain': <CloudRain className="h-4 w-4" />,
+  'cloudrain': <CloudRain className="h-4 w-4" />,
+  'clock': <Clock className="h-4 w-4" />
+};
 
 interface PostCardProps {
   post: Post;
@@ -120,29 +167,30 @@ const getEngagingExcerpt = (content: string): string => {
   return bestParagraph;
 };
 
-  // Use type detection and theme categorization
-  const themes = post.content ? detectThemes(post.content) : [];
-  const theme = themes.length > 0 ? themes[0] : null;
+  // Use stored theme category and icon if available, otherwise use automatic detection
+  let theme: string | null = null;
+  let iconName: string | null = null;
+
+  // First check if the post has manually assigned theme/icon from admin
+  if (post.themeCategory) {
+    theme = post.themeCategory as string;
+    iconName = post.themeIcon || null;
+  } else {
+    // Fall back to automatic detection if no admin-assigned theme
+    const themes = post.content ? detectThemes(post.content) : [];
+    theme = themes.length > 0 ? themes[0] : null;
+  }
+
   const intensity = post.content ? calculateIntensity(post.content) : 1;
-  const themeInfo = theme ? THEME_CATEGORIES[theme] : null;
+  const themeInfo = theme ? THEME_CATEGORIES[theme as keyof typeof THEME_CATEGORIES] : null;
   const displayName = theme ? theme.charAt(0) + theme.slice(1).toLowerCase().replace(/_/g, ' ') : '';
 
-  const IconComponent = themeInfo?.icon === 'Worm' ? Worm :
-                    themeInfo?.icon === 'Skull' ? Skull :
-                    themeInfo?.icon === 'Brain' ? Brain :
-                    themeInfo?.icon === 'Pill' ? Pill :
-                    themeInfo?.icon === 'Cpu' ? Cpu :
-                    themeInfo?.icon === 'Dna' ? Dna :
-                    themeInfo?.icon === 'Ghost' ? Ghost :
-                    themeInfo?.icon === 'Footprints' ? Footprints :
-                    themeInfo?.icon === 'Castle' ? Castle :
-                    themeInfo?.icon === 'Radiation' ? Radiation :
-                    themeInfo?.icon === 'UserMinus2' ? UserMinus2 :
-                    themeInfo?.icon === 'Anchor' ? Anchor :
-                    themeInfo?.icon === 'AlertTriangle' ? AlertTriangle :
-                    themeInfo?.icon === 'Building' ? Building :
-                    themeInfo?.icon === 'Clock' ? Clock :
-                    Moon;
+  // Determine icon - use the stored iconName if available, otherwise use theme's default icon
+  const defaultIconName = themeInfo?.icon || 'ghost';
+  const actualIconName = iconName || defaultIconName;
+  
+  // Convert to lowercase for consistent lookup
+  const iconKey = actualIconName?.toLowerCase() || 'ghost';
 
   return (
     <motion.div
@@ -176,7 +224,10 @@ const getEngagingExcerpt = (content: string): string => {
                 variant="default"
                 className="text-xs font-medium tracking-wide px-2 py-0.5 flex items-center gap-1 w-fit"
               >
-                <IconComponent className="h-3 w-3" />
+                {THEME_ICONS[iconKey] ? 
+                  THEME_ICONS[iconKey] :
+                  <Ghost className="h-3 w-3" />
+                }
                 {displayName}
               </Badge>
             </div>
