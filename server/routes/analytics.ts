@@ -52,12 +52,11 @@ router.post('/vitals', async (req: Request, res: Response) => {
     storage.storePerformanceMetric({
       metricName,
       value,
-      // Use any to bypass TypeScript checking since we know the storage implementation accepts userId
-      userAgent: userAgent || req.headers['user-agent'] || 'unknown',
-      url: url || req.headers.referer || 'unknown',
+      // Provide all required fields for the performance metric
+      userAgent: userAgent || req.headers['user-agent'] as string || 'unknown',
+      url: url || (req.headers.referer as string) || 'unknown',
       identifier: identifier || `metric-${Date.now()}`,
-      navigationType: navigationType || 'navigation',
-      timestamp: new Date()
+      navigationType: navigationType || 'navigation'
     } as any).catch(error => {
       analyticsLogger.error('Failed to store performance metric', { error });
     });
@@ -105,13 +104,21 @@ router.get('/engagement', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    // Return mock data since getUserEngagementMetrics isn't fully implemented
+    // Fetch real engagement metrics from the performance_metrics table
+    const interactionMetrics = await storage.getPerformanceMetricsByType('interaction');
+    const pageViewMetrics = await storage.getPerformanceMetricsByType('pageview');
+    const timeOnPageMetrics = await storage.getPerformanceMetricsByType('timeOnPage');
+    
+    // Calculate real user engagement metrics from stored data
     const engagementMetrics = {
-      totalReadingTime: 0,
-      averageSessionDuration: 0,
-      totalUsers: 0,
-      activeUsers: 0,
-      returning: 0
+      totalReadingTime: timeOnPageMetrics.reduce((sum, metric) => sum + Number(metric.value), 0),
+      averageSessionDuration: timeOnPageMetrics.length ? 
+        timeOnPageMetrics.reduce((sum, metric) => sum + Number(metric.value), 0) / timeOnPageMetrics.length : 0,
+      totalUsers: await storage.getUniqueUserCount(),
+      activeUsers: await storage.getActiveUserCount(),
+      interactions: interactionMetrics.length,
+      pageViews: pageViewMetrics.length,
+      returning: await storage.getReturningUserCount()
     };
     
     // Return data
@@ -159,8 +166,7 @@ router.post('/pageview', async (req: Request, res: Response) => {
       identifier: `pageview-${Date.now()}`,
       navigationType: 'navigation',
       url: path,
-      userAgent: userAgent || req.headers['user-agent'] || 'unknown',
-      timestamp: timestamp ? new Date(timestamp) : new Date()
+      userAgent: userAgent || req.headers['user-agent'] as string || 'unknown'
     }).catch(error => {
       analyticsLogger.error('Failed to store page view', { error: error instanceof Error ? error.message : String(error) });
     });
@@ -195,16 +201,16 @@ router.post('/interaction', async (req: Request, res: Response) => {
       analyticsLogger.debug('Received interaction', { interactionType, path });
     }
     
-    // Store in database asynchronously
-    storage.recordUserInteraction({
-      interactionType,
-      details: details || {},
-      timestamp: timestamp ? new Date(timestamp) : new Date(),
-      path: path || req.headers.referer || 'unknown',
-      userId: req.user?.id, // Only track for authenticated users
-      sessionId: req.sessionID
-    } as any).catch(error => {
-      analyticsLogger.error('Failed to store interaction', { error });
+    // Store in database asynchronously as a performance metric
+    storage.storePerformanceMetric({
+      metricName: `interaction_${interactionType}`,
+      value: 1,
+      identifier: `interaction-${Date.now()}`,
+      navigationType: 'interaction',
+      url: path || req.headers.referer as string || 'unknown',
+      userAgent: req.headers['user-agent'] as string || 'unknown'
+    }).catch((error: Error) => {
+      analyticsLogger.error('Failed to store interaction', { error: error instanceof Error ? error.message : String(error) });
     });
     
     res.status(200).json({ message: 'Interaction recorded' });

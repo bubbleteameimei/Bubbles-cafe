@@ -83,7 +83,7 @@ const pool = new Pool({
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
-import { eq, desc, and, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, or, not, like, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from 'bcryptjs';
@@ -224,6 +224,10 @@ export interface IStorage {
 
   // Add performance metrics method
   storePerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric>;
+  getPerformanceMetricsByType(metricType: string): Promise<PerformanceMetric[]>;
+  getUniqueUserCount(): Promise<number>;
+  getActiveUserCount(): Promise<number>;
+  getReturningUserCount(): Promise<number>;
   getAdminInfo(): Promise<{
     totalPosts: number;
     totalUsers: number;
@@ -2355,6 +2359,88 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting admin info:", error);
       throw new Error("Failed to fetch admin information");
+    }
+  }
+  
+  // New methods for real metrics analysis
+  
+  async getPerformanceMetricsByType(metricType: string): Promise<PerformanceMetric[]> {
+    try {
+      // For metricType, we can check partial matches (e.g., 'interaction' will match 'interaction_click', 'interaction_scroll', etc.)
+      return await db.select()
+        .from(performanceMetrics)
+        .where(sql`metric_name LIKE ${metricType + '%'}`)
+        .orderBy(desc(performanceMetrics.timestamp))
+        .limit(1000);
+    } catch (error) {
+      console.error(`[Storage] Error getting metrics by type ${metricType}:`, error);
+      return [];
+    }
+  }
+  
+  async getUniqueUserCount(): Promise<number> {
+    try {
+      // This is a simple approximation by counting unique identifiers from the last 30 days
+      // In a real implementation with user authentication, you would count users with activity
+      const result = await db.select({
+        count: sql<number>`COUNT(DISTINCT identifier)`
+      })
+      .from(performanceMetrics)
+      .where(
+        and(
+          sql`timestamp > NOW() - INTERVAL '30 days'`,
+          eq(performanceMetrics.metricName, 'pageview')
+        )
+      );
+      
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('[Storage] Error getting unique user count:', error);
+      return 0;
+    }
+  }
+  
+  async getActiveUserCount(): Promise<number> {
+    try {
+      // Count users with activity in the last 7 days
+      const result = await db.select({
+        count: sql<number>`COUNT(DISTINCT identifier)`
+      })
+      .from(performanceMetrics)
+      .where(
+        and(
+          sql`timestamp > NOW() - INTERVAL '7 days'`,
+          eq(performanceMetrics.metricName, 'pageview')
+        )
+      );
+      
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('[Storage] Error getting active user count:', error);
+      return 0;
+    }
+  }
+  
+  async getReturningUserCount(): Promise<number> {
+    try {
+      // Count identifiers that appear multiple times within the last 30 days
+      // This is a simplified approach that counts returning visitors
+      const result = await db.execute(sql`
+        SELECT COUNT(DISTINCT identifier) as count
+        FROM (
+          SELECT identifier, COUNT(*) as visit_count
+          FROM performance_metrics
+          WHERE metric_name = 'pageview'
+          AND timestamp > NOW() - INTERVAL '30 days'
+          GROUP BY identifier
+          HAVING COUNT(*) > 1
+        ) as returning_visitors
+      `);
+      
+      return result.rows[0]?.count || 0;
+    } catch (error) {
+      console.error('[Storage] Error getting returning user count:', error);
+      return 0;
     }
   }
 

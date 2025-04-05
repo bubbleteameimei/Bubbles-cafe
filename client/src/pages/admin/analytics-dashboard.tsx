@@ -29,16 +29,45 @@ export default function AnalyticsDashboard() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Query for main analytics data
-  const { data: analyticsData, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/admin/analytics', refreshKey],
+  // Define interfaces for our analytics data
+  interface SiteAnalytics {
+    totalViews: number;
+    uniqueVisitors: number;
+    avgReadTime: number;
+    bounceRate: number;
+  }
+  
+  interface EngagementMetrics {
+    totalReadingTime: number;
+    averageSessionDuration: number;
+    totalUsers: number;
+    activeUsers: number;
+    interactions: number;
+    pageViews: number;
+    returning: number;
+  }
+  
+  // Query for site analytics summary data
+  const { data: analyticsData, isLoading: isLoadingSite, error: siteError, refetch: refetchSite } = useQuery<SiteAnalytics>({
+    queryKey: ['/api/analytics/site', refreshKey],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+  
+  // Query for user engagement data
+  const { data: engagementData, isLoading: isLoadingEngagement, error: engagementError, refetch: refetchEngagement } = useQuery<EngagementMetrics>({
+    queryKey: ['/api/analytics/engagement', refreshKey],
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1)
-    refetch()
+    refetchSite()
+    refetchEngagement()
   }
+  
+  // Determine if any queries are loading or have errors
+  const isLoading = isLoadingSite || isLoadingEngagement
+  const hasError = siteError || engagementError
 
   if (isLoading) {
     return (
@@ -55,7 +84,7 @@ export default function AnalyticsDashboard() {
     )
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] p-8">
         <div className="text-xl font-semibold text-red-500 mb-4">Error loading analytics data</div>
@@ -108,14 +137,14 @@ export default function AnalyticsDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Page Views</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analyticsData?.totalViews?.toLocaleString() || 0}
+                  {engagementData?.pageViews.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +{analyticsData?.viewsChangePercent || 5.2}% from last month
+                  From all site users
                 </p>
               </CardContent>
             </Card>
@@ -125,36 +154,78 @@ export default function AnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analyticsData?.uniqueVisitors?.toLocaleString() || 0}
+                  {engagementData?.totalUsers.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +{analyticsData?.visitorsChangePercent || 3.1}% from last month
+                  Past 30 days
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Read Time</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {Math.floor((analyticsData?.avgReadTime || 0) / 60)}m {(analyticsData?.avgReadTime || 0) % 60}s
+                  {engagementData?.activeUsers.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +{analyticsData?.readTimeChangePercent || 8.5}% from last month
+                  Past 7 days
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Bounce Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Interactions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {analyticsData?.bounceRate?.toFixed(1) || 0}%
+                  {engagementData?.interactions.toLocaleString() || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  -{analyticsData?.bounceRateChangePercent || 1.8}% from last month
+                  All clicks and engagements
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Reading Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Math.floor((engagementData?.totalReadingTime || 0) / 60)}m {(engagementData?.totalReadingTime || 0) % 60}s
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total time spent reading
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg. Session</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Math.floor((engagementData?.averageSessionDuration || 0) / 60)}m {Math.floor((engagementData?.averageSessionDuration || 0) % 60)}s
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Average user session length
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Returning Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {engagementData?.returning.toLocaleString() || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users with multiple visits
                 </p>
               </CardContent>
             </Card>
