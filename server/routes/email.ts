@@ -1,126 +1,97 @@
 /**
  * Email Routes
  * 
- * API endpoints for sending emails and checking email service status.
+ * API routes for email functionality
  */
 
 import { Router } from 'express';
 import logger from '../utils/logger';
 import { sendEmail } from '../services/email';
-import { checkMailerSendStatus } from '../services/mailersend';
+import { checkGmailStatus } from '../services/gmail';
 import { checkSendGridStatus } from '../services/sendgrid';
+import { checkMailerSendStatus } from '../services/mailersend';
 import { isAdmin } from '../middlewares/auth';
+import { EmailMessage } from '../services/email-types';
 
 const router = Router();
 
 /**
- * Send an email
+ * GET /api/email/status
  * 
- * POST /api/email/send
- * 
- * Request body: {
- *   to: string | string[],
- *   subject: string,
- *   text?: string,
- *   html?: string,
- *   replyTo?: string
- * }
- * 
- * Response: {
- *   success: boolean,
- *   message: string
- * }
+ * Check the status of the email services
+ * Admin-only endpoint
  */
-router.post('/send', isAdmin, async (req, res) => {
+router.get('/status', isAdmin, async (req, res) => {
   try {
-    const { to, subject, text, html, replyTo } = req.body;
+    const gmail = await checkGmailStatus();
+    const sendgrid = await checkSendGridStatus();
+    const mailersend = await checkMailerSendStatus();
     
-    // Basic validation
-    if (!to) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Recipient (to) is required' 
-      });
-    }
-    
-    if (!subject) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Subject is required' 
-      });
-    }
-    
-    if (!text && !html) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email body (text or html) is required' 
-      });
-    }
-    
-    // Send the email
-    const result = await sendEmail({
-      to,
-      subject,
-      ...(text && { text }),
-      ...(html && { html }),
-      ...(replyTo && { replyTo }),
-    });
-    
-    // Log success
-    logger.info(`[Email] Successfully sent email to ${Array.isArray(to) ? to.join(', ') : to}`, {
-      subject,
-      service: result.service,
-    });
-    
-    return res.status(200).json({
+    res.json({
       success: true,
-      message: `Email sent successfully via ${result.service}`,
-      service: result.service,
+      services: {
+        gmail,
+        sendgrid,
+        mailersend
+      },
+      primaryService: gmail ? 'gmail' : (sendgrid ? 'sendgrid' : (mailersend ? 'mailersend' : 'none'))
     });
   } catch (error: any) {
-    logger.error('[Email] Failed to send email', {
-      error: error.message,
-      stack: error.stack,
+    logger.error('[Email] Error checking email service status', {
+      error: error.message
     });
     
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: `Failed to send email: ${error.message}`,
+      message: 'Failed to check email service status',
+      error: error.message
     });
   }
 });
 
 /**
- * Check email service status
+ * POST /api/email/test
  * 
- * GET /api/email/status
- * 
- * Response: {
- *   sendgrid: boolean,
- *   mailersend: boolean
- * }
+ * Send a test email
+ * Admin-only endpoint
  */
-router.get('/status', isAdmin, async (_req, res) => {
+router.post('/test', isAdmin, async (req, res) => {
   try {
-    // Check status of both email providers
-    const [sendgridStatus, mailersendStatus] = await Promise.allSettled([
-      checkSendGridStatus(),
-      checkMailerSendStatus()
-    ]);
+    const { to, subject, text, html } = req.body;
     
-    return res.status(200).json({
-      sendgrid: sendgridStatus.status === 'fulfilled' ? sendgridStatus.value : false,
-      mailersend: mailersendStatus.status === 'fulfilled' ? mailersendStatus.value : false,
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipient email address is required'
+      });
+    }
+    
+    // Create email message
+    const message: EmailMessage = {
+      to,
+      subject: subject || 'Test Email from Bubble\'s Cafe',
+      text: text || 'This is a test email from Bubble\'s Cafe.',
+      html: html || '<h1>Test Email</h1><p>This is a test email from Bubble\'s Cafe.</p>'
+    };
+    
+    // Send the email
+    const result = await sendEmail(message);
+    
+    res.json({
+      success: true,
+      message: 'Test email sent successfully',
+      details: result
     });
   } catch (error: any) {
-    logger.error('[Email] Failed to check email services status', {
+    logger.error('[Email] Error sending test email', {
       error: error.message,
-      stack: error.stack,
+      stack: error.stack
     });
     
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: `Failed to check email services: ${error.message}`,
+      message: 'Failed to send test email',
+      error: error.message
     });
   }
 });

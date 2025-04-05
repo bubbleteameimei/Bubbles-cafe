@@ -1,35 +1,84 @@
 /**
  * Authentication Middleware
  * 
- * This module provides middleware functions for checking user authentication and authorization.
+ * Middleware functions for protecting routes based on authentication status.
  */
 
 import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 
-// Check if user is authenticated
-export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
+// Interface for user object with admin flag
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin?: boolean;
+  [key: string]: any;
+}
+
+// Add user to request object
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
+/**
+ * Check if user is authenticated
+ * 
+ * @param req Express request
+ * @param res Express response
+ * @param next Next function
+ */
+export function isAuthenticated(req: Request, res: Response, next: NextFunction): void {
+  if (req.user) {
     return next();
   }
-  return res.status(401).json({ success: false, message: 'Unauthorized' });
-};
 
-// Check if user is an admin
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated() && req.user && (req.user as any).isAdmin) {
+  logger.warn('[Auth] Unauthorized access attempt', {
+    path: req.path,
+    ip: req.ip,
+  });
+  
+  res.status(401).json({
+    success: false,
+    message: 'Authentication required',
+  });
+}
+
+/**
+ * Check if user is an admin
+ * 
+ * @param req Express request
+ * @param res Express response
+ * @param next Next function
+ */
+export function isAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (req.user?.isAdmin) {
     return next();
   }
-  return res.status(403).json({ success: false, message: 'Forbidden - Admin access required' });
-};
-
-// Allow access for authenticated users or continue for public routes
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
-  // Even if not authenticated, allow the request to continue
-  return next();
-};
-
-export default {
-  isAuthenticated,
-  isAdmin,
-  optionalAuth
-};
+  
+  logger.warn('[Auth] Unauthorized admin access attempt', {
+    path: req.path,
+    ip: req.ip,
+    user: req.user?.id,
+  });
+  
+  // If user is not authenticated at all
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Authentication required',
+    });
+    return;
+  }
+  
+  // If user is authenticated but not an admin
+  res.status(403).json({
+    success: false,
+    message: 'Admin privileges required',
+  });
+  return;
+}

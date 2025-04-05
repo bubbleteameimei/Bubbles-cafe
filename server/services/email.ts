@@ -1,74 +1,88 @@
 /**
  * Email Service
  * 
- * This module provides a unified interface for sending emails through multiple providers.
- * It attempts to send emails through SendGrid first, and falls back to MailerSend if that fails.
+ * Functions for sending emails using available providers.
  */
 
-import { EmailMessage, EmailResult } from './email-types';
+import nodemailer from 'nodemailer';
 import logger from '../utils/logger';
+import { createGmailTransporter } from './gmail';
 import * as sendgrid from './sendgrid';
 import * as mailersend from './mailersend';
+import { EmailMessage, EmailResult } from './email-types';
 
 /**
- * Send an email with automatic fallback between providers
+ * Send an email using the available email providers
  * 
- * This function attempts to send an email through SendGrid first.
- * If that fails, it attempts to send through MailerSend.
+ * Will try Gmail first, then SendGrid, then MailerSend
  * 
- * @param emailMessage Email message to send
- * @returns Promise that resolves to result of sending the email
+ * @param message Email message to send
+ * @returns Promise resolving to the result of the email send operation
  */
-export async function sendEmail(emailMessage: EmailMessage): Promise<EmailResult> {
-  // Try SendGrid first
+export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
+  // Gmail (primary)
   try {
-    logger.info('[Email] Attempting to send email via SendGrid');
-    const result = await sendgrid.sendEmail(emailMessage);
-    
-    if (result.success) {
-      logger.info('[Email] Successfully sent email via SendGrid');
-      return result;
-    }
-    
-    logger.warn('[Email] SendGrid failed, falling back to MailerSend', {
-      error: result.error?.message
+    const transporter = createGmailTransporter();
+    const result = await transporter.sendMail({
+      from: message.from || process.env.GMAIL_USER || 'noreply@bubblescafe.com',
+      to: message.to,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+      replyTo: message.replyTo,
+      attachments: message.attachments
     });
-  } catch (error: any) {
-    logger.error('[Email] Error using SendGrid', {
-      error: error.message,
-      stack: error.stack,
-    });
-  }
-  
-  // If SendGrid fails, try MailerSend
-  try {
-    logger.info('[Email] Attempting to send email via MailerSend');
-    const result = await mailersend.sendEmail(emailMessage);
     
-    if (result.success) {
-      logger.info('[Email] Successfully sent email via MailerSend (fallback)');
-      return result;
-    }
-    
-    logger.error('[Email] MailerSend failed', {
-      error: result.error?.message
+    logger.info('[Email] Successfully sent email via Gmail', {
+      to: message.to,
+      subject: message.subject,
+      messageId: result.messageId
     });
     
     return {
-      success: false,
-      service: 'none',
-      error: new Error('All email providers failed'),
+      success: true,
+      service: 'gmail' as const,
+      messageId: result.messageId,
+      details: result
     };
-  } catch (error: any) {
-    logger.error('[Email] Error using MailerSend', {
-      error: error.message,
-      stack: error.stack,
+  } catch (gmailError: any) {
+    logger.warn('[Email] Failed to send email via Gmail, trying SendGrid', {
+      error: gmailError.message,
+      stack: gmailError.stack
     });
     
-    return {
-      success: false,
-      service: 'none',
-      error: new Error(`All email providers failed: ${error.message}`),
-    };
+    // SendGrid (secondary)
+    try {
+      // Use the sendEmail function from the SendGrid service
+      return await sendgrid.sendEmail(message);
+    } catch (sendgridError: any) {
+      logger.warn('[Email] Failed to send email via SendGrid, trying MailerSend', {
+        error: sendgridError.message,
+        stack: sendgridError.stack
+      });
+      
+      // MailerSend (final fallback)
+      try {
+        // Use the sendEmail function from the MailerSend service
+        return await mailersend.sendEmail(message);
+      } catch (mailersendError: any) {
+        logger.error('[Email] All email providers failed', {
+          gmailError: gmailError.message,
+          sendgridError: sendgridError.message,
+          mailersendError: mailersendError.message
+        });
+        
+        return {
+          success: false,
+          service: 'none',
+          error: new Error('All email providers failed'),
+          details: {
+            gmailError,
+            sendgridError,
+            mailersendError
+          }
+        };
+      }
+    }
   }
 }

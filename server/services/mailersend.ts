@@ -1,205 +1,185 @@
 /**
  * MailerSend Service
  * 
- * This service provides email sending capabilities via the MailerSend API.
- * It uses fetch API for making HTTP requests to avoid dependency issues.
+ * Functions for working with MailerSend email service.
  */
 
-import { EmailMessage, EmailResult, MailerSendEmail, MailerSendRecipient } from './email-types';
+import fetch from 'node-fetch';
 import logger from '../utils/logger';
-
-// Configuration
-const MAILERSEND_API_KEY = process.env.MAILERSEND_API_TOKEN || '';
-const MAILERSEND_API_URL = 'https://api.mailersend.com/v1';
-const DEFAULT_FROM_EMAIL = 'noreply@bubblescafe.com';
-const DEFAULT_FROM_NAME = 'Bubble\'s Cafe';
+import { EmailMessage, EmailResult, MailerSendEmail, MailerSendRecipient } from './email-types';
 
 /**
- * Send a simple email via MailerSend API
+ * Check if MailerSend API key is available
  * 
- * @param to Recipient email(s)
- * @param subject Email subject
- * @param content Email content (HTML or plain text)
- * @param isHtml Whether the content is HTML or plain text
- * @returns Promise that resolves to response from MailerSend API
+ * @returns Boolean indicating if API key is set
  */
-export async function sendSimpleEmail(
-  to: string | string[],
-  subject: string,
-  content: string,
-  isHtml: boolean = true
-): Promise<EmailResult> {
-  try {
-    // Check if API key is available
-    if (!MAILERSEND_API_KEY) {
-      throw new Error('MailerSend API key is not configured');
-    }
-
-    // Format recipients
-    const recipients = Array.isArray(to)
-      ? to.map(email => ({ email }))
-      : [{ email: to }] as MailerSendRecipient[];
-
-    // Prepare email data
-    const emailData: MailerSendEmail = {
-      from: {
-        email: DEFAULT_FROM_EMAIL,
-        name: DEFAULT_FROM_NAME,
-      },
-      to: recipients,
-      subject,
-      ...(isHtml ? { html: content } : { text: content }),
-    };
-
-    // Send request to MailerSend API
-    const response = await fetch(`${MAILERSEND_API_URL}/email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MAILERSEND_API_KEY}`,
-      },
-      body: JSON.stringify(emailData),
-    });
-
-    // Parse response
-    const responseData = await response.json();
-
-    // Check if response is successful
-    if (!response.ok) {
-      throw new Error(responseData.message || 'Failed to send email via MailerSend');
-    }
-
-    return {
-      success: true,
-      service: 'mailersend',
-      messageId: responseData.message_id || undefined,
-      details: responseData,
-    };
-  } catch (error: any) {
-    logger.error('[MailerSend] Error sending email', {
-      error: error.message,
-      stack: error.stack,
-    });
-    
-    return {
-      success: false,
-      service: 'mailersend',
-      error,
-    };
-  }
+function hasMailerSendApiKey(): boolean {
+  return !!process.env.MAILERSEND_API_TOKEN;
 }
 
 /**
- * Send an email via MailerSend API
+ * Check MailerSend service status
  * 
- * @param emailMessage Email message to send
- * @returns Promise that resolves to email result
- */
-export async function sendEmail(emailMessage: EmailMessage): Promise<EmailResult> {
-  try {
-    const { to, subject, html, text, from, replyTo } = emailMessage;
-    
-    // Check if API key is available
-    if (!MAILERSEND_API_KEY) {
-      throw new Error('MailerSend API key is not configured');
-    }
-    
-    // Format recipients
-    const recipients = Array.isArray(to)
-      ? to.map(email => ({ email }))
-      : [{ email: to }] as MailerSendRecipient[];
-    
-    // Prepare email data
-    const emailData: MailerSendEmail = {
-      from: {
-        email: from || DEFAULT_FROM_EMAIL,
-        name: DEFAULT_FROM_NAME,
-      },
-      to: recipients,
-      subject,
-    };
-    
-    // Add HTML or text content
-    if (html) {
-      emailData.html = html;
-    }
-    
-    if (text) {
-      emailData.text = text;
-    }
-    
-    // Add reply-to if provided
-    if (replyTo) {
-      emailData.reply_to = { email: replyTo };
-    }
-    
-    // Send request to MailerSend API
-    const response = await fetch(`${MAILERSEND_API_URL}/email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MAILERSEND_API_KEY}`,
-      },
-      body: JSON.stringify(emailData),
-    });
-    
-    // Parse response
-    const responseData = await response.json();
-    
-    // Check if response is successful
-    if (!response.ok) {
-      throw new Error(responseData.message || 'Failed to send email via MailerSend');
-    }
-    
-    return {
-      success: true,
-      service: 'mailersend',
-      messageId: responseData.message_id || undefined,
-      details: responseData,
-    };
-  } catch (error: any) {
-    logger.error('[MailerSend] Error sending email', {
-      error: error.message,
-      stack: error.stack,
-    });
-    
-    return {
-      success: false,
-      service: 'mailersend',
-      error,
-    };
-  }
-}
-
-/**
- * Check if MailerSend API is working properly
- * 
- * @returns Promise that resolves to true if MailerSend API is working
+ * @returns Promise resolving to boolean indicating if service is available
  */
 export async function checkMailerSendStatus(): Promise<boolean> {
   try {
-    // Check if API key is available
-    if (!MAILERSEND_API_KEY) {
-      logger.warn('[MailerSend] API key not configured');
+    if (!hasMailerSendApiKey()) {
+      logger.warn('[Email] MailerSend API token not configured');
       return false;
     }
     
-    // Try to fetch domains (lightweight API call to check auth)
-    const response = await fetch(`${MAILERSEND_API_URL}/domains`, {
+    // Use MailerSend API to check service status
+    const response = await fetch('https://api.mailersend.com/v1/health', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${MAILERSEND_API_KEY}`,
+        'Authorization': `Bearer ${process.env.MAILERSEND_API_TOKEN}`,
+        'Content-Type': 'application/json',
       },
     });
     
-    // If response is successful, MailerSend is working
-    return response.ok;
+    if (!response.ok) {
+      logger.error('[Email] MailerSend health check failed', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return false;
+    }
+    
+    const data = await response.json() as { health: string; version?: string };
+    
+    // Check if API response is valid and indicates service is healthy
+    const isHealthy = data && data.health === 'ok';
+    
+    logger.info('[Email] MailerSend service status check', {
+      status: isHealthy ? 'available' : 'unavailable',
+      response: data,
+    });
+    
+    return isHealthy;
   } catch (error: any) {
-    logger.error('[MailerSend] Error checking status', {
+    logger.error('[Email] Failed to verify MailerSend service', {
       error: error.message,
       stack: error.stack,
     });
     
     return false;
+  }
+}
+
+/**
+ * Format recipient for MailerSend API
+ * 
+ * @param recipient Recipient email or array of emails
+ * @returns Array of MailerSend recipient objects
+ */
+function formatRecipients(recipient: string | string[]): MailerSendRecipient[] {
+  if (Array.isArray(recipient)) {
+    return recipient.map(email => ({ email }));
+  }
+  return [{ email: recipient }];
+}
+
+/**
+ * Format attachments for MailerSend API
+ * 
+ * @param attachments Array of email attachments
+ * @returns Array of MailerSend attachment objects or undefined
+ */
+function formatAttachments(attachments?: any[]): any[] | undefined {
+  if (!attachments || !attachments.length) {
+    return undefined;
+  }
+  
+  return attachments.map(attachment => ({
+    filename: attachment.filename,
+    content: attachment.content.toString('base64'),
+    disposition: 'attachment'
+  }));
+}
+
+/**
+ * Send an email using MailerSend
+ * 
+ * @param message Email message to send
+ * @returns Promise resolving to the result of the email send operation
+ */
+export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
+  try {
+    if (!hasMailerSendApiKey()) {
+      throw new Error('MailerSend API key not configured');
+    }
+    
+    // Create MailerSend email format
+    const mailersendEmail: MailerSendEmail = {
+      from: {
+        email: message.from || process.env.MAILERSEND_FROM || 'noreply@bubblescafe.com',
+        name: 'Bubble\'s Cafe'
+      },
+      to: formatRecipients(message.to),
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+      attachments: formatAttachments(message.attachments)
+    };
+    
+    if (message.replyTo) {
+      mailersendEmail.reply_to = { email: message.replyTo };
+    }
+    
+    // Send email using MailerSend API
+    const response = await fetch('https://api.mailersend.com/v1/email', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.MAILERSEND_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(mailersendEmail)
+    });
+    
+    const data = await response.json() as any;
+    
+    if (!response.ok) {
+      logger.error('[Email] MailerSend API error', {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      });
+      
+      return {
+        success: false,
+        service: 'mailersend',
+        error: new Error(`MailerSend API error: ${data.message || response.statusText}`),
+        details: data
+      };
+    }
+    
+    logger.info('[Email] Successfully sent email via MailerSend', {
+      to: message.to,
+      subject: message.subject,
+      messageId: data.id
+    });
+    
+    return {
+      success: true,
+      service: 'mailersend',
+      messageId: data.id,
+      details: data
+    };
+  } catch (error: any) {
+    logger.error('[Email] Failed to send email via MailerSend', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    return {
+      success: false,
+      service: 'mailersend',
+      error,
+      details: {
+        message: error.message
+      }
+    };
   }
 }

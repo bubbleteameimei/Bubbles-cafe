@@ -1,22 +1,18 @@
 /**
- * Email Service Routes
+ * Email Service Routes Registration
  * 
- * API endpoints for email service configuration and testing.
+ * This file registers routes for email service functionality.
  */
 
-import { Express } from 'express';
-import emailRoutes from './email';
-import logger from '../utils/logger';
+import { Application } from 'express';
+import emailRoutes from '../routes/email';
 
 /**
- * Register all email service related routes
+ * Register email service routes
  * 
  * @param app Express application
  */
-export function registerEmailServiceRoutes(app: Express): void {
-  // Mount email routes
+export function registerEmailServiceRoutes(app: Application): void {
+  // Mount email routes under /api/email prefix
   app.use('/api/email', emailRoutes);
-  
-  // Log registration
-  logger.info('Email service routes registered');
 }

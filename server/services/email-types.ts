@@ -37,7 +37,7 @@ export interface EmailAttachment {
  */
 export interface EmailResult {
   success: boolean;
-  service: 'sendgrid' | 'mailersend' | 'none';
+  service: 'gmail' | 'sendgrid' | 'mailersend' | 'none';
   messageId?: string;
   error?: Error | null;
   details?: any;
@@ -77,35 +77,11 @@ export interface MailerSendEmail {
 }
 
 /**
- * SendGrid Email
+ * MailerSend API Response
  * 
- * Interface for SendGrid email request.
+ * Interface for MailerSend API health check response.
  */
-export interface SendGridEmail {
-  personalizations: {
-    to: {
-      email: string;
-      name?: string;
-    }[];
-    subject?: string;
-  }[];
-  from: {
-    email: string;
-    name?: string;
-  };
-  reply_to?: {
-    email: string;
-    name?: string;
-  };
-  subject: string;
-  content: {
-    type: 'text/plain' | 'text/html';
-    value: string;
-  }[];
-  attachments?: {
-    content: string; // Base64 encoded
-    filename: string;
-    type?: string;
-    disposition?: 'attachment' | 'inline';
-  }[];
+export interface MailerSendHealthResponse {
+  health: string; // 'ok' if healthy
+  version?: string;
 }
