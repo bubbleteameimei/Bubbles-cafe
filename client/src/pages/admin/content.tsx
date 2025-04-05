@@ -241,7 +241,9 @@ export default function ContentPage() {
                           post.status === 'draft' ? 'outline' : 
                           'secondary'
                         }>
-                          {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                          {post.status && typeof post.status === 'string' 
+                            ? post.status.charAt(0).toUpperCase() + post.status.slice(1)
+                            : 'Unknown'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -252,7 +254,9 @@ export default function ContentPage() {
                         }>
                           {post.sourceType === 'wordpress' && <ExternalLink className="h-3 w-3 mr-1 inline" />}
                           {post.sourceType === 'manual' && <BookOpen className="h-3 w-3 mr-1 inline" />}
-                          {post.sourceType.charAt(0).toUpperCase() + post.sourceType.slice(1)}
+                          {post.sourceType && typeof post.sourceType === 'string'
+                            ? post.sourceType.charAt(0).toUpperCase() + post.sourceType.slice(1)
+                            : 'Unknown'}
                         </Badge>
                       </TableCell>
                       <TableCell>

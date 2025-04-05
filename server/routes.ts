@@ -481,15 +481,30 @@ export function registerRoutes(app: Express): Server {
       const allPosts = await db.select({
         id: posts.id,
         title: posts.title,
-        theme_category: posts.themeCategory,
+        themeCategory: posts.themeCategory,
+        themeIcon: posts.themeIcon,
         slug: posts.slug,
         createdAt: posts.createdAt
       })
       .from(posts)
       .orderBy(desc(posts.createdAt));
       
-      console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', allPosts.length);
-      res.json(allPosts);
+      // Transform the results to support both naming conventions
+      const transformedPosts = allPosts.map((post: {
+        id: number;
+        title: string;
+        themeCategory: string | null;
+        themeIcon: string | null;
+        slug: string;
+        createdAt: Date;
+      }) => ({
+        ...post,
+        theme_category: post.themeCategory, // Add snake_case version for backward compatibility
+        theme_icon: post.themeIcon // Add snake_case version for backward compatibility
+      }));
+      
+      console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', transformedPosts.length);
+      res.json(transformedPosts);
     } catch (error) {
       console.error('[GET /api/posts/admin/themes] Error fetching admin posts for theme management:', error);
       res.status(500).json({ error: 'Failed to fetch posts' });
@@ -500,10 +515,15 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/posts/:id/theme', isAuthenticated, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const { theme_category, icon } = req.body;
+      // Allow both snake_case and camelCase property names for backward compatibility
+      const { theme_category, themeCategory, icon, themeIcon } = req.body;
+      
+      // Use the camelCase version if available, otherwise use snake_case
+      const actualThemeCategory = themeCategory || theme_category;
+      const actualIcon = themeIcon || icon;
       
       // Validate input
-      if (!theme_category) {
+      if (!actualThemeCategory) {
         return res.status(400).json({ error: 'Theme category is required' });
       }
       
@@ -519,16 +539,16 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ error: 'Forbidden' });
       }
       
-      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${theme_category}, icon: ${icon || 'default'}`);
+      console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${actualThemeCategory}, icon: ${actualIcon || 'default'}`);
       
       // Create update data with the new schema fields
       const updateData: any = { 
-        themeCategory: theme_category
+        themeCategory: actualThemeCategory
       };
       
       // If icon is provided, update that too
-      if (icon) {
-        updateData.themeIcon = icon;
+      if (actualIcon) {
+        updateData.themeIcon = actualIcon;
       }
       
       const updatedPost = await storage.updatePost(postId, updateData);
@@ -538,18 +558,21 @@ export function registerRoutes(app: Express): Server {
       await storage.clearCache(cacheKey);
       
       // Construct the response with properties that definitely exist
+      // Support both snake_case and camelCase for backward compatibility
       const responseData = {
         success: true,
         post: {
           id: updatedPost.id,
           title: updatedPost.title,
-          theme_category: updatedPost.themeCategory || null
+          theme_category: updatedPost.themeCategory || null,
+          themeCategory: updatedPost.themeCategory || null
         }
       };
       
-      // Add the icon if it exists on the updated post
+      // Add the icon if it exists on the updated post, using both naming conventions
       if ('themeIcon' in updatedPost) {
         (responseData.post as any).theme_icon = updatedPost.themeIcon;
+        (responseData.post as any).themeIcon = updatedPost.themeIcon;
       }
       
       res.json(responseData);

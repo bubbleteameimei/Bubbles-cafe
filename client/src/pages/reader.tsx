@@ -664,8 +664,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     formattedDate = 'Publication date unavailable';
   }
   
-  // Detect themes from content for categorization
-  const detectedThemes = detectThemes(currentPost.content?.rendered || currentPost.content || '');
+  // Use theme from post or detect from content
+  const postThemeCategory = currentPost.themeCategory;
+  const postThemeIcon = currentPost.themeIcon;
+  
+  // Detect themes from content as fallback if no theme is assigned
+  const detectedThemes = postThemeCategory 
+    ? [postThemeCategory] 
+    : detectThemes(currentPost.content?.rendered || currentPost.content || '');
 
   const handleSocialShare = (platform: string, url: string) => {
     try {
@@ -1332,21 +1338,69 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                         const primaryTheme = detectedThemes[0];
                         const themeInfo = THEME_CATEGORIES[primaryTheme];
                         const ThemeIcon = (() => {
+                          // First check if we have a custom icon from the post
+                          if (postThemeIcon) {
+                            // Try to find the icon in our import list
+                            switch(postThemeIcon.toLowerCase()) {
+                              case 'skull': return Skull;
+                              case 'brain': return Brain;
+                              case 'pill': return Pill;
+                              case 'cpu': return Cpu;
+                              case 'dna': return Dna;
+                              case 'ghost': return Ghost;
+                              case 'footprints': return Footprints;
+                              case 'cloud-rain': 
+                              case 'cloudrain': return CloudRain;
+                              case 'castle': return Castle;
+                              case 'bug': return Bug;
+                              case 'radiation': return Radiation;
+                              case 'umbrella': return Umbrella;
+                              case 'userminus2': 
+                              case 'user-minus2': return UserMinus2;
+                              case 'anchor': return Anchor;
+                              case 'alerttriangle': 
+                              case 'alert-triangle': return AlertTriangle;
+                              case 'building': return Building;
+                              case 'worm': return Worm;
+                              case 'cloud': return Cloud;
+                              case 'cloudfog': 
+                              case 'cloud-fog': return CloudFog;
+                              default: return Ghost; // Default fallback
+                            }
+                          }
+                          
+                          // If no custom icon, fall back to the theme definition
                           switch(themeInfo.icon) {
+                            case 'skull': 
                             case 'Skull': return Skull;
+                            case 'brain': 
                             case 'Brain': return Brain;
+                            case 'pill': 
                             case 'Pill': return Pill;
+                            case 'cpu': 
                             case 'Cpu': return Cpu;
+                            case 'dna': 
                             case 'Dna': return Dna;
+                            case 'ghost': 
                             case 'Ghost': return Ghost;
+                            case 'cross': 
                             case 'Cross': return Cross;
+                            case 'car': 
                             case 'Car': return ChevronRight; // Temporary fallback for Car icon
+                            case 'footprints': 
                             case 'Footprints': return Footprints;
+                            case 'cloudrain': 
+                            case 'cloud-rain': 
                             case 'CloudRain': return CloudRain;
+                            case 'castle': 
                             case 'Castle': return Castle;
+                            case 'utensils': 
                             case 'Utensils': return BookOpen; // Temporary fallback for Utensils icon
+                            case 'bug': 
                             case 'Bug': return Bug;
+                            case 'knife': 
                             case 'Knife': return Ghost; // Temporary fallback for Knife icon
+                            case 'scan': 
                             case 'Scan': return Cpu; // Temporary fallback for Scan icon
                             case 'AlertTriangle': return AlertTriangle;
                             case 'Copy': return RefreshCcw; // Temporary fallback for Copy icon

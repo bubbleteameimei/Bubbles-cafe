@@ -110,6 +110,9 @@ export default function ThemesPage() {
     id: number;
     title: string;
     theme_category?: string;
+    themeCategory?: string;
+    themeIcon?: string;
+    theme_icon?: string;
     slug: string;
     createdAt: string;
   }
@@ -130,15 +133,22 @@ export default function ThemesPage() {
 
   // Mutation for updating a post's theme
   const updateThemeMutation = useMutation({
-    mutationFn: async ({ id, theme, icon }: { id: number; theme: string; icon?: string }) => {
+    mutationFn: async ({ id, themeCategory, themeIcon }: { id: number; themeCategory: string; themeIcon?: string }) => {
       // If icon is provided, use it; otherwise, use the selectedIcon state
-      const iconToSend = icon || selectedIcon;
+      const iconToSend = themeIcon || selectedIcon;
       return apiRequest(`/api/posts/${id}/theme`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ theme_category: theme, icon: iconToSend }),
+        body: JSON.stringify({
+          // Support both camelCase and snake_case for backward compatibility
+          themeCategory: themeCategory,
+          themeIcon: iconToSend,
+          // Include snake_case versions for older API compatibility
+          theme_category: themeCategory,
+          icon: iconToSend,
+        }),
       });
     },
     onSuccess: () => {
@@ -181,9 +191,20 @@ export default function ThemesPage() {
   // Handler for saving the theme change
   const handleSave = (id: number) => {
     if (selectedTheme) {
-      // If using custom icon input, use that value instead of the selected icon
-      const iconToUse = showCustomIconInput && customIconInput ? customIconInput : selectedIcon;
-      updateThemeMutation.mutate({ id, theme: selectedTheme, icon: iconToUse });
+      console.log('[Admin Themes] Saving theme:', { selectedTheme, selectedIcon });
+      
+      // Determine which icon to save based on whether custom option is selected
+      const iconToUse = selectedIcon === "custom" ? 
+        (customIconInput ? customIconInput : "ghost") : // Use ghost as default if custom is selected but empty
+        selectedIcon;
+      
+      console.log('[Admin Themes] Final icon to save:', iconToUse);
+      
+      updateThemeMutation.mutate({ 
+        id, 
+        themeCategory: selectedTheme, 
+        themeIcon: iconToUse 
+      });
     }
   };
   
@@ -251,9 +272,21 @@ export default function ThemesPage() {
                     </TableRow>
                   ) : (
                     filteredPosts.map((post: Post) => {
-                      const themeKey = post.theme_category as keyof typeof THEME_CATEGORIES;
+                      // Use either camelCase or snake_case property based on what's available
+                      const themeCategory = post.themeCategory || post.theme_category;
+                      const themeKey = themeCategory as keyof typeof THEME_CATEGORIES;
                       const themeInfo = themeKey ? THEME_CATEGORIES[themeKey] : null;
-                      const themeIcon = themeInfo?.icon || 'eye';
+                      
+                      // Get icon from either property name
+                      const postIcon = post.themeIcon || post.theme_icon;
+                      const themeIcon = postIcon || (themeInfo?.icon || 'eye');
+                      
+                      console.log(`[Admin Themes] Post ${post.id} theme:`, { 
+                        themeCategory, 
+                        themeIcon,
+                        post_theme: post.theme_category,
+                        post_icon: post.theme_icon
+                      });
                       
                       return (
                         <TableRow key={post.id}>
@@ -303,23 +336,48 @@ export default function ThemesPage() {
                           <TableCell className="hidden md:table-cell">
                             {editingId === post.id ? (
                               <div className="space-y-2">
-                                {!showCustomIconInput ? (
+                                {/* Combined icon dropdown with presets and custom input field */}
+                                <div className="space-y-3">
                                   <Select
                                     value={selectedIcon}
-                                    onValueChange={setSelectedIcon}
+                                    onValueChange={(value) => {
+                                      setSelectedIcon(value);
+                                      // If user selects "custom", show input field
+                                      if (value === "custom") {
+                                        setShowCustomIconInput(true);
+                                      } else {
+                                        setShowCustomIconInput(false);
+                                        setCustomIconInput("");
+                                      }
+                                    }}
                                     disabled={updateThemeMutation.isPending}
                                   >
-                                    <SelectTrigger className="w-[150px]">
+                                    <SelectTrigger className="w-[180px]">
                                       <SelectValue placeholder="Select an icon">
                                         <div className="flex items-center">
-                                          {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                          <span className="ml-2">
-                                            {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
-                                          </span>
+                                          {selectedIcon !== "custom" ? 
+                                            (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
+                                            <span className="flex items-center">
+                                              {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                              <span className="ml-2">Custom: {customIconInput || 'none'}</span>
+                                            </span>
+                                          }
+                                          {selectedIcon !== "custom" && (
+                                            <span className="ml-2">
+                                              {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                            </span>
+                                          )}
                                         </div>
                                       </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="custom">
+                                        <div className="flex items-center">
+                                          <Pencil className="h-4 w-4" />
+                                          <span className="ml-2">Custom Icon...</span>
+                                        </div>
+                                      </SelectItem>
+                                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b">Preset Icons</div>
                                       {ICON_OPTIONS.map((icon) => (
                                         <SelectItem key={icon.value} value={icon.value}>
                                           <div className="flex items-center">
@@ -330,32 +388,26 @@ export default function ThemesPage() {
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                ) : (
-                                  <div className="space-y-2">
-                                    <Input
-                                      placeholder="Custom icon name"
-                                      value={customIconInput}
-                                      onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
-                                      className="w-[150px]"
-                                    />
-                                    <div className="flex items-center">
-                                      <span className="text-xs text-muted-foreground">Preview: </span>
-                                      <span className="ml-2 flex items-center">
-                                        {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                        <span className="ml-1">{customIconInput || 'eye'}</span>
-                                      </span>
+                                  
+                                  {/* Show custom input only when user selects "custom" option */}
+                                  {selectedIcon === "custom" && showCustomIconInput && (
+                                    <div className="space-y-2">
+                                      <Input
+                                        placeholder="Type a custom icon name"
+                                        value={customIconInput}
+                                        onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
+                                        className="w-[180px]"
+                                      />
+                                      <div className="flex items-center">
+                                        <span className="text-xs text-muted-foreground">Preview: </span>
+                                        <span className="ml-2 flex items-center">
+                                          {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                          <span className="ml-1">{customIconInput || 'eye'}</span>
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                                
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={toggleCustomIconInput}
-                                  className="text-xs"
-                                >
-                                  {showCustomIconInput ? "Use Preset Icon" : "Use Custom Icon"}
-                                </Button>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               <div className="flex items-center">
@@ -393,23 +445,48 @@ export default function ThemesPage() {
                                     </SelectContent>
                                   </Select>
                                   
-                                  {!showCustomIconInput ? (
+                                  {/* Mobile version of the combined icon dropdown with presets and custom input field */}
+                                  <div className="space-y-3">
                                     <Select
                                       value={selectedIcon}
-                                      onValueChange={setSelectedIcon}
+                                      onValueChange={(value) => {
+                                        setSelectedIcon(value);
+                                        // If user selects "custom", show input field
+                                        if (value === "custom") {
+                                          setShowCustomIconInput(true);
+                                        } else {
+                                          setShowCustomIconInput(false);
+                                          setCustomIconInput("");
+                                        }
+                                      }}
                                       disabled={updateThemeMutation.isPending}
                                     >
                                       <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select an icon">
                                           <div className="flex items-center">
-                                            {THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                            <span className="ml-2">
-                                              {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
-                                            </span>
+                                            {selectedIcon !== "custom" ? 
+                                              (THEME_ICONS[selectedIcon.toLowerCase()] || <Eye className="h-4 w-4" />) : 
+                                              <span className="flex items-center">
+                                                {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                                <span className="ml-2">Custom: {customIconInput || 'none'}</span>
+                                              </span>
+                                            }
+                                            {selectedIcon !== "custom" && (
+                                              <span className="ml-2">
+                                                {ICON_OPTIONS.find(icon => icon.value === selectedIcon.toLowerCase())?.label || 'Icon'}
+                                              </span>
+                                            )}
                                           </div>
                                         </SelectValue>
                                       </SelectTrigger>
                                       <SelectContent>
+                                        <SelectItem value="custom">
+                                          <div className="flex items-center">
+                                            <Pencil className="h-4 w-4" />
+                                            <span className="ml-2">Custom Icon...</span>
+                                          </div>
+                                        </SelectItem>
+                                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-b">Preset Icons</div>
                                         {ICON_OPTIONS.map((icon) => (
                                           <SelectItem key={icon.value} value={icon.value}>
                                             <div className="flex items-center">
@@ -420,32 +497,26 @@ export default function ThemesPage() {
                                         ))}
                                       </SelectContent>
                                     </Select>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      <Input
-                                        placeholder="Custom icon name"
-                                        value={customIconInput}
-                                        onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
-                                        className="w-full"
-                                      />
-                                      <div className="flex items-center">
-                                        <span className="text-xs text-muted-foreground">Preview: </span>
-                                        <span className="ml-2 flex items-center">
-                                          {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
-                                          <span className="ml-1">{customIconInput || 'eye'}</span>
-                                        </span>
+                                    
+                                    {/* Show custom input only when user selects "custom" option */}
+                                    {selectedIcon === "custom" && showCustomIconInput && (
+                                      <div className="space-y-2">
+                                        <Input
+                                          placeholder="Type a custom icon name"
+                                          value={customIconInput}
+                                          onChange={(e) => setCustomIconInput(e.target.value.toLowerCase())}
+                                          className="w-full"
+                                        />
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-muted-foreground">Preview: </span>
+                                          <span className="ml-2 flex items-center">
+                                            {THEME_ICONS[customIconInput.toLowerCase()] || <Eye className="h-4 w-4" />}
+                                            <span className="ml-1">{customIconInput || 'eye'}</span>
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-                                  
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={toggleCustomIconInput}
-                                    className="text-xs w-full mt-1"
-                                  >
-                                    {showCustomIconInput ? "Use Preset Icon" : "Use Custom Icon"}
-                                  </Button>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 <Button
