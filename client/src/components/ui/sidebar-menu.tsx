@@ -44,35 +44,63 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [touchStartX, setTouchStartX] = React.useState<number | null>(null);
   const sidebar = useSidebar();
   
-  // Add swipe to close functionality
+  // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
     // Only add touch events if mobile and sidebar is open
     if (!sidebar?.isMobile || !sidebar?.openMobile) return;
     
+    // Keep track of the starting position and movement
+    let startX = 0;
+    let startY = 0;
+    let moveX = 0;
+    let moveY = 0;
+    
     const handleTouchStart = (e: TouchEvent) => {
-      setTouchStartX(e.touches[0].clientX);
+      // Store both X and Y coordinates to detect diagonal swipes
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      setTouchStartX(startX);
     };
     
     const handleTouchMove = (e: TouchEvent) => {
       if (!touchStartX) return;
       
-      const touchEndX = e.touches[0].clientX;
-      const touchDiff = touchStartX - touchEndX;
+      // Get current position
+      moveX = e.touches[0].clientX;
+      moveY = e.touches[0].clientY;
       
-      // If swipe left (from right to left) with threshold of 50px
-      if (touchDiff > 50) {
+      // Calculate horizontal and vertical difference
+      const touchDiffX = startX - moveX;
+      const touchDiffY = Math.abs(startY - moveY);
+      
+      // Only trigger close if swipe is primarily horizontal (not diagonal)
+      // This prevents accidental closes when scrolling the menu
+      if (touchDiffX > 40 && touchDiffY < 30) {
+        // Close the sidebar both ways to ensure it properly closes
         sidebar.setOpenMobile(false);
+        
+        // Force the sheet to close by finding and clicking its close button
+        const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
+        if (closeButton) {
+          closeButton.click();
+        }
+        
         setTouchStartX(null); // Reset touch start
       }
     };
     
     const handleTouchEnd = () => {
-      setTouchStartX(null); // Reset touch start when touch ends
+      // Reset all touch values
+      startX = 0;
+      startY = 0;
+      moveX = 0;
+      moveY = 0;
+      setTouchStartX(null);
     };
     
-    // Add event listeners
-    document.addEventListener("touchstart", handleTouchStart);
-    document.addEventListener("touchmove", handleTouchMove);
+    // Add event listeners with passive: false to allow preventDefault if needed
+    document.addEventListener("touchstart", handleTouchStart, { passive: false });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
     document.addEventListener("touchend", handleTouchEnd);
     
     // Cleanup function
@@ -87,10 +115,30 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     if (onNavigate) {
       onNavigate();
     }
+    
+    // Ensure the sidebar is closed on mobile navigation
+    // Adding a small delay to ensure UI state updates properly
     if (sidebar?.isMobile) {
+      // First set state
       sidebar.setOpenMobile(false);
+      
+      // Also force sheet to close by finding and clicking the close button if it exists
+      setTimeout(() => {
+        const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
+        if (closeButton) {
+          closeButton.click();
+        }
+        
+        // Add an additional cleanup to make sure sidebar is closed
+        sidebar.setOpenMobile(false);
+        
+        // Navigate after ensuring sheet is closed
+        setLocation(path);
+      }, 50);
+    } else {
+      // On desktop, just navigate immediately
+      setLocation(path);
     }
-    setLocation(path);
   }, [onNavigate, sidebar, setLocation]);
   
   // Function to render the active indicator for menu items

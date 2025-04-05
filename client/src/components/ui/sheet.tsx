@@ -100,11 +100,12 @@ const SheetContent = React.forwardRef<
       >
         {children}
         <SheetPrimitive.Close 
-          className="absolute right-4 top-4 flex h-3 w-3 items-center justify-center rounded-md bg-background/95 border border-border/40 opacity-80 shadow-sm touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 focus:outline-none disabled:pointer-events-none"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-md bg-background/95 border border-border/40 opacity-70 shadow-sm touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 focus:outline-none disabled:pointer-events-none"
           style={{ WebkitTapHighlightColor: 'transparent' }}
           aria-label="Close"
+          data-close-button="true"
         >
-          <X className="h-2 w-2" strokeWidth={2} />
+          <X className="h-4 w-4" strokeWidth={2} />
           <span className="sr-only">Close</span>
           <span className="absolute inset-0 bg-current opacity-0 hover:opacity-5 active:opacity-10 transition-opacity duration-150 rounded-md" />
         </SheetPrimitive.Close>
