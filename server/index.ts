@@ -28,6 +28,14 @@ import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark r
 import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
+// Import performance middleware
+import { 
+  applyPerformanceMiddleware, 
+  cacheControlMiddleware, 
+  responseTimeMiddleware, 
+  queryPerformanceMiddleware,
+  wrapDbWithProfiler
+} from "./middleware";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -38,13 +46,26 @@ const HOST = '0.0.0.0';
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
 
+// Apply our new performance monitoring middleware
+// This wraps the database with profiling capabilities
+wrapDbWithProfiler(db);
+
 // Configure basic middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(compression());
+app.use(compression({ level: 6 })); // Improved compression settings
+
+// Add response time monitoring
+app.use(responseTimeMiddleware);
+
+// Add query performance monitoring
+app.use(queryPerformanceMiddleware);
 
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
+
+// Add cache control headers for better browser caching
+app.use(cacheControlMiddleware);
 
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
@@ -89,12 +110,17 @@ app.use(createCsrfMiddleware({
 setupAuth(app);
 setupOAuth(app);
 
-// Add health check endpoint with CSRF token information
+// Add enhanced health check endpoint with performance metrics
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    csrfToken: req.session.csrfToken || 'not set'
+    csrfToken: req.session.csrfToken || 'not set',
+    performance: {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    }
   });
 });
 
@@ -290,7 +316,7 @@ async function startServer() {
           // Output more detailed message for debug purposes
           console.log(`\n🚀 APPLICATION READY! 🚀`);
           console.log(`\n- Server URL: http://${HOST}:${PORT}`);
-          console.log(`- Database: Connected with ${postsCount} posts`);
+          console.log(`- Database: Connected successfully`);
           console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
           console.log(`\nApplication is now fully ready to accept connections!\n`);
         }
