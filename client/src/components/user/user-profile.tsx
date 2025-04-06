@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { FileInput } from '@/components/ui/file-input';
 
 interface ProfileFormData {
   username?: string;
@@ -18,7 +17,6 @@ interface ProfileFormData {
   fullName?: string;
   bio?: string;
   avatar?: string;
-  avatarFile?: File | null;
 }
 
 interface UserProfileResponse {
@@ -32,14 +30,10 @@ interface UserProfileResponse {
   createdAt: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
 export function UserProfile() {
   const { user, isAuthenticated, checkAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<ProfileFormData>({
     username: user?.username || '',
@@ -47,12 +41,7 @@ export function UserProfile() {
     fullName: user?.fullName || '',
     bio: user?.bio || '',
     avatar: user?.avatar || '',
-    avatarFile: null,
   });
-  
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [fileError, setFileError] = useState<string | undefined>(undefined);
-  const [selectedFileName, setSelectedFileName] = useState<string | undefined>(undefined);
 
   // Query for user profile data
   const { data: profileData, isLoading } = useQuery<UserProfileResponse | null>({
@@ -73,96 +62,24 @@ export function UserProfile() {
         fullName: profileData.fullName || '',
         bio: profileData.bio || '',
         avatar: profileData.avatar || '',
-        avatarFile: null,
       });
     }
   }, [profileData]);
-
-  // Handle file selection for profile image
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    setFileError(undefined);
-    
-    if (!files || files.length === 0) {
-      setPreviewUrl(null);
-      setSelectedFileName(undefined);
-      setFormData(prev => ({ ...prev, avatarFile: null }));
-      return;
-    }
-    
-    const file = files[0];
-    setSelectedFileName(file.name);
-    
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      setFileError("Image must be less than 10MB");
-      setPreviewUrl(null);
-      setFormData(prev => ({ ...prev, avatarFile: null }));
-      return;
-    }
-    
-    // Validate file type
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setFileError("Only JPG, PNG, and WebP images are supported");
-      setPreviewUrl(null);
-      setFormData(prev => ({ ...prev, avatarFile: null }));
-      return;
-    }
-    
-    // Create a preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    setFormData(prev => ({ ...prev, avatarFile: file }));
-  };
-
-  // Handle clearing the file input
-  const handleClearFile = () => {
-    setPreviewUrl(null);
-    setSelectedFileName(undefined);
-    setFileError(undefined);
-    setFormData(prev => ({ ...prev, avatarFile: null }));
-  };
-
-  // Clean up preview URL when component unmounts
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   // Mutation to update profile
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       console.log('[Profile] Updating profile with data:', data);
-      const { email, avatarFile, ...otherData } = data;
+      const { email, ...otherData } = data;
       
-      // If we have a file, handle it differently (upload to server)
-      if (avatarFile) {
-        console.log('[Profile] Using multipart form data for avatar upload');
-        const formData = new FormData();
-        formData.append('username', otherData.username || '');
-        formData.append('avatarFile', avatarFile);
-        
-        // Use the same field names the server expects
-        if (otherData.fullName) formData.append('displayName', otherData.fullName);
-        if (otherData.bio) formData.append('bio', otherData.bio);
-        
-        return apiRequest<UserProfileResponse>('/api/auth/profile-with-image', {
-          method: 'PATCH',
-          body: formData,
-        });
-      }
-      
-      // Otherwise send a regular JSON update
+      // Send a regular JSON update
       console.log('[Profile] Using JSON update for profile data');
       const updateData = {
         username: otherData.username,
         metadata: {
           displayName: otherData.fullName, // Server expects displayName for fullName
           bio: otherData.bio,
-          photoURL: otherData.avatar,  // Server expects photoURL for avatar
+          // Note: photoURL/avatar handling removed since we're not allowing image uploads
         }
       };
       
@@ -172,9 +89,6 @@ export function UserProfile() {
       
       if (otherData.fullName) {
         extendedMetadata.fullName = otherData.fullName;
-      }
-      if (otherData.avatar) {
-        extendedMetadata.avatar = otherData.avatar;
       }
       
       console.log('[Profile] Sending update data:', updateData);
@@ -191,14 +105,6 @@ export function UserProfile() {
         title: 'Profile Updated',
         description: 'Your profile has been updated successfully.',
       });
-      
-      // Clean up preview URL
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
-      
-      setFormData(prev => ({ ...prev, avatarFile: null }));
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
@@ -258,8 +164,8 @@ export function UserProfile() {
     return 'U';
   };
 
-  // Determine the avatar source (preview URL or stored URL)
-  const avatarSrc = previewUrl || formData.avatar || '';
+  // Use avatar URL from profile
+  const avatarSrc = formData.avatar || '';
 
   return (
     <div className="container max-w-2xl mx-auto py-6">
@@ -279,18 +185,6 @@ export function UserProfile() {
                   <AvatarImage src={avatarSrc} alt={formData.username || 'User'} />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
-                
-                <div className="w-full">
-                  <FileInput
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handleFileChange}
-                    onClear={handleClearFile}
-                    selectedFileName={selectedFileName}
-                    error={fileError}
-                    helperText="Upload a profile picture (max 10MB)"
-                    className="w-full"
-                  />
-                </div>
               </div>
               
               <div className="flex-1 space-y-4">
@@ -343,7 +237,7 @@ export function UserProfile() {
                   />
                 </div>
                 
-                {/* Removed the URL input field in favor of the file upload component */}
+                {/* No image upload option as requested */}
               </div>
             </div>
             

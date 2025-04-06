@@ -58,10 +58,6 @@ import {
   gameSaves,
   gameProgress,
   gameStats,
-  type Achievement,
-  type UserAchievement,
-  achievements,
-  userAchievements,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
@@ -216,9 +212,7 @@ export interface IStorage {
   }>;
   sessionStore: session.Store;
 
-  // Add achievement methods to IStorage interface
-  getAllAchievements(): Promise<Achievement[]>;
-  getUserAchievements(userId: number): Promise<UserAchievement[]>;
+  // Achievement methods removed
   getUserPosts(userId: number): Promise<Post[]>;
   getUserTotalLikes(userId: number): Promise<number>;
   getPostById(id: number): Promise<Post | undefined>;
@@ -2189,32 +2183,7 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
-  async getAllAchievements(): Promise<Achievement[]> {
-    try {
-      console.log('[Storage] Fetching all achievements');
-      const achievementsList = await db.select()
-        .from(achievements)
-        .orderBy(achievements.id);
-      return achievementsList;
-    } catch (error) {
-      console.error('[Storage] Error fetching achievements:', error);
-      throw error;
-    }
-  }
-
-  async getUserAchievements(userId: number): Promise<UserAchievement[]> {
-    try {
-      console.log(`[Storage] Fetching achievements for user: ${userId}`);
-      const userAchievementList = await db.select()
-        .from(userAchievements)
-        .where(eq(userAchievements.userId, userId))
-        .orderBy(userAchievements.unlockedAt);
-      return userAchievementList;
-    } catch (error) {
-      console.error('[Storage] Error fetching user achievements:', error);
-      throw error;
-    }
-  }
+  // Achievement methods removed
 
   async getUserPosts(userId: number): Promise<Post[]> {
     try {

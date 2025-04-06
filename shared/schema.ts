@@ -263,36 +263,7 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// New tables for achievement system
-export const achievements = pgTable("achievements", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  type: text("type").notNull(), // 'reader' or 'writer'
-  condition: json("condition").notNull(), // {type: 'streak', days: 7} or {type: 'posts', count: 10}
-  badgeIcon: text("badge_icon"), // SVG or icon identifier
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
-
-export const userAchievements = pgTable("user_achievements", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  achievementId: integer("achievement_id").references(() => achievements.id).notNull(),
-  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
-  progress: json("progress").default({}).notNull(), // {current: 5, required: 7}
-}, (table) => ({
-  userAchievementUnique: unique().on(table.userId, table.achievementId)
-}));
-
-export const userStreaks = pgTable("user_streaks", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  streakType: text("streak_type").notNull(), // 'reading' or 'writing'
-  currentStreak: integer("current_streak").default(0).notNull(),
-  longestStreak: integer("longest_streak").default(0).notNull(),
-  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
-  totalActivities: integer("total_activities").default(0).notNull()
-});
+// Achievement system tables removed
 
 export const userProgress = pgTable("user_progress", {
   id: serial("id").primaryKey(),
@@ -546,21 +517,7 @@ export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSche
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
 // Add new insert schemas and types
-export const insertAchievementSchema = createInsertSchema(achievements).omit({ 
-  id: true,
-  createdAt: true 
-});
-
-export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({ 
-  id: true,
-  unlockedAt: true 
-});
-
-// Create insert schemas for new unified tables
-export const insertUserStreakSchema = createInsertSchema(userStreaks).omit({ 
-  id: true,
-  lastActivityAt: true 
-});
+// Achievement system schemas removed
 
 export const insertUserProgressSchema = createInsertSchema(userProgress).omit({ 
   id: true,
@@ -572,19 +529,9 @@ export const insertSiteAnalyticsSchema = createInsertSchema(siteAnalytics).omit(
   timestamp: true 
 });
 
-// For backwards compatibility 
-export const insertReadingStreakSchema = insertUserStreakSchema;
-export const insertWriterStreakSchema = insertUserStreakSchema;
+// Streak-related schemas removed
 
-// Export types for new unified tables
-export type Achievement = typeof achievements.$inferSelect;
-export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
-
-export type UserAchievement = typeof userAchievements.$inferSelect;
-export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
-
-export type UserStreak = typeof userStreaks.$inferSelect;
-export type InsertUserStreak = z.infer<typeof insertUserStreakSchema>;
+// Achievement types removed
 
 export type UserProgress = typeof userProgress.$inferSelect;
 export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
@@ -592,11 +539,18 @@ export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
 export type SiteAnalytics = typeof siteAnalytics.$inferSelect;
 export type InsertSiteAnalytics = z.infer<typeof insertSiteAnalyticsSchema>;
 
-// For backwards compatibility
-export type ReadingStreak = UserStreak;
-export type InsertReadingStreak = InsertUserStreak;
-export type WriterStreak = UserStreak;
-export type InsertWriterStreak = InsertUserStreak;
+// Streak types removed (previously for backward compatibility)
+// Define custom streak type replacements as needed
+export type ReadingStreak = {
+  id: number;
+  userId: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityAt: Date;
+};
+export type InsertReadingStreak = Omit<ReadingStreak, 'id' | 'lastActivityAt'>;
+export type WriterStreak = ReadingStreak;
+export type InsertWriterStreak = InsertReadingStreak;
 
 // Update CommentMetadata interface
 export interface CommentMetadata {

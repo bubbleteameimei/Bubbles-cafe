@@ -173,10 +173,10 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsList className="grid grid-cols-3 mb-4 w-full">
+              <TabsTrigger value="content" className="px-2 py-1.5 md:px-4 md:py-2">Content</TabsTrigger>
+              <TabsTrigger value="settings" className="px-2 py-1.5 md:px-4 md:py-2">Settings</TabsTrigger>
+              <TabsTrigger value="preview" className="px-2 py-1.5 md:px-4 md:py-2">Preview</TabsTrigger>
             </TabsList>
             
             <TabsContent value="content" className="space-y-4">
@@ -227,7 +227,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                     <FormControl>
                       <Textarea 
                         placeholder="Brief summary of the post" 
-                        className="min-h-[80px]"
+                        className="min-h-[100px] text-base"
                         {...field} 
                       />
                     </FormControl>
@@ -248,7 +248,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                     <FormControl>
                       <Textarea 
                         placeholder="Write your story content here..." 
-                        className="min-h-[300px] font-mono text-sm"
+                        className="min-h-[250px] md:min-h-[300px] font-mono text-sm md:text-base"
                         {...field} 
                       />
                     </FormControl>
@@ -371,7 +371,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                     <CardDescription>Select themes that best describe this story</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[400px] pr-4">
+                    <ScrollArea className="h-[300px] md:h-[400px] pr-2 md:pr-4">
                       <FormField
                         control={form.control}
                         name="categories"
@@ -387,7 +387,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                                     return (
                                       <FormItem
                                         key={category.id}
-                                        className="flex items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm"
+                                        className="flex items-start space-x-3 space-y-0 rounded-md border p-2 md:p-3 shadow-sm"
                                       >
                                         <FormControl>
                                           <Checkbox

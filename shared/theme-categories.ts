@@ -102,6 +102,66 @@ export const THEME_CATEGORIES = {
   INFERNAL: {
     label: "Infernal",
     icon: "flame"
+  },
+  GOTHIC: {
+    label: "Gothic",
+    icon: "castle"
+  },
+  FOLK_HORROR: {
+    label: "Folk Horror",
+    icon: "tree"
+  },
+  SLASHER: {
+    label: "Slasher",
+    icon: "knife"
+  },
+  MONSTER: {
+    label: "Monster",
+    icon: "cat"
+  },
+  ZOMBIE: {
+    label: "Zombie",
+    icon: "footprints"
+  },
+  VAMPIRE: {
+    label: "Vampire",
+    icon: "moon"
+  },
+  WEREWOLF: {
+    label: "Werewolf",
+    icon: "dog"
+  },
+  PARANORMAL: {
+    label: "Paranormal",
+    icon: "radio"
+  },
+  DREAM_HORROR: {
+    label: "Dream Horror",
+    icon: "moon-star"
+  },
+  DEMONIC: {
+    label: "Demonic",
+    icon: "flame"
+  },
+  CURSED_OBJECT: {
+    label: "Cursed Object",
+    icon: "box"
+  },
+  TIME_HORROR: {
+    label: "Time Horror",
+    icon: "clock"
+  },
+  APOCALYPTIC: {
+    label: "Apocalyptic",
+    icon: "bomb"
+  },
+  DYSTOPIAN: {
+    label: "Dystopian",
+    icon: "building"
+  },
+  SCIENCE_HORROR: {
+    label: "Science Horror",
+    icon: "flask"
   }
 };
 

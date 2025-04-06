@@ -179,18 +179,35 @@ export default function WordPressSyncPage() {
   const filteredPosts = React.useMemo(() => {
     // First ensure wordPressPosts exists and is an array
     if (!wordPressPosts) return [];
+    
+    // More robust check to ensure wordPressPosts is an array
     if (!Array.isArray(wordPressPosts)) {
-      console.error('Expected wordPressPosts to be an array but got:', typeof wordPressPosts);
+      console.error('Expected wordPressPosts to be an array but got:', typeof wordPressPosts, wordPressPosts);
       return [];
     }
     
     if (!searchQuery) return wordPressPosts;
     
-    const query = searchQuery.toLowerCase();
-    return wordPressPosts.filter(post => 
-      post.title.toLowerCase().includes(query) || 
-      post.slug.toLowerCase().includes(query)
-    );
+    try {
+      const query = searchQuery.toLowerCase();
+      return wordPressPosts.filter(post => {
+        // Ensure post is an object with required properties
+        if (!post || typeof post !== 'object') return false;
+        
+        // Handle case where title or slug might be undefined or null
+        const title = post.title || '';
+        const slug = post.slug || '';
+        
+        // Verify these properties are strings before calling toLowerCase
+        const titleStr = typeof title === 'string' ? title.toLowerCase() : '';
+        const slugStr = typeof slug === 'string' ? slug.toLowerCase() : '';
+        
+        return titleStr.includes(query) || slugStr.includes(query);
+      });
+    } catch (error) {
+      console.error('Error filtering posts:', error);
+      return [];
+    }
   }, [wordPressPosts, searchQuery]);
 
   // Loading state
@@ -345,62 +362,71 @@ export default function WordPressSyncPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  // Extra safety check to ensure filteredPosts is an array
-                  Array.isArray(filteredPosts) && filteredPosts.map((post) => (
-                    <TableRow key={post.id}>
-                      <TableCell className="font-medium">{post.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          post.status === 'published' ? 'default' : 
-                          post.status === 'draft' ? 'outline' : 
-                          'secondary'
-                        }>
-                          {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {post.lastUpdated ? format(new Date(post.lastUpdated), 'MMM dd, yyyy') : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {post.syncStatus === 'success' ? (
-                          <div className="flex items-center">
-                            <Check className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-sm">Synced</span>
+                  Array.isArray(filteredPosts) && filteredPosts.map(post => {
+                    // Safety check for each post
+                    if (!post || typeof post !== 'object') return null;
+                    
+                    // Get a safe key for React
+                    const safeKey = post.id || Math.random();
+                    
+                    return (
+                      <TableRow key={safeKey}>
+                        <TableCell className="font-medium">{post.title || 'Untitled'}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            post.status === 'published' ? 'default' : 
+                            post.status === 'draft' ? 'outline' : 
+                            'secondary'
+                          }>
+                            {post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : 'Unknown'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {post.lastUpdated ? format(new Date(post.lastUpdated), 'MMM dd, yyyy') : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {post.syncStatus === 'success' ? (
+                            <div className="flex items-center">
+                              <Check className="h-4 w-4 text-green-600 mr-1" />
+                              <span className="text-sm">Synced</span>
+                            </div>
+                          ) : post.syncStatus === 'error' ? (
+                            <div className="flex items-center">
+                              <AlertTriangle className="h-4 w-4 text-red-600 mr-1" />
+                              <span className="text-sm">Error</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 text-amber-600 mr-1" />
+                              <span className="text-sm">Pending</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => post.slug ? window.open(`/reader/${post.slug}`, '_blank') : null}
+                              title="View Post"
+                              disabled={!post.slug}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => post.wpId ? window.open(`https://bubbleteameimei.wordpress.com/post/${post.wpId}`, '_blank') : null}
+                              title="View on WordPress"
+                              disabled={!post.wpId}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
                           </div>
-                        ) : post.syncStatus === 'error' ? (
-                          <div className="flex items-center">
-                            <AlertTriangle className="h-4 w-4 text-red-600 mr-1" />
-                            <span className="text-sm">Error</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 text-amber-600 mr-1" />
-                            <span className="text-sm">Pending</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(`/reader/${post.slug}`, '_blank')}
-                            title="View Post"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(`https://bubbleteameimei.wordpress.com/post/${post.wpId}`, '_blank')}
-                            title="View on WordPress"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

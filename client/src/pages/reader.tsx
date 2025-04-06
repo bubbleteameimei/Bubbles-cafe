@@ -1336,7 +1336,18 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       {(() => {
                         // Get the primary theme (first one as it's sorted by relevance)
                         const primaryTheme = detectedThemes[0];
-                        const themeInfo = THEME_CATEGORIES[primaryTheme];
+                        // Safely get the theme information with fallback
+                        const themeInfo = primaryTheme && 
+                          Object.prototype.hasOwnProperty.call(THEME_CATEGORIES, primaryTheme) 
+                            ? THEME_CATEGORIES[primaryTheme as keyof typeof THEME_CATEGORIES] 
+                            : {
+                                icon: 'Ghost',
+                                badgeVariant: 'default',
+                                keywords: [],
+                                description: 'Horror Fiction',
+                                visualEffects: []
+                              };
+                        
                         const ThemeIcon = (() => {
                           // First check if we have a custom icon from the post
                           if (postThemeIcon) {
@@ -1370,6 +1381,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                           }
                           
                           // If no custom icon, fall back to the theme definition
+                          // Ensure themeInfo and themeInfo.icon exist before using them
+                          if (!themeInfo || !themeInfo.icon) {
+                            return Ghost; // Default fallback if themeInfo or icon is missing
+                          }
+                          
                           switch(themeInfo.icon) {
                             case 'skull': 
                             case 'Skull': return Skull;
