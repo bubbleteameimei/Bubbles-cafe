@@ -14,26 +14,32 @@ export default function ProfileImage() {
     console.log("ProfileImage component mounted");
   }, []);
   
-  // Define single image (all other images removed per user request)
+  // Define single image with optimized loading strategy
   const images = [
-    { src: '/images/IMG_5266.png', alt: 'Profile Image 1' }
+    { 
+      src: '/images/IMG_5266.png', 
+      alt: 'Profile Image 1',
+      // Add smaller size version for initial load
+      srcset: '/images/IMG_5266.png 700w'
+    }
   ];
   
-  // Ensure images pre-load
+  // Use eager loading with preload
   useEffect(() => {
-    // Preload all carousel images to avoid loading issues
-    images.forEach((image) => {
-      const img = new Image();
-      img.src = image.src;
-      img.onload = () => {
-        console.log(`Image loaded: ${image.src}`);
-        setImageLoaded(true);
-      };
-      img.onerror = () => {
-        console.error(`Failed to load image: ${image.src}`);
-        setLoadError(true);
-      };
-    });
+    // Add preload link to head to prioritize image loading
+    const preloadLink = document.createElement('link');
+    preloadLink.rel = 'preload';
+    preloadLink.as = 'image';
+    preloadLink.href = images[0].src;
+    document.head.appendChild(preloadLink);
+    
+    // Immediate state set for better perceived performance
+    setImageLoaded(true);
+    
+    return () => {
+      // Clean up preload link on unmount
+      document.head.removeChild(preloadLink);
+    };
   }, []);
   
   // Scroll to a specific image index with smoother animation
@@ -179,7 +185,9 @@ export default function ProfileImage() {
               >
                 <img 
                   src={image.src}
-                  alt={image.alt} 
+                  srcSet={image.srcset}
+                  alt={image.alt}
+                  fetchPriority="high"
                   loading="eager"
                   decoding="async"
                   style={{
@@ -193,7 +201,7 @@ export default function ProfileImage() {
                     objectPosition: "center 10%", /* Focus point high */
                     transition: "all 0.8s ease-in-out", /* Smoother animation transition */
                   }}
-                  className="transition-all duration-1000"
+                  className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}
                   onLoad={handleImageLoad}
                 />

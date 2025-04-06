@@ -46,4 +46,38 @@ router.get("/dashboard", isAdmin, async (req, res) => {
   }
 });
 
+// Get admin stats
+router.get("/stats", isAdmin, async (req, res) => {
+  try {
+    const [
+      totalPosts,
+      totalUsers,
+      totalComments,
+      totalBookmarks,
+      recentActivity
+    ] = await Promise.all([
+      storage.getPostCount(),
+      storage.getUserCount(),
+      storage.getCommentCount(),
+      storage.getBookmarkCount(),
+      storage.getRecentActivity(10)
+    ]);
+
+    // Return proper JSON response with stats
+    res.json({
+      stats: {
+        posts: totalPosts,
+        users: totalUsers,
+        comments: totalComments,
+        bookmarks: totalBookmarks
+      },
+      recentActivity: recentActivity || [],
+      serverTime: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error fetching admin stats:", error);
+    res.status(500).json({ message: "Failed to fetch admin statistics" });
+  }
+});
+
 export default router;

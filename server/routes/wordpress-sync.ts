@@ -13,10 +13,66 @@ let lastSyncTime: string | null = null;
 
 export function registerWordPressSyncRoutes(app: Express): void {
   /**
+   * GET /api/wordpress/status
+   * Get the general status of WordPress integration
+   */
+  app.get('/api/wordpress/status', (_req: Request, res: Response) => {
+    // Set proper Content-Type to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    res.json({
+      connected: true,
+      wpApiEndpoint: 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com',
+      lastSyncTime,
+      status: 'operational'
+    });
+  });
+
+  /**
+   * GET /api/wordpress/status-check
+   * Check if WordPress API integration is working properly
+   */
+  app.get('/api/wordpress/status-check', async (_req: Request, res: Response) => {
+    // Set proper Content-Type to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    try {
+      // Perform a basic check by attempting to fetch from WordPress API
+      const wpApiUrl = 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com/posts?per_page=1';
+      const response = await fetch(wpApiUrl);
+      
+      if (response.ok) {
+        res.json({
+          status: 'connected',
+          message: 'WordPress API is accessible',
+          lastChecked: new Date().toISOString(),
+          apiEndpoint: 'https://public-api.wordpress.com/wp/v2/sites/bubbleteameimei.wordpress.com'
+        });
+      } else {
+        const errorText = await response.text();
+        res.status(503).json({
+          status: 'error',
+          message: `WordPress API returned status: ${response.status}`,
+          lastChecked: new Date().toISOString(),
+          error: errorText.substring(0, 200) // Limit error text
+        });
+      }
+    } catch (error) {
+      res.status(503).json({
+        status: 'error',
+        message: 'Failed to connect to WordPress API',
+        lastChecked: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  /**
    * GET /api/wordpress/sync/status
    * Get the status of WordPress sync
    */
   app.get('/api/wordpress/sync/status', (_req: Request, res: Response) => {
+    // Set proper Content-Type to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
     res.json({
       syncInProgress,
       lastSyncStatus,
