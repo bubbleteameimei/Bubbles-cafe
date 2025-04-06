@@ -23,14 +23,14 @@ const SILENT_PING_MESSAGES = [
 ];
 
 export function SilentPingProvider({ children }: { children: React.ReactNode }) {
-  // Check if silent pings are enabled (on by default)
+  // Check if silent pings are enabled (off by default)
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('silentPingEnabled');
-      return saved !== null ? JSON.parse(saved) : true;
+      return saved !== null ? JSON.parse(saved) : false;
     } catch (error) {
       console.error('[SilentPing] Error loading from localStorage:', error);
-      return true;
+      return false;
     }
   });
 

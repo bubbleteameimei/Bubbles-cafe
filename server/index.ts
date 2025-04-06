@@ -18,7 +18,7 @@ import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
-import { registerUserDataExportRoutes } from "./routes/user-data-export";
+// User Data Export routes removed
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
@@ -225,8 +225,8 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
-      // Register user data export routes
-      registerUserDataExportRoutes(app, storage);
+ // User data export routes removed
+ 
       
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);
@@ -393,8 +393,8 @@ async function startServer() {
       // Register recommendation routes
       registerRecommendationsRoutes(app, storage);
       
-      // Register user data export routes
-      registerUserDataExportRoutes(app, storage);
+ // User data export routes removed
+ 
       
       // Register privacy settings routes
       registerPrivacySettingsRoutes(app, storage);

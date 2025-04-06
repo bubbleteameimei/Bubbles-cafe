@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Link } from 'wouter';
 import { useCookieConsent } from '@/hooks/use-cookie-consent';
 import { CookieCategory } from '@/lib/cookie-manager';
-import { AlertTriangle, ArrowRight, Download, Info, Lock, Loader, Shield, ShieldAlert, ShieldCheck, User, Cookie } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Info, Lock, Loader, Shield, ShieldAlert, ShieldCheck, User, Cookie } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { usePrivacySettings } from '@/hooks/use-privacy-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -489,23 +489,7 @@ export default function PrivacySettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Data Export</CardTitle>
-          <CardDescription>Export your personal data</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            You can request a copy of your personal data in a machine-readable format.
-            This includes your profile information, reading history, comments, and other data associated with your account.
-          </p>
-          <Link href="/settings/data-export">
-            <Button>
-              Export My Data
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+      {/* Data Export card removed */}
     </div>
   );
 }

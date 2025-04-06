@@ -492,16 +492,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/settings/data-export'}
-                        onClick={() => handleNavigation('/settings/data-export')}
-                        className={submenuItemClass}
-                      >
-                        <Database className="h-3.5 w-3.5 mr-2 opacity-70" />
-                        <span>Export My Data</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    {/* Data export menu item removed */}
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/connected'}

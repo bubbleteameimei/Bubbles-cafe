@@ -2607,7 +2607,7 @@ export class DatabaseStorage implements IStorage {
       const readingHistory = await db.select()
         .from(readingProgress)
         .where(eq(readingProgress.userId, userId))
-        .orderBy(desc(readingProgress.lastRead));
+        .orderBy(desc(readingProgress.lastReadAt));
       
       console.log(`[Storage] Found ${readingHistory.length} reading history entries for user: ${userId}`);
       return readingHistory;

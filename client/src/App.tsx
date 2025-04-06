@@ -61,6 +61,7 @@ import ResponsiveDemoPage from './pages/responsive-demo';
 import ScrollDemoPage from './pages/scroll-demo';
 import ScrollTestPage from './pages/scroll-test';
 import RefreshDemoPage from './pages/refresh-demo';
+// Export test page removed
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
 import AboutPage from './pages/about';
@@ -82,7 +83,7 @@ import FontSettingsPage from './pages/settings/fonts';
 import AccessibilitySettingsPage from './pages/settings/accessibility';
 import NotificationSettingsPage from './pages/settings/notifications';
 import PrivacySettingsPage from './pages/settings/privacy';
-import DataExportPage from './pages/settings/data-export';
+// DataExportPage import removed
 import CookieManagementPage from './pages/settings/cookie-management';
 import QuickSettingsPage from './pages/settings/quick-settings';
 import PreviewSettingsPage from './pages/settings/preview';
@@ -221,6 +222,7 @@ const AppContent = () => {
               <Route path="/scroll-test" component={ScrollTestPage} />
               <Route path="/refresh-demo" component={RefreshDemoPage} />
               <Route path="/pixel-art" component={PixelArtPage} />
+              {/* Export test route removed */}
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
@@ -263,7 +265,7 @@ const AppContent = () => {
               <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
               <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
               <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-              <ProtectedRoute path="/settings/data-export" component={DataExportPage} />
+              {/* Data export route removed */}
               <ProtectedRoute path="/settings/cookie-management" component={CookieManagementPage} />
               <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
               <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
