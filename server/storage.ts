@@ -29,7 +29,7 @@ import {
   type GameSaveRecord, type InsertGameSave,
   type GameProgressRecord, type InsertGameProgress,
   type GameStatsRecord, type InsertGameStats,
-  type GameSceneRecord, 
+  type GameSceneRecord, type GameItemRecord,
   // Tables
   posts as postsTable,
   comments,
@@ -60,6 +60,7 @@ import {
   gameProgress,
   gameStats,
   gameScenes,
+  gameItems,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
@@ -281,6 +282,10 @@ export interface IStorage {
   // Game Scenes methods
   getGameScenes(): Promise<GameSceneRecord[]>;
   getGameScene(sceneId: string): Promise<GameSceneRecord | undefined>;
+  
+  // Game Items methods
+  getGameItems(): Promise<GameItemRecord[]>;
+  getGameItem(itemId: string): Promise<GameItemRecord | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3185,6 +3190,82 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // Game Scene Methods
+  async getGameScenes(): Promise<GameSceneRecord[]> {
+    try {
+      console.log('[Storage] Fetching all game scenes');
+      
+      const scenes = await db.select()
+        .from(gameScenes);
+        
+      console.log(`[Storage] Found ${scenes.length} game scenes`);
+      return scenes;
+    } catch (error) {
+      console.error('[Storage] Error in getGameScenes:', error);
+      throw new Error('Failed to fetch game scenes');
+    }
+  }
+
+  async getGameScene(sceneId: string): Promise<GameSceneRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game scene with ID: ${sceneId}`);
+      
+      const [scene] = await db.select()
+        .from(gameScenes)
+        .where(eq(gameScenes.sceneId, sceneId))
+        .limit(1);
+      
+      if (scene) {
+        console.log(`[Storage] Found game scene with ID: ${sceneId}`);
+      } else {
+        console.log(`[Storage] No game scene found with ID: ${sceneId}`);
+      }
+      
+      return scene;
+    } catch (error) {
+      console.error(`[Storage] Error fetching game scene ${sceneId}:`, error);
+      throw new Error('Failed to fetch game scene');
+    }
+  }
+
+  // Game Item Methods
+  async getGameItems(): Promise<GameItemRecord[]> {
+    try {
+      console.log('[Storage] Fetching all game items');
+      
+      const items = await db.select()
+        .from(gameItems);
+        
+      console.log(`[Storage] Found ${items.length} game items`);
+      return items;
+    } catch (error) {
+      console.error('[Storage] Error in getGameItems:', error);
+      throw new Error('Failed to fetch game items');
+    }
+  }
+
+  async getGameItem(itemId: string): Promise<GameItemRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game item with ID: ${itemId}`);
+      
+      const [item] = await db.select()
+        .from(gameItems)
+        .where(eq(gameItems.itemId, itemId))
+        .limit(1);
+      
+      if (item) {
+        console.log(`[Storage] Found game item with ID: ${itemId}`);
+      } else {
+        console.log(`[Storage] No game item found with ID: ${itemId}`);
+      }
+      
+      return item;
+    } catch (error) {
+      console.error(`[Storage] Error fetching game item ${itemId}:`, error);
+      throw new Error('Failed to fetch game item');
+    }
+  }
+
   // Implementation of getPostById for fetching posts by ID
   async getPostById(id: number): Promise<Post | undefined> {
     try {
@@ -3265,43 +3346,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Game Scenes methods
-  async getGameScenes(): Promise<GameSceneRecord[]> {
-    try {
-      console.log('[Storage] Fetching all game scenes');
-      
-      const scenes = await db.select()
-        .from(gameScenes);
-        
-      console.log(`[Storage] Found ${scenes.length} game scenes`);
-      return scenes;
-    } catch (error) {
-      console.error('[Storage] Error in getGameScenes:', error);
-      throw new Error('Failed to fetch game scenes');
-    }
-  }
-  
-  async getGameScene(sceneId: string): Promise<GameSceneRecord | undefined> {
-    try {
-      console.log(`[Storage] Fetching game scene with ID: ${sceneId}`);
-      
-      const [scene] = await db.select()
-        .from(gameScenes)
-        .where(eq(gameScenes.sceneId, sceneId))
-        .limit(1);
-        
-      if (scene) {
-        console.log(`[Storage] Found game scene: ${scene.name}`);
-      } else {
-        console.log(`[Storage] Game scene not found with ID: ${sceneId}`);
-      }
-      
-      return scene;
-    } catch (error) {
-      console.error('[Storage] Error in getGameScene:', error);
-      return undefined;
-    }
-  }
+  // Delete duplicate implementation as they're already added above
 }
 
 export const storage = new DatabaseStorage();

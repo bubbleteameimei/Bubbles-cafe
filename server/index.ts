@@ -25,6 +25,7 @@ import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the decl
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
+import { registerDirectGameRoutes } from "./routes/direct-game-api"; // Direct game API routes
 import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { setupCors } from "./cors-setup";
@@ -245,7 +246,10 @@ async function startServer() {
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
-      // Direct API endpoints for game scenes that bypass Vite middleware
+      // Register direct game API routes that bypass Vite middleware
+      registerDirectGameRoutes(app);
+
+      // Legacy direct API endpoints - keeping for reference
       app.get('/direct-api/game/scenes', async (req, res) => {
         try {
           // Set correct Content-Type for JSON response
@@ -410,7 +414,10 @@ async function startServer() {
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
-      // Direct API endpoints for game scenes that bypass Vite middleware
+      // Register direct game API routes that bypass Vite middleware
+      registerDirectGameRoutes(app);
+
+      // Legacy direct API endpoints - keeping for reference
       app.get('/direct-api/game/scenes', async (req, res) => {
         try {
           // Set correct Content-Type for JSON response

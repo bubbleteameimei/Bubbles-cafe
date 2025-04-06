@@ -369,4 +369,53 @@ router.get('/scenes/:sceneId', async (req, res) => {
   }
 });
 
+// Get all game items
+router.get('/items', async (req, res) => {
+  try {
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Get items from the database
+    const items = await storage.getGameItems();
+    
+    if (items && items.length > 0) {
+      return res.json({ items });
+    }
+    
+    // If no items in DB, return empty list with message
+    return res.json({
+      items: [],
+      message: "No game items found in database."
+    });
+  } catch (error) {
+    console.error('Error fetching game items:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ error: 'Failed to fetch game items' });
+  }
+});
+
+// Get a specific game item by ID
+router.get('/items/:itemId', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Try to get the item from the database
+    const item = await storage.getGameItem(itemId);
+    
+    if (item) {
+      return res.json(item);
+    }
+    
+    // If item not found, return 404
+    return res.status(404).json({ error: 'Item not found' });
+  } catch (error) {
+    console.error(`Error fetching game item ${req.params.itemId}:`, error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ error: 'Failed to fetch game item' });
+  }
+});
+
 export default router;
