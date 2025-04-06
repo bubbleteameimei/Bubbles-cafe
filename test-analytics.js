@@ -10,14 +10,14 @@ async function loginAdmin() {
   console.log('Logging in as admin...');
   
   try {
-    const response = await fetch('https://db692093-8467-4eed-afb7-a4bb7cae4b6a-00-3usl4zgbcua3b.picard.replit.dev/api/auth/login', {
+    const response = await fetch('http://localhost:3003/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        username: 'admin',
-        password: 'password123'  // Use the known password from your database
+        email: 'vantalison@gmail.com',
+        password: 'powerPUFF7'  // Use the known password from fix-admin-password.js
       }),
       credentials: 'include'
     });
@@ -51,7 +51,7 @@ async function fetchAnalytics(cookies) {
   console.log('Fetching analytics data...');
   
   try {
-    const response = await fetch('https://db692093-8467-4eed-afb7-a4bb7cae4b6a-00-3usl4zgbcua3b.picard.replit.dev/api/admin/analytics', {
+    const response = await fetch('http://localhost:3003/api/admin/analytics', {
       method: 'GET',
       headers: {
         'Cookie': cookies
@@ -80,7 +80,7 @@ async function fetchPublicAnalytics() {
   console.log('Fetching public analytics data...');
   
   try {
-    const response = await fetch('https://db692093-8467-4eed-afb7-a4bb7cae4b6a-00-3usl4zgbcua3b.picard.replit.dev/api/analytics/site');
+    const response = await fetch('http://localhost:3003/api/analytics/site');
     
     if (!response.ok) {
       console.error('Public analytics fetch error:', response.status, response.statusText);
@@ -107,8 +107,14 @@ async function runTests() {
     console.log('\n--- Testing public analytics endpoint ---');
     await fetchPublicAnalytics();
     
-    // Skipping admin analytics endpoint test for now since it requires authentication
-    console.log('\n--- Skipping admin analytics endpoint test (requires authentication) ---');
+    // Try running admin analytics endpoint test
+    console.log('\n--- Testing admin analytics endpoint ---');
+    try {
+      const cookies = await loginAdmin();
+      await fetchAnalytics(cookies);
+    } catch (error) {
+      console.error('Admin analytics test failed:', error.message);
+    }
     
     console.log('\nTests completed');
   } catch (error) {

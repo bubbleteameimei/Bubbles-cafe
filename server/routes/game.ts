@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { storage } from '../storage';
 import { insertGameSaveSchema, insertGameProgressSchema, insertGameStatsSchema } from '../../shared/schema';
 import { z } from 'zod';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 
@@ -236,6 +238,134 @@ router.get('/stats/check', async (req, res) => {
   } catch (error) {
     console.error('Error checking game system:', error);
     res.status(500).json({ error: 'Failed to check game system' });
+  }
+});
+
+// Get all game scenes
+router.get('/scenes', async (req, res) => {
+  try {
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    // First, try to get scenes from the database
+    const dbScenes = await storage.getGameScenes();
+    
+    if (dbScenes && dbScenes.length > 0) {
+      return res.json({ scenes: dbScenes });
+    }
+    
+    // If no scenes in DB, use default game scenes
+    console.log('No database scenes found, using default scenes');
+    
+    // Default scene data
+    const defaultScenes = [
+      {
+        sceneId: 'village_entrance',
+        name: "Village Entrance",
+        description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
+        backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_square", label: "Enter the village" }
+          ],
+          items: [],
+          characters: []
+        }
+      },
+      {
+        sceneId: 'village_square',
+        name: "Village Square",
+        description: "A once-bustling village square now stands eerily empty.",
+        backgroundImage: "/assets/eden/scenes/village_square.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_entrance", label: "Return to entrance" },
+            { target: "abandoned_church", label: "Visit the church" },
+            { target: "old_tavern", label: "Enter the tavern" }
+          ],
+          items: [],
+          characters: []
+        }
+      }
+    ];
+    
+    return res.json({
+      scenes: defaultScenes,
+      source: "default",
+      message: "Using default game scenes. Database scenes not available."
+    });
+  } catch (error) {
+    console.error('Error fetching game scenes:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ error: 'Failed to fetch game scenes' });
+  }
+});
+
+// Get a specific game scene by ID
+router.get('/scenes/:sceneId', async (req, res) => {
+  try {
+    const { sceneId } = req.params;
+    
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Try to get the scene from the database
+    const scene = await storage.getGameScene(sceneId);
+    
+    if (scene) {
+      return res.json(scene);
+    }
+    
+    // Check for default scenes
+    const defaultScenes = {
+      'village_entrance': {
+        sceneId: 'village_entrance',
+        name: "Village Entrance",
+        description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
+        backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_square", label: "Enter the village" }
+          ],
+          items: [],
+          characters: []
+        }
+      },
+      'village_square': {
+        sceneId: 'village_square',
+        name: "Village Square",
+        description: "A once-bustling village square now stands eerily empty.",
+        backgroundImage: "/assets/eden/scenes/village_square.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_entrance", label: "Return to entrance" },
+            { target: "abandoned_church", label: "Visit the church" },
+            { target: "old_tavern", label: "Enter the tavern" }
+          ],
+          items: [],
+          characters: []
+        }
+      }
+    };
+    
+    // Check if requested scene is one of our defaults
+    if (defaultScenes[sceneId]) {
+      return res.json({
+        ...defaultScenes[sceneId],
+        source: "default"
+      });
+    }
+    
+    // If scene not found, return 404
+    return res.status(404).json({ error: 'Scene not found' });
+  } catch (error) {
+    console.error(`Error fetching game scene ${req.params.sceneId}:`, error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ error: 'Failed to fetch game scene' });
   }
 });
 

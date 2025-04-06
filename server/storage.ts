@@ -28,7 +28,8 @@ import {
   // Game types
   type GameSaveRecord, type InsertGameSave,
   type GameProgressRecord, type InsertGameProgress,
-  type GameStatsRecord, type InsertGameStats, 
+  type GameStatsRecord, type InsertGameStats,
+  type GameSceneRecord, 
   // Tables
   posts as postsTable,
   comments,
@@ -58,6 +59,7 @@ import {
   gameSaves,
   gameProgress,
   gameStats,
+  gameScenes,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
@@ -275,6 +277,10 @@ export interface IStorage {
   // Game Stats methods
   getGameStats(userId: number): Promise<GameStatsRecord | undefined>;
   updateGameStats(userId: number, stats: InsertGameStats): Promise<number>;
+  
+  // Game Scenes methods
+  getGameScenes(): Promise<GameSceneRecord[]>;
+  getGameScene(sceneId: string): Promise<GameSceneRecord | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3256,6 +3262,44 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('[Storage] Error in getPostById:', error);
       throw new Error('Failed to fetch post by ID');
+    }
+  }
+
+  // Game Scenes methods
+  async getGameScenes(): Promise<GameSceneRecord[]> {
+    try {
+      console.log('[Storage] Fetching all game scenes');
+      
+      const scenes = await db.select()
+        .from(gameScenes);
+        
+      console.log(`[Storage] Found ${scenes.length} game scenes`);
+      return scenes;
+    } catch (error) {
+      console.error('[Storage] Error in getGameScenes:', error);
+      throw new Error('Failed to fetch game scenes');
+    }
+  }
+  
+  async getGameScene(sceneId: string): Promise<GameSceneRecord | undefined> {
+    try {
+      console.log(`[Storage] Fetching game scene with ID: ${sceneId}`);
+      
+      const [scene] = await db.select()
+        .from(gameScenes)
+        .where(eq(gameScenes.sceneId, sceneId))
+        .limit(1);
+        
+      if (scene) {
+        console.log(`[Storage] Found game scene: ${scene.name}`);
+      } else {
+        console.log(`[Storage] Game scene not found with ID: ${sceneId}`);
+      }
+      
+      return scene;
+    } catch (error) {
+      console.error('[Storage] Error in getGameScene:', error);
+      return undefined;
     }
   }
 }
