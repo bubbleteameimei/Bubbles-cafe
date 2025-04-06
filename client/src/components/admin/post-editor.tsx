@@ -317,7 +317,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                       )}
                     />
                     
-                    <div className="flex space-x-4">
+                    <div className="flex space-x-2 md:space-x-4">
                       <FormField
                         control={form.control}
                         name="allowComments"
@@ -330,8 +330,8 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                               />
                             </FormControl>
                             <div>
-                              <FormLabel>Allow Comments</FormLabel>
-                              <FormDescription>
+                              <FormLabel className="text-sm md:text-base">Allow Comments</FormLabel>
+                              <FormDescription className="text-xs md:text-sm">
                                 Let readers leave comments on this post.
                               </FormDescription>
                             </div>
@@ -340,7 +340,7 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                       />
                     </div>
                     
-                    <div className="flex space-x-4">
+                    <div className="flex space-x-2 md:space-x-4">
                       <FormField
                         control={form.control}
                         name="isFeatured"
@@ -353,8 +353,8 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                               />
                             </FormControl>
                             <div>
-                              <FormLabel>Featured Story</FormLabel>
-                              <FormDescription>
+                              <FormLabel className="text-sm md:text-base">Featured Story</FormLabel>
+                              <FormDescription className="text-xs md:text-sm">
                                 Highlight this story on the homepage and listings.
                               </FormDescription>
                             </div>
@@ -403,10 +403,10 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
                                           />
                                         </FormControl>
                                         <div className="space-y-1">
-                                          <FormLabel className="text-base">
+                                          <FormLabel className="text-sm md:text-base font-medium">
                                             {category.name}
                                           </FormLabel>
-                                          <FormDescription>
+                                          <FormDescription className="text-xs md:text-sm">
                                             {category.description}
                                           </FormDescription>
                                         </div>
@@ -430,10 +430,10 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
               <Card>
                 <CardHeader>
                   <CardTitle>{form.getValues().title || "Post Title"}</CardTitle>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{form.getValues().status}</Badge>
                     {form.getValues().categories.map((category) => (
-                      <Badge key={category} variant="secondary">
+                      <Badge key={category} variant="secondary" className="text-xs md:text-sm">
                         {themeCategories.find(c => c.id === category)?.name || category}
                       </Badge>
                     ))}
@@ -454,29 +454,31 @@ export default function PostEditor({ post, onClose, onSaveSuccess }: PostEditorP
             </TabsContent>
           </Tabs>
           
-          <div className="flex justify-end space-x-2 mt-4">
+          <div className="flex justify-end space-x-3 mt-6 sticky bottom-2 z-10">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isSaving}
+              className="px-3 py-2 md:px-4 h-10"
             >
-              <X className="h-4 w-4 mr-1" />
-              Cancel
+              <X className="h-4 w-4 mr-1 md:mr-2" />
+              <span>Cancel</span>
             </Button>
             <Button
               type="submit"
               disabled={isSaving}
+              className="px-3 py-2 md:px-4 h-10"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Saving...
+                  <Loader2 className="h-4 w-4 mr-1 md:mr-2 animate-spin" />
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-1" />
-                  Save {post ? "Changes" : "Post"}
+                  <Save className="h-4 w-4 mr-1 md:mr-2" />
+                  <span>Save {post ? "Changes" : "Post"}</span>
                 </>
               )}
             </Button>

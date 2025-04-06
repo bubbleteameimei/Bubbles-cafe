@@ -178,7 +178,10 @@ export default function WordPressSyncPage() {
   // Filter posts based on search query
   const filteredPosts = React.useMemo(() => {
     // First ensure wordPressPosts exists and is an array
-    if (!wordPressPosts) return [];
+    if (!wordPressPosts) {
+      console.log('wordPressPosts is empty or null, returning empty array');
+      return [];
+    }
     
     // More robust check to ensure wordPressPosts is an array
     if (!Array.isArray(wordPressPosts)) {
@@ -186,13 +189,17 @@ export default function WordPressSyncPage() {
       return [];
     }
     
-    if (!searchQuery) return wordPressPosts;
+    // Now we're sure wordPressPosts is an array
+    if (!searchQuery) return [...wordPressPosts]; // Return a shallow copy to ensure it's a fresh array
     
     try {
       const query = searchQuery.toLowerCase();
-      return wordPressPosts.filter(post => {
+      const filtered = wordPressPosts.filter(post => {
         // Ensure post is an object with required properties
-        if (!post || typeof post !== 'object') return false;
+        if (!post || typeof post !== 'object') {
+          console.log('Skipping invalid post:', post);
+          return false;
+        }
         
         // Handle case where title or slug might be undefined or null
         const title = post.title || '';
@@ -204,6 +211,9 @@ export default function WordPressSyncPage() {
         
         return titleStr.includes(query) || slugStr.includes(query);
       });
+      
+      // One final check to ensure we return an array
+      return Array.isArray(filtered) ? filtered : [];
     } catch (error) {
       console.error('Error filtering posts:', error);
       return [];
@@ -362,7 +372,8 @@ export default function WordPressSyncPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  Array.isArray(filteredPosts) && filteredPosts.map(post => {
+                  // Ensure filteredPosts is 100% an array before mapping
+                  (Array.isArray(filteredPosts) ? filteredPosts : []).map(post => {
                     // Safety check for each post
                     if (!post || typeof post !== 'object') return null;
                     
