@@ -47,8 +47,8 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page bg-background">
-          {/* Background effect removed */}
+        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
+          {/* Background image added via CSS */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
