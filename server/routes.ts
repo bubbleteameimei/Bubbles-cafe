@@ -220,62 +220,99 @@ export function registerRoutes(app: Express): Server {
     try {
       const { title, content, themeCategory } = req.body;
 
-      if (!title) {
+      // Improved validation
+      if (!title || title.trim() === '') {
         return res.status(400).json({
           message: "Invalid post data",
           errors: [{ path: "title", message: "Title is required" }]
         });
       }
 
-      // Generate slug from title first
-      const slug = generateSlug(title);
+      if (!content || content.trim() === '') {
+        return res.status(400).json({
+          message: "Invalid post data",
+          errors: [{ path: "content", message: "Content is required" }]
+        });
+      }
 
-      // Prepare the complete post data before validation
-      // Create proper metadata first
+      // Import sanitizer
+      const { sanitizeHtml, stripHtml } = require('./utils/sanitizer');
+
+      // Sanitize user input to prevent XSS attacks
+      const sanitizedTitle = stripHtml(title.trim());
+      const sanitizedContent = sanitizeHtml(content);
+
+      // Generate slug from sanitized title
+      const slug = generateSlug(sanitizedTitle);
+
+      // Validate theme category (if provided)
+      const validThemeCategories = ['HORROR', 'SUPERNATURAL', 'MYSTERY', 'THRILLER', 'PARANORMAL', 'OTHER'];
+      const validatedThemeCategory = validThemeCategories.includes(themeCategory) 
+        ? themeCategory 
+        : 'HORROR';
+
+      // Create proper metadata
       const metadata = {
         isCommunityPost: true,
         isAdminPost: false,
         status: 'publish',  // Must be one of: 'pending', 'approved', 'publish'
         source: 'community',
-        themeCategory: themeCategory || 'HORROR' // Store the theme category in metadata
+        themeCategory: validatedThemeCategory, // Store the validated theme category in metadata
+        createdBy: req.user?.id || null,
+        ipAddress: req.ip || 'unknown', // Store IP for moderation purposes (anonymized in logs)
+        sanitized: sanitizedContent !== content // Flag if content was sanitized
       };
       
-      console.log('[POST /api/posts/community] Metadata prepared:', metadata);
+      console.log('[POST /api/posts/community] Metadata prepared:', {
+        ...metadata,
+        ipAddress: 'REDACTED' // Don't log IP addresses
+      });
       
-      // Generate an excerpt from the content
-      const excerpt = content.substring(0, 150) + (content.length > 150 ? '...' : '');
+      // Generate an excerpt from the sanitized content
+      const excerpt = stripHtml(sanitizedContent).substring(0, 150) + 
+                      (sanitizedContent.length > 150 ? '...' : '');
       
       const postData = {
-        title,
-        content,
+        title: sanitizedTitle,
+        content: sanitizedContent,
         slug,
         authorId: req.user?.id || 1, // Default to admin user if not authenticated
-        excerpt, // Use the generated excerpt
-        themeCategory: themeCategory || 'HORROR', // Use the theme from the form or default to HORROR
+        excerpt,
+        themeCategory: validatedThemeCategory,
         isSecret: false,
         matureContent: false,
-        metadata // Use the prepared metadata object
+        metadata
       };
 
       console.log('[POST /api/posts/community] Post data before validation:', {
         title: postData.title,
-        content: postData.content,
+        excerpt: postData.excerpt,
         slug: postData.slug,
         authorId: postData.authorId,
-        metadata: postData.metadata
+        themeCategory: postData.themeCategory
       });
 
       // Validate the complete post data
       const validatedData = insertPostSchema.parse(postData);
 
-      console.log('[POST /api/posts/community] Creating new community post:', validatedData);
+      console.log('[POST /api/posts/community] Creating new community post:', {
+        title: validatedData.title,
+        slug: validatedData.slug,
+        authorId: validatedData.authorId
+      });
+      
       const post = await storage.createPost(validatedData);
 
       if (!post) {
         throw new Error("Failed to create community post");
       }
 
-      console.log('[POST /api/posts/community] Post created successfully:', post);
+      console.log('[POST /api/posts/community] Post created successfully:', {
+        id: post.id,
+        title: post.title,
+        slug: post.slug
+      });
+      
       res.status(201).json(post);
     } catch (error) {
       console.error("[POST /api/posts/community] Error:", error);

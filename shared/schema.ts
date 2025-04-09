@@ -385,18 +385,19 @@ export type PostMetadata = {
   [key: string]: any; // Allow for any additional properties
 };
 
-// Update insertPostSchema to accept WordPress fields
+// Update insertPostSchema to accept WordPress fields and add validation
 export const insertPostSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-  slug: z.string().min(1, "Slug is required"),
+  title: z.string().min(1, "Title is required").max(255, "Title cannot exceed 255 characters"),
+  content: z.string().min(1, "Content is required").max(65535, "Content is too long"),
+  slug: z.string().min(1, "Slug is required").max(255, "Slug cannot exceed 255 characters")
+    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   authorId: z.number(),
-  excerpt: z.string().optional(),
+  excerpt: z.string().max(500, "Excerpt cannot exceed 500 characters").optional(),
   isSecret: z.boolean().optional(),
   isAdminPost: z.boolean().optional(),
   matureContent: z.boolean().optional(),
-  themeCategory: z.string().optional(),
-  readingTimeMinutes: z.number().optional(),
+  themeCategory: z.string().max(50, "Theme category cannot exceed 50 characters").optional(),
+  readingTimeMinutes: z.number().int("Reading time must be a whole number").optional(),
   metadata: z.object({
     isCommunityPost: z.boolean().optional(),
     isApproved: z.boolean().optional(),

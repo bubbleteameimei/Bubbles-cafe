@@ -77,24 +77,9 @@ export function setupAuth(app: Express) {
         isValid = await bcryptjs.compare(password, user.password_hash);
       } catch (compareError) {
         console.error('[Auth] Error comparing passwords:', compareError);
-        // Try to recover if the password hash might be stored incorrectly
-        // This helps with migration issues or corrupted hashes
-        if (user.password_hash && user.password_hash.length > 0) {
-          try {
-            // Last resort: rehash the password and update it if login succeeds with plaintext comparison
-            // WARNING: This is only for recovery and should be removed in production
-            isValid = password === user.password_hash;
-            if (isValid) {
-              console.log('[Auth] Plain text password matched, rehashing password');
-              const salt = await bcryptjs.genSalt(SALT_ROUNDS);
-              const newHash = await bcryptjs.hash(password, salt);
-              // Update the user's password hash silently
-              await storage.updateUser(user.id, { password_hash: newHash });
-            }
-          } catch (fallbackError) {
-            console.error('[Auth] Fallback password recovery failed:', fallbackError);
-          }
-        }
+        // If bcrypt fails, we consider it an invalid password
+        // No fallback to plaintext comparison - that creates a security risk
+        isValid = false;
       }
       
       console.log('[Auth] Password validation result:', isValid);
