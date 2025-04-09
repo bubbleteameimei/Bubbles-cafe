@@ -1055,7 +1055,10 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      // Sanitize user input - using the sanitizer imported at the top of the file
+      // Import sanitizer to prevent XSS attacks
+      const { sanitizeHtml, stripHtml } = require('./utils/sanitizer');
+
+      // Sanitize user input
       const sanitizedContent = sanitizeHtml(content.trim());
       const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
 
@@ -1292,7 +1295,10 @@ export function registerRoutes(app: Express): Server {
         });
       }
       
-      // Sanitize user input using the sanitizer imported at the top of the file
+      // Import sanitizer to prevent XSS attacks
+      const { sanitizeHtml, stripHtml } = require('./utils/sanitizer');
+
+      // Sanitize user input
       const sanitizedContent = sanitizeHtml(content.trim());
       const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
 
