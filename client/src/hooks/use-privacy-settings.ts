@@ -68,6 +68,21 @@ export function usePrivacySettings() {
         });
 
         if (!response.ok) {
+          // Handle authentication errors specially
+          if (response.status === 401) {
+            console.log('Authentication required for privacy settings');
+            toast({
+              title: 'Authentication required',
+              description: 'Please log in to access your privacy settings',
+              variant: 'destructive',
+            });
+            
+            // Use default settings for unauthenticated users
+            setSettings(getDefaultPrivacySettings());
+            setIsLoading(false);
+            return;
+          }
+          
           // For development, use demo settings when API fails
           const isDev = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
           if (isDev) {
@@ -86,6 +101,7 @@ export function usePrivacySettings() {
             setIsLoading(false);
             return;
           }
+          
           throw new Error(`Failed to fetch privacy settings: ${response.status} ${response.statusText}`);
         }
 
@@ -163,12 +179,21 @@ export function usePrivacySettings() {
       });
 
       if (!response.ok) {
+        // Handle authentication errors specially
+        if (response.status === 401) {
+          toast({
+            title: 'Authentication required',
+            description: 'Your session has expired. Please log in again to update your privacy settings',
+            variant: 'destructive',
+          });
+        }
+        
         // Revert the optimistic update if the API call fails
         setSettings(prev => ({
           ...prev,
           [key]: !value // Toggle back to previous value
         }));
-        throw new Error('Failed to update privacy settings');
+        throw new Error(`Failed to update privacy settings: ${response.status}`);
       }
 
       // Successfully updated
@@ -222,7 +247,15 @@ export function usePrivacySettings() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update privacy settings');
+        // Handle authentication errors specially
+        if (response.status === 401) {
+          toast({
+            title: 'Authentication required',
+            description: 'Your session has expired. Please log in again to update your privacy settings',
+            variant: 'destructive',
+          });
+        }
+        throw new Error(`Failed to update privacy settings: ${response.status}`);
       }
 
       // Successfully updated

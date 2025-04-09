@@ -439,9 +439,10 @@ export default function PrivacySettingsPage() {
                   // Use appropriate colors based on score
                   style={{
                     background: "hsl(var(--muted))",
+                    // Use gradient for visual appeal
                     "--tw-gradient-from": privacyScore < 30 ? "hsl(var(--destructive))" : 
-                                         privacyScore < 70 ? "hsl(var(--amber-600))" : 
-                                         "hsl(var(--green-600))"
+                                         privacyScore < 70 ? "hsl(var(--warning))" : 
+                                         "hsl(var(--success))"
                   } as React.CSSProperties}
                 />
                 

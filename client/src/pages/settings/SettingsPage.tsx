@@ -1,17 +1,38 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [isDataExportPage, setIsDataExportPage] = useState(false);
   const [fontSize, setFontSize] = useState(16);
   const [readingMode, setReadingMode] = useState<'scroll' | 'page'>('scroll');
   const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
+  
+  // Check if user is trying to access the removed data export page
+  const [, params] = useRoute('/settings/data-export');
+  
+  useEffect(() => {
+    // If the URL contains /settings/data-export, redirect to privacy settings
+    if (location === '/settings/data-export') {
+      // Show toast notification explaining the redirection
+      toast({
+        title: "Data Export Feature Removed",
+        description: "The data export functionality has been removed for security and performance reasons. Please contact support if you need your data.",
+        variant: "destructive"
+      });
+      
+      // Redirect to privacy settings page
+      setLocation('/settings/privacy');
+    }
+  }, [location, toast, setLocation]);
 
   // Font size handler
   const handleFontSizeChange = (value: number[]) => {

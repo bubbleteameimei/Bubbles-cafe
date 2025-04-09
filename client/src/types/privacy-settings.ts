@@ -40,11 +40,6 @@ export interface PrivacySettings {
 }
 
 /**
- * Available data export formats
- */
-export type ExportFormat = 'json' | 'csv' | 'text' | 'print';
-
-/**
  * Available privacy impact levels
  * Used to assess the privacy impact of user's settings
  */

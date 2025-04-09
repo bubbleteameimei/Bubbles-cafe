@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
+import { toast } from 'sonner';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
@@ -265,7 +266,22 @@ const AppContent = () => {
               <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
               <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
               <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
-              {/* Data export route removed */}
+              {/* Redirect data export route to privacy settings */}
+              <Route path="/settings/data-export">
+                {() => {
+                  const [, setLocation] = useLocation();
+                  React.useEffect(() => {
+                    // Show toast notification with the Toaster component
+                    toast.error("Data Export Feature Removed", {
+                      description: "The data export functionality has been removed. Please contact support if you need your data."
+                    });
+                    // Redirect to privacy settings page
+                    setLocation('/settings/privacy');
+                  }, [setLocation]);
+                  // Return null while redirecting
+                  return null;
+                }}
+              </Route>
               <ProtectedRoute path="/settings/cookie-management" component={CookieManagementPage} />
               <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
               <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
