@@ -121,3 +121,6 @@ export const formatBytes = (bytes: number, decimals = 2) => {
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
+
+// Default export that provides the useShowToast hook
+export default useShowToast;
