@@ -2,8 +2,8 @@ import { memo } from "react";
 
 export const LoadingScreen = memo(() => {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
-      <div className="loader">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-[2px] z-50 transition-all duration-300">
+      <div className="loader p-4 rounded-md bg-background/20">
         <span>L</span>
         <span>O</span>
         <span>A</span>
@@ -25,36 +25,32 @@ export const LoadingScreen = memo(() => {
         }
 
         .loader span {
-          font-size: 22px;
-          font-family: 'Space Mono', monospace;
+          font-size: 20px;
+          font-family: 'Space Mono', monospace, sans-serif;
           font-weight: 600;
-          animation: blur 2s linear infinite;
+          animation: fade 1.6s ease-in-out infinite;
           line-height: 20px;
-          transition: all 0.5s;
+          transition: all 0.3s;
           letter-spacing: 0.2em;
-          color: white;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+          color: hsl(var(--foreground));
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.2s; }
-        .loader span:nth-child(3) { animation-delay: 0.4s; }
-        .loader span:nth-child(4) { animation-delay: 0.6s; }
-        .loader span:nth-child(5) { animation-delay: 0.8s; }
-        .loader span:nth-child(6) { animation-delay: 1.0s; }
-        .loader span:nth-child(7) { animation-delay: 1.2s; }
+        .loader span:nth-child(2) { animation-delay: 0.1s; }
+        .loader span:nth-child(3) { animation-delay: 0.2s; }
+        .loader span:nth-child(4) { animation-delay: 0.3s; }
+        .loader span:nth-child(5) { animation-delay: 0.4s; }
+        .loader span:nth-child(6) { animation-delay: 0.5s; }
+        .loader span:nth-child(7) { animation-delay: 0.6s; }
         
-        @keyframes blur {
+        @keyframes fade {
           0% {
-            filter: blur(0px);
             opacity: 1;
           }
           50% {
-            filter: blur(5px);
-            opacity: 0.3;
+            opacity: 0.4;
           }
           100% {
-            filter: blur(0px);
             opacity: 1;
           }
         }
