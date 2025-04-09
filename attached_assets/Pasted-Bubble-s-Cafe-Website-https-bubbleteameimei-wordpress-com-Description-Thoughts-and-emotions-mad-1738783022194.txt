@@ -1,60 +1,0 @@
-Bubble’s Cafe Website: https://bubbleteameimei.wordpress.com  Description: Thoughts and emotions made into art.  Last Updated: Tue, 04 Feb 2025 02:11:22  Language: en-GB Version: 1.2  Blog Posts Rain Date Published: Fri, 19 Aug 2022 11:55:47  Author: vantalison Link: Rain Excerpt: The rain pours down with a vengeance, each drop wetting the earth and entering into any uncovered crevices. A lady is in overly thin clothes and makeup that clearly does not hold up under the rain. With non-waterproof mascara dripping down her pale face, her once-beautiful features are forced to look horrible. Descent Date Published: Sat, 20 Aug 2022 16:22:25  Author: vantalison Link: Descent Excerpt: Have you ever wanted to feel what dying feels like? Do you want to? I can help you, picture this- You’re lying face up in a pile of garbage. It rained recently so an earthy scent lingers in the choking smell of garbage. Chase Date Published: Thu, 08 Sep 2022 19:15:02  Author: vantalison Link: Chase Excerpt: You look different today. The ol’ dark outfit has been swapped out for a brighter, sunnier look. I like it. You’re usually 5 steps behind me, matching my pace when I speed up and peeping when I turn a corner. Tunnel Date Published: Tue, 13 Dec 2022 00:11:17  Author: vantalison Link: Tunnel Excerpt: I chose you. I’ve seen you walk this path a dozen times, your head bowed and your gait sluggish. You’re a 9 to 5 slave, for people who don’t care about you or even know your name. Skin Date Published: Fri, 06 Jan 2023 19:03:04  Author: vantalison Link: Skin Excerpt: If beauty is only skin deep, then please may I have your skin? If I ask politely will you give it to me? You refused- now I have no choice but to take it by force. Doll Date Published: Tue, 17 Jan 2023 21:41:29  Author: vantalison Link: Doll Excerpt: She appeared the day you left, right where you sat previously. She won’t be able to bring you back. I won’t let it happen. Cookbook Date Published: Tue, 17 Jan 2023 21:41:22  Author: vantalison Link: Cookbook Excerpt: I’m starting a cookbook. I’m working on my first recipe and I’ve already gotten the ingredients ready. I combine breadcrumbs soaked in milk with minced garlic and onion and set aside. Car Date Published: Sun, 05 Mar 2023 17:15:03  Author: vantalison Link: Car Excerpt: As I stand alone at the deserted bus stop, I can’t help but feel vulnerable and exposed in the darkness. That's when you appear, a stranger who offers to drive me home. Mirror Date Published: Thu, 09 Mar 2023 20:41:08  Author: vantalison Link: Mirror Excerpt: I’m observing you. You’re blabbering on the phone with your friends, talking about things I can’t hear clearly. Come closer. I very much want to listen in. Drive Date Published: Sun, 12 Mar 2023 22:33:26  Author: vantalison Link: Drive Excerpt: I can’t drive. If I learnt how to, then the first thing I would do is to run over a pedestrian. I’d put the car in reverse and run them over once more. Bug Date Published: Tue, 09 May 2023 13:08:58  Author: vantalison Link: Bug Excerpt: You can feel it crawling under your skin, a lump. It never stays in the same place for too long, constantly moving. The doctors say it’s all in your mind, formication they call it. Machine Date Published: Tue, 30 May 2023 18:25:37  Author: vantalison Link: Machine Excerpt: I am in the empty corridors of an abandoned research facility, surrounded by silence. Once filled with the hum of scientific progress, now it lies in ruins. Bleach Date Published: Sat, 24 Jun 2023 19:34:50  Author: vantalison Link: Bleach Excerpt: Do you want to end it all? Drink bleach then! It burns? Of course it does. You’ve lost your sense of taste and your tastebuds are burnt useless? Therapist Date Published: Sat, 24 Jun 2023 19:37:03  Author: vantalison Link: Therapist Excerpt: You’ve come in again today for your session. You’re laying on my coffee colored couch telling me your fears, your thoughts. You’re afraid of the dark, you tell me. Cave Date Published: Mon, 22 Apr 2024 20:15:27  Author: vantalison Link: Cave Excerpt: Journal Entry - May 21, 2004. For the past five months I have been exploring the perimeter of the caves. They fascinate me. I’m enticed to explore within. Nostalgia Date Published: Fri, 12 Jul 2024 22:05:24  Author: vantalison Link: Nostalgia Excerpt: Nostalgia is disgusting. It is a slimy, writhing worm in your brain you can’t reach. A parasite that gnaws at your sanity.
-Website Information
-Website Name: Bubble’s Cafe
-URL: https://bubbleteameimei.wordpress.com
-Tagline/Description: "Thoughts and emotions made into art."
-Platform: WordPress.com
- Author Information
- Author Name: vantalison
-Email Address: vantalison@gmail.com
-Activity: The author has been consistently publishing posts over several years (from 2022 to 2024).
- Technical Metadata
- Last Updated: Tue, 04 Feb 2025 02:11:22 +0000
-Language: en-GB
-Version: 1.2
-WordPress ID: 225108574
- Navigation Menus
- Menu IDs:
-1358 (Type: nav_menu, Location: main)
-1357 (Type: nav_menu, Location: primary)
- Comment Activity The file contains detailed records of comments and interactions on the posts. For example:
- Commenters:
-okolidaniel321@gmail.com
-emannychiddy@gmail.com
-margaret.chiwetalu@gmail.com
-daphnechiwetalu1@gmail.com
-steam@gmail.com
-adepegbaesther4@gmail.com
- Comment Metadata:
-Timestamps for when comments were posted.
-IP addresses of commenters (e.g., 102.89.33.5, 197.210.79.75).
-Flags for spam checks (akismet_result, akismet_history).
-Notifications (email_notification_notqueued, jabber_published).
- Post-Specific Metadata Each post contains additional metadata beyond the content:
- Post IDs: Unique identifiers for each post (e.g., 8, 71, 77, etc.).
-Publication Status: All posts are marked as publish.
-Categories: Most posts are uncategorized.
-Tags: Some posts have suggested tags (e.g., reader_suggested_tags).
-API Information:
-_rest_api_published: Indicates whether the post was published via the REST API.
-_rest_api_client_id: Identifies the client used for publishing.
- User Interactions
- Publicize Jobs: Posts were likely shared on social media or other platforms (_publicize_job_id).
-WordAds Integration: Posts may have been monetized through WordAds (wordads_ufa).
-Timeline Notifications: Timestamps for when notifications were sent (timeline_notification).
- Miscellaneous Features
- Elasticsearch Data Sharing: Some posts have been indexed for search purposes (_elasticsearch_data_sharing_indexed_on).
-Jetpack Memberships: Certain posts may contain paywalled or paid content (_jetpack_memberships_contains_paywalled_content, _jetpack_memberships_contains_paid_content).
-Firehose Sent: Indicates whether the post was distributed via WordPress's content syndication system (firehose_sent).
- Patterns in Content Creation
- Frequency: Posts are irregular but span multiple years, with no clear schedule.
-Themes: The posts explore dark, psychological, and often disturbing themes, including death, obsession, transformation, and existential dread.
-Tone: The writing style is introspective, surreal, and often unsettling, blending vivid imagery with emotional depth.
- External References
- Links to WordPress Services:
-http://wordpress.com/
-http://s0.wp.com/i/buttonw-com.png
- Potential Insights
- Audience Engagement: The presence of comments and interactions suggests an engaged readership.
-Author’s Mindset: The recurring themes of isolation, obsession, and transformation may reflect the author’s personal interests or struggles.
-Technical Setup: The use of WordPress features like Jetpack memberships, WordAds, and Elasticsearch indicates a sophisticated setup aimed at both monetization and discoverability. (Use this to create a website for me with these features and more if possible- Offline mode, adaptive font sizes, skeletal hand cursor, search system, breadcrumb navigation, secret pages, interactive polls, live story reading mode, comment section, story progression tracker, mist effect, mouse tracking eyes, ambient background sounds, hover effects, animated page transitions, headers, good typography, dark mode toggle with light and dark theme

@@ -1,14 +1,10 @@
 /**
  * Dependency Optimization Script
  * 
- * This script analyzes the project dependencies and creates a production-optimized
- * package.json file that can be used for deployment.
- * 
- * Features:
- * 1. Identifies potentially unused dependencies
- * 2. Creates a production-only package.json for deployment
- * 3. Provides instructions for pruning and optimizing dependencies
- * 4. Safe mode - doesn't modify any existing files directly
+ * This script analyzes and optimizes the project dependencies by:
+ * 1. Identifying unnecessarily large packages
+ * 2. Finding potentially unused dependencies
+ * 3. Suggesting optimizations for reducing node_modules size
  */
 
 import fs from 'fs';
@@ -16,205 +12,159 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Get __dirname equivalent in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// ANSI color codes for output formatting
-const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightBlue: '\x1b[94m'
-};
-
-// Function to format file sizes
+// Size display helper
 function formatBytes(bytes, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
+  
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  
   const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-// Read the package.json file
+// Read package.json
 function readPackageJson() {
+  const packageJsonPath = path.join(__dirname, 'package.json');
   try {
-    const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    return packageJson;
+    const content = fs.readFileSync(packageJsonPath, 'utf8');
+    return JSON.parse(content);
   } catch (error) {
-    console.error(`${colors.red}Error reading package.json:${colors.reset}`, error.message);
-    process.exit(1);
+    console.error('Error reading package.json:', error.message);
+    return {};
   }
 }
 
-// Get the size of node_modules
-function getNodeModulesSize() {
+// Get size of node_modules directory or specific package
+function getPackageSize(packageName = null) {
+  let targetPath;
+  
+  if (packageName) {
+    targetPath = path.join(__dirname, 'node_modules', packageName);
+  } else {
+    targetPath = path.join(__dirname, 'node_modules');
+  }
+  
+  if (!fs.existsSync(targetPath)) return 0;
+  
   try {
-    // Use du command to get the size of node_modules directory
-    const output = execSync('du -s -h node_modules', { encoding: 'utf8' });
-    const size = output.trim().split('\t')[0];
-    return size;
+    const output = execSync(`du -sb "${targetPath}" 2>/dev/null || echo 0`).toString();
+    const size = parseInt(output.split(/\s+/)[0], 10);
+    return isNaN(size) ? 0 : size;
   } catch (error) {
-    return 'unknown';
+    return 0;
   }
 }
 
-// Find potentially unused dependencies by analyzing import statements
-function findUnusedDependencies(dependencies) {
-  console.log(`${colors.cyan}Analyzing source code for unused dependencies...${colors.reset}`);
+// Get packages ordered by size
+function getPackagesBySize() {
+  const nodeModulesPath = path.join(__dirname, 'node_modules');
   
-  const usedDependencies = new Set();
-  const directories = ['client', 'server', 'shared'];
+  if (!fs.existsSync(nodeModulesPath)) {
+    return [];
+  }
   
-  // Search for import statements in JS/TS files
-  directories.forEach(dir => {
-    if (!fs.existsSync(dir)) return;
+  try {
+    const packages = fs.readdirSync(nodeModulesPath)
+      .filter(pkg => !pkg.startsWith('.'))
+      .map(pkg => {
+        const size = getPackageSize(pkg);
+        return { name: pkg, size };
+      })
+      .sort((a, b) => b.size - a.size);
     
-    const files = findFiles(dir, ['.js', '.jsx', '.ts', '.tsx']);
-    files.forEach(file => {
-      const content = fs.readFileSync(file, 'utf8');
-      
-      // Check for import statements
-      const importRegex = /import\s+(?:.+\s+from\s+)?['"]([^./][^'"]+)['"]/g;
-      let match;
-      while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        // Extract the package name (e.g., 'lodash/map' -> 'lodash')
-        const packageName = importPath.split('/')[0];
-        usedDependencies.add(packageName);
-      }
-      
-      // Check for require statements
-      const requireRegex = /require\s*\(\s*['"]([^./][^'"]+)['"]\s*\)/g;
-      while ((match = requireRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        const packageName = importPath.split('/')[0];
-        usedDependencies.add(packageName);
-      }
-    });
+    return packages;
+  } catch (error) {
+    console.error('Error getting package sizes:', error.message);
+    return [];
+  }
+}
+
+// Find potential optimizations
+function findOptimizations() {
+  // Find large packages that have lighter alternatives
+  const packagesBySize = getPackagesBySize();
+  const packageJson = readPackageJson();
+  
+  // All dependencies
+  const allDeps = {
+    ...(packageJson.dependencies || {}),
+    ...(packageJson.devDependencies || {})
+  };
+  
+  // Check for large packages
+  const largePackages = packagesBySize.slice(0, 20); // Top 20 largest packages
+  
+  // Check for duplicate packages with different versions
+  const packagesByName = {};
+  packagesBySize.forEach(pkg => {
+    const baseName = pkg.name.split('@')[0];
+    if (!packagesByName[baseName]) {
+      packagesByName[baseName] = [];
+    }
+    packagesByName[baseName].push(pkg);
   });
   
-  // Find dependencies that are not imported in the code
-  const potentiallyUnused = [];
+  // Find packages with multiple versions
+  const duplicatePackages = Object.entries(packagesByName)
+    .filter(([_, versions]) => versions.length > 1)
+    .map(([name, versions]) => ({
+      name,
+      versions: versions.map(v => v.name),
+      totalSize: versions.reduce((sum, v) => sum + v.size, 0)
+    }))
+    .sort((a, b) => b.totalSize - a.totalSize);
   
-  for (const dep in dependencies) {
-    if (!usedDependencies.has(dep) && 
-        !dep.startsWith('@types/') && // Ignore type definitions
-        dep !== 'typescript') {  // Ignore typescript
-      potentiallyUnused.push(dep);
-    }
-  }
-  
-  return potentiallyUnused;
-}
-
-// Find files with specific extensions in a directory (recursive)
-function findFiles(directory, extensions) {
-  let results = [];
-  
-  if (!fs.existsSync(directory)) return results;
-  
-  const files = fs.readdirSync(directory);
-  
-  files.forEach(file => {
-    const filePath = path.join(directory, file);
-    const stat = fs.statSync(filePath);
-    
-    if (stat.isDirectory() && file !== 'node_modules' && !file.startsWith('.')) {
-      results = results.concat(findFiles(filePath, extensions));
-    } else if (stat.isFile() && extensions.includes(path.extname(file))) {
-      results.push(filePath);
-    }
-  });
-  
-  return results;
-}
-
-// Create a production-optimized package.json
-function createProductionPackageJson(packageJson, potentiallyUnused) {
-  const prodPackageJson = { ...packageJson };
-  
-  // Move devDependencies into a backup field
-  if (!prodPackageJson._devDependencies && prodPackageJson.devDependencies) {
-    prodPackageJson._devDependencies = { ...prodPackageJson.devDependencies };
-    delete prodPackageJson.devDependencies;
-  }
-  
-  // Save the production package.json
-  const outputPath = path.join(__dirname, 'package.production.json');
-  fs.writeFileSync(outputPath, JSON.stringify(prodPackageJson, null, 2), 'utf8');
-  
-  console.log(`${colors.green}Production package.json created at:${colors.reset} package.production.json`);
-  
-  return outputPath;
-}
-
-// Generate deployment instructions
-function generateDeploymentInstructions(outputPath, potentiallyUnused) {
-  console.log('\n===============================================');
-  console.log(`${colors.brightYellow}DEPENDENCY OPTIMIZATION INSTRUCTIONS${colors.reset}`);
-  console.log('===============================================\n');
-  
-  console.log(`${colors.cyan}Current node_modules size:${colors.reset} ${getNodeModulesSize()}`);
-  
-  console.log(`\n${colors.cyan}Step 1:${colors.reset} For deployment, use the following commands:`);
-  console.log(`  ${colors.green}cp package.json package.backup.json${colors.reset}`);
-  console.log(`  ${colors.green}cp package.production.json package.json${colors.reset}`);
-  console.log(`  ${colors.green}npm ci --production${colors.reset}`);
-  
-  if (potentiallyUnused.length > 0) {
-    console.log(`\n${colors.yellow}Potentially unused dependencies (${potentiallyUnused.length}):${colors.reset}`);
-    potentiallyUnused.forEach(dep => {
-      console.log(`  - ${dep}`);
-    });
-    console.log(`\n${colors.cyan}Step 2 (Optional):${colors.reset} Verify and remove unused dependencies`);
-    console.log(`  ${colors.green}npm uninstall ${potentiallyUnused.join(' ')}${colors.reset}`);
-  }
-  
-  console.log(`\n${colors.cyan}Step 3:${colors.reset} After deployment, restore your development environment:`);
-  console.log(`  ${colors.green}cp package.backup.json package.json${colors.reset}`);
-  console.log(`  ${colors.green}npm ci${colors.reset}`);
-  
-  console.log(`\n${colors.cyan}Additional optimizations:${colors.reset}`);
-  console.log(`  • Use dynamic imports for code splitting`);
-  console.log(`  • Implement proper tree-shaking in your bundler`);
-  console.log(`  • Consider using smaller alternatives for large packages`);
-  
-  console.log('\n===============================================');
-  console.log(`${colors.brightGreen}SAFETY NOTICE${colors.reset}`);
-  console.log('===============================================');
-  console.log(`This script doesn't modify your existing package.json.`);
-  console.log(`It creates a separate production file for deployment use.`);
-  console.log(`Always verify that your application works correctly after`);
-  console.log(`any dependency changes.\n`);
+  return {
+    largePackages,
+    duplicatePackages
+  };
 }
 
 // Main function
-async function optimizeDependencies() {
-  console.log(`\n${colors.brightBlue}DEPENDENCY OPTIMIZATION TOOL${colors.reset}\n`);
+async function main() {
+  console.log('==== Dependency Optimization Analysis ====');
   
-  // Read the package.json file
-  const packageJson = readPackageJson();
+  // Get node_modules size
+  const nodeModulesSize = getPackageSize();
+  console.log(`node_modules size: ${formatBytes(nodeModulesSize)}`);
   
-  // Analyze dependencies
-  const potentiallyUnused = findUnusedDependencies(packageJson.dependencies || {});
+  // Find optimizations
+  const { largePackages, duplicatePackages } = findOptimizations();
   
-  // Create production package.json
-  const outputPath = createProductionPackageJson(packageJson, potentiallyUnused);
+  // Report largest packages
+  console.log('\n==== Largest Packages ====');
+  largePackages.forEach((pkg, index) => {
+    console.log(`${index + 1}. ${pkg.name}: ${formatBytes(pkg.size)}`);
+  });
   
-  // Generate deployment instructions
-  generateDeploymentInstructions(outputPath, potentiallyUnused);
+  // Report duplicate packages
+  if (duplicatePackages.length > 0) {
+    console.log('\n==== Duplicate Packages ====');
+    duplicatePackages.forEach((pkg, index) => {
+      console.log(`${index + 1}. ${pkg.name} (${formatBytes(pkg.totalSize)})`);
+      pkg.versions.forEach(v => console.log(`   - ${v}`));
+    });
+  }
+  
+  // Recommendations
+  console.log('\n==== Optimization Recommendations ====');
+  console.log('1. Remove duplicate packages by running: npm dedupe');
+  console.log('2. Install only production dependencies for deployment:');
+  console.log('   npm install --production');
+  console.log('3. Consider alternatives for large packages:');
+  for (const pkg of largePackages.slice(0, 5)) {
+    console.log(`   - ${pkg.name} (${formatBytes(pkg.size)})`);
+  }
+  console.log('\n4. Run development and production builds separately:');
+  console.log('   - Keep development dependencies in devDependencies');
+  console.log('   - Use npm prune --production before deployment');
 }
 
-// Run the script
-optimizeDependencies().catch(error => {
-  console.error(`${colors.red}Error:${colors.reset}`, error);
-  process.exit(1);
-});
+main().catch(console.error);

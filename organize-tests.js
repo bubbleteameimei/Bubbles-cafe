@@ -11,175 +11,177 @@
 
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const execAsync = promisify(exec);
+// Get __dirname equivalent in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Check if dry run mode is enabled
+// Configuration
+const TEST_FILE_PATTERNS = [
+  /^check-.*\.js$/,
+  /^check_.*\.js$/,
+  /^capture-.*\.js$/,
+  /^screenshot.*\.js$/,
+  /^test-.*\.js$/,
+  /^verify-.*\.js$/,
+];
+
+const TEST_DIRECTORY = path.join(__dirname, 'tests');
+const TEST_SUBDIRECTORIES = {
+  'ui': ['screenshot', 'capture'],
+  'functional': ['check', 'verify'],
+  'integration': ['test'],
+  'utils': ['utils'],
+};
+
+// Command line args
 const isDryRun = process.argv.includes('--dry');
-console.log(isDryRun ? '🔍 DRY RUN MODE (No files will be modified)' : '⚠️ LIVE MODE (Files will be moved)');
 
-// Function to format bytes to human-readable form
+// Size display helper
 function formatBytes(bytes, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
   
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-// Organize test files into categories
+// Helper to determine which category a file belongs to
 function getCategoryForFile(filename) {
-  const lowerName = filename.toLowerCase();
+  const lowercaseFilename = filename.toLowerCase();
   
-  if (lowerName.includes('screenshot') || lowerName.includes('capture')) {
-    return 'visual';
-  } else if (lowerName.includes('comment')) {
-    return 'comments';
-  } else if (lowerName.includes('reader') || lowerName.includes('tooltip')) {
-    return 'reader';
-  } else if (lowerName.includes('admin') || lowerName.includes('auth')) {
-    return 'admin';
-  } else if (lowerName.includes('wordpress') || lowerName.includes('wp-api')) {
-    return 'wordpress';
-  } else if (lowerName.includes('feedback')) {
-    return 'feedback';
-  } else if (lowerName.includes('csrf') || lowerName.includes('security')) {
-    return 'security';
-  } else if (lowerName.includes('excerpt')) {
-    return 'content';
-  } else {
-    return 'general';
+  for (const [category, prefixes] of Object.entries(TEST_SUBDIRECTORIES)) {
+    for (const prefix of prefixes) {
+      if (lowercaseFilename.includes(prefix)) {
+        return category;
+      }
+    }
   }
+  
+  return 'misc'; // Default category
 }
 
-// Main function to organize test files
+// Main function
 async function organizeTestFiles() {
-  console.log('\n🚀 Starting test file organization...');
+  console.log(`==== Test File Organization ${isDryRun ? '(DRY RUN)' : ''} ====`);
   
-  try {
-    // Find test files that aren't part of regular test structure but were created for one-off testing
-    const { stdout: testFiles } = await execAsync('find . -maxdepth 1 -type f \\( -name "test-*.js" -o -name "*-test.js" -o -name "*-test.html" -o -name "check-*.js" -o -name "simple-*.js" -o -name "*-screenshot.js" \\) | grep -v "node_modules" 2>/dev/null || echo ""');
-    const oneOffTestList = testFiles.trim().split('\n').filter(file => file);
-    
-    if (oneOffTestList.length === 0) {
-      console.log('No test files found at root level.');
-      return;
+  // Create test directory structure
+  if (!isDryRun) {
+    if (!fs.existsSync(TEST_DIRECTORY)) {
+      fs.mkdirSync(TEST_DIRECTORY);
     }
     
-    console.log(`Found ${oneOffTestList.length} test files to organize.`);
-    
-    // Create tests directory and category subdirectories
-    if (!isDryRun) {
-      if (!fs.existsSync('./tests')) {
-        console.log('Creating tests directory structure...');
-        fs.mkdirSync('./tests', { recursive: true });
-        fs.mkdirSync('./tests/visual', { recursive: true });
-        fs.mkdirSync('./tests/comments', { recursive: true });
-        fs.mkdirSync('./tests/reader', { recursive: true });
-        fs.mkdirSync('./tests/admin', { recursive: true });
-        fs.mkdirSync('./tests/wordpress', { recursive: true });
-        fs.mkdirSync('./tests/feedback', { recursive: true });
-        fs.mkdirSync('./tests/security', { recursive: true });
-        fs.mkdirSync('./tests/content', { recursive: true });
-        fs.mkdirSync('./tests/general', { recursive: true });
-        
-        // Create README file explaining the test directory structure
-        const readmeContent = `# Test Directory
-
-This directory contains organized test files for the project.
-
-## Organization
-
-Tests are organized into the following categories:
-
-- **admin/** - Tests for admin panel, authentication, and user management
-- **comments/** - Tests for the comment system functionality
-- **content/** - Tests for content handling, excerpts, and text processing
-- **feedback/** - Tests for the user feedback system
-- **general/** - General tests that don't fit other categories
-- **reader/** - Tests for the reader experience, reading modes, and related features
-- **security/** - Tests for CSRF protection, authentication security, and related features
-- **visual/** - Screenshot tests and visual verification tests
-- **wordpress/** - Tests for WordPress API integration and related functionality
-
-## Running Tests
-
-Most tests can be run using:
-
-\`\`\`
-node tests/[category]/[test-file].js
-\`\`\`
-
-HTML test files can be opened in the browser directly.
-
-## Test Migration
-
-These tests were automatically migrated from the project root to reduce clutter
-while preserving test functionality.
-`;
-
-        fs.writeFileSync('./tests/README.md', readmeContent);
+    for (const dir of [...Object.keys(TEST_SUBDIRECTORIES), 'misc']) {
+      const subDir = path.join(TEST_DIRECTORY, dir);
+      if (!fs.existsSync(subDir)) {
+        fs.mkdirSync(subDir);
       }
     }
-    
-    // Track files by category for summary
-    const categoryCounts = {
-      visual: 0,
-      comments: 0,
-      reader: 0,
-      admin: 0,
-      wordpress: 0,
-      feedback: 0,
-      security: 0,
-      content: 0,
-      general: 0
-    };
-    
-    // Move files into appropriate subdirectories
-    for (const filePath of oneOffTestList) {
-      try {
-        const fileName = path.basename(filePath);
-        const category = getCategoryForFile(fileName);
-        const targetDir = `./tests/${category}`;
-        const targetPath = path.join(targetDir, fileName);
-        
-        categoryCounts[category]++;
-        
-        console.log(`${isDryRun ? 'Would move' : 'Moving'} "${filePath}" to "${targetPath}"`);
-        
-        if (!isDryRun) {
-          fs.copyFileSync(filePath, targetPath);
-          fs.unlinkSync(filePath);
-        }
-      } catch (err) {
-        console.error(`Error processing file ${filePath}:`, err);
-      }
-    }
-    
-    // Print summary
-    console.log('\n--- 📊 ORGANIZATION SUMMARY ---');
-    console.log('Files organized by category:');
-    for (const [category, count] of Object.entries(categoryCounts)) {
-      if (count > 0) {
-        console.log(`- ${category}: ${count} files`);
-      }
-    }
-    
-    if (isDryRun) {
-      console.log(`\n🔍 DRY RUN COMPLETE! No files were moved.`);
-      console.log(`To perform the actual organization, run: node organize-tests.js`);
-    } else {
-      console.log(`\n✅ ORGANIZATION COMPLETE!`);
-      console.log(`Tests have been organized into the ./tests directory with appropriate categorization.`);
-    }
-  } catch (error) {
-    console.error('Error organizing test files:', error);
   }
+  
+  // Get all files in the root directory
+  const rootFiles = fs.readdirSync(__dirname)
+    .filter(file => {
+      const isFile = fs.statSync(path.join(__dirname, file)).isFile();
+      const isTestFile = TEST_FILE_PATTERNS.some(pattern => pattern.test(file));
+      return isFile && isTestFile;
+    });
+  
+  // Organize by category
+  const filesByCategory = {};
+  let totalFiles = 0;
+  let totalSize = 0;
+  
+  for (const file of rootFiles) {
+    const filePath = path.join(__dirname, file);
+    const stats = fs.statSync(filePath);
+    const fileSize = stats.size;
+    
+    const category = getCategoryForFile(file);
+    
+    if (!filesByCategory[category]) {
+      filesByCategory[category] = [];
+    }
+    
+    filesByCategory[category].push({ name: file, size: fileSize });
+    totalFiles++;
+    totalSize += fileSize;
+  }
+  
+  // Move files if not a dry run
+  if (!isDryRun) {
+    for (const [category, files] of Object.entries(filesByCategory)) {
+      const targetDir = path.join(TEST_DIRECTORY, category);
+      
+      for (const file of files) {
+        const source = path.join(__dirname, file.name);
+        const target = path.join(targetDir, file.name);
+        
+        fs.copyFileSync(source, target);
+        fs.unlinkSync(source);
+        
+        console.log(`Moved: ${file.name} -> tests/${category}/ (${formatBytes(file.size)})`);
+      }
+    }
+  } else {
+    // Just display what would happen in a dry run
+    for (const [category, files] of Object.entries(filesByCategory)) {
+      console.log(`\n==== Category: ${category} ====`);
+      
+      for (const file of files) {
+        console.log(`Would move: ${file.name} -> tests/${category}/ (${formatBytes(file.size)})`);
+      }
+    }
+  }
+  
+  // Summary
+  console.log(`\n==== Organization Summary ====`);
+  console.log(`Total files: ${totalFiles}`);
+  console.log(`Total size: ${formatBytes(totalSize)}`);
+  
+  // Create an index.js file with imports for each category
+  if (!isDryRun) {
+    for (const category of Object.keys(filesByCategory)) {
+      const indexPath = path.join(TEST_DIRECTORY, category, 'index.js');
+      let indexContent = '/**\n';
+      indexContent += ` * Test Index for ${category}\n`;
+      indexContent += ' */\n\n';
+      
+      for (const file of filesByCategory[category]) {
+        const importName = file.name
+          .replace(/\.js$/, '')
+          .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+          .replace(/^[a-z]/, letter => letter.toUpperCase());
+        
+        indexContent += `import ${importName} from './${file.name}';\n`;
+      }
+      
+      indexContent += '\nexport {\n';
+      
+      for (const file of filesByCategory[category]) {
+        const importName = file.name
+          .replace(/\.js$/, '')
+          .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+          .replace(/^[a-z]/, letter => letter.toUpperCase());
+        
+        indexContent += `  ${importName},\n`;
+      }
+      
+      indexContent += '};\n';
+      
+      fs.writeFileSync(indexPath, indexContent);
+      console.log(`Created index file: tests/${category}/index.js`);
+    }
+  }
+  
+  return { totalFiles, totalSize };
 }
 
-// Run the organization
-organizeTestFiles();
+// Run the script
+organizeTestFiles().catch(console.error);
