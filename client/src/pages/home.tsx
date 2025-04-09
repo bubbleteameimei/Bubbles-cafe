@@ -14,12 +14,20 @@ import ApiLoader from "@/components/api-loader";
 export default function Home() {
   const [, setLocation] = useLocation();
   
-  // Add/remove body-home class when component mounts/unmounts
+  // Add/remove body-home class and set background image when component mounts/unmounts
   useEffect(() => {
     document.body.classList.add('body-home');
     
+    // Directly apply background image to body element
+    document.body.style.backgroundImage = "url('/images/background.jpeg')";
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundRepeat = "no-repeat";
+    document.body.style.backgroundAttachment = "fixed";
+    
     return () => {
       document.body.classList.remove('body-home');
+      document.body.style.backgroundImage = "";
     };
   }, []);
   

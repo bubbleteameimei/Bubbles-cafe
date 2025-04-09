@@ -195,45 +195,46 @@ div[data-reader-page="true"] .container,
 /* Add background image to shadcn theme */
 :root {
   --bg-image: url("/images/background.jpeg");
+  --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%);
+  --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.8) 100%);
 }
 
-html.dark {
-  background-image: var(--bg-image);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  position: relative;
+/* Both html and body elements need the background for consistency */
+html, body {
+  background-color: transparent;
 }
 
-html.dark::after {
+/* Page background for home page in body-home class */
+body.body-home {
+  background-image: var(--bg-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  position: relative !important;
+}
+
+/* Dynamic overlay based on theme - dark theme */
+html.dark body.body-home::after {
   content: "";
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%);
+  background: var(--bg-overlay-dark);
   z-index: -1;
 }
 
-html.light {
-  background-image: var(--bg-image);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  position: relative;
-}
-
-html.light::after {
+/* Dynamic overlay based on theme - light theme */
+html.light body.body-home::after {
   content: "";
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.8) 100%);
+  background: var(--bg-overlay-light);
   z-index: -1;
 }
 
@@ -304,6 +305,10 @@ html.light::after {
     overflow-x: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+  
+  /* Ensure normal body styling on non-home pages */
+  body:not(.body-home) {
     background-color: hsl(var(--background)) !important;
   }
 
@@ -418,13 +423,8 @@ html.dark *, html.light * {
     max-width: 100vw;
   }
 
-  body.body-home {
-    background-image: url('/images/background.jpeg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-  }
+  /* This style is now handled by the dedicated body-home class styling above */
+  body.body-home {}
 
   body {
     @apply bg-background text-foreground;
