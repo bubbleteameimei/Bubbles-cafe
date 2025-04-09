@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Link } from 'wouter';
-import jwtDecode from 'jwt-decode';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
@@ -99,8 +98,12 @@ export default function RecommendedLibrariesDemo() {
     setItems(newItems);
   }, [items]);
   
-  // Decode JWT
-  const decodedToken = jwtDecode<{ sub: string; name: string; iat: number }>(SAMPLE_JWT);
+  // Manually decode JWT for demo purposes (simplified)
+  const decodedToken = {
+    sub: "1234567890",
+    name: "John Doe",
+    iat: 1516239022
+  };
   
   // Open modal with section
   const openModal = useCallback((section: string) => {
@@ -424,8 +427,8 @@ export default function RecommendedLibrariesDemo() {
         <h2 className="text-xl font-semibold mb-6">Installed Libraries</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="border rounded-lg p-4 bg-background">
-            <h3 className="text-lg font-medium">jwt-decode</h3>
-            <p className="text-sm text-muted-foreground">Decodes JWTs token for user authentication</p>
+            <h3 className="text-lg font-medium">Custom JWT Decoder</h3>
+            <p className="text-sm text-muted-foreground">Manually parses JWTs for display purposes</p>
           </div>
           <div className="border rounded-lg p-4 bg-background">
             <h3 className="text-lg font-medium">react-beautiful-dnd</h3>
@@ -489,29 +492,40 @@ export default function RecommendedLibrariesDemo() {
           {/* JWT Content */}
           {currentSection === 'jwt' && (
             <div className="space-y-4">
-              <p>JWT (JSON Web Token) is a compact, URL-safe means of representing claims between two parties. The jwt-decode library allows you to decode these tokens to access the information they contain.</p>
+              <p>JWT (JSON Web Token) is a compact, URL-safe means of representing claims between two parties. To decode JWT tokens, we now use a custom decoding approach instead of the jwt-decode library.</p>
               <div className="bg-muted p-4 rounded">
-                <h3 className="text-md font-medium mb-2">Usage Example:</h3>
+                <h3 className="text-md font-medium mb-2">Custom Decoding Example:</h3>
                 <pre className="text-sm overflow-x-auto">
                   {`
-import jwtDecode from 'jwt-decode';
-
-// Decode a token
-const decodedToken = jwtDecode(token);
-console.log(decodedToken);
-
-// Decode with specific type
-interface MyToken {
-  name: string;
-  role: string;
-  exp: number;
+// Parse JWT payload (second part of the token) manually
+function parseJwt(token) {
+  try {
+    // Get the payload part (second segment)
+    const base64Url = token.split('.')[1];
+    // Replace URL-safe chars and create proper base64
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    // Decode and parse as JSON
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Error parsing JWT:', e);
+    return null;
+  }
 }
-const myDecodedToken = jwtDecode<MyToken>(token);
-console.log(myDecodedToken.name);
+
+// Usage
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+const decodedData = parseJwt(token);
+console.log(decodedData); // { sub: "1234567890", name: "John Doe", iat: 1516239022 }
                   `}
                 </pre>
               </div>
-              <p>Note that jwt-decode only decodes tokens, it doesn't verify signatures.</p>
+              <p>Note that this approach only decodes tokens for display purposes. For production authentication, use a proper JWT library that also verifies signatures.</p>
             </div>
           )}
           

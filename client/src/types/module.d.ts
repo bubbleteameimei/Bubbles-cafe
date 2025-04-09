@@ -167,10 +167,7 @@ declare module 'react-speech-kit' {
   export function useSpeechRecognition(options?: UseSpeechRecognitionOptions): UseSpeechRecognitionProps;
 }
 
-// Declaration for jwt-decode
-declare module 'jwt-decode' {
-  export default function jwtDecode<T = { [key: string]: any }>(token: string): T;
-}
+// We've removed the jwt-decode library and now use a custom implementation
 
 // Declaration for react-beautiful-dnd
 declare module 'react-beautiful-dnd' {

@@ -1,2 +1,2 @@
-export * from './toast-utils';
+export * from './toast-utils.tsx';
 export * from './ToastActionsDemo';

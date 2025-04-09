@@ -1,2 +1,4 @@
 // This file is deprecated, use use-theme.tsx instead
-export * from './use-theme.tsx';
+import { useTheme } from './use-theme.tsx';
+export { useTheme };
+export default useTheme;
