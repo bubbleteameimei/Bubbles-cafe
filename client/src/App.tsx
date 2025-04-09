@@ -64,6 +64,7 @@ import ScrollTestPage from './pages/scroll-test';
 import RefreshDemoPage from './pages/refresh-demo';
 import ZustandDemoPage from './pages/zustand-demo';
 import LibrariesDemoPage from './pages/libraries-demo';
+import LibraryDemoPage from './pages/LibraryDemoPage';
 // Demo pages removed due to import errors
 // Export test page removed
 import HomePage from './pages/home';
@@ -227,6 +228,7 @@ const AppContent = () => {
               <Route path="/refresh-demo" component={RefreshDemoPage} />
               <Route path="/zustand-demo" component={ZustandDemoPage} />
               <Route path="/libraries-demo" component={LibrariesDemoPage} />
+              <Route path="/library-demo" component={LibraryDemoPage} />
               {/* Demo routes removed due to import errors */}
               <Route path="/pixel-art" component={PixelArtPage} />
               {/* Export test route removed */}

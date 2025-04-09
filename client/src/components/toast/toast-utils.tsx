@@ -1,8 +1,6 @@
 import React from 'react';
 import { ToastAction } from '@/components/ui/toast';
-import { useToast } from '@/hooks/use-toast';
-
-export type ToastVariant = 'default' | 'destructive' | 'success';
+import { useToast, type ToastVariant } from '@/hooks/use-toast';
 
 interface ActionToastOptions {
   title: string;

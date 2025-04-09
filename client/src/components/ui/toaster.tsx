@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { useToast, ToastVariant } from "@/hooks/use-toast";
+import { useToast, type ToastVariant } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
