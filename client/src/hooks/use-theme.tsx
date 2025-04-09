@@ -1,92 +1,38 @@
-import { useEffect, useCallback, useState } from "react";
-import { theme as themeConfig } from "@/lib/theme";
-
-type ColorMode = 'light' | 'dark';
+// Redirecting all theme handling to shadcn/ui theme provider
+import { useTheme as useShadcnTheme } from "@/components/theme-provider";
 
 interface ThemeState {
-  mode: ColorMode;
+  mode: 'light' | 'dark';
   appearance: 'light' | 'dark' | 'system';
 }
 
+/**
+ * This is a compatibility wrapper for the shadcn/ui theme provider
+ * It maintains the same API as the old useTheme hook but delegates to shadcn/ui
+ */
 export function useTheme() {
-  const [theme, setThemeState] = useState<ThemeState>(() => {
-    if (typeof window === 'undefined') return { mode: 'dark', appearance: 'system' };
-    
-    const savedMode = window.localStorage.getItem('color-mode') as ColorMode || 'dark';
-    const savedAppearance = window.localStorage.getItem('theme-appearance') as 'light' | 'dark' | 'system' || 'system';
-    
-    return { 
-      mode: savedMode,
-      appearance: savedAppearance
-    };
-  });
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const newMode = prev.mode === 'light' ? 'dark' : 'light';
-      const newAppearance = newMode; // Also update appearance when toggling
-      
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('color-mode', newMode);
-        window.localStorage.setItem('theme-appearance', newAppearance);
-      }
-      
-      return {
-        mode: newMode,
-        appearance: newAppearance
-      };
-    });
-  }, []);
+  const { theme: shadcnTheme, setTheme: setShadcnTheme, toggleTheme: toggleShadcnTheme } = useShadcnTheme();
   
-  const setTheme = useCallback((newTheme: Partial<ThemeState>) => {
-    setThemeState(prev => {
-      const updatedTheme = { ...prev, ...newTheme };
-      
-      // Update localStorage
-      if (typeof window !== 'undefined') {
-        if (newTheme.mode) {
-          window.localStorage.setItem('color-mode', newTheme.mode);
-        }
-        if (newTheme.appearance) {
-          window.localStorage.setItem('theme-appearance', newTheme.appearance);
-        }
-      }
-      
-      return updatedTheme;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const root = window.document.documentElement;
-    const colors = themeConfig.colors[theme.mode];
-
-    // Apply theme colors as CSS custom properties
-    Object.entries(colors).forEach(([key, value]) => {
-      // Convert the color to CSS custom property format
-      const cssVarName = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      root.style.setProperty(cssVarName, value as string);
-    });
-
-    // Apply base styles
-    const body = document.body;
-    body.style.backgroundColor = colors.background;
-    body.style.color = colors.foreground;
-    body.style.transition = themeConfig.effects.transition.theme;
-
-    // Add debug information
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Theme applied:', {
-        theme: theme,
-        colors: colors
-      });
+  // Map shadcn theme to old theme structure
+  const theme: ThemeState = {
+    mode: shadcnTheme === 'light' ? 'light' : 'dark',
+    appearance: shadcnTheme
+  };
+  
+  // Map setTheme to setShacnTheme with compatibility
+  const setTheme = (newTheme: Partial<ThemeState>) => {
+    if (newTheme.mode) {
+      setShadcnTheme(newTheme.mode);
+    } else if (newTheme.appearance && newTheme.appearance !== 'system') {
+      setShadcnTheme(newTheme.appearance);
+    } else if (newTheme.appearance === 'system') {
+      setShadcnTheme('system');
     }
-  }, [theme.mode]);
-
+  };
+  
   return {
     theme,
-    toggleTheme,
+    toggleTheme: toggleShadcnTheme,
     setTheme
   };
 }
