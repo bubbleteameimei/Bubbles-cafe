@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -12,6 +13,15 @@ import ApiLoader from "@/components/api-loader";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  
+  // Add/remove body-home class when component mounts/unmounts
+  useEffect(() => {
+    document.body.classList.add('body-home');
+    
+    return () => {
+      document.body.classList.remove('body-home');
+    };
+  }, []);
   
   const { data: postsResponse, isLoading, error } = useQuery({
     queryKey: ["pages", "home", "latest-post"],
@@ -48,7 +58,34 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Background image added via CSS */}
+          {/* Full screen background with inline styles using Vite public folder */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundImage: 'url("/images/background.jpeg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              zIndex: -10
+            }}
+          ></div>
+          
+          {/* Dark overlay for better text contrast */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%)',
+              zIndex: -9
+            }}
+          ></div>
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>

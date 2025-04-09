@@ -134,18 +134,18 @@ div[class*="container"] {
   padding-right: initial !important;
 }
 
-/* Homepage background styles */
-.home-page::before {
-  content: "";
+/* Explicit homepage background element */
+.bg-homepage {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/images/IMG_5891.jpeg');
+  background-image: url('/attached_assets/IMG_5891.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-attachment: fixed;
   z-index: var(--z-background); /* Use our z-index system to place below content */
   pointer-events: none; /* Allow clicks to pass through */
 }
@@ -371,6 +371,14 @@ html.dark *, html.light * {
     overflow-x: hidden; /* Prevent horizontal scrolling globally */
     width: 100%;
     max-width: 100vw;
+  }
+
+  body.body-home {
+    background-image: url('/images/background.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 
   body {
@@ -1213,14 +1221,15 @@ input[type="reset"],
   }
 }
 
-/* Homepage background has been removed to prevent conflicts */
+/* Homepage styling for content elements */
 .home-page {
-  background-color: hsl(var(--background)) !important;
+  /* Remove background color to let the bg-homepage show through */
+  background-color: transparent !important;
 }
 
-/* Ensure proper spacing and layout for homepage without background image */
+/* Ensure text is visible on dark background */
 .home-page h1, .home-page p, .home-page button {
-  color: hsl(var(--foreground)) !important;
+  color: white !important;
 }
 
 /* Fix for input fields to prevent background bleed-through */
@@ -1241,9 +1250,9 @@ select {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Background color fallback */
+/* Background color fallback - use transparent for homepage */
 body {
-  background-color: #121212;
+  background-color: transparent;
   min-height: 100vh;
   display: flex;
   flex-direction: column;

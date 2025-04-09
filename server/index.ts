@@ -69,6 +69,17 @@ app.use(queryPerformanceMiddleware);
 // Configure CORS for cross-domain requests when deployed on Vercel/Render
 setupCors(app);
 
+// Serve attached assets directly
+app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets'), {
+  maxAge: '30d',  // Cache for 30 days
+  immutable: true // Files never change
+}));
+
+// Serve files from public directory
+app.use('/public', express.static(path.join(process.cwd(), 'public'), {
+  maxAge: '1d'  // Cache for 1 day
+}));
+
 // Add cache control headers for better browser caching
 app.use(cacheControlMiddleware);
 
@@ -142,7 +153,7 @@ app.use(helmet({
       styleSrc: ["'self'", ...(isDev ? ["'unsafe-inline'"] : []), "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
       // Restrict image sources to self and specific data URIs
-      imgSrc: ["'self'", "data:image/svg+xml", "data:image/png", "data:image/jpeg", "data:image/webp"],
+      imgSrc: ["'self'", "data:image/svg+xml", "data:image/png", "data:image/jpeg", "data:image/webp", "https:"],
       // Eliminate unsafe-eval in production
       scriptSrc: ["'self'", ...(isDev ? ["'unsafe-inline'", "'unsafe-eval'"] : [])],
       // Add frame-ancestors restriction
@@ -150,7 +161,7 @@ app.use(helmet({
       // Add form action restriction
       formAction: ["'self'"],
       // Add connect-src for API calls
-      connectSrc: ["'self'", "api.wordpress.com"],
+      connectSrc: ["'self'", "api.wordpress.com", "https:"],
       // Upgrade insecure requests
       upgradeInsecureRequests: [],
       // Block all mixed content
