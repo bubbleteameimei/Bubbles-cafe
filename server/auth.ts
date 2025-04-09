@@ -6,6 +6,7 @@ import bcryptjs from "bcryptjs";
 import * as crypto from "crypto";
 import { User, InsertResetToken } from "@shared/schema";
 import { emailService } from "./utils/email-service";
+import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
 
 // Extend Express.User with our User type but avoid password_hash
 declare global {
@@ -118,8 +119,8 @@ export function setupAuth(app: Express) {
     }
   }));
 
-  // Add login endpoint with enhanced logging and remember me feature
-  app.post("/api/auth/login", (req, res, next) => {
+  // Add login endpoint with enhanced logging, remember me feature, and rate limiting
+  app.post("/api/auth/login", authRateLimiter, (req, res, next) => {
     console.log('[Auth] Login request received:', { 
       email: req.body.email,
       hasPassword: !!req.body.password,
@@ -157,7 +158,7 @@ export function setupAuth(app: Express) {
   });
 
   // Add other routes...
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authRateLimiter, async (req, res) => {
     try {
       console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
       let { email, password, username } = req.body;
@@ -246,8 +247,8 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
   
-  // Add social login endpoint
-  app.post("/api/auth/social-login", async (req, res) => {
+  // Add social login endpoint with rate limiting
+  app.post("/api/auth/social-login", authRateLimiter, async (req, res) => {
     try {
       console.log('[Auth] Social login request received:', { 
         provider: req.body.provider,
@@ -342,8 +343,8 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Password reset request route
-  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+  // Password reset request route with rate limiting
+  app.post("/api/auth/forgot-password", sensitiveOperationsRateLimiter, async (req: Request, res: Response) => {
     try {
       let { email } = req.body;
       
@@ -520,8 +521,8 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // Reset password with token
-  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+  // Reset password with token - apply rate limiting for security
+  app.post("/api/auth/reset-password", sensitiveOperationsRateLimiter, async (req: Request, res: Response) => {
     try {
       const { token, password } = req.body;
       

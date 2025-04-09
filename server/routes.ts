@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import express from 'express';
+import { apiRateLimiter, authRateLimiter } from './middlewares/rate-limiter';
 import * as session from 'express-session';
 
 // Define session types for Express
@@ -179,7 +180,8 @@ export function registerRoutes(app: Express): Server {
         req.path.startsWith('/register')) {
       return next();
     }
-    apiLimiter(req, res, next);
+    // Use our shared apiRateLimiter middleware
+    apiRateLimiter(req, res, next);
   });
 
   // Set up session configuration before route registration

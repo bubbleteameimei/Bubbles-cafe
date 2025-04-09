@@ -28,6 +28,7 @@ import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark r
 import { registerDirectGameRoutes } from "./routes/direct-game-api"; // Direct game API routes
 import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
 import { runMigrations } from "./migrations"; // Import our custom migrations
+import { globalRateLimiter, apiRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
 import { setupCors } from "./cors-setup";
 // Import performance middleware
 import { 
@@ -59,6 +60,9 @@ app.use(compression({ level: 6 })); // Improved compression settings
 // Add response time monitoring
 app.use(responseTimeMiddleware);
 
+// Apply global rate limiting to all routes
+app.use(globalRateLimiter);
+
 // Add query performance monitoring
 app.use(queryPerformanceMiddleware);
 
@@ -80,26 +84,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configure session
+// Generate a secure session secret if not provided
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+
+// Configure session with enhanced security
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'horror-stories-session-secret',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Only secure in production
     httpOnly: true,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-domain cookies
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
   },
   store: storage.sessionStore
 }));
 
-// Setup simplified CSRF protection with a single middleware
+// Setup enhanced CSRF protection with a single middleware
 app.use(createCsrfMiddleware({
-  // Add any additional paths to exclude beyond the defaults
+  // Only exclude essential API endpoints that are properly authenticated
   ignorePaths: [
-    '/api/bookmarks',  // Authenticated bookmarks API
-    '/admin-cleanup'   // Special admin cleanup route
+    // No paths excluded - all routes require CSRF protection
   ],
   cookie: {
     secure: !isDev, // Secure cookies in production
@@ -125,17 +132,43 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Basic security headers
+// Enhanced security headers with strict CSP
 app.use(helmet({
-  contentSecurityPolicy: isDev ? false : {
+  // Apply CSP in both development and production
+  contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      // Reduce unsafe-inline usage where possible 
+      styleSrc: ["'self'", ...(isDev ? ["'unsafe-inline'"] : []), "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+      // Restrict image sources to self and specific data URIs
+      imgSrc: ["'self'", "data:image/svg+xml", "data:image/png", "data:image/jpeg", "data:image/webp"],
+      // Eliminate unsafe-eval in production
+      scriptSrc: ["'self'", ...(isDev ? ["'unsafe-inline'", "'unsafe-eval'"] : [])],
+      // Add frame-ancestors restriction
+      frameAncestors: ["'self'"],
+      // Add form action restriction
+      formAction: ["'self'"],
+      // Add connect-src for API calls
+      connectSrc: ["'self'", "api.wordpress.com"],
+      // Upgrade insecure requests
+      upgradeInsecureRequests: [],
+      // Block all mixed content
+      blockAllMixedContent: []
     }
-  }
+  },
+  // Force HTTPS in production
+  hsts: {
+    maxAge: 15552000, // 180 days
+    includeSubDomains: true,
+    preload: true
+  },
+  // Prevent clickjacking
+  frameguard: {
+    action: 'deny'
+  },
+  // Disable X-Powered-By header
+  hidePoweredBy: true
 }));
 
 // Create a server logger
