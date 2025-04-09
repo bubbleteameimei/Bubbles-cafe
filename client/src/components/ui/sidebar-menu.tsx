@@ -6,7 +6,7 @@ import {
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
-  Search, Sparkles, GanttChart, GamepadIcon, Rss
+  Search, Sparkles, GanttChart, GamepadIcon, Rss, Grid, Eye
 } from "lucide-react"
 
 
@@ -251,12 +251,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={location === '/eden-game'}
-                onClick={() => handleNavigation('/eden-game')}
+                isActive={location === '/game-test'}
+                onClick={() => handleNavigation('/game-test')}
                 tooltip="Eden - Experimental Game"
                 className={menuItemClass}
               >
-                {renderActiveIndicator('/eden-game')}
+                {renderActiveIndicator('/game-test')}
                 <GamepadIcon className="h-4 w-4" />
                 <span>Eden - Experimental Game</span>
               </SidebarMenuButton>
@@ -417,9 +417,39 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                    {/* Removed text-to-speech menu item */}
                     
-                    {/* Removed accessibility test menu item */}
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/pixel-art'}
+                        onClick={() => handleNavigation('/pixel-art')}
+                        className={submenuItemClass}
+                      >
+                        <Grid className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Pixel Art</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/quick-settings'}
+                        onClick={() => handleNavigation('/settings/quick-settings')}
+                        className={submenuItemClass}
+                      >
+                        <Settings className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Quick Settings</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        isActive={location === '/settings/preview'}
+                        onClick={() => handleNavigation('/settings/preview')}
+                        className={submenuItemClass}
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <span>Preview</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </Collapsible>

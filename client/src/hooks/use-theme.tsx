@@ -3,19 +3,56 @@ import { theme as themeConfig } from "@/lib/theme";
 
 type ColorMode = 'light' | 'dark';
 
+interface ThemeState {
+  mode: ColorMode;
+  appearance: 'light' | 'dark' | 'system';
+}
+
 export function useTheme() {
-  const [theme, setTheme] = useState<ColorMode>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return (window.localStorage.getItem('color-mode') as ColorMode) || 'dark';
+  const [theme, setThemeState] = useState<ThemeState>(() => {
+    if (typeof window === 'undefined') return { mode: 'dark', appearance: 'system' };
+    
+    const savedMode = window.localStorage.getItem('color-mode') as ColorMode || 'dark';
+    const savedAppearance = window.localStorage.getItem('theme-appearance') as 'light' | 'dark' | 'system' || 'system';
+    
+    return { 
+      mode: savedMode,
+      appearance: savedAppearance
+    };
   });
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const newMode = prev === 'light' ? 'dark' : 'light';
+    setThemeState((prev) => {
+      const newMode = prev.mode === 'light' ? 'dark' : 'light';
+      const newAppearance = newMode; // Also update appearance when toggling
+      
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('color-mode', newMode);
+        window.localStorage.setItem('theme-appearance', newAppearance);
       }
-      return newMode;
+      
+      return {
+        mode: newMode,
+        appearance: newAppearance
+      };
+    });
+  }, []);
+  
+  const setTheme = useCallback((newTheme: Partial<ThemeState>) => {
+    setThemeState(prev => {
+      const updatedTheme = { ...prev, ...newTheme };
+      
+      // Update localStorage
+      if (typeof window !== 'undefined') {
+        if (newTheme.mode) {
+          window.localStorage.setItem('color-mode', newTheme.mode);
+        }
+        if (newTheme.appearance) {
+          window.localStorage.setItem('theme-appearance', newTheme.appearance);
+        }
+      }
+      
+      return updatedTheme;
     });
   }, []);
 
@@ -23,7 +60,7 @@ export function useTheme() {
     if (typeof window === 'undefined') return;
 
     const root = window.document.documentElement;
-    const colors = themeConfig.colors[theme];
+    const colors = themeConfig.colors[theme.mode];
 
     // Apply theme colors as CSS custom properties
     Object.entries(colors).forEach(([key, value]) => {
@@ -41,15 +78,16 @@ export function useTheme() {
     // Add debug information
     if (process.env.NODE_ENV === 'development') {
       console.log('Theme applied:', {
-        mode: theme,
+        theme: theme,
         colors: colors
       });
     }
-  }, [theme]);
+  }, [theme.mode]);
 
   return {
     theme,
     toggleTheme,
+    setTheme
   };
 }
 

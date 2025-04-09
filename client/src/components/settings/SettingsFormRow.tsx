@@ -1,56 +1,61 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HelpCircle } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface SettingsFormRowProps {
   label: string;
   description?: string;
   htmlFor?: string;
   tooltip?: string;
-  error?: string;
-  className?: string;
   children: React.ReactNode;
 }
 
-export function SettingsFormRow({
-  label,
-  description,
-  htmlFor,
-  tooltip,
-  error,
-  className,
-  children
+export function SettingsFormRow({ 
+  label, 
+  description, 
+  htmlFor, 
+  tooltip, 
+  children 
 }: SettingsFormRowProps) {
   return (
-    <div className={cn("grid gap-2 sm:grid-cols-3 sm:gap-4 items-start mb-6", className)}>
-      <div className="sm:col-span-1">
-        <div className="flex items-center gap-1.5">
-          <label htmlFor={htmlFor} className="text-sm font-medium">
+    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <label 
+            htmlFor={htmlFor}
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
             {label}
           </label>
+          
           {tooltip && (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                <TooltipTrigger type="button">
+                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-sm">
-                  <p className="text-xs">{tooltip}</p>
+                <TooltipContent>
+                  <p className="max-w-xs">{tooltip}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
         </div>
+        
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-[0.8rem] text-muted-foreground">
+            {description}
+          </p>
         )}
       </div>
-      <div className="sm:col-span-2">
+      
+      <div className="flex justify-end md:w-[260px] lg:w-[350px]">
         {children}
-        {error && (
-          <p className="text-xs text-destructive mt-1">{error}</p>
-        )}
       </div>
     </div>
   );

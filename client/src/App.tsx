@@ -218,15 +218,6 @@ const AppContent = () => {
               <ProtectedRoute path="/profile" component={ProfilePage} />
 
               {/* Game Routes */}
-              <Route path="/eden-game">
-                <Error404Page />
-              </Route>
-              <Route path="/eden-pixelgame">
-                <Error404Page />
-              </Route>
-              <Route path="/eden-game-new">
-                <Error404Page />
-              </Route>
               <Route path="/game-test" component={GameTestPage} />
 
               {/* Legal Routes */}
@@ -252,9 +243,9 @@ const AppContent = () => {
               {/* Settings Routes */}
               <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
               <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
-              <ProtectedRoute path="/settings/fonts" component={FontSettingsPage} />
+              <Route path="/settings/fonts" component={FontSettingsPage} />
               <ProtectedRoute path="/settings/accessibility" component={AccessibilitySettingsPage} />
-              <ProtectedRoute path="/settings/notifications" component={NotificationSettingsPage} />
+              <Route path="/settings/notifications" component={NotificationSettingsPage} />
               <ProtectedRoute path="/settings/privacy" component={PrivacySettingsPage} />
               {/* Redirect data export route to privacy settings */}
               <Route path="/settings/data-export">
@@ -272,9 +263,9 @@ const AppContent = () => {
                   return null;
                 }}
               </Route>
-              <ProtectedRoute path="/settings/cookie-management" component={CookieManagementPage} />
-              <ProtectedRoute path="/settings/quick-settings" component={QuickSettingsPage} />
-              <ProtectedRoute path="/settings/preview" component={PreviewSettingsPage} />
+              <Route path="/settings/cookie-management" component={CookieManagementPage} />
+              <Route path="/settings/quick-settings" component={QuickSettingsPage} />
+              <Route path="/settings/preview" component={PreviewSettingsPage} />
 
               {/* Admin Routes */}
               <ProtectedRoute path="/admin" component={AdminPage} requireAdmin={true} />
