@@ -64,8 +64,8 @@ import ScrollTestPage from './pages/scroll-test';
 import RefreshDemoPage from './pages/refresh-demo';
 import ZustandDemoPage from './pages/zustand-demo';
 import LibrariesDemoPage from './pages/libraries-demo';
-import LibraryDemoPage from './pages/LibraryDemoPage';
-// Demo pages removed due to import errors
+import RecommendedLibrariesDemoPage from './pages/recommended-libraries-demo';
+import CommentModerationDemo from './pages/comment-moderation-demo';
 // Export test page removed
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
@@ -228,8 +228,8 @@ const AppContent = () => {
               <Route path="/refresh-demo" component={RefreshDemoPage} />
               <Route path="/zustand-demo" component={ZustandDemoPage} />
               <Route path="/libraries-demo" component={LibrariesDemoPage} />
-              <Route path="/library-demo" component={LibraryDemoPage} />
-              {/* Demo routes removed due to import errors */}
+              <Route path="/recommended-libraries-demo" component={RecommendedLibrariesDemoPage} />
+              <Route path="/comment-moderation-demo" component={CommentModerationDemo} />
               <Route path="/pixel-art" component={PixelArtPage} />
               {/* Export test route removed */}
               <Route path="/bookmarks" component={BookmarksPage} />

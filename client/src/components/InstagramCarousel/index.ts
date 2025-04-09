@@ -1,2 +1,1 @@
-import InstagramCarousel from './InstagramCarousel';
-export default InstagramCarousel;
+export { default } from './InstagramCarousel';

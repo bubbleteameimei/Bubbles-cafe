@@ -1,5 +1,3 @@
-import PixelArtBackground from './PixelArtBackground';
-import PixelArtDemo from './PixelArtDemo';
-import PixelArtGenerator from './PixelArtGenerator';
-
-export { PixelArtBackground, PixelArtDemo, PixelArtGenerator };
+export { default as PixelArtBackground } from './PixelArtBackground';
+export { default as PixelArtDemo } from './PixelArtDemo';
+export { default as PixelArtGenerator } from './PixelArtGenerator';
