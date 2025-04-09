@@ -566,6 +566,7 @@ export interface CommentMetadata {
   upvotes?: number;
   downvotes?: number;
   replyCount?: number;
+  sanitized?: boolean; // Flag to indicate content was sanitized
 }
 
 // Add insert schema and types for performance metrics

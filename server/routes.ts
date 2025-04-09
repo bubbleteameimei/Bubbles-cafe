@@ -1055,21 +1055,29 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
+      // Import sanitizer to prevent XSS attacks
+      const { sanitizeHtml, stripHtml } = require('./utils/sanitizer');
+
+      // Sanitize user input
+      const sanitizedContent = sanitizeHtml(content.trim());
+      const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
+
       console.log(`[POST /api/posts/:postId/comments] Creating comment for post ID: ${postId}`);
 
-      // Create the comment with properly typed metadata
+      // Create the comment with properly typed metadata and sanitized content
       const comment = await storage.createComment({
         postId,
-        content: content.trim(),
+        content: sanitizedContent,
         userId: req.user?.id || null, // Allow null for anonymous users
         is_approved: true, // Auto-approve comments - using is_approved instead of approved
         metadata: {
-          author: author?.trim() || 'Anonymous', // Default to 'Anonymous' if no author provided
+          author: sanitizedAuthor,
           moderated: false,
           isAnonymous: !req.user?.id,
           upvotes: 0,
           downvotes: 0,
-          replyCount: 0
+          replyCount: 0,
+          sanitized: sanitizedContent !== content.trim() || sanitizedAuthor !== (author?.trim() || 'Anonymous')
         }
       });
 
@@ -1274,17 +1282,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update reply creation with proper metadata
+  // Update reply creation with proper metadata and sanitization
   app.post("/api/comments/:commentId/replies", async (req, res) => {
     try {
       const commentId = parseInt(req.params.commentId);
       const { content, author } = req.body;
 
+      // Validate basic input
+      if (!content?.trim()) {
+        return res.status(400).json({
+          message: "Reply content is required"
+        });
+      }
+      
+      // Import sanitizer to prevent XSS attacks
+      const { sanitizeHtml, stripHtml } = require('./utils/sanitizer');
+
+      // Sanitize user input
+      const sanitizedContent = sanitizeHtml(content.trim());
+      const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
+
       // Validate input using schema
       const replyData = insertCommentReplySchema.parse({
         commentId,
-        content,
-        author: author?.trim() || 'Anonymous'
+        content: sanitizedContent,
+        author: sanitizedAuthor
       });
 
       // Check for filtered words
@@ -1294,7 +1316,7 @@ export function registerRoutes(app: Express): Server {
       ];
 
       const containsFilteredWord = filteredWords.some(word =>
-        content.toLowerCase().includes(word.toLowerCase())
+        sanitizedContent.toLowerCase().includes(word.toLowerCase())
       );
 
       // Create reply with proper metadata
@@ -1302,12 +1324,13 @@ export function registerRoutes(app: Express): Server {
         ...replyData,
         is_approved: !containsFilteredWord, // Using is_approved instead of approved
         metadata: {
-          author: author?.trim() || 'Anonymous',
+          author: sanitizedAuthor,
           moderated: containsFilteredWord,
-          originalContent: content,
+          originalContent: sanitizedContent,
           isAnonymous: !req.user?.id,
           upvotes: 0,
-          downvotes: 0
+          downvotes: 0,
+          sanitized: sanitizedContent !== content.trim() || sanitizedAuthor !== (author?.trim() || 'Anonymous')
         }
       });
 
@@ -1412,21 +1435,12 @@ export function registerRoutes(app: Express): Server {
       // Get aggregated stats data from database via storage interface
       try {
         // Replace with more efficient queries that use specialized storage methods
-        const [
-          postsCount,
-          usersCount,
-          commentsCount,
-          bookmarksCount,
-          trendingPosts,
-          adminStats
-        ] = await Promise.all([
-          storage.getPostsCount(), // More efficient than fetching all posts
-          storage.getUsersCount(),
-          storage.getCommentsCount(),
-          storage.getBookmarksCount(),
-          storage.getTrendingPosts(5), // Get top 5 trending posts
-          storage.getAdminStats() // Get consolidated admin stats
-        ]);
+        const postsCount = await storage.getPostsCount();
+        const usersCount = await storage.getUsersCount();
+        const commentsCount = await storage.getCommentsCount();
+        const bookmarkCount = await storage.getBookmarkCount();
+        const trendingPosts = await storage.getTrendingPosts(5);
+        const adminStats = await storage.getAdminStats();
         
         // Return structured stats response with enhanced analytics data
         res.json({
@@ -1454,7 +1468,7 @@ export function registerRoutes(app: Express): Server {
             flagged: commentsCount.flagged || 0
           },
           bookmarks: {
-            total: bookmarksCount || 0
+            total: bookmarkCount || 0
           },
           performance: {
             uptime: process.uptime(),
