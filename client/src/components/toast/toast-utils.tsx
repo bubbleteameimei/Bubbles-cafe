@@ -1,9 +1,8 @@
 import React from 'react';
 import { ToastAction } from '@/components/ui/toast';
-import { useToast, ToastVariant } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
-// Re-export the type from use-toast for convenient access
-export type { ToastVariant };
+export type ToastVariant = 'default' | 'destructive' | 'success';
 
 interface ActionToastOptions {
   title: string;
@@ -17,7 +16,7 @@ interface ActionToastOptions {
 /**
  * A hook providing simplified access to toast functions
  */
-export function useShowToast() {
+export const useShowToast = () => {
   const { toast } = useToast();
 
   // Simple toast with just a message
@@ -75,7 +74,7 @@ export function useShowToast() {
     error,
     withAction,
   };
-}
+};
 
 // Pre-defined toast messages for common scenarios
 export const CommonToasts = {
@@ -111,7 +110,7 @@ export const CommonToasts = {
 };
 
 // Helper to format bytes into a readable format
-export function formatBytes(bytes: number, decimals = 2) {
+export const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return '0 Bytes';
   
   const k = 1024;
@@ -121,4 +120,4 @@ export function formatBytes(bytes: number, decimals = 2) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
+};

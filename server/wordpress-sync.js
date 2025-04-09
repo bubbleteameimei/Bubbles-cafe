@@ -434,19 +434,14 @@ export async function syncWordPressPosts() {
 /**
  * Run a WordPress import on a schedule (can be called from cron job)
  * Default interval is every 5 minutes
- * Added delay for initial sync to improve startup performance
  */
-export function setupWordPressSyncSchedule(intervalMs = 5 * 60 * 1000, initialDelay = 10000) {
+export function setupWordPressSyncSchedule(intervalMs = 5 * 60 * 1000) {
   log(`Setting up WordPress sync schedule (every ${intervalMs / (60 * 1000)} minutes)`, 'wordpress-sync');
-  log(`Initial sync will start after ${initialDelay / 1000} seconds to improve startup performance`, 'wordpress-sync');
   
-  // Run once after a delay to improve startup performance
-  const initialSyncTimeout = setTimeout(() => {
-    log(`Running initial WordPress sync after startup delay...`, 'wordpress-sync');
-    syncWordPressPosts().catch(err => {
-      log(`Error in initial WordPress sync: ${err.message}`, 'wordpress-sync');
-    });
-  }, initialDelay);
+  // Run once at startup
+  syncWordPressPosts().catch(err => {
+    log(`Error in initial WordPress sync: ${err.message}`, 'wordpress-sync');
+  });
   
   // Set up interval
   const intervalId = setInterval(() => {
@@ -455,7 +450,7 @@ export function setupWordPressSyncSchedule(intervalMs = 5 * 60 * 1000, initialDe
     });
   }, intervalMs);
   
-  return { intervalId, initialSyncTimeout };
+  return intervalId;
 }
 
 /**

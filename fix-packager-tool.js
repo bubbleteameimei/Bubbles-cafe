@@ -32,18 +32,14 @@ function installDependency(name, version = 'latest') {
 }
 
 // Function to uninstall a dependency
-function uninstallDependency(name, options = '') {
+function uninstallDependency(name) {
   try {
     console.log(`${colors.blue}Uninstalling ${name}...${colors.reset}`);
-    execSync(`npm uninstall ${name} ${options}`, { stdio: 'inherit' });
+    execSync(`npm uninstall ${name}`, { stdio: 'inherit' });
     console.log(`${colors.green}Successfully uninstalled ${name}${colors.reset}`);
     return true;
   } catch (error) {
     console.error(`${colors.red}Failed to uninstall ${name}: ${error.message}${colors.reset}`);
-    if (!options.includes('--legacy-peer-deps')) {
-      console.log(`${colors.yellow}Retrying with --legacy-peer-deps...${colors.reset}`);
-      return uninstallDependency(name, '--legacy-peer-deps');
-    }
     return false;
   }
 }

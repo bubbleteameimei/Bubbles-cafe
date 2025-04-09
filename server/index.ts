@@ -287,8 +287,8 @@ async function startServer() {
       // Register bookmark routes - only once to avoid duplicates
       registerBookmarkRoutes(app);
       
-      // Setup WordPress sync schedule (run every 5 minutes, with delayed startup for performance)
-      setupWordPressSyncSchedule(5 * 60 * 1000, 10000);
+      // Setup WordPress sync schedule (run every 5 minutes)
+      setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // Register direct game API routes that bypass Vite middleware
       registerDirectGameRoutes(app);
@@ -455,8 +455,8 @@ async function startServer() {
       // Register bookmark routes - only once to avoid duplicates
       registerBookmarkRoutes(app);
       
-      // Setup WordPress sync schedule (run every 5 minutes, with delayed startup for performance)
-      setupWordPressSyncSchedule(5 * 60 * 1000, 10000);
+      // Setup WordPress sync schedule (run every 5 minutes)
+      setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // Register direct game API routes that bypass Vite middleware
       registerDirectGameRoutes(app);
