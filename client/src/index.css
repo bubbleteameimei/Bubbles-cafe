@@ -202,15 +202,18 @@ div[data-reader-page="true"] .container,
 /* Both html and body elements need the background for consistency */
 html, body {
   background-color: transparent;
-}
-
-/* Page background for home page in body-home class */
-body.body-home {
-  background-image: var(--bg-image) !important;
+  /* Set background image for all pages */
+  background-image: url('/attached_assets/IMG_5891.jpeg') !important;
   background-size: cover !important;
   background-position: center !important;
   background-attachment: fixed !important;
   background-repeat: no-repeat !important;
+  position: relative !important;
+}
+
+/* Additional styling for home page */
+body.body-home {
+  /* The background is already set on the body */
   position: relative !important;
 }
 

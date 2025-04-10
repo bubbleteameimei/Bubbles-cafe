@@ -312,6 +312,25 @@ const AppContent = () => {
 function App() {
   // Setup performance monitoring
   usePerformanceMonitoring();
+  const { showLoading, hideLoading } = useLoading();
+  const [location] = useLocation();
+  
+  // Track page transitions and show loading animation
+  useEffect(() => {
+    // Don't show loading screen on initial load
+    if (sessionStorage.getItem(`visited-${location}`)) {
+      // Skip loading if the page has been visited before
+      return;
+    }
+    
+    // Show loading animation for page transitions
+    showLoading();
+    
+    // Mark this page as visited
+    sessionStorage.setItem(`visited-${location}`, 'true');
+    
+    // The loading screen will automatically be hidden after the animation completes
+  }, [location, showLoading]);
 
   // Initialize WordPress sync service - managed internally with its own state
   useEffect(() => {
