@@ -2,13 +2,18 @@ import { memo } from "react";
 
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
   // Add minimal callback functionality to ensure loading completes
-  // Complete the animation after 1 second for quicker response
+  // Complete the animation after 2 seconds as requested
   if (onAnimationComplete) {
-    setTimeout(onAnimationComplete, 1000);
+    setTimeout(onAnimationComplete, 2000);
   }
   
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-md z-50">
+      {/* Import Megrim font from Google Fonts */}
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Megrim&display=swap');
+      </style>
+      
       <div className="loader">
         <span className="text-uppercase">L</span>
         <span className="text-uppercase">O</span>
@@ -35,11 +40,11 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         }
 
         .loader span {
-          font-size: 22px;
-          font-family: 'Space Mono', monospace;
-          font-weight: 600;
+          font-size: 24px;
+          font-family: 'Megrim', cursive;
+          font-weight: 400;
           animation: blur 2s linear infinite;
-          line-height: 20px;
+          line-height: 24px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
           color: white;
