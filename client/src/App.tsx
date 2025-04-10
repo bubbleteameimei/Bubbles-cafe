@@ -16,7 +16,7 @@ import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
 import ScrollToTopButton from './components/ScrollToTopButton';
 // Import our enhanced page transition component
-import { EnhancedPageTransition } from './components/enhanced-page-transition';
+// EnhancedPageTransition removed to fix loading animation conflicts
 // Add critical fullwidth fix stylesheet
 import './styles/fullwidth-fix.css';
 // Scroll-to-top now uses inline styles
@@ -350,16 +350,14 @@ function App() {
                     <ErrorToastProvider>
                       <LoadingProvider>
                         <RefreshProvider>
-                          <EnhancedPageTransition minLoadingTime={850}>
-                            {/* Wrap AppContent with PullToRefresh */}
-                            <PullToRefresh onRefresh={handleDataRefresh}>
-                              {/* Add PerformanceMonitor for metrics collection */}
-                              <PerformanceMonitor />
-                              <div className="app-content">
-                                <AppContent />
-                              </div>
-                            </PullToRefresh>
-                          </EnhancedPageTransition>
+                          {/* Wrap AppContent with PullToRefresh */}
+                          <PullToRefresh onRefresh={handleDataRefresh}>
+                            {/* Add PerformanceMonitor for metrics collection */}
+                            <PerformanceMonitor />
+                            <div className="app-content">
+                              <AppContent />
+                            </div>
+                          </PullToRefresh>
                           {/* Site-wide elements outside of the main layout */}
                           <CookieConsent />
                           <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
