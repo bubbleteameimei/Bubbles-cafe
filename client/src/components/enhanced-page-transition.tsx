@@ -69,7 +69,7 @@ export function EnhancedPageTransition({
   return (
     <div className="page-transition-container">
       {/* Just use the standardized loading screen component */}
-      {showLoading && <LoadingScreen />}
+      {showLoading && <LoadingScreen onAnimationComplete={() => setShowLoading(false)} />}
       
       {/* Current page content */}
       <div className="page-content">
