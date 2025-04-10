@@ -79,8 +79,17 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Background is now handled by the body-home class in CSS */}
+        <div 
+          className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
+          style={{
+            backgroundImage: "url('/images/background.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundAttachment: "fixed",
+            backgroundRepeat: "no-repeat"
+          }}
+          >
+          {/* Background is now applied directly via inline styles */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
