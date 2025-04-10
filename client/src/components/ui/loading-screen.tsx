@@ -1,19 +1,13 @@
-import { memo, useEffect } from "react";
+import { memo } from "react";
 
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
-  useEffect(() => {
-    // Call onAnimationComplete after exactly one full animation cycle (2s)
-    const timer = setTimeout(() => {
-      if (onAnimationComplete) {
-        onAnimationComplete();
-      }
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [onAnimationComplete]);
+  // Add minimal callback functionality to ensure loading completes
+  if (onAnimationComplete) {
+    setTimeout(onAnimationComplete, 2000);
+  }
   
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-[9999]">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
       <div className="loader">
         <span>L</span>
         <span>O</span>
@@ -41,6 +35,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
           font-weight: 600;
           animation: blur 2s linear infinite;
           line-height: 20px;
+          transition: all 0.5s;
           letter-spacing: 0.2em;
           color: white;
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
