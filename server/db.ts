@@ -1,8 +1,8 @@
 /**
- * Direct Database Connection Module
+ * Database Connection Module
  * 
- * This module provides direct access to the database using the Neon serverless driver.
- * Enhanced with automatic reconnection handling for improved reliability.
+ * This module provides direct access to the PostgreSQL database using the Neon serverless driver.
+ * Enhanced with proper error handling for improved reliability.
  */
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
@@ -12,51 +12,38 @@ import ws from 'ws';
 // Required for Neon serverless in Node.js
 neonConfig.webSocketConstructor = ws;
 
-// Configure Neon to use secure WebSockets
+// Configure connection options
 try {
-  // @ts-ignore - These may not exist in all versions of the Neon SDK
-  neonConfig.useSecureWebSocket = true;
-  // @ts-ignore - Add additional configuration for better resilience 
-  neonConfig.patchWebSocketForReconnect = true;
   // @ts-ignore - Increase connection timeouts
   neonConfig.connectionTimeoutMillis = 10000; // 10 seconds
-  // @ts-ignore - Implement automatic retry
-  neonConfig.retryCount = 3;
-  // @ts-ignore - Implement automatic backoff
-  neonConfig.backoffStrategy = (retryCount) => {
-    return Math.min(100 * Math.pow(2, retryCount), 10000); // Exponential backoff with max of 10 seconds
-  };
 } catch (configErr) {
-  console.log('Note: Some config options not available in this Neon version');
+  console.log('[Database] Note: Some config options not available');
 }
 
 /**
- * Create SQL executor with connection resilience
- * This wraps the Neon client creation with better error handling and automatic reconnection
+ * Creates a database connection
  */
-function createResilientSqlClient() {
-  const dbUrl = process.env.DATABASE_URL!;
-  console.log('[Database] Initializing Neon database connection...');
+function createDbConnection() {
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    console.error('[Database] No DATABASE_URL found in environment variables');
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+  
+  console.log('[Database] Initializing database connection...');
   
   try {
-    // Create a SQL executor using the Neon HTTP driver with all our config settings
-    return neon(dbUrl);
+    // Connect using the Neon HTTP driver
+    return neon(dbUrl.toString());
   } catch (error) {
-    console.error('[Database] Failed to create initial SQL client:', error);
-    console.warn('[Database] Retrying connection with default settings...');
-    
-    // If the initial connection fails, try again with minimal settings
-    try {
-      return neon(dbUrl);
-    } catch (fallbackError) {
-      console.error('[Database] Critical database connection failure:', fallbackError);
-      throw new Error('Cannot establish database connection after multiple attempts');
-    }
+    console.error('[Database] Failed to connect to database:', error);
+    throw new Error('Cannot establish database connection');
   }
 }
 
-// Create a resilient SQL executor using the Neon HTTP driver
-export const sql = createResilientSqlClient();
+// Create the SQL executor
+export const sql = createDbConnection();
 
 // Initialize Drizzle ORM with our schema
 export const db = drizzle(sql, { schema });
