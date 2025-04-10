@@ -41,9 +41,13 @@ import {
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
-// Use port 3003 to avoid conflicts with other running processes
-const PORT = parseInt(process.env.PORT || "3003", 10);
+// Setup port with fallback options in case of conflicts
+const DEFAULT_PORT = parseInt(process.env.PORT || "3003", 10);
 const HOST = '0.0.0.0';
+// We'll try a range of ports starting with DEFAULT_PORT
+let PORT = DEFAULT_PORT;
+// Alternative ports to try if the default is in use
+const ALTERNATIVE_PORTS = [3004, 3005, 3006, 3007, 3008];
 
 // Create server instance outside startServer for proper cleanup
 let server: ReturnType<typeof createServer>;
@@ -638,15 +642,40 @@ async function startServer() {
 
       server.on('error', (error: Error & { code?: string }) => {
         if (error.code === 'EADDRINUSE') {
-          serverLogger.error('Port already in use', { port: PORT });
+          serverLogger.warn(`Port ${PORT} is already in use, trying alternative ports...`);
+          
+          // Try each alternative port in the list
+          let currentPortIndex = 0;
+          const tryNextPort = () => {
+            if (currentPortIndex < ALTERNATIVE_PORTS.length) {
+              const newPort = ALTERNATIVE_PORTS[currentPortIndex];
+              serverLogger.info(`Attempting to use alternative port: ${newPort}`);
+              
+              // Update the global PORT variable
+              PORT = newPort;
+              currentPortIndex++;
+              
+              // Try to listen on the new port
+              server.listen(PORT, HOST);
+            } else {
+              // We've tried all ports and none worked
+              serverLogger.error('All ports are in use, cannot start server', { 
+                triedPorts: [DEFAULT_PORT, ...ALTERNATIVE_PORTS].join(', ') 
+              });
+              reject(error);
+            }
+          };
+          
+          // Start trying alternative ports
+          tryNextPort();
         } else {
           serverLogger.error('Server error', { 
             error: error.message,
             code: error.code,
             stack: error.stack 
           });
+          reject(error);
         }
-        reject(error);
       });
     });
   } catch (error) {

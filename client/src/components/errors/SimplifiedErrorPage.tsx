@@ -28,7 +28,7 @@ const SimplifiedErrorPage: React.FC<SimplifiedErrorPageProps> = ({
       <div className="space-y-4">
         {/* Animated eyeball loader */}
         <div className="flex justify-center mb-6">
-          <span className="loader" aria-hidden="true"></span>
+          <div className="eyeball-loader"></div>
         </div>
         
         <div className="text-9xl font-creepster text-red-600">{statusCode}</div>

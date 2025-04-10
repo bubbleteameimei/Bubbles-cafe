@@ -1,56 +1,136 @@
 /**
- * Loading Provider Component
+ * Loading Context Provider
  * 
- * This file contains the React component that provides loading functionality
- * to the application and renders the LoadingScreen when isLoading is true.
+ * This centralized loading context provides application-wide loading state management.
+ * It renders the LoadingScreen component when loading state is active and ensures
+ * the animation completes a full cycle before content is displayed.
  */
-import { createContext, useContext, useState, type ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode, useCallback } from "react";
 import { LoadingScreen } from "../components/ui/loading-screen";
 
-// Create a context for loading state
+// Create a loading context type with additional functionality
 type LoadingContextType = {
   isLoading: boolean;
-  showLoading: () => void;
+  showLoading: (message?: string) => void;
   hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>) => Promise<T>;
+  withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
+  setLoadingMessage: (message: string) => void;
 };
 
+// Default context values
 const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
   hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise
+  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
+  setLoadingMessage: () => {}
 });
 
+/**
+ * Custom hook to access loading context
+ */
 export function useLoading() {
   return useContext(LoadingContext);
 }
 
+/**
+ * LoadingProvider component that manages global loading state
+ */
 export const LoadingProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<string | undefined>(undefined);
+  const [canHideLoading, setCanHideLoading] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const minimumLoadTimeRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const hideRequestedRef = useRef(false);
+  
+  // Cleanup function for any timers
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+      if (minimumLoadTimeRef.current) {
+        clearTimeout(minimumLoadTimeRef.current);
+      }
+    };
+  }, []);
 
-  const showLoading = useCallback(() => {
-    setIsLoading(true);
+  // Handle animation completion
+  const handleAnimationComplete = useCallback(() => {
+    setCanHideLoading(true);
+    // If there was a request to hide loading while animation was in progress
+    if (hideRequestedRef.current) {
+      // Start a transition to hide the loading screen
+      setTimeout(() => {
+        setIsLoading(false);
+        setMessage(undefined);
+        document.body.classList.remove('loading-active');
+        hideRequestedRef.current = false;
+      }, 300); // Short delay for smooth transition
+    }
+  }, []);
+
+  // Show loading state with optional message
+  const showLoading = useCallback((newMessage?: string) => {
+    if (newMessage) {
+      setMessage(newMessage);
+    }
+    
+    // Immediately ensure body has the loading class (before React render)
     document.body.classList.add('loading-active');
+    
+    // Force browser to reflow/repaint to ensure the loading class takes effect immediately
+    // This prevents any potential flash of content
+    void document.body.offsetHeight;
+    
+    setIsLoading(true);
+    setCanHideLoading(false);
+    hideRequestedRef.current = false;
+    startTimeRef.current = Date.now();
   }, []);
 
+  // Hide loading state, but only after animation completes
   const hideLoading = useCallback(() => {
-    setIsLoading(false);
-    document.body.classList.remove('loading-active');
-  }, []);
+    // If animation has completed its cycle, we can hide immediately
+    if (canHideLoading) {
+      setIsLoading(false);
+      setMessage(undefined);
+      document.body.classList.remove('loading-active');
+    } else {
+      // Otherwise, we mark that a hide was requested
+      // The actual hide will happen when the animation completes
+      hideRequestedRef.current = true;
+    }
+  }, [canHideLoading]);
 
-  const withLoading = useCallback(<T,>(promise: Promise<T>): Promise<T> => {
-    showLoading();
-    return promise
-      .finally(() => {
-        hideLoading();
-      });
+  // Utility to wrap promises with loading state
+  const withLoading = useCallback(<T,>(promise: Promise<T>, loadingMessage?: string): Promise<T> => {
+    showLoading(loadingMessage);
+    
+    return promise.finally(() => {
+      hideLoading();
+    });
   }, [showLoading, hideLoading]);
 
+  // Update loading message
+  const setLoadingMessage = useCallback((newMessage: string) => {
+    setMessage(newMessage);
+  }, []);
+
   return (
-    <LoadingContext.Provider value={{ isLoading, showLoading, hideLoading, withLoading }}>
+    <LoadingContext.Provider 
+      value={{ 
+        isLoading, 
+        showLoading, 
+        hideLoading, 
+        withLoading,
+        setLoadingMessage 
+      }}
+    >
       {children}
-      {isLoading && <LoadingScreen />}
+      {isLoading && <LoadingScreen onAnimationComplete={handleAnimationComplete} />}
     </LoadingContext.Provider>
   );
 };

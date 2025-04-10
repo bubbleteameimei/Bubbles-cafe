@@ -87,6 +87,9 @@ import PreviewSettingsPage from './pages/settings/preview';
 // Game pages
 import GameTestPage from './pages/game-test';
 
+// Demo pages
+import ErrorDemoPage from './pages/error-demo';
+
 // Admin pages
 import AdminPage from './pages/admin';
 import AdminAnalyticsPage from './pages/admin/analytics';
@@ -219,6 +222,9 @@ const AppContent = () => {
 
               {/* Game Routes */}
               <Route path="/game-test" component={GameTestPage} />
+              
+              {/* Demo Routes */}
+              <Route path="/error-demo" component={ErrorDemoPage} />
 
               {/* Legal Routes */}
               <Route path="/legal/copyright" component={CopyrightPage} />
@@ -349,7 +355,9 @@ function App() {
                             <PullToRefresh onRefresh={handleDataRefresh}>
                               {/* Add PerformanceMonitor for metrics collection */}
                               <PerformanceMonitor />
-                              <AppContent />
+                              <div className="app-content">
+                                <AppContent />
+                              </div>
                             </PullToRefresh>
                           </EnhancedPageTransition>
                           {/* Site-wide elements outside of the main layout */}
