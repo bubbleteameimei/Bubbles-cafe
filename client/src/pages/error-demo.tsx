@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ErrorPage from '@/components/ui/error-page';
-import { useLoading } from '@/hooks/use-loading';
+import { useLoading } from '@/components/GlobalLoadingProvider';
 
 /**
  * Error Demo Page

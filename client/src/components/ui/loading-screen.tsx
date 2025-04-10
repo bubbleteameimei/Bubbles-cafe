@@ -9,13 +9,13 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50">
       <div className="loader">
-        <span>L</span>
-        <span>O</span>
-        <span>A</span>
-        <span>D</span>
-        <span>I</span>
-        <span>N</span>
-        <span>G</span>
+        <span className="text-uppercase">L</span>
+        <span className="text-uppercase">O</span>
+        <span className="text-uppercase">A</span>
+        <span className="text-uppercase">D</span>
+        <span className="text-uppercase">I</span>
+        <span className="text-uppercase">N</span>
+        <span className="text-uppercase">G</span>
       </div>
 
       {/* ARIA live region for accessibility */}
@@ -29,12 +29,16 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
           gap: 0.5rem;
         }
 
+        .text-uppercase {
+          text-transform: uppercase;
+        }
+
         .loader span {
-          font-size: 22px;
-          font-family: 'Space Mono', monospace;
+          font-size: 28px;
+          font-family: 'Encode Sans Semi Expanded', sans-serif;
           font-weight: 600;
           animation: blur 2s linear infinite;
-          line-height: 20px;
+          line-height: 26px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
           color: white;

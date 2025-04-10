@@ -13,7 +13,7 @@ import {
 import { LikeDislike } from "@/components/ui/like-dislike";
 import { Badge } from "@/components/ui/badge";
 import Mist from "@/components/effects/mist";
-import { useLoading } from "@/hooks/use-loading.tsx";
+import { useLoading } from "@/components/GlobalLoadingProvider";
 
 
 import { getReadingTime, extractHorrorExcerpt, THEME_CATEGORIES } from "@/lib/content-analysis";

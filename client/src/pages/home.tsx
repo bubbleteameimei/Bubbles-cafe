@@ -14,20 +14,15 @@ import ApiLoader from "@/components/api-loader";
 export default function Home() {
   const [, setLocation] = useLocation();
   
-  // Add/remove body-home class and set background image when component mounts/unmounts
+  // Add/remove body-home class for background image when component mounts/unmounts
   useEffect(() => {
     document.body.classList.add('body-home');
     
-    // Directly apply background image to body element
-    document.body.style.backgroundImage = "url('/images/background.jpeg')";
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundRepeat = "no-repeat";
-    document.body.style.backgroundAttachment = "fixed";
+    // Let CSS handle the background image styling
+    // The body-home class in index.css will apply all the proper background styles
     
     return () => {
       document.body.classList.remove('body-home');
-      document.body.style.backgroundImage = "";
     };
   }, []);
   
@@ -66,34 +61,7 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Full screen background with inline styles using Vite public folder */}
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundImage: 'url("/images/background.jpeg")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              zIndex: -10
-            }}
-          ></div>
-          
-          {/* Dark overlay for better text contrast */}
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.7) 100%)',
-              zIndex: -9
-            }}
-          ></div>
+          {/* Background is now handled by the body-home class in CSS */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>

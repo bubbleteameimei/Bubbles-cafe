@@ -5,7 +5,7 @@ import { useLocation } from 'wouter';
 import SilentMovieEffect from './SilentMovieEffect';
 import { useTheme } from '@/components/theme-provider';
 import CreepyTextGlitch from './CreepyTextGlitch';
-import { useLoading } from '@/hooks/use-loading';
+import { useLoading } from '@/components/GlobalLoadingProvider';
 
 export interface ErrorPageProps {
   code: string;

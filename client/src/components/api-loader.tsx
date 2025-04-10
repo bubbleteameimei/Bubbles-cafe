@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useLoading } from '@/hooks/use-loading';
+import { useLoading } from '@/components/GlobalLoadingProvider';
 
 interface ApiLoaderProps {
   isLoading: boolean;

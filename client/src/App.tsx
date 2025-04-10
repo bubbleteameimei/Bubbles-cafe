@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { useLoading } from './hooks/use-loading';
+// Import our new GlobalLoadingProvider component that handles loading state
+import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingProvider';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
@@ -26,8 +27,6 @@ import { Button } from './components/ui/button';
 import { Menu } from 'lucide-react';
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
-// Import our standardized loading provider
-import { LoadingProvider } from './hooks/use-loading';
 // Import WordPress API preload function for enhanced reliability
 import { preloadWordPressPosts } from './lib/wordpress-api';
 // Import WordPress sync service
@@ -143,6 +142,9 @@ const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
   
+  // Get loading functions from context after provider is initialized
+  const { showLoading, hideLoading } = useLoading();
+  
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
@@ -155,6 +157,23 @@ const AppContent = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  
+  // Track page transitions and show loading animation
+  useEffect(() => {
+    // Don't show loading screen on initial load
+    if (sessionStorage.getItem(`visited-${location}`)) {
+      // Skip loading if the page has been visited before
+      return;
+    }
+    
+    // Show loading animation for page transitions
+    showLoading();
+    
+    // Mark this page as visited
+    sessionStorage.setItem(`visited-${location}`, 'true');
+    
+    // The loading screen will automatically be hidden after the animation completes
+  }, [location, showLoading]);
   
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {
@@ -313,25 +332,10 @@ const AppContent = () => {
 function App() {
   // Setup performance monitoring
   usePerformanceMonitoring();
-  const { showLoading, hideLoading } = useLoading();
   const [location] = useLocation();
   
-  // Track page transitions and show loading animation
-  useEffect(() => {
-    // Don't show loading screen on initial load
-    if (sessionStorage.getItem(`visited-${location}`)) {
-      // Skip loading if the page has been visited before
-      return;
-    }
-    
-    // Show loading animation for page transitions
-    showLoading();
-    
-    // Mark this page as visited
-    sessionStorage.setItem(`visited-${location}`, 'true');
-    
-    // The loading screen will automatically be hidden after the animation completes
-  }, [location, showLoading]);
+  // The page transition loading will be handled by AppContent component
+  // where useLoading will be called after LoadingProvider is mounted
 
   // Initialize WordPress sync service - managed internally with its own state
   useEffect(() => {
@@ -368,7 +372,7 @@ function App() {
                 <SilentPingProvider>
                   <ScrollEffectsProvider>
                     <ErrorToastProvider>
-                      <LoadingProvider>
+                      <GlobalLoadingProvider>
                         <RefreshProvider>
                           {/* Wrap AppContent with PullToRefresh */}
                           <PullToRefresh onRefresh={handleDataRefresh}>
@@ -388,7 +392,7 @@ function App() {
                           <Toaster />
                           <Sonner position="bottom-left" className="fixed-sonner" />
                         </RefreshProvider>
-                      </LoadingProvider>
+                      </GlobalLoadingProvider>
                     </ErrorToastProvider>
                   </ScrollEffectsProvider>
                 </SilentPingProvider>

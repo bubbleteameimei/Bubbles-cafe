@@ -1,12 +1,5 @@
-/**
- * Loading Context Provider
- * 
- * This centralized loading context provides application-wide loading state management.
- * It renders the LoadingScreen component when loading state is active and ensures
- * the animation completes a full cycle before content is displayed.
- */
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode, useCallback } from "react";
-import { LoadingScreen } from "../components/ui/loading-screen";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { LoadingScreen } from './ui/loading-screen';
 
 // Create a loading context type with additional functionality
 type LoadingContextType = {
@@ -36,7 +29,7 @@ export function useLoading() {
 /**
  * LoadingProvider component that manages global loading state
  */
-export const LoadingProvider = ({ children }: { children: ReactNode }) => {
+export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | undefined>(undefined);
   const [canHideLoading, setCanHideLoading] = useState(false);
@@ -134,3 +127,5 @@ export const LoadingProvider = ({ children }: { children: ReactNode }) => {
     </LoadingContext.Provider>
   );
 };
+
+export default GlobalLoadingProvider;
