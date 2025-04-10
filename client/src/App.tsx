@@ -205,10 +205,10 @@ const AppContent = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-screen flex-1 flex flex-col bg-background w-full min-w-full max-w-[100vw]" 
+      <main className={`min-h-screen flex-1 flex flex-col w-full min-w-full max-w-[100vw] ${location === '/' ? '' : 'bg-background'}`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflow: 'hidden' }}>
         <AutoHideNavbar />
-        <div className={`w-full min-w-full max-w-full ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} lg:pt-6 flex-1 bg-background m-0 p-0 px-0 mx-0`}
+        <div className={`w-full min-w-full max-w-full ${location.startsWith('/reader') ? 'pt-4' : 'pt-20'} lg:pt-6 flex-1 ${location === '/' ? '' : 'bg-background'} m-0 p-0 px-0 mx-0`}
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
           {/* Display WordPress sync status notifications */}
           <WordPressSyncStatus />

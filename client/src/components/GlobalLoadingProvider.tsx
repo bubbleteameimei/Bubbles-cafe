@@ -82,10 +82,31 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     setCanHideLoading(false);
     hideRequestedRef.current = false;
     startTimeRef.current = Date.now();
+    
+    // Set a maximum timeout of 3 seconds for the loading screen
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+    }
+    
+    loadingTimerRef.current = setTimeout(() => {
+      // Force hide loading after 3 seconds
+      setIsLoading(false);
+      setMessage(undefined);
+      document.body.classList.remove('loading-active');
+      hideRequestedRef.current = false;
+      setCanHideLoading(true);
+      console.log('Loading screen auto-hidden after 3 seconds');
+    }, 3000);
   }, []);
 
   // Hide loading state, but only after animation completes
   const hideLoading = useCallback(() => {
+    // Clear the auto-hide timer if it exists
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+    
     // If animation has completed its cycle, we can hide immediately
     if (canHideLoading) {
       setIsLoading(false);

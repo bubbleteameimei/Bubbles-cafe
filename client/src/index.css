@@ -215,6 +215,18 @@ body.body-home {
   background-repeat: no-repeat !important;
   position: relative !important;
   color: white !important; /* Ensure text is visible on dark background */
+  /* Override any theme background colors */
+  background-color: transparent !important;
+}
+
+/* Override any theme background on containers when body-home is active */
+body.body-home .app-content,
+body.body-home main,
+body.body-home .bg-background,
+.transparent-bg {
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 
 /* Dynamic overlay based on theme - dark theme */

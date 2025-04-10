@@ -2,8 +2,9 @@ import { memo } from "react";
 
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
   // Add minimal callback functionality to ensure loading completes
+  // Complete the animation after 1 second for quicker response
   if (onAnimationComplete) {
-    setTimeout(onAnimationComplete, 2000);
+    setTimeout(onAnimationComplete, 1000);
   }
   
   return (
@@ -35,7 +36,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
 
         .loader span {
           font-size: 28px;
-          font-family: 'Encode Sans Semi Expanded', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-weight: 600;
           animation: blur 2s linear infinite;
           line-height: 26px;

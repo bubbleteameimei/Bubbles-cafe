@@ -16,13 +16,32 @@ export default function Home() {
   
   // Add/remove body-home class for background image when component mounts/unmounts
   useEffect(() => {
+    // Add the body-home class to enable background image
     document.body.classList.add('body-home');
     
-    // Let CSS handle the background image styling
-    // The body-home class in index.css will apply all the proper background styles
+    // Add an additional class to the main tag to ensure transparency
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.classList.add('transparent-bg');
+    }
+    
+    // Clear any bg-background classes that might override our image
+    const bgElements = document.querySelectorAll('.bg-background');
+    bgElements.forEach(el => {
+      el.classList.add('transparent-bg');
+    });
     
     return () => {
+      // Clean up by removing classes when component unmounts
       document.body.classList.remove('body-home');
+      
+      if (mainElement) {
+        mainElement.classList.remove('transparent-bg');
+      }
+      
+      bgElements.forEach(el => {
+        el.classList.remove('transparent-bg');
+      });
     };
   }, []);
   
