@@ -30,7 +30,7 @@ export function CookieConsent() {
         ease: [0.4, 0, 0.2, 1],
         y: { type: "spring", stiffness: 300, damping: 30 }
       }}
-      className="fixed inset-0 flex items-center justify-center z-50 bg-background/80 backdrop-blur-sm pointer-events-auto"
+      className="fixed inset-0 flex items-start justify-center pt-[25vh] z-50 bg-background/80 backdrop-blur-sm pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cookie-consent-title"
