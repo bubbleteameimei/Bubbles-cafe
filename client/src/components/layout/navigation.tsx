@@ -101,12 +101,18 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`sticky top-0 z-40 w-full border-b 
+      className={`fixed top-0 z-40 w-screen border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       data-device-type={deviceType}
-      style={{width: "100vw", maxWidth: "100vw", marginLeft: "calc(-50vw + 50%)"}}
+      style={{
+        width: "100vw",
+        left: 0,
+        right: 0,
+        margin: 0,
+        padding: 0
+      }}
     >
       <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}

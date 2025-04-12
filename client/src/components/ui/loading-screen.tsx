@@ -7,66 +7,22 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     return Math.floor(Math.random() * 20) < 1;
   });
   
-  // Completely disable scrolling while loading screen is active
+  // Use a less aggressive scrolling control mechanism
   useEffect(() => {
-    // Save current styles
-    const bodyStyles = {
-      overflow: document.body.style.overflow,
-      height: document.body.style.height,
-      position: document.body.style.position,
-      width: document.body.style.width,
-      top: document.body.style.top,
-      left: document.body.style.left,
-      right: document.body.style.right,
-      bottom: document.body.style.bottom
-    };
-    
-    const htmlStyles = {
-      overflow: document.documentElement.style.overflow,
-      height: document.documentElement.style.height,
-      position: document.documentElement.style.position
-    };
-    
-    // Completely immobilize the body with multiple techniques
-    // Technique 1: Fixed position with dimensions
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.width = '100%';
-    document.body.style.position = 'fixed';
-    document.body.style.top = '0';
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.bottom = '0';
-    
-    // Technique 2: Apply to HTML element
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.position = 'relative';
-    
-    // Technique 3: Temporarily add a specific class
+    // Only add the class to disable scrolling
     document.body.classList.add('no-scroll-loading');
     
-    console.log("[LoadingScreen] Scroll disabled with multiple techniques");
+    console.log("[LoadingScreen] Scroll disabled with class-based method");
     
-    // Restore original styles when loading is complete
+    // Restore original scrolling when component unmounts
     return () => {
-      // Restore body styles
-      document.body.style.overflow = bodyStyles.overflow;
-      document.body.style.height = bodyStyles.height;
-      document.body.style.position = bodyStyles.position;
-      document.body.style.width = bodyStyles.width;
-      document.body.style.top = bodyStyles.top;
-      document.body.style.left = bodyStyles.left;
-      document.body.style.right = bodyStyles.right;
-      document.body.style.bottom = bodyStyles.bottom;
-      
-      // Restore HTML styles
-      document.documentElement.style.overflow = htmlStyles.overflow;
-      document.documentElement.style.height = htmlStyles.height;
-      document.documentElement.style.position = htmlStyles.position;
-      
       // Remove the temporary class
       document.body.classList.remove('no-scroll-loading');
+      
+      // Force enable scrolling to fix any potential issues
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.documentElement.style.overflow = '';
       
       console.log("[LoadingScreen] Scroll re-enabled");
     };

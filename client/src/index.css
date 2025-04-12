@@ -41,6 +41,15 @@
     position: relative;
     background-color: hsl(var(--background));
     box-sizing: border-box;
+    /* Improve scroll behavior */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix for bottom page scrolling issues */
+  body {
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-y !important;
   }
   
   img {

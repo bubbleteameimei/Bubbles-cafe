@@ -64,13 +64,11 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         document.body.classList.remove('loading-active');
         hideRequestedRef.current = false;
         
-        // Restore scrolling
+        // Restore scrolling by removing the class
+        document.body.classList.remove('no-scroll-loading');
+        // Force scroll settings in case they get stuck
         document.body.style.overflow = '';
-        document.body.style.height = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
         document.documentElement.style.overflow = '';
-        document.documentElement.style.height = '';
         console.log('[LoadingProvider] Scroll re-enabled after animation');
         
         // Clear loading state in sessionStorage
@@ -92,13 +90,8 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Immediately ensure body has the loading class (before React render)
     document.body.classList.add('loading-active');
     
-    // Disable scrolling immediately (in addition to React component's logic)
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.height = '100%';
+    // Use class-based scroll locking instead of direct style manipulation
+    document.body.classList.add('no-scroll-loading');
     
     // Force browser to reflow/repaint to ensure the loading class takes effect immediately
     // This prevents any potential flash of content
@@ -162,13 +155,14 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       setMessage(undefined);
       document.body.classList.remove('loading-active');
       
-      // Restore scrolling
+      // Restore scrolling by removing the class
+      document.body.classList.remove('no-scroll-loading');
+      // Force override any inline styles
       document.body.style.overflow = '';
-      document.body.style.height = '';
       document.body.style.position = '';
-      document.body.style.width = '';
       document.documentElement.style.overflow = '';
-      document.documentElement.style.height = '';
+      // Force set touch action to auto to improve mobile scrolling
+      document.body.style.touchAction = 'auto';
       console.log('[LoadingProvider] Scroll re-enabled on hide');
     } else {
       // Otherwise, we mark that a hide was requested
