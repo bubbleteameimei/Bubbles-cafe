@@ -143,19 +143,26 @@ export default function IndexView() {
   const featuredStory = useMemo(() => {
     if (!currentPosts || currentPosts.length === 0) return null;
     
-    console.log('[Index] Selecting featured story from', currentPosts.length, 'posts');
+    console.log('\n\n========== FEATURED STORY SELECTION ==========');
+    console.log(`%c[Index] Selecting featured story from ${currentPosts.length} posts`, 'color: green; font-weight: bold');
     
     // Debug all posts - check if metrics are actually available
-    console.log('[Index] Posts metrics debug:');
+    console.log('%c[Index] Posts metrics debug:', 'color: blue; font-weight: bold');
     currentPosts.forEach(post => {
       // Check for direct metrics in post object
       const hasLikes = typeof post.likesCount === 'number';
       const hasDislikes = typeof post.dislikesCount === 'number';
       
+      // Check for metadata
+      const metadata = post.metadata && typeof post.metadata === 'object' ? post.metadata : {};
+      const views = metadata && 'pageViews' in (metadata as Record<string, unknown>) ? 
+        Number((metadata as Record<string, unknown>).pageViews || 0) : 0;
+      
       // Include title ID for validation
-      console.log(`[Index] Post "${post.title}" (ID: ${post.id}) metrics:`, {
+      console.log(`Post "${post.title}" (ID: ${post.id}):`, {
         likesCount: hasLikes ? post.likesCount : 'undefined',
         dislikesCount: hasDislikes ? post.dislikesCount : 'undefined',
+        pageViews: views,
         hasMetadata: !!post.metadata,
         createdAt: post.createdAt
       });
@@ -233,22 +240,30 @@ export default function IndexView() {
                      (bRecency * 15) + 
                      bHasTheme;
       
-      // Log each post's score with detailed breakdown
-      console.log(`[Index] Score for "${a.title}" (ID: ${a.id}): ${aScore.toFixed(2)}`, {
-        likes: aLikes,
-        views: aViews,
-        recency: aRecency.toFixed(2),
-        hasTheme: aHasTheme > 0,
-        finalScore: aScore.toFixed(2)
-      });
+      // Comparison for debugging
+      if (a.id === 1 || a.id === 3) {
+        console.log(`\n%cCOMPARISON: "${a.title}" vs other stories`, 'color: red; font-weight: bold');
+        console.log(`Score for "${a.title}" (ID: ${a.id}): ${aScore.toFixed(2)}`, {
+          likes: aLikes,
+          views: aViews,
+          recency: aRecency.toFixed(2),
+          hasTheme: aHasTheme > 0,
+          finalScore: aScore.toFixed(2)
+        });
+      }
       
       return bScore - aScore; // Sort in descending order
     });
     
-    // Always log the top 3 posts for debugging
-    console.log('[Index] Top 3 posts by score:');
-    sortedByEngagement.slice(0, 3).forEach((post, index) => {
-      console.log(`[Index] #${index + 1}: "${post.title}" (ID: ${post.id})`);
+    // Always log the top 5 posts for debugging
+    console.log('\n%c[Index] Top 5 posts by score:', 'color: blue; font-weight: bold');
+    sortedByEngagement.slice(0, 5).forEach((post, index) => {
+      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
+      const views = post.metadata && typeof post.metadata === 'object' && 
+        'pageViews' in (post.metadata as Record<string, unknown>) ?
+        Number((post.metadata as Record<string, unknown>).pageViews || 0) : 0;
+        
+      console.log(`#${index + 1}: "${post.title}" (ID: ${post.id}) - ${likes} likes, ${views} views`);
     });
     
     // Check if we have at least 5 posts
@@ -258,11 +273,17 @@ export default function IndexView() {
       const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
       const rotationIndex = dayOfYear % 5; // 0-4 based on day of year
       
-      console.log('[Index] Using rotation index', rotationIndex, 'based on day of year', dayOfYear);
-      console.log('[Index] Featured story selected:', {
+      console.log(`\n%c[Index] Using rotation index ${rotationIndex} based on day of year ${dayOfYear}`, 'color: purple');
+      console.log('%c[Index] Featured story selected:', 'color: green; font-weight: bold', {
         id: sortedByEngagement[rotationIndex].id,
-        title: sortedByEngagement[rotationIndex].title
+        title: sortedByEngagement[rotationIndex].title,
+        likes: sortedByEngagement[rotationIndex].likesCount,
+        views: sortedByEngagement[rotationIndex].metadata && 
+               typeof sortedByEngagement[rotationIndex].metadata === 'object' && 
+               'pageViews' in (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>) ? 
+               (sortedByEngagement[rotationIndex].metadata as Record<string, unknown>).pageViews : 0
       });
+      console.log('=============================================\n\n');
       
       return sortedByEngagement[rotationIndex];
     }
@@ -272,6 +293,7 @@ export default function IndexView() {
       id: sortedByEngagement[0].id,
       title: sortedByEngagement[0].title
     });
+    console.log('=============================================\n\n');
     
     return sortedByEngagement[0];
   }, [currentPosts]);
