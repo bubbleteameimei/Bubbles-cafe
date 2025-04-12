@@ -101,13 +101,13 @@ export default function Navigation() {
 
   return (
     <header 
-      className={`sticky top-0 z-40 flex justify-center w-full border-b 
+      className={`sticky top-0 z-40 w-full border-b 
                 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       data-device-type={deviceType}
     >
-      <div className="max-w-5xl w-11/12 flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}
         <div className="flex items-center">
           {/* Mobile menu toggle */}
