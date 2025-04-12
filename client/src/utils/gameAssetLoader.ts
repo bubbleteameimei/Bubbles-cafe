@@ -42,6 +42,9 @@ export function loadBackground(scene: Phaser.Scene, key: string) {
     return true;
   }
   
+  // Create fallback texture immediately
+  createFallbackBackground(scene, key);
+  
   try {
     // Load image
     scene.load.image(textureKey, imagePath);
@@ -54,16 +57,16 @@ export function loadBackground(scene: Phaser.Scene, key: string) {
     });
     
     scene.load.once('loaderror', (fileObj: any) => {
-      console.error(`Failed to load background: ${key}`);
-      createFallbackBackground(scene, key);
+      console.log(`Using fallback for background: ${key}`);
+      // The fallback was already created, so we're good
     });
     
     scene.load.start();
     return true;
   } catch (error) {
-    console.error(`Error loading background ${key}:`, error);
-    createFallbackBackground(scene, key);
-    return false;
+    console.log(`Using fallback for background ${key}`);
+    // We already created the fallback, no need to do it again
+    return true;
   }
 }
 
@@ -162,8 +165,10 @@ export function loadSound(scene: Phaser.Scene, key: string) {
   const soundPath = SOUND_PATHS[key];
   
   if (!soundPath) {
-    console.error(`Sound not defined: ${key}`);
-    return false;
+    console.log(`Sound not defined: ${key}, using silent fallback`);
+    // Create a silent sound as fallback - prevents errors in the game
+    createSilentSound(scene, key);
+    return true;
   }
   
   // Check if already loaded
@@ -172,6 +177,9 @@ export function loadSound(scene: Phaser.Scene, key: string) {
   }
   
   try {
+    // Create a silent fallback first
+    createSilentSound(scene, key + '_fallback');
+    
     // Load sound
     scene.load.audio(key, soundPath);
     
@@ -180,10 +188,51 @@ export function loadSound(scene: Phaser.Scene, key: string) {
       console.log(`Sound loaded: ${key}`);
     });
     
+    scene.load.once('loaderror', () => {
+      console.log(`Sound ${key} failed to load, using fallback`);
+      // If the real sound fails to load, copy the fallback
+      if (scene.cache.audio.exists(key + '_fallback')) {
+        scene.cache.audio.add(key, scene.cache.audio.get(key + '_fallback'));
+      }
+    });
+    
     scene.load.start();
     return true;
   } catch (error) {
-    console.error(`Error loading sound ${key}:`, error);
-    return false;
+    console.log(`Error loading sound ${key}, using fallback`);
+    createSilentSound(scene, key);
+    return true;
+  }
+}
+
+/**
+ * Create a silent sound as fallback
+ */
+function createSilentSound(scene: Phaser.Scene, key: string) {
+  if (scene.cache.audio.exists(key)) return;
+  
+  try {
+    // Create a very short silent audio buffer
+    const audioContext = new AudioContext();
+    const buffer = audioContext.createBuffer(1, 1024, 22050);
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    
+    // Convert to base64 data URL of silence
+    const silenceDataURL = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+    
+    // Add to the cache
+    scene.cache.audio.add(key, {
+      decoded: true,
+      duration: 0.1,
+      isDecoded: true,
+      isSoundDecoded: true,
+      isCompressedAudio: true,
+      data: silenceDataURL
+    });
+    
+    console.log(`Created silent fallback for sound: ${key}`);
+  } catch (e) {
+    console.warn(`Could not create silent fallback: ${e}`);
   }
 }

@@ -45,14 +45,45 @@ export default class MainScene extends Phaser.Scene {
   }
   
   preload() {
-    // Load common assets
-    this.load.image('vignette', '/games/edens-hollow/effects/vignette.png');
-    this.load.image('sanity-effect-low', '/games/edens-hollow/effects/sanity-low.png');
-    this.load.image('sanity-effect-critical', '/games/edens-hollow/effects/sanity-critical.png');
+    // Create gradient background fallback first
+    const width = this.cameras.main.width || 800;
+    const height = this.cameras.main.height || 600;
+    
+    // Create fallback textures for backgrounds
+    const bgGraphics = this.add.graphics();
+    bgGraphics.fillGradientStyle(0x000000, 0x000011, 0x000022, 0x000011, 1);
+    bgGraphics.fillRect(0, 0, width, height);
+    bgGraphics.generateTexture('bg-fallback', width, height);
+    bgGraphics.destroy();
+    
+    // Create fallback texture for vignette
+    const vignetteGraphics = this.add.graphics();
+    vignetteGraphics.fillStyle(0x000000, 0);
+    vignetteGraphics.fillRect(0, 0, width, height);
+    vignetteGraphics.generateTexture('vignette-fallback', width, height);
+    vignetteGraphics.destroy();
+    
+    // Try to load assets with error handling
+    try {
+      this.load.image('vignette', '/games/edens-hollow/effects/vignette.png');
+    } catch (e) {
+      console.log('Using fallback for vignette');
+    }
+    
+    try {
+      this.load.image('sanity-effect-low', '/games/edens-hollow/effects/sanity-low.png');
+      this.load.image('sanity-effect-critical', '/games/edens-hollow/effects/sanity-critical.png');
+    } catch (e) {
+      console.log('Using fallbacks for sanity effects');
+    }
     
     // Load initial background based on story
     if (this.currentPassage) {
-      loadBackground(this, 'manor-exterior');
+      try {
+        loadBackground(this, 'manor-exterior');
+      } catch (e) {
+        console.log('Error loading initial background:', e);
+      }
     }
   }
   
@@ -60,9 +91,20 @@ export default class MainScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
     
-    // Create background
-    this.background = this.add.image(width / 2, height / 2, 'background-manor-exterior');
-    this.background.setDisplaySize(width, height);
+    // Create a dark background as fallback first
+    const bgFallback = this.add.graphics();
+    bgFallback.fillStyle(0x000011, 1);
+    bgFallback.fillRect(0, 0, width, height);
+    
+    // Create background with fallback
+    try {
+      this.background = this.add.image(width / 2, height / 2, 'background-manor-exterior');
+      this.background.setDisplaySize(width, height);
+    } catch (e) {
+      console.log('Using fallback background');
+      this.background = this.add.image(width / 2, height / 2, 'bg-fallback');
+      this.background.setDisplaySize(width, height);
+    }
     
     // Create text container (with black semi-transparent background)
     this.createTextContainer();
@@ -70,10 +112,36 @@ export default class MainScene extends Phaser.Scene {
     // Create sanity meter
     this.createSanityMeter();
     
-    // Create vignette overlay
-    this.vignette = this.add.image(width / 2, height / 2, 'vignette');
+    // Create a vignette effect using canvas
+    const vignetteTexture = this.textures.createCanvas('vignette-texture', width, height);
+    
+    if (vignetteTexture) {
+      const vignetteContext = vignetteTexture.getContext();
+      
+      // Create radial gradient for vignette
+      const vignetteGrad = vignetteContext.createRadialGradient(
+        width/2, height/2, height * 0.5, // inner circle
+        width/2, height/2, height        // outer circle to edge
+      );
+      vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');     // transparent center
+      vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.7)');   // dark edges
+      
+      vignetteContext.fillStyle = vignetteGrad;
+      vignetteContext.fillRect(0, 0, width, height);
+      vignetteTexture.refresh();
+    } else {
+      // Create a fallback vignette if canvas creation failed
+      const vignetteGraphics = this.add.graphics();
+      vignetteGraphics.fillStyle(0x000000, 0);
+      vignetteGraphics.fillRect(0, 0, width, height);
+      vignetteGraphics.generateTexture('vignette-texture', width, height);
+      vignetteGraphics.destroy();
+    }
+    
+    // Add the vignette 
+    this.vignette = this.add.image(width / 2, height / 2, 'vignette-texture');
     this.vignette.setDisplaySize(width, height);
-    this.vignette.setAlpha(0.3);
+    this.vignette.setAlpha(0.4);
     
     // Set up sanity visual effects (initially hidden)
     this.setupSanityEffects();
@@ -148,13 +216,52 @@ export default class MainScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
     
-    // Low sanity overlay
-    const lowSanityEffect = this.add.image(width / 2, height / 2, 'sanity-effect-low');
+    // Create better fallback graphics for sanity effects
+    // For low sanity - a slight dark red vignette
+    const lowSanityCanvas = this.textures.createCanvas('low-sanity-gradient', width, height);
+    
+    if (lowSanityCanvas) {
+      const lowSanityContext = lowSanityCanvas.getContext();
+      
+      // Create radial gradient (dark red around edges)
+      const lowGrad = lowSanityContext.createRadialGradient(
+        width/2, height/2, height * 0.25, 
+        width/2, height/2, height
+      );
+      lowGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      lowGrad.addColorStop(1, 'rgba(100,0,0,0.5)');
+      
+      lowSanityContext.fillStyle = lowGrad;
+      lowSanityContext.fillRect(0, 0, width, height);
+      lowSanityCanvas.refresh();
+    }
+    
+    // For critical sanity - more intense dark red effect
+    const criticalSanityCanvas = this.textures.createCanvas('critical-sanity-gradient', width, height);
+    
+    if (criticalSanityCanvas) {
+      const criticalSanityContext = criticalSanityCanvas.getContext();
+      
+      // Create radial gradient (more intense dark red)
+      const criticalGrad = criticalSanityContext.createRadialGradient(
+        width/2, height/2, height * 0.1, 
+        width/2, height/2, height * 0.7
+      );
+      criticalGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      criticalGrad.addColorStop(1, 'rgba(120,0,0,0.7)');
+      
+      criticalSanityContext.fillStyle = criticalGrad;
+      criticalSanityContext.fillRect(0, 0, width, height);
+      criticalSanityCanvas.refresh();
+    }
+    
+    // Low sanity overlay - use canvas texture instead of loading image
+    const lowSanityEffect = this.add.image(width / 2, height / 2, 'low-sanity-gradient');
     lowSanityEffect.setDisplaySize(width, height);
     lowSanityEffect.setAlpha(0);
     
-    // Critical sanity overlay
-    const criticalSanityEffect = this.add.image(width / 2, height / 2, 'sanity-effect-critical');
+    // Critical sanity overlay - use canvas texture instead of loading image
+    const criticalSanityEffect = this.add.image(width / 2, height / 2, 'critical-sanity-gradient');
     criticalSanityEffect.setDisplaySize(width, height);
     criticalSanityEffect.setAlpha(0);
     
