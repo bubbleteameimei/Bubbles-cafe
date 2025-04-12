@@ -145,8 +145,38 @@ export default function IndexView() {
     
     console.log('[Index] Selecting featured story from', currentPosts.length, 'posts');
     
-    // Sort posts by engagement metrics, using direct database values where possible
+    // Debug all posts - check if metrics are actually available
+    console.log('[Index] Posts metrics debug:');
+    currentPosts.forEach(post => {
+      // Check for direct metrics in post object
+      const hasLikes = typeof post.likesCount === 'number';
+      const hasDislikes = typeof post.dislikesCount === 'number';
+      
+      // Include title ID for validation
+      console.log(`[Index] Post "${post.title}" (ID: ${post.id}) metrics:`, {
+        likesCount: hasLikes ? post.likesCount : 'undefined',
+        dislikesCount: hasDislikes ? post.dislikesCount : 'undefined',
+        hasMetadata: !!post.metadata,
+        createdAt: post.createdAt
+      });
+    });
+    
+    // Modified scoring system that considers recency as a major factor
     const sortedByEngagement = [...currentPosts].sort((a, b) => {
+      // Get creation dates for recency
+      const aDate = new Date(a.createdAt).getTime();
+      const bDate = new Date(b.createdAt).getTime();
+      
+      // Calculate recency score - newer posts get higher scores
+      // Posts in the last 7 days get the most recency bonus
+      const now = Date.now();
+      const dayInMs = 24 * 60 * 60 * 1000;
+      const sevenDaysInMs = 7 * dayInMs;
+      
+      // Calculate recency as a 0-1 value (1 being most recent)
+      const aRecency = Math.max(0, Math.min(1, 1 - ((now - aDate) / sevenDaysInMs)));
+      const bRecency = Math.max(0, Math.min(1, 1 - ((now - bDate) / sevenDaysInMs)));
+      
       // Primary metrics: direct from database when available
       // Get likesCount directly from the post object (from DB)
       const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
@@ -175,64 +205,74 @@ export default function IndexView() {
         'averageReadTime' in (b.metadata as Record<string, unknown>) ?
         Number((b.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
       
+      // Assign points for having a theme category
+      const aHasTheme = a.metadata && typeof a.metadata === 'object' && 
+        'themeCategory' in (a.metadata as Record<string, unknown>) ? 5 : 0;
+      
+      const bHasTheme = b.metadata && typeof b.metadata === 'object' && 
+        'themeCategory' in (b.metadata as Record<string, unknown>) ? 5 : 0;
+      
       // Calculate engagement score with weighted factors:
       // - Likes have highest weight (positive engagement)
       // - Views are important but secondary
       // - Reading time indicates content quality
       // - Dislikes have a smaller negative effect (still indicates engagement)
-      const aScore = (aLikes * 3) + aViews + (aReadTime * 0.5) - (aDislikes * 0.5);
-      const bScore = (bLikes * 3) + bViews + (bReadTime * 0.5) - (bDislikes * 0.5);
+      // - Recency is now a major factor - multiply by up to 15 points for very recent posts
+      // - Theme is now directly included in the scoring formula
+      const aScore = (aLikes * 3) + 
+                     aViews + 
+                     (aReadTime * 0.5) - 
+                     (aDislikes * 0.5) +
+                     (aRecency * 15) + 
+                     aHasTheme;
       
-      // For debugging, log the top posts' scores
-      if (aScore > 10 || bScore > 10) {
-        console.log('[Featured Story] Post metrics comparison:', {
-          postA: { id: a.id, title: a.title, likes: aLikes, views: aViews, score: aScore },
-          postB: { id: b.id, title: b.title, likes: bLikes, views: bViews, score: bScore }
-        });
-      }
+      const bScore = (bLikes * 3) + 
+                     bViews + 
+                     (bReadTime * 0.5) - 
+                     (bDislikes * 0.5) +
+                     (bRecency * 15) + 
+                     bHasTheme;
+      
+      // Log each post's score with detailed breakdown
+      console.log(`[Index] Score for "${a.title}" (ID: ${a.id}): ${aScore.toFixed(2)}`, {
+        likes: aLikes,
+        views: aViews,
+        recency: aRecency.toFixed(2),
+        hasTheme: aHasTheme > 0,
+        finalScore: aScore.toFixed(2)
+      });
       
       return bScore - aScore; // Sort in descending order
     });
     
-    // First try to find a post with high engagement and theme category
-    const highEngagementThreshold = 10; // Define what "high engagement" means
-    const highEngagementWithTheme = sortedByEngagement.find(post => {
-      if (!post.metadata) return false;
-      const metadata = post.metadata as Record<string, unknown>;
-      const hasTheme = 'themeCategory' in metadata && metadata.themeCategory;
-      
-      // Calculate this post's engagement score again
-      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
-      const views = metadata && 'pageViews' in metadata ? Number(metadata.pageViews || 0) : 0;
-      const score = (likes * 3) + views;
-      
-      return hasTheme && score >= highEngagementThreshold;
+    // Always log the top 3 posts for debugging
+    console.log('[Index] Top 3 posts by score:');
+    sortedByEngagement.slice(0, 3).forEach((post, index) => {
+      console.log(`[Index] #${index + 1}: "${post.title}" (ID: ${post.id})`);
     });
     
-    // If we found a high-engagement themed post, use it
-    if (highEngagementWithTheme) {
-      console.log('[Featured Story] Selected high-engagement themed post:', 
-        { id: highEngagementWithTheme.id, title: highEngagementWithTheme.title });
-      return highEngagementWithTheme;
+    // Check if we have at least 5 posts
+    if (sortedByEngagement.length >= 5) {
+      // Avoid always using the first post - pick from top 5 stories to add variety
+      // Use a different post ID modulo 5 each day to rotate featured story daily
+      const dayOfYear = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+      const rotationIndex = dayOfYear % 5; // 0-4 based on day of year
+      
+      console.log('[Index] Using rotation index', rotationIndex, 'based on day of year', dayOfYear);
+      console.log('[Index] Featured story selected:', {
+        id: sortedByEngagement[rotationIndex].id,
+        title: sortedByEngagement[rotationIndex].title
+      });
+      
+      return sortedByEngagement[rotationIndex];
     }
     
-    // Fall back to any post with a theme
-    const anyPostWithTheme = sortedByEngagement.find(post => {
-      if (!post.metadata) return false;
-      const metadata = post.metadata as Record<string, unknown>;
-      return 'themeCategory' in metadata && metadata.themeCategory;
+    // If we have fewer than 5 posts, just use the highest ranked one
+    console.log('[Index] Featured story selected (fewer than 5 posts):', {
+      id: sortedByEngagement[0].id,
+      title: sortedByEngagement[0].title
     });
     
-    // If we found a themed post, use it
-    if (anyPostWithTheme) {
-      console.log('[Featured Story] Selected themed post:', 
-        { id: anyPostWithTheme.id, title: anyPostWithTheme.title });
-      return anyPostWithTheme;
-    }
-    
-    // Last resort: just use the highest engagement post
-    console.log('[Featured Story] Selected highest engagement post:', 
-      { id: sortedByEngagement[0]?.id, title: sortedByEngagement[0]?.title });
     return sortedByEngagement[0];
   }, [currentPosts]);
   
