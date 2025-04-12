@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,70 +13,37 @@ interface LikeDislikeProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-interface Stats {
-  likes: number;
-  dislikes: number;
-  baseStats: {
-    likes: number;
-    dislikes: number;
-  };
-  userInteracted: boolean;
+interface ReactionStats {
+  likesCount: number;
+  dislikesCount: number;
 }
 
-function isValidStats(obj: any): obj is Stats {
-  return obj
-    && typeof obj.likes === 'number'
-    && !isNaN(obj.likes)
-    && typeof obj.dislikes === 'number'
-    && !isNaN(obj.dislikes)
-    && obj.baseStats
-    && typeof obj.baseStats.likes === 'number'
-    && !isNaN(obj.baseStats.likes)
-    && typeof obj.baseStats.dislikes === 'number'
-    && !isNaN(obj.baseStats.dislikes)
-    && typeof obj.userInteracted === 'boolean';
-}
-
-const getStorageKey = (postId: number) => `post-stats-${postId}`;
-
-const getOrCreateStats = (postId: number): Stats => {
+// Get the user's interaction status for this post from local storage
+const getUserInteraction = (postId: number): { liked: boolean, disliked: boolean } => {
   try {
-    const storageKey = getStorageKey(postId);
-    const existingStats = localStorage.getItem(storageKey);
-
-    if (existingStats) {
-      const parsed = JSON.parse(existingStats);
-      if (isValidStats(parsed)) {
+    const storageKey = `post-interaction-${postId}`;
+    const savedInteraction = localStorage.getItem(storageKey);
+    
+    if (savedInteraction) {
+      const parsed = JSON.parse(savedInteraction);
+      if (parsed && typeof parsed.liked === 'boolean' && typeof parsed.disliked === 'boolean') {
         return parsed;
       }
     }
-
-    const likesBase = Math.floor(Math.random() * (150 - 80 + 1)) + 80;
-    const dislikesBase = Math.floor(Math.random() * (20 - 8 + 1)) + 8;
-
-    const newStats: Stats = {
-      likes: likesBase,
-      dislikes: dislikesBase,
-      baseStats: {
-        likes: likesBase,
-        dislikes: dislikesBase
-      },
-      userInteracted: false
-    };
-
-    localStorage.setItem(storageKey, JSON.stringify(newStats));
-    return newStats;
+    return { liked: false, disliked: false };
   } catch (error) {
-    console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
-    return {
-      likes: 100,
-      dislikes: 10,
-      baseStats: {
-        likes: 100,
-        dislikes: 10
-      },
-      userInteracted: false
-    };
+    console.error(`[LikeDislike] Error getting user interaction for post ${postId}:`, error);
+    return { liked: false, disliked: false };
+  }
+};
+
+// Save the user's interaction status for this post to local storage
+const saveUserInteraction = (postId: number, liked: boolean, disliked: boolean) => {
+  try {
+    const storageKey = `post-interaction-${postId}`;
+    localStorage.setItem(storageKey, JSON.stringify({ liked, disliked }));
+  } catch (error) {
+    console.error(`[LikeDislike] Error saving user interaction for post ${postId}:`, error);
   }
 };
 
@@ -90,55 +57,110 @@ export function LikeDislike({
   variant = 'index',
   size = 'sm'
 }: LikeDislikeProps) {
-  // Always call hooks in the same order - use dummy hooks if necessary
   const { toast } = useToast();
   
-  // Ensure consistent hook order with dummy state if needed
-  const initialStats = useMemo(() => getOrCreateStats(postId), [postId]);
-  const [liked, setLiked] = useState(userLikeStatus === 'like');
-  const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
-  const [stats, setStats] = useState<Stats>(initialStats);
+  // Get the initial user interaction from localStorage
+  const initialInteraction = getUserInteraction(postId);
+  
+  // Initialize state from local storage or props
+  const [liked, setLiked] = useState(userLikeStatus === 'like' || initialInteraction.liked);
+  const [disliked, setDisliked] = useState(userLikeStatus === 'dislike' || initialInteraction.disliked);
+  const [stats, setStats] = useState<ReactionStats>({ likesCount: 0, dislikesCount: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateStats = (newStats: Stats) => {
+  // Fetch the current reaction counts from the server
+  useEffect(() => {
+    const fetchReactionCounts = async () => {
+      try {
+        setIsLoading(true);
+        console.log(`[LikeDislike] Fetching reaction counts for post ${postId}`);
+        
+        // Use the correct port based on workflow server
+        const port = window.location.port || "3000";
+        const response = await fetch(`/api/posts/${postId}/reactions`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch reaction counts: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`[LikeDislike] Received counts for post ${postId}:`, data);
+        
+        setStats({
+          likesCount: data.likesCount || 0,
+          dislikesCount: data.dislikesCount || 0
+        });
+      } catch (error) {
+        console.error(`[LikeDislike] Error fetching reaction counts for post ${postId}:`, error);
+        // Use default zero counts on error
+        setStats({ likesCount: 0, dislikesCount: 0 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchReactionCounts();
+  }, [postId]);
+
+  // Handle sending reaction to the server and updating local state
+  const sendReaction = async (isLike: boolean | null) => {
     try {
-      localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
-      setStats(newStats);
-      onUpdate?.(newStats.likes, newStats.dislikes);
-    } catch (error) {
-      console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
-      toast({
-        title: "Error updating reaction",
-        description: "Please try again later",
-        variant: "destructive"
+      console.log(`[LikeDislike] Sending reaction for post ${postId}:`, isLike);
+      
+      const response = await fetch(`/api/posts/${postId}/reaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isLike })
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to send reaction: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`[LikeDislike] Reaction response for post ${postId}:`, data);
+      
+      // Update stats with server counts
+      setStats({
+        likesCount: data.likesCount || 0,
+        dislikesCount: data.dislikesCount || 0
+      });
+      
+      // Notify parent component of the update
+      onUpdate?.(data.likesCount || 0, data.dislikesCount || 0);
+      
+      return true;
+    } catch (error) {
+      console.error(`[LikeDislike] Error sending reaction for post ${postId}:`, error);
+      return false;
     }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     const newLiked = !liked;
+    
     try {
-      if (newLiked) {
-        setLiked(true);
+      // Update UI state immediately for better UX
+      setLiked(newLiked);
+      if (newLiked && disliked) {
         setDisliked(false);
-        updateStats({
-          ...stats,
-          likes: stats.likes + 1,
-          dislikes: disliked ? stats.dislikes - 1 : stats.dislikes,
-          baseStats: stats.baseStats,
-          userInteracted: true
-        });
+      }
+      
+      // Save interaction to localStorage
+      saveUserInteraction(postId, newLiked, false);
+      
+      // Send to server
+      const success = await sendReaction(newLiked ? true : null);
+      
+      if (success && newLiked) {
         toast({
           description: "Thanks for liking! 🥰"
         });
-      } else {
-        setLiked(false);
-        updateStats({
-          ...stats,
-          likes: stats.likes - 1,
-          baseStats: stats.baseStats,
-          userInteracted: false
-        });
       }
+      
+      // Call onLike callback
       onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
@@ -147,34 +169,38 @@ export function LikeDislike({
         description: "Please try again",
         variant: "destructive"
       });
+      
+      // Revert UI state on error
+      setLiked(!newLiked);
+      if (disliked) {
+        setDisliked(true);
+      }
     }
   };
 
-  const handleDislike = () => {
+  const handleDislike = async () => {
     const newDisliked = !disliked;
+    
     try {
-      if (newDisliked) {
-        setDisliked(true);
+      // Update UI state immediately for better UX
+      setDisliked(newDisliked);
+      if (newDisliked && liked) {
         setLiked(false);
-        updateStats({
-          ...stats,
-          dislikes: stats.dislikes + 1,
-          likes: liked ? stats.likes - 1 : stats.likes,
-          baseStats: stats.baseStats,
-          userInteracted: true
-        });
+      }
+      
+      // Save interaction to localStorage
+      saveUserInteraction(postId, false, newDisliked);
+      
+      // Send to server
+      const success = await sendReaction(newDisliked ? false : null);
+      
+      if (success && newDisliked) {
         toast({
           description: "Thanks for the feedback! 😔"
         });
-      } else {
-        setDisliked(false);
-        updateStats({
-          ...stats,
-          dislikes: stats.dislikes - 1,
-          baseStats: stats.baseStats,
-          userInteracted: false
-        });
       }
+      
+      // Call onDislike callback
       onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
@@ -183,6 +209,12 @@ export function LikeDislike({
         description: "Please try again",
         variant: "destructive"
       });
+      
+      // Revert UI state on error
+      setDisliked(!newDisliked);
+      if (liked) {
+        setLiked(true);
+      }
     }
   };
 
@@ -232,7 +264,7 @@ export function LikeDislike({
             <path d="M7 10v12"></path>
             <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path>
           </svg>
-          {stats.likes}
+          {isLoading ? '...' : stats.likesCount}
         </button>
 
         {/* Dislike Button - Updated to match design */}
@@ -267,7 +299,7 @@ export function LikeDislike({
             <path d="M17 14V2"></path>
             <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path>
           </svg>
-          {stats.dislikes}
+          {isLoading ? '...' : stats.dislikesCount}
         </button>
       </div>
     </div>

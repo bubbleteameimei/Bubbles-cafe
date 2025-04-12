@@ -1936,27 +1936,30 @@ export class DatabaseStorage implements IStorage {
   async getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }> {
     try {
       console.log(`[Storage] Getting like counts for post ${postId}`);
-      const [likes] = await db.select({
-        count: sql<string>`count(*)`
+      
+      // Use a direct SQL query to see the exact data
+      const result = await db.execute(sql`SELECT id, title, likes_count, dislikes_count FROM posts WHERE id = ${postId}`);
+      console.log(`[Storage] Raw SQL result for post ${postId}:`, result.rows[0]);
+      
+      // Get the likes/dislikes directly from the post record
+      const [post] = await db.select({
+        likesCount: postsTable.likesCount,
+        dislikesCount: postsTable.dislikesCount
       })
-        .from(postLikes)
-        .where(and(
-          eq(postLikes.postId, postId),
-          eq(postLikes.isLike, true)
-        ));
-
-      const [dislikes] = await db.select({
-        count: sql<string>`count(*)`
-      })
-        .from(postLikes)
-        .where(and(
-          eq(postLikes.postId, postId),
-          eq(postLikes.isLike, false)
-        ));
-
+      .from(postsTable)
+      .where(eq(postsTable.id, postId))
+      .limit(1);
+      
+      if (!post) {
+        console.log(`[Storage] No post found with ID ${postId}, returning zero counts`);
+        return { likesCount: 0, dislikesCount: 0 };
+      }
+      
+      console.log(`[Storage] Post ${postId} data from select query:`, post);
+      
       const counts = {
-        likesCount: Number(likes?.count || 0),
-        dislikesCount: Number(dislikes?.count || 0)
+        likesCount: Number(post.likesCount || 0),
+        dislikesCount: Number(post.dislikesCount || 0)
       };
 
       console.log(`[Storage] Post ${postId} counts:`, counts);
