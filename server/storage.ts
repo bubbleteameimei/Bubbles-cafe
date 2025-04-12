@@ -1247,12 +1247,12 @@ export class DatabaseStorage implements IStorage {
             }
             
             // If isAdminPost filter is set, apply it separately
-            // In fallback mode, we attempt to get this from the is_admin_post column directly
+            // Now using the isAdminPost column directly from the schema
             if (filters.isAdminPost !== undefined) {
               try {
-                // Try a direct SQL approach to check the is_admin_post column
+                // Try a direct SQL approach to check the isAdminPost column
                 const result = await db.execute(sql`
-                  SELECT id FROM posts WHERE is_admin_post = ${filters.isAdminPost}
+                  SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
                 `);
                 
                 const adminPostIds = result.rows.map(row => row.id);
@@ -1267,7 +1267,7 @@ export class DatabaseStorage implements IStorage {
                   }
                 }
               } catch (filterError) {
-                console.warn("Failed to filter by is_admin_post column, falling back to metadata check:", filterError);
+                console.warn("Failed to filter by isAdminPost column, falling back to metadata check:", filterError);
                 // Fall back to metadata check if column doesn't exist
                 filteredPosts = filteredPosts.filter(post => {
                   const metadata = post.metadata || {};
@@ -1452,7 +1452,7 @@ export class DatabaseStorage implements IStorage {
           excerpt, 
           metadata, 
           is_secret, 
-          is_admin_post,
+          "isAdminPost",
           mature_content, 
           theme_category, 
           created_at, 

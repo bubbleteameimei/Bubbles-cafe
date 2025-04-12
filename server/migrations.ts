@@ -41,6 +41,9 @@ export async function runMigrations() {
       // Create missing tables based on schema definitions
       await createMissingTables(existingTables, client);
       
+      // Fix isAdminPost column naming in posts table
+      await fixPostsTableColumns(client);
+      
       log("[Migrations] Database migrations completed successfully");
       return true;
     } finally {
@@ -343,4 +346,66 @@ async function createMissingTables(existingTables: string[], client: any) {
   
   // Add more tables as needed from the schema definition
   // This implements the most critical tables first
+}
+
+/**
+ * Fix the isAdminPost column in the posts table
+ * This function checks if is_admin_post column exists and renames it to isAdminPost
+ * or creates the isAdminPost column if neither exists
+ */
+async function fixPostsTableColumns(client: any) {
+  try {
+    log("[Migrations] Checking posts table columns for isAdminPost naming issue");
+    
+    // First check if is_admin_post column exists
+    const checkOldColumnQuery = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'posts' AND column_name = 'is_admin_post'
+    `;
+    
+    const oldColumnResult = await client.query(checkOldColumnQuery);
+    const oldColumnExists = oldColumnResult.rows.length > 0;
+    
+    // Then check if isAdminPost column exists
+    const checkNewColumnQuery = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'posts' AND column_name = 'isAdminPost'
+    `;
+    
+    const newColumnResult = await client.query(checkNewColumnQuery);
+    const newColumnExists = newColumnResult.rows.length > 0;
+    
+    if (oldColumnExists && !newColumnExists) {
+      // Only is_admin_post exists, rename it to isAdminPost
+      log("[Migrations] Renaming is_admin_post column to isAdminPost");
+      await client.query(`ALTER TABLE posts RENAME COLUMN is_admin_post TO "isAdminPost"`);
+      log("[Migrations] Successfully renamed is_admin_post to isAdminPost");
+    } else if (oldColumnExists && newColumnExists) {
+      // Both columns exist, migrate data and drop is_admin_post
+      log("[Migrations] Both columns exist. Migrating data and dropping is_admin_post");
+      await client.query(`
+        UPDATE posts 
+        SET "isAdminPost" = is_admin_post 
+        WHERE "isAdminPost" IS NULL
+      `);
+      
+      await client.query(`ALTER TABLE posts DROP COLUMN is_admin_post`);
+      log("[Migrations] Successfully migrated data and dropped is_admin_post column");
+    } else if (!oldColumnExists && !newColumnExists) {
+      // Neither column exists, create isAdminPost
+      log("[Migrations] Creating isAdminPost column in posts table");
+      await client.query(`ALTER TABLE posts ADD COLUMN "isAdminPost" BOOLEAN DEFAULT FALSE`);
+      log("[Migrations] Successfully created isAdminPost column");
+    } else {
+      // Only isAdminPost exists, which is what we want
+      log("[Migrations] Column isAdminPost already exists. No changes needed.");
+    }
+    
+    return true;
+  } catch (error) {
+    log("[Migrations] Error fixing posts table columns:", error);
+    return false;
+  }
 }

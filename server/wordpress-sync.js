@@ -343,7 +343,7 @@ export async function syncWordPressPosts() {
             const result = await pool.query(`
               INSERT INTO posts (
                 title, content, excerpt, slug, author_id, 
-                is_secret, is_admin_post, created_at, mature_content, reading_time_minutes, 
+                is_secret, "isAdminPost", created_at, mature_content, reading_time_minutes, 
                 theme_category, metadata
               ) VALUES (
                 $1, $2, $3, $4, $5, 
@@ -375,7 +375,7 @@ export async function syncWordPressPosts() {
                 reading_time_minutes = $4,
                 theme_category = $5,
                 metadata = $6,
-                is_admin_post = $7
+                "isAdminPost" = $7
               WHERE id = $8
             `, [
               title, 
@@ -532,7 +532,7 @@ export async function syncSingleWordPressPost(wpPostId) {
       result = await pool.query(`
         INSERT INTO posts (
           title, content, excerpt, slug, author_id, 
-          is_secret, is_admin_post, created_at, mature_content, reading_time_minutes, 
+          is_secret, "isAdminPost", created_at, mature_content, reading_time_minutes, 
           theme_category, metadata
         ) VALUES (
           $1, $2, $3, $4, $5, 
@@ -564,7 +564,7 @@ export async function syncSingleWordPressPost(wpPostId) {
           reading_time_minutes = $4,
           theme_category = $5,
           metadata = $6,
-          is_admin_post = $7
+          "isAdminPost" = $7
         WHERE id = $8
       `, [
         title, 
