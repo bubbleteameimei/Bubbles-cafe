@@ -106,8 +106,9 @@ export default function Navigation() {
                 transition-all duration-300 ease-in-out 
                 ${scrolled ? 'shadow-md' : ''}`}
       data-device-type={deviceType}
+      style={{width: "100vw", maxWidth: "100vw", marginLeft: "calc(-50vw + 50%)"}}
     >
-      <div className="w-full max-w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}
         <div className="flex items-center">
           {/* Mobile menu toggle */}
