@@ -38,10 +38,64 @@ export default class UIScene extends Phaser.Scene {
   }
   
   preload() {
-    // Load UI assets
+    // Load UI assets using our asset loader utility
+    this.loadUIAssets();
+  }
+  
+  loadUIAssets() {
+    // Load button backgrounds directly since we don't have loadUIElement function yet
     this.load.image('button-bg', '/games/edens-hollow/ui/button-bg.png');
     this.load.image('button-bg-hover', '/games/edens-hollow/ui/button-bg-hover.png');
     this.load.image('button-bg-disabled', '/games/edens-hollow/ui/button-bg-disabled.png');
+    
+    // Setup fallback textures in case image assets fail to load
+    this.load.on('loaderror', (fileObj: any) => {
+      const key = fileObj.key;
+      console.log(`Failed to load asset: ${key}`);
+      
+      // Create fallback textures for button backgrounds
+      if (key === 'button-bg' || key === 'button-bg-hover' || key === 'button-bg-disabled') {
+        this.createFallbackButtonTexture(key);
+      }
+    });
+  }
+  
+  // Create a programmatic fallback texture for buttons
+  createFallbackButtonTexture(key: string) {
+    // Skip if the texture already exists
+    if (this.textures.exists(key)) return;
+    
+    // Create a graphics object for rendering
+    const graphics = this.add.graphics();
+    
+    // Different styles based on button state
+    if (key === 'button-bg') {
+      graphics.fillStyle(0x333344);
+      graphics.fillRoundedRect(0, 0, 300, 60, 10);
+      graphics.lineStyle(2, 0x444466);
+      graphics.strokeRoundedRect(0, 0, 300, 60, 10);
+    } else if (key === 'button-bg-hover') {
+      graphics.fillStyle(0x444466);
+      graphics.fillRoundedRect(0, 0, 300, 60, 10);
+      graphics.lineStyle(2, 0x5555aa);
+      graphics.strokeRoundedRect(0, 0, 300, 60, 10);
+    } else {
+      // Disabled button
+      graphics.fillStyle(0x222222);
+      graphics.fillRoundedRect(0, 0, 300, 60, 10);
+      graphics.lineStyle(2, 0x333333);
+      graphics.strokeRoundedRect(0, 0, 300, 60, 10);
+    }
+    
+    // Generate texture from graphics
+    try {
+      graphics.generateTexture(key, 300, 60);
+    } catch (e) {
+      console.warn(`Could not generate texture for ${key}:`, e);
+    }
+    
+    // Remove the graphics from the scene once we're done
+    graphics.destroy();
   }
   
   create() {

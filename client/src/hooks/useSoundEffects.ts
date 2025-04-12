@@ -10,6 +10,7 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import { GameSettings } from '../types/game';
+import { SOUND_PATHS as gameAssetSoundPaths } from '../utils/gameAssetLoader';
 
 // Sound effect types
 type SoundType = 
@@ -23,22 +24,11 @@ type SoundType =
   | 'ambientLowSanity' 
   | 'jumpscare' 
   | 'revelation' 
-  | 'ending';
+  | 'ending'
+  | 'creaking-gate';
 
-// Mapping of sound types to file paths
-const SOUND_PATHS: Record<SoundType, string> = {
-  choice: '/games/edens-hollow/sounds/choice.mp3',
-  confirm: '/games/edens-hollow/sounds/confirm.mp3',
-  cancel: '/games/edens-hollow/sounds/cancel.mp3',
-  sanityDrop: '/games/edens-hollow/sounds/sanity-drop.mp3',
-  sanityGain: '/games/edens-hollow/sounds/sanity-gain.mp3',
-  itemGet: '/games/edens-hollow/sounds/item-get.mp3',
-  ambientNormal: '/games/edens-hollow/sounds/ambient-normal.mp3',
-  ambientLowSanity: '/games/edens-hollow/sounds/ambient-low-sanity.mp3',
-  jumpscare: '/games/edens-hollow/sounds/jumpscare.mp3',
-  revelation: '/games/edens-hollow/sounds/revelation.mp3',
-  ending: '/games/edens-hollow/sounds/ending.mp3'
-};
+// Use sound paths from gameAssetLoader to keep everything consistent
+const SOUND_PATHS = gameAssetSoundPaths;
 
 // Sound playback options
 interface PlayOptions {
@@ -109,6 +99,13 @@ export default function useSoundEffects(settings: GameSettings) {
       audio.loop = true;
     }
     
+    // Handle missing audio files gracefully
+    audio.onerror = () => {
+      console.warn(`Audio file not found: ${path}`);
+      // Clean up the reference so we don't keep trying to use this audio element
+      delete audioElements.current[soundType];
+    };
+    
     // Store the audio element for later control
     audioElements.current[soundType] = audio;
     
@@ -119,18 +116,26 @@ export default function useSoundEffects(settings: GameSettings) {
       if (playPromise !== undefined) {
         playPromise.catch(error => {
           console.error(`Error playing sound ${soundType}:`, error);
+          // Clean up the reference if playback fails
+          delete audioElements.current[soundType];
         });
       }
       
       return {
         stop: () => {
-          audio.pause();
-          audio.currentTime = 0;
+          try {
+            audio.pause();
+            audio.currentTime = 0;
+          } catch (e) {
+            console.warn('Could not stop audio properly:', e);
+          }
           delete audioElements.current[soundType];
         }
       };
     } catch (error) {
       console.error(`Error playing sound ${soundType}:`, error);
+      // Clean up references on error
+      delete audioElements.current[soundType];
       return undefined;
     }
   }, [settings.soundEnabled, settings.musicVolume, settings.sfxVolume]);

@@ -1,180 +1,189 @@
 /**
- * Game Asset Loader
+ * Game Asset Loader Utility
  * 
- * This utility handles loading and caching game assets for efficient use
- * throughout the Eden's Hollow game.
+ * This utility helps load game assets with proper error handling and fallbacks
  */
 
-// Background image mapping
-const BACKGROUND_PATHS: Record<string, string> = {
-  'manor-exterior': '/games/edens-hollow/backgrounds/manor-exterior.jpg',
-  'manor-exterior-dusk': '/games/edens-hollow/backgrounds/manor-exterior-dusk.jpg',
-  'manor-entrance': '/games/edens-hollow/backgrounds/manor-entrance.jpg',
-  'manor-foyer': '/games/edens-hollow/backgrounds/manor-foyer.jpg',
-  'manor-garden': '/games/edens-hollow/backgrounds/manor-garden.jpg',
-  'manor-cellar': '/games/edens-hollow/backgrounds/manor-cellar.jpg',
-  'manor-staircase': '/games/edens-hollow/backgrounds/manor-staircase.jpg',
-  'manor-hallway': '/games/edens-hollow/backgrounds/manor-hallway.jpg',
-  'manor-sitting-room': '/games/edens-hollow/backgrounds/manor-sitting-room.jpg',
-  'manor-bedroom': '/games/edens-hollow/backgrounds/manor-bedroom.jpg',
-  'manor-study': '/games/edens-hollow/backgrounds/manor-study.jpg',
-  'manor-basement': '/games/edens-hollow/backgrounds/manor-basement.jpg',
-  'manor-attic': '/games/edens-hollow/backgrounds/manor-attic.jpg',
-  'town-dusk': '/games/edens-hollow/backgrounds/town-dusk.jpg',
-  'flashback': '/games/edens-hollow/backgrounds/flashback.jpg'
-};
+import Phaser from 'phaser';
 
-// Effect image mapping
-const EFFECT_PATHS: Record<string, string> = {
-  'fog': '/games/edens-hollow/effects/fog.png',
-  'rain': '/games/edens-hollow/effects/rain.png',
-  'blood': '/games/edens-hollow/effects/blood.png',
-  'flicker': '/games/edens-hollow/effects/flicker.png',
-  'shadow': '/games/edens-hollow/effects/shadow.png',
-  'scratches': '/games/edens-hollow/effects/scratches.png',
-  'glitch': '/games/edens-hollow/effects/glitch.png'
-};
+// Base paths
+export const ASSET_BASE_PATH = '/games/edens-hollow';
+export const BACKGROUNDS_PATH = `${ASSET_BASE_PATH}/backgrounds`;
+export const EFFECTS_PATH = `${ASSET_BASE_PATH}/effects`;
+export const ITEMS_PATH = `${ASSET_BASE_PATH}/items`;
+export const SOUNDS_PATH = `${ASSET_BASE_PATH}/sounds`;
+export const UI_PATH = `${ASSET_BASE_PATH}/ui`;
 
-// Item image mapping
-const ITEM_PATHS: Record<string, string> = {
-  'key': '/games/edens-hollow/items/key.png',
-  'lantern': '/games/edens-hollow/items/lantern.png',
-  'book': '/games/edens-hollow/items/book.png',
-  'amulet': '/games/edens-hollow/items/amulet.png',
-  'photo': '/games/edens-hollow/items/photo.png',
-  'knife': '/games/edens-hollow/items/knife.png',
-  'letter': '/games/edens-hollow/items/letter.png',
-  'candle': '/games/edens-hollow/items/candle.png',
-  'talisman': '/games/edens-hollow/items/talisman.png'
+// Sound paths mapping
+export const SOUND_PATHS: Record<string, string> = {
+  'choice': `${SOUNDS_PATH}/choice.mp3`,
+  'confirm': `${SOUNDS_PATH}/confirm.mp3`,
+  'cancel': `${SOUNDS_PATH}/cancel.mp3`,
+  'sanityDrop': `${SOUNDS_PATH}/sanity-drop.mp3`,
+  'sanityGain': `${SOUNDS_PATH}/sanity-gain.mp3`,
+  'itemGet': `${SOUNDS_PATH}/item-get.mp3`,
+  'ambientNormal': `${SOUNDS_PATH}/ambient-normal.mp3`,
+  'ambientLowSanity': `${SOUNDS_PATH}/ambient-low-sanity.mp3`,
+  'jumpscare': `${SOUNDS_PATH}/jumpscare.mp3`,
+  'revelation': `${SOUNDS_PATH}/revelation.mp3`,
+  'ending': `${SOUNDS_PATH}/ending.mp3`,
+  'creaking-gate': `${SOUNDS_PATH}/choice.mp3`, // Fallback to the choice sound for now
 };
 
 /**
- * Load a background image for a scene
+ * Load a background image for the scene
  */
-export function loadBackground(scene: Phaser.Scene, backgroundKey: string): void {
-  // Skip if already loaded
-  if (scene.textures.exists(`background-${backgroundKey}`)) {
-    return;
+export function loadBackground(scene: Phaser.Scene, key: string) {
+  const imagePath = `${BACKGROUNDS_PATH}/${key}.jpg`;
+  const textureKey = `background-${key}`;
+  
+  // Check if already loaded
+  if (scene.textures.exists(textureKey)) {
+    return true;
   }
   
-  const path = BACKGROUND_PATHS[backgroundKey];
-  if (!path) {
-    console.error(`Background not found: ${backgroundKey}`);
-    return;
+  try {
+    // Load image
+    scene.load.image(textureKey, imagePath);
+    
+    // Start the load
+    scene.load.once('complete', () => {
+      console.log(`Background loaded: ${key}`);
+      // Dispatch an event that the texture is ready
+      scene.textures.emit(`addtexture_${textureKey}`);
+    });
+    
+    scene.load.once('loaderror', (fileObj: any) => {
+      console.error(`Failed to load background: ${key}`);
+      createFallbackBackground(scene, key);
+    });
+    
+    scene.load.start();
+    return true;
+  } catch (error) {
+    console.error(`Error loading background ${key}:`, error);
+    createFallbackBackground(scene, key);
+    return false;
+  }
+}
+
+/**
+ * Create a fallback background if the image can't be loaded
+ */
+function createFallbackBackground(scene: Phaser.Scene, key: string) {
+  const textureKey = `background-${key}`;
+  if (scene.textures.exists(textureKey)) return;
+
+  const width = scene.cameras.main.width;
+  const height = scene.cameras.main.height;
+  
+  // Create a graphics object to draw the background
+  const graphics = scene.add.graphics();
+  
+  // Create a gradient background based on the key
+  let colors = [0x000000, 0x111122];
+  
+  if (key.includes('manor')) {
+    // Manor areas get dark blue gradient
+    colors = [0x000011, 0x112233];
+  } else if (key.includes('garden')) {
+    // Garden areas get dark green gradient
+    colors = [0x001100, 0x112211];
+  } else if (key.includes('foyer')) {
+    // Interior areas get warm dark gradient
+    colors = [0x110000, 0x221111];
+  } else if (key.includes('dusk')) {
+    // Dusk scenes get purple gradient
+    colors = [0x110022, 0x221133];
   }
   
-  // Load the background image
-  scene.load.image(`background-${backgroundKey}`, path);
+  // Fill with gradient
+  graphics.fillGradientStyle(colors[0], colors[0], colors[1], colors[1], 1);
+  graphics.fillRect(0, 0, width, height);
   
-  // Start loading
-  scene.load.start();
-}
-
-/**
- * Load a visual effect for a scene
- */
-export function loadEffect(scene: Phaser.Scene, effectKey: string): void {
-  // Skip if already loaded
-  if (scene.textures.exists(`effect-${effectKey}`)) {
-    return;
+  // Add some visual noise/texture
+  for (let i = 0; i < 100; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = Math.random() * 2 + 1;
+    const alpha = Math.random() * 0.2;
+    
+    graphics.fillStyle(0xffffff, alpha);
+    graphics.fillCircle(x, y, size);
   }
   
-  const path = EFFECT_PATHS[effectKey];
-  if (!path) {
-    console.error(`Effect not found: ${effectKey}`);
-    return;
+  // Generate the texture
+  try {
+    graphics.generateTexture(textureKey, width, height);
+    console.log(`Created fallback texture for: ${textureKey}`);
+    
+    // Dispatch an event that the texture is ready
+    scene.textures.emit(`addtexture_${textureKey}`);
+  } catch (e) {
+    console.warn(`Could not generate fallback texture: ${e}`);
   }
   
-  // Load the effect image
-  scene.load.image(`effect-${effectKey}`, path);
-  
-  // Start loading
-  scene.load.start();
+  // Clean up the graphics object
+  graphics.destroy();
 }
 
 /**
- * Load an item image for a scene
+ * Load a UI element
  */
-export function loadItem(scene: Phaser.Scene, itemKey: string): void {
-  // Skip if already loaded
-  if (scene.textures.exists(`item-${itemKey}`)) {
-    return;
+export function loadUIElement(scene: Phaser.Scene, key: string) {
+  const imagePath = `${UI_PATH}/${key}.png`;
+  
+  // Check if already loaded
+  if (scene.textures.exists(key)) {
+    return true;
   }
   
-  const path = ITEM_PATHS[itemKey];
-  if (!path) {
-    console.error(`Item not found: ${itemKey}`);
-    return;
+  try {
+    // Load image
+    scene.load.image(key, imagePath);
+    
+    // Start the load
+    scene.load.once('complete', () => {
+      console.log(`UI element loaded: ${key}`);
+    });
+    
+    scene.load.start();
+    return true;
+  } catch (error) {
+    console.error(`Error loading UI element ${key}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Load a sound effect
+ */
+export function loadSound(scene: Phaser.Scene, key: string) {
+  const soundPath = SOUND_PATHS[key];
+  
+  if (!soundPath) {
+    console.error(`Sound not defined: ${key}`);
+    return false;
   }
   
-  // Load the item image
-  scene.load.image(`item-${itemKey}`, path);
+  // Check if already loaded
+  if (scene.cache.audio.exists(key)) {
+    return true;
+  }
   
-  // Start loading
-  scene.load.start();
-}
-
-/**
- * Preload multiple backgrounds at once
- */
-export function preloadBackgrounds(scene: Phaser.Scene, backgroundKeys: string[]): void {
-  backgroundKeys.forEach(key => {
-    if (!scene.textures.exists(`background-${key}`)) {
-      const path = BACKGROUND_PATHS[key];
-      if (path) {
-        scene.load.image(`background-${key}`, path);
-      }
-    }
-  });
-  
-  // Start loading
-  scene.load.start();
-}
-
-/**
- * Preload multiple effects at once
- */
-export function preloadEffects(scene: Phaser.Scene, effectKeys: string[]): void {
-  effectKeys.forEach(key => {
-    if (!scene.textures.exists(`effect-${key}`)) {
-      const path = EFFECT_PATHS[key];
-      if (path) {
-        scene.load.image(`effect-${key}`, path);
-      }
-    }
-  });
-  
-  // Start loading
-  scene.load.start();
-}
-
-/**
- * Preload multiple items at once
- */
-export function preloadItems(scene: Phaser.Scene, itemKeys: string[]): void {
-  itemKeys.forEach(key => {
-    if (!scene.textures.exists(`item-${key}`)) {
-      const path = ITEM_PATHS[key];
-      if (path) {
-        scene.load.image(`item-${key}`, path);
-      }
-    }
-  });
-  
-  // Start loading
-  scene.load.start();
-}
-
-/**
- * Check if an asset is already loaded in the scene
- */
-export function isAssetLoaded(scene: Phaser.Scene, assetKey: string): boolean {
-  return scene.textures.exists(assetKey);
-}
-
-/**
- * Get the full key for an asset type
- */
-export function getAssetKey(type: 'background' | 'effect' | 'item', key: string): string {
-  return `${type}-${key}`;
+  try {
+    // Load sound
+    scene.load.audio(key, soundPath);
+    
+    // Start the load
+    scene.load.once('complete', () => {
+      console.log(`Sound loaded: ${key}`);
+    });
+    
+    scene.load.start();
+    return true;
+  } catch (error) {
+    console.error(`Error loading sound ${key}:`, error);
+    return false;
+  }
 }

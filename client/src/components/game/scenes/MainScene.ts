@@ -9,7 +9,7 @@
  */
 
 import { GameState, Passage } from '../../../types/game';
-import { loadBackground, loadEffect } from '../../../utils/gameAssetLoader';
+import { loadBackground } from '../../../utils/gameAssetLoader';
 
 interface MainSceneProps {
   gameState: GameState;
@@ -245,19 +245,47 @@ export default class MainScene extends Phaser.Scene {
       backgroundKey = 'manor-entrance';
     } else if (passageId.includes('retreat')) {
       backgroundKey = 'manor-exterior-dusk';
+    } else if (passageId.includes('early-departure')) {
+      backgroundKey = 'manor-exterior-dusk';
     } else if (passageId.includes('ending')) {
       backgroundKey = 'town-dusk';
     }
     
-    // Load and set background
-    loadBackground(this, backgroundKey);
+    // Create a fallback rectangle as background if the background doesn't exist yet
+    // This allows the game to function properly even if image assets are missing
+    if (!this.background) {
+      const width = this.cameras.main.width;
+      const height = this.cameras.main.height;
+      
+      // Create a gradient-like background as fallback
+      const gradient = this.add.graphics();
+      gradient.fillGradientStyle(0x000000, 0x000000, 0x1a1a2e, 0x121212, 1);
+      gradient.fillRect(0, 0, width, height);
+      
+      this.background = this.add.image(width / 2, height / 2, 'background-manor-exterior');
+      this.background.setDisplaySize(width, height);
+    }
     
-    // Update the background image when loaded
-    this.textures.once(`addtexture_background-${backgroundKey}`, () => {
-      if (this.background) {
-        this.background.setTexture(`background-${backgroundKey}`);
-      }
-    });
+    // Check if we have a current passage background specified
+    if (this.currentPassage && this.currentPassage.background) {
+      // Override with the specific background from the passage data
+      backgroundKey = this.currentPassage.background;
+    }
+    
+    // Try to load the background image
+    try {
+      loadBackground(this, backgroundKey);
+      
+      // Update the background image when loaded
+      this.textures.once(`addtexture_background-${backgroundKey}`, () => {
+        if (this.background) {
+          this.background.setTexture(`background-${backgroundKey}`);
+          this.background.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+        }
+      });
+    } catch (error) {
+      console.log(`Background image for ${backgroundKey} could not be loaded. Using fallback.`);
+    }
   }
   
   updateSanityEffects() {
