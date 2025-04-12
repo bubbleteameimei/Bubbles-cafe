@@ -155,7 +155,7 @@ export default function ProfileImage() {
       <div className="relative" style={{ width: '200px', height: '200px' }}>
         {/* Reduced subtle glow effect behind the image */}
         <div className="absolute inset-0 rounded-full bg-[#8B0000]/20 dark:bg-[#8B0000]/30 blur-xl transform scale-[1.2]" 
-             style={{ animation: 'none' }}></div>
+             style={{ animation: 'pulse-slow 4s ease-in-out infinite' }}></div>
                 
         {/* Container for the image carousel */}
         <div className="h-48 w-48 relative border-2 border-[#8B0000]/30 dark:border-[#8B0000]/40 shadow-lg 
@@ -222,10 +222,10 @@ export default function ProfileImage() {
                     transform: "translate(-50%, -15%)", /* Adjusted for top focus */
                     objectFit: "cover", /* Ensure the image covers the area */
                     objectPosition: "center 10%", /* Focus point high */
-                    transition: "opacity 0.8s ease-in-out", /* Only transition opacity, not position or scale */
+                    transition: "all 0.8s ease-in-out", /* Smoother animation transition */
                     opacity: imageLoaded ? 1 : 0,
                   }}
-                  className="transition-opacity duration-1000"
+                  className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}
                   onLoad={() => {
                     console.log("[Profile] Image loaded successfully");

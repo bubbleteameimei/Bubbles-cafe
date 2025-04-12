@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
 import { useEffect, useState } from "react";
@@ -117,7 +118,6 @@ export default function Home() {
                 height: '100vh',
                 objectFit: 'cover',
                 objectPosition: 'center center',
-                animation: 'none',
                 opacity: imageLoaded ? 0 : 1 /* Hide when main image loads */
               }}
             />
@@ -135,8 +135,8 @@ export default function Home() {
                 height: '100vh', /* Full screen height */
                 objectFit: 'cover',
                 objectPosition: 'center center', /* Center the image */
-                animation: 'none',
-                willChange: 'auto'
+                animation: 'subtleZoom 30s infinite alternate ease-in-out',
+                willChange: 'transform'
               }}
               onLoad={() => {
                 console.log("[Homepage] Background image loaded successfully");
@@ -213,7 +213,7 @@ export default function Home() {
                   <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
-                    className="group cursor-pointer transition-colors duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
+                    className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
                   >
                     <h2 
                       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-5 text-white group-hover:text-primary transition-colors px-2"
@@ -221,14 +221,18 @@ export default function Home() {
                     />
                     <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 w-full mb-3 sm:mb-4 md:mb-5 line-clamp-2 px-2 md:px-4 leading-relaxed md:leading-relaxed">
                       {posts[0]?.content?.rendered && (
-                        <span>
+                        <motion.span
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                        >
                           {getExcerpt(posts[0].content.rendered)}
-                        </span>
+                        </motion.span>
                       )}
                     </div>
-                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 transition-colors duration-300 font-medium">
+                    <div className="flex items-center justify-center text-sm sm:text-base md:text-lg lg:text-xl text-primary gap-1 group-hover:gap-2 transition-all duration-300 font-medium">
                       Read full story 
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 transition-opacity" />
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 group-hover:translate-x-1 transition-transform" />
                     </div>
                     <div className="text-sm sm:text-base md:text-lg font-medium text-white/70 mt-3 md:mt-4">
                       {posts[0]?.date ? formatDate(posts[0].date) : ''}
