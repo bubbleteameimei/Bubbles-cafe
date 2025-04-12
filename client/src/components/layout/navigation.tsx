@@ -107,7 +107,7 @@ export default function Navigation() {
                 ${scrolled ? 'shadow-md' : ''}`}
       data-device-type={deviceType}
     >
-      <div className="container flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}
         <div className="flex items-center">
           {/* Mobile menu toggle */}
