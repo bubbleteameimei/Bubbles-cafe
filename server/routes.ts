@@ -1160,13 +1160,10 @@ export function registerRoutes(app: Express): Server {
         dislikesCount: dbCounts.dislikesCount
       };
 
-      // Add session likes to counts
-      if (!req.user?.id && req.session.likes) {
-        const sessionLike = req.session.likes[postId.toString()];
-        if (sessionLike === true) counts.likesCount++;
-        if (sessionLike === false) counts.dislikesCount++;
-      }
-
+      // For consistency, we no longer add session likes to the count
+      // This ensures index and reader pages show identical counts
+      // The like/dislike data is still tracked in the session for UI state
+      
       console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
       res.json({
         ...counts,
@@ -1218,13 +1215,10 @@ export function registerRoutes(app: Express): Server {
         dislikesCount: dbCounts.dislikesCount
       };
 
-      // Add session likes to counts for anonymous users
-      if (!req.user?.id && req.session.likes) {
-        const sessionLike = req.session.likes[postId.toString()];
-        if (sessionLike === true) counts.likesCount++;
-        if (sessionLike === false) counts.dislikesCount++;
-      }
-
+      // For consistency, we no longer add session likes to the count
+      // This ensures index and reader pages show identical counts
+      // The like/dislike data is still tracked in the session for UI state
+      
       console.log(`[Reaction] Current counts for post ${postId}:`, counts);
       res.json(counts);
     } catch (error) {
