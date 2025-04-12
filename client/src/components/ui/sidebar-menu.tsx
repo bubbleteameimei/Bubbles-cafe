@@ -253,12 +253,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuButton
                 isActive={location === '/game-test'}
                 onClick={() => handleNavigation('/game-test')}
-                tooltip="Eden - Experimental Game"
+                tooltip="Eden's Hollow - Experimental Horror Game"
                 className={menuItemClass}
               >
                 {renderActiveIndicator('/game-test')}
                 <GamepadIcon className="h-4 w-4" />
-                <span>Eden - Experimental Game</span>
+                <span>Eden's Hollow - Experimental</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

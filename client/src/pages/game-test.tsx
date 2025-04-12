@@ -1,151 +1,121 @@
 /**
- * Test page for Eden's Hollow game
- * This is a simple test page to ensure the game component loads correctly
+ * Eden's Hollow Game Page
+ * 
+ * This page displays the Eden's Hollow interactive horror game experience.
+ * The game is implemented using React components that provide a narrative-based
+ * horror experience with branching storylines.
  */
 
 import React from 'react';
-import GameContainer from '../components/GameContainer';
+import EdenHollowGame from '../components/EdenHollowGame';
 import { Link } from 'wouter';
+import { ArrowLeft, Share2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function GameTestPage() {
   return (
-    <div className="game-test-page">
-      <header className="test-header">
-        <h1>Eden's Hollow Game Test Page</h1>
-        <p>This page tests the integration of the Phaser game in our React application</p>
-        <nav>
-          <Link href="/">
-            <a className="home-link">Back to Home</a>
-          </Link>
-        </nav>
+    <div className="game-page">
+      <header className="game-header">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center">
+            <Link href="/">
+              <Button variant="outline" size="sm" className="mr-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Eden's Hollow</h1>
+          </div>
+          
+          <Button variant="ghost" size="sm">
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        </div>
+        <p className="mt-2 text-muted-foreground">A dark interactive horror experience - choose your path wisely</p>
       </header>
 
-      <main className="game-test-container">
+      <main className="game-container">
         <div className="game-wrapper">
-          <h2>Game Container</h2>
-          <GameContainer 
-            width="800px"
-            height="600px"
-            autoStart={true}
-          />
+          <EdenHollowGame className="w-full h-full" />
         </div>
         
-        <div className="test-controls">
-          <h3>Test Controls</h3>
-          <ul>
-            <li>
-              <strong>Arrow Keys:</strong> Move character
-            </li>
-            <li>
-              <strong>Space:</strong> Interact with objects
-            </li>
-            <li>
-              <strong>Z/X:</strong> Zoom in/out
-            </li>
-          </ul>
-          
-          <div className="test-notes">
-            <h3>Development Notes</h3>
-            <p>
-              The game is loading assets from <code>/public/assets/</code> including:
-            </p>
-            <ul>
-              <li>Tileset (environment/tileset.svg)</li>
-              <li>Map data (environment/map.json)</li>
-              <li>Player sprite (characters/player.svg)</li>
-              <li>Item sprites (items/*.svg)</li>
+        <div className="game-info">
+          <div className="game-controls">
+            <h3 className="text-xl font-semibold mb-2">Game Features</h3>
+            <ul className="space-y-1">
+              <li className="flex items-center">
+                <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-sm mr-2 font-mono">Choices</span>
+                <span>Your decisions impact the story and your character's sanity</span>
+              </li>
+              <li className="flex items-center">
+                <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-sm mr-2 font-mono">Sanity</span>
+                <span>Maintain your sanity or experience a different reality</span>
+              </li>
+              <li className="flex items-center">
+                <span className="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-sm mr-2 font-mono">Save</span>
+                <span>Save your progress and revisit later</span>
+              </li>
             </ul>
+          </div>
+          
+          <div className="game-description mt-6">
+            <h3 className="text-xl font-semibold mb-2">About Eden's Hollow</h3>
+            <p className="text-muted-foreground">
+              Eden's Hollow is a psychological horror experience with multiple branching storylines.
+              Your choices influence the narrative and can lead to different endings. 
+              Explore the dark corners of the town while maintaining your sanity.
+            </p>
+            <p className="text-muted-foreground mt-2">
+              <strong>Warning:</strong> This game contains themes of psychological horror and may not be suitable for all audiences.
+            </p>
           </div>
         </div>
       </main>
 
       <style>{`
-        .game-test-page {
+        .game-page {
           padding: 2rem;
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
-          font-family: system-ui, -apple-system, sans-serif;
         }
 
-        .test-header {
+        .game-header {
           margin-bottom: 2rem;
           padding-bottom: 1rem;
-          border-bottom: 1px solid #eaeaea;
+          border-bottom: 1px solid hsl(var(--border));
         }
 
-        .test-header h1 {
-          margin-top: 0;
-          color: #333;
-        }
-
-        .home-link {
-          display: inline-block;
-          padding: 0.5rem 1rem;
-          background-color: #333;
-          color: white;
-          text-decoration: none;
-          border-radius: 4px;
-          margin-top: 1rem;
-        }
-
-        .home-link:hover {
-          background-color: #555;
-        }
-
-        .game-test-container {
+        .game-container {
           display: grid;
           grid-template-columns: 1fr;
           gap: 2rem;
         }
 
         @media (min-width: 1024px) {
-          .game-test-container {
-            grid-template-columns: 2fr 1fr;
+          .game-container {
+            grid-template-columns: 3fr 1fr;
           }
         }
 
         .game-wrapper {
-          background-color: #f5f5f5;
+          background-color: hsl(var(--secondary));
           padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          border-radius: var(--radius);
+          border: 1px solid hsl(var(--border));
+          min-height: 600px;
+          overflow: hidden;
         }
 
-        .game-wrapper h2 {
-          margin-top: 0;
-          margin-bottom: 1rem;
-          color: #333;
+        .game-info {
+          padding: 1.5rem;
+          border-radius: var(--radius);
+          border: 1px solid hsl(var(--border));
+          background-color: hsl(var(--card));
         }
 
-        .test-controls {
-          background-color: #f5f5f5;
-          padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .test-controls h3 {
-          margin-top: 0;
-          color: #333;
-        }
-
-        .test-controls ul {
-          padding-left: 1.5rem;
-          line-height: 1.6;
-        }
-
-        .test-notes {
-          margin-top: 2rem;
-          padding-top: 1rem;
-          border-top: 1px solid #ddd;
-        }
-
-        code {
-          background-color: #eee;
-          padding: 0.2rem 0.4rem;
-          border-radius: 3px;
-          font-family: monospace;
-          font-size: 0.9rem;
+        .game-controls {
+          margin-bottom: 1.5rem;
         }
       `}</style>
     </div>

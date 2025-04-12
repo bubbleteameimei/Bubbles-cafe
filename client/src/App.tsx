@@ -345,13 +345,14 @@ function App() {
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
-    // Check if current page is index, reader, community page, or community-story
+    // Check if current page is index, reader, community page, community-story, or game-test
     const shouldHideButton = 
       currentPath === "/" || 
       currentPath === "/index" || 
       currentPath.startsWith("/reader") || 
       currentPath.startsWith("/community-story") || 
-      currentPath === "/community";
+      currentPath === "/community" ||
+      currentPath === "/game-test";
       
     return !shouldHideButton ? <FeedbackButton /> : null;
   };
