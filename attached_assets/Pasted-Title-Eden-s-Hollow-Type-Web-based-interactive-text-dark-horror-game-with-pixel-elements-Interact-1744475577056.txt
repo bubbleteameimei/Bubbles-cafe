@@ -1,0 +1,173 @@
+Title: Eden’s Hollow
+Type: Web-based interactive text dark horror game with pixel elements. Interactive Text game - designing text-based game with branching narratives, choice systems, and state management
+Genre: Dark fantasy, psychological horror
+
+2. Game Concept
+
+	Eden’s Hollow is a branching narrative game featuring five standalone horror storylines. Each story unfolds through immersive prose and choice-based gameplay, with sanity and corruption mechanics affecting decisions and outcomes.
+
+3. Core Mechanics
+	•	Choice-Based Gameplay: Players read text and make choices that affect the narrative.
+	•	Sanity Meter: Visible sanity/corruption gauge that influences available choices and paths.
+	•	Branching Paths: Every choice can lead to new scenes, consequences, or endings.
+	•	Amazing Visuals: Focus is on also atmosphere, text, and sound.
+	•	Retry Mechanic: Occasionally prompts like “Are you truly sure you want to go down this path?” give players one last moment to reconsider.
+	•	Permadeath: Rare, but possible in specific bad-ending paths.
+
+4. Narrative Structure
+	•5 standalone Storylines:
+	
+Each story is self-contained, with its own:
+	•	Protagonist
+	•	Sanity events
+	•	Endings
+	•	Tone and themes
+
+5. Interface & UX
+	•	Start Screen: Choose a storyline
+	•	Game Screen: Story text + choices
+	•	Sanity Meter: Always visible
+	•	Dark Fantasy Theme: Vampyr, Dark souls 3, Valheim inspired.
+	•	Responsive Design: Mobile & desktop friendly
+	
+
+7. Example Explanation to Copy-Paste in Replit
+
+# Eden’s Hollow: Interactive Horror Game
+
+An immersive, web-based dark fantasy text game with branching narratives and sanity mechanics. 
+
+Each of the five stories is standalone, featuring unique horror plots, character arcs, and decision consequences.
+
+We use a sanity meter to dynamically lock/unlock choices and alter the flow of the story.
+
+This is meant to have amazing visuals and very terrifying novel. Just deeply immersive horror.
+
+1. Overall Game Concept
+Eden's Hollow is a branching narrative dark fantasy horror game with five standalone storylines, each designed to feel unsettling and psychologically terrifying. The game will feature:
+* Choice-based gameplay with branching narratives
+* A visible sanity meter affecting available choices and paths
+* Deeply atmospheric, unsettling prose
+* Typewriter-style text effect
+* Background sound and ambient effects
+* Integration with the existing sidebar menu
+2. Technical Architecture
+Frontend Integration
+1. Web-Based Implementation
+    * Use a hybrid approach that integrates Löve2D (for game mechanics) within the web application
+    * Embed the Löve2D game canvas in a React component for the web interface
+2. Routing & Navigation
+    * Update the existing /eden-game route in App.tsx to point to our new game component
+    * Keep the existing sidebar menu entry "Eden - Experimental Game"
+Game Engine Implementation
+1. Löve2D Core Game Engine
+    * Create a modular Löve2D structure with:
+        * main.lua - Entry point
+        * game_state.lua - Game state management
+        * ui.lua - UI components (sanity meter, choices)
+        * typewriter.lua - Text rendering with typewriter effect
+        * audio.lua - Sound effects and ambient audio system
+2. Story Structure
+    * Define a data structure for the narrative content
+    * Implement storyline parser and scene manager
+    * Create state management for tracking player choices and sanity
+3. Core Game Features
+Narrative Structure
+1. Five Standalone Storylines
+    * Each with its own protagonist, sanity events, endings, tone and themes
+    * Built according to the 5-part progression model from the reference text:
+        * Introduction: The Normal Cracks
+        * Descent: Fractures in Reality
+        * Fragmentation: The Mind Breaks Open
+        * Confrontation: The Truth or the Lie
+        * Endings: Multiplicity of Madness
+2. Branching Narrative System
+    * Choice-based progression
+    * Diverging story paths based on decisions
+    * Conditional branching based on sanity levels
+    * Multiple endings per storyline
+Gameplay Mechanics
+1. Sanity Meter
+    * Visual representation (0-100 scale)
+    * Dynamic changes based on player choices
+    * Affects available options (choices locked/unlocked based on sanity)
+    * Visual effects that intensify as sanity decreases
+2. Choice System
+    * Standard choices affecting narrative progression
+    * "Are you truly sure?" moments for critical decisions
+    * Rare permadeath paths in specific bad endings
+3. Typewriter Text Effect
+    * Characters appear sequentially with timing control
+    * Skippable with "Skip" button
+    * Sound effects synchronized with text appearance
+UI/UX Design
+1. Game Interface
+    * Dark, Gothic-inspired design (Vampyr, Dark Souls 3, Valheim influences)
+    * Start screen with storyline selection
+    * Game screen with narrative text and choice buttons
+    * Always-visible sanity meter
+    * Responsive design for mobile and desktop
+2. Visual Effects
+    * Text distortion effects for low sanity
+    * Subtle animations for environmental elements
+    * Visual feedback for sanity changes
+Audio Design
+1. Sound System
+    * Ambient background sounds (wind, whispers, echoes)
+    * Event-triggered sound effects
+    * Typewriter clicking sounds
+    * Dynamic audio that responds to sanity level
+4. Implementation Approach
+Phase 1: Foundation Setup
+1. Create core Löve2D files
+2. Set up game state management
+3. Implement basic UI components
+4. Create React wrapper for Löve2D integration
+Phase 2: Narrative Engine
+1. Implement the story data structure
+2. Build the typewriter text effect system
+3. Create the choice rendering system
+4. Implement sanity mechanics
+Phase 3: Content Creation
+1. Complete the first storyline "Whispers in the Walls"
+2. Add ambient sounds and effects
+3. Implement visual feedback effects
+4. Build start screen and story selection
+Phase 4: Integration & Testing
+1. Connect to existing sidebar navigation
+2. Test across different devices
+3. Optimize performance
+4. Add finishing touches and polish
+5. Technical Requirements
+Löve2D Implementation
+* Core game logic in Lua
+* Asset management for sounds and visuals
+* State management for game progression
+Web Integration
+* HTML5 Canvas for Löve2D rendering
+* React component wrapper
+* Responsive design considerations
+6. Storyline Details
+I'll develop five distinct storylines as specified:
+1. Whispers in the Walls (Haunted house narrative)
+    * Theme: Inherited evil and ancestral corruption
+    * Sanity focus: Paranoia and distrust of one's senses
+2. The Looking Glass (Identity horror)
+    * Theme: Fractured self and doppelgangers
+    * Sanity focus: Deteriorating sense of self
+3. Beneath the Skin (Body horror)
+    * Theme: Transformation and physical corruption
+    * Sanity focus: Fear of one's own body
+4. Cold Embrace (Psychological isolation)
+    * Theme: Winter isolation and temporal distortion
+    * Sanity focus: Reality slippage and time perception
+5. The Watching Woods (Environmental horror)
+    * Theme: Nature's malevolence and ancient evil
+    * Sanity focus: Primal fears and natural corruption
+Each storyline will follow the 5-part narrative structure outlined in your text, with increasing psychological horror elements.
+7. Next Steps
+1. Set up the Löve2D environment and core files
+2. Create the first storyline's complete narrative flow
+3. Implement the sanity meter and typewriter effect
+4. Integrate with the existing web application
+5. Test gameplay flow and user experience

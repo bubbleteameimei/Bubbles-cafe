@@ -2,16 +2,17 @@
  * Eden's Hollow Game Container
  * 
  * Main container component for the Eden's Hollow game experience.
+ * Uses Phaser.js for enhanced visual storytelling.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useGameState } from "../../hooks/useGameState";
 import { useSoundEffects } from "../../hooks/useSoundEffects";
 import { Choice } from "../../types/game";
 import GameHeader from "./GameHeader";
-import GameContent from "./GameContent";
 import GameFooter from "./GameFooter";
 import GameSettingsModal from "./GameSettingsModal";
+import PhaserGame from "./PhaserGame";
 
 export default function GameContainer() {
   const { 
@@ -36,6 +37,7 @@ export default function GameContainer() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Start ambient sounds when component mounts
   useEffect(() => {
@@ -62,8 +64,14 @@ export default function GameContainer() {
     }
   }, [showLowSanityEffects, toggleLowSanitySounds, gameState.settings.soundEnabled]);
   
-  // Handle player making a choice
-  const handleChoice = (choice: Choice) => {
+  // Handle choice selection
+  const handleChoice = (choiceId: string) => {
+    if (!currentPassage || !canMakeChoice) return;
+    
+    // Find the selected choice
+    const choice = currentPassage.choices.find(c => c.id === choiceId);
+    if (!choice) return;
+    
     // Play choice sound
     if (gameState.settings.soundEnabled) {
       playSound('choice');
@@ -135,28 +143,52 @@ export default function GameContainer() {
     }
     setIsSettingsOpen(false);
   };
-  
+
   return (
-    <div className="bg-black min-h-screen flex flex-col text-white">
-      {/* Game overlay for visual effects */}
-      {showLowSanityEffects && (
-        <div className="fixed inset-0 bg-red-900/10 z-10 pointer-events-none"></div>
-      )}
-      
-      {/* Main Game Components */}
+    <div className="bg-black min-h-screen flex flex-col text-white" ref={containerRef}>
+      {/* Game Header */}
       <GameHeader />
       
-      <GameContent 
-        gameState={gameState}
-        currentStory={currentStory}
-        currentPassage={currentPassage}
-        showLowSanityEffects={showLowSanityEffects}
-        onChoice={handleChoice}
-        canMakeChoice={canMakeChoice}
-        onConfirm={handleConfirmation}
-        isConfirmationOpen={isConfirmationOpen}
-      />
+      {/* Main Game Content - Phaser Game */}
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+        {containerRef.current && (
+          <PhaserGame
+            gameState={gameState}
+            currentStory={currentStory}
+            currentPassage={currentPassage}
+            showLowSanityEffects={showLowSanityEffects}
+            onChoice={handleChoice}
+            containerWidth={containerRef.current.clientWidth}
+            containerHeight={containerRef.current.clientHeight - 120} // Account for header/footer
+          />
+        )}
+        
+        {/* Confirmation Modal */}
+        {isConfirmationOpen && pendingChoice && (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-gray-900 p-6 rounded-lg max-w-md text-center">
+              <h3 className="text-xl font-bold mb-4">Are you sure?</h3>
+              <p className="mb-6">This choice could have significant consequences. Are you certain you want to proceed?</p>
+              <div className="flex justify-center space-x-4">
+                <button 
+                  className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+                  onClick={() => handleConfirmation(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-4 py-2 bg-red-700 rounded hover:bg-red-600"
+                  onClick={() => handleConfirmation(true)}
+                >
+                  Yes, I'm Sure
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       
+      {/* Game Footer */}
       <GameFooter 
         storyPhase={currentPassage?.phase}
         storyTitle={currentStory?.title}
