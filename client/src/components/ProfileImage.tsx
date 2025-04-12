@@ -14,13 +14,15 @@ export default function ProfileImage() {
     console.log("ProfileImage component mounted");
   }, []);
   
-  // Define single image with optimized loading strategy
+  // Define optimized images with progressive loading strategy
   const images = [
     { 
-      src: '/images/IMG_5266.png', 
+      src: '/images/optimized/profile-optimized.jpg', 
       alt: 'Profile Image 1',
-      // Add smaller size version for initial load
-      srcset: '/images/IMG_5266.png 700w'
+      // Smaller blur version for faster loading
+      blurSrc: '/images/optimized/profile-blur.jpg',
+      // Proper srcset for responsive loading
+      srcset: '/images/optimized/profile-optimized.jpg 600w, /images/IMG_5266.png 900w'
     }
   ];
   
@@ -183,6 +185,27 @@ export default function ProfileImage() {
                 className="min-w-full h-full rounded-full overflow-hidden flex-shrink-0 scroll-snap-align-start"
                 style={{ position: "relative" }}
               >
+                {/* Blur image that loads first */}
+                {!imageLoaded && (
+                  <img 
+                    src={image.blurSrc}
+                    alt=""
+                    style={{
+                      position: "absolute",
+                      height: "145%",
+                      width: "auto",
+                      left: "45%",
+                      top: "20%",
+                      transform: "translate(-50%, -15%)",
+                      objectFit: "cover",
+                      objectPosition: "center 10%",
+                      transition: "opacity 0.5s ease-in-out",
+                    }}
+                    className="transition-opacity"
+                  />
+                )}
+                
+                {/* Main high quality image */}
                 <img 
                   src={image.src}
                   srcSet={image.srcset}
@@ -200,10 +223,14 @@ export default function ProfileImage() {
                     objectFit: "cover", /* Ensure the image covers the area */
                     objectPosition: "center 10%", /* Focus point high */
                     transition: "all 0.8s ease-in-out", /* Smoother animation transition */
+                    opacity: imageLoaded ? 1 : 0,
                   }}
                   className="transition-all duration-1000 will-change-transform"
                   onError={handleImageError}
-                  onLoad={handleImageLoad}
+                  onLoad={() => {
+                    console.log("[Profile] Image loaded successfully");
+                    handleImageLoad();
+                  }}
                 />
                 {/* Overlay removed per user request */}
               </div>

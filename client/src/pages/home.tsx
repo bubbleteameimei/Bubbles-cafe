@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { format } from 'date-fns';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Book, ArrowRight, ChevronRight } from "lucide-react";
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
@@ -13,34 +13,57 @@ import ApiLoader from "@/components/api-loader";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Add/remove body-home class for background image when component mounts/unmounts
   useEffect(() => {
-    // Add the body-home class to enable background image
+    // Set body to black immediately to prevent white flash
+    document.body.style.backgroundColor = "#000";
+    
+    // Preload both the blur and main images
+    const blurImg = new Image();
+    blurImg.src = "/blur-bg.jpg";
+    
+    const img = new Image();
+    img.src = "/optimized-bg.jpg";
+    img.onload = () => setImageLoaded(true);
+    
+    // Add the body-home class to enable background styling
     document.body.classList.add('body-home');
     
     // Add an additional class to the main tag to ensure transparency
     const mainElement = document.querySelector('main');
     if (mainElement) {
       mainElement.classList.add('transparent-bg');
+      // Ensure the main element is transparent
+      (mainElement as HTMLElement).style.backgroundColor = "transparent";
     }
     
     // Clear any bg-background classes that might override our image
     const bgElements = document.querySelectorAll('.bg-background');
     bgElements.forEach(el => {
       el.classList.add('transparent-bg');
+      (el as HTMLElement).style.backgroundColor = "transparent";
     });
+    
+    // Log to console for debugging
+    console.log("[Homepage] Background blur image path: /blur-bg.jpg");
+    console.log("[Homepage] Background main image path: /optimized-bg.jpg");
+    console.log("[Homepage] Background setup complete with progressive loading");
     
     return () => {
       // Clean up by removing classes when component unmounts
       document.body.classList.remove('body-home');
+      document.body.style.backgroundColor = "";
       
       if (mainElement) {
         mainElement.classList.remove('transparent-bg');
+        (mainElement as HTMLElement).style.backgroundColor = "";
       }
       
       bgElements.forEach(el => {
         el.classList.remove('transparent-bg');
+        (el as HTMLElement).style.backgroundColor = "";
       });
     };
   }, []);
@@ -79,17 +102,59 @@ export default function Home() {
       {error ? (
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
-        <div 
-          className="relative min-h-screen overflow-x-hidden flex flex-col home-page"
-          style={{
-            backgroundImage: "url('/images/background.jpeg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundAttachment: "fixed",
-            backgroundRepeat: "no-repeat"
-          }}
-          >
-          {/* Background is now applied directly via inline styles */}
+        <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
+          {/* Progressive image loading with blur-up technique */}
+          <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen overflow-hidden" style={{ zIndex: -2, backgroundColor: '#000' }}>
+            {/* Blurred smaller image that loads first */}
+            <img 
+              src="/blur-bg.jpg" 
+              alt=""
+              className="w-full h-full object-cover transition-opacity duration-500"
+              style={{ 
+                position: 'fixed',
+                left: 0,
+                top: 0,
+                width: '100vw',
+                height: '100vh',
+                objectFit: 'cover',
+                objectPosition: 'center center',
+                opacity: imageLoaded ? 0 : 1 /* Hide when main image loads */
+              }}
+            />
+            
+            {/* Main optimized image that loads with higher quality */}
+            <img 
+              src="/optimized-bg.jpg" 
+              alt=""
+              className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              style={{ 
+                position: 'fixed',
+                left: 0,
+                top: 0,
+                width: '100vw',
+                height: '100vh', /* Full screen height */
+                objectFit: 'cover',
+                objectPosition: 'center center', /* Center the image */
+                animation: 'subtleZoom 30s infinite alternate ease-in-out',
+                willChange: 'transform'
+              }}
+              onLoad={() => {
+                console.log("[Homepage] Background image loaded successfully");
+                setImageLoaded(true);
+              }}
+              onError={(e) => console.error("[Homepage] Background image failed to load:", e)}
+              loading="eager" /* Prioritize loading this image */
+            />
+          </div>
+          
+          {/* Extremely minimal overlay for just enough text visibility */}
+          <div 
+            className="fixed top-0 left-0 right-0 bottom-0 w-full h-full" 
+            style={{
+              background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.08) 100%)",
+              zIndex: -1
+            }}
+          />
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
@@ -97,7 +162,7 @@ export default function Home() {
           {/* Content container with proper z-index to appear above background - full width */}
           <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center w-full min-h-screen">
             <div>
-              <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center">
+              <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                 <span>BUBBLE'S</span>
                 <span className="mt-1 md:mt-2">CAFE</span>
               </h1>
@@ -108,7 +173,7 @@ export default function Home() {
           
             <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
               <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
                   Each story here is a portal to the unexpected,
                   the unsettling, and the unexplained.
                 </p>

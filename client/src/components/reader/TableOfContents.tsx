@@ -125,8 +125,8 @@ export default function TableOfContents({ currentPostId, onClose }: TableOfConte
       
       {/* Key fix: Make sure the scroll container has enough height and proper overflow behavior */}
       <div className="flex-1 mt-4 overflow-hidden flex flex-col">
-        <ScrollArea className="flex-1 h-full pr-4" style={{ maxHeight: 'calc(85vh - 250px)' }}>
-          <div className="px-1 pb-10">
+        <ScrollArea className="flex-1 h-full pr-4" style={{ maxHeight: '350px' }}>
+          <div className="px-1 pb-6">
             {filteredPosts.length === 0 && searchTerm ? (
               <div className="flex flex-col items-center justify-center h-full py-8 text-center">
                 <div className="text-sm text-muted-foreground">No stories found matching "{searchTerm}"</div>

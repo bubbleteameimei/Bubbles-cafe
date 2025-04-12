@@ -53,6 +53,8 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   // Handle animation completion
   const handleAnimationComplete = useCallback(() => {
     setCanHideLoading(true);
+    console.log('[LoadingProvider] Animation complete');
+    
     // If there was a request to hide loading while animation was in progress
     if (hideRequestedRef.current) {
       // Start a transition to hide the loading screen
@@ -61,6 +63,22 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         setMessage(undefined);
         document.body.classList.remove('loading-active');
         hideRequestedRef.current = false;
+        
+        // Restore scrolling
+        document.body.style.overflow = '';
+        document.body.style.height = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.height = '';
+        console.log('[LoadingProvider] Scroll re-enabled after animation');
+        
+        // Clear loading state in sessionStorage
+        try {
+          sessionStorage.removeItem('app_loading');
+        } catch (e) {
+          // Ignore sessionStorage errors
+        }
       }, 300); // Short delay for smooth transition
     }
   }, []);
@@ -73,6 +91,14 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     
     // Immediately ensure body has the loading class (before React render)
     document.body.classList.add('loading-active');
+    
+    // Disable scrolling immediately (in addition to React component's logic)
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
     
     // Force browser to reflow/repaint to ensure the loading class takes effect immediately
     // This prevents any potential flash of content
@@ -88,6 +114,14 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       clearTimeout(loadingTimerRef.current);
     }
     
+    // Store the loading state in sessionStorage to persist across page reloads
+    try {
+      sessionStorage.setItem('app_loading', 'true');
+      console.log('[LoadingProvider] Set loading state in session storage');
+    } catch (e) {
+      // Ignore sessionStorage errors
+    }
+    
     loadingTimerRef.current = setTimeout(() => {
       // Force hide loading after 2 seconds
       setIsLoading(false);
@@ -95,6 +129,14 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       document.body.classList.remove('loading-active');
       hideRequestedRef.current = false;
       setCanHideLoading(true);
+      
+      // Clear loading state in sessionStorage
+      try {
+        sessionStorage.removeItem('app_loading');
+      } catch (e) {
+        // Ignore sessionStorage errors
+      }
+      
       console.log('Loading screen auto-hidden after 2 seconds');
     }, 2000);
   }, []);
@@ -107,11 +149,27 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       loadingTimerRef.current = null;
     }
     
+    // Remove loading state from sessionStorage
+    try {
+      sessionStorage.removeItem('app_loading');
+    } catch (e) {
+      // Ignore sessionStorage errors
+    }
+    
     // If animation has completed its cycle, we can hide immediately
     if (canHideLoading) {
       setIsLoading(false);
       setMessage(undefined);
       document.body.classList.remove('loading-active');
+      
+      // Restore scrolling
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+      console.log('[LoadingProvider] Scroll re-enabled on hide');
     } else {
       // Otherwise, we mark that a hide was requested
       // The actual hide will happen when the animation completes

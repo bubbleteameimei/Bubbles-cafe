@@ -11,7 +11,7 @@ import {
   Share2, Minus, Plus, Shuffle, RefreshCcw, ChevronLeft, ChevronRight, BookOpen,
   Skull, Brain, Pill, Cpu, Dna, Ghost, Cross, Umbrella, Footprints, CloudRain, Castle, 
   Radiation, UserMinus2, Anchor, AlertTriangle, Building, Bug, Worm, Cloud, CloudFog,
-  Menu, BookText, Home, Trash
+  Menu, BookText, Home, Trash, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
@@ -44,6 +44,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 
 // Import comment section directly for now to avoid lazy loading issues
@@ -1231,7 +1232,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
 
           {/* Text-to-speech functionality removed */}
 
-          {/* Contents Dialog with controlled open state */}
+          {/* Contents Dialog with controlled open state - non-fullscreen with close button */}
           <Dialog open={contentsDialogOpen} onOpenChange={setContentsDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -1244,8 +1245,20 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               </Button>
             </DialogTrigger>
             {/* Wrap the TableOfContents component to ensure DialogContent has proper aria attributes */}
-            <DialogContent aria-labelledby="toc-dialog-title" aria-describedby="toc-dialog-description">
-              <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+            <DialogContent 
+              className="max-w-md" 
+              aria-labelledby="toc-dialog-title" 
+              aria-describedby="toc-dialog-description"
+            >
+              <div className="flex items-center justify-between">
+                <DialogTitle id="toc-dialog-title">Table of Contents</DialogTitle>
+                <DialogClose asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </DialogClose>
+              </div>
               <DialogDescription id="toc-dialog-description">Browse all available stories</DialogDescription>
               <TableOfContents 
                 currentPostId={currentPost.id} 
