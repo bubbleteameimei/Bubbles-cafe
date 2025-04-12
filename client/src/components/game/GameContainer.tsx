@@ -105,12 +105,8 @@ const GameContainer: React.FC<GameContainerProps> = ({
   }, [initialized, showLowSanityEffects, soundEffects]);
   
   // Handle player choice
-  const handleChoice = (choiceId: string) => {
+  const handleChoice = (choice: Choice) => {
     if (!currentPassage || !currentPassage.choices) return;
-    
-    // Find the selected choice
-    const choice = currentPassage.choices.find(c => c.id === choiceId);
-    if (!choice) return;
     
     // Play sound effect
     soundEffects.playSound('choice');
@@ -162,7 +158,7 @@ const GameContainer: React.FC<GameContainerProps> = ({
             currentStory={currentStory}
             currentPassage={currentPassage}
             showLowSanityEffects={showLowSanityEffects}
-            onChoice={handleChoice}
+            onChoiceSelected={handleChoice}
             containerWidth={containerSize.width}
             containerHeight={containerSize.height}
           />

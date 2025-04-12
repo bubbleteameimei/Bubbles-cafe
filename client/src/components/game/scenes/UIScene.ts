@@ -107,8 +107,8 @@ export default class UIScene extends Phaser.Scene {
       
       // Button background
       const buttonBg = this.add.image(0, 0, isLocked ? 'button-bg-disabled' : 'button-bg');
-      buttonBg.setDisplayWidth(width - 100);
-      buttonBg.setDisplayHeight(buttonHeight);
+      buttonBg.displayWidth = width - 100;
+      buttonBg.displayHeight = buttonHeight;
       buttonBg.setOrigin(0.5);
       
       // Choice text
@@ -151,8 +151,8 @@ export default class UIScene extends Phaser.Scene {
           lockReason = `Requires ${choice.minSanity} Sanity`;
         } else if (choice.maxSanity && this.gameState.sanity > choice.maxSanity) {
           lockReason = `Requires less than ${choice.maxSanity} Sanity`;
-        } else if (choice.requiresItems && choice.requiresItems.length > 0) {
-          const missingItems = choice.requiresItems.filter(
+        } else if (choice.requiredItems && choice.requiredItems.length > 0) {
+          const missingItems = choice.requiredItems.filter(
             item => !this.gameState.inventory.includes(item)
           );
           if (missingItems.length > 0) {
@@ -195,9 +195,9 @@ export default class UIScene extends Phaser.Scene {
     }
     
     // Item requirements
-    if (choice.requiresItems && choice.requiresItems.length > 0) {
-      const hasAllItems = choice.requiresItems.every(
-        item => this.gameState.inventory.includes(item)
+    if (choice.requiredItems && choice.requiredItems.length > 0) {
+      const hasAllItems = choice.requiredItems.every(
+        (item: string) => this.gameState.inventory.includes(item)
       );
       if (!hasAllItems) return true;
     }
@@ -256,6 +256,8 @@ export default class UIScene extends Phaser.Scene {
   
   setupKeyboardNavigation() {
     // Add keyboard navigation for choices
+    if (!this.input.keyboard) return;
+    
     const upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
     const downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
     const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
