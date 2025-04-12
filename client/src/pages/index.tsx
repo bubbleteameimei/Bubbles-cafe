@@ -143,18 +143,20 @@ export default function IndexView() {
   const featuredStory = useMemo(() => {
     if (!currentPosts || currentPosts.length === 0) return null;
     
-    // Sort posts by engagement metrics (likes and views)
-    // This uses actual database metrics from the posts table
+    console.log('[Index] Selecting featured story from', currentPosts.length, 'posts');
+    
+    // Sort posts by engagement metrics, using direct database values where possible
     const sortedByEngagement = [...currentPosts].sort((a, b) => {
-      // Get likes count from metadata if available
-      const aLikes = a.metadata && typeof a.metadata === 'object' && 
-        'likesCount' in (a.metadata as Record<string, unknown>) ?
-        Number((a.metadata as Record<string, unknown>).likesCount || 0) : 0;
+      // Primary metrics: direct from database when available
+      // Get likesCount directly from the post object (from DB)
+      const aLikes = typeof a.likesCount === 'number' ? a.likesCount : 0;
+      const bLikes = typeof b.likesCount === 'number' ? b.likesCount : 0;
       
-      const bLikes = b.metadata && typeof b.metadata === 'object' && 
-        'likesCount' in (b.metadata as Record<string, unknown>) ?
-        Number((b.metadata as Record<string, unknown>).likesCount || 0) : 0;
+      // Get dislikesCount directly from the post object (from DB)
+      const aDislikes = typeof a.dislikesCount === 'number' ? a.dislikesCount : 0;
+      const bDislikes = typeof b.dislikesCount === 'number' ? b.dislikesCount : 0;
       
+      // Secondary metrics: from metadata
       // Get page views from metadata if available
       const aViews = a.metadata && typeof a.metadata === 'object' && 
         'pageViews' in (a.metadata as Record<string, unknown>) ?
@@ -164,22 +166,74 @@ export default function IndexView() {
         'pageViews' in (b.metadata as Record<string, unknown>) ?
         Number((b.metadata as Record<string, unknown>).pageViews || 0) : 0;
       
-      // Calculate engagement score (likes + views)
-      const aScore = aLikes * 2 + aViews;
-      const bScore = bLikes * 2 + bViews;
+      // Get reading time metrics if available
+      const aReadTime = a.metadata && typeof a.metadata === 'object' && 
+        'averageReadTime' in (a.metadata as Record<string, unknown>) ?
+        Number((a.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
+      
+      const bReadTime = b.metadata && typeof b.metadata === 'object' && 
+        'averageReadTime' in (b.metadata as Record<string, unknown>) ?
+        Number((b.metadata as Record<string, unknown>).averageReadTime || 0) : 0;
+      
+      // Calculate engagement score with weighted factors:
+      // - Likes have highest weight (positive engagement)
+      // - Views are important but secondary
+      // - Reading time indicates content quality
+      // - Dislikes have a smaller negative effect (still indicates engagement)
+      const aScore = (aLikes * 3) + aViews + (aReadTime * 0.5) - (aDislikes * 0.5);
+      const bScore = (bLikes * 3) + bViews + (bReadTime * 0.5) - (bDislikes * 0.5);
+      
+      // For debugging, log the top posts' scores
+      if (aScore > 10 || bScore > 10) {
+        console.log('[Featured Story] Post metrics comparison:', {
+          postA: { id: a.id, title: a.title, likes: aLikes, views: aViews, score: aScore },
+          postB: { id: b.id, title: b.title, likes: bLikes, views: bViews, score: bScore }
+        });
+      }
       
       return bScore - aScore; // Sort in descending order
     });
     
-    // Take the top post with theme category if possible
-    const topWithTheme = sortedByEngagement.find(post => {
+    // First try to find a post with high engagement and theme category
+    const highEngagementThreshold = 10; // Define what "high engagement" means
+    const highEngagementWithTheme = sortedByEngagement.find(post => {
+      if (!post.metadata) return false;
+      const metadata = post.metadata as Record<string, unknown>;
+      const hasTheme = 'themeCategory' in metadata && metadata.themeCategory;
+      
+      // Calculate this post's engagement score again
+      const likes = typeof post.likesCount === 'number' ? post.likesCount : 0;
+      const views = metadata && 'pageViews' in metadata ? Number(metadata.pageViews || 0) : 0;
+      const score = (likes * 3) + views;
+      
+      return hasTheme && score >= highEngagementThreshold;
+    });
+    
+    // If we found a high-engagement themed post, use it
+    if (highEngagementWithTheme) {
+      console.log('[Featured Story] Selected high-engagement themed post:', 
+        { id: highEngagementWithTheme.id, title: highEngagementWithTheme.title });
+      return highEngagementWithTheme;
+    }
+    
+    // Fall back to any post with a theme
+    const anyPostWithTheme = sortedByEngagement.find(post => {
       if (!post.metadata) return false;
       const metadata = post.metadata as Record<string, unknown>;
       return 'themeCategory' in metadata && metadata.themeCategory;
     });
     
-    // Return the post with highest engagement and theme, or just the highest engagement
-    return topWithTheme || sortedByEngagement[0];
+    // If we found a themed post, use it
+    if (anyPostWithTheme) {
+      console.log('[Featured Story] Selected themed post:', 
+        { id: anyPostWithTheme.id, title: anyPostWithTheme.title });
+      return anyPostWithTheme;
+    }
+    
+    // Last resort: just use the highest engagement post
+    console.log('[Featured Story] Selected highest engagement post:', 
+      { id: sortedByEngagement[0]?.id, title: sortedByEngagement[0]?.title });
+    return sortedByEngagement[0];
   }, [currentPosts]);
   
   // Use the loading hook for the global loading state
