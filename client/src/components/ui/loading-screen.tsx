@@ -120,12 +120,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         ></div>
       )}
       
-      {/* Import Megrim font from Google Fonts */}
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Megrim&display=swap');`}
-      </style>
-      
-      {/* Loading text with higher z-index */}
+      {/* Loading text with higher z-index - Megrim font preloaded in index.html */}
       <div className="loader relative z-10">
         <span className="text-uppercase">L</span>
         <span className="text-uppercase">O</span>
