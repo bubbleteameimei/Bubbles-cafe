@@ -1,75 +1,69 @@
 /**
- * Eden's Hollow Game Test Page
+ * Game Test Page
  * 
- * This page is for testing the Eden's Hollow game component.
+ * This page provides a full-screen environment for the Eden's Hollow game.
+ * It's used for testing and development before integration with the main site.
  */
 
-import React from "react";
+import React, { useState } from 'react';
 import { Link } from "wouter";
 import EdenHollowGame from "@/components/EdenHollowGame";
-import { Helmet } from "react-helmet";
 
 export default function GameTestPage() {
   return (
     <div className="min-h-screen bg-black text-white">
-      <Helmet>
-        <title>Eden's Hollow - Experimental Horror Game</title>
-        <meta name="description" content="An experimental interactive horror game set in the mysterious town of Eden's Hollow" />
-      </Helmet>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link href="/" className="text-gray-400 hover:text-white transition-colors inline-flex items-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Back to Site</span>
+      {/* Header with Back Button */}
+      <header className="px-6 py-4 bg-zinc-900">
+        <div className="flex items-center justify-between">
+          <Link href="/">
+            <a className="flex items-center text-zinc-400 hover:text-white transition-colors">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 mr-2" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+              <span>Back to Home</span>
+            </a>
           </Link>
-          
-          <h1 className="text-3xl font-serif tracking-wider mb-2">Eden's Hollow</h1>
-          <p className="text-gray-400 mb-6">
-            A text-based horror adventure with branching narratives and sanity mechanics. 
-            Choices you make affect your character's mental state and available options.
-          </p>
+          <div className="text-lg font-semibold">Eden's Hollow - Experimental</div>
+          <div className="w-24"></div> {/* Spacer for symmetry */}
         </div>
-        
-        <div className="game-wrapper bg-gray-900 rounded-lg overflow-hidden border border-gray-800 shadow-2xl">
-          <EdenHollowGame initialStoryId="abandoned-manor" />
-        </div>
-        
-        <div className="mt-8 prose prose-invert max-w-none">
-          <h2 className="text-xl font-serif mb-4">How to Play</h2>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg mb-2">Game Mechanics</h3>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Make choices to progress through the story</li>
-                <li>Each choice may affect your <strong>sanity</strong> level</li>
-                <li>Low sanity unlocks darker choices but restricts positive ones</li>
-                <li>Some paths require specific items in your inventory</li>
-                <li>Pay attention to environmental details for clues</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg mb-2">Tips for Survival</h3>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Not all that appears safe is actually safe</li>
-                <li>Your sanity is a valuable resource - manage it carefully</li>
-                <li>Some choices may seem correct but lead to disaster</li>
-                <li>Multiple playthroughs will reveal new story elements</li>
-                <li>There are multiple endings - can you find them all?</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-8">
-            <p className="text-sm text-gray-500">
-              <strong>Note:</strong> This is an experimental feature currently in development.
-              Game saves may be reset with future updates.
-            </p>
-          </div>
+      </header>
+      
+      {/* Game Container */}
+      <div className="w-full" style={{ height: "calc(100vh - 64px)" }}>
+        <EdenHollowGame />
+      </div>
+      
+      {/* Game Instructions - Hidden, will show with a toggle */}
+      <div className="hidden fixed bottom-0 left-0 right-0 bg-zinc-900 bg-opacity-90 p-4 border-t border-zinc-800">
+        <div className="max-w-3xl mx-auto">
+          <h3 className="text-lg font-medium mb-2">Eden's Hollow - Game Controls</h3>
+          <ul className="text-sm text-zinc-300 grid grid-cols-2 gap-x-8 gap-y-1">
+            <li className="flex items-center">
+              <span className="bg-zinc-800 text-xs rounded px-2 py-1 mr-2 min-w-[80px] text-center">Arrow Keys</span>
+              <span>Navigate choices</span>
+            </li>
+            <li className="flex items-center">
+              <span className="bg-zinc-800 text-xs rounded px-2 py-1 mr-2 min-w-[80px] text-center">Enter/Space</span>
+              <span>Select choice</span>
+            </li>
+            <li className="flex items-center">
+              <span className="bg-zinc-800 text-xs rounded px-2 py-1 mr-2 min-w-[80px] text-center">ESC</span>
+              <span>Open settings</span>
+            </li>
+            <li className="flex items-center">
+              <span className="bg-zinc-800 text-xs rounded px-2 py-1 mr-2 min-w-[80px] text-center">Backspace</span>
+              <span>Go back (when available)</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

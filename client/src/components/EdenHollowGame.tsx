@@ -1,30 +1,23 @@
 /**
  * Eden's Hollow Game Component
  * 
- * This is the main entry point for the Eden's Hollow game experience.
- * It coordinates all game components and manages the overall game state.
+ * This is the main game component that brings together all the game elements:
+ * - Game state management
+ * - Sound effects
+ * - Interactive UI
+ * - Game scenes
  */
 
-import React, { useState, useEffect } from 'react';
-import { useGameState } from '../hooks/useGameState';
-import { useSoundEffects } from '../hooks/useSoundEffects';
-import GameContainer from './game/GameContainer';
-import GameHeader from './game/GameHeader';
+import React, { useState, useEffect, useRef } from 'react';
+import useGameState from '../hooks/useGameState';
+import useSoundEffects from '../hooks/useSoundEffects';
+import PhaserGame from './game/PhaserGame';
 import GameFooter from './game/GameFooter';
 import GameSettingsModal from './game/GameSettingsModal';
-import PhaserGame from './game/PhaserGame';
 import { Choice } from '../types/game';
 
-interface EdenHollowGameProps {
-  initialStoryId?: string;
-  className?: string;
-}
-
-const EdenHollowGame: React.FC<EdenHollowGameProps> = ({
-  initialStoryId = 'abandoned-manor',
-  className = ''
-}) => {
-  // Game state management
+const EdenHollowGame: React.FC = () => {
+  // Game state
   const {
     gameState,
     currentStory,
@@ -33,86 +26,129 @@ const EdenHollowGame: React.FC<EdenHollowGameProps> = ({
     makeChoice,
     startNewGame,
     goBack,
+    canGoBack,
     updateSetting,
-    resetGame
-  } = useGameState(initialStoryId);
+    resetGame,
+    saveGame
+  } = useGameState();
   
-  // Sound effects management
-  const { playSound, stopSound, stopAllSounds } = useSoundEffects(gameState.settings);
+  // Sound effects
+  const soundEffects = useSoundEffects(gameState.settings);
   
   // UI state
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [gameContainerSize, setGameContainerSize] = useState({ width: 800, height: 600 });
+  const [showSettings, setShowSettings] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   
-  // Handle container resize
-  const updateContainerSize = () => {
-    const container = document.getElementById('game-container');
-    if (container) {
-      setGameContainerSize({
-        width: container.clientWidth,
-        height: container.clientHeight
-      });
-    }
-  };
+  // Container size for the game
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   
-  // Set up resize listener
+  // Track container size for responsive game canvas
   useEffect(() => {
-    updateContainerSize();
-    window.addEventListener('resize', updateContainerSize);
+    const updateSize = () => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        });
+      }
+    };
+    
+    // Initial size
+    updateSize();
+    
+    // Update on window resize
+    window.addEventListener('resize', updateSize);
     
     return () => {
-      window.removeEventListener('resize', updateContainerSize);
-      stopAllSounds();
+      window.removeEventListener('resize', updateSize);
     };
-  }, [stopAllSounds]);
+  }, []);
   
-  // Handle choice selection
-  const handleChoiceSelected = (choice: Choice) => {
-    // Play sound effects
-    playSound('choice');
+  // Start the game when mounted
+  useEffect(() => {
+    if (!initialized && !currentStory) {
+      // Start with the first story (later we could show a selection screen)
+      startNewGame('haunted-manor');
+      setInitialized(true);
+    }
+  }, [initialized, currentStory, startNewGame]);
+  
+  // Toggle ambient sounds based on sanity state
+  useEffect(() => {
+    if (initialized) {
+      soundEffects.startAmbientSounds(showLowSanityEffects);
+    }
     
-    // Make the choice
+    return () => {
+      soundEffects.stopAllSounds();
+    };
+  }, [initialized, showLowSanityEffects, soundEffects]);
+  
+  // Handle player choices
+  const handleChoiceSelected = (choice: Choice) => {
+    // Play appropriate sound for choice
+    soundEffects.playSound('choice');
+    
+    // Handle sanity change sound effects if applicable
+    if (choice.sanityChange) {
+      if (choice.sanityChange < 0) {
+        soundEffects.playSound('sanityDrop');
+      } else if (choice.sanityChange > 0) {
+        soundEffects.playSound('sanityGain');
+      }
+    }
+    
+    // Apply the choice
     makeChoice(choice);
   };
   
   // Handle settings changes
   const handleSettingChange = (key: string, value: any) => {
     updateSetting(key as any, value);
+    
+    // Update sound system if sound settings change
+    if (key === 'soundEnabled' || key === 'musicVolume' || key === 'sfxVolume') {
+      soundEffects.updateVolumes();
+    }
   };
   
   return (
-    <div className={`eden-hollow-game ${className}`}>
-      {/* Game header with title and back button */}
-      <GameHeader />
-      
-      {/* Main game container */}
+    <div className="flex flex-col w-full h-full bg-black overflow-hidden">
+      {/* Game Container */}
       <div 
-        id="game-container"
-        className="game-container relative w-full" 
-        style={{ minHeight: '600px' }}
+        ref={containerRef}
+        className="flex-grow relative overflow-hidden"
       >
-        <PhaserGame 
+        {/* Phaser Game Canvas */}
+        <PhaserGame
           gameState={gameState}
           currentStory={currentStory}
           currentPassage={currentPassage}
           showLowSanityEffects={showLowSanityEffects}
+          containerWidth={containerSize.width}
+          containerHeight={containerSize.height}
           onChoiceSelected={handleChoiceSelected}
         />
       </div>
       
-      {/* Game footer with controls */}
-      <GameFooter 
-        onSettingsClick={() => setSettingsOpen(true)}
-        onBackClick={goBack}
-        canGoBack={gameState.passageHistory.length > 0}
+      {/* Game Footer Controls */}
+      <GameFooter
+        storyPhase={currentPassage?.phase}
+        storyTitle={currentStory?.title}
+        canGoBack={canGoBack}
+        onSettings={() => setShowSettings(true)}
+        onSave={saveGame}
+        onReset={resetGame}
+        onBack={goBack}
       />
       
-      {/* Settings modal */}
-      <GameSettingsModal 
-        isOpen={settingsOpen} 
-        onClose={() => setSettingsOpen(false)}
+      {/* Settings Modal */}
+      <GameSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
         settings={gameState.settings}
-        onSettingsChange={handleSettingChange}
+        onSettingChange={handleSettingChange}
       />
     </div>
   );

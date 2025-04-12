@@ -1,101 +1,126 @@
 /**
- * Eden's Hollow Game Container
+ * Game Container Component
  * 
- * Main container component for the Eden's Hollow game experience.
- * Uses Phaser.js for enhanced visual storytelling.
+ * This component serves as the main entry point for the Eden's Hollow game.
+ * It provides a properly sized container and handles game initialization.
  */
 
-import React, { useState, useEffect, useRef } from "react";
-import { useGameState } from "../../hooks/useGameState";
-import { useSoundEffects } from "../../hooks/useSoundEffects";
-import { Choice } from "../../types/game";
-import GameHeader from "./GameHeader";
-import GameFooter from "./GameFooter";
-import GameSettingsModal from "./GameSettingsModal";
-import PhaserGame from "./PhaserGame";
+import React, { useState, useEffect } from 'react';
+import useGameState from '../../hooks/useGameState';
+import useSoundEffects from '../../hooks/useSoundEffects';
+import PhaserGame from './PhaserGame';
+import GameFooter from './GameFooter';
+import GameSettingsModal from './GameSettingsModal';
+import { Choice, StoryPhase } from '../../types/game';
 
-export default function GameContainer() {
-  const { 
-    gameState, 
-    currentStory, 
-    currentPassage, 
+// Default size for the game container
+const DEFAULT_WIDTH = 800;
+const DEFAULT_HEIGHT = 600;
+
+interface GameContainerProps {
+  className?: string;
+  defaultStory?: string;
+}
+
+const GameContainer: React.FC<GameContainerProps> = ({
+  className = '',
+  defaultStory = 'haunted-manor'
+}) => {
+  // Get game state from custom hook
+  const gameState = useGameState();
+  const {
+    currentStory,
+    currentPassage,
     showLowSanityEffects,
-    makeChoice, 
-    canMakeChoice,
-    saveGame,
-    updateSettings,
-    resetGame
-  } = useGameState();
+    makeChoice,
+    startNewGame,
+    goBack,
+    canGoBack,
+    updateSetting,
+    resetGame,
+    saveGame
+  } = gameState;
   
-  const { 
-    playSound, 
-    startAmbientSounds, 
-    toggleLowSanitySounds,
-    updateVolumes
-  } = useSoundEffects(gameState.settings.soundEnabled);
+  // Sound effects hook
+  const soundEffects = useSoundEffects(gameState.gameState.settings);
   
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-  const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // UI state
+  const [showSettings, setShowSettings] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   
-  // Start ambient sounds when component mounts
+  // Container size (responsive)
+  const [containerSize, setContainerSize] = useState({
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT
+  });
+  
+  // Container ref for measuring
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  // Update container size when window resizes
   useEffect(() => {
-    if (gameState.settings.soundEnabled) {
-      startAmbientSounds(showLowSanityEffects);
-    }
-    
-    // Update volumes based on settings
-    updateVolumes(
-      gameState.settings.sfxVolume, 
-      gameState.settings.musicVolume
-    );
-    
-    // Clean up on unmount
-    return () => {
-      // Sound cleanup is handled inside the hook
+    const updateSize = () => {
+      if (containerRef.current) {
+        // Get the actual size of our container
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({
+          width: rect.width,
+          height: rect.height
+        });
+      }
     };
-  }, [startAmbientSounds, showLowSanityEffects, gameState.settings, updateVolumes]);
+    
+    // Initialize size
+    updateSize();
+    
+    // Add resize listener
+    window.addEventListener('resize', updateSize);
+    
+    return () => {
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
   
-  // Toggle low sanity sound effects when sanity changes
+  // Initialize game when first mounted
   useEffect(() => {
-    if (gameState.settings.soundEnabled) {
-      toggleLowSanitySounds(showLowSanityEffects);
+    if (!initialized && !currentStory) {
+      startNewGame(defaultStory);
+      setInitialized(true);
+      
+      // Start ambient sounds
+      soundEffects.startAmbientSounds(false);
     }
-  }, [showLowSanityEffects, toggleLowSanitySounds, gameState.settings.soundEnabled]);
+  }, [initialized, defaultStory, currentStory, startNewGame, soundEffects]);
   
-  // Handle choice selection
+  // Update ambient sounds when sanity state changes
+  useEffect(() => {
+    if (initialized) {
+      soundEffects.toggleLowSanitySounds(showLowSanityEffects);
+    }
+    
+    // Cleanup sounds on unmount
+    return () => {
+      soundEffects.stopAllSounds();
+    };
+  }, [initialized, showLowSanityEffects, soundEffects]);
+  
+  // Handle player choice
   const handleChoice = (choiceId: string) => {
-    if (!currentPassage || !canMakeChoice) return;
+    if (!currentPassage || !currentPassage.choices) return;
     
     // Find the selected choice
     const choice = currentPassage.choices.find(c => c.id === choiceId);
     if (!choice) return;
     
-    // Play choice sound
-    if (gameState.settings.soundEnabled) {
-      playSound('choice');
-    }
+    // Play sound effect
+    soundEffects.playSound('choice');
     
-    // If choice is critical, show confirmation modal
-    if (choice.critical) {
-      setPendingChoice(choice);
-      setIsConfirmationOpen(true);
-      return;
-    }
-    
-    // Otherwise, process choice immediately
-    processChoice(choice);
-  };
-  
-  // Process the confirmed choice
-  const processChoice = (choice: Choice) => {
-    // Play different sounds based on sanity change
-    if (gameState.settings.soundEnabled) {
+    // Play sanity change sound if applicable
+    if (choice.sanityChange) {
       if (choice.sanityChange < 0) {
-        playSound('sanityDrop');
+        soundEffects.playSound('sanityDrop');
       } else if (choice.sanityChange > 0) {
-        playSound('sanityGain');
+        soundEffects.playSound('sanityGain');
       }
     }
     
@@ -103,107 +128,69 @@ export default function GameContainer() {
     makeChoice(choice);
   };
   
-  // Handle confirmation modal response
-  const handleConfirmation = (confirmed: boolean) => {
-    setIsConfirmationOpen(false);
+  // Settings handlers
+  const handleSettingsOpen = () => setShowSettings(true);
+  const handleSettingsClose = () => setShowSettings(false);
+  const handleSettingsSave = (newSettings: any) => {
+    // Update all settings that have changed
+    Object.entries(newSettings).forEach(([key, value]) => {
+      updateSetting(key as any, value);
+    });
     
-    if (confirmed && pendingChoice) {
-      if (gameState.settings.soundEnabled) {
-        playSound('confirm');
-      }
-      processChoice(pendingChoice);
-    }
+    // Update sound system
+    soundEffects.updateVolumes();
     
-    setPendingChoice(null);
+    // Close modal
+    handleSettingsClose();
   };
   
-  // Toggle settings modal
-  const toggleSettings = () => {
-    setIsSettingsOpen(prev => !prev);
-    if (gameState.settings.soundEnabled) {
-      playSound('choice');
-    }
+  // Get story phase for displaying in the footer
+  const getStoryPhase = (): StoryPhase | undefined => {
+    return currentPassage?.phase;
   };
   
-  // Handle save game
-  const handleSaveGame = () => {
-    if (gameState.settings.soundEnabled) {
-      playSound('confirm');
-    }
-    saveGame();
-    // Show a save confirmation message (or toast)
-    alert("Game saved successfully!");
-  };
-  
-  // Handle settings update
-  const handleSettingsUpdate = (newSettings: any) => {
-    updateSettings(newSettings);
-    if (newSettings.soundEnabled) {
-      playSound('confirm');
-    }
-    setIsSettingsOpen(false);
-  };
-
   return (
-    <div className="bg-black min-h-screen flex flex-col text-white" ref={containerRef}>
-      {/* Game Header */}
-      <GameHeader />
-      
-      {/* Main Game Content - Phaser Game */}
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-        {containerRef.current && (
+    <div 
+      ref={containerRef}
+      className={`w-full h-full flex flex-col bg-black relative overflow-hidden ${className}`}
+    >
+      {/* Game Canvas */}
+      <div className="flex-grow relative">
+        {initialized && (
           <PhaserGame
-            gameState={gameState}
+            gameState={gameState.gameState}
             currentStory={currentStory}
             currentPassage={currentPassage}
             showLowSanityEffects={showLowSanityEffects}
             onChoice={handleChoice}
-            containerWidth={containerRef.current.clientWidth}
-            containerHeight={containerRef.current.clientHeight - 120} // Account for header/footer
+            containerWidth={containerSize.width}
+            containerHeight={containerSize.height}
           />
-        )}
-        
-        {/* Confirmation Modal */}
-        {isConfirmationOpen && pendingChoice && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-gray-900 p-6 rounded-lg max-w-md text-center">
-              <h3 className="text-xl font-bold mb-4">Are you sure?</h3>
-              <p className="mb-6">This choice could have significant consequences. Are you certain you want to proceed?</p>
-              <div className="flex justify-center space-x-4">
-                <button 
-                  className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
-                  onClick={() => handleConfirmation(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="px-4 py-2 bg-red-700 rounded hover:bg-red-600"
-                  onClick={() => handleConfirmation(true)}
-                >
-                  Yes, I'm Sure
-                </button>
-              </div>
-            </div>
-          </div>
         )}
       </div>
       
-      {/* Game Footer */}
-      <GameFooter 
-        storyPhase={currentPassage?.phase}
-        storyTitle={currentStory?.title}
-        onSave={handleSaveGame}
-        onSettings={toggleSettings}
-        onReset={resetGame}
-      />
+      {/* Footer Controls */}
+      <div className="flex-shrink-0">
+        <GameFooter
+          storyPhase={getStoryPhase()}
+          storyTitle={currentStory?.title}
+          onSave={saveGame}
+          onSettings={handleSettingsOpen}
+          onReset={resetGame}
+          onBack={goBack}
+          canGoBack={canGoBack}
+        />
+      </div>
       
       {/* Settings Modal */}
-      <GameSettingsModal 
-        isOpen={isSettingsOpen}
-        settings={gameState.settings}
-        onClose={() => setIsSettingsOpen(false)}
-        onSave={handleSettingsUpdate}
+      <GameSettingsModal
+        isOpen={showSettings}
+        settings={gameState.gameState.settings}
+        onClose={handleSettingsClose}
+        onSettingChange={updateSetting}
       />
     </div>
   );
-}
+};
+
+export default GameContainer;
