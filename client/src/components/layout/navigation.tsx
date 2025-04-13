@@ -114,7 +114,7 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="w-full flex h-20 md:h-24 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}
         <div className="flex items-center">
           {/* Mobile menu toggle */}
@@ -124,7 +124,7 @@ export default function Navigation() {
                 variant="ghost"
                 size="icon"
                 className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/60
-                          transition-all duration-200 ease-in-out active:scale-95 -mt-2.5"
+                          transition-all duration-200 ease-in-out active:scale-95 mt-4"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
@@ -143,13 +143,13 @@ export default function Navigation() {
           {/* Empty container to maintain layout spacing */}
         </div>
         
-        {/* Horizontal Nav - Desktop only - Moved to the right */}
-        <nav className="hidden lg:flex items-center space-x-4 -mt-2">
+        {/* Horizontal Nav - Desktop only - Moved to the right and lower */}
+        <nav className="hidden lg:flex items-center space-x-4 -mt-2 pt-4 mb-[-1rem]">
           {navLinks.map(link => (
             <button 
               key={link.href}
               onClick={() => setLocation(link.href)} 
-              className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30
+              className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-accent/30 mt-4
                         ${location === link.href 
                           ? 'text-primary font-semibold bg-accent/40 border border-border/40 shadow-sm' 
                           : 'text-foreground/80 hover:text-foreground'}`}
@@ -167,14 +167,14 @@ export default function Navigation() {
         {/* No need for additional spacer since we removed the mobile nav links */}
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-3 -mt-2">
+        <div className="flex items-center space-x-3 -mt-2 pt-4">
           {/* Search button - shown on all devices */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleSearchButtonClick}
             className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95 -mt-0.5"
+                      transition-all duration-150 active:scale-95 mt-4"
             aria-label="Search"
           >
             <Search className="h-5 w-5" />
@@ -184,7 +184,7 @@ export default function Navigation() {
           <NotificationIcon 
             notifications={notifications} 
             className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
-                      transition-all duration-150 active:scale-95" 
+                      transition-all duration-150 active:scale-95 mt-4" 
           />
           
           {/* Theme toggle */}
@@ -193,7 +193,7 @@ export default function Navigation() {
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                      transition-all duration-150 active:scale-95"
+                      transition-all duration-150 active:scale-95 mt-4"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
@@ -209,7 +209,7 @@ export default function Navigation() {
               variant="default"
               onClick={() => setLocation("/auth")}
               className="h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider 
-                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm"
+                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm mt-4"
               aria-label="Sign in"
             >
               Sign In
@@ -220,7 +220,7 @@ export default function Navigation() {
               size="icon"
               onClick={() => setLocation('/profile')}
               className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
-                        transition-all duration-150 active:scale-95 p-0 overflow-hidden"
+                        transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-4"
               aria-label="Profile"
             >
               {user.avatar ? (

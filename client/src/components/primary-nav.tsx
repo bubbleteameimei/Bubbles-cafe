@@ -56,9 +56,9 @@ export function PrimaryNav() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Search component could go here */}
           </div>
-          <nav className="flex items-center -mt-5 transform -translate-y-1"> {/* Increased negative margin and added transform for more vertical shift */}
-            <GlobalThemeToggle className="mr-2" />
-            <div className="ml-3 text-xs text-muted-foreground">
+          <nav className="flex items-center -mt-8 transform -translate-y-2"> {/* Increased negative margin and added transform for more vertical shift */}
+            <GlobalThemeToggle className="mr-2 mt-4" />
+            <div className="ml-3 text-xs text-muted-foreground mt-4">
               {theme === 'dark' ? 'Dark' : 'Light'} Mode
             </div>
             
@@ -66,7 +66,7 @@ export function PrimaryNav() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="ml-4 -mt-0.5" /* Added slight negative margin to button */
+                className="ml-4 mt-4" /* Added positive margin to move button lower */
                 onClick={() => navigate('/settings/profile')}
               >
                 Profile
@@ -75,7 +75,7 @@ export function PrimaryNav() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="ml-4 -mt-0.5" /* Added slight negative margin to button */
+                className="ml-4 mt-4" /* Added positive margin to move button lower */
                 onClick={() => navigate('/auth')}
               >
                 Login
