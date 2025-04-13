@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Volume1, Volume, Minus, Plus } from 'lucide-react';
+import { Volume2, VolumeX, Volume1, Volume } from 'lucide-react';
 import { useMusic } from '@/contexts/music-context';
 import type { PlaybackContext } from '@/contexts/music-context';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,6 @@ export function MusicButton({ className }: MusicButtonProps) {
     storePlaybackPosition
   } = useMusic();
   
-  const [showVolumeControls, setShowVolumeControls] = useState(false);
   const [location] = useLocation();
 
   // Map current location to a playback context
@@ -68,31 +67,17 @@ export function MusicButton({ className }: MusicButtonProps) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isPlaying, storePlaybackPosition]);
-
-  // Handle key events for volume controls
-  useEffect(() => {
-    // Hide volume controls after 3 seconds of inactivity
-    if (showVolumeControls) {
-      const timer = setTimeout(() => {
-        setShowVolumeControls(false);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [showVolumeControls, volume]);
-
-  // Increase volume by 10%
-  const increaseVolume = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setVolume(Math.min(1, volume + 0.1));
-    setShowVolumeControls(true);
-  };
-
-  // Decrease volume by 10%
-  const decreaseVolume = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setVolume(Math.max(0, volume - 0.1));
-    setShowVolumeControls(true);
+  
+  // Handle volume adjustment with wheel events
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!isPlaying) return;
+    
+    e.preventDefault();
+    const delta = e.deltaY;
+    // Scroll up increases volume, scroll down decreases
+    const volumeChange = delta > 0 ? -0.05 : 0.05;
+    const newVolume = Math.max(0, Math.min(1, volume + volumeChange));
+    setVolume(newVolume);
   };
 
   // Get the appropriate volume icon based on the volume level
@@ -105,81 +90,38 @@ export function MusicButton({ className }: MusicButtonProps) {
   };
 
   return (
-    <div className="relative flex items-center gap-1">
-      {/* Volume controls */}
-      {isPlaying && (
-        <>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            onClick={decreaseVolume}
-            className="h-6 w-6 rounded-md hover:bg-accent/50 transition-all duration-150 active:scale-95"
-            aria-label="Decrease volume"
+            onClick={toggleMusic}
+            onWheel={handleWheel}
+            className={cn(
+              "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2",
+              isPlaying && "text-primary border-primary/40",
+              className
+            )}
+            aria-label={isPlaying ? "Toggle music" : "Play music"}
           >
-            <Minus className="h-3 w-3" />
+            <VolumeIcon />
           </Button>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleMusic}
-                  className={cn(
-                    "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95",
-                    isPlaying && "text-primary border-primary/40",
-                    className
-                  )}
-                  aria-label={isPlaying ? "Toggle music" : "Play music"}
-                >
-                  <VolumeIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isPlaying ? `Ambient Music: ${Math.round(volume * 100)}%` : "Ambient Music: Off"}</p>
-                <p className="text-xs text-muted-foreground mt-1">Click +/- buttons to adjust volume</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={increaseVolume}
-            className="h-6 w-6 rounded-md hover:bg-accent/50 transition-all duration-150 active:scale-95"
-            aria-label="Increase volume"
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        </>
-      )}
-      
-      {/* Just the toggle button when music is off */}
-      {!isPlaying && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMusic}
-                className={cn(
-                  "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95",
-                  className
-                )}
-                aria-label="Play music"
-              >
-                <VolumeIcon />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isPlaying ? (
+            <>
+              <p>Ambient Music: {Math.round(volume * 100)}%</p>
+              <p className="text-xs text-muted-foreground mt-1">Scroll to adjust volume</p>
+            </>
+          ) : (
+            <>
               <p>Ambient Music: Off</p>
               <p className="text-xs text-muted-foreground mt-1">Click to turn on</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-    </div>
+            </>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
