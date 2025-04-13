@@ -114,9 +114,9 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4">
+      <div className="w-full flex h-16 md:h-18 items-center justify-between px-0">
         {/* Left section with menu toggle only */}
-        <div className="flex items-center -mt-1">
+        <div className="flex items-center -mt-1 pl-3">
           {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -167,23 +167,23 @@ export default function Navigation() {
         {/* No need for additional spacer since we removed the mobile nav links */}
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-3 -mt-1 ml-auto">
+        <div className="flex items-center space-x-1 -mt-1 ml-auto">
           {/* Search button - shown on all devices */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleSearchButtonClick}
-            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                       transition-all duration-150 active:scale-95 mt-2"
             aria-label="Search"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-4 w-4" />
           </Button>
           
           {/* Notifications */}
           <NotificationIcon 
             notifications={notifications} 
-            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 
                       transition-all duration-150 active:scale-95 mt-2" 
           />
           
@@ -192,24 +192,25 @@ export default function Navigation() {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+            className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                       transition-all duration-150 active:scale-95 mt-2"
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
-              <Sun className="h-5 w-5 transition-all" />
+              <Sun className="h-4 w-4 transition-all" />
             ) : (
-              <Moon className="h-5 w-5 transition-all" />
+              <Moon className="h-4 w-4 transition-all" />
             )}
           </Button>
           
-          {/* User/Auth button - restored blue styling */}
+          {/* User/Auth button - smaller blue styling */}
           {!user ? (
             <Button
               variant="default"
+              size="sm"
               onClick={() => setLocation("/auth")}
-              className="h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider 
-                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm mt-2"
+              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider 
+                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm mt-2 text-xs"
               aria-label="Sign in"
             >
               Sign In
@@ -219,7 +220,7 @@ export default function Navigation() {
               variant="ghost"
               size="icon"
               onClick={() => setLocation('/profile')}
-              className="h-10 w-10 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+              className="h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
                         transition-all duration-150 active:scale-95 p-0 overflow-hidden mt-2"
               aria-label="Profile"
             >
@@ -232,7 +233,7 @@ export default function Navigation() {
                   />
                 </div>
               ) : (
-                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
+                <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground text-xs font-medium">
                   {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
                 </div>
               )}
