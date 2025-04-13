@@ -116,7 +116,7 @@ export default function Navigation() {
     >
       <div className="w-full flex h-16 md:h-18 items-center justify-between px-0">
         {/* Left section with menu toggle only */}
-        <div className="flex items-center -mt-1 pl-3">
+        <div className="flex items-center -mt-1 pl-2">
           {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -167,7 +167,7 @@ export default function Navigation() {
         {/* No need for additional spacer since we removed the mobile nav links */}
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-1 -mt-1 ml-auto">
+        <div className="flex items-center space-x-2 -mt-1 ml-auto pr-2">
           {/* Search button - shown on all devices */}
           <Button
             variant="ghost"
