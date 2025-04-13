@@ -48,6 +48,8 @@ import { NotificationProvider } from './contexts/notification-context';
 import { NotificationIcon } from './components/ui/notification-icon';
 // Import Silent Ping feature
 import { SilentPingProvider } from './contexts/silent-ping-context';
+// Import music provider for background music functionality
+import { MusicProvider } from './contexts/music-context';
 import SidebarHeader from './components/SidebarHeader';
 import { PrimaryNav } from './components/primary-nav';
 import ErrorToastProvider from './components/providers/error-toast-provider';
@@ -371,31 +373,33 @@ function App() {
             <SidebarProvider>
               <NotificationProvider>
                 <SilentPingProvider>
-                  <ScrollEffectsProvider>
-                    <ErrorToastProvider>
-                      <GlobalLoadingProvider>
-                        <RefreshProvider>
-                          {/* Wrap AppContent with PullToRefresh */}
-                          <PullToRefresh onRefresh={handleDataRefresh}>
-                            {/* Add PerformanceMonitor for metrics collection */}
-                            <PerformanceMonitor />
-                            <div className="app-content">
-                              <AppContent />
-                            </div>
-                          </PullToRefresh>
-                          {/* Site-wide elements outside of the main layout */}
-                          <CookieConsent />
-                          <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
-                          {/* Conditionally show FeedbackButton */}
-                          <ConditionalFeedbackButton />
-                          
-                          {/* Toast notifications */}
-                          <Toaster />
-                          <Sonner position="bottom-left" className="fixed-sonner" />
-                        </RefreshProvider>
-                      </GlobalLoadingProvider>
-                    </ErrorToastProvider>
-                  </ScrollEffectsProvider>
+                  <MusicProvider>
+                    <ScrollEffectsProvider>
+                      <ErrorToastProvider>
+                        <GlobalLoadingProvider>
+                          <RefreshProvider>
+                            {/* Wrap AppContent with PullToRefresh */}
+                            <PullToRefresh onRefresh={handleDataRefresh}>
+                              {/* Add PerformanceMonitor for metrics collection */}
+                              <PerformanceMonitor />
+                              <div className="app-content">
+                                <AppContent />
+                              </div>
+                            </PullToRefresh>
+                            {/* Site-wide elements outside of the main layout */}
+                            <CookieConsent />
+                            <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
+                            {/* Conditionally show FeedbackButton */}
+                            <ConditionalFeedbackButton />
+                            
+                            {/* Toast notifications */}
+                            <Toaster />
+                            <Sonner position="bottom-left" className="fixed-sonner" />
+                          </RefreshProvider>
+                        </GlobalLoadingProvider>
+                      </ErrorToastProvider>
+                    </ScrollEffectsProvider>
+                  </MusicProvider>
                 </SilentPingProvider>
               </NotificationProvider>
             </SidebarProvider>

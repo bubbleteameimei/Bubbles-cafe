@@ -11,6 +11,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { MusicButton } from "@/components/ui/music-button";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
@@ -179,6 +180,9 @@ export default function Navigation() {
           >
             <Search className="h-4 w-4" />
           </Button>
+          
+          {/* Music button - new addition */}
+          <MusicButton />
           
           {/* Notifications */}
           <NotificationIcon 
