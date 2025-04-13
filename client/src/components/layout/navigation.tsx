@@ -116,7 +116,7 @@ export default function Navigation() {
     >
       <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left section with menu toggle only */}
-        <div className="flex items-center">
+        <div className="flex items-center -mt-1">
           {/* Mobile menu toggle */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
