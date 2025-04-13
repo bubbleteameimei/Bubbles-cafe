@@ -92,6 +92,7 @@ export function MusicButton({ className }: MusicButtonProps) {
 
   return (
     <div className="relative">
+      {/* Main toggle music button with tooltip */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -116,26 +117,27 @@ export function MusicButton({ className }: MusicButtonProps) {
         </Tooltip>
       </TooltipProvider>
 
-      {/* Long press overlay - invisible button that activates on long press */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onPointerDown={() => {
-          const timer = setTimeout(() => setOpen(true), 500);
-          
-          const clearTimer = () => {
-            clearTimeout(timer);
-            window.removeEventListener('pointerup', clearTimer);
-          };
-          
-          window.addEventListener('pointerup', clearTimer, { once: true });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0"
-        aria-label="Open music controls"
-      />
-
-      {/* Music settings sheet */}
+      {/* Sheet dialog with proper trigger */}
       <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPointerDown={() => {
+              const timer = setTimeout(() => setOpen(true), 500);
+              
+              const clearTimer = () => {
+                clearTimeout(timer);
+                window.removeEventListener('pointerup', clearTimer);
+              };
+              
+              window.addEventListener('pointerup', clearTimer, { once: true });
+            }}
+            className="absolute inset-0 w-full h-full opacity-0"
+            aria-label="Open music controls"
+          />
+        </SheetTrigger>
+        
         <SheetContent className="w-80 sm:max-w-md" side="right">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
