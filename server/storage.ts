@@ -1124,7 +1124,12 @@ export class DatabaseStorage implements IStorage {
 
       // Apply isAdminPost filter if specified
       if (filters.isAdminPost !== undefined) {
-        query = query.where(eq(postsTable.isAdminPost, filters.isAdminPost));
+        try {
+          query = query.where(eq(postsTable.isAdminPost, filters.isAdminPost));
+        } catch (error) {
+          console.warn("Failed to apply isAdminPost filter via query builder, will apply later:", error);
+          // We'll handle this in the post-processing step
+        }
       }
       
       // Apply sorting
