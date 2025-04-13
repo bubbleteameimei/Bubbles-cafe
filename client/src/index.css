@@ -180,7 +180,7 @@ body.body-home div[class*="container"] {
   height: 100vh;
   background-image: url('/images/homepage-background.jpeg');
   background-size: cover; /* Show full image coverage */
-  background-position: center center;
+  background-position: center bottom; /* Position at the bottom */
   background-repeat: no-repeat;
   background-attachment: fixed !important; /* Force fixed positioning */
   z-index: var(--z-background); /* Use our z-index system to place below content */
@@ -273,7 +273,7 @@ body.body-home::before {
   height: 100%;
   background-color: #000;
   background-image: url('/images/homepage-background.jpeg');
-  background-position: center center;
+  background-position: center bottom;
   background-size: cover;
   background-repeat: no-repeat;
   z-index: -2;

@@ -117,7 +117,7 @@ export default function Home() {
                 width: '100vw',
                 height: '100vh',
                 objectFit: 'cover',
-                objectPosition: 'center center',
+                objectPosition: 'center bottom',
                 opacity: imageLoaded ? 0 : 1 /* Hide when main image loads */
               }}
             />
@@ -134,7 +134,7 @@ export default function Home() {
                 width: '100vw',
                 height: '100vh', /* Full screen height */
                 objectFit: 'cover',
-                objectPosition: 'center center', /* Center the image */
+                objectPosition: 'center bottom', /* Position at the bottom */
                 animation: 'subtleZoom 30s infinite alternate ease-in-out',
                 willChange: 'transform'
               }}
