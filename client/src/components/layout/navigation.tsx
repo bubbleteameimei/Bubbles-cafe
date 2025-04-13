@@ -114,7 +114,7 @@ export default function Navigation() {
         padding: 0
       }}
     >
-      <div className="w-full flex h-16 md:h-18 items-center justify-between px-6 sm:px-10 lg:px-16">
+      <div className="w-full flex h-16 md:h-18 items-center justify-between px-4 sm:px-5 lg:px-6">
         {/* Left section with menu toggle only */}
         <div className="flex items-center -mt-1">
           {/* Mobile menu toggle */}
@@ -143,8 +143,8 @@ export default function Navigation() {
           {/* Empty container to maintain layout spacing */}
         </div>
         
-        {/* Horizontal Nav - Desktop only - Moved far to the right and lower */}
-        <nav className="hidden lg:flex items-center space-x-4 -mt-1 ml-64">
+        {/* Horizontal Nav - Desktop only - moved more to the right */}
+        <nav className="hidden lg:flex items-center space-x-4 -mt-1 absolute inset-0 justify-center">
           {navLinks.map(link => (
             <button 
               key={link.href}
@@ -167,7 +167,7 @@ export default function Navigation() {
         {/* No need for additional spacer since we removed the mobile nav links */}
         
         {/* Right section - Action buttons */}
-        <div className="flex items-center space-x-3 -mt-1 mr-12">
+        <div className="flex items-center space-x-3 -mt-1 ml-auto pr-4">
           {/* Search button - shown on all devices */}
           <Button
             variant="ghost"
