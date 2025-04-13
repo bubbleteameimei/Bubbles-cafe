@@ -92,7 +92,7 @@ export function MusicButton({ className }: MusicButtonProps) {
 
   return (
     <div className="relative">
-      {/* Main toggle music button with tooltip */}
+      {/* Simple toggle music button with tooltip */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -112,40 +112,44 @@ export function MusicButton({ className }: MusicButtonProps) {
           </TooltipTrigger>
           <TooltipContent>
             <p>{isPlaying ? "Ambient Music: Playing" : "Ambient Music: Paused"}</p>
-            <p className="text-xs text-muted-foreground mt-1">Click to toggle music, long-press for controls</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to toggle music</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
-      {/* Sheet dialog with proper trigger */}
+      {/* Simple settings button to open sheet */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpen(true)}
+              className={cn(
+                "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2 ml-2",
+                className
+              )}
+              aria-label="Music settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Audio Settings</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      
+      {/* Sheet dialog for audio controls */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onPointerDown={() => {
-              const timer = setTimeout(() => setOpen(true), 500);
-              
-              const clearTimer = () => {
-                clearTimeout(timer);
-                window.removeEventListener('pointerup', clearTimer);
-              };
-              
-              window.addEventListener('pointerup', clearTimer, { once: true });
-            }}
-            className="absolute inset-0 w-full h-full opacity-0"
-            aria-label="Open music controls"
-          />
-        </SheetTrigger>
-        
         <SheetContent className="w-80 sm:max-w-md" side="right">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Music className="h-5 w-5" /> 
-              Ambient Audio Controls
+              Audio Controls
             </SheetTitle>
             <SheetDescription>
-              Adjust your sound preferences and manage playback settings
+              Adjust volume and playback settings
             </SheetDescription>
           </SheetHeader>
           
@@ -173,18 +177,6 @@ export function MusicButton({ className }: MusicButtonProps) {
                 )} />
                 <p className="text-sm">
                   {isPlaying ? "Currently playing" : "Paused"}
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Current Context</h4>
-              <div className="rounded-md border p-2">
-                <p className="text-sm font-medium capitalize text-primary">
-                  {location.startsWith('/') ? location.substring(1) || 'homepage' : location}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Your position is saved separately for each section
                 </p>
               </div>
             </div>
