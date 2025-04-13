@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Volume1, Volume } from 'lucide-react';
+import { Volume2, VolumeX, Volume1, Volume, Settings, Music } from 'lucide-react';
 import { useMusic } from '@/contexts/music-context';
 import type { PlaybackContext } from '@/contexts/music-context';
 import { cn } from '@/lib/utils';
@@ -12,10 +12,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 
 interface MusicButtonProps {
@@ -86,35 +91,66 @@ export function MusicButton({ className }: MusicButtonProps) {
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  if (!open) {
-                    toggleMusic();
-                  }
-                }}
-                className={cn(
-                  "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2 relative",
-                  isPlaying && "text-primary border-primary/40",
-                  className
-                )}
-                aria-label={isPlaying ? "Adjust music" : "Play music"}
-              >
-                <VolumeIcon />
-              </Button>
-            </TooltipTrigger>
-          </PopoverTrigger>
-          <PopoverContent className="w-60 p-4" align="end">
+    <div className="relative">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMusic}
+              className={cn(
+                "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2 relative",
+                isPlaying && "text-primary border-primary/40",
+                className
+              )}
+              aria-label={isPlaying ? "Toggle music" : "Play music"}
+            >
+              <VolumeIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isPlaying ? "Ambient Music: Playing" : "Ambient Music: Paused"}</p>
+            <p className="text-xs text-muted-foreground mt-1">Click to toggle music, long-press for controls</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Long press overlay - invisible button that activates on long press */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onPointerDown={() => {
+          const timer = setTimeout(() => setOpen(true), 500);
+          
+          const clearTimer = () => {
+            clearTimeout(timer);
+            window.removeEventListener('pointerup', clearTimer);
+          };
+          
+          window.addEventListener('pointerup', clearTimer, { once: true });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0"
+        aria-label="Open music controls"
+      />
+
+      {/* Music settings sheet */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className="w-80 sm:max-w-md" side="right">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Music className="h-5 w-5" /> 
+              Ambient Audio Controls
+            </SheetTitle>
+            <SheetDescription>
+              Adjust your sound preferences and manage playback settings
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="space-y-6 py-6">
             <div className="space-y-4">
-              <h4 className="font-medium leading-none mb-2">Music Controls</h4>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Volume</span>
+                <h4 className="text-sm font-medium">Volume</h4>
                 <span className="text-sm text-muted-foreground">{Math.round(volume * 100)}%</span>
               </div>
               <Slider
@@ -124,61 +160,72 @@ export function MusicButton({ className }: MusicButtonProps) {
                 onValueChange={(value) => setVolume(value[0] / 100)}
                 className="mt-2"
               />
-              {/* Context-aware controls */}
-              <div className="flex flex-col gap-2">
-                <div className="text-xs text-muted-foreground">
-                  <span>Current context: </span>
-                  <span className="font-semibold text-primary capitalize">{location.startsWith('/') ? location.substring(1) || 'homepage' : location}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    if (isPlaying) {
-                      toggleMusic();
-                    }
-                    setOpen(false);
-                  }}
-                >
-                  {isPlaying ? "Pause" : "Music Off"}
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={() => {
-                    if (!isPlaying) {
-                      // Context-aware resume
-                      let context: PlaybackContext = 'general';
-                      
-                      if (location.startsWith('/reader') || location.includes('/post/')) {
-                        context = 'reader';
-                      } else if (location.startsWith('/game')) {
-                        context = 'game';
-                      } else if (location.startsWith('/settings')) {
-                        context = 'settings';
-                      } else if (location === '/') {
-                        context = 'homepage';
-                      }
-                      
-                      resumeFromContext(context);
-                    }
-                    setOpen(false);
-                  }}
-                >
-                  {isPlaying ? "Keep Playing" : "Resume Music"}
-                </Button>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Playback Status</h4>
+              <div className="flex items-center space-x-2 rounded-md border p-2">
+                <div className={cn(
+                  "h-2 w-2 rounded-full",
+                  isPlaying ? "bg-green-500" : "bg-gray-400"
+                )} />
+                <p className="text-sm">
+                  {isPlaying ? "Currently playing" : "Paused"}
+                </p>
               </div>
             </div>
-          </PopoverContent>
-        </Popover>
-        <TooltipContent>
-          <p>{isPlaying ? "Whispers Wind Music: Playing" : "Ambient Background Music: Paused"}</p>
-          <p className="text-xs text-muted-foreground mt-1">Click to toggle, or click and hold for volume controls</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Current Context</h4>
+              <div className="rounded-md border p-2">
+                <p className="text-sm font-medium capitalize text-primary">
+                  {location.startsWith('/') ? location.substring(1) || 'homepage' : location}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your position is saved separately for each section
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <SheetFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (isPlaying) {
+                  toggleMusic();
+                }
+                setOpen(false);
+              }}
+            >
+              {isPlaying ? "Pause Music" : "Music Off"}
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!isPlaying) {
+                  // Context-aware resume
+                  let context: PlaybackContext = 'general';
+                  
+                  if (location.startsWith('/reader') || location.includes('/post/')) {
+                    context = 'reader';
+                  } else if (location.startsWith('/game')) {
+                    context = 'game';
+                  } else if (location.startsWith('/settings')) {
+                    context = 'settings';
+                  } else if (location === '/') {
+                    context = 'homepage';
+                  }
+                  
+                  resumeFromContext(context);
+                }
+                setOpen(false);
+              }}
+            >
+              {isPlaying ? "Keep Playing" : "Resume Music"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
