@@ -388,7 +388,9 @@ function App() {
                             </PullToRefresh>
                             {/* Site-wide elements outside of the main layout */}
                             <CookieConsent />
-                            <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
+                            {location !== '/' && (
+                              <ScrollToTopButton position="bottom-right" /* Using inline styles for reliable positioning */ />
+                            )}
                             {/* Conditionally show FeedbackButton */}
                             <ConditionalFeedbackButton />
                             

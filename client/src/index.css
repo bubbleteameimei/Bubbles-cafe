@@ -180,7 +180,7 @@ body.body-home div[class*="container"] {
   height: 100vh;
   background-image: url('/images/homepage-background.jpeg');
   background-size: cover; /* Show full image coverage */
-  background-position: center bottom; /* Position at the bottom */
+  background-position: center 80%; /* Position lower with precise control */
   background-repeat: no-repeat;
   background-attachment: fixed !important; /* Force fixed positioning */
   z-index: var(--z-background); /* Use our z-index system to place below content */
@@ -273,12 +273,16 @@ body.body-home::before {
   height: 100%;
   background-color: #000;
   background-image: url('/images/homepage-background.jpeg');
-  background-position: center bottom;
+  /* Position exactly at the header bottom */
+  background-position: center top;
+  transform: none; /* Reset transform */
+  top: 64px; /* Start exactly at the header bottom (16*4=64px) */
+  height: calc(100vh - 64px); /* Viewport height minus header */
   background-size: cover;
   background-repeat: no-repeat;
   z-index: -2;
-  transform: scale(1.0);
-  animation: subtleZoom 30s infinite alternate ease-in-out;
+  /* We don't need this scale since we've added translateY above */
+  /* animation: subtleZoom 30s infinite alternate ease-in-out; */
 }
 
 /* Override any theme background on containers when body-home is active */

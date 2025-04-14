@@ -113,11 +113,11 @@ export default function Home() {
               style={{ 
                 position: 'fixed',
                 left: 0,
-                top: 0,
+                top: '64px', /* Start exactly at the header bottom border (16*4=64px in Tailwind) */
                 width: '100vw',
-                height: '100vh',
+                height: 'calc(100vh - 64px)', /* Viewport height minus header */
                 objectFit: 'cover',
-                objectPosition: 'center bottom',
+                objectPosition: 'center top', /* Align to the top to push the image content down */
                 opacity: imageLoaded ? 0 : 1 /* Hide when main image loads */
               }}
             />
@@ -130,12 +130,11 @@ export default function Home() {
               style={{ 
                 position: 'fixed',
                 left: 0,
-                top: 0,
+                top: '64px', /* Start exactly at the header bottom border (16*4=64px in Tailwind) */
                 width: '100vw',
-                height: '100vh', /* Full screen height */
+                height: 'calc(100vh - 64px)', /* Viewport height minus header */
                 objectFit: 'cover',
-                objectPosition: 'center bottom', /* Position at the bottom */
-                animation: 'subtleZoom 30s infinite alternate ease-in-out',
+                objectPosition: 'center top', /* Align to the top to push the image content down */
                 willChange: 'transform'
               }}
               onLoad={() => {

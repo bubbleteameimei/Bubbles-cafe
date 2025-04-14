@@ -166,7 +166,7 @@ export function MusicButton({ className }: MusicButtonProps) {
               }}
               className={cn(
                 "h-8 w-8 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50 transition-all duration-150 active:scale-95 mt-2",
-                isPlaying && "text-primary border-primary/40",
+                isPlaying && "text-foreground border-border/60",
                 className
               )}
               aria-label={isPlaying ? "Toggle music" : "Play music"}
@@ -174,18 +174,18 @@ export function MusicButton({ className }: MusicButtonProps) {
               <VolumeIcon />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-background/95 backdrop-blur border border-border/30 text-foreground">
             {isPlaying ? (
               <>
                 <p>Ambient Music: {Math.round(volume * 100)}%</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-foreground/70 mt-1">
                   {isMobile ? 'Long-press for volume controls' : 'Scroll or right-click for volume'}
                 </p>
               </>
             ) : (
               <>
                 <p>Ambient Music: Off</p>
-                <p className="text-xs text-muted-foreground mt-1">Click to turn on</p>
+                <p className="text-xs text-foreground/70 mt-1">Click to turn on</p>
               </>
             )}
           </TooltipContent>
@@ -194,24 +194,24 @@ export function MusicButton({ className }: MusicButtonProps) {
       
       {/* Volume controls that show on long press/right click */}
       {isPlaying && showVolumeControls && (
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-card rounded-md shadow-md border border-border p-2 z-50 flex flex-col items-center">
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-background/95 backdrop-blur rounded-md shadow-md border border-border/30 p-2 z-50 flex flex-col items-center">
           <Button
             variant="ghost"
             size="icon"
             onClick={increaseVolume}
-            className="h-8 w-8 rounded-md hover:bg-accent/50"
+            className="h-8 w-8 rounded-md hover:bg-accent/50 text-foreground/80 hover:text-foreground"
             aria-label="Increase volume"
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
           
-          <div className="text-xs font-medium my-1">{Math.round(volume * 100)}%</div>
+          <div className="text-xs font-medium my-1 text-foreground">{Math.round(volume * 100)}%</div>
           
           <Button
             variant="ghost" 
             size="icon"
             onClick={decreaseVolume}
-            className="h-8 w-8 rounded-md hover:bg-accent/50"
+            className="h-8 w-8 rounded-md hover:bg-accent/50 text-foreground/80 hover:text-foreground"
             aria-label="Decrease volume"
           >
             <ChevronDown className="h-4 w-4" />
