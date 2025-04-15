@@ -16,7 +16,7 @@ export default function Footer() {
       <div className="w-full flex flex-col items-center px-0">
         {/* Copyright text - centered on top with normal (not blurred) text */}
         <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pt-4 pb-2">
-          © Bubble's Cafe 2022-2025. All rights reserved.
+          © Bubble's Cafe 2022-2025.&nbsp;&nbsp;All rights reserved.
         </div>
         
         {/* Simplified navigation links - centered on bottom row with minimal options */}
