@@ -5,7 +5,7 @@ export default function Footer() {
 
   return (
     <footer 
-      className="w-screen border-t border-primary/20 py-4 bg-background/90 backdrop-blur-md shadow-md"
+      className="w-screen border-t border-primary/20 py-3 bg-background/90 backdrop-blur-md shadow-md"
       style={{
         width: "100vw",
         left: 0,
@@ -14,14 +14,14 @@ export default function Footer() {
         padding: 0
       }}
     >
-      <div className="w-full flex flex-nowrap justify-between items-center px-6 md:px-10">
-        {/* Copyright text - left aligned with subtle gradient */}
-        <div className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary/90 to-primary/70 whitespace-nowrap">
+      <div className="w-full flex flex-col items-center px-6 md:px-10">
+        {/* Copyright text - centered on top with subtle gradient */}
+        <div className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary/90 to-primary/70 mb-2 whitespace-nowrap">
           © Bubble's Cafe {currentYear}
         </div>
         
-        {/* Navigation links - right aligned with elegant separator */}
-        <div className="flex items-center">
+        {/* Navigation links - centered on bottom row with elegant separator */}
+        <div className="flex items-center justify-center w-full">
           <Link href="/about" className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap">
             About
           </Link>
