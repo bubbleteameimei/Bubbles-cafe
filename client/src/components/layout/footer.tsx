@@ -6,7 +6,8 @@ export default function Footer() {
       className="w-screen border-t border-primary/20 bg-background/90 backdrop-blur-md shadow-md"
       style={{
         width: "100vw",
-        position: "relative",
+        position: "fixed",
+        bottom: 0,
         left: 0,
         right: 0,
         margin: 0,
