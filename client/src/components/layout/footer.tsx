@@ -5,7 +5,7 @@ export default function Footer() {
 
   return (
     <footer 
-      className="w-screen border-t border-gray-200 dark:border-gray-800 py-2 bg-background/95 backdrop-blur-sm shadow-sm"
+      className="w-screen border-t border-primary/20 py-4 bg-background/90 backdrop-blur-md shadow-md"
       style={{
         width: "100vw",
         left: 0,
@@ -14,24 +14,27 @@ export default function Footer() {
         padding: 0
       }}
     >
-      <div className="w-full flex justify-between items-center px-4">
-        {/* Copyright text - left aligned */}
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+      <div className="w-full flex flex-nowrap justify-between items-center px-6 md:px-10">
+        {/* Copyright text - left aligned with subtle gradient */}
+        <div className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary/90 to-primary/70 whitespace-nowrap">
           © Bubble's Cafe {currentYear}
         </div>
         
-        {/* Navigation links - right aligned */}
-        <div className="flex items-center gap-3">
-          <Link href="/about" className="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+        {/* Navigation links - right aligned with elegant separator */}
+        <div className="flex items-center">
+          <Link href="/about" className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap">
             About
           </Link>
-          <Link href="/contact" className="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+          <span className="text-primary/40">•</span>
+          <Link href="/contact" className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap">
             Contact
           </Link>
-          <Link href="/privacy" className="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+          <span className="text-primary/40">•</span>
+          <Link href="/privacy" className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap">
             Privacy
           </Link>
-          <Link href="/legal/terms" className="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+          <span className="text-primary/40">•</span>
+          <Link href="/legal/terms" className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap">
             Terms
           </Link>
         </div>
