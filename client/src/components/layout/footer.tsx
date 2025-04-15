@@ -1,6 +1,34 @@
 import { Link } from "wouter";
+import { useEffect } from "react";
 
 export default function Footer() {
+  // Calculate the footer height and apply padding to the body
+  useEffect(() => {
+    // Add padding to the main content to prevent footer overlap
+    const addMainContentPadding = () => {
+      const footer = document.querySelector('footer');
+      if (footer) {
+        const footerHeight = footer.offsetHeight;
+        document.body.style.paddingBottom = `${footerHeight}px`;
+        
+        // Reduce space between content and footer
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          mainContent.style.marginBottom = "0";
+        }
+      }
+    };
+    
+    // Run once on mount and on window resize
+    addMainContentPadding();
+    window.addEventListener('resize', addMainContentPadding);
+    
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('resize', addMainContentPadding);
+    };
+  }, []);
+  
   return (
     <footer 
       className="w-screen border-t border-primary/20 bg-background/90 backdrop-blur-md shadow-md"
@@ -11,7 +39,8 @@ export default function Footer() {
         left: 0,
         right: 0,
         margin: 0,
-        padding: 0
+        padding: 0,
+        zIndex: 50
       }}
     >
       <div className="w-full flex flex-col items-center px-0">
