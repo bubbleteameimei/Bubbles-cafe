@@ -14,8 +14,8 @@ export default function Footer() {
       }}
     >
       <div className="w-full flex flex-col items-center px-0">
-        {/* Copyright text - centered on top with subtle gradient */}
-        <div className="text-sm font-medium bg-clip-text text-transparent bg-gradient-to-r from-primary/90 to-primary/70 whitespace-nowrap pt-4 pb-2">
+        {/* Copyright text - centered on top with normal (not blurred) text */}
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pt-4 pb-2">
           © Bubble's Cafe 2022-2025. All rights reserved.
         </div>
         
