@@ -18,30 +18,7 @@
   animation: eyeMove 10s infinite, blink 10s infinite;
 }
 
-/* Enhanced eyeball loader for error pages */
-.eyeball-loader.error-page {
-  width: 160px;
-  margin: 0 auto;
-}
-.eyeball-loader.error-page::after,
-.eyeball-loader.error-page::before {
-  width: 70px;
-  height: 70px;
-  background-image: radial-gradient(circle 20px, #0d161b 100%, transparent 0);
-  box-shadow: 0 0 25px rgba(255, 0, 0, 0.2);
-  animation: eyeMove 8s infinite, blink 8s infinite, pulse 4s infinite;
-}
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 25px rgba(255, 0, 0, 0.2);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
-  }
-}
 @keyframes eyeMove {
   0%,
   10% {

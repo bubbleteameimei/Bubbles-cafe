@@ -10,7 +10,7 @@ import SimplifiedErrorPage from '@/components/errors/SimplifiedErrorPage';
 const NotFoundPage: React.FC = () => {
   // Set page title and meta description
   useEffect(() => {
-    document.title = "404 - LOST IN THE VOID | Horror Stories";
+    document.title = "404 - Page Not Found | Horror Stories";
     
     // Find the description meta tag, or create one if it doesn't exist
     let metaDescription = document.querySelector('meta[name="description"]');
@@ -19,7 +19,7 @@ const NotFoundPage: React.FC = () => {
       metaDescription.setAttribute('name', 'description');
       document.head.appendChild(metaDescription);
     }
-    metaDescription.setAttribute('content', "The page you're seeking has vanished into the darkness. Perhaps it was just a figment of your imagination, or something more sinister...");
+    metaDescription.setAttribute('content', "The page you're looking for doesn't exist or has been moved.");
     
     return () => {
       document.title = "Horror Stories";
@@ -29,9 +29,9 @@ const NotFoundPage: React.FC = () => {
   return (
     <SimplifiedErrorPage 
       statusCode={404}
-      title="LOST IN THE VOID"
-      message="The page you're seeking has vanished into the darkness. Perhaps it was just a figment of your imagination, or something more sinister..."
-      actionText="ESCAPE"
+      title="Page Not Found"
+      message="The page you're looking for doesn't exist or has been moved."
+      actionText="Go Home"
       actionLink="/"
     />
   );
