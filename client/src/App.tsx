@@ -58,85 +58,99 @@ import NotFoundRouteHandler from './components/NotFoundRouteHandler';
 import { PullToRefresh } from './components/ui/pull-to-refresh';
 import { RefreshProvider } from './contexts/refresh-context';
 
-// Import all pages directly - no lazy loading
-import ReaderPage from './pages/reader';
+// Import essential pages directly
 import HomePage from './pages/home';
 import StoriesPage from './pages/index';
-import AboutPage from './pages/about';
-import ContactPage from './pages/contact';
-import PrivacyPage from './pages/privacy';
-import ReportBugPage from './pages/report-bug';
-import PixelArtPage from './pages/PixelArtPage';
-import AuthPage from './pages/auth';
-import AuthSuccessPage from './pages/auth-success';
-import ProfilePage from './pages/profile';
-import BookmarksPage from './pages/bookmarks';
-import SearchResultsPage from './pages/SearchResults';
-import NotificationsPage from './pages/notifications';
 
-// Settings pages
-import ProfileSettingsPage from './pages/settings/profile';
-import ConnectedAccountsPage from './pages/settings/connected-accounts';
-import FontSettingsPage from './pages/settings/fonts';
-import AccessibilitySettingsPage from './pages/settings/accessibility';
-import NotificationSettingsPage from './pages/settings/notifications';
-import PrivacySettingsPage from './pages/settings/privacy';
-// DataExportPage import removed
-import CookieManagementPage from './pages/settings/cookie-management';
-import QuickSettingsPage from './pages/settings/quick-settings';
-import PreviewSettingsPage from './pages/settings/preview';
+// Lazy-load all other pages to improve initial load time
+const ReaderPage = React.lazy(() => import('./pages/reader'));
+const AboutPage = React.lazy(() => import('./pages/about'));
+const ContactPage = React.lazy(() => import('./pages/contact'));
+const PrivacyPage = React.lazy(() => import('./pages/privacy'));
+const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
+const PixelArtPage = React.lazy(() => import('./pages/PixelArtPage'));
+const AuthPage = React.lazy(() => import('./pages/auth'));
+const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
+const ProfilePage = React.lazy(() => import('./pages/profile'));
+const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
+const SearchResultsPage = React.lazy(() => import('./pages/SearchResults'));
+const NotificationsPage = React.lazy(() => import('./pages/notifications'));
 
-// Game pages
-import GameTestPage from './pages/game-test';
+// Settings pages - lazy loaded
+const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
+const ConnectedAccountsPage = React.lazy(() => import('./pages/settings/connected-accounts'));
+const FontSettingsPage = React.lazy(() => import('./pages/settings/fonts'));
+const AccessibilitySettingsPage = React.lazy(() => import('./pages/settings/accessibility'));
+const NotificationSettingsPage = React.lazy(() => import('./pages/settings/notifications'));
+const PrivacySettingsPage = React.lazy(() => import('./pages/settings/privacy'));
+const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-management'));
+const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
+const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-// Demo pages
-import ErrorDemoPage from './pages/error-demo';
+// Game pages - lazy loaded
+const GameTestPage = React.lazy(() => import('./pages/game-test'));
 
-// Admin pages
-import AdminPage from './pages/admin';
-import AdminAnalyticsPage from './pages/admin/analytics';
-import AdminAnalyticsDashboardPage from './pages/admin/analytics-dashboard';
-import AdminUsersPage from './pages/admin/users';
-import AdminSettingsPage from './pages/admin/settings';
-import AdminPostsPage from './pages/admin/posts';
-import AdminManagePostsPage from './pages/admin/manage-posts';
-import AdminFeedbackPage from './pages/admin/feedback';
-import AdminFeedbackManagementPage from './pages/admin/FeedbackAdmin';
-import AdminFeedbackReviewPage from './pages/admin/feedback-review';
-import AdminBugReportsPage from './pages/admin/bug-reports';
-import AdminContentModerationPage from './pages/admin/content-moderation';
-import AdminContentPage from './pages/admin/content';
-import AdminDashboardPage from './pages/admin/dashboard';
-import AdminSiteStatisticsPage from './pages/admin/site-statistics';
-import AdminWordPressSyncPage from './pages/admin/WordPressSyncPage';
-import AdminContentManagementPage from './pages/admin/content-management';
-import AdminThemesPage from './pages/admin/themes';
-import ResetPasswordPage from './pages/reset-password';
+// Demo pages - lazy loaded
+const ErrorDemoPage = React.lazy(() => import('./pages/error-demo'));
 
-// Error pages
-import Error403Page from './pages/errors/403';
-import Error404Page from './pages/errors/404';
-import Error429Page from './pages/errors/429';
-import Error500Page from './pages/errors/500';
-import Error503Page from './pages/errors/503';
-import Error504Page from './pages/errors/504';
+// Admin pages - lazy loaded
+const AdminPage = React.lazy(() => import('./pages/admin'));
+const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
+const AdminAnalyticsDashboardPage = React.lazy(() => import('./pages/admin/analytics-dashboard'));
+const AdminUsersPage = React.lazy(() => import('./pages/admin/users'));
+const AdminSettingsPage = React.lazy(() => import('./pages/admin/settings'));
+const AdminPostsPage = React.lazy(() => import('./pages/admin/posts'));
+const AdminManagePostsPage = React.lazy(() => import('./pages/admin/manage-posts'));
+const AdminFeedbackPage = React.lazy(() => import('./pages/admin/feedback'));
+const AdminFeedbackManagementPage = React.lazy(() => import('./pages/admin/FeedbackAdmin'));
+const AdminFeedbackReviewPage = React.lazy(() => import('./pages/admin/feedback-review'));
+const AdminBugReportsPage = React.lazy(() => import('./pages/admin/bug-reports'));
+const AdminContentModerationPage = React.lazy(() => import('./pages/admin/content-moderation'));
+const AdminContentPage = React.lazy(() => import('./pages/admin/content'));
+const AdminDashboardPage = React.lazy(() => import('./pages/admin/dashboard'));
+const AdminSiteStatisticsPage = React.lazy(() => import('./pages/admin/site-statistics'));
+const AdminWordPressSyncPage = React.lazy(() => import('./pages/admin/WordPressSyncPage'));
+const AdminContentManagementPage = React.lazy(() => import('./pages/admin/content-management'));
+const AdminThemesPage = React.lazy(() => import('./pages/admin/themes'));
+const ResetPasswordPage = React.lazy(() => import('./pages/reset-password'));
 
-// Legal Pages
-import CopyrightPage from './pages/legal/copyright';
-import TermsPage from './pages/legal/terms';
-import CookiePolicyPage from './pages/legal/cookie-policy';
+// Error pages - lazy loaded
+const Error403Page = React.lazy(() => import('./pages/errors/403'));
+const Error404Page = React.lazy(() => import('./pages/errors/404'));
+const Error429Page = React.lazy(() => import('./pages/errors/429'));
+const Error500Page = React.lazy(() => import('./pages/errors/500'));
+const Error503Page = React.lazy(() => import('./pages/errors/503'));
+const Error504Page = React.lazy(() => import('./pages/errors/504'));
 
-// Community Pages
-import CommunityPage from './pages/community';
-import SubmitStoryPage from './pages/submit-story';
-import EditStoryPage from './pages/edit-story';
-import FeedbackPage from './pages/feedback';
-import UserFeedbackDashboardPage from './pages/user/feedback-dashboard';
-import GuidelinesPage from './pages/support/guidelines';
-import CsrfTestPage from './pages/csrf-test';
+// Legal Pages - lazy loaded
+const CopyrightPage = React.lazy(() => import('./pages/legal/copyright'));
+const TermsPage = React.lazy(() => import('./pages/legal/terms'));
+const CookiePolicyPage = React.lazy(() => import('./pages/legal/cookie-policy'));
 
-// Preload WordPress posts immediately on app load
-preloadWordPressPosts();
+// Community Pages - lazy loaded
+const CommunityPage = React.lazy(() => import('./pages/community'));
+const SubmitStoryPage = React.lazy(() => import('./pages/submit-story'));
+const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
+const FeedbackPage = React.lazy(() => import('./pages/feedback'));
+const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback-dashboard'));
+const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
+const CsrfTestPage = React.lazy(() => import('./pages/csrf-test'));
+
+// Defer WordPress posts preloading until after initial page render
+// This improves initial load time significantly
+const preloadWordPressPostsDeferred = () => {
+  // Use requestIdleCallback for browsers that support it, or setTimeout as fallback
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => {
+      preloadWordPressPosts();
+    }, { timeout: 2000 }); // 2-second timeout
+  } else {
+    // Fallback to setTimeout with a slight delay
+    setTimeout(() => {
+      preloadWordPressPosts();
+    }, 1000); // 1-second delay
+  }
+};
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -339,9 +353,13 @@ function App() {
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
-  // Initialize WordPress sync service - managed internally with its own state
+  // Initialize WordPress sync service and defer content preloading
   useEffect(() => {
+    // Initialize the sync service first
     initWordPressSync();
+    
+    // Defer preloading content until after the initial render
+    preloadWordPressPostsDeferred();
   }, []);
   
   // Create a FeedbackButton wrapper component to handle visibility logic
@@ -383,7 +401,14 @@ function App() {
                               {/* Add PerformanceMonitor for metrics collection */}
                               <PerformanceMonitor />
                               <div className="app-content">
-                                <AppContent />
+                                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+                                  <div className="animate-pulse text-center">
+                                    <div className="h-10 w-40 bg-accent mx-auto rounded mb-4"></div>
+                                    <div className="h-4 w-60 bg-muted mx-auto rounded"></div>
+                                  </div>
+                                </div>}>
+                                  <AppContent />
+                                </React.Suspense>
                               </div>
                             </PullToRefresh>
                             {/* Site-wide elements outside of the main layout */}

@@ -162,7 +162,7 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
     slug,
     includeContent = true,
     skipCache = false,
-    maxRetries = 2
+    maxRetries = 1 // Reduced default retries from 2 to 1 for better performance
   } = options;
 
   // Check cache first (unless explicitly skipped)
@@ -229,9 +229,9 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
       const apiUrl = `${WORDPRESS_API_BASE}/posts?${params.toString()}`;
       console.log(`[WordPress] Request URL: ${apiUrl}`);
       
-      // Set up timeout handling with increased duration
+      // Set up timeout handling with optimized duration
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout (increased from 20s)
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout (reduced from 30s)
       
       try {
         // Make the fetch request with extended timeout
@@ -336,15 +336,15 @@ export async function fetchWordPressPosts(options: FetchPostsOptions = {}) {
         
         // Handle timeout errors specifically with better user feedback
         if (fetchError.name === 'AbortError') {
-          console.error(`[WordPress] Request timed out after 30 seconds`);
+          console.error(`[WordPress] Request timed out after 10 seconds`);
           // Store the timeout status for UI reporting
           localStorage.setItem('wp_sync_status', JSON.stringify({
             status: 'error',
             type: 'timeout',
-            message: 'WordPress API request timed out after 30 seconds',
+            message: 'WordPress API request timed out after 10 seconds',
             timestamp: Date.now()
           }));
-          throw new Error('WordPress API request timed out (30s)');
+          throw new Error('WordPress API request timed out (10s)');
         }
         
         // Re-throw the error for the retry logic
@@ -848,11 +848,12 @@ export function preloadWordPressPosts(): Promise<void> {
       return fallbackToServerAPI({ perPage: 5 });
     }
     
-    // API is available, fetch posts normally
+    // API is available, fetch posts normally with minimal options for faster load
     return fetchWordPressPosts({ 
-      perPage: 5, 
-      skipCache: true,
-      maxRetries: 1  // Limit retries for initial load
+      perPage: 3, // Reduced number of posts for initial load
+      skipCache: false, // Use cache if available
+      maxRetries: 0, // No retries for background refresh
+      includeContent: false // Skip content for faster loading
     }).then(result => {
       console.log(`[WordPress] Preloaded ${result.posts?.length || 0} posts successfully`);
       return result;

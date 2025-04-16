@@ -159,7 +159,7 @@ export default function Home() {
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-40 sm:pb-48 md:pb-56 lg:pb-64 text-center w-full min-h-screen">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
             <div>
               <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                 <span>BUBBLE'S</span>
