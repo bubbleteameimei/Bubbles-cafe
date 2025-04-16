@@ -103,15 +103,15 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
         }
 
         .loader span {
-          font-size: 24px;
-          font-family: 'Megrim', cursive;
+          font-size: 26px;
+          font-family: 'Megrim';
           font-weight: 400;
           animation: blur 2s linear infinite;
-          line-height: 24px;
+          line-height: 26px;
           transition: all 0.5s;
           letter-spacing: 0.2em;
           color: white;
-          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+          text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
         }
 
         .loader span:nth-child(1) { animation-delay: 0.0s; }
