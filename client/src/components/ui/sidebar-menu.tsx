@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
-
+import { useLoading } from "@/components/GlobalLoadingProvider"
 import { Button } from "@/components/ui/button"
 import {
   Collapsible,
@@ -38,7 +38,7 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
-  // No need for loading hooks in this file
+  const { showLoading } = useLoading(); // Add loading hook
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
@@ -117,11 +117,39 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     if (onNavigate) {
       onNavigate();
     }
+    
+    // Always show the loading screen for page transitions
+    // This ensures users see the loading animation instead of skeletons
+    showLoading();
+    
+    // Force close sidebar immediately to prevent it from staying open
     if (sidebar?.isMobile) {
+      // Immediately set state to false
       sidebar.setOpenMobile(false);
+      
+      // Attempt to force close any UI sheets by directly clicking close button
+      const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
+      if (closeButton) {
+        closeButton.click();
+      }
+      
+      // Ensure it's forced closed by directly removing any open class/attribute
+      const sidebarSheets = document.querySelectorAll('[role="dialog"]');
+      sidebarSheets.forEach(sheet => {
+        if (sheet.getAttribute('data-state') === 'open') {
+          sheet.setAttribute('data-state', 'closed');
+        }
+      });
+      
+      // Add a tiny delay before navigation to ensure UI state is updated
+      setTimeout(() => {
+        setLocation(path);
+      }, 10);
+    } else {
+      // On desktop, just navigate immediately
+      setLocation(path);
     }
-    setLocation(path);
-  }, [onNavigate, sidebar, setLocation]);
+  }, [onNavigate, sidebar, setLocation, showLoading]);
   
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {

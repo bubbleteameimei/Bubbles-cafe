@@ -401,10 +401,7 @@ function App() {
                               {/* Add PerformanceMonitor for metrics collection */}
                               <PerformanceMonitor />
                               <div className="app-content">
-                                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen" 
-                                  data-loading="skeleton"
-                                  style={{ display: 'none' }} // Initially hidden, will be managed by the LoadingScreen
-                                >
+                                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">
                                   <div className="animate-pulse text-center">
                                     <div className="h-10 w-40 bg-accent mx-auto rounded mb-4"></div>
                                     <div className="h-4 w-60 bg-muted mx-auto rounded"></div>
