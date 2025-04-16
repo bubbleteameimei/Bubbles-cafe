@@ -122,25 +122,29 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     // This ensures users see the loading animation instead of skeletons
     showLoading();
     
-    // Ensure the sidebar is closed on mobile navigation
-    // Adding a small delay to ensure UI state updates properly
+    // Force close sidebar immediately to prevent it from staying open
     if (sidebar?.isMobile) {
-      // First set state
+      // Immediately set state to false
       sidebar.setOpenMobile(false);
       
-      // Also force sheet to close by finding and clicking the close button if it exists
-      setTimeout(() => {
-        const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
-        if (closeButton) {
-          closeButton.click();
+      // Attempt to force close any UI sheets by directly clicking close button
+      const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
+      if (closeButton) {
+        closeButton.click();
+      }
+      
+      // Ensure it's forced closed by directly removing any open class/attribute
+      const sidebarSheets = document.querySelectorAll('[role="dialog"]');
+      sidebarSheets.forEach(sheet => {
+        if (sheet.getAttribute('data-state') === 'open') {
+          sheet.setAttribute('data-state', 'closed');
         }
-        
-        // Add an additional cleanup to make sure sidebar is closed
-        sidebar.setOpenMobile(false);
-        
-        // Navigate after ensuring sheet is closed
+      });
+      
+      // Add a tiny delay before navigation to ensure UI state is updated
+      setTimeout(() => {
         setLocation(path);
-      }, 50);
+      }, 10);
     } else {
       // On desktop, just navigate immediately
       setLocation(path);
