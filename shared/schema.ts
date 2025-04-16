@@ -26,7 +26,7 @@ export const posts = pgTable("posts", {
   slug: text("slug").notNull().unique(),
   authorId: integer("author_id").references(() => users.id).notNull(),
   isSecret: boolean("is_secret").default(false).notNull(),
-  isAdminPost: boolean("isAdminPost").default(false),
+  isAdminPost: boolean("is_admin_post").default(false),
   matureContent: boolean("mature_content").default(false).notNull(),
   themeCategory: text("theme_category"),
   themeIcon: text("theme_icon"),

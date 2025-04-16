@@ -1125,7 +1125,8 @@ export class DatabaseStorage implements IStorage {
       // Apply isAdminPost filter if specified
       if (filters.isAdminPost !== undefined) {
         try {
-          query = query.where(eq(postsTable.isAdminPost, filters.isAdminPost));
+          // Using SQL template for compatibility with column naming
+          query = query.where(sql`"is_admin_post" = ${filters.isAdminPost}`);
         } catch (error) {
           console.warn("Failed to apply isAdminPost filter via query builder, will apply later:", error);
           // We'll handle this in the post-processing step
@@ -1255,9 +1256,9 @@ export class DatabaseStorage implements IStorage {
             // Now using the isAdminPost column directly from the schema
             if (filters.isAdminPost !== undefined) {
               try {
-                // Try a direct SQL approach to check the isAdminPost column
+                // Try a direct SQL approach to check the is_admin_post column
                 const result = await db.execute(sql`
-                  SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
+                  SELECT id FROM posts WHERE "is_admin_post" = ${filters.isAdminPost}
                 `);
                 
                 const adminPostIds = result.rows.map(row => row.id);

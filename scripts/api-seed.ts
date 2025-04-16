@@ -260,6 +260,7 @@ async function seedFromWordPressAPI() {
                 slug, 
                 authorId: admin.id, 
                 isSecret: false,
+                isAdminPost: false,
                 createdAt: pubDate,
                 matureContent: false,
                 readingTimeMinutes,

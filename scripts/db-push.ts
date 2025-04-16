@@ -95,6 +95,7 @@ async function pushSchema() {
               "slug" TEXT NOT NULL UNIQUE,
               "author_id" INTEGER NOT NULL REFERENCES "users"("id"),
               "is_secret" BOOLEAN NOT NULL DEFAULT false,
+              "is_admin_post" BOOLEAN DEFAULT false,
               "mature_content" BOOLEAN NOT NULL DEFAULT false,
               "theme_category" TEXT,
               "reading_time_minutes" INTEGER,
