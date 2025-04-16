@@ -174,19 +174,19 @@ const AppContent = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
-  // Track page transitions and show loading animation
+  // Track page transitions and always show loading animation between pages
   useEffect(() => {
-    // Don't show loading screen on initial load
-    if (sessionStorage.getItem(`visited-${location}`)) {
-      // Skip loading if the page has been visited before
-      return;
+    // Store the current location to detect actual navigation
+    const prevLocation = sessionStorage.getItem('current-location');
+    
+    // Only show loading when actually changing pages (not on initial load)
+    if (prevLocation && prevLocation !== location) {
+      // Show loading animation for page transitions
+      showLoading();
     }
     
-    // Show loading animation for page transitions
-    showLoading();
-    
-    // Mark this page as visited
-    sessionStorage.setItem(`visited-${location}`, 'true');
+    // Update current location in session storage
+    sessionStorage.setItem('current-location', location);
     
     // The loading screen will automatically be hidden after the animation completes
   }, [location, showLoading]);

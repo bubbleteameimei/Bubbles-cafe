@@ -8,6 +8,7 @@ type LoadingContextType = {
   hideLoading: () => void;
   withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
   setLoadingMessage: (message: string) => void;
+  suppressSkeletons: boolean; // New property to prevent skeletons from showing during transitions
 };
 
 // Default context values
@@ -16,7 +17,8 @@ const LoadingContext = createContext<LoadingContextType>({
   showLoading: () => {},
   hideLoading: () => {},
   withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
-  setLoadingMessage: () => {}
+  setLoadingMessage: () => {},
+  suppressSkeletons: false // Default to not suppressing skeletons
 });
 
 /**
@@ -192,7 +194,8 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         showLoading, 
         hideLoading, 
         withLoading,
-        setLoadingMessage 
+        setLoadingMessage,
+        suppressSkeletons: isLoading // Suppress skeleton loaders when global loading is active
       }}
     >
       {children}

@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
+import { useLoading } from "@/components/GlobalLoadingProvider"
 import { Button } from "@/components/ui/button"
 import {
   Collapsible,
@@ -37,6 +38,7 @@ import {
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
+  const { showLoading } = useLoading(); // Add loading hook
   const [displayOpen, setDisplayOpen] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [supportOpen, setSupportOpen] = React.useState(false);
@@ -116,6 +118,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       onNavigate();
     }
     
+    // Always show the loading screen for page transitions
+    // This ensures users see the loading animation instead of skeletons
+    showLoading();
+    
     // Ensure the sidebar is closed on mobile navigation
     // Adding a small delay to ensure UI state updates properly
     if (sidebar?.isMobile) {
@@ -139,7 +145,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       // On desktop, just navigate immediately
       setLocation(path);
     }
-  }, [onNavigate, sidebar, setLocation]);
+  }, [onNavigate, sidebar, setLocation, showLoading]);
   
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {
