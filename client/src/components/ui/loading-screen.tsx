@@ -7,28 +7,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     return Math.floor(Math.random() * 20) < 1;
   });
   
-  // Use a less aggressive scrolling control mechanism
-  useEffect(() => {
-    // Only add the class to disable scrolling
-    document.body.classList.add('no-scroll-loading');
-    
-    console.log("[LoadingScreen] Scroll disabled with class-based method");
-    
-    // Restore original scrolling when component unmounts
-    return () => {
-      // Remove the temporary class
-      document.body.classList.remove('no-scroll-loading');
-      
-      // Force enable scrolling to fix any potential issues
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.documentElement.style.overflow = '';
-      
-      console.log("[LoadingScreen] Scroll re-enabled");
-    };
-  }, []);
-  
-  // Complete the animation after 2 seconds as requested
+  // Complete the animation after 2 seconds
   useEffect(() => {
     if (onAnimationComplete) {
       const timer = setTimeout(onAnimationComplete, 2000);

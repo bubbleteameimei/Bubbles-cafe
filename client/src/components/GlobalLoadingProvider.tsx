@@ -89,11 +89,58 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       setMessage(newMessage);
     }
     
+    // Force close any open modals, sheets, and sidebars
+    const closeAllUI = () => {
+      // Force close sheet/drawer UI elements
+      document.querySelectorAll('[role="dialog"][data-state="open"]').forEach(sheet => {
+        if (sheet instanceof HTMLElement) {
+          sheet.setAttribute('data-state', 'closed');
+          sheet.setAttribute('aria-hidden', 'true');
+          // Remove from tab order
+          sheet.setAttribute('tabindex', '-1');
+        }
+      });
+      
+      // Force close mobile navigation if open
+      document.querySelectorAll('[data-sidebar="sidebar"][data-mobile="true"]').forEach(sidebar => {
+        if (sidebar instanceof HTMLElement) {
+          const closeBtn = sidebar.querySelector('button');
+          if (closeBtn) closeBtn.click();
+        }
+      });
+      
+      // Manually close any visible sidebars by modifying state attributes
+      document.querySelectorAll('[data-state="expanded"]').forEach(element => {
+        if (element instanceof HTMLElement) {
+          element.setAttribute('data-state', 'collapsed');
+        }
+      });
+      
+      // Remove any modal backdrops
+      document.querySelectorAll('[role="presentation"]').forEach(backdrop => {
+        if (backdrop instanceof HTMLElement) {
+          backdrop.style.display = 'none';
+        }
+      });
+
+      // Force remove any Radix UI portals that might be lingering
+      document.querySelectorAll('[data-radix-portal]').forEach(portal => {
+        if (portal instanceof HTMLElement && portal.style.display !== 'none') {
+          portal.style.display = 'none';
+        }
+      });
+    };
+
+    // Close all UI elements before showing loading screen
+    closeAllUI();
+    
     // Immediately ensure body has the loading class (before React render)
     document.body.classList.add('loading-active');
     
-    // Use class-based scroll locking instead of direct style manipulation
+    // Use class-based scroll locking AND direct style manipulation for maximum compatibility
     document.body.classList.add('no-scroll-loading');
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     
     // Force browser to reflow/repaint to ensure the loading class takes effect immediately
     // This prevents any potential flash of content
