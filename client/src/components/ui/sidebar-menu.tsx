@@ -164,10 +164,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   // Enhanced menu item class with hover effects and prevent text wrapping
-  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap py-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0";
+  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap py-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 text-sm font-medium";
   
   // Enhanced submenu item class with hover effects and prevent text wrapping
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0";
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 text-sm font-medium";
 
 
 
@@ -178,8 +178,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-          Navigation
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          NAVIGATION
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
@@ -254,8 +254,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Games & Interactive Experiences */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-          Games & Interactive
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          GAMES & INTERACTIVE
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
@@ -278,8 +278,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
         <SidebarGroup className="mt-1">
-          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-            Administration
+          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+            ADMINISTRATION
           </SidebarGroupLabel>
           <SidebarGroupContent className="-mt-1">
             <SidebarMenu>
@@ -382,8 +382,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Accessibility */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-          Reading & Accessibility
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          READING & ACCESSIBILITY
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
@@ -470,8 +470,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-          Account Settings
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          ACCOUNT SETTINGS
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
@@ -556,8 +556,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Support & Legal */}
       <SidebarGroup className="mt-1">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1">
-          Support & Legal
+        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          SUPPORT & LEGAL
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
@@ -665,7 +665,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             onClick={() => handleNavigation("/auth")}
             aria-label="Sign in to your account"
           >
-            Sign In
+            SIGN IN
           </Button>
         ) : (
           <Button
@@ -679,7 +679,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             }}
             aria-label="Sign out of your account"
           >
-            Sign Out
+            SIGN OUT
           </Button>
         )}
 
@@ -695,7 +695,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           role="link"
         >
           <Bug className="h-4 w-4" aria-hidden="true" />
-          Report Bug
+          <span className="uppercase tracking-wider font-medium">Report Bug</span>
         </button>
       </div>
     </div>

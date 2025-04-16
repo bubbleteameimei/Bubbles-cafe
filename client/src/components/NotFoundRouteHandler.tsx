@@ -16,7 +16,7 @@ const NotFoundRouteHandler: React.FC<{children: React.ReactNode}> = ({ children 
   useEffect(() => {
     // Navigate to the 404 error page (or just render children)
     if (!children) {
-      setLocation('/error/404');
+      setLocation('/errors/404');
     }
   }, [setLocation, children]);
   

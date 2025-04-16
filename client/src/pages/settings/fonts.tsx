@@ -118,7 +118,7 @@ export default function FontSettingsPage() {
         <TabsContent value="fonts">
           <Card>
             <CardHeader>
-              <CardTitle>Font Settings</CardTitle>
+              <CardTitle className="uppercase tracking-wider text-sm font-semibold">Font Settings</CardTitle>
               <CardDescription>
                 Choose your preferred font family and size for a customized reading experience
               </CardDescription>
@@ -126,7 +126,7 @@ export default function FontSettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Font Size</h3>
+                  <h3 className="text-sm font-medium mb-2 uppercase tracking-wider">Font Size</h3>
                   <div className="flex flex-col space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Small</span>
@@ -153,7 +153,7 @@ export default function FontSettingsPage() {
                 <Separator className="my-2" />
                 
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Font Family</h3>
+                  <h3 className="text-sm font-medium mb-2 uppercase tracking-wider">Font Family</h3>
                   <Select value={fontFamily} onValueChange={handleFontFamilyChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a font" />
@@ -193,7 +193,7 @@ export default function FontSettingsPage() {
                 <div className="bg-muted/40 rounded-lg p-4 mt-2">
                   <div className="mb-2 flex items-center gap-2">
                     <Text className="h-4 w-4 text-primary/70" />
-                    <h3 className="text-sm font-medium">Selected Font: {availableFonts[fontFamily as FontFamilyKey].name}</h3>
+                    <h3 className="text-sm font-medium uppercase tracking-wider">Selected Font: {availableFonts[fontFamily as FontFamilyKey].name}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
                     {availableFonts[fontFamily as FontFamilyKey].description}
@@ -251,7 +251,7 @@ export default function FontSettingsPage() {
         <TabsContent value="layout">
           <Card>
             <CardHeader>
-              <CardTitle>Text Layout</CardTitle>
+              <CardTitle className="uppercase tracking-wider text-sm font-semibold">Text Layout</CardTitle>
               <CardDescription>
                 Adjust spacing and alignment for optimal reading comfort
               </CardDescription>
@@ -261,7 +261,7 @@ export default function FontSettingsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <AlignVerticalSpaceBetween className="h-4 w-4 text-primary/70" />
-                    <h3 className="text-sm font-medium">Line Spacing</h3>
+                    <h3 className="text-sm font-medium uppercase tracking-wider">Line Spacing</h3>
                   </div>
                   <div className="flex flex-col space-y-4">
                     <div className="flex items-center justify-between">
@@ -285,7 +285,7 @@ export default function FontSettingsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Baseline className="h-4 w-4 text-primary/70" />
-                    <h3 className="text-sm font-medium">Paragraph Spacing</h3>
+                    <h3 className="text-sm font-medium uppercase tracking-wider">Paragraph Spacing</h3>
                   </div>
                   <div className="flex flex-col space-y-4">
                     <div className="flex items-center justify-between">
@@ -309,7 +309,7 @@ export default function FontSettingsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <AlignLeft className="h-4 w-4 text-primary/70" />
-                    <h3 className="text-sm font-medium">Text Alignment</h3>
+                    <h3 className="text-sm font-medium uppercase tracking-wider">Text Alignment</h3>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <Button
@@ -410,7 +410,7 @@ export default function FontSettingsPage() {
         <TabsContent value="preview">
           <Card>
             <CardHeader>
-              <CardTitle>Reading Preview</CardTitle>
+              <CardTitle className="uppercase tracking-wider text-sm font-semibold">Reading Preview</CardTitle>
               <CardDescription>
                 Preview how stories will appear with your chosen typography settings
               </CardDescription>

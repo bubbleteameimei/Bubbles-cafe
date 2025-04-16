@@ -12,7 +12,7 @@ export function ThemeDemoSection() {
   return (
     <div className="p-6 space-y-8 max-w-3xl mx-auto my-8 rounded-lg border border-border bg-card/40 backdrop-blur-sm transition-all duration-300">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Theme Demo Section</h2>
+        <h2 className="text-2xl font-bold mb-2 uppercase tracking-wider">Theme Demo Section</h2>
         <p className="text-muted-foreground">
           Currently using <span className="font-semibold text-primary">{theme === 'dark' ? 'Dark' : 'Light'}</span> theme
         </p>
@@ -34,7 +34,7 @@ export function ThemeDemoSection() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="transition-all duration-300 hover:shadow-md">
           <CardHeader>
-            <CardTitle>Card Component</CardTitle>
+            <CardTitle className="uppercase tracking-wider text-sm font-semibold">Card Component</CardTitle>
           </CardHeader>
           <CardContent>
             <p>This is how card components look in {theme === 'dark' ? 'dark' : 'light'} mode.</p>
@@ -52,7 +52,7 @@ export function ThemeDemoSection() {
         
         <Card className="transition-all duration-300 hover:shadow-md">
           <CardHeader>
-            <CardTitle>Form Elements</CardTitle>
+            <CardTitle className="uppercase tracking-wider text-sm font-semibold">Form Elements</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -69,7 +69,7 @@ export function ThemeDemoSection() {
         
         <Alert className="transition-all duration-300">
           <InfoIcon className="h-4 w-4" />
-          <AlertTitle>Information</AlertTitle>
+          <AlertTitle className="uppercase tracking-wider text-sm font-semibold">Information</AlertTitle>
           <AlertDescription>
             This is how alerts appear in {theme === 'dark' ? 'dark' : 'light'} mode.
           </AlertDescription>
@@ -77,7 +77,7 @@ export function ThemeDemoSection() {
         
         <Alert variant="destructive" className="transition-all duration-300">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle className="uppercase tracking-wider text-sm font-semibold">Error</AlertTitle>
           <AlertDescription>
             Error alerts are equally visible in both themes.
           </AlertDescription>

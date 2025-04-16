@@ -100,7 +100,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                     <Button
                       key={item.path}
                       variant="ghost"
-                      className="justify-start"
+                      className="justify-start uppercase tracking-wider font-medium"
                       onClick={() => {
                         showLoading(); // Show loading screen before navigation
                         navigate(item.path);
@@ -113,7 +113,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                   
                   <Button
                     variant="ghost"
-                    className="justify-start"
+                    className="justify-start uppercase tracking-wider font-medium"
                     onClick={toggleSearch}
                   >
                     <Search className="h-4 w-4 mr-2" />
@@ -170,6 +170,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
+                      className="uppercase tracking-wider font-medium"
                       onClick={() => setShowSearch(false)}
                     >
                       Close
