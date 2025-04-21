@@ -118,37 +118,26 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       onNavigate();
     }
     
-    // Always show the loading screen for page transitions
-    // This ensures users see the loading animation instead of skeletons
+    // Show loading screen for page transitions
     showLoading();
     
-    // Force close sidebar immediately to prevent it from staying open
-    if (sidebar?.isMobile) {
-      // Immediately set state to false
+    // Simple mobile sidebar close - only on mobile
+    if (sidebar && sidebar.isMobile) {
       sidebar.setOpenMobile(false);
-      
-      // Attempt to force close any UI sheets by directly clicking close button
-      const closeButton = document.querySelector('[data-sidebar="sidebar"] button') as HTMLButtonElement;
-      if (closeButton) {
-        closeButton.click();
-      }
-      
-      // Ensure it's forced closed by directly removing any open class/attribute
-      const sidebarSheets = document.querySelectorAll('[role="dialog"]');
-      sidebarSheets.forEach(sheet => {
-        if (sheet.getAttribute('data-state') === 'open') {
-          sheet.setAttribute('data-state', 'closed');
-        }
-      });
-      
-      // Add a tiny delay before navigation to ensure UI state is updated
-      setTimeout(() => {
-        setLocation(path);
-      }, 10);
-    } else {
-      // On desktop, just navigate immediately
-      setLocation(path);
     }
+    
+    // Close any open collapsible menus in state only
+    setDisplayOpen(false);
+    setAccountOpen(false);
+    setSupportOpen(false);
+    setAdminOpen(false);
+    
+    // Simple class addition to help with CSS targeting
+    document.body.classList.add('sidebar-closed');
+    
+    // Navigate to the new location immediately
+    setLocation(path);
+    
   }, [onNavigate, sidebar, setLocation, showLoading]);
   
   // Function to render the active indicator for menu items

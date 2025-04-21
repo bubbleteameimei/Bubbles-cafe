@@ -9,6 +9,10 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
   
   // Use a less aggressive scrolling control mechanism
   useEffect(() => {
+    // Add a class to the body to identify when the loading screen is active
+    // This allows us to target elements that should be hidden during loading
+    document.body.classList.add('loading-screen-active');
+    
     // Only add the class to disable scrolling
     document.body.classList.add('no-scroll-loading');
     
@@ -16,6 +20,9 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     
     // Restore original scrolling when component unmounts
     return () => {
+      // Remove the identifier class
+      document.body.classList.remove('loading-screen-active');
+      
       // Remove the temporary class
       document.body.classList.remove('no-scroll-loading');
       
@@ -28,22 +35,51 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     };
   }, []);
   
-  // Complete the animation after 2 seconds as requested
+  // ALWAYS force close the loading screen after exactly 2 seconds, regardless of loading state
+  // This is a hard timeout that cannot be canceled or extended
   useEffect(() => {
-    if (onAnimationComplete) {
-      const timer = setTimeout(onAnimationComplete, 2000);
-      return () => clearTimeout(timer);
-    }
+    // Set a guaranteed timeout to force complete the animation after exactly 2 seconds
+    const timer = setTimeout(() => {
+      console.log("Loading screen auto-hidden after 2 seconds");
+      
+      // Clean up any UI side effects
+      document.body.classList.remove('loading-screen-active');
+      document.body.classList.remove('no-scroll-loading');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.documentElement.style.overflow = '';
+      
+      // Also trigger the animation complete callback if provided
+      if (onAnimationComplete) {
+        console.log("Loading screen animation complete - triggering callback");
+        onAnimationComplete();
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, [onAnimationComplete]);
   
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center z-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div 
+      className="fixed inset-0 flex flex-col items-center justify-center z-[9999]" 
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        width: '100vw', 
+        height: '100vh', 
+        overflow: 'hidden' 
+      }}
+    >
       {/* Conditionally show image background or just dark background */}
       {showImageBackground ? (
-        // Background image with dark overlay (special 5% chance)
+        // Background image with black overlay (special 5% chance)
         <div 
           className="absolute inset-0 z-0" 
           style={{
+            backgroundColor: '#000000',
             backgroundImage: `url(/loading-background.jpeg)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -57,14 +93,15 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
             height: '100vh'
           }}
         >
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-black/70"></div>
+          {/* Pure black overlay with no transparency */}
+          <div className="absolute inset-0 bg-black"></div>
         </div>
       ) : (
-        // Regular black background (95% chance)
+        // Pure black background with no transparency (95% chance)
         <div 
-          className="absolute inset-0 z-0 bg-black backdrop-blur-md"
+          className="absolute inset-0 z-0 bg-black"
           style={{
+            backgroundColor: '#000000',
             position: 'fixed', // Ensure fixed position
             top: 0,
             left: 0,
@@ -93,6 +130,10 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       </div>
 
       <style>{`
+        body.loading-screen-active .animate-pulse {
+          display: none !important;
+        }
+
         .loader {
           display: flex;
           gap: 0.5rem;

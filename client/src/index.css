@@ -26,6 +26,13 @@
 
 /* Global responsive design fixes */
 @layer base {
+  /* Completely disable the skeleton loading animation by overriding Tailwind's animate-pulse */
+  .animate-pulse {
+    animation: none !important;
+    background-color: hsl(var(--muted)) !important;
+    opacity: 0.3 !important;
+  }
+  
   html, body, #root {
     margin: 0;
     padding: 0;
@@ -401,6 +408,14 @@ body.no-scroll-loading {
   touch-action: none !important;
   -webkit-overflow-scrolling: none !important;
   overscroll-behavior: none !important;
+}
+
+/* Use a simpler approach to hide sidebar when loading screen is active */
+body.loading-screen-active .sidebar-root,
+body.sidebar-closed .sidebar-root {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
 }
 
 /* Mobile specific fixes - prevent horizontal scrolling and black borders */

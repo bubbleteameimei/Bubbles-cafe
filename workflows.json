@@ -4,7 +4,7 @@
       "name": "Start application",
       "command": "npm run dev",
       "wait_for_port": true,
-      "port": 3003
+      "port": 3004
     }
   ]
 }
