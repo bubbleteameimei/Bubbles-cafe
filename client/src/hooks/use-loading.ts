@@ -1,26 +1,8 @@
 /**
- * Standardized loading hook to provide compatibility with components
- * that expect the loading API, integrating with our centralized loading component
+ * Re-export loading hook from GlobalLoadingProvider for consistent usage
  */
-import { createContext, useContext, useState, type ReactNode, useCallback } from "react";
+import { useLoading } from '../components/GlobalLoadingProvider';
 
-// Create a context for loading state
-type LoadingContextType = {
-  isLoading: boolean;
-  showLoading: () => void;
-  hideLoading: () => void;
-  withLoading: <T,>(promise: Promise<T>) => Promise<T>;
-};
-
-const LoadingContext = createContext<LoadingContextType>({
-  isLoading: false,
-  showLoading: () => {},
-  hideLoading: () => {},
-  withLoading: <T,>(promise: Promise<T>): Promise<T> => promise
-});
-
-export function useLoading() {
-  return useContext(LoadingContext);
-}
-
+// Re-export for backward compatibility
+export { useLoading };
 export default useLoading;

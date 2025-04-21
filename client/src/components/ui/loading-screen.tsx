@@ -1,183 +1,74 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef } from "react";
 
+// This is a completely rewritten version of the loading screen that prioritizes
+// reliability and performance over complex features
 export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplete?: () => void }) => {
-  // State to determine if image background should be shown (1 out of 20 chance - 5%)
-  const [showImageBackground] = useState(() => {
-    // Generate random number between 0-19, if 0 then show image (5% chance)
-    return Math.floor(Math.random() * 20) < 1;
-  });
+  // Use refs to store original body state and callback execution state
+  const scrollY = useRef(0);
+  const callbackFired = useRef(false);
   
-  // Use a less aggressive scrolling control mechanism
+  // Effects should run only once on mount/unmount and be completely self-contained
   useEffect(() => {
-    // Add a class to the body to identify when the loading screen is active
-    // This allows us to target elements that should be hidden during loading
-    document.body.classList.add('loading-screen-active');
+    // Save current scroll position first
+    scrollY.current = window.scrollY;
     
-    // Only add the class to disable scrolling
-    document.body.classList.add('no-scroll-loading');
+    // Apply loading state - Use classes only, avoiding direct style manipulation
+    document.documentElement.classList.add('disable-scroll');
+    document.body.classList.add('loading-active');
     
-    console.log("[LoadingScreen] Scroll disabled with class-based method");
+    // Reset callback fired state
+    callbackFired.current = false;
     
-    // Restore original scrolling when component unmounts
-    return () => {
-      // Remove the identifier class
-      document.body.classList.remove('loading-screen-active');
-      
-      // Remove the temporary class
-      document.body.classList.remove('no-scroll-loading');
-      
-      // Force enable scrolling to fix any potential issues
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.documentElement.style.overflow = '';
-      
-      console.log("[LoadingScreen] Scroll re-enabled");
-    };
-  }, []);
-  
-  // ALWAYS force close the loading screen after exactly 2 seconds, regardless of loading state
-  // This is a hard timeout that cannot be canceled or extended
-  useEffect(() => {
-    // Set a guaranteed timeout to force complete the animation after exactly 2 seconds
-    const timer = setTimeout(() => {
-      console.log("Loading screen auto-hidden after 2 seconds");
-      
-      // Clean up any UI side effects
-      document.body.classList.remove('loading-screen-active');
-      document.body.classList.remove('no-scroll-loading');
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.documentElement.style.overflow = '';
-      
-      // Also trigger the animation complete callback if provided
-      if (onAnimationComplete) {
-        console.log("Loading screen animation complete - triggering callback");
+    // Create a hard timeout that will force-close the loading screen
+    // This is crucial to ensure the loading screen never gets stuck
+    const forceCloseTimer = setTimeout(() => {
+      if (!callbackFired.current && onAnimationComplete) {
+        callbackFired.current = true;
+        console.log("Loading screen force-closed after 2 seconds");
+        
+        // Run cleanup before calling completion callback
+        document.documentElement.classList.remove('disable-scroll');
+        document.body.classList.remove('loading-active');
+        
+        // Execute callback last to allow proper cleanup
         onAnimationComplete();
       }
     }, 2000);
     
-    return () => clearTimeout(timer);
+    // Comprehensive cleanup on unmount - ensures complete state reset
+    return () => {
+      // Clear the timeout first
+      clearTimeout(forceCloseTimer);
+      
+      // Remove all classes
+      document.documentElement.classList.remove('disable-scroll');
+      document.body.classList.remove('loading-active');
+      
+      // Restore scroll position if needed
+      window.scrollTo(0, scrollY.current);
+      
+      console.log("[LoadingScreen] Cleanup complete, scroll restored");
+    };
   }, [onAnimationComplete]);
   
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-center z-[9999]" 
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
-        width: '100vw', 
-        height: '100vh', 
-        overflow: 'hidden' 
-      }}
+      id="eden-loading-screen"
+      className="eden-loading-overlay"
+      aria-label="Loading screen"
+      aria-live="polite"
+      role="status"
     >
-      {/* Conditionally show image background or just dark background */}
-      {showImageBackground ? (
-        // Background image with black overlay (special 5% chance)
-        <div 
-          className="absolute inset-0 z-0" 
-          style={{
-            backgroundColor: '#000000',
-            backgroundImage: `url(/loading-background.jpeg)`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            position: 'fixed', // Ensure fixed position
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh'
-          }}
-        >
-          {/* Pure black overlay with no transparency */}
-          <div className="absolute inset-0 bg-black"></div>
-        </div>
-      ) : (
-        // Pure black background with no transparency (95% chance)
-        <div 
-          className="absolute inset-0 z-0 bg-black"
-          style={{
-            backgroundColor: '#000000',
-            position: 'fixed', // Ensure fixed position
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh'
-          }}
-        ></div>
-      )}
-      
-      {/* Loading text with higher z-index - Megrim font preloaded in index.html */}
-      <div className="loader relative z-10">
-        <span className="text-uppercase">L</span>
-        <span className="text-uppercase">O</span>
-        <span className="text-uppercase">A</span>
-        <span className="text-uppercase">D</span>
-        <span className="text-uppercase">I</span>
-        <span className="text-uppercase">N</span>
-        <span className="text-uppercase">G</span>
+      <div className="eden-loading-background"></div>
+      <div className="eden-loading-content">
+        <span>L</span>
+        <span>O</span>
+        <span>A</span>
+        <span>D</span>
+        <span>I</span>
+        <span>N</span>
+        <span>G</span>
       </div>
-
-      {/* ARIA live region for accessibility */}
-      <div className="sr-only" role="status" aria-live="polite">
-        Loading content, please wait...
-      </div>
-
-      <style>{`
-        body.loading-screen-active .animate-pulse {
-          display: none !important;
-        }
-
-        .loader {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .text-uppercase {
-          text-transform: uppercase;
-        }
-
-        .loader span {
-          font-size: 26px;
-          font-family: 'Megrim';
-          font-weight: 400;
-          animation: blur 2s linear infinite;
-          line-height: 26px;
-          transition: all 0.5s;
-          letter-spacing: 0.2em;
-          color: white;
-          text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-        }
-
-        .loader span:nth-child(1) { animation-delay: 0.0s; }
-        .loader span:nth-child(2) { animation-delay: 0.2s; }
-        .loader span:nth-child(3) { animation-delay: 0.4s; }
-        .loader span:nth-child(4) { animation-delay: 0.6s; }
-        .loader span:nth-child(5) { animation-delay: 0.8s; }
-        .loader span:nth-child(6) { animation-delay: 1.0s; }
-        .loader span:nth-child(7) { animation-delay: 1.2s; }
-        
-        @keyframes blur {
-          0% {
-            filter: blur(0px);
-            opacity: 1;
-          }
-          50% {
-            filter: blur(6px);
-            opacity: 0.5;
-          }
-          100% {
-            filter: blur(0px);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 });

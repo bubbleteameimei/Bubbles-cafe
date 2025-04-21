@@ -113,32 +113,66 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     };
   }, [sidebar, touchStartX]); // Dependencies include sidebar and touchStartX
 
+  // Navigation logic extracted to a separate state-controlled function
+  // This prevents race conditions and ensures clean navigation
+  const [isNavigating, setIsNavigating] = React.useState(false);
+  
   const handleNavigation = React.useCallback((path: string) => {
-    if (onNavigate) {
-      onNavigate();
+    // Prevent duplicate navigation or navigation while in progress
+    if (location === path || isNavigating) {
+      // Just close sidebar if already on this page
+      if (sidebar && sidebar.isMobile && path === location) {
+        sidebar.setOpenMobile(false);
+      }
+      return;
     }
     
-    // Show loading screen for page transitions
-    showLoading();
-    
-    // Simple mobile sidebar close - only on mobile
-    if (sidebar && sidebar.isMobile) {
-      sidebar.setOpenMobile(false);
+    try {
+      // Set navigating state to prevent multiple clicks
+      setIsNavigating(true);
+      
+      // Execute in strict sequence to prevent UI freezing:
+      
+      // 1. Reset UI state first (all menus closed)
+      setDisplayOpen(false);
+      setAccountOpen(false);
+      setSupportOpen(false);
+      setAdminOpen(false);
+      
+      // 2. Close mobile sidebar if open
+      if (sidebar && sidebar.isMobile) {
+        sidebar.setOpenMobile(false);
+      }
+      
+      // 3. If callback provided, call it
+      if (onNavigate) {
+        onNavigate();
+      }
+      
+      // 4. Show loading screen for page transitions
+      // This needs to be before navigation to ensure it's visible
+      showLoading();
+      
+      // 5. Start a timeout to ensure clean navigation
+      // This ensures the loading screen has time to appear before navigation
+      setTimeout(() => {
+        // Navigate to the new location
+        setLocation(path);
+        
+        // Reset navigation state after a delay
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 500);
+      }, 50);
+      
+    } catch (error) {
+      console.error("Navigation error:", error);
+      // Reset navigation state
+      setIsNavigating(false);
+      // Fallback to direct location navigation as last resort
+      window.location.href = path;
     }
-    
-    // Close any open collapsible menus in state only
-    setDisplayOpen(false);
-    setAccountOpen(false);
-    setSupportOpen(false);
-    setAdminOpen(false);
-    
-    // Simple class addition to help with CSS targeting
-    document.body.classList.add('sidebar-closed');
-    
-    // Navigate to the new location immediately
-    setLocation(path);
-    
-  }, [onNavigate, sidebar, setLocation, showLoading]);
+  }, [location, isNavigating, onNavigate, sidebar, setLocation, showLoading]);
   
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {

@@ -393,29 +393,113 @@ html.light body.body-home::after {
   animation: pulse-slow 3s infinite ease-in-out;
 }
 
-/* Specific class to completely disable scrolling during loading */
-body.no-scroll-loading {
+/* Eden's Hollow - Loading Screen System
+   Completely isolated from other CSS to avoid any conflicts */
+
+/* Prevent page scrolling during loading */
+html.disable-scroll {
   overflow: hidden !important;
   height: 100% !important;
-  width: 100% !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  touch-action: none !important;
-  -webkit-overflow-scrolling: none !important;
-  overscroll-behavior: none !important;
 }
 
-/* Use a simpler approach to hide sidebar when loading screen is active */
-body.loading-screen-active .sidebar-root,
-body.sidebar-closed .sidebar-root {
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease;
+/* Base container - isolated, highest z-index */
+#eden-loading-screen {
+  /* Fixed positioning to cover viewport */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  
+  /* Centering content */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+  /* Stacking context isolation */
+  z-index: 2147483647; /* Maximum possible z-index */
+  isolation: isolate;
+  
+  /* Prevent pointer events below */
+  pointer-events: all;
+}
+
+/* Loading background - pure black */
+.eden-loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  z-index: -1;
+}
+
+/* Loading text container */
+.eden-loading-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Individual loading text letters */
+.eden-loading-content span {
+  text-transform: uppercase;
+  font-size: 26px;
+  font-family: 'Megrim', 'Times New Roman', serif;
+  font-weight: 400;
+  animation: eden-loading-blur 2s linear infinite;
+  line-height: 26px;
+  letter-spacing: 0.2em;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Letter animation delays */
+.eden-loading-content span:nth-child(1) { animation-delay: 0.0s; }
+.eden-loading-content span:nth-child(2) { animation-delay: 0.2s; }
+.eden-loading-content span:nth-child(3) { animation-delay: 0.4s; }
+.eden-loading-content span:nth-child(4) { animation-delay: 0.6s; }
+.eden-loading-content span:nth-child(5) { animation-delay: 0.8s; }
+.eden-loading-content span:nth-child(6) { animation-delay: 1.0s; }
+.eden-loading-content span:nth-child(7) { animation-delay: 1.2s; }
+
+/* Loading text blur animation */
+@keyframes eden-loading-blur {
+  0% {
+    filter: blur(0px);
+    opacity: 1;
+  }
+  50% {
+    filter: blur(6px);
+    opacity: 0.5;
+  }
+  100% {
+    filter: blur(0px);
+    opacity: 1;
+  }
+}
+
+/* When loading is active - hide problematic elements */
+body.loading-active {
+  /* Ensure scroll lock */
+  overflow: hidden !important;
+  
+  /* Ensure sidebar is hidden during loading */
+  & .sidebar-navigation,
+  & .sidebar-menu,
+  & [data-state="open"],
+  & [role="dialog"] {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 }
 
 /* Mobile specific fixes - prevent horizontal scrolling and black borders */

@@ -1,192 +1,159 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { LoadingScreen } from './ui/loading-screen';
 
-// Create a loading context type with additional functionality
+// Define loading context type
 type LoadingContextType = {
   isLoading: boolean;
   showLoading: (message?: string) => void;
   hideLoading: () => void;
   withLoading: <T,>(promise: Promise<T>, message?: string) => Promise<T>;
   setLoadingMessage: (message: string) => void;
-  suppressSkeletons: boolean; // New property to prevent skeletons from showing during transitions
+  suppressSkeletons: boolean;
 };
 
-// Default context values
+// Create context with default values
 const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
   showLoading: () => {},
   hideLoading: () => {},
   withLoading: <T,>(promise: Promise<T>): Promise<T> => promise,
   setLoadingMessage: () => {},
-  suppressSkeletons: false // Default to not suppressing skeletons
+  suppressSkeletons: false
 });
 
 /**
  * Custom hook to access loading context
  */
-export function useLoading() {
+export const useLoading = () => {
   return useContext(LoadingContext);
 }
 
 /**
- * LoadingProvider component that manages global loading state
+ * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
+ * This provider manages the loading state in a simpler, more robust way
  */
 export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Core state
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | undefined>(undefined);
-  const [canHideLoading, setCanHideLoading] = useState(false);
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const minimumLoadTimeRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const hideRequestedRef = useRef(false);
   
-  // Cleanup function for any timers
+  // Refs for tracking state between renders
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const preventRapidShowRef = useRef(false);
+  
+  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
       }
-      if (minimumLoadTimeRef.current) {
-        clearTimeout(minimumLoadTimeRef.current);
-      }
     };
   }, []);
-
-  // Handle animation completion
+  
+  // Handle animation completion from loading screen
   const handleAnimationComplete = useCallback(() => {
-    setCanHideLoading(true);
-    console.log('[LoadingProvider] Animation complete');
+    // Loading animation has completed, update state
+    setIsLoading(false);
     
-    // If there was a request to hide loading while animation was in progress
-    if (hideRequestedRef.current) {
-      // Start a transition to hide the loading screen
-      setTimeout(() => {
-        setIsLoading(false);
-        setMessage(undefined);
-        document.body.classList.remove('loading-active');
-        hideRequestedRef.current = false;
-        
-        // Restore scrolling by removing the class
-        document.body.classList.remove('no-scroll-loading');
-        // Force scroll settings in case they get stuck
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-        console.log('[LoadingProvider] Scroll re-enabled after animation');
-        
-        // Clear loading state in sessionStorage
-        try {
-          sessionStorage.removeItem('app_loading');
-        } catch (e) {
-          // Ignore sessionStorage errors
-        }
-      }, 300); // Short delay for smooth transition
+    // Update session storage
+    try {
+      sessionStorage.removeItem('app_loading');
+    } catch (e) {
+      // Ignore storage errors
     }
+    
+    console.log('[LoadingProvider] Animation complete');
+    console.log('[LoadingProvider] Scroll re-enabled after animation');
+    
+    // Allow new loading actions after a short delay
+    setTimeout(() => {
+      preventRapidShowRef.current = false;
+    }, 300);
   }, []);
-
-  // Show loading state with optional message
+  
+  // Show loading screen
   const showLoading = useCallback((newMessage?: string) => {
+    // Prevent rapid show/hide cycles
+    if (preventRapidShowRef.current) return;
+    preventRapidShowRef.current = true;
+    
+    // Update message if provided
     if (newMessage) {
       setMessage(newMessage);
     }
     
-    // Immediately ensure body has the loading class (before React render)
-    document.body.classList.add('loading-active');
-    
-    // Use class-based scroll locking instead of direct style manipulation
-    document.body.classList.add('no-scroll-loading');
-    
-    // Force browser to reflow/repaint to ensure the loading class takes effect immediately
-    // This prevents any potential flash of content
-    void document.body.offsetHeight;
-    
+    // Set loading state
     setIsLoading(true);
-    setCanHideLoading(false);
-    hideRequestedRef.current = false;
-    startTimeRef.current = Date.now();
     
-    // Set a maximum timeout of 2 seconds for the loading screen
-    if (loadingTimerRef.current) {
-      clearTimeout(loadingTimerRef.current);
-    }
-    
-    // Store the loading state in sessionStorage to persist across page reloads
+    // Set storage state for persistence
     try {
       sessionStorage.setItem('app_loading', 'true');
       console.log('[LoadingProvider] Set loading state in session storage');
     } catch (e) {
-      // Ignore sessionStorage errors
+      // Ignore storage errors
+    }
+    
+    // Safety timer: force close after 2 seconds regardless of other state
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
     }
     
     loadingTimerRef.current = setTimeout(() => {
-      // Force hide loading after 2 seconds
+      // The loading screen component has its own 2-second timer
+      // This is a backup in case that fails for some reason
+      console.log('Loading provider backup timer triggered after 2.5 seconds');
       setIsLoading(false);
-      setMessage(undefined);
-      document.body.classList.remove('loading-active');
-      hideRequestedRef.current = false;
-      setCanHideLoading(true);
       
-      // Clear loading state in sessionStorage
       try {
         sessionStorage.removeItem('app_loading');
       } catch (e) {
-        // Ignore sessionStorage errors
+        // Ignore storage errors
       }
       
-      console.log('Loading screen auto-hidden after 2 seconds');
-    }, 2000);
+      // Reset prevention flag
+      preventRapidShowRef.current = false;
+    }, 2500); // Slightly longer than component timer
   }, []);
-
-  // Hide loading state, but only after animation completes
+  
+  // Hide loading screen
   const hideLoading = useCallback(() => {
-    // Clear the auto-hide timer if it exists
+    // Let the loading screen component handle itself
+    // It has its own cleanup logic and will call handleAnimationComplete
+    
+    // Just clean up the timer
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
       loadingTimerRef.current = null;
     }
     
-    // Remove loading state from sessionStorage
+    // Clear storage
     try {
       sessionStorage.removeItem('app_loading');
     } catch (e) {
-      // Ignore sessionStorage errors
+      // Ignore storage errors
     }
-    
-    // If animation has completed its cycle, we can hide immediately
-    if (canHideLoading) {
-      setIsLoading(false);
-      setMessage(undefined);
-      document.body.classList.remove('loading-active');
-      
-      // Restore scrolling by removing the class
-      document.body.classList.remove('no-scroll-loading');
-      // Force override any inline styles
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.documentElement.style.overflow = '';
-      // Force set touch action to auto to improve mobile scrolling
-      document.body.style.touchAction = 'auto';
-      console.log('[LoadingProvider] Scroll re-enabled on hide');
-    } else {
-      // Otherwise, we mark that a hide was requested
-      // The actual hide will happen when the animation completes
-      hideRequestedRef.current = true;
-    }
-  }, [canHideLoading]);
-
+  }, []);
+  
   // Utility to wrap promises with loading state
   const withLoading = useCallback(<T,>(promise: Promise<T>, loadingMessage?: string): Promise<T> => {
     showLoading(loadingMessage);
     
-    return promise.finally(() => {
-      hideLoading();
-    });
+    return promise
+      .then(result => {
+        hideLoading();
+        return result;
+      })
+      .catch(error => {
+        hideLoading();
+        throw error;
+      });
   }, [showLoading, hideLoading]);
-
+  
   // Update loading message
   const setLoadingMessage = useCallback((newMessage: string) => {
     setMessage(newMessage);
   }, []);
-
+  
   return (
     <LoadingContext.Provider 
       value={{ 
