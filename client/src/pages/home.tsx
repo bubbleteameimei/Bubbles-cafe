@@ -20,12 +20,9 @@ export default function Home() {
     // Set body to black immediately to prevent white flash
     document.body.style.backgroundColor = "#000";
     
-    // Preload both the blur and main images
-    const blurImg = new Image();
-    blurImg.src = "/blur-bg.jpg";
-    
+    // Preload the new background image
     const img = new Image();
-    img.src = "/optimized-bg.jpg";
+    img.src = "/images/homepage-bg.jpeg";
     img.onload = () => setImageLoaded(true);
     
     // Add the body-home class to enable background styling
@@ -47,9 +44,8 @@ export default function Home() {
     });
     
     // Log to console for debugging
-    console.log("[Homepage] Background blur image path: /blur-bg.jpg");
-    console.log("[Homepage] Background main image path: /optimized-bg.jpg");
-    console.log("[Homepage] Background setup complete with progressive loading");
+    console.log("[Homepage] Background image path: /images/homepage-bg.jpeg");
+    console.log("[Homepage] Background setup complete");
     
     return () => {
       // Clean up by removing classes when component unmounts
@@ -103,38 +99,21 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Progressive image loading with blur-up technique */}
+          {/* Full-screen background image that fills the entire page */}
           <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen overflow-hidden" style={{ zIndex: -2, backgroundColor: '#000' }}>
-            {/* Blurred smaller image that loads first */}
+            {/* Main background image */}
             <img 
-              src="/blur-bg.jpg" 
-              alt=""
-              className="w-full h-full object-cover transition-opacity duration-500"
-              style={{ 
-                position: 'fixed',
-                left: 0,
-                top: '64px', /* Start exactly at the header bottom border (16*4=64px in Tailwind) */
-                width: '100vw',
-                height: 'calc(100vh - 64px)', /* Viewport height minus header */
-                objectFit: 'cover',
-                objectPosition: 'center top', /* Align to the top to push the image content down */
-                opacity: imageLoaded ? 0 : 1 /* Hide when main image loads */
-              }}
-            />
-            
-            {/* Main optimized image that loads with higher quality */}
-            <img 
-              src="/optimized-bg.jpg" 
+              src="/images/homepage-bg.jpeg" 
               alt=""
               className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               style={{ 
                 position: 'fixed',
                 left: 0,
-                top: '64px', /* Start exactly at the header bottom border (16*4=64px in Tailwind) */
+                top: 0, /* Start from the very top of the page, including the header */
                 width: '100vw',
-                height: 'calc(100vh - 64px)', /* Viewport height minus header */
+                height: '100vh', /* Full viewport height */
                 objectFit: 'cover',
-                objectPosition: 'center top', /* Align to the top to push the image content down */
+                objectPosition: 'center center', /* Center the image */
                 willChange: 'transform'
               }}
               onLoad={() => {
@@ -146,11 +125,11 @@ export default function Home() {
             />
           </div>
           
-          {/* Extremely minimal overlay for just enough text visibility */}
+          {/* Dark overlay for better text visibility against the background */}
           <div 
             className="fixed top-0 left-0 right-0 bottom-0 w-full h-full" 
             style={{
-              background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.08) 100%)",
+              background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.6) 100%)",
               zIndex: -1
             }}
           />
