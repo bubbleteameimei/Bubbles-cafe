@@ -11,6 +11,9 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Discover thrilling horror stories in a gothic, dark academia inspired setting. Customize your reading experience, explore, and immerse yourself in dark fantasy. Dare to enter?" />
     
+    <!-- Cross-Origin Error Suppressor - Load before any other scripts -->
+    <script src="/js/error-polyfill.js" crossorigin="anonymous"></script>
+    
     <!-- Preload fonts for application -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,12 +34,12 @@
     <meta name="twitter:title" content="Bubble's Cafe - Immersive Horror Stories" />
     <meta name="twitter:description" content="Discover thrilling horror stories in a gothic, dark academia inspired setting. Customize your reading experience and immerse yourself in dark fantasy." />
     <!-- Phaser Game Library - Local Copy -->
-    <script src="/assets/js/phaser.min.js"></script>
+    <script src="/assets/js/phaser.min.js" crossorigin="anonymous"></script>
     <!-- Phaser Loader Helper -->
-    <script src="/assets/js/phaser-loader.js"></script>
+    <script src="/assets/js/phaser-loader.js" crossorigin="anonymous"></script>
   </head>
   <body class="min-h-screen w-full m-0 p-0 bg-black">
     <div id="root" class="min-h-screen w-full min-w-full max-w-full overflow-x-hidden mx-0 p-0"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" crossorigin="anonymous"></script>
   </body>
 </html>
