@@ -1,104 +1,185 @@
 /**
- * Performance Monitoring Hook
+ * usePerformanceMonitoring Hook
  * 
- * Custom hook to manage performance monitoring and reporting metrics
- * to the analytics endpoints.
+ * This hook provides performance monitoring functionality for components.
+ * It allows components to track and submit various metrics for analysis.
  */
-import { useCallback } from 'react';
-import { submitPerformanceMetrics } from '@/api/analytics';
+import { useCallback, useEffect } from 'react';
 
+type PerformanceMetricType = 'FCP' | 'LCP' | 'CLS' | 'TTFB' | 'TTI' | 'TBT' | 'FID' | 'LoadComplete' | 'LongTask' | 'Custom' | string;
+
+interface PerformanceMetric {
+  type: PerformanceMetricType;
+  value: number;
+  url: string;
+  userAgent: string;
+  timestamp: number;
+  sessionId?: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Hook for performance monitoring functionality
+ */
 export function usePerformanceMonitoring() {
-  /**
-   * Record and send a performance metric to the server
-   */
-  const recordMetric = useCallback((
-    metricName: string,
-    value: number,
-    identifier: string
-  ) => {
+  // Track initial page load performance
+  useEffect(() => {
     try {
-      // Get navigation type if available
-      const navigationEntry = performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming;
-      const navigationType = navigationEntry?.type || 'unknown';
-      
-      // Capture user agent
-      const userAgent = window.navigator.userAgent;
-      
-      // Get current URL
-      const url = window.location.pathname + window.location.search;
-      
-      // Submit metric to server
-      submitPerformanceMetrics({
-        metricName,
-        value,
-        identifier,
-        url,
-        userAgent,
-        navigationType
-      }).catch(error => {
-        console.warn(`Failed to submit ${metricName} metric:`, error);
-      });
-    } catch (error) {
-      console.warn(`Error recording metric ${metricName}:`, error);
+      // Record basic page load timing on initial mount
+      if (window.performance && window.performance.timing) {
+        const timing = window.performance.timing;
+        const loadTime = timing.loadEventEnd - timing.navigationStart;
+        const domReadyTime = timing.domComplete - timing.domLoading;
+        
+        // Log performance metrics to console in development
+        if (import.meta.env.DEV) {
+          console.log('[Performance] Page load time:', loadTime, 'ms');
+          console.log('[Performance] DOM ready time:', domReadyTime, 'ms');
+        }
+      }
+    } catch (e) {
+      console.warn('[Performance] Error measuring initial page load:', e);
     }
   }, []);
   
   /**
-   * Record Navigation Timing API metrics
+   * Record a performance metric
    */
-  const recordNavigationTiming = useCallback((identifier: string) => {
+  const recordMetric = useCallback((
+    type: PerformanceMetricType,
+    value: number,
+    sessionId?: string,
+    metadata?: Record<string, any>
+  ) => {
     try {
-      // Ensure Navigation Timing API is supported
-      if (!performance || !performance.getEntriesByType) {
-        return;
+      const metric: PerformanceMetric = {
+        type,
+        value,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now(),
+        sessionId,
+        metadata
+      };
+      
+      // Log metric to console in development
+      if (import.meta.env.DEV) {
+        console.log(`[Performance] Metric ${type}:`, value);
       }
       
-      // Get navigation timing data
-      const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      if (!navEntry) {
-        return;
+      // Store metric in localStorage for later sending
+      const storedMetrics = JSON.parse(localStorage.getItem('performance_metrics') || '[]');
+      storedMetrics.push(metric);
+      
+      // Keep only the last 50 metrics to avoid storage issues
+      if (storedMetrics.length > 50) {
+        storedMetrics.shift();
       }
       
-      // Record key navigation metrics
-      if (navEntry.domContentLoadedEventEnd) {
-        recordMetric('DOMContentLoaded', navEntry.domContentLoadedEventEnd, identifier);
-      }
+      localStorage.setItem('performance_metrics', JSON.stringify(storedMetrics));
       
-      if (navEntry.loadEventEnd) {
-        recordMetric('LoadComplete', navEntry.loadEventEnd, identifier);
-      }
+      // If we have a server endpoint, send metrics to server
+      sendMetricsToServer(storedMetrics);
+    } catch (error) {
+      console.warn('[Performance] Failed to record metric:', error);
+    }
+  }, []);
+  
+  /**
+   * Collect navigation timing metrics
+   */
+  const recordNavigationTiming = useCallback((sessionId?: string) => {
+    if (!window.performance || !window.performance.timing) {
+      return;
+    }
+    
+    // Wait for the page to fully load
+    if (document.readyState !== 'complete') {
+      window.addEventListener('load', () => {
+        // Give browser time to finalize timing measurements
+        setTimeout(() => recordNavigationTiming(sessionId), 100);
+      });
+      return;
+    }
+    
+    try {
+      const timing = window.performance.timing;
       
-      if (navEntry.connectEnd && navEntry.connectStart) {
-        recordMetric('ConnectionTime', navEntry.connectEnd - navEntry.connectStart, identifier);
-      }
+      // Calculate key metrics
+      const metrics = {
+        // Time to First Byte (TTFB)
+        ttfb: timing.responseStart - timing.navigationStart,
+        
+        // DOM Content Loaded
+        domContentLoaded: timing.domContentLoadedEventEnd - timing.navigationStart,
+        
+        // Load event
+        loadComplete: timing.loadEventEnd - timing.navigationStart,
+        
+        // DNS lookup time
+        dns: timing.domainLookupEnd - timing.domainLookupStart,
+        
+        // Connection time
+        connect: timing.connectEnd - timing.connectStart,
+        
+        // Request time
+        request: timing.responseEnd - timing.requestStart,
+        
+        // Response time
+        response: timing.responseEnd - timing.responseStart,
+        
+        // DOM processing time
+        domProcessing: timing.domComplete - timing.domLoading,
+      };
       
-      if (navEntry.responseEnd && navEntry.responseStart) {
-        recordMetric('ResponseTime', navEntry.responseEnd - navEntry.responseStart, identifier);
-      }
+      // Record each metric individually
+      Object.entries(metrics).forEach(([key, value]) => {
+        // Only record valid metrics (greater than zero)
+        if (value > 0) {
+          recordMetric(key as PerformanceMetricType, value, sessionId);
+        }
+      });
       
-      if (navEntry.domComplete && navEntry.domInteractive) {
-        recordMetric('DOMProcessingTime', navEntry.domComplete - navEntry.domInteractive, identifier);
+      // Log overview in development
+      if (import.meta.env.DEV) {
+        console.table(metrics);
       }
     } catch (error) {
-      console.warn('Error recording navigation timing:', error);
+      console.warn('[Performance] Error recording navigation timing:', error);
     }
   }, [recordMetric]);
   
   /**
-   * Record a custom user interaction metric
+   * Send collected metrics to the server
    */
-  const recordInteractionMetric = useCallback((
-    interactionType: string,
-    duration: number,
-    identifier: string = window.location.pathname + '-' + Date.now()
-  ) => {
-    recordMetric(`Interaction-${interactionType}`, duration, identifier);
-  }, [recordMetric]);
+  const sendMetricsToServer = async (metrics: PerformanceMetric[]) => {
+    // Skip if no metrics or in development
+    if (!metrics.length) return;
+    
+    try {
+      const response = await fetch('/api/performance/metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ metrics }),
+        // Don't block the UI for this non-critical operation
+        keepalive: true,
+      });
+      
+      if (response.ok) {
+        // Clear successfully sent metrics
+        localStorage.removeItem('performance_metrics');
+      }
+    } catch (error) {
+      // Silent failure is acceptable for performance tracking
+      console.debug('[Performance] Failed to send metrics to server:', error);
+    }
+  };
   
   return {
     recordMetric,
     recordNavigationTiming,
-    recordInteractionMetric
   };
 }
 

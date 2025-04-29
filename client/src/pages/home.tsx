@@ -111,7 +111,7 @@ export default function Home() {
                 left: 0,
                 top: 0, /* Start from the very top of the page, including the header */
                 width: '100vw',
-                height: '100vh', /* Full viewport height */
+                height: 'calc(100vh - 60px)', /* Full viewport height minus space for footer */
                 objectFit: 'cover',
                 objectPosition: 'center center', /* Center the image */
                 willChange: 'transform'

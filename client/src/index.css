@@ -182,18 +182,21 @@ body.body-home div[class*="container"] {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Position to leave space at bottom for footer */
+  bottom: 60px;
   width: 100vw;
-  height: 100vh;
-  background-image: url('/images/homepage-background.jpeg');
+  /* Height leaves space for footer */
+  height: calc(100vh - 60px);
+  background-image: url('/images/homepage-bg.jpeg');
   background-size: cover; /* Show full image coverage */
-  background-position: center 80%; /* Position lower with precise control */
+  background-position: center center; /* Center the image */
   background-repeat: no-repeat;
   background-attachment: fixed !important; /* Force fixed positioning */
   z-index: var(--z-background); /* Use our z-index system to place below content */
   pointer-events: none; /* Allow clicks to pass through */
   transform: translateZ(0); /* Hardware acceleration to fix jittering */
   will-change: transform; /* Optimize for animations */
+  animation: subtleZoom 30s infinite alternate ease-in-out;
 }
 
 /* Gradient overlay for better text visibility - extremely minimal */
@@ -279,17 +282,17 @@ body.body-home::before {
   width: 100%;
   height: 100%;
   background-color: #000;
-  background-image: url('/images/homepage-background.jpeg');
-  /* Position exactly at the header bottom */
-  background-position: center top;
+  background-image: url('/images/homepage-bg.jpeg'); /* Use the new image */
+  /* Position from the top of the page (including header) */
+  background-position: center center;
   transform: none; /* Reset transform */
-  top: 64px; /* Start exactly at the header bottom (16*4=64px) */
-  height: calc(100vh - 64px); /* Viewport height minus header */
+  /* Fill full height but leave 60px at bottom for footer */
+  height: calc(100vh - 60px); 
   background-size: cover;
   background-repeat: no-repeat;
   z-index: -2;
-  /* We don't need this scale since we've added translateY above */
-  /* animation: subtleZoom 30s infinite alternate ease-in-out; */
+  /* Add subtle zoom animation for a more dynamic feel */
+  animation: subtleZoom 30s infinite alternate ease-in-out;
 }
 
 /* Override any theme background on containers when body-home is active */
