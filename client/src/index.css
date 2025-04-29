@@ -464,6 +464,32 @@ html.disable-scroll {
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+/* Fallback loading text - shown when Megrim font fails to load */
+.eden-loading-fallback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: system-ui, -apple-system, sans-serif; /* System font fallback */
+  font-size: 18px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  opacity: 0; /* Hidden by default */
+  animation: fallback-fade 500ms ease-in forwards;
+  animation-delay: 1000ms; /* Only appear after a delay if main content fails */
+  background: transparent; /* Ensure no box shows */
+  text-align: center;
+  font-weight: 500;
+  z-index: 0; /* Below main content */
+}
+
+/* Animation to fade in the fallback */
+@keyframes fallback-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Letter animation delays */
 .eden-loading-content span:nth-child(1) { animation-delay: 0.0s; }
 .eden-loading-content span:nth-child(2) { animation-delay: 0.2s; }

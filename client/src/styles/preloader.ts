@@ -135,14 +135,8 @@ export function addInitialLoadingIndicator() {
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
   
-  // Create loading text
-  const loadingText = document.createElement('div');
-  loadingText.className = 'loading-text';
-  loadingText.textContent = 'Loading';
-  
-  // Add elements to overlay
+  // Add spinner to overlay (removed loading text to prevent overlapping)
   initialLoadingOverlay.appendChild(spinner);
-  initialLoadingOverlay.appendChild(loadingText);
   
   // Add overlay to body
   document.body.appendChild(initialLoadingOverlay);

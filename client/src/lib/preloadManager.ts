@@ -185,6 +185,54 @@ export function preloadImage(url: string, options: PreloadOptions = {}): Promise
 }
 
 /**
+ * Preload a font file
+ * 
+ * @param url Font URL or Google Fonts name
+ * @param options Preload options
+ * @returns Promise that resolves when the font is loaded
+ */
+export function preloadFont(url: string, options: PreloadOptions = {}): Promise<void> {
+  // For Google Fonts, handle differently by loading a stylesheet
+  if (url.includes('fonts.googleapis.com') || url.startsWith('Megrim') || url.startsWith('Crimson')) {
+    // Create a link for Google Fonts
+    const fontName = url.startsWith('Megrim') ? 'Megrim' : 
+                    url.startsWith('Crimson') ? 'Crimson+Text' : url;
+    
+    const fontUrl = `https://fonts.googleapis.com/css2?family=${fontName}&display=${options.fontDisplay || 'swap'}`;
+    
+    // For Google Fonts, we need to create a stylesheet link instead of preload
+    return new Promise<void>((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = fontUrl;
+      
+      link.onload = () => {
+        console.log(`[Preloader] Successfully loaded Google Font: ${fontName}`);
+        if (options.onLoad) options.onLoad();
+        resolve();
+      };
+      
+      link.onerror = (error) => {
+        console.error(`[Preloader] Error loading Google Font: ${fontName}`, error);
+        if (options.onError) options.onError(error as unknown as Error);
+        reject(new Error(`Failed to load font: ${fontName}`));
+      };
+      
+      // Add to document head
+      document.head.appendChild(link);
+    });
+  }
+  
+  // For local font files
+  return preload(url, { 
+    ...options, 
+    as: 'font',
+    fontDisplay: options.fontDisplay || 'swap',
+    crossOrigin: true
+  });
+}
+
+/**
  * Preload critical page resources based on current route
  * 
  * @param route Current route
@@ -313,6 +361,7 @@ export default {
   preload,
   preloadAll,
   preloadImage,
+  preloadFont,
   preloadRoute,
   preloadApiData,
   clearPreloadedResources,

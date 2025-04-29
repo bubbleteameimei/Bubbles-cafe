@@ -79,6 +79,23 @@ export function usePreloading() {
   }, []);
   
   /**
+   * Preload a specific font
+   */
+  const preloadFont = useCallback(async (fontName: string, options = {}) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await preloadManager.preloadFont(fontName, options);
+      setIsLoading(false);
+    } catch (err) {
+      setError(err as Error);
+      setIsLoading(false);
+      console.error('[usePreloading] Error preloading font:', err);
+    }
+  }, []);
+  
+  /**
    * Preload API data 
    */
   const preloadApiData = useCallback(async <T>(endpoint: string, options: RequestInit = {}) => {
@@ -128,6 +145,7 @@ export function usePreloading() {
     preloadRoute,
     preloadAssets,
     preloadImage,
+    preloadFont,
     preloadApiData,
     clearPreloadedResources,
   };

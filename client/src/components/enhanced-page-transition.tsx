@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { LoadingScreen } from './ui/loading-screen';
+import { useLoading } from './GlobalLoadingProvider';
 
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
@@ -12,11 +12,11 @@ export function EnhancedPageTransition({
   minLoadingTime = 850, // Reduced minimum loading time for better user experience (850ms is enough for animation)
 }: EnhancedPageTransitionProps) {
   const [location] = useLocation();
-  const [showLoading, setShowLoading] = useState(false);
   const [currentChildren, setCurrentChildren] = useState(children);
   const prevLocationRef = useRef<string>(location);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const { showLoading, hideLoading } = useLoading();
   
   // Simple page transition using just React state
   useEffect(() => {
@@ -25,8 +25,8 @@ export function EnhancedPageTransition({
       // Start timing for minimum loading display
       startTimeRef.current = Date.now();
       
-      // Show loading immediately
-      setShowLoading(true);
+      // Use the GlobalLoadingProvider instead of local state
+      showLoading();
       
       // Clear any existing timeouts
       if (timeoutRef.current) {
@@ -47,7 +47,7 @@ export function EnhancedPageTransition({
           // Give the DOM a moment to update before hiding loading screen
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              setShowLoading(false);
+              hideLoading();
               prevLocationRef.current = location;
             });
           });
@@ -64,13 +64,10 @@ export function EnhancedPageTransition({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [location, children, minLoadingTime]);
+  }, [location, children, minLoadingTime, showLoading, hideLoading]);
   
   return (
     <div className="page-transition-container">
-      {/* Just use the standardized loading screen component */}
-      {showLoading && <LoadingScreen onAnimationComplete={() => setShowLoading(false)} />}
-      
       {/* Current page content */}
       <div className="page-content">
         {currentChildren}
