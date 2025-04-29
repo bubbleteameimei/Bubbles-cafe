@@ -1,15 +1,17 @@
 import React from 'react';
 
-interface SettingsSectionProps {
+export interface SettingsSectionProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
+  includeSeparator?: boolean;
 }
 
 export function SettingsSection({ 
   title, 
   description, 
-  children 
+  children,
+  includeSeparator = true
 }: SettingsSectionProps) {
   return (
     <div className="space-y-4">
@@ -24,6 +26,7 @@ export function SettingsSection({
         </div>
       )}
       {children}
+      {includeSeparator && <div className="border-b my-6" />}
     </div>
   );
 }
