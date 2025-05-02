@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ContactForm from "@/components/contact/contact-form";
+import NewsletterSubscription from "@/components/newsletter/newsletter-subscription";
 
 export default function Contact() {
   return (
     <div className="relative min-h-screen">
-      <div className="container mx-auto px-4 py-12 space-y-8">
+      <div className="container mx-auto px-4 py-12 space-y-16">
         <Card className="max-w-2xl mx-auto backdrop-blur-sm bg-card/90">
           <CardHeader>
             <CardTitle className="text-center">Contact Me</CardTitle>
@@ -13,6 +14,11 @@ export default function Contact() {
             <ContactForm />
           </CardContent>
         </Card>
+        
+        {/* Newsletter Subscription */}
+        <div className="max-w-4xl mx-auto">
+          <NewsletterSubscription />
+        </div>
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 import gameRoutes from './routes/game';
 import searchRouter from './routes/search';
+import newsletterRouter from './routes/newsletter';
 import { setCsrfToken, csrfTokenToLocals, validateCsrfToken } from './middleware/csrf-protection';
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db-connect";
@@ -2623,6 +2624,23 @@ Message ID: ${savedMessage.id}
   
   // Register search routes
   app.use('/api/search', searchRouter);
+  
+  // Register newsletter routes
+  app.use('/api/newsletter', newsletterRouter);
+  
+  // Email configuration check endpoint
+  app.get('/api/check-email-config', (req, res) => {
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD ? 'Password is set' : 'Password not set';
+    
+    return res.json({
+      success: true,
+      emailConfig: {
+        gmailUser,
+        gmailPassword
+      }
+    });
+  });
 
   // User statistics endpoint
   app.get("/api/users/stats", isAuthenticated, async (req, res) => {

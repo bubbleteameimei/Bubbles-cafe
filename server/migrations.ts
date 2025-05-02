@@ -58,6 +58,28 @@ export async function runMigrations() {
 async function createMissingTables(existingTables: string[], client: any) {
   // Track which tables were attempted and successfully created
   const creationAttempts: Record<string, boolean> = {};
+  
+  // Create newsletter_subscriptions table if it doesn't exist
+  if (!existingTables.includes('newsletter_subscriptions')) {
+    try {
+      log("[Migrations] Creating newsletter_subscriptions table");
+      await client.query(`
+        CREATE TABLE newsletter_subscriptions (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'active',
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `);
+      log("[Migrations] newsletter_subscriptions table created");
+      creationAttempts['newsletter_subscriptions'] = true;
+    } catch (error) {
+      log("[Migrations] Error creating newsletter_subscriptions table:", error);
+      creationAttempts['newsletter_subscriptions'] = false;
+    }
+  }
   // Create performance_metrics table if it doesn't exist
   if (!existingTables.includes('performance_metrics')) {
     try {

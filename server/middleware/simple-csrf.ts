@@ -26,7 +26,9 @@ const DEFAULT_EXCLUDED_PATHS = [
   '/api/reader/bookmarks',
   '/api/analytics',
   '/api/wordpress/sync',
-  '/api/contact'
+  '/api/contact',
+  '/api/newsletter/subscribe',
+  '/api/newsletter/unsubscribe'
 ];
 
 // List of methods that don't need CSRF protection
@@ -84,11 +86,17 @@ export function createCsrfMiddleware(options: {
     }
 
     // 3. Check if the path should be excluded from CSRF validation
+    // Log path info for debugging
+    console.log(`CSRF checking path: ${req.method} ${req.path} (API full: ${req.originalUrl})`);
+    console.log(`Ignore paths:`, ignorePaths);
+    
     const shouldExcludePath = ignorePaths.some(path => 
       req.path === path || 
       req.path.startsWith(path) ||
       req.originalUrl === path ||
-      req.originalUrl.startsWith(path)
+      req.originalUrl.startsWith(path) ||
+      // Handle the case where API path might be mapped differently
+      req.originalUrl.includes(path)
     );
 
     if (shouldExcludePath) {

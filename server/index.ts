@@ -1,3 +1,54 @@
+// Load environment variables manually since we're having trouble with dotenv
+import fs from 'fs';
+import path from 'path';
+
+// Manual environment variable loader
+function loadEnvFile(filePath: string) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const envContent = fs.readFileSync(filePath, 'utf8');
+      const envLines = envContent.split('\n');
+      
+      for (const line of envLines) {
+        // Skip comments and empty lines
+        if (line.trim().startsWith('#') || line.trim() === '') continue;
+        
+        // Parse key=value pairs
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+          const key = match[1];
+          let value = match[2] || '';
+          
+          // Remove quotes if present
+          if (value.length > 0 && (value.startsWith('"') && value.endsWith('"')) 
+              || (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.substring(1, value.length - 1);
+          }
+          
+          // Only set if not already defined
+          if (!process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      }
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`[ENV] Error loading env file ${filePath}:`, error);
+    return false;
+  }
+}
+
+// Load .env file from project root
+const envPath = path.resolve(process.cwd(), '.env');
+loadEnvFile(envPath);
+
+// Log environment variables being loaded
+console.log('[ENV] Loading Gmail credentials from .env file');
+console.log('[ENV] GMAIL_USER:', process.env.GMAIL_USER ? 'Set' : 'Not set');
+console.log('[ENV] GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
+
 import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
@@ -6,7 +57,6 @@ import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
-import path from "path";
 import helmet from "helmet";
 import compression from "compression";
 import crypto from "crypto";
@@ -121,7 +171,23 @@ app.use(session({
 app.use(createCsrfMiddleware({
   // Only exclude essential API endpoints that are properly authenticated
   ignorePaths: [
-    // No paths excluded - all routes require CSRF protection
+    '/health',
+    '/api/health',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/verify-reset-token',
+    '/api/feedback',
+    '/api/posts',
+    '/api/reader/bookmarks',
+    '/api/analytics',
+    '/api/wordpress/sync',
+    '/api/contact',
+    '/api/newsletter/subscribe',
+    '/api/newsletter/unsubscribe',
+    '/api/check-email-config',
+    '/api/performance/metrics'
   ],
   cookie: {
     secure: !isDev, // Secure cookies in production

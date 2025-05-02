@@ -25,6 +25,7 @@ import {
   type Bookmark, type InsertBookmark,
   type UserFeedback, type InsertUserFeedback,
   type UserPrivacySettings, type InsertUserPrivacySettings,
+  type NewsletterSubscription, type InsertNewsletterSubscription,
   // Game types
   type GameSaveRecord, type InsertGameSave,
   type GameProgressRecord, type InsertGameProgress,
@@ -37,6 +38,7 @@ import {
   secretProgress,
   users,
   contactMessages,
+  newsletterSubscriptions,
   sessions,
   postLikes,
   commentVotes,
@@ -149,6 +151,12 @@ export interface IStorage {
   // Contact Messages
   getContactMessages(): Promise<ContactMessage[]>;
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+
+  // Newsletter subscriptions
+  createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
+  getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined>;
+  updateNewsletterSubscriptionStatus(email: string, status: string): Promise<NewsletterSubscription>;
+  getNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
 
   // Post Likes
   getPostLike(postId: number, userId: number): Promise<PostLike | undefined>;
@@ -1872,6 +1880,87 @@ export class DatabaseStorage implements IStorage {
       ...newMessage,
       createdAt: newMessage.createdAt instanceof Date ? newMessage.createdAt : new Date(newMessage.createdAt)
     };
+  }
+
+  // Newsletter subscription operations
+  async createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+    try {
+      // Check if this email is already subscribed
+      const existingSubscription = await this.getNewsletterSubscriptionByEmail(subscription.email);
+      
+      if (existingSubscription) {
+        if (existingSubscription.status === 'unsubscribed') {
+          // If they were previously unsubscribed, update their status to active
+          return await this.updateNewsletterSubscriptionStatus(subscription.email, 'active');
+        }
+        // Return the existing subscription if already active
+        return existingSubscription;
+      }
+      
+      // Create new subscription
+      const [newSubscription] = await db
+        .insert(newsletterSubscriptions)
+        .values({
+          ...subscription,
+          status: 'active',
+          metadata: subscription.metadata || {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      return newSubscription;
+    } catch (error) {
+      console.error("Error in createNewsletterSubscription:", error);
+      throw error;
+    }
+  }
+
+  async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
+    try {
+      const [subscription] = await db
+        .select()
+        .from(newsletterSubscriptions)
+        .where(eq(newsletterSubscriptions.email, email))
+        .limit(1);
+      
+      return subscription;
+    } catch (error) {
+      console.error("Error in getNewsletterSubscriptionByEmail:", error);
+      return undefined;
+    }
+  }
+
+  async updateNewsletterSubscriptionStatus(email: string, status: string): Promise<NewsletterSubscription> {
+    try {
+      const [updatedSubscription] = await db
+        .update(newsletterSubscriptions)
+        .set({ 
+          status, 
+          updatedAt: new Date() 
+        })
+        .where(eq(newsletterSubscriptions.email, email))
+        .returning();
+      
+      return updatedSubscription;
+    } catch (error) {
+      console.error("Error in updateNewsletterSubscriptionStatus:", error);
+      throw error;
+    }
+  }
+
+  async getNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
+    try {
+      const subscriptions = await db
+        .select()
+        .from(newsletterSubscriptions)
+        .orderBy(desc(newsletterSubscriptions.createdAt));
+      
+      return subscriptions;
+    } catch (error) {
+      console.error("Error in getNewsletterSubscriptions:", error);
+      return [];
+    }
   }
 
   // Post Likes operations

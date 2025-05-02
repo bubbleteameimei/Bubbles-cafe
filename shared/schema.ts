@@ -122,6 +122,16 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// Newsletter subscribers table
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  status: text("status").default("active").notNull(), // active, unsubscribed, bounced
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Sessions
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
@@ -446,6 +456,16 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 });
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
+// Newsletter subscription schema
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  status: true 
+});
+export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 
 export const insertSessionSchema = createInsertSchema(sessions).omit({ id: true, createdAt: true });
 export type InsertSession = z.infer<typeof insertSessionSchema>;

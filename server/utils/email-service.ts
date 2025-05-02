@@ -20,7 +20,7 @@ export class EmailService {
   private isReady: boolean = false;
   
   constructor() {
-    const user = process.env.GMAIL_EMAIL || '';
+    const user = process.env.GMAIL_USER || '';
     const pass = process.env.GMAIL_APP_PASSWORD || '';
     
     // Set up Gmail transporter with optimized settings
