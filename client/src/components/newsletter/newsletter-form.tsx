@@ -32,7 +32,8 @@ export default function NewsletterForm() {
   // Setup mutation for API request
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: NewsletterFormValues) => {
-      return apiRequest('/api/newsletter/subscribe', {
+      // Use the direct endpoint that bypasses CSRF protection
+      return apiRequest('/api/newsletter-direct/subscribe', {
         method: 'POST',
         body: JSON.stringify(data),
       })

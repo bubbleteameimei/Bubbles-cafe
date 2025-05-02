@@ -20,8 +20,9 @@ declare module 'express-session' {
 import { generateResponseSuggestion, getResponseHints } from './utils/feedback-ai';
 import { generateEnhancedResponse, generateResponseAlternatives } from './utils/enhanced-feedback-ai';
 import { sanitizeHtml, stripHtml } from './utils/sanitizer';
+import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
-import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, type Post, type PostMetadata, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
+import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, insertNewsletterSubscriptionSchema, type Post, type PostMetadata, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
 import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -2627,6 +2628,82 @@ Message ID: ${savedMessage.id}
   
   // Register newsletter routes
   app.use('/api/newsletter', newsletterRouter);
+  
+  // Direct newsletter subscribe endpoint that bypasses CSRF check
+  app.post('/api/newsletter-direct/subscribe', async (req, res) => {
+    try {
+      console.log('[Newsletter-Direct] Received subscription request:', req.body);
+      
+      // Validate the request body using the same schema
+      const validatedData = insertNewsletterSubscriptionSchema.parse(req.body);
+      
+      // Check if this email already exists in the database
+      const existingSubscription = await storage.getNewsletterSubscriptionByEmail(validatedData.email);
+      
+      // If the subscription already exists and is active, just return success
+      if (existingSubscription && existingSubscription.status === 'active') {
+        return res.status(200).json({
+          success: true,
+          message: 'You are already subscribed to the newsletter',
+          data: existingSubscription,
+          alreadySubscribed: true
+        });
+      }
+      
+      // Subscribe to the newsletter using our storage
+      const subscription = await storage.createNewsletterSubscription(validatedData);
+      
+      // Attempt to send welcome email if it's a new subscription or reactivation
+      let emailStatus = { sent: false, error: null as string | null };
+      if (subscription && (subscription.status === 'active')) {
+        try {
+          // Try to send welcome email
+          const emailSent = await sendNewsletterWelcomeEmail(subscription.email);
+          emailStatus.sent = emailSent;
+          
+          if (emailSent) {
+            console.log(`[Newsletter-Direct] Welcome email sent to ${subscription.email}`);
+          } else {
+            console.warn(`[Newsletter-Direct] Failed to send welcome email to ${subscription.email}`);
+            emailStatus.error = 'Email configuration issue';
+          }
+        } catch (emailError) {
+          console.error(`[Newsletter-Direct] Error sending welcome email to ${subscription.email}:`, emailError);
+          emailStatus.error = emailError instanceof Error ? emailError.message : 'Unknown error';
+        }
+      }
+      
+      // Return success response with email status
+      return res.status(200).json({
+        success: true,
+        message: 'Successfully subscribed to the newsletter',
+        data: subscription,
+        email: {
+          sent: emailStatus.sent,
+          message: emailStatus.sent 
+            ? 'Welcome email sent successfully' 
+            : 'Welcome email could not be sent at this time, but your subscription is active'
+        }
+      });
+    } catch (error) {
+      console.error('[Newsletter-Direct] Subscription error:', error);
+      
+      // Check if it's a validation error
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid subscription data',
+          errors: error.errors
+        });
+      }
+      
+      // Handle database errors
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred while subscribing to the newsletter'
+      });
+    }
+  });
   
   // Email configuration check endpoint
   app.get('/api/check-email-config', (req, res) => {

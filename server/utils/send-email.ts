@@ -52,12 +52,11 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       return false;
     }
 
-    // Initialize the transporter if it hasn't been created yet
-    if (!gmailTransporter) {
-      gmailTransporter = getGmailTransporter();
-    }
+    // Always create a fresh transporter to use the latest environment variables
+    // This ensures we always use the most up-to-date Gmail credentials
+    const transporter = getGmailTransporter();
 
-    await gmailTransporter.sendMail({
+    await transporter.sendMail({
       to: params.to,
       from: params.from,
       subject: params.subject,
@@ -80,7 +79,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  */
 export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean> {
   const fromEmail = process.env.GMAIL_USER || 'vantalison@gmail.com';
-  const siteName = 'Eden\'s Hollow';
+  const siteName = 'Bubble\'s Cafe';
   
   const subject = `Welcome to ${siteName}'s Newsletter`;
   
@@ -102,7 +101,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
       <p>Your first newsletter will arrive soon. In the meantime, explore our latest stories on the website!</p>
       
       <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-left: 4px solid #6c5ce7;">
-        <p style="margin: 0;"><em>"In the darkness, we find the light of stories waiting to be told."</em></p>
+        <p style="margin: 0;"><em>"No great mind has ever existed without a touch of madness." - Aristotle</em></p>
       </div>
       
       <p>Happy reading,<br>The ${siteName} Team</p>
@@ -127,7 +126,7 @@ Here's what you can expect:
 
 Your first newsletter will arrive soon. In the meantime, explore our latest stories on the website!
 
-"In the darkness, we find the light of stories waiting to be told."
+"No great mind has ever existed without a touch of madness." - Aristotle
 
 Happy reading,
 The ${siteName} Team

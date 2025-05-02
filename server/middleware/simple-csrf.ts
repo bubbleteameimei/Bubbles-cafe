@@ -28,7 +28,10 @@ const DEFAULT_EXCLUDED_PATHS = [
   '/api/wordpress/sync',
   '/api/contact',
   '/api/newsletter/subscribe',
-  '/api/newsletter/unsubscribe'
+  '/api/newsletter/unsubscribe',
+  '/api/newsletter-direct/subscribe', // Add our direct newsletter endpoint
+  '/api/check-email-config',
+  '/api/performance/metrics'
 ];
 
 // List of methods that don't need CSRF protection

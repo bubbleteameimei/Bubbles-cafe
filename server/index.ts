@@ -186,6 +186,7 @@ app.use(createCsrfMiddleware({
     '/api/contact',
     '/api/newsletter/subscribe',
     '/api/newsletter/unsubscribe',
+    '/api/newsletter-direct/subscribe',  // Add our new direct endpoint
     '/api/check-email-config',
     '/api/performance/metrics'
   ],

@@ -136,7 +136,11 @@ export function validateCsrfToken(options: CsrfValidationOptions = {}) {
         req.path.includes('/analytics/pageview') ||
         req.path.includes('/analytics/interaction') ||
         // Special case for reader bookmarks endpoints
-        req.path.includes('/reader/bookmarks')
+        req.path.includes('/reader/bookmarks') ||
+        // Special cases for newsletter endpoints
+        req.path.includes('/newsletter-direct/subscribe') ||
+        req.path.includes('/newsletter/subscribe') ||
+        req.path.includes('/newsletter/unsubscribe')
       )
     ) {
       console.log(`CSRF validation skipped for ${req.method} ${req.path} (matches ignore path)`);

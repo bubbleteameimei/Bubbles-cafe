@@ -12,30 +12,53 @@ router.post('/subscribe', async (req, res) => {
     // Validate the request body
     const validatedData = insertNewsletterSubscriptionSchema.parse(req.body);
     
+    // Check if this email already exists in the database
+    const existingSubscription = await storage.getNewsletterSubscriptionByEmail(validatedData.email);
+    
+    // If the subscription already exists and is active, just return success
+    if (existingSubscription && existingSubscription.status === 'active') {
+      return res.status(200).json({
+        success: true,
+        message: 'You are already subscribed to the newsletter',
+        data: existingSubscription,
+        alreadySubscribed: true
+      });
+    }
+    
     // Subscribe to the newsletter
     const subscription = await storage.createNewsletterSubscription(validatedData);
     
-    // If it's a new subscription or reactivation, send welcome email
+    // Attempt to send welcome email if it's a new subscription or reactivation
+    let emailStatus = { sent: false, error: null as string | null };
     if (subscription && (subscription.status === 'active')) {
-      // Send welcome email in the background without waiting for it to complete
-      sendNewsletterWelcomeEmail(subscription.email)
-        .then(sent => {
-          if (sent) {
-            console.log(`[Newsletter] Welcome email sent to ${subscription.email}`);
-          } else {
-            console.warn(`[Newsletter] Failed to send welcome email to ${subscription.email}`);
-          }
-        })
-        .catch(err => {
-          console.error(`[Newsletter] Error sending welcome email to ${subscription.email}:`, err);
-        });
+      try {
+        // Try to send welcome email
+        const emailSent = await sendNewsletterWelcomeEmail(subscription.email);
+        emailStatus.sent = emailSent;
+        
+        if (emailSent) {
+          console.log(`[Newsletter] Welcome email sent to ${subscription.email}`);
+        } else {
+          console.warn(`[Newsletter] Failed to send welcome email to ${subscription.email}`);
+          emailStatus.error = 'Email configuration issue';
+        }
+      } catch (emailError) {
+        console.error(`[Newsletter] Error sending welcome email to ${subscription.email}:`, emailError);
+        emailStatus.error = emailError instanceof Error ? emailError.message : 'Unknown error';
+      }
     }
     
-    // Return success response
+    // Return success response with email status
     return res.status(200).json({
       success: true,
       message: 'Successfully subscribed to the newsletter',
-      data: subscription
+      data: subscription,
+      email: {
+        sent: emailStatus.sent,
+        message: emailStatus.sent 
+          ? 'Welcome email sent successfully' 
+          : 'Welcome email could not be sent at this time, but your subscription is active'
+      }
     });
   } catch (error) {
     console.error('[Newsletter] Subscription error:', error);
