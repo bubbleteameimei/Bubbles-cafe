@@ -209,7 +209,12 @@ export function registerRoutes(app: Express): Server {
   // Apply CSRF validation to all POST/PUT/DELETE/PATCH requests
   app.use('/api', validateCsrfToken({
     // Exclude specific paths that don't need CSRF protection (such as webhooks or specific APIs)
-    ignorePaths: ['/health', '/config/public', '/csrf-test-bypass'],
+    ignorePaths: [
+      '/health', 
+      '/config/public', 
+      '/csrf-test-bypass',
+      '/newsletter/subscribe'
+    ],
   }));
 
   // Set up auth BEFORE routes
@@ -2627,6 +2632,7 @@ Message ID: ${savedMessage.id}
   app.use('/api/search', searchRouter);
   
   // Register newsletter routes
+  // Register unified newsletter routes with anti-caching features
   app.use('/api/newsletter', newsletterRouter);
   
   // Direct newsletter subscribe endpoint that bypasses CSRF check

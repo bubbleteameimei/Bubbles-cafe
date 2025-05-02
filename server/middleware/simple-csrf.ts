@@ -30,6 +30,7 @@ const DEFAULT_EXCLUDED_PATHS = [
   '/api/newsletter/subscribe',
   '/api/newsletter/unsubscribe',
   '/api/newsletter-direct/subscribe', // Add our direct newsletter endpoint
+  '/api/fresh-newsletter/subscribe', // Add our fresh newsletter endpoint
   '/api/check-email-config',
   '/api/performance/metrics'
 ];

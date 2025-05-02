@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ContactForm from "@/components/contact/contact-form";
-import NewsletterSubscription from "@/components/newsletter/newsletter-subscription";
+import { FreshNewsletterForm } from "@/components/newsletter/fresh-newsletter-form";
 
 export default function Contact() {
   return (
@@ -17,7 +17,11 @@ export default function Contact() {
         
         {/* Newsletter Subscription */}
         <div className="max-w-4xl mx-auto">
-          <NewsletterSubscription />
+          <h2 className="text-2xl font-bold text-center mb-6">Join Our Newsletter</h2>
+          
+          <div className="w-full max-w-3xl mx-auto">
+            <FreshNewsletterForm />
+          </div>
         </div>
       </div>
     </div>

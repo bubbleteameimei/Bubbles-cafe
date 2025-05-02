@@ -80,11 +80,15 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean> {
   // Always create a new timestamp to ensure the template is refreshed
   const timestamp = new Date().toISOString();
+  
+  // Add random ID to ensure uniqueness and bypass caching
+  const randomId = Math.random().toString(36).substring(2, 15);
+  
   const fromEmail = process.env.GMAIL_USER || 'vantalison@gmail.com';
   const siteName = 'Bubble\'s Cafe';
   
-  // SIMPLIFIED TITLE AS REQUESTED
-  const subject = `Welcome to Bubble's Cafe Newsletter`;
+  // SIMPLIFIED TITLE AS REQUESTED WITH RANDOM ID TO PREVENT CACHING
+  const subject = `Welcome to Bubble's Cafe Newsletter [${randomId}]`;
   
   // COMPLETELY REDESIGNED TEMPLATE WITH TIMESTAMP TO FORCE UPDATE
   const html = `
@@ -102,11 +106,11 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
         
         <!-- WELCOME SECTION -->
         <div style="background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px;">
-          <p style="font-size: 16px; line-height: 1.6;">Hello coffee lover!</p>
+          <p style="font-size: 16px; line-height: 1.6;">Hi there,</p>
           
-          <p style="font-size: 16px; line-height: 1.6;">We're delighted to welcome you to our community where stories and coffee blend perfectly together.</p>
+          <p style="font-size: 16px; line-height: 1.6;">We're delighted to welcome you to our corner of the internet where we explore storytelling through a darker lens.</p>
           
-          <p style="font-size: 16px; line-height: 1.6;">At Bubble's Cafe, we believe great stories are best enjoyed with a perfect cup of brew.</p>
+          <p style="font-size: 16px; line-height: 1.6;">At Bubble's Cafe, we share stories that might stay with you a while, for better or worse.</p>
         </div>
         
         <!-- BENEFITS SECTION -->
@@ -117,7 +121,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
             <li><strong>Fresh Stories:</strong> New tales delivered directly to you</li>
             <li><strong>Exclusive Content:</strong> Special features only for subscribers</li>
             <li><strong>Community Events:</strong> Join readings and discussions</li>
-            <li><strong>Coffee Talk:</strong> Tips for the perfect reading atmosphere</li>
+            <li><strong>Reading Tips:</strong> Ideas for creating the perfect reading atmosphere</li>
           </ul>
         </div>
         
@@ -138,7 +142,7 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e8e1d9; font-size: 14px; color: #8d6e63; text-align: center;">
           <p>If you didn't subscribe to this newsletter, <a href="https://bubblescafe.replit.app/unsubscribe?email=${email}" style="color: #5d4037; text-decoration: underline;">unsubscribe here</a>.</p>
           <p>© ${new Date().getFullYear()} Bubble's Cafe • All Rights Reserved</p>
-          <p>Generated: ${timestamp}</p>
+          <p>ID: ${randomId}</p>
         </div>
       </div>
     </body>
@@ -149,17 +153,17 @@ export async function sendNewsletterWelcomeEmail(email: string): Promise<boolean
   const text = `
 WELCOME TO BUBBLE'S CAFE NEWSLETTER
 
-Hello coffee lover!
+Hi there,
 
-We're delighted to welcome you to our community where stories and coffee blend perfectly together.
+We're delighted to welcome you to our corner of the internet where we explore storytelling through a darker lens.
 
-At Bubble's Cafe, we believe great stories are best enjoyed with a perfect cup of brew.
+At Bubble's Cafe, we share stories that might stay with you a while, for better or worse.
 
 WHAT'S BREWING IN YOUR INBOX?
 - Fresh Stories: New tales delivered directly to you
 - Exclusive Content: Special features only for subscribers
 - Community Events: Join readings and discussions
-- Coffee Talk: Tips for the perfect reading atmosphere
+- Reading Tips: Ideas for creating the perfect reading atmosphere
 
 "No great mind has ever existed without a touch of madness." - Aristotle
 
@@ -173,7 +177,7 @@ If you didn't subscribe to this newsletter, you can unsubscribe by visiting:
 https://bubblescafe.replit.app/unsubscribe?email=${email}
 
 © ${new Date().getFullYear()} Bubble's Cafe • All Rights Reserved
-Generated: ${timestamp}
+ID: ${randomId}
   `;
   
   // Create a fresh transporter for each email sent
@@ -190,7 +194,12 @@ Generated: ${timestamp}
       text,
       html,
       headers: {
-        'X-Generated-At': timestamp // Add timestamp header to ensure uniqueness
+        'X-Generated-At': timestamp, // Add timestamp header to ensure uniqueness
+        'X-Priority': '1',
+        'X-Random-ID': randomId,
+        'X-Fresh-Email': 'true',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
       }
     });
     
