@@ -3980,8 +3980,9 @@ export class MemStorage implements IStorage {
       isAdminPost: true,
       matureContent: false,
       themeCategory: 'introduction',
-      themeIcon: null,
-      metadata: {},
+      metadata: {
+        themeIcon: null
+      },
       createdAt: new Date(),
       readingTimeMinutes: 3,
       likesCount: 5,
@@ -4000,8 +4001,9 @@ export class MemStorage implements IStorage {
       isAdminPost: true,
       matureContent: true,
       themeCategory: 'psychological',
-      themeIcon: 'ghost',
-      metadata: {},
+      metadata: {
+        themeIcon: 'ghost'
+      },
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       readingTimeMinutes: 8,
       likesCount: 12,

@@ -95,4 +95,28 @@ export function getDatabaseStatus() {
   };
 }
 
+/**
+ * Safe database operation wrapper
+ * @param operation Function that performs the database operation
+ * @param fallback Default value to return if operation fails
+ * @param operationName Name of the operation for logging
+ * @returns Result of the operation or fallback value
+ */
+export async function safeDbOperation<T>(
+  operation: () => Promise<T>, 
+  fallback: T, 
+  operationName: string
+): Promise<T> {
+  try {
+    if (!isConnected) {
+      console.warn(`[Database] Database not connected, using fallback for: ${operationName}`);
+      return fallback;
+    }
+    return await operation();
+  } catch (error) {
+    console.error(`[Database] Error executing ${operationName}:`, error);
+    return fallback;
+  }
+}
+
 export default db;

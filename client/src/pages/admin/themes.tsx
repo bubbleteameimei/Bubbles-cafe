@@ -113,6 +113,7 @@ export default function ThemesPage() {
     themeCategory?: string;
     themeIcon?: string;
     theme_icon?: string;
+    metadata?: any;
     slug: string;
     createdAt: string;
   }
@@ -277,8 +278,9 @@ export default function ThemesPage() {
                       const themeKey = themeCategory as keyof typeof THEME_CATEGORIES;
                       const themeInfo = themeKey ? THEME_CATEGORIES[themeKey] : null;
                       
-                      // Get icon from either property name
-                      const postIcon = post.themeIcon || post.theme_icon;
+                      // Get icon from properties or metadata
+                      const metadataIcon = post.metadata?.themeIcon;
+                      const postIcon = post.themeIcon || post.theme_icon || metadataIcon;
                       const themeIcon = postIcon || (themeInfo?.icon || 'eye');
                       
                       console.log(`[Admin Themes] Post ${post.id} theme:`, { 

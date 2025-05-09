@@ -667,7 +667,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Use theme from post or detect from content
   const postThemeCategory = currentPost.themeCategory;
-  const postThemeIcon = currentPost.themeIcon;
+  // Get icon from direct property or metadata
+  const postThemeIcon = currentPost.themeIcon || 
+                       (currentPost.metadata && (currentPost.metadata as any).themeIcon);
   
   // Detect themes from content as fallback if no theme is assigned
   const detectedThemes = postThemeCategory 

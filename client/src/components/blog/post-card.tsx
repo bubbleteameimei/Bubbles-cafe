@@ -174,7 +174,10 @@ const getEngagingExcerpt = (content: string): string => {
   // First check if the post has manually assigned theme/icon from admin
   if (post.themeCategory) {
     theme = post.themeCategory as string;
-    iconName = post.themeIcon || null;
+    // Get icon from direct property or metadata
+    iconName = post.themeIcon || 
+              (post.metadata && (post.metadata as any).themeIcon) || 
+              null;
   } else {
     // Fall back to automatic detection if no admin-assigned theme
     const themes = post.content ? detectThemes(post.content) : [];

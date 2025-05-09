@@ -602,26 +602,37 @@ export function registerRoutes(app: Express): Server {
         id: posts.id,
         title: posts.title,
         themeCategory: posts.themeCategory,
-        themeIcon: posts.themeIcon,
+        // themeIcon is accessed through metadata which may not be in database schema
+        themeIcon: null, // Will be populated from metadata later if available
         slug: posts.slug,
         createdAt: posts.createdAt
       })
       .from(posts)
       .orderBy(desc(posts.createdAt));
       
-      // Transform the results to support both naming conventions
-      const transformedPosts = allPosts.map((post: {
-        id: number;
-        title: string;
-        themeCategory: string | null;
-        themeIcon: string | null;
-        slug: string;
-        createdAt: Date;
-      }) => ({
-        ...post,
-        theme_category: post.themeCategory, // Add snake_case version for backward compatibility
-        theme_icon: post.themeIcon // Add snake_case version for backward compatibility
+      // Get full post data to extract themeIcon from metadata
+      const fullPosts = await Promise.all(allPosts.map(async (post) => {
+        const fullPost = await storage.getPostById(post.id);
+        return fullPost;
       }));
+      
+      // Transform the results to support both naming conventions
+      const transformedPosts = fullPosts.map((post) => {
+        // Extract themeIcon from metadata
+        const metadata = post.metadata as any || {};
+        const themeIcon = metadata.themeIcon || null;
+        
+        return {
+          id: post.id,
+          title: post.title,
+          themeCategory: post.themeCategory,
+          themeIcon: themeIcon,
+          theme_category: post.themeCategory, // Add snake_case version for backward compatibility
+          theme_icon: themeIcon, // Add snake_case version for backward compatibility
+          slug: post.slug,
+          createdAt: post.createdAt
+        };
+      });
       
       console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', transformedPosts.length);
       res.json(transformedPosts);
@@ -666,9 +677,19 @@ export function registerRoutes(app: Express): Server {
         themeCategory: actualThemeCategory
       };
       
-      // If icon is provided, update that too
+      // If icon is provided, update it in metadata
       if (actualIcon) {
-        updateData.themeIcon = actualIcon;
+        // First get the current post to access its metadata
+        const currentPost = await storage.getPostById(postId);
+        if (!currentPost) {
+          return res.status(404).json({ error: 'Post not found' });
+        }
+        
+        // Update metadata with the new icon
+        updateData.metadata = {
+          ...(currentPost.metadata || {}),
+          themeIcon: actualIcon
+        };
       }
       
       const updatedPost = await storage.updatePost(postId, updateData);
@@ -689,10 +710,11 @@ export function registerRoutes(app: Express): Server {
         }
       };
       
-      // Add the icon if it exists on the updated post, using both naming conventions
-      if ('themeIcon' in updatedPost) {
-        (responseData.post as any).theme_icon = updatedPost.themeIcon;
-        (responseData.post as any).themeIcon = updatedPost.themeIcon;
+      // Extract themeIcon from metadata and add to response with both naming conventions
+      const postMetadata = updatedPost.metadata as any;
+      if (postMetadata && postMetadata.themeIcon) {
+        (responseData.post as any).theme_icon = postMetadata.themeIcon;
+        (responseData.post as any).themeIcon = postMetadata.themeIcon;
       }
       
       res.json(responseData);
@@ -799,11 +821,12 @@ export function registerRoutes(app: Express): Server {
       // For testing purposes - create posts without authentication
       // Note: In production, this would be protected by isAuthenticated middleware
       
-      // Extract community post flag and theme category from request
+      // Extract community post flag, theme category and theme icon from request
       const isCommunityPost = req.body.metadata?.isCommunityPost || req.body.isCommunityPost || false;
       const themeCategory = req.body.metadata?.themeCategory || req.body.themeCategory || 'HORROR';
+      const themeIcon = req.body.metadata?.themeIcon || req.body.themeIcon || null;
       
-      // Create post data object with all community flags in metadata
+      // Create post data object with all flags in metadata
       const postData = insertPostSchema.parse({
         ...req.body,
         authorId: req.body.authorId || 1, // Use provided authorId or default to 1
@@ -813,7 +836,8 @@ export function registerRoutes(app: Express): Server {
           isCommunityPost: isCommunityPost,
           isAdminPost: false, // Set flag in metadata instead of column
           isApproved: true, // Auto-approve posts for testing
-          themeCategory: themeCategory // Ensure theme is in metadata
+          themeCategory: themeCategory, // Ensure theme is in metadata
+          themeIcon: themeIcon // Store themeIcon in metadata
         },
         themeCategory: themeCategory // Also set in the main object for column
       });

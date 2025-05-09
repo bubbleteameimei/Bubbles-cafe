@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Share2, Copy, X, Quote, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,7 +19,12 @@ interface StoryHighlightClipProps {
   variant?: 'default' | 'reader';
 }
 
-export function StoryHighlightClip({ postId, postTitle, className, variant = 'default' }: StoryHighlightClipProps) {
+export const StoryHighlightClip = memo(function StoryHighlightClip({ 
+  postId, 
+  postTitle, 
+  className, 
+  variant = 'default' 
+}: StoryHighlightClipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -28,18 +33,19 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
   const captureRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Listen for text selection
-  useEffect(() => {
-    const handleSelection = () => {
-      const selection = window.getSelection();
-      if (selection && !selection.isCollapsed) {
-        const text = selection.toString().trim();
-        if (text && text.length > 10) {
-          setSelectedText(text);
-        }
+  // Handle text selection with memoized function
+  const handleSelection = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      const text = selection.toString().trim();
+      if (text && text.length > 10) {
+        setSelectedText(text);
       }
-    };
+    }
+  }, []);
 
+  // Listen for text selection - effect is stable now
+  useEffect(() => {
     document.addEventListener('mouseup', handleSelection);
     document.addEventListener('touchend', handleSelection);
 
@@ -47,12 +53,13 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
       document.removeEventListener('mouseup', handleSelection);
       document.removeEventListener('touchend', handleSelection);
     };
-  }, []);
+  }, [handleSelection]);
 
   // Check if there's any selected text to enable the highlight button
   const hasSelectedText = selectedText.length > 10;
 
-  const openHighlightModal = () => {
+  // Memoize the openHighlightModal function
+  const openHighlightModal = useCallback(() => {
     if (hasSelectedText) {
       setIsOpen(true);
     } else {
@@ -61,10 +68,25 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
         variant: "default"
       });
     }
-  };
+  }, [hasSelectedText, toast]);
 
-  // Capture the highlight as an image
-  const captureHighlight = async () => {
+  // Generate a link with the highlighted text as a query parameter - memoized
+  const generateHighlightLink = useCallback(() => {
+    const baseUrl = window.location.href.split('?')[0];
+    const encodedText = encodeURIComponent(selectedText);
+    return `${baseUrl}?highlight=${encodedText}`;
+  }, [selectedText]);
+
+  // Copy highlight link to clipboard - memoized
+  const copyHighlightLink = useCallback(() => {
+    navigator.clipboard.writeText(generateHighlightLink());
+    toast({
+      description: "Highlight link copied to clipboard!",
+    });
+  }, [generateHighlightLink, toast]);
+
+  // Capture the highlight as an image - memoized
+  const captureHighlight = useCallback(async () => {
     try {
       setIsCapturing(true);
       
@@ -117,23 +139,10 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
     } finally {
       setIsCapturing(false);
     }
-  };
+  }, [toast, captureRef]);
 
-  // Generate a link with the highlighted text as a query parameter
-  const generateHighlightLink = () => {
-    const baseUrl = window.location.href.split('?')[0];
-    const encodedText = encodeURIComponent(selectedText);
-    return `${baseUrl}?highlight=${encodedText}`;
-  };
-
-  const copyHighlightLink = () => {
-    navigator.clipboard.writeText(generateHighlightLink());
-    toast({
-      description: "Highlight link copied to clipboard!",
-    });
-  };
-
-  const shareHighlight = async () => {
+  // Share the highlight - memoized
+  const shareHighlight = useCallback(async () => {
     const shareData = {
       title: postTitle || document.title,
       text: `"${selectedText.substring(0, 100)}${selectedText.length > 100 ? '...' : ''}" from ${postTitle}`,
@@ -156,10 +165,10 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
     } else {
       copyHighlightLink();
     }
-  };
+  }, [postTitle, selectedText, generateHighlightLink, setIsOpen, toast, copyHighlightLink]);
   
-  // Download the highlight image
-  const downloadHighlightImage = () => {
+  // Download the highlight image - memoized
+  const downloadHighlightImage = useCallback(() => {
     if (!imageUrl) return;
     
     const link = document.createElement('a');
@@ -168,7 +177,7 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [imageUrl, postId]);
 
   return (
     <>
@@ -292,4 +301,4 @@ export function StoryHighlightClip({ postId, postTitle, className, variant = 'de
       </Dialog>
     </>
   );
-}
+});
