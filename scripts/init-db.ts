@@ -1,5 +1,5 @@
 import { initializeDatabaseConnection } from './connect-db';
-import { migrate } from 'drizzle-orm/neon-serverless/migrator';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
 
 async function initializeDb() {
   console.log('🚀 Starting database initialization and migrations...');

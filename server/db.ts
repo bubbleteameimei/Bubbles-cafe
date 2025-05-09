@@ -1,40 +1,25 @@
 /**
  * Database Connection Module
  * 
- * This module provides direct access to the PostgreSQL database using the Neon serverless driver.
+ * This module provides access to the PostgreSQL database using Drizzle ORM.
  * Enhanced with proper error handling for improved reliability.
  */
-import { neon, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
-import ws from 'ws';
 
 // Check if we're in test mode (SKIP_DB=true)
 const skipDb = process.env.SKIP_DB === 'true';
-
-// Required for Neon serverless in Node.js
-neonConfig.webSocketConstructor = ws;
-
-// Configure connection options
-try {
-  // @ts-ignore - Increase connection timeouts
-  neonConfig.connectionTimeoutMillis = 10000; // 10 seconds
-} catch (configErr) {
-  console.log('[Database] Note: Some config options not available');
-}
 
 /**
  * Creates a database connection
  */
 function createDbConnection() {
-  // If we're in test mode, return a mock SQL function
+  // If we're in test mode, return a mock connection
   if (skipDb) {
     console.log('[Database] Running in SKIP_DB mode with mock database');
-    // Return a mock SQL function that resolves with test data
-    return (strings: TemplateStringsArray, ...values: any[]) => {
-      console.log('[Database] Mock SQL query:', strings.join('?'), values);
-      return Promise.resolve([{ test: 1 }]);
-    };
+    return null as any; // Return null as any to avoid type errors
   }
 
   const dbUrl = process.env.DATABASE_URL;
@@ -47,21 +32,43 @@ function createDbConnection() {
   console.log('[Database] Initializing database connection...');
   
   try {
-    // Connect using the Neon HTTP driver
-    return neon(dbUrl.toString());
+    // Connect using the pg Pool
+    return new Pool({
+      connectionString: dbUrl,
+      max: 10, // Maximum number of clients in the pool
+      idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+      connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
+    });
   } catch (error) {
     console.error('[Database] Failed to connect to database:', error);
     throw new Error('Cannot establish database connection');
   }
 }
 
-// Create the SQL executor
-export const sql = createDbConnection();
+// Create the database pool
+export const pool = createDbConnection();
+
+// Create a SQL query executor function for compatibility
+export const sql = skipDb
+  ? (strings: TemplateStringsArray, ...values: any[]) => {
+      console.log('[Database] Mock SQL query:', strings.join('?'), values);
+      return Promise.resolve([{ test: 1 }]);
+    }
+  : async (strings: TemplateStringsArray, ...values: any[]) => {
+      const text = strings.join('?').replace(/\?/g, () => '$' + (values.length + 1));
+      const client = await pool.connect();
+      try {
+        const result = await client.query(text, values);
+        return result.rows;
+      } finally {
+        client.release();
+      }
+    };
 
 // Initialize Drizzle ORM with our schema
 export const db = skipDb 
   ? {} as any // Return empty mock in test mode
-  : drizzle(sql, { schema });
+  : drizzle(pool, { schema });
 
 // Export a helper function to validate the database connection
 export async function validateConnection() {

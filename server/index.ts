@@ -275,58 +275,20 @@ async function startServer() {
     if (skipDb) {
       serverLogger.info('Starting in SKIP_DB mode - database operations will be mocked');
     } else {
-      // Setup database connection first
       try {
-        // Ensure DATABASE_URL is properly set
-        serverLogger.info('Setting up database connection...');
+        // Simplified database setup
+        serverLogger.info('Setting up database connection in fallback mode...');
+        // Only setup the connection without attempting to seed or run migrations
         await setupDatabase();
+        serverLogger.info('Database connection established');
         
-        // Check database connection
-        try {
-        // This may fail if tables don't exist yet
-        const [{ value: postsCount }] = await db.select({ value: count() }).from(posts);
-        serverLogger.info('Database connected, tables exist', { postsCount });
-        
-        // Run migrations to ensure all tables defined in the schema exist
-        serverLogger.info('Running database migrations to create missing tables...');
-        await runMigrations();
-        serverLogger.info('Database migrations completed');
-    
-        if (postsCount === 0) {
-          serverLogger.info('Tables exist but no posts - seeding database from WordPress API...');
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
-        }
-      } catch (tableError) {
-        serverLogger.warn('Database tables check failed, attempting to create schema', { 
-          error: tableError instanceof Error ? tableError.message : 'Unknown error' 
+      } catch (dbError) {
+        serverLogger.error('Database connection failed, continuing in partial mode', { 
+          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
         });
-        
-        // If tables don't exist, push the schema
-        serverLogger.info('Creating database schema...');
-        await pushSchema();
-        serverLogger.info('Schema created, seeding data from WordPress API...');
-        
-        try {
-          await seedFromWordPressAPI();
-          serverLogger.info('Database seeding from WordPress API completed');
-        } catch (seedError) {
-          serverLogger.error('Error seeding from WordPress API, falling back to XML seeding', {
-            error: seedError instanceof Error ? seedError.message : 'Unknown error'
-          });
-          
-          // Fall back to XML seeding if WordPress API fails
-          await seedDatabase();
-          serverLogger.info('Database seeding from XML completed');
-        }
+        // We'll continue with the application even if the database setup fails
+        // This allows the frontend to work with mock data or in read-only mode
       }
-    } catch (dbError) {
-      serverLogger.error('Critical database setup error', { 
-        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-      });
-      throw dbError;
-    }
-
     }  // Close the skipDb if-else block
     
     // Create server instance

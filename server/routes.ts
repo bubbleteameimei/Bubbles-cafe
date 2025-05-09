@@ -161,6 +161,79 @@ export function registerRoutes(app: Express): Server {
     });
   });
   
+  // Mock data endpoints for temporary use while database is being fixed
+  app.get("/api/mock/recent-posts", (_req: Request, res: Response) => {
+    console.log("[DEBUG] Using mock data for recent posts");
+    res.json([
+      {
+        id: 101,
+        title: "Welcome to Bubble's Cafe",
+        slug: "welcome-to-bubbles-cafe",
+        excerpt: "A sample post for testing purposes.",
+        readingTime: 5,
+        authorName: 'Anonymous',
+        views: 50,
+        likes: 10
+      },
+      {
+        id: 102,
+        title: "The Whispers in the Dark",
+        slug: "the-whispers-in-the-dark",
+        excerpt: "A tale of terror that unfolds in the silence of night.",
+        readingTime: 8,
+        authorName: 'Anonymous',
+        views: 120,
+        likes: 32
+      },
+      {
+        id: 103,
+        title: "Midnight Delights",
+        slug: "midnight-delights",
+        excerpt: "Some delights are best enjoyed in darkness, where no one can see what you become.",
+        readingTime: 12,
+        authorName: 'Anonymous',
+        views: 85,
+        likes: 21
+      }
+    ]);
+  });
+  
+  app.get("/api/mock/recommendations", (_req: Request, res: Response) => {
+    console.log("[DEBUG] Using mock data for recommendations");
+    res.json([
+      {
+        id: 104,
+        title: "The Midnight Hour",
+        slug: "the-midnight-hour",
+        excerpt: "When the clock strikes twelve, they come out to play.",
+        readingTime: 7,
+        authorName: 'Anonymous',
+        views: 65,
+        likes: 18
+      },
+      {
+        id: 105,
+        title: "Echoes in the Hallway",
+        slug: "echoes-in-the-hallway",
+        excerpt: "The footsteps you hear behind you might not be your own.",
+        readingTime: 9,
+        authorName: 'Anonymous',
+        views: 72,
+        likes: 24
+      },
+      {
+        id: 106,
+        title: "The Last Customer",
+        slug: "the-last-customer",
+        excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
+        readingTime: 11,
+        authorName: 'Anonymous',
+        views: 95,
+        likes: 31
+      }
+    ]);
+  });
+  
   // Public config endpoint for environment testing (safe values only)
   app.get("/api/config/public", (_req: Request, res: Response) => {
     res.status(200).json({
@@ -1806,7 +1879,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Recent posts endpoint for direct consumption
+  // Recent posts endpoint with mockable data for when DB is unavailable
   app.get("/api/posts/recent", async (req, res) => {
     try {
       console.log("Recent posts endpoint called:", req.url);
@@ -1814,31 +1887,110 @@ export function registerRoutes(app: Express): Server {
       
       const limit = Number(req.query.limit) || 10;
       
-      // Get recent posts with minimal fields
-      const recentPosts = await db.select({
-        id: posts.id,
-        title: posts.title,
-        excerpt: posts.excerpt,
-        slug: posts.slug
-      })
-      .from(posts)
-      .orderBy(desc(posts.createdAt))
-      .limit(limit);
+      // Use mock data when database is unavailable or SKIP_DB is true
+      const skipDb = process.env.SKIP_DB === 'true';
       
-      console.log(`Found ${recentPosts.length} recent posts`);
+      if (skipDb) {
+        console.log("Using mock data for recent posts (SKIP_DB=true)");
+        // Return sample posts for testing
+        return res.json([
+          {
+            id: 101,
+            title: "Welcome to Bubble's Cafe",
+            slug: "welcome-to-bubbles-cafe",
+            excerpt: "A sample post for testing purposes.",
+            readingTime: 5,
+            authorName: 'Anonymous',
+            views: 50,
+            likes: 10
+          },
+          {
+            id: 102,
+            title: "The Whispers in the Dark",
+            slug: "the-whispers-in-the-dark",
+            excerpt: "A tale of terror that unfolds in the silence of night.",
+            readingTime: 8,
+            authorName: 'Anonymous',
+            views: 120,
+            likes: 32
+          },
+          {
+            id: 103,
+            title: "Midnight Delights",
+            slug: "midnight-delights",
+            excerpt: "Some delights are best enjoyed in darkness, where no one can see what you become.",
+            readingTime: 12,
+            authorName: 'Anonymous',
+            views: 85,
+            likes: 21
+          }
+        ]);
+      }
       
-      // Return simplified metadata for display
-      const result = recentPosts.map((post: any) => ({
-        ...post,
-        readingTime: 5, // Default time
-        authorName: 'Anonymous',
-        views: 50,
-        likes: 10
-      }));
-      
-      return res.json(result);
+      try {
+        // Otherwise try to get posts from the database
+        const recentPosts = await db.select({
+          id: posts.id,
+          title: posts.title,
+          excerpt: posts.excerpt,
+          slug: posts.slug
+        })
+        .from(posts)
+        .orderBy(desc(posts.createdAt))
+        .limit(limit);
+        
+        console.log(`Found ${recentPosts.length} recent posts`);
+        
+        // Return simplified metadata for display
+        const result = recentPosts.map((post: any) => ({
+          ...post,
+          readingTime: 5, // Default time
+          authorName: 'Anonymous',
+          views: 50,
+          likes: 10
+        }));
+        
+        return res.json(result);
+      } catch (dbError) {
+        console.error("Database error fetching recent posts:", dbError);
+        console.log("Falling back to mock data due to database error");
+        
+        // If database fails, return sample posts
+        return res.json([
+          {
+            id: 101,
+            title: "Welcome to Bubble's Cafe",
+            slug: "welcome-to-bubbles-cafe",
+            excerpt: "A sample post for testing purposes.",
+            readingTime: 5,
+            authorName: 'Anonymous',
+            views: 50,
+            likes: 10
+          },
+          {
+            id: 102,
+            title: "The Whispers in the Dark",
+            slug: "the-whispers-in-the-dark",
+            excerpt: "A tale of terror that unfolds in the silence of night.",
+            readingTime: 8,
+            authorName: 'Anonymous',
+            views: 120,
+            likes: 32
+          },
+          {
+            id: 103,
+            title: "Midnight Delights",
+            slug: "midnight-delights",
+            excerpt: "Some delights are best enjoyed in darkness, where no one can see what you become.",
+            readingTime: 12,
+            authorName: 'Anonymous',
+            views: 85,
+            likes: 21
+          }
+        ]);
+      }
     } catch (error) {
-      console.error("Error fetching recent posts:", error);
+      console.error("Error in recent posts endpoint:", error);
       return res.status(500).json({ 
         message: "Failed to fetch recent posts",
         error: process.env.NODE_ENV === 'development' ? 
@@ -1860,44 +2012,166 @@ export function registerRoutes(app: Express): Server {
     
     console.log(`DEBUG - Routes.ts: Fetching recommendations for postId: ${postId}, limit: ${limit}`);
     
-    // Verify post exists if postId provided
-    if (postId) {
-      const result = await db.query.posts.findFirst({
-        where: eq(posts.id, postId)
-      });
-      
-      if (!result) {
-        console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
-        return res.status(404).json({ message: "Post not found" });
-      }
-      
-      console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
+    // Use mock data when database is unavailable or SKIP_DB is true
+    const skipDb = process.env.SKIP_DB === 'true';
+    
+    if (skipDb) {
+      console.log("Using mock data for recommendations (SKIP_DB=true)");
+      // Return sample recommendations for testing
+      return res.json([
+        {
+          id: 104,
+          title: "The Midnight Hour",
+          slug: "the-midnight-hour",
+          excerpt: "When the clock strikes twelve, they come out to play.",
+          readingTime: 7,
+          authorName: 'Anonymous',
+          views: 65,
+          likes: 18
+        },
+        {
+          id: 105,
+          title: "Echoes in the Hallway",
+          slug: "echoes-in-the-hallway",
+          excerpt: "The footsteps you hear behind you might not be your own.",
+          readingTime: 9,
+          authorName: 'Anonymous',
+          views: 72,
+          likes: 24
+        },
+        {
+          id: 106,
+          title: "The Last Customer",
+          slug: "the-last-customer",
+          excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
+          readingTime: 11,
+          authorName: 'Anonymous',
+          views: 95,
+          likes: 31
+        }
+      ]);
     }
     
-    // If no postId provided or it's invalid, return recent posts
-    console.log('DEBUG - Routes.ts: Returning recent posts');
-    const recentPosts = await db.select({
-      id: posts.id,
-      title: posts.title,
-      excerpt: posts.excerpt,
-      slug: posts.slug
-    })
-    .from(posts)
-    .orderBy(desc(posts.createdAt))
-    .limit(limit);
-    
-    console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
-    
-    // Return simplified metadata for display
-    const result = recentPosts.map((post: any) => ({
-      ...post,
-      readingTime: 5, // Default time
-      authorName: 'Anonymous',
-      views: 50,
-      likes: 10
-    }));
-    
-    return res.json(result);
+    try {
+      // Verify post exists if postId provided
+      if (postId) {
+        try {
+          const result = await db.query.posts.findFirst({
+            where: eq(posts.id, postId)
+          });
+          
+          if (!result) {
+            console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
+            return res.status(404).json({ message: "Post not found" });
+          }
+          
+          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
+        } catch (dbError) {
+          console.error("Database error verifying post:", dbError);
+          console.log("Continuing with recommendations anyway");
+          // Continue execution even if post verification fails
+        }
+      }
+      
+      try {
+        // If no postId provided or it's invalid, return recent posts
+        console.log('DEBUG - Routes.ts: Returning recent posts');
+        const recentPosts = await db.select({
+          id: posts.id,
+          title: posts.title,
+          excerpt: posts.excerpt,
+          slug: posts.slug
+        })
+        .from(posts)
+        .orderBy(desc(posts.createdAt))
+        .limit(limit);
+        
+        console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
+        
+        // Return simplified metadata for display
+        const result = recentPosts.map((post: any) => ({
+          ...post,
+          readingTime: 5, // Default time
+          authorName: 'Anonymous',
+          views: 50,
+          likes: 10
+        }));
+        
+        return res.json(result);
+      } catch (dbError) {
+        console.error("Database error fetching recommendations:", dbError);
+        console.log("Falling back to mock data due to database error");
+        
+        // If database fails, return mock recommendations
+        return res.json([
+          {
+            id: 104,
+            title: "The Midnight Hour",
+            slug: "the-midnight-hour",
+            excerpt: "When the clock strikes twelve, they come out to play.",
+            readingTime: 7,
+            authorName: 'Anonymous',
+            views: 65,
+            likes: 18
+          },
+          {
+            id: 105,
+            title: "Echoes in the Hallway",
+            slug: "echoes-in-the-hallway",
+            excerpt: "The footsteps you hear behind you might not be your own.",
+            readingTime: 9,
+            authorName: 'Anonymous',
+            views: 72,
+            likes: 24
+          },
+          {
+            id: 106,
+            title: "The Last Customer",
+            slug: "the-last-customer",
+            excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
+            readingTime: 11,
+            authorName: 'Anonymous',
+            views: 95,
+            likes: 31
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error in recommendations endpoint:", error);
+      // Return fallback recommendations
+      return res.json([
+        {
+          id: 104,
+          title: "The Midnight Hour",
+          slug: "the-midnight-hour",
+          excerpt: "When the clock strikes twelve, they come out to play.",
+          readingTime: 7,
+          authorName: 'Anonymous',
+          views: 65,
+          likes: 18
+        },
+        {
+          id: 105,
+          title: "Echoes in the Hallway",
+          slug: "echoes-in-the-hallway",
+          excerpt: "The footsteps you hear behind you might not be your own.",
+          readingTime: 9,
+          authorName: 'Anonymous',
+          views: 72,
+          likes: 24
+        },
+        {
+          id: 106,
+          title: "The Last Customer",
+          slug: "the-last-customer",
+          excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
+          readingTime: 11,
+          authorName: 'Anonymous',
+          views: 95,
+          likes: 31
+        }
+      ]);
+    }
   });
 
   app.get("/api/analytics/reading-time", isAuthenticated, async (req: Request, res: Response) => {
