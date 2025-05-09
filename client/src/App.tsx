@@ -33,6 +33,8 @@ import { preloadWordPressPosts } from './lib/wordpress-api';
 import { initWordPressSync } from './lib/wordpress-sync';
 // Import WordPress sync status component
 import { WordPressSyncStatus } from './components/wordpress-sync-status';
+// Import database status indicator component
+import { DbStatusIndicator } from './components/db-status-indicator';
 // Import FeedbackButton component for site-wide feedback
 import { FeedbackButton } from './components/feedback/FeedbackButton';
 // Import our scroll effects provider for multi-speed scroll and gentle return
@@ -228,6 +230,8 @@ const AppContent = () => {
              style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', margin: '0 auto' }}>
           {/* Display WordPress sync status notifications */}
           <WordPressSyncStatus />
+          {/* Display database status indicator */}
+          <DbStatusIndicator />
           <ErrorBoundary>
             <Switch>
               {/* Auth Routes */}

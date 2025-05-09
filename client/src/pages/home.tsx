@@ -99,7 +99,26 @@ export default function Home() {
       <ApiLoader isLoading={isLoading} />
       
       {error ? (
-        <div className="text-center p-8">Error loading latest story.</div>
+        <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
+          <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
+          <p className="mb-4">The database connection is currently unavailable, but you can still explore the site.</p>
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 max-w-md mx-auto">
+            <Button 
+              onClick={() => setLocation('/reader')}
+              className="bg-[#444444] hover:bg-[#505050] text-white"
+            >
+              Browse Stories
+              <Book className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-[#121212] hover:bg-[#1a1a1a] text-white"
+            >
+              Try Again
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
           {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}

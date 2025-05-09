@@ -175,20 +175,27 @@ export function registerRoutes(app: Express): Server {
     
     res.status(200).json({
       timestamp: new Date().toISOString(),
-      status: dbStatus.isConnected ? "connected" : "disconnected",
+      status: dbStatus.isEndpointDisabled ? "endpoint_disabled" : 
+              dbStatus.isConnected ? "connected" : "disconnected",
       details: {
         connected: dbStatus.isConnected,
         connectionAttempted: dbStatus.connectionAttempted,
         lastConnectionAttempt: dbStatus.lastConnectionAttempt,
         lastSuccessfulConnection: dbStatus.lastSuccessfulConnection,
         reconnectAttempts: dbStatus.reconnectAttempts,
+        isReconnecting: dbStatus.isReconnecting,
         errorCode: dbStatus.errorCode,
         errorMessage: dbStatus.error
       },
-      reconnecting: dbStatus.isReconnecting,
-      diagnostics: {
+      environmentInfo: {
         hasValidDatabaseUrl: !!process.env.DATABASE_URL,
-        readOnly: dbStatus.readOnly || false
+        envVariables: {
+          DATABASE_URL: process.env.DATABASE_URL ? "Set" : "Not set",
+          PGHOST: process.env.PGHOST ? "Set" : "Not set",
+          PGPORT: process.env.PGPORT ? "Set" : "Not set",
+          PGUSER: process.env.PGUSER ? "Set" : "Not set",
+          PGDATABASE: process.env.PGDATABASE ? "Set" : "Not set"
+        }
       }
     });
   });
