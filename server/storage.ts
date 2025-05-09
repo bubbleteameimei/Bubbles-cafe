@@ -409,23 +409,6 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    // Check if we're in skip database mode
-    const skipDb = process.env.SKIP_DB === 'true';
-    
-    if (skipDb) {
-      console.log('[Storage] SKIP_DB mode: Returning mock user for ID:', id);
-      // Return a mock admin user when in SKIP_DB mode
-      return {
-        id: 1,
-        username: 'admin',
-        email: 'admin@bubblescafe.com',
-        password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
-        isAdmin: true,
-        createdAt: new Date('2022-01-01T00:00:00.000Z'),
-        metadata: {}
-      };
-    }
-    
     try {
       // Use explicit column selection to avoid errors with columns that might not exist
       const [user] = await db.select({
@@ -462,26 +445,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    // Check if we're in skip database mode
-    const skipDb = process.env.SKIP_DB === 'true';
-    
-    if (skipDb) {
-      console.log('[Storage] SKIP_DB mode: Checking mock user for username:', username);
-      // Return a mock admin user when in SKIP_DB mode and the username matches
-      if (username === 'admin') {
-        return {
-          id: 1,
-          username: 'admin',
-          email: 'admin@bubblescafe.com',
-          password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
-          isAdmin: true,
-          createdAt: new Date('2022-01-01T00:00:00.000Z'),
-          metadata: {}
-        };
-      }
-      return undefined;
-    }
-    
     try {
       // Use explicit column selection to avoid errors with columns that might not exist
       const [user] = await db.select({
@@ -518,29 +481,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    // Check if we're in skip database mode
-    const skipDb = process.env.SKIP_DB === 'true';
-    
-    if (skipDb) {
-      console.log('[Storage] SKIP_DB mode: Checking mock user for email:', email);
-      // Normalize the email address to ensure case-insensitive matching
-      const normalizedEmail = email.trim().toLowerCase();
-      
-      // Return a mock admin user when in SKIP_DB mode and the email matches
-      if (normalizedEmail === 'admin@bubblescafe.com') {
-        return {
-          id: 1,
-          username: 'admin',
-          email: 'admin@bubblescafe.com',
-          password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
-          isAdmin: true,
-          createdAt: new Date('2022-01-01T00:00:00.000Z'),
-          metadata: {}
-        };
-      }
-      return undefined;
-    }
-    
     try {
       // Normalize the email address to ensure case-insensitive matching
       const normalizedEmail = email.trim().toLowerCase();
@@ -3941,4 +3881,296 @@ export class DatabaseStorage implements IStorage {
   // Delete duplicate implementation as they're already added above
 }
 
-export const storage = new DatabaseStorage();
+/**
+ * In-memory storage implementation for testing and development
+ */
+export class MemStorage implements IStorage {
+  private users: User[] = [];
+  private posts: Post[] = [];
+  private comments: Comment[] = [];
+  private userPreferences: UserPreference[] = [];
+  private bookmarks: Bookmark[] = [];
+  private userFeedback: UserFeedback[] = [];
+  private gameScenes: any[] = []; // Using any for simplicity in mock data
+  
+  private nextUserId = 1;
+  private nextPostId = 101;
+  private nextCommentId = 1001;
+  private nextBookmarkId = 1;
+  private nextFeedbackId = 1;
+  
+  constructor() {
+    console.log('[MemStorage] Initializing in-memory storage');
+    this.seedSampleData();
+  }
+  
+  // Sample data seeding for development and testing
+  private seedSampleData() {
+    // Add a sample admin user
+    this.users.push({
+      id: this.nextUserId++,
+      username: 'admin',
+      email: 'admin@example.com',
+      password: '$2b$10$X4kv7j5ZcG39Wgog.Oan1uXsR7.Otyks4S.8O242XXIhq9GH8kU0y', // hash for 'password123'
+      isAdmin: true,
+      createdAt: new Date(),
+      displayName: 'Admin User',
+      bio: 'System administrator',
+      avatar: null,
+      metadata: {},
+      verified: true
+    });
+    
+    // Add a sample regular user
+    this.users.push({
+      id: this.nextUserId++,
+      username: 'user',
+      email: 'user@example.com',
+      password: '$2b$10$X4kv7j5ZcG39WgogOan1uXsR7.Otyks4S.8O242XXIhq9GH8kU0y', // hash for 'password123'
+      isAdmin: false,
+      createdAt: new Date(),
+      displayName: 'Regular User',
+      bio: 'Just a reader',
+      avatar: null,
+      metadata: {},
+      verified: true
+    });
+    
+    // Sample posts
+    this.posts.push({
+      id: this.nextPostId++,
+      title: 'Welcome to Bubble\'s Cafe',
+      content: 'This is a sample post created by the in-memory storage for testing.',
+      slug: 'welcome-to-bubbles-cafe',
+      excerpt: 'A sample post for testing purposes.',
+      authorId: 1,
+      isSecret: false,
+      isAdminPost: true,
+      matureContent: false,
+      themeCategory: 'introduction',
+      themeIcon: null,
+      metadata: {},
+      createdAt: new Date(),
+      readingTimeMinutes: 3,
+      likesCount: 5,
+      dislikesCount: 0
+    });
+    
+    // More sample posts with horror themes
+    this.posts.push({
+      id: this.nextPostId++,
+      title: 'The Whispers in the Dark',
+      content: 'Long sample content with a horror story about whispers heard at night...',
+      slug: 'the-whispers-in-the-dark',
+      excerpt: 'A tale of terror that unfolds in the silence of night.',
+      authorId: 1,
+      isSecret: false,
+      isAdminPost: true,
+      matureContent: true,
+      themeCategory: 'psychological',
+      themeIcon: 'ghost',
+      metadata: {},
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      readingTimeMinutes: 8,
+      likesCount: 12,
+      dislikesCount: 2
+    });
+    
+    // Add sample game scenes
+    this.gameScenes = [
+      {
+        sceneId: 'village_entrance',
+        name: "Village Entrance",
+        description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
+        backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_square", label: "Enter the village" }
+          ],
+          items: [],
+          characters: []
+        }
+      },
+      {
+        sceneId: 'village_square',
+        name: "Village Square",
+        description: "A once-bustling village square now stands eerily empty.",
+        backgroundImage: "/assets/eden/scenes/village_square.jpg",
+        type: "exploration",
+        data: {
+          exits: [
+            { target: "village_entrance", label: "Return to entrance" },
+            { target: "abandoned_church", label: "Visit the church" },
+            { target: "old_tavern", label: "Enter the tavern" }
+          ],
+          items: [],
+          characters: []
+        }
+      }
+    ];
+  }
+  
+  // User methods implementation
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.find(user => user.id === id);
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return this.users.find(user => user.username === username);
+  }
+  
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const newUser: User = {
+      ...insertUser,
+      id: this.nextUserId++,
+      createdAt: new Date(),
+      isAdmin: false,
+      displayName: insertUser.username,
+      bio: null,
+      avatar: null,
+      metadata: {},
+      verified: false
+    };
+    
+    this.users.push(newUser);
+    return newUser;
+  }
+  
+  // Basic implementations for required methods
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const userIndex = this.users.findIndex(user => user.id === id);
+    if (userIndex === -1) return undefined;
+    
+    this.users[userIndex] = { ...this.users[userIndex], ...userData };
+    return this.users[userIndex];
+  }
+  
+  // Post methods implementation
+  async getPosts(): Promise<Post[]> {
+    return this.posts;
+  }
+  
+  async getRecentPosts(limit: number = 10): Promise<Post[]> {
+    console.log(`[MemStorage] Getting ${limit} recent posts from memory storage`);
+    // Sort posts by creation date (newest first) and return the specified limit
+    return [...this.posts]
+      .filter(post => !post.isSecret)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  }
+  
+  async getPostBySlug(slug: string): Promise<Post | undefined> {
+    return this.posts.find(post => post.slug === slug);
+  }
+  
+  async getPostById(id: number): Promise<Post | undefined> {
+    return this.posts.find(post => post.id === id);
+  }
+  
+  // Game scene methods
+  async getGameScenes(): Promise<any[]> {
+    return this.gameScenes;
+  }
+  
+  async getGameScene(sceneId: string): Promise<any | undefined> {
+    return this.gameScenes.find(scene => scene.sceneId === sceneId);
+  }
+  
+  // Implement necessary comment methods
+  async getCommentsByPostId(postId: number): Promise<Comment[]> {
+    return this.comments.filter(comment => comment.postId === postId);
+  }
+  
+  async getCommentById(id: number): Promise<Comment | undefined> {
+    return this.comments.find(comment => comment.id === id);
+  }
+  
+  // Stub implementations for required methods to satisfy the interface
+  // These can be expanded as needed
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return this.users.find(user => user.email === email);
+  }
+  
+  async addPostView(postId: number): Promise<boolean> {
+    return true; // Just pretend it succeeded
+  }
+  
+  async getPostViews(postId: number): Promise<number> {
+    return Math.floor(Math.random() * 100); // Return a random view count
+  }
+  
+  async createPostReaction(postId: number, userId: number, type: string): Promise<boolean> {
+    return true;
+  }
+  
+  async createBookmark(userId: number, postId: number): Promise<Bookmark> {
+    const newBookmark: Bookmark = {
+      id: this.nextBookmarkId++,
+      userId,
+      postId,
+      createdAt: new Date()
+    };
+    this.bookmarks.push(newBookmark);
+    return newBookmark;
+  }
+  
+  async getBookmarksByUserId(userId: number): Promise<Bookmark[]> {
+    return this.bookmarks.filter(bookmark => bookmark.userId === userId);
+  }
+  
+  async deleteBookmark(id: number): Promise<boolean> {
+    const index = this.bookmarks.findIndex(bookmark => bookmark.id === id);
+    if (index !== -1) {
+      this.bookmarks.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+  
+  async getPostBookmarks(postId: number): Promise<number> {
+    return this.bookmarks.filter(bookmark => bookmark.postId === postId).length;
+  }
+  
+  async getUserPostBookmark(userId: number, postId: number): Promise<Bookmark | undefined> {
+    return this.bookmarks.find(bookmark => bookmark.userId === userId && bookmark.postId === postId);
+  }
+  
+  async createUserFeedback(feedback: UserFeedback): Promise<UserFeedback> {
+    const newFeedback: UserFeedback = {
+      ...feedback,
+      id: this.nextFeedbackId++,
+      createdAt: new Date()
+    };
+    this.userFeedback.push(newFeedback);
+    return newFeedback;
+  }
+  
+  async getUserFeedback(): Promise<UserFeedback[]> {
+    return this.userFeedback;
+  }
+  
+  // Other required methods with minimal implementations
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const newComment: Comment = {
+      ...comment,
+      id: this.nextCommentId++,
+      createdAt: new Date(),
+      is_approved: false,
+      edited: false,
+      editedAt: null,
+      metadata: {}
+    };
+    this.comments.push(newComment);
+    return newComment;
+  }
+}
+
+// Determine which storage implementation to use based on environment
+const skipDb = process.env.SKIP_DB === 'true';
+
+// Export the appropriate storage implementation
+export const storage = skipDb 
+  ? new MemStorage() 
+  : new DatabaseStorage();
