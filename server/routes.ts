@@ -1806,112 +1806,44 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Recent posts endpoint with improved error handling
-  app.get("/api/posts/recent", async (req: Request, res: Response) => {
+  // Recent posts endpoint for direct consumption
+  app.get("/api/posts/recent", async (req, res) => {
     try {
-      console.log("[GET /api/posts/recent] Fetching recent posts");
+      console.log("Recent posts endpoint called:", req.url);
+      console.log("Request query params:", req.query);
+      
       const limit = Number(req.query.limit) || 10;
       
-      // Check if we're in SKIP_DB mode
-      const skipDb = process.env.SKIP_DB === 'true';
+      // Get recent posts with minimal fields
+      const recentPosts = await db.select({
+        id: posts.id,
+        title: posts.title,
+        excerpt: posts.excerpt,
+        slug: posts.slug
+      })
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
+      .limit(limit);
       
-      if (skipDb) {
-        console.log("[GET /api/posts/recent] Using MemStorage implementation");
-        try {
-          // Get posts from in-memory storage
-          const posts = await storage.getRecentPosts(limit);
-          console.log(`[GET /api/posts/recent] Retrieved ${posts.length} recent posts from MemStorage`);
-          return res.json(posts);
-        } catch (error) {
-          console.error("[GET /api/posts/recent] Error getting posts from MemStorage:", error);
-          // Fall back to providing sample data
-          return res.json([
-            {
-              id: 101,
-              title: "Welcome to Bubble's Cafe",
-              content: "This is a sample post for testing.",
-              slug: "welcome-to-bubbles-cafe",
-              excerpt: "A sample post for testing purposes.",
-              authorId: 1,
-              isSecret: false,
-              isAdminPost: true,
-              matureContent: false,
-              themeCategory: "introduction",
-              themeIcon: null,
-              metadata: {},
-              createdAt: new Date(),
-              readingTimeMinutes: 3,
-              likesCount: 5,
-              dislikesCount: 0
-            },
-            {
-              id: 102,
-              title: "The Whispers in the Dark",
-              content: "A horror story about whispers heard at night...",
-              slug: "the-whispers-in-the-dark",
-              excerpt: "A tale of terror that unfolds in the silence of night.",
-              authorId: 1,
-              isSecret: false,
-              isAdminPost: true,
-              matureContent: true,
-              themeCategory: "psychological",
-              themeIcon: "ghost",
-              metadata: {},
-              createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-              readingTimeMinutes: 8,
-              likesCount: 12,
-              dislikesCount: 2
-            }
-          ]);
-        }
-      } else {
-        // Get recent posts from database storage
-        console.log("[GET /api/posts/recent] Using DatabaseStorage implementation");
-        const posts = await storage.getRecentPosts(limit);
-        console.log(`[GET /api/posts/recent] Retrieved ${posts.length} recent posts from DatabaseStorage`);
-        return res.json(posts);
-      }
+      console.log(`Found ${recentPosts.length} recent posts`);
+      
+      // Return simplified metadata for display
+      const result = recentPosts.map((post: any) => ({
+        ...post,
+        readingTime: 5, // Default time
+        authorName: 'Anonymous',
+        views: 50,
+        likes: 10
+      }));
+      
+      return res.json(result);
     } catch (error) {
-      console.error("[GET /api/posts/recent] Error fetching recent posts:", error);
-      // Return a fallback response with sample data
-      res.status(200).json([
-        {
-          id: 101,
-          title: "Welcome to Bubble's Cafe",
-          content: "This is a sample post for testing.",
-          slug: "welcome-to-bubbles-cafe",
-          excerpt: "A sample post for testing purposes.",
-          authorId: 1,
-          isSecret: false,
-          isAdminPost: true,
-          matureContent: false,
-          themeCategory: "introduction",
-          themeIcon: null,
-          metadata: {},
-          createdAt: new Date(),
-          readingTimeMinutes: 3,
-          likesCount: 5,
-          dislikesCount: 0
-        },
-        {
-          id: 102,
-          title: "The Whispers in the Dark",
-          content: "A horror story about whispers heard at night...",
-          slug: "the-whispers-in-the-dark",
-          excerpt: "A tale of terror that unfolds in the silence of night.",
-          authorId: 1,
-          isSecret: false,
-          isAdminPost: true,
-          matureContent: true,
-          themeCategory: "psychological",
-          themeIcon: "ghost",
-          metadata: {},
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-          readingTimeMinutes: 8,
-          likesCount: 12,
-          dislikesCount: 2
-        }
-      ]);
+      console.error("Error fetching recent posts:", error);
+      return res.status(500).json({ 
+        message: "Failed to fetch recent posts",
+        error: process.env.NODE_ENV === 'development' ? 
+          (error instanceof Error ? error.message : String(error)) : undefined
+      });
     }
   });
 

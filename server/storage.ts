@@ -4051,15 +4051,6 @@ export class MemStorage implements IStorage {
     return this.posts;
   }
   
-  async getRecentPosts(limit: number = 10): Promise<Post[]> {
-    console.log(`[MemStorage] Getting ${limit} recent posts from memory storage`);
-    // Sort posts by creation date (newest first) and return the specified limit
-    return [...this.posts]
-      .filter(post => !post.isSecret)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, limit);
-  }
-  
   async getPostBySlug(slug: string): Promise<Post | undefined> {
     return this.posts.find(post => post.slug === slug);
   }
