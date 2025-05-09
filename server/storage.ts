@@ -147,6 +147,9 @@ export interface IStorage {
   // Reading Progress
   getProgress(postId: number): Promise<ReadingProgress | undefined>;
   updateProgress(progress: InsertProgress): Promise<ReadingProgress>;
+  
+  // Recommendation methods
+  getPersonalizedRecommendations(userId: number, preferredThemes?: string[], limit?: number): Promise<Post[]>;
 
   // Contact Messages
   getContactMessages(): Promise<ContactMessage[]>;
@@ -2067,12 +2070,30 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`[Storage] Getting like counts for post ${postId}`);
       
-      // Use a direct SQL query to see the exact data
-      const result = await db.execute(sql`SELECT id, title, likes_count, dislikes_count FROM posts WHERE id = ${postId}`);
-      console.log(`[Storage] Raw SQL result for post ${postId}:`, result.rows[0]);
+      // Calculate counts directly from the post_likes table for accuracy
+      const likesResult = await db.select({
+        count: count()
+      })
+      .from(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.isLike, true)
+      ));
       
-      // Get the likes/dislikes directly from the post record
-      const [post] = await db.select({
+      const dislikesResult = await db.select({
+        count: count()
+      })
+      .from(postLikes)
+      .where(and(
+        eq(postLikes.postId, postId),
+        eq(postLikes.isLike, false)
+      ));
+      
+      const likesCount = Number(likesResult[0]?.count || 0);
+      const dislikesCount = Number(dislikesResult[0]?.count || 0);
+      
+      // Get current values from the posts table for logging comparison
+      const [currentValues] = await db.select({
         likesCount: postsTable.likesCount,
         dislikesCount: postsTable.dislikesCount
       })
@@ -2080,23 +2101,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(postsTable.id, postId))
       .limit(1);
       
-      if (!post) {
-        console.log(`[Storage] No post found with ID ${postId}, returning zero counts`);
-        return { likesCount: 0, dislikesCount: 0 };
+      // Log both calculated and stored values to identify discrepancies
+      if (currentValues) {
+        console.log(`[Storage] Post ${postId} current stored counts:`, {
+          likesCount: Number(currentValues.likesCount || 0),
+          dislikesCount: Number(currentValues.dislikesCount || 0)
+        });
       }
       
-      console.log(`[Storage] Post ${postId} data from select query:`, post);
+      const counts = { likesCount, dislikesCount };
+      console.log(`[Storage] Post ${postId} calculated counts:`, counts);
       
-      const counts = {
-        likesCount: Number(post.likesCount || 0),
-        dislikesCount: Number(post.dislikesCount || 0)
-      };
-
-      console.log(`[Storage] Post ${postId} counts:`, counts);
       return counts;
     } catch (error) {
       console.error(`[Storage] Error getting like counts for post ${postId}:`, error);
-      throw error;
+      // Return zero counts as a fallback
+      return { likesCount: 0, dislikesCount: 0 };
     }
   }
 
@@ -4236,6 +4256,191 @@ export class MemStorage implements IStorage {
     } catch (error) {
       console.error('[Storage] Error in getRecommendedPosts:', error);
       throw new Error('Failed to fetch recommended posts');
+    }
+  }
+  
+  async getPersonalizedRecommendations(userId: number, preferredThemes: string[] = [], limit: number = 5): Promise<Post[]> {
+    try {
+      console.log(`[Storage] Fetching personalized recommendations for user ID: ${userId}, limit: ${limit}`);
+      
+      // Implement safe database operation with retry logic
+      const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
+        let lastError;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            return await operation();
+          } catch (error) {
+            console.warn(`[Storage] Recommendation query attempt ${attempt + 1} failed:`, error);
+            lastError = error;
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
+          }
+        }
+        throw lastError;
+      };
+      
+      // Step 1: Get user's reading history (posts they've read)
+      const readingHistory = await safeDbOperation(async () => {
+        return await db.select()
+          .from(readingProgress)
+          .where(eq(readingProgress.userId, userId))
+          .orderBy(desc(readingProgress.lastReadAt))
+          .limit(10);
+      });
+      
+      // Step 2: Get user's liked posts
+      const likedPosts = await safeDbOperation(async () => {
+        return await db.select()
+          .from(postLikes)
+          .where(and(
+            eq(postLikes.userId, userId),
+            eq(postLikes.isLike, true)
+          ))
+          .limit(10);
+      });
+      
+      // Step 3: Get user's bookmarks
+      const userBookmarks = await safeDbOperation(async () => {
+        return await db.select()
+          .from(bookmarks)
+          .where(eq(bookmarks.userId, userId))
+          .limit(10);
+      });
+      
+      // Collect post IDs from user history
+      const historyPostIds = new Set([
+        ...readingHistory.map(item => item.postId),
+        ...likedPosts.map(item => item.postId),
+        ...userBookmarks.map(item => item.postId)
+      ]);
+      
+      // If user has no history, fall back to trending posts with theme preferences
+      if (historyPostIds.size === 0) {
+        console.log(`[Storage] User ${userId} has no history, using trending posts`);
+        let query = db.select()
+          .from(postsTable)
+          .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt));
+        
+        // Apply theme filter if preferences exist
+        if (preferredThemes.length > 0) {
+          query = query.where(
+            preferredThemes.map(theme => 
+              or(
+                like(postsTable.themeCategory, `%${theme}%`),
+                sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+              )
+            ).reduce((acc, condition) => or(acc, condition))
+          );
+        }
+        
+        const trendingPosts = await safeDbOperation(async () => {
+          return await query.limit(limit);
+        });
+        
+        console.log(`[Storage] Found ${trendingPosts.length} trending posts for user ${userId}`);
+        return trendingPosts.map(post => ({
+          ...post,
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+        }));
+      }
+      
+      // Step 4: Get content-based recommendations
+      // Find posts with similar themes to what the user has engaged with
+      const historicalPosts = await safeDbOperation(async () => {
+        return await db.select()
+          .from(postsTable)
+          .where(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`)
+          .limit(20);
+      });
+      
+      // Extract themes from historical posts
+      const userThemes = new Set<string>();
+      historicalPosts.forEach(post => {
+        if (post.themeCategory) {
+          userThemes.add(post.themeCategory);
+        }
+        // Also check metadata for themeCategory
+        if (post.metadata && typeof post.metadata === 'object') {
+          const metadata = post.metadata as any;
+          if (metadata?.themeCategory) {
+            userThemes.add(metadata.themeCategory);
+          }
+        }
+      });
+      
+      // Combine user preferences with derived themes
+      const allThemes = [...Array.from(userThemes), ...preferredThemes];
+      
+      // Get recommendations based on themes
+      const contentBasedRecommendations = await safeDbOperation(async () => {
+        let query = db.select()
+          .from(postsTable);
+        
+        if (allThemes.length > 0 && historyPostIds.size > 0) {
+          query = query.where(
+            and(
+              // Exclude posts the user has already interacted with
+              not(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`),
+              // Include posts with matching themes
+              or(
+                ...allThemes.map(theme => 
+                  or(
+                    like(postsTable.themeCategory, `%${theme}%`),
+                    sql`${postsTable.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+                  )
+                )
+              )
+            )
+          );
+        }
+        
+        return await query
+          .orderBy(desc(postsTable.createdAt))
+          .limit(limit);
+      });
+      
+      // Step 5: If we don't have enough recommendations, supplement with popular posts
+      if (contentBasedRecommendations.length < limit) {
+        console.log(`[Storage] Not enough content-based recommendations (${contentBasedRecommendations.length}), supplementing with popular posts`);
+        const remainingCount = limit - contentBasedRecommendations.length;
+        const existingIds = new Set([
+          ...contentBasedRecommendations.map(post => post.id),
+          ...Array.from(historyPostIds)
+        ]);
+        
+        const popularSupplements = await safeDbOperation(async () => {
+          return await db.select()
+            .from(postsTable)
+            .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
+            .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
+            .limit(remainingCount);
+        });
+        
+        console.log(`[Storage] Found ${popularSupplements.length} popular supplemental posts`);
+        
+        const result = [
+          ...contentBasedRecommendations.map(post => ({
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          })),
+          ...popularSupplements.map(post => ({
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          }))
+        ];
+        
+        return result;
+      }
+      
+      console.log(`[Storage] Found ${contentBasedRecommendations.length} personalized recommendations for user ${userId}`);
+      return contentBasedRecommendations.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error(`[Storage] Error getting personalized recommendations:`, error);
+      // Return empty array instead of throwing to provide graceful degradation
+      return [];
     }
   }
   

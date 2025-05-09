@@ -1,7 +1,7 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db-connect";
-import { posts, Post } from "@shared/schema";
-import { and, eq, ne, or, like, desc, asc, sql, count } from "drizzle-orm";
+import { posts, Post, readingProgress, postLikes, bookmarks } from "@shared/schema";
+import { and, eq, ne, or, like, desc, asc, sql, count, not } from "drizzle-orm";
 import { IStorage } from "../storage";
 
 /**
@@ -23,7 +23,8 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
   
   /**
    * GET /api/users/recommendations
-   * Get personalized recommendations for the current user
+   * Get personalized recommendations for the current user based on reading history,
+   * preferences, and collaborative filtering
    */
   app.get("/api/users/recommendations", async (req: Request, res: Response) => {
     try {
@@ -35,17 +36,237 @@ export function registerRecommendationsRoutes(app: Express, storage: IStorage) {
       
       const limit = Number(req.query.limit) || 5;
       
-      // Get user's reading history, likes, and bookmarks
-      // For now, just get random posts
-      const randomPosts = await db.query.posts.findMany({
-        limit: limit,
-        orderBy: [desc(posts.createdAt)]
+      // Extract user preferences if provided
+      const preferredThemes = req.query.themes ? 
+        (Array.isArray(req.query.themes) ? req.query.themes : [req.query.themes]) : 
+        [];
+        
+      // Implement safe database operation with retry logic
+      const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
+        let lastError;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            return await operation();
+          } catch (error) {
+            console.warn(`Recommendation query attempt ${attempt + 1} failed:`, error);
+            lastError = error;
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
+          }
+        }
+        throw lastError;
+      };
+      
+      // Step 1: Get user's reading history (posts they've read)
+      const readingHistory = await safeDbOperation(async () => {
+        return await db.query.readingProgress.findMany({
+          where: eq(readingProgress.userId, userId),
+          orderBy: [desc(readingProgress.lastReadAt)],
+          limit: 10
+        });
       });
       
-      return res.json(randomPosts);
+      // Step 2: Get user's liked posts
+      const likedPosts = await safeDbOperation(async () => {
+        return await db.query.postLikes.findMany({
+          where: and(
+            eq(postLikes.userId, userId),
+            eq(postLikes.isLike, true)
+          ),
+          limit: 10
+        });
+      });
+      
+      // Step 3: Get user's bookmarks
+      const userBookmarks = await safeDbOperation(async () => {
+        return await db.query.bookmarks.findMany({
+          where: eq(bookmarks.userId, userId),
+          limit: 10
+        });
+      });
+      
+      // Collect post IDs from user history
+      const historyPostIds = new Set([
+        ...readingHistory.map((item: {postId: number}) => item.postId),
+        ...likedPosts.map((item: {postId: number}) => item.postId),
+        ...userBookmarks.map((item: {postId: number}) => item.postId)
+      ]);
+      
+      // If user has no history, fall back to trending posts with theme preferences
+      if (historyPostIds.size === 0) {
+        let query = db.select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          themeCategory: posts.themeCategory,
+          createdAt: posts.createdAt,
+          metadata: posts.metadata
+        })
+        .from(posts)
+        .orderBy(desc(posts.likesCount), desc(posts.createdAt));
+        
+        // Apply theme filter if preferences exist
+        if (preferredThemes.length > 0) {
+          query = query.where(
+            preferredThemes.map(theme => 
+              or(
+                like(posts.themeCategory, `%${theme}%`),
+                sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+              )
+            ).reduce((acc, condition) => or(acc, condition))
+          );
+        }
+        
+        const trendingPosts = await safeDbOperation(async () => {
+          return await query.limit(limit);
+        });
+        
+        return res.json(trendingPosts);
+      }
+      
+      // Step 4: Get content-based recommendations
+      // Find posts with similar themes to what the user has engaged with
+      const historicalPosts = await safeDbOperation(async () => {
+        return await db.query.posts.findMany({
+          where: sql`${posts.id} IN (${Array.from(historyPostIds).join(',')})`,
+        });
+      });
+      
+      // Extract themes from historical posts
+      const userThemes = new Set<string>();
+      historicalPosts.forEach((post: {themeCategory?: string, metadata?: any}) => {
+        if (post.themeCategory) {
+          userThemes.add(post.themeCategory);
+        }
+        // Also check metadata for themeCategory
+        const metadata = post.metadata as any;
+        if (metadata?.themeCategory) {
+          userThemes.add(metadata.themeCategory);
+        }
+      });
+      
+      // Combine user preferences with derived themes
+      const allThemes = [...Array.from(userThemes), ...preferredThemes];
+      
+      // Get recommendations based on themes
+      const contentBasedRecommendations = await safeDbOperation(async () => {
+        let query = db.select({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          excerpt: posts.excerpt,
+          themeCategory: posts.themeCategory,
+          createdAt: posts.createdAt,
+          metadata: posts.metadata
+        })
+        .from(posts)
+        .where(
+          and(
+            // Exclude posts the user has already interacted with
+            not(sql`${posts.id} IN (${Array.from(historyPostIds).join(',')})`),
+            // Include posts with matching themes
+            allThemes.map(theme => 
+              or(
+                like(posts.themeCategory, `%${theme}%`),
+                sql`${posts.metadata}->>'themeCategory' LIKE ${`%${theme}%`}`
+              )
+            ).reduce((acc, condition) => or(acc, condition), sql`1=0`)
+          )
+        )
+        .orderBy(desc(posts.createdAt))
+        .limit(limit);
+        
+        return await query;
+      });
+      
+      // Step 5: If we don't have enough recommendations, supplement with popular posts
+      if (contentBasedRecommendations.length < limit) {
+        const remainingCount = limit - contentBasedRecommendations.length;
+        const existingIds = new Set([
+          ...contentBasedRecommendations.map((post: {id: number}) => post.id),
+          ...Array.from(historyPostIds)
+        ]);
+        
+        const popularSupplements = await safeDbOperation(async () => {
+          return await db.select({
+            id: posts.id,
+            title: posts.title,
+            slug: posts.slug,
+            excerpt: posts.excerpt,
+            themeCategory: posts.themeCategory,
+            createdAt: posts.createdAt,
+            metadata: posts.metadata
+          })
+          .from(posts)
+          .where(not(sql`${posts.id} IN (${Array.from(existingIds).join(',')})`))
+          .orderBy(desc(posts.likesCount), desc(posts.createdAt))
+          .limit(remainingCount);
+        });
+        
+        return res.json([...contentBasedRecommendations, ...popularSupplements]);
+      }
+      
+      return res.json(contentBasedRecommendations);
     } catch (error) {
       console.error("Error getting user recommendations:", error);
-      return res.status(500).json({ message: "An error occurred while fetching recommendations" });
+      return res.status(500).json({ 
+        message: "An error occurred while fetching personalized recommendations",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  /**
+   * GET /api/recommendations/personalized
+   * Enhanced personalized recommendations endpoint using the improved algorithm
+   * This endpoint uses the new storage method with advanced user preference tracking
+   */
+  app.get("/api/recommendations/personalized", async (req: Request, res: Response) => {
+    console.log("Enhanced personalized recommendations endpoint called");
+    try {
+      // Check if user is authenticated
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const limit = Number(req.query.limit) || 5;
+      
+      // Extract user preferences if provided
+      const preferredThemes = req.query.themes ? 
+        (Array.isArray(req.query.themes) ? req.query.themes : [req.query.themes]) : 
+        [];
+        
+      console.log(`Getting personalized recommendations for user ${userId} with limit ${limit}`);
+      console.log(`User preferences: ${preferredThemes.join(', ') || 'None specified'}`);
+      
+      // Use the new storage method with enhanced personalization
+      const recommendedPosts = await storage.getPersonalizedRecommendations(
+        userId, 
+        preferredThemes as string[], 
+        limit
+      );
+      
+      console.log(`Found ${recommendedPosts.length} personalized recommendations`);
+      
+      // Add helpful metadata to the response
+      const response = {
+        recommendations: recommendedPosts,
+        meta: {
+          count: recommendedPosts.length,
+          userPreferences: preferredThemes.length > 0,
+          generatedAt: new Date().toISOString()
+        }
+      };
+      
+      return res.json(response);
+    } catch (error) {
+      console.error("Error getting enhanced personalized recommendations:", error);
+      return res.status(500).json({ 
+        message: "An error occurred while fetching personalized recommendations",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

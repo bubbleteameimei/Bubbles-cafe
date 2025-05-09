@@ -75,6 +75,7 @@ const ProfilePage = React.lazy(() => import('./pages/profile'));
 const BookmarksPage = React.lazy(() => import('./pages/bookmarks'));
 const SearchResultsPage = React.lazy(() => import('./pages/SearchResults'));
 const NotificationsPage = React.lazy(() => import('./pages/notifications'));
+const RecommendationsPage = React.lazy(() => import('./pages/recommendations'));
 
 // Settings pages - lazy loaded
 const ProfileSettingsPage = React.lazy(() => import('./pages/settings/profile'));
@@ -255,6 +256,7 @@ const AppContent = () => {
               {/* Export test route removed */}
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
+              <Route path="/recommendations" component={RecommendationsPage} />
 
               {/* Game Routes */}
               <Route path="/game-test" component={GameTestPage} />

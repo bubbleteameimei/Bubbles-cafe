@@ -71,27 +71,59 @@ export function LikeDislike({
   // Fetch the current reaction counts from the server
   useEffect(() => {
     const fetchReactionCounts = async () => {
+      // Check if post ID is valid before making the request
+      if (!postId || isNaN(Number(postId))) {
+        console.warn(`[LikeDislike] Invalid post ID: ${postId}`);
+        setStats({ likesCount: 0, dislikesCount: 0 });
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         setIsLoading(true);
         console.log(`[LikeDislike] Fetching reaction counts for post ${postId}`);
         
-        // Use the correct port based on workflow server
-        const port = window.location.port || "3000";
-        const response = await fetch(`/api/posts/${postId}/reactions`);
+        // Add timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/posts/${postId}/reactions?t=${timestamp}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        // Special handling for 404s - just return 0 counts without error
+        if (response.status === 404) {
+          console.log(`[LikeDislike] Post ${postId} not found, using zero counts`);
+          setStats({ likesCount: 0, dislikesCount: 0 });
+          setIsLoading(false);
+          return;
+        }
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[LikeDislike] Server error: ${response.status}`, errorText);
           throw new Error(`Failed to fetch reaction counts: ${response.status}`);
         }
         
         const data = await response.json();
         console.log(`[LikeDislike] Received counts for post ${postId}:`, data);
         
-        setStats({
-          likesCount: data.likesCount || 0,
-          dislikesCount: data.dislikesCount || 0
-        });
+        if (typeof data.likesCount === 'number' && typeof data.dislikesCount === 'number') {
+          setStats({
+            likesCount: data.likesCount,
+            dislikesCount: data.dislikesCount
+          });
+        } else {
+          console.error(`[LikeDislike] Invalid data format from server:`, data);
+          // Use default zero counts on invalid format
+          setStats({ likesCount: 0, dislikesCount: 0 });
+        }
       } catch (error) {
-        console.error(`[LikeDislike] Error fetching reaction counts for post ${postId}:`, error);
+        // Don't log as error for 404s since we handle those separately
+        if (error instanceof Error && !error.message.includes('404')) {
+          console.error(`[LikeDislike] Error fetching reaction counts for post ${postId}:`, error);
+        }
         // Use default zero counts on error
         setStats({ likesCount: 0, dislikesCount: 0 });
       } finally {
@@ -104,18 +136,37 @@ export function LikeDislike({
 
   // Handle sending reaction to the server and updating local state
   const sendReaction = async (isLike: boolean | null) => {
+    // Check if post ID is valid before making the request
+    if (!postId || isNaN(Number(postId))) {
+      console.warn(`[LikeDislike] Invalid post ID: ${postId}, cannot send reaction`);
+      return false;
+    }
+    
     try {
       console.log(`[LikeDislike] Sending reaction for post ${postId}:`, isLike);
       
-      const response = await fetch(`/api/posts/${postId}/reaction`, {
+      // Add a timestamp parameter to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/posts/${postId}/reaction?t=${timestamp}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         },
         body: JSON.stringify({ isLike })
       });
       
+      // Special handling for 404s
+      if (response.status === 404) {
+        console.log(`[LikeDislike] Post ${postId} not found, cannot update reaction`);
+        // Return false but don't throw an error - this is expected for non-existent posts
+        return false;
+      }
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[LikeDislike] Server error: ${response.status}`, errorText);
         throw new Error(`Failed to send reaction: ${response.status}`);
       }
       
@@ -123,17 +174,30 @@ export function LikeDislike({
       console.log(`[LikeDislike] Reaction response for post ${postId}:`, data);
       
       // Update stats with server counts
-      setStats({
-        likesCount: data.likesCount || 0,
-        dislikesCount: data.dislikesCount || 0
-      });
-      
-      // Notify parent component of the update
-      onUpdate?.(data.likesCount || 0, data.dislikesCount || 0);
-      
-      return true;
+      if (typeof data.likesCount === 'number' && typeof data.dislikesCount === 'number') {
+        setStats({
+          likesCount: data.likesCount,
+          dislikesCount: data.dislikesCount
+        });
+        
+        // Notify parent component of the update
+        onUpdate?.(data.likesCount, data.dislikesCount);
+        return true;
+      } else {
+        console.warn(`[LikeDislike] Invalid data format from server:`, data);
+        // Use values from the response if available, otherwise default to 0
+        const likesCount = Number(data?.likesCount || 0);
+        const dislikesCount = Number(data?.dislikesCount || 0);
+        
+        setStats({ likesCount, dislikesCount });
+        onUpdate?.(likesCount, dislikesCount);
+        return true;
+      }
     } catch (error) {
-      console.error(`[LikeDislike] Error sending reaction for post ${postId}:`, error);
+      // Don't log as error for 404s since we handle those separately
+      if (error instanceof Error && !error.message.includes('404')) {
+        console.error(`[LikeDislike] Error sending reaction for post ${postId}:`, error);
+      }
       return false;
     }
   };

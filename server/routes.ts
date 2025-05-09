@@ -1191,30 +1191,76 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update the like/dislike route handler
+  // Update the like/dislike route handler with robust error handling
   app.post("/api/posts/:postId/reaction", async (req, res) => {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
+      
+      // Verify the parameter is valid
+      if (!postIdParam) {
+        console.warn(`[POST /api/posts/:postId/reaction] Missing post ID parameter`);
+        return res.status(400).json({ 
+          message: "Missing post ID parameter",
+          likesCount: 0,
+          dislikesCount: 0 
+        });
+      }
+      
+      // Check if isLike is properly provided
+      if (req.body.isLike !== true && req.body.isLike !== false && req.body.isLike !== null) {
+        console.warn(`[POST /api/posts/:postId/reaction] Invalid isLike value:`, req.body.isLike);
+        return res.status(400).json({ 
+          message: "isLike must be true, false, or null",
+          likesCount: 0,
+          dislikesCount: 0 
+        });
+      }
       
       // Check if postId is numeric or a slug
       if (/^\d+$/.test(postIdParam)) {
         postId = parseInt(postIdParam);
         
         // Verify the post exists
-        const post = await storage.getPostById(postId);
-        if (!post) {
-          console.log(`[POST /api/posts/:postId/reaction] Post not found with ID: ${postId}`);
-          return res.status(404).json({ message: "Post not found" });
+        try {
+          const post = await storage.getPostById(postId);
+          if (!post) {
+            console.log(`[POST /api/posts/:postId/reaction] Post not found with ID: ${postId}`);
+            return res.status(404).json({ 
+              message: "Post not found",
+              likesCount: 0,
+              dislikesCount: 0 
+            });
+          }
+        } catch (err) {
+          console.error(`[POST /api/posts/:postId/reaction] Error finding post with ID ${postId}:`, err);
+          return res.status(404).json({ 
+            message: "Post not found or database error",
+            likesCount: 0,
+            dislikesCount: 0 
+          });
         }
       } else {
         // It's a slug, we need to find the corresponding post ID
-        const post = await storage.getPost(postIdParam);
-        if (!post) {
-          console.log(`[POST /api/posts/:postId/reaction] Post not found with slug: ${postIdParam}`);
-          return res.status(404).json({ message: "Post not found" });
+        try {
+          const post = await storage.getPost(postIdParam);
+          if (!post) {
+            console.log(`[POST /api/posts/:postId/reaction] Post not found with slug: ${postIdParam}`);
+            return res.status(404).json({ 
+              message: "Post not found",
+              likesCount: 0,
+              dislikesCount: 0 
+            });
+          }
+          postId = post.id;
+        } catch (err) {
+          console.error(`[POST /api/posts/:postId/reaction] Error finding post with slug ${postIdParam}:`, err);
+          return res.status(404).json({ 
+            message: "Post not found or database error",
+            likesCount: 0,
+            dislikesCount: 0 
+          });
         }
-        postId = post.id;
       }
       
       const { isLike } = req.body;
@@ -1258,80 +1304,142 @@ export function registerRoutes(app: Express): Server {
         }
       }
 
-      // Get updated counts (combine database and session likes)
-      const dbCounts = await storage.getPostLikeCounts(postId);
-      const counts = {
-        likesCount: dbCounts.likesCount,
-        dislikesCount: dbCounts.dislikesCount
-      };
+      // Get updated counts (combine database and session likes) with error handling
+      try {
+        const dbCounts = await storage.getPostLikeCounts(postId);
+        const counts = {
+          likesCount: dbCounts.likesCount || 0,
+          dislikesCount: dbCounts.dislikesCount || 0
+        };
 
-      // For consistency, we no longer add session likes to the count
-      // This ensures index and reader pages show identical counts
-      // The like/dislike data is still tracked in the session for UI state
-      
-      console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
-      res.json({
-        ...counts,
-        message: req.user?.id
-          ? `Successfully ${isLike ? 'liked' : 'disliked'} the post`
-          : 'Reaction recorded anonymously'
-      });
+        // For consistency, we no longer add session likes to the count
+        // This ensures index and reader pages show identical counts
+        // The like/dislike data is still tracked in the session for UI state
+        
+        console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
+        res.json({
+          ...counts,
+          message: req.user?.id
+            ? `Successfully ${isLike !== null ? (isLike ? 'liked' : 'disliked') : 'removed reaction from'} the post`
+            : 'Reaction recorded anonymously'
+        });
+      } catch (error) {
+        console.error(`[Reaction] Error getting counts for post ${postId}:`, error);
+        // Return a graceful response even if counts fail
+        res.json({
+          likesCount: 0,
+          dislikesCount: 0,
+          message: req.user?.id
+            ? `Reaction processed but counts unavailable`
+            : 'Anonymous reaction processed',
+          error: "Failed to retrieve updated counts"
+        });
+      }
     } catch (error) {
       console.error("[Reaction] Error handling post reaction:", error);
       res.status(500).json({
         message: error instanceof Error
           ? error.message
-          : "Failed to update reaction status"
+          : "Failed to update reaction status",
+        likesCount: 0,
+        dislikesCount: 0
       });
     }
   });
 
-  // Add a route to get current like/dislike counts
+  // Add a route to get current like/dislike counts with better error handling
   app.get("/api/posts/:postId/reactions", async (req, res) => {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
+      
+      // Verify the parameter is valid
+      if (!postIdParam) {
+        console.warn(`[GET /api/posts/:postId/reactions] Missing post ID parameter`);
+        return res.status(400).json({ 
+          message: "Missing post ID parameter",
+          likesCount: 0,
+          dislikesCount: 0 
+        });
+      }
       
       // Check if postId is numeric or a slug
       if (/^\d+$/.test(postIdParam)) {
         postId = parseInt(postIdParam);
         
         // Verify the post exists
-        const post = await storage.getPostById(postId);
-        if (!post) {
-          console.log(`[GET /api/posts/:postId/reactions] Post not found with ID: ${postId}`);
-          return res.status(404).json({ message: "Post not found" });
+        try {
+          const post = await storage.getPostById(postId);
+          if (!post) {
+            console.log(`[GET /api/posts/:postId/reactions] Post not found with ID: ${postId}`);
+            return res.status(404).json({ 
+              message: "Post not found",
+              likesCount: 0,
+              dislikesCount: 0 
+            });
+          }
+        } catch (err) {
+          console.error(`[GET /api/posts/:postId/reactions] Error finding post with ID ${postId}:`, err);
+          return res.status(404).json({ 
+            message: "Post not found or database error",
+            likesCount: 0,
+            dislikesCount: 0 
+          });
         }
       } else {
         // It's a slug, we need to find the corresponding post ID
-        const post = await storage.getPost(postIdParam);
-        if (!post) {
-          console.log(`[GET /api/posts/:postId/reactions] Post not found with slug: ${postIdParam}`);
-          return res.status(404).json({ message: "Post not found" });
+        try {
+          const post = await storage.getPost(postIdParam);
+          if (!post) {
+            console.log(`[GET /api/posts/:postId/reactions] Post not found with slug: ${postIdParam}`);
+            return res.status(404).json({ 
+              message: "Post not found",
+              likesCount: 0,
+              dislikesCount: 0 
+            });
+          }
+          postId = post.id;
+        } catch (err) {
+          console.error(`[GET /api/posts/:postId/reactions] Error finding post with slug ${postIdParam}:`, err);
+          return res.status(404).json({ 
+            message: "Post not found or database error",
+            likesCount: 0,
+            dislikesCount: 0 
+          });
         }
-        postId = post.id;
       }
       
       console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
 
-      const dbCounts = await storage.getPostLikeCounts(postId);
-      const counts = {
-        likesCount: dbCounts.likesCount,
-        dislikesCount: dbCounts.dislikesCount
-      };
+      try {
+        const dbCounts = await storage.getPostLikeCounts(postId);
+        const counts = {
+          likesCount: dbCounts.likesCount || 0,
+          dislikesCount: dbCounts.dislikesCount || 0
+        };
 
-      // For consistency, we no longer add session likes to the count
-      // This ensures index and reader pages show identical counts
-      // The like/dislike data is still tracked in the session for UI state
-      
-      console.log(`[Reaction] Current counts for post ${postId}:`, counts);
-      res.json(counts);
+        // For consistency, we no longer add session likes to the count
+        // This ensures index and reader pages show identical counts
+        // The like/dislike data is still tracked in the session for UI state
+        
+        console.log(`[Reaction] Current counts for post ${postId}:`, counts);
+        res.json(counts);
+      } catch (error) {
+        console.error(`[Reaction] Error fetching like counts for post ${postId}:`, error);
+        // Return zeros instead of error to improve UX
+        res.json({
+          likesCount: 0,
+          dislikesCount: 0,
+          message: "Error retrieving counts"
+        });
+      }
     } catch (error) {
-      console.error("[Reaction] Error fetching post reactions:", error);
+      console.error("[Reaction] Error in main reaction handler:", error);
+      // Return zeros instead of error to improve UX
       res.status(500).json({
-        message: error instanceof Error
-          ? error.message
-          : "Failed to fetch reaction counts"
+        message: error instanceof Error ? error.message : "Failed to fetch reaction counts",
+        likesCount: 0,
+        dislikesCount: 0
       });
     }
   });
