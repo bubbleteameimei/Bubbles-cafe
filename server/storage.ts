@@ -312,18 +312,20 @@ export class DatabaseStorage implements IStorage {
     return status.isConnected;
   }
   
-  // Helper method for safely executing database operations with fallback options
-  async safeDbOperation<T>(operation: () => Promise<T>, fallback: T, operationName: string): Promise<T> {
-    try {
-      if (!this.isDbConnected()) {
-        console.warn(`[Storage] Database not connected, using fallback for: ${operationName}`);
-        return fallback;
-      }
-      return await operation();
-    } catch (error) {
-      console.error(`[Storage] Error executing ${operationName}:`, error);
-      return fallback;
-    }
+  // Helper method for safely executing database operations with fallback options and retries
+  async safeDbOperation<T>(
+    operation: () => Promise<T>, 
+    fallback: T, 
+    operationName: string,
+    maxRetries: number = 3
+  ): Promise<T> {
+    // Use the enhanced safeDbOperation from db.ts with retry functionality
+    return safeDbOperation(
+      operation,
+      fallback,
+      `[Storage] ${operationName}`,
+      maxRetries
+    );
   }
 
   // System methods for accessing DB objects directly
@@ -376,7 +378,8 @@ export class DatabaseStorage implements IStorage {
                 error.message.includes('Connection terminated') || 
                 error.message.includes('terminating connection') ||
                 error.message.includes('connection reset') ||
-                error.message.includes('server closed')
+                error.message.includes('server closed') ||
+                error.message.includes('endpoint is disabled')
               );
                 
               if (isConnectionError && retries < maxRetries) {

@@ -177,16 +177,29 @@ export default function ThemesPage() {
   // Handler for starting the edit process
   const handleEdit = (post: Post) => {
     setEditingId(post.id);
-    const currentTheme = post.theme_category || 'HORROR';
+    const currentTheme = post.themeCategory || post.theme_category || 'HORROR';
     setSelectedTheme(currentTheme);
     
-    // Set the default icon based on the theme
-    const themeInfo = THEME_CATEGORIES[currentTheme as keyof typeof THEME_CATEGORIES];
-    setSelectedIcon(themeInfo?.icon || 'eye');
+    // Get current icon from direct properties or metadata
+    const metadataIcon = post.metadata?.themeIcon;
+    const currentIcon = post.themeIcon || post.theme_icon || metadataIcon;
     
-    // Reset custom icon input state when editing a different post
-    setShowCustomIconInput(false);
-    setCustomIconInput('');
+    // If the post already has an icon, use it; otherwise use theme default
+    if (currentIcon) {
+      setSelectedIcon(currentIcon);
+      // If it's a custom icon that's not in our predefined list
+      if (!Object.keys(THEME_ICONS).includes(currentIcon.toLowerCase())) {
+        setSelectedIcon('custom');
+        setCustomIconInput(currentIcon);
+        setShowCustomIconInput(true);
+      }
+    } else {
+      // Set the default icon based on the theme
+      const themeInfo = THEME_CATEGORIES[currentTheme as keyof typeof THEME_CATEGORIES];
+      setSelectedIcon(themeInfo?.icon || 'eye');
+      setShowCustomIconInput(false);
+      setCustomIconInput('');
+    }
   };
 
   // Handler for saving the theme change

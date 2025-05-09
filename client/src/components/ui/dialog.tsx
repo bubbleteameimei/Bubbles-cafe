@@ -37,6 +37,26 @@ const DialogContent = React.forwardRef<
   const defaultTitleId = `dialog-title-${id}`;
   const defaultDescId = `dialog-desc-${id}`;
   
+  // Store previously focused element to restore focus when dialog closes
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  
+  // Set up focus trap and management
+  React.useEffect(() => {
+    // Save the currently focused element
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    
+    // Handle cleanup when the dialog is closed
+    return () => {
+      // Return focus to the element that was focused before the dialog was opened
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        // Small delay to ensure proper focus return after animations
+        setTimeout(() => {
+          previousFocusRef.current?.focus();
+        }, 50);
+      }
+    };
+  }, []);
+  
   // Check if aria attributes are already provided
   const hasAriaLabel = Boolean(props['aria-label']);
   const hasAriaLabelledby = Boolean(props['aria-labelledby']);
@@ -45,7 +65,7 @@ const DialogContent = React.forwardRef<
   // Use React.Children.toArray to get a flat, searchable array
   const childrenArray = React.Children.toArray(children);
   
-    // Prepare the dialog with an accessible title and description regardless of its content
+  // Prepare the dialog with an accessible title and description regardless of its content
   // This ensures we'll never have accessibility warnings
   
   // Create a screen-reader only title that's always included
@@ -78,6 +98,17 @@ const DialogContent = React.forwardRef<
   const finalAriaLabelledby = props['aria-labelledby'] || (hasAriaLabel ? undefined : defaultTitleId);
   const finalAriaDescribedby = props['aria-describedby'] || defaultDescId;
   
+  // Handle keyboard navigation - add ESC handler explicitly even though Radix probably handles this
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (props.onKeyDown) {
+      // Cast to any to avoid type issues with event handling
+      (props.onKeyDown as any)(e);
+    }
+    
+    // Add additional accessibility keyboard handling if needed
+    // Radix UI already handles Escape for closing
+  };
+  
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -85,6 +116,10 @@ const DialogContent = React.forwardRef<
         ref={ref}
         aria-labelledby={finalAriaLabelledby}
         aria-describedby={finalAriaDescribedby}
+        aria-modal="true" 
+        role="dialog"
+        tabIndex={-1} // Makes the dialog container focusable, but not in the tab order
+        onKeyDown={handleKeyDown}
         className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
           className
@@ -175,6 +210,12 @@ const DialogClose = React.forwardRef<
   const hasAriaLabel = Boolean(props['aria-label']);
   const childrenText = typeof children === 'string' ? children : undefined;
   
+  // If children is not an X icon, we'll add an invisible one for screen readers
+  const hasXIcon = React.Children.toArray(children).some(child => 
+    React.isValidElement(child) && 
+    child.type === X
+  );
+  
   return (
     <DialogPrimitive.Close
       ref={ref}
@@ -186,6 +227,12 @@ const DialogClose = React.forwardRef<
       {...props}
     >
       {children}
+      {!hasXIcon && (
+        <span className="sr-only">
+          <X size={16} aria-hidden="true" />
+          Close
+        </span>
+      )}
     </DialogPrimitive.Close>
   );
 })

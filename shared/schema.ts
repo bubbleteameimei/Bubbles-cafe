@@ -384,6 +384,7 @@ export type PostMetadata = {
   status?: 'pending' | 'approved' | 'publish';
   triggerWarnings?: string[];
   themeCategory?: string;
+  themeIcon?: string; // Added explicit support for themeIcon in metadata
   // WordPress specific fields
   wordpressId?: number;
   modified?: string;
@@ -415,6 +416,7 @@ export const insertPostSchema = z.object({
     status: z.enum(['pending', 'approved', 'publish']).optional(),
     triggerWarnings: z.array(z.string()).optional(),
     themeCategory: z.string().optional(),
+    themeIcon: z.string().optional(),
     // WordPress specific fields
     wordpressId: z.number().optional(),
     modified: z.string().optional(),
