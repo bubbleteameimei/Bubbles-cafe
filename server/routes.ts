@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, MemStorage } from "./storage";
+import { getDatabaseStatus } from "./db";
 import { setupAuth } from "./auth";
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -153,11 +154,42 @@ export function registerRoutes(app: Express): Server {
   
   // Health check endpoint for deployment testing
   app.get("/api/health", (req: Request, res: Response) => {
+    const dbStatus = getDatabaseStatus();
+    
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "development",
-      csrfToken: req.session.csrfToken || null
+      csrfToken: req.session.csrfToken || null,
+      database: {
+        connected: dbStatus.isConnected,
+        connectionAttempted: dbStatus.connectionAttempted,
+        error: dbStatus.error
+      }
+    });
+  });
+  
+  // Dedicated database status endpoint for monitoring
+  app.get("/api/system/database-status", (req: Request, res: Response) => {
+    const dbStatus = getDatabaseStatus();
+    
+    res.status(200).json({
+      timestamp: new Date().toISOString(),
+      status: dbStatus.isConnected ? "connected" : "disconnected",
+      details: {
+        connected: dbStatus.isConnected,
+        connectionAttempted: dbStatus.connectionAttempted,
+        lastConnectionAttempt: dbStatus.lastConnectionAttempt,
+        lastSuccessfulConnection: dbStatus.lastSuccessfulConnection,
+        reconnectAttempts: dbStatus.reconnectAttempts,
+        errorCode: dbStatus.errorCode,
+        errorMessage: dbStatus.error
+      },
+      reconnecting: dbStatus.isReconnecting,
+      diagnostics: {
+        hasValidDatabaseUrl: !!process.env.DATABASE_URL,
+        readOnly: dbStatus.readOnly || false
+      }
     });
   });
   
@@ -295,6 +327,8 @@ export function registerRoutes(app: Express): Server {
   
   // Register CSRF test routes after CSRF middleware so bypass works
   app.use('/api', csrfTestRoutes);
+  
+  // The updated database status endpoint is now defined above
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
@@ -1887,12 +1921,14 @@ export function registerRoutes(app: Express): Server {
       
       const limit = Number(req.query.limit) || 10;
       
-      // Use mock data when database is unavailable or SKIP_DB is true
-      const skipDb = process.env.SKIP_DB === 'true';
-      
-      if (skipDb) {
-        console.log("Using mock data for recent posts (SKIP_DB=true)");
-        // Return sample posts for testing
+      try {
+        // Attempt to get posts from database
+        const recentPosts = await storage.getRecentPosts();
+        return res.json(recentPosts);
+      } catch (error) {
+        console.error("Error fetching recent posts from database:", error);
+        // Only fall back to sample data if database access fails
+        console.log("Database error - using fallback post data");
         return res.json([
           {
             id: 101,
@@ -2012,12 +2048,14 @@ export function registerRoutes(app: Express): Server {
     
     console.log(`DEBUG - Routes.ts: Fetching recommendations for postId: ${postId}, limit: ${limit}`);
     
-    // Use mock data when database is unavailable or SKIP_DB is true
-    const skipDb = process.env.SKIP_DB === 'true';
-    
-    if (skipDb) {
-      console.log("Using mock data for recommendations (SKIP_DB=true)");
-      // Return sample recommendations for testing
+    try {
+      // Attempt to get recommendations from database
+      const recommendations = await storage.getRecommendedPosts(postId, limit);
+      return res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching recommendations from database:", error);
+      // Only fall back to sample data if database access fails
+      console.log("Database error - using fallback recommendation data");
       return res.json([
         {
           id: 104,

@@ -70,7 +70,7 @@ import {
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
 import type { CommentMetadata } from "@shared/schema";
-import { db } from "./db";
+import { db, getDatabaseStatus } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
 
@@ -305,6 +305,26 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+  
+  // Helper method to determine if the database is available
+  isDbConnected(): boolean {
+    const status = getDatabaseStatus();
+    return status.isConnected;
+  }
+  
+  // Helper method for safely executing database operations with fallback options
+  async safeDbOperation<T>(operation: () => Promise<T>, fallback: T, operationName: string): Promise<T> {
+    try {
+      if (!this.isDbConnected()) {
+        console.warn(`[Storage] Database not connected, using fallback for: ${operationName}`);
+        return fallback;
+      }
+      return await operation();
+    } catch (error) {
+      console.error(`[Storage] Error executing ${operationName}:`, error);
+      return fallback;
+    }
+  }
 
   // System methods for accessing DB objects directly
   getDb() {
@@ -445,88 +465,92 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      // Use explicit column selection to avoid errors with columns that might not exist
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        password_hash: users.password_hash,
-        isAdmin: users.isAdmin,
-        createdAt: users.createdAt
-      })
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-      
-      // Add an empty metadata field since it doesn't exist in the DB yet
-      return {
-        ...user,
-        metadata: {}
-      };
-    } catch (error) {
-      console.error("Error in getUserByUsername:", error);
-      // Try a more basic approach as fallback using raw SQL
-      try {
-        const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
-          [username]
-        );
-        return result.rows[0] || undefined;
-      } catch (fallbackError) {
-        console.error("Fallback error in getUserByUsername:", fallbackError);
-        throw fallbackError;
-      }
-    }
+    return this.safeDbOperation(
+      async () => {
+        try {
+          // Use explicit column selection to avoid errors with columns that might not exist
+          const [user] = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            password_hash: users.password_hash,
+            isAdmin: users.isAdmin,
+            createdAt: users.createdAt
+          })
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+          
+          if (!user) return undefined;
+
+          // Add an empty metadata field since it doesn't exist in the DB yet
+          return {
+            ...user,
+            metadata: {}
+          };
+        } catch (error) {
+          console.error("Error in getUserByUsername:", error);
+          // Try a more basic approach as fallback using raw SQL
+          const result = await pool.query(
+            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", created_at as \"createdAt\" FROM users WHERE username = $1 LIMIT 1",
+            [username]
+          );
+          return result.rows[0] || undefined;
+        }
+      },
+      undefined,
+      'getUserByUsername'
+    );
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      // Normalize the email address to ensure case-insensitive matching
-      const normalizedEmail = email.trim().toLowerCase();
-      console.log('[Storage] Looking up user by email:', normalizedEmail);
-      
-      // Now include metadata column since it exists in the database
-      // Use LOWER() for case-insensitive comparison
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        password_hash: users.password_hash,
-        isAdmin: users.isAdmin,
-        metadata: users.metadata,
-        createdAt: users.createdAt
-      })
-      .from(users)
-      .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
-      .limit(1);
-      
-      if (user) {
-        console.log('[Storage] User found by email:', normalizedEmail);
-      } else {
-        console.log('[Storage] No user found with email:', normalizedEmail);
-      }
-      
-      return user;
-    } catch (error) {
-      console.error("Error in getUserByEmail:", error);
-      // Try a more basic approach as fallback using raw SQL with case-insensitive comparison
-      try {
-        const result = await pool.query(
-          "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
-          [email.trim()]
-        );
+    return this.safeDbOperation(
+      async () => {
+        // Normalize the email address to ensure case-insensitive matching
+        const normalizedEmail = email.trim().toLowerCase();
+        console.log('[Storage] Looking up user by email:', normalizedEmail);
         
-        if (result.rows.length > 0) {
-          console.log('[Storage] User found by email (fallback method):', email);
+        try {
+          // Now include metadata column since it exists in the database
+          // Use LOWER() for case-insensitive comparison
+          const [user] = await db.select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            password_hash: users.password_hash,
+            isAdmin: users.isAdmin,
+            metadata: users.metadata,
+            createdAt: users.createdAt
+          })
+          .from(users)
+          .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
+          .limit(1);
+          
+          if (user) {
+            console.log('[Storage] User found by email:', normalizedEmail);
+          } else {
+            console.log('[Storage] No user found with email:', normalizedEmail);
+          }
+          
+          return user;
+        } catch (error) {
+          console.error("Error in getUserByEmail:", error);
+          // Try a more basic approach as fallback using raw SQL with case-insensitive comparison
+          const result = await pool.query(
+            "SELECT id, username, email, password_hash, is_admin as \"isAdmin\", metadata, created_at as \"createdAt\" FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+            [email.trim()]
+          );
+          
+          if (result.rows.length > 0) {
+            console.log('[Storage] User found by email (fallback method):', email);
+          }
+          
+          return result.rows[0] || undefined;
         }
-        
-        return result.rows[0] || undefined;
-      } catch (fallbackError) {
-        console.error("Fallback error in getUserByEmail:", fallbackError);
-        throw fallbackError;
-      }
-    }
+      },
+      undefined,
+      'getUserByEmail'
+    );
   }
 
   async getAdminByEmail(email: string): Promise<User[]> {
@@ -1116,56 +1140,145 @@ export class DatabaseStorage implements IStorage {
       order?: string;
     } = {}
   ): Promise<{ posts: Post[], hasMore: boolean }> {
-    try {
-      console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
-      const offset = (page - 1) * limit;
-
-      // Start building the query
-      let query = db.select()
-        .from(postsTable)
-        .where(eq(postsTable.isSecret, false));
-      
-      // Apply filtering based on metadata for community posts
-      if (filters.authorId) {
-        query = query.where(eq(postsTable.authorId, filters.authorId));
-      }
-
-      // Apply isAdminPost filter if specified
-      if (filters.isAdminPost !== undefined) {
-        try {
-          // Using SQL template for compatibility with column naming
-          query = query.where(sql`"isAdminPost" = ${filters.isAdminPost}`);
-        } catch (error) {
-          console.warn("Failed to apply isAdminPost filter via query builder, will apply later:", error);
-          // We'll handle this in the post-processing step
+    return this.safeDbOperation(
+      async () => {
+        console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
+        const offset = (page - 1) * limit;
+  
+        // Start building the query
+        let query = db.select()
+          .from(postsTable)
+          .where(eq(postsTable.isSecret, false));
+        
+        // Apply filtering based on metadata for community posts
+        if (filters.authorId) {
+          query = query.where(eq(postsTable.authorId, filters.authorId));
         }
-      }
-      
-      // Apply sorting
-      if (filters.sort && filters.order) {
-        if (filters.sort === 'date') {
-          query = query.orderBy(
-            filters.order === 'desc' ? desc(postsTable.createdAt) : postsTable.createdAt
-          );
+  
+        // Apply isAdminPost filter if specified
+        if (filters.isAdminPost !== undefined) {
+          try {
+            // Using SQL template for compatibility with column naming
+            query = query.where(sql`"isAdminPost" = ${filters.isAdminPost}`);
+          } catch (error) {
+            console.warn("Failed to apply isAdminPost filter via query builder, will apply later:", error);
+            // We'll handle this in the post-processing step
+          }
+        }
+        
+        // Apply sorting
+        if (filters.sort && filters.order) {
+          if (filters.sort === 'date') {
+            query = query.orderBy(
+              filters.order === 'desc' ? desc(postsTable.createdAt) : postsTable.createdAt
+            );
+          } else {
+            // Default sort by creation date desc
+            query = query.orderBy(desc(postsTable.createdAt));
+          }
         } else {
           // Default sort by creation date desc
           query = query.orderBy(desc(postsTable.createdAt));
         }
-      } else {
-        // Default sort by creation date desc
-        query = query.orderBy(desc(postsTable.createdAt));
-      }
+        
+        // Execute the query with limit and offset
+        query = query.limit(limit + 1).offset(offset);
+        
+        // Execute the query
+        let posts = await query;
+        
+        // Post-query filtering for metadata fields like isCommunityPost
+        // This avoids database schema issues when these fields are missing
+        if (filters.isCommunityPost !== undefined || filters.category) {
+          posts = posts.filter(post => {
+            const metadata = post.metadata || {};
+            
+            // Check for community post flag in metadata
+            if (filters.isCommunityPost !== undefined) {
+              const isCommunityPost = metadata.isCommunityPost === true;
+              if (isCommunityPost !== filters.isCommunityPost) return false;
+            }
+            
+            // Filter by category if specified
+            if (filters.category) {
+              const themeCategory = metadata.themeCategory;
+              if (themeCategory !== filters.category) return false;
+            }
+            
+            return true;
+          });
+        }
+        
+        // Apply text search filter if specified
+        if (filters.search) {
+          const searchTerm = filters.search.toLowerCase();
+          posts = posts.filter(post => 
+            post.title.toLowerCase().includes(searchTerm) || 
+            post.content.toLowerCase().includes(searchTerm) ||
+            (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
+          );
+        }
+  
+        // Check if there are more posts
+        const hasMore = posts.length > limit;
+        const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
+  
+        console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
+  
+        return {
+          posts: paginatedPosts.map(post => ({
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          })),
+          hasMore
+        };
+      },
+      { posts: [], hasMore: false },
+      'getPosts'
+    ).catch(error => {
+      // If the safeDbOperation throws an error, we have a fallback within a fallback
+      console.error("Error in getPosts even with safeDbOperation:", error);
       
-      // Execute the query with limit and offset
-      query = query.limit(limit + 1).offset(offset);
+      // Try an even more basic approach with raw SQL if possible
+      return this.getFallbackPosts(page, limit, filters);
+    });
+  }
+
+  // Fallback method for getting posts when the database operation fails
+  private async getFallbackPosts(
+    page: number = 1, 
+    limit: number = 16, 
+    filters: any = {}
+  ): Promise<{ posts: Post[], hasMore: boolean }> {
+    try {
+      console.warn(`[Storage] Using fallback query for getPosts - page: ${page}, limit: ${limit}`);
+      const offset = (page - 1) * limit;
       
-      // Execute the query
-      let posts = await query;
+      // Fallback query without problematic columns
+      // Use jsonb metadata field directly when available 
+      // This is the most reliable approach as it doesn't depend on columns that might not exist
+      const simplePosts = await db.select({
+        id: postsTable.id,
+        title: postsTable.title,
+        content: postsTable.content,
+        slug: postsTable.slug,
+        authorId: postsTable.authorId,
+        excerpt: postsTable.excerpt,
+        metadata: postsTable.metadata,
+        createdAt: postsTable.createdAt,
+        isSecret: postsTable.isSecret
+      })
+      .from(postsTable)
+      .where(eq(postsTable.isSecret, false))
+      .orderBy(desc(postsTable.createdAt))
+      .limit(limit + 1)
+      .offset(offset);
       
-      // Post-query filtering for metadata fields like isCommunityPost
-      // This avoids database schema issues when these fields are missing
+      // Now apply the filtering based on metadata fields
+      let filteredPosts = simplePosts;
+      
       if (filters.isCommunityPost !== undefined || filters.category) {
-        posts = posts.filter(post => {
+        filteredPosts = simplePosts.filter(post => {
           const metadata = post.metadata || {};
           
           // Check for community post flag in metadata
@@ -1184,22 +1297,53 @@ export class DatabaseStorage implements IStorage {
         });
       }
       
+      // If isAdminPost filter is set, apply it separately
+      // Now using the isAdminPost column directly from the schema
+      if (filters.isAdminPost !== undefined) {
+        try {
+          // Try a direct SQL approach to check the isAdminPost column
+          const result = await db.execute(sql`
+            SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
+          `);
+          
+          const adminPostIds = result.rows.map(row => row.id);
+          
+          // Further filter the posts to those matching the admin post filter
+          if (adminPostIds.length > 0) {
+            filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
+          } else {
+            // If no admin posts found, and we're looking for admin posts, return empty
+            if (filters.isAdminPost === true) {
+              filteredPosts = [];
+            }
+          }
+        } catch (filterError) {
+          console.warn("Failed to filter by isAdminPost column, falling back to metadata check:", filterError);
+          // Fall back to metadata check if column doesn't exist
+          filteredPosts = filteredPosts.filter(post => {
+            const metadata = post.metadata || {};
+            const isAdminPost = metadata.isAdminPost === true;
+            return isAdminPost === filters.isAdminPost;
+          });
+        }
+      }
+      
       // Apply text search filter if specified
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        posts = posts.filter(post => 
+        filteredPosts = filteredPosts.filter(post => 
           post.title.toLowerCase().includes(searchTerm) || 
           post.content.toLowerCase().includes(searchTerm) ||
           (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
         );
       }
-
+      
       // Check if there are more posts
-      const hasMore = posts.length > limit;
-      const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
-
-      console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
-
+      const hasMore = filteredPosts.length > limit;
+      const paginatedPosts = filteredPosts.slice(0, limit);
+      
+      console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
+      
       return {
         posts: paginatedPosts.map(post => ({
           ...post,
@@ -1207,123 +1351,10 @@ export class DatabaseStorage implements IStorage {
         })),
         hasMore
       };
-    } catch (error) {
-      console.error("Error in getPosts:", error);
-      if (error instanceof Error) {
-        if (error.message.includes('relation') || error.message.includes('column')) {
-          console.warn("Database schema issue detected, attempting simpler query without problematic columns");
-          
-          try {
-            // Define offset here to avoid ReferenceError in fallback query
-            const offset = (page - 1) * limit;
-            
-            // Fallback query without problematic columns
-            // Use jsonb metadata field directly when available 
-            // This is the most reliable approach as it doesn't depend on columns that might not exist
-            const simplePosts = await db.select({
-              id: postsTable.id,
-              title: postsTable.title,
-              content: postsTable.content,
-              slug: postsTable.slug,
-              authorId: postsTable.authorId,
-              excerpt: postsTable.excerpt,
-              metadata: postsTable.metadata,
-              createdAt: postsTable.createdAt,
-              isSecret: postsTable.isSecret
-            })
-            .from(postsTable)
-            .where(eq(postsTable.isSecret, false))
-            .orderBy(desc(postsTable.createdAt))
-            .limit(limit + 1)
-            .offset(offset);
-            
-            // Now apply the filtering based on metadata fields
-            let filteredPosts = simplePosts;
-            
-            if (filters.isCommunityPost !== undefined || filters.category) {
-              filteredPosts = simplePosts.filter(post => {
-                const metadata = post.metadata || {};
-                
-                // Check for community post flag in metadata
-                if (filters.isCommunityPost !== undefined) {
-                  const isCommunityPost = metadata.isCommunityPost === true;
-                  if (isCommunityPost !== filters.isCommunityPost) return false;
-                }
-                
-                // Filter by category if specified
-                if (filters.category) {
-                  const themeCategory = metadata.themeCategory;
-                  if (themeCategory !== filters.category) return false;
-                }
-                
-                return true;
-              });
-            }
-            
-            // If isAdminPost filter is set, apply it separately
-            // Now using the isAdminPost column directly from the schema
-            if (filters.isAdminPost !== undefined) {
-              try {
-                // Try a direct SQL approach to check the isAdminPost column
-                const result = await db.execute(sql`
-                  SELECT id FROM posts WHERE "isAdminPost" = ${filters.isAdminPost}
-                `);
-                
-                const adminPostIds = result.rows.map(row => row.id);
-                
-                // Further filter the posts to those matching the admin post filter
-                if (adminPostIds.length > 0) {
-                  filteredPosts = filteredPosts.filter(post => adminPostIds.includes(post.id));
-                } else {
-                  // If no admin posts found, and we're looking for admin posts, return empty
-                  if (filters.isAdminPost === true) {
-                    filteredPosts = [];
-                  }
-                }
-              } catch (filterError) {
-                console.warn("Failed to filter by isAdminPost column, falling back to metadata check:", filterError);
-                // Fall back to metadata check if column doesn't exist
-                filteredPosts = filteredPosts.filter(post => {
-                  const metadata = post.metadata || {};
-                  const isAdminPost = metadata.isAdminPost === true;
-                  return isAdminPost === filters.isAdminPost;
-                });
-              }
-            }
-            
-            // Apply text search filter if specified
-            if (filters.search) {
-              const searchTerm = filters.search.toLowerCase();
-              filteredPosts = filteredPosts.filter(post => 
-                post.title.toLowerCase().includes(searchTerm) || 
-                post.content.toLowerCase().includes(searchTerm) ||
-                (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
-              );
-            }
-            
-            // Check if there are more posts
-            const hasMore = filteredPosts.length > limit;
-            const paginatedPosts = filteredPosts.slice(0, limit);
-            
-            console.log(`[Storage] Found ${paginatedPosts.length} posts using fallback query, hasMore: ${hasMore}`);
-            
-            return {
-              posts: paginatedPosts.map(post => ({
-                ...post,
-                createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-              })),
-              hasMore
-            };
-          } catch (fallbackError) {
-            console.error("Fallback query also failed:", fallbackError);
-            throw new Error("Database schema error: Please check if the database is properly initialized");
-          }
-        }
-        if (error.message.includes('connection')) {
-          throw new Error("Database connection error: Unable to connect to the database");
-        }
-      }
-      throw new Error("Failed to fetch posts");
+    } catch (fallbackError) {
+      console.error("All fallback queries failed:", fallbackError);
+      // Return empty result set as the last resort
+      return { posts: [], hasMore: false };
     }
   }
 
@@ -1346,71 +1377,72 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPost(slug: string): Promise<Post | undefined> {
-    try {
-      // Try the standard Drizzle query first
-      try {
-        const [post] = await db.select()
-          .from(postsTable)
-          .where(eq(postsTable.slug, slug))
-          .limit(1);
-
-        if (!post) return undefined;
-
-        return {
-          ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-        };
-      } catch (queryError: any) {
-        console.log("Initial getPost query failed, trying fallback.", queryError.message);
-        
-        // If standard query fails, fall back to SQL for schema flexibility
-        if (queryError.message && (
-            queryError.message.includes("column") || 
-            queryError.message.includes("does not exist"))) {
-          console.log("Using fallback SQL query for getPost.");
-          
-          // Fallback to raw SQL query that only selects columns we know exist
-          const result = await db.execute(sql`
-            SELECT 
-              id, title, content, slug, excerpt, author_id,
-              metadata, created_at, is_secret, mature_content,
-              theme_category, reading_time_minutes,
-              likes_count, dislikes_count
-            FROM posts 
-            WHERE slug = ${slug}
-            LIMIT 1
-          `);
-          
-          const rows = result.rows;
-          if (!rows || rows.length === 0) return undefined;
-          
-          const post = rows[0];
-          
+    return this.safeDbOperation(
+      async () => {
+        // Try the standard Drizzle query first
+        try {
+          const [post] = await db.select()
+            .from(postsTable)
+            .where(eq(postsTable.slug, slug))
+            .limit(1);
+  
+          if (!post) return undefined;
+  
           return {
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            slug: post.slug,
-            excerpt: post.excerpt,
-            authorId: post.author_id,
-            isSecret: post.is_secret || false,
-            matureContent: post.mature_content || false,
-            themeCategory: post.theme_category,
-            metadata: post.metadata || {},
-            createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
-            readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
-            likesCount: post.likes_count || 0,
-            dislikesCount: post.dislikes_count || 0
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
           };
-        } else {
-          // If it's another type of error, rethrow it
-          throw queryError;
+        } catch (queryError: any) {
+          console.log("Initial getPost query failed, trying fallback.", queryError.message);
+          
+          // If standard query fails, fall back to SQL for schema flexibility
+          if (queryError.message && (
+              queryError.message.includes("column") || 
+              queryError.message.includes("does not exist"))) {
+            console.log("Using fallback SQL query for getPost.");
+            
+            // Fallback to raw SQL query that only selects columns we know exist
+            const result = await db.execute(sql`
+              SELECT 
+                id, title, content, slug, excerpt, author_id,
+                metadata, created_at, is_secret, mature_content,
+                theme_category, reading_time_minutes,
+                likes_count, dislikes_count
+              FROM posts 
+              WHERE slug = ${slug}
+              LIMIT 1
+            `);
+            
+            const rows = result.rows;
+            if (!rows || rows.length === 0) return undefined;
+            
+            const post = rows[0];
+            
+            return {
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              slug: post.slug,
+              excerpt: post.excerpt,
+              authorId: post.author_id,
+              isSecret: post.is_secret || false,
+              matureContent: post.mature_content || false,
+              themeCategory: post.theme_category,
+              metadata: post.metadata || {},
+              createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
+              readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
+              likesCount: post.likes_count || 0,
+              dislikesCount: post.dislikes_count || 0
+            };
+          } else {
+            // If it's another type of error, rethrow it
+            throw queryError;
+          }
         }
-      }
-    } catch (error) {
-      console.error("Error in getPost:", error);
-      throw new Error("Failed to fetch post");
-    }
+      },
+      undefined,
+      'getPost'
+    );
   }
 
   async getPostsByAuthor(authorId: number, limit: number = 10): Promise<Post[]> {
@@ -4156,12 +4188,65 @@ export class MemStorage implements IStorage {
     this.comments.push(newComment);
     return newComment;
   }
+  
+  // Methods for fallback endpoints
+  async getRecentPosts(): Promise<Post[]> {
+    try {
+      console.log(`[Storage] Fetching recent posts`);
+      
+      const recentPosts = await db.select()
+        .from(postsTable)
+        .orderBy(desc(postsTable.createdAt))
+        .limit(10);
+      
+      console.log(`[Storage] Found ${recentPosts.length} recent posts`);
+      
+      return recentPosts.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error('[Storage] Error in getRecentPosts:', error);
+      throw new Error('Failed to fetch recent posts');
+    }
+  }
+  
+  async getRecommendedPosts(postId: number | null, limit: number): Promise<Post[]> {
+    try {
+      console.log(`[Storage] Fetching recommended posts for post ID: ${postId}, limit: ${limit}`);
+      
+      // If postId is provided, we could get related posts by category, tags, etc.
+      // For now, we'll just return recent posts
+      const recommendedPosts = await db.select()
+        .from(postsTable)
+        .orderBy(desc(postsTable.createdAt))
+        .limit(limit);
+      
+      console.log(`[Storage] Found ${recommendedPosts.length} recommended posts`);
+      
+      return recommendedPosts.map(post => ({
+        ...post,
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+      }));
+    } catch (error) {
+      console.error('[Storage] Error in getRecommendedPosts:', error);
+      throw new Error('Failed to fetch recommended posts');
+    }
+  }
+  
+  // Achievement methods
+  async getUserAchievements(userId: number): Promise<any[]> {
+    // This would be implemented with the actual achievement tables
+    console.log(`[Storage] Fetching achievements for user: ${userId}`);
+    return [];
+  }
+  
+  async getAllAchievements(): Promise<any[]> {
+    // This would be implemented with the actual achievement tables
+    console.log(`[Storage] Fetching all achievements`);
+    return [];
+  }
 }
 
-// Determine which storage implementation to use based on environment
-const skipDb = process.env.SKIP_DB === 'true';
-
-// Export the appropriate storage implementation
-export const storage = skipDb 
-  ? new MemStorage() 
-  : new DatabaseStorage();
+// Always use the database implementation
+export const storage = new DatabaseStorage();

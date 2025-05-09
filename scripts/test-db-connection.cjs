@@ -13,9 +13,14 @@ async function testDatabaseConnection() {
   console.log('PGPASSWORD:', process.env.PGPASSWORD ? 'Set (hidden for security)' : 'Not set');
   
   try {
-    // Try to connect using the Pool
+    // Try to connect using individual parameters instead of connection string
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL
+      host: process.env.PGHOST,
+      port: process.env.PGPORT,
+      database: process.env.PGDATABASE,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      ssl: true
     });
     
     console.log('Attempting to connect to the database...');

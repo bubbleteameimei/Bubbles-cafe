@@ -269,27 +269,20 @@ async function startServer() {
       port: PORT
     });
 
-    // Check if we're in skip database mode
-    const skipDb = process.env.SKIP_DB === 'true';
-    
-    if (skipDb) {
-      serverLogger.info('Starting in SKIP_DB mode - database operations will be mocked');
-    } else {
-      try {
-        // Simplified database setup
-        serverLogger.info('Setting up database connection in fallback mode...');
-        // Only setup the connection without attempting to seed or run migrations
-        await setupDatabase();
-        serverLogger.info('Database connection established');
-        
-      } catch (dbError) {
-        serverLogger.error('Database connection failed, continuing in partial mode', { 
-          error: dbError instanceof Error ? dbError.message : 'Unknown error' 
-        });
-        // We'll continue with the application even if the database setup fails
-        // This allows the frontend to work with mock data or in read-only mode
-      }
-    }  // Close the skipDb if-else block
+    // Set up database connection
+    try {
+      // Simplified database setup
+      serverLogger.info('Setting up database connection...');
+      // Only setup the connection without attempting to seed or run migrations
+      await setupDatabase();
+      serverLogger.info('Database connection established');
+    } catch (dbError) {
+      serverLogger.error('Database connection failed, continuing in partial mode', { 
+        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+      });
+      // We'll continue with the application even if the database setup fails
+      // But will attempt to reconnect periodically
+    }
     
     // Create server instance
     server = createServer(app);
