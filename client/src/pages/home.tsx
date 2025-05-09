@@ -20,10 +20,13 @@ export default function Home() {
     // Set body to black immediately to prevent white flash
     document.body.style.backgroundColor = "#000";
     
-    // Preload the new background image
+    // Preload the background image
     const img = new Image();
-    img.src = "/images/homepage-bg.jpeg";
-    img.onload = () => setImageLoaded(true);
+    img.src = "/images/IMG_5890.jpeg";
+    img.onload = () => {
+      console.log("[Homepage] Background image loaded successfully");
+      setImageLoaded(true);
+    };
     
     // Add the body-home class to enable background styling
     document.body.classList.add('body-home');
@@ -44,7 +47,7 @@ export default function Home() {
     });
     
     // Log to console for debugging
-    console.log("[Homepage] Background image path: /images/homepage-bg.jpeg");
+    console.log("[Homepage] Background image path: /images/IMG_5890.jpeg");
     console.log("[Homepage] Background setup complete");
     
     return () => {
@@ -99,40 +102,7 @@ export default function Home() {
         <div className="text-center p-8">Error loading latest story.</div>
       ) : (
         <div className="relative min-h-screen overflow-x-hidden flex flex-col home-page">
-          {/* Full-screen background image that fills the entire page */}
-          <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen overflow-hidden" style={{ zIndex: -2, backgroundColor: '#000' }}>
-            {/* Main background image */}
-            <img 
-              src="/images/homepage-bg.jpeg" 
-              alt=""
-              className={`w-full h-full object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              style={{ 
-                position: 'fixed',
-                left: 0,
-                top: 0, /* Start from the very top of the page, including the header */
-                width: '100vw',
-                height: 'calc(100vh - 60px)', /* Full viewport height minus space for footer */
-                objectFit: 'cover',
-                objectPosition: 'center center', /* Center the image */
-                willChange: 'transform'
-              }}
-              onLoad={() => {
-                console.log("[Homepage] Background image loaded successfully");
-                setImageLoaded(true);
-              }}
-              onError={(e) => console.error("[Homepage] Background image failed to load:", e)}
-              loading="eager" /* Prioritize loading this image */
-            />
-          </div>
-          
-          {/* Dark overlay for better text visibility against the background */}
-          <div 
-            className="fixed top-0 left-0 right-0 bottom-0 w-full h-full" 
-            style={{
-              background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.6) 100%)",
-              zIndex: -1
-            }}
-          />
+          {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}
             
           {/* Invisible barrier to prevent scrolling under header */}
           <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
@@ -140,7 +110,7 @@ export default function Home() {
           {/* Content container with proper z-index to appear above background - full width */}
           <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
             <div>
-              <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+              <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center" style={{ textShadow: '0 4px 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.9)' }}>
                 <span>BUBBLE'S</span>
                 <span className="mt-1 md:mt-2">CAFE</span>
               </h1>
@@ -151,7 +121,7 @@ export default function Home() {
           
             <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
               <div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,0.9)' }}>
                   Each story here is a portal to the unexpected,
                   the unsettling, and the unexplained.
                 </p>
@@ -188,7 +158,7 @@ export default function Home() {
               
               {posts.length > 0 && (
                 <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 text-center space-y-2 sm:space-y-3 md:space-y-4">
-                  <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider">Latest Story</p>
+                  <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}>Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
                     className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"

@@ -182,11 +182,9 @@ body.body-home div[class*="container"] {
   top: 0;
   left: 0;
   right: 0;
-  /* Position to leave space at bottom for footer */
-  bottom: 60px;
+  bottom: 0;
   width: 100vw;
-  /* Height leaves space for footer */
-  height: calc(100vh - 60px);
+  height: 100vh;
   background-image: url('/images/homepage-bg.jpeg');
   background-size: cover; /* Show full image coverage */
   background-position: center center; /* Center the image */
@@ -199,21 +197,9 @@ body.body-home div[class*="container"] {
   animation: subtleZoom 30s infinite alternate ease-in-out;
 }
 
-/* Gradient overlay for better text visibility - extremely minimal */
+/* Gradient overlay is now handled by a separate div in home.tsx */
 .home-page::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.08) 100%);
-  z-index: calc(var(--z-background) + 1); /* Just above the background image */
-  pointer-events: none; /* Allow clicks to pass through */
-  transform: translateZ(0); /* Hardware acceleration to fix jittering */
-  will-change: transform; /* Optimize for animations */
+  content: none; /* Remove the overlay since we use an explicit div in home.tsx */
 }
 
 /* Fix for absolute positioned elements */
@@ -247,8 +233,8 @@ div[data-reader-page="true"] .container,
 
 /* Define variables for background images and overlays */
 :root {
-  --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.08) 100%);
-  --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.5) 100%);
+  --bg-overlay-dark: linear-gradient(to bottom, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.01) 50%, rgba(0,0,0,0.03) 100%);
+  --bg-overlay-light: linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%);
 }
 
 /* Reset default background for non-homepage */
@@ -279,15 +265,14 @@ body.body-home::before {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: #000;
-  background-image: url('/images/homepage-bg.jpeg'); /* Use the new image */
-  /* Position from the top of the page (including header) */
-  background-position: center center;
-  transform: none; /* Reset transform */
-  /* Fill full height but leave 60px at bottom for footer */
-  height: calc(100vh - 60px); 
+  background-image: url('/images/IMG_5890.jpeg');
+  background-position: center top;
+  transform: none;
   background-size: cover;
   background-repeat: no-repeat;
   z-index: -2;
@@ -305,28 +290,10 @@ body.body-home .bg-background,
   background-image: none !important;
 }
 
-/* Dynamic overlay based on theme - dark theme */
-html.dark body.body-home::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--bg-overlay-dark);
-  z-index: -1;
-}
-
-/* Dynamic overlay based on theme - light theme */
+/* Dynamic theme overlays have been removed as requested */
+html.dark body.body-home::after,
 html.light body.body-home::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--bg-overlay-light);
-  z-index: -1;
+  content: none;
 }
 
 /* Night mode styling has been removed */

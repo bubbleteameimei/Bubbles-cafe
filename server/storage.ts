@@ -409,6 +409,23 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
+    // Check if we're in skip database mode
+    const skipDb = process.env.SKIP_DB === 'true';
+    
+    if (skipDb) {
+      console.log('[Storage] SKIP_DB mode: Returning mock user for ID:', id);
+      // Return a mock admin user when in SKIP_DB mode
+      return {
+        id: 1,
+        username: 'admin',
+        email: 'admin@bubblescafe.com',
+        password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
+        isAdmin: true,
+        createdAt: new Date('2022-01-01T00:00:00.000Z'),
+        metadata: {}
+      };
+    }
+    
     try {
       // Use explicit column selection to avoid errors with columns that might not exist
       const [user] = await db.select({
@@ -445,6 +462,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    // Check if we're in skip database mode
+    const skipDb = process.env.SKIP_DB === 'true';
+    
+    if (skipDb) {
+      console.log('[Storage] SKIP_DB mode: Checking mock user for username:', username);
+      // Return a mock admin user when in SKIP_DB mode and the username matches
+      if (username === 'admin') {
+        return {
+          id: 1,
+          username: 'admin',
+          email: 'admin@bubblescafe.com',
+          password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
+          isAdmin: true,
+          createdAt: new Date('2022-01-01T00:00:00.000Z'),
+          metadata: {}
+        };
+      }
+      return undefined;
+    }
+    
     try {
       // Use explicit column selection to avoid errors with columns that might not exist
       const [user] = await db.select({
@@ -481,6 +518,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    // Check if we're in skip database mode
+    const skipDb = process.env.SKIP_DB === 'true';
+    
+    if (skipDb) {
+      console.log('[Storage] SKIP_DB mode: Checking mock user for email:', email);
+      // Normalize the email address to ensure case-insensitive matching
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      // Return a mock admin user when in SKIP_DB mode and the email matches
+      if (normalizedEmail === 'admin@bubblescafe.com') {
+        return {
+          id: 1,
+          username: 'admin',
+          email: 'admin@bubblescafe.com',
+          password_hash: '$2b$10$B3aXjbDILDkXshK/Ll8KQ.l8mQD3/g10fQERPbqF4jTVWEJhljxgm', // hash for 'password'
+          isAdmin: true,
+          createdAt: new Date('2022-01-01T00:00:00.000Z'),
+          metadata: {}
+        };
+      }
+      return undefined;
+    }
+    
     try {
       // Normalize the email address to ensure case-insensitive matching
       const normalizedEmail = email.trim().toLowerCase();

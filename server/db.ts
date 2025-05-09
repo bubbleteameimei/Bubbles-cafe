@@ -9,6 +9,9 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 import ws from 'ws';
 
+// Check if we're in test mode (SKIP_DB=true)
+const skipDb = process.env.SKIP_DB === 'true';
+
 // Required for Neon serverless in Node.js
 neonConfig.webSocketConstructor = ws;
 
@@ -24,6 +27,16 @@ try {
  * Creates a database connection
  */
 function createDbConnection() {
+  // If we're in test mode, return a mock SQL function
+  if (skipDb) {
+    console.log('[Database] Running in SKIP_DB mode with mock database');
+    // Return a mock SQL function that resolves with test data
+    return (strings: TemplateStringsArray, ...values: any[]) => {
+      console.log('[Database] Mock SQL query:', strings.join('?'), values);
+      return Promise.resolve([{ test: 1 }]);
+    };
+  }
+
   const dbUrl = process.env.DATABASE_URL;
   
   if (!dbUrl) {
@@ -46,10 +59,17 @@ function createDbConnection() {
 export const sql = createDbConnection();
 
 // Initialize Drizzle ORM with our schema
-export const db = drizzle(sql, { schema });
+export const db = skipDb 
+  ? {} as any // Return empty mock in test mode
+  : drizzle(sql, { schema });
 
 // Export a helper function to validate the database connection
 export async function validateConnection() {
+  if (skipDb) {
+    console.log('[Database] Skipping connection validation in test mode');
+    return true;
+  }
+  
   try {
     // Simple database query to test the connection
     const result = await sql`SELECT 1 as test`;

@@ -11,33 +11,36 @@ export default function Footer() {
   
   return (
     <footer 
-      className="w-full border-t border-primary/20 bg-background/90 backdrop-blur-md mt-8"
+      className="w-screen border-t border-primary/20 bg-background/95 mt-8"
       style={{
-        width: "100%",
         position: "relative",
+        left: 0,
+        right: 0,
         margin: 0,
         padding: 0,
-        zIndex: 10
+        zIndex: 10,
+        width: '100vw',
+        marginLeft: 'calc(-50vw + 50%)'
       }}
     >
-      <div className="w-full flex flex-col items-center px-0">
-        {/* Copyright text - centered on top */}
-        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap pt-4 pb-2">
-          © Bubble's Cafe 2022-2025.&nbsp;&nbsp;All rights reserved.
+      <div className="w-full flex flex-col sm:flex-row justify-between items-center py-2">
+        {/* Copyright text - responsive alignment */}
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-1 sm:mb-0 ml-4 sm:ml-8">
+          © Bubble's Cafe 2025.&nbsp;All rights reserved.
         </div>
         
-        {/* Simplified navigation links - centered on bottom row */}
-        <div className="flex items-center justify-center w-full pb-3">
+        {/* Navigation links - responsive alignment */}
+        <div className="flex items-center mr-4 sm:mr-8">
           <Link 
             href="/privacy" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
           >
             Privacy Policy
           </Link>
-          <span className="text-primary/40">•</span>
+          <span className="text-primary/40 text-sm mx-1">•</span>
           <Link 
             href="/contact" 
-            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 py-1 whitespace-nowrap"
+            className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
           >
             Contact Me
           </Link>
