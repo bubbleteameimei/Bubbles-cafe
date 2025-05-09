@@ -154,49 +154,11 @@ export function registerRoutes(app: Express): Server {
   
   // Health check endpoint for deployment testing
   app.get("/api/health", (req: Request, res: Response) => {
-    const dbStatus = getDatabaseStatus();
-    
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "development",
-      csrfToken: req.session.csrfToken || null,
-      database: {
-        connected: dbStatus.isConnected,
-        connectionAttempted: dbStatus.connectionAttempted,
-        error: dbStatus.error
-      }
-    });
-  });
-  
-  // Dedicated database status endpoint for monitoring
-  app.get("/api/system/database-status", (req: Request, res: Response) => {
-    const dbStatus = getDatabaseStatus();
-    
-    res.status(200).json({
-      timestamp: new Date().toISOString(),
-      status: dbStatus.isEndpointDisabled ? "endpoint_disabled" : 
-              dbStatus.isConnected ? "connected" : "disconnected",
-      details: {
-        connected: dbStatus.isConnected,
-        connectionAttempted: dbStatus.connectionAttempted,
-        lastConnectionAttempt: dbStatus.lastConnectionAttempt,
-        lastSuccessfulConnection: dbStatus.lastSuccessfulConnection,
-        reconnectAttempts: dbStatus.reconnectAttempts,
-        isReconnecting: dbStatus.isReconnecting,
-        errorCode: dbStatus.errorCode,
-        errorMessage: dbStatus.error
-      },
-      environmentInfo: {
-        hasValidDatabaseUrl: !!process.env.DATABASE_URL,
-        envVariables: {
-          DATABASE_URL: process.env.DATABASE_URL ? "Set" : "Not set",
-          PGHOST: process.env.PGHOST ? "Set" : "Not set",
-          PGPORT: process.env.PGPORT ? "Set" : "Not set",
-          PGUSER: process.env.PGUSER ? "Set" : "Not set",
-          PGDATABASE: process.env.PGDATABASE ? "Set" : "Not set"
-        }
-      }
+      csrfToken: req.session.csrfToken || null
     });
   });
   
@@ -334,8 +296,6 @@ export function registerRoutes(app: Express): Server {
   
   // Register CSRF test routes after CSRF middleware so bypass works
   app.use('/api', csrfTestRoutes);
-  
-  // The updated database status endpoint is now defined above
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
