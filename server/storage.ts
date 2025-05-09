@@ -84,7 +84,7 @@ const pool = new Pool({
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
-import { eq, desc, asc, and, or, not, like, lt, gt, sql, avg, count, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, or, not, like, lt, gt, gte, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from 'bcryptjs';
@@ -4261,7 +4261,8 @@ export class MemStorage implements IStorage {
   
   async getPersonalizedRecommendations(userId: number, preferredThemes: string[] = [], limit: number = 5): Promise<Post[]> {
     try {
-      console.log(`[Storage] Fetching personalized recommendations for user ID: ${userId}, limit: ${limit}`);
+      console.log(`[Storage] Fetching enhanced personalized recommendations for user ID: ${userId}, limit: ${limit}`);
+      const startTime = Date.now(); // For performance tracking
       
       // Implement safe database operation with retry logic
       const safeDbOperation = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
@@ -4285,10 +4286,10 @@ export class MemStorage implements IStorage {
           .from(readingProgress)
           .where(eq(readingProgress.userId, userId))
           .orderBy(desc(readingProgress.lastReadAt))
-          .limit(10);
+          .limit(15); // Increased from 10 to get better history data
       });
       
-      // Step 2: Get user's liked posts
+      // Step 2: Get user's liked posts with additional weight
       const likedPosts = await safeDbOperation(async () => {
         return await db.select()
           .from(postLikes)
@@ -4296,7 +4297,7 @@ export class MemStorage implements IStorage {
             eq(postLikes.userId, userId),
             eq(postLikes.isLike, true)
           ))
-          .limit(10);
+          .limit(15); // Increased from 10 to capture more preferences
       });
       
       // Step 3: Get user's bookmarks
@@ -4304,7 +4305,7 @@ export class MemStorage implements IStorage {
         return await db.select()
           .from(bookmarks)
           .where(eq(bookmarks.userId, userId))
-          .limit(10);
+          .limit(15); // Increased from 10
       });
       
       // Collect post IDs from user history
@@ -4333,15 +4334,35 @@ export class MemStorage implements IStorage {
           );
         }
         
-        const trendingPosts = await safeDbOperation(async () => {
-          return await query.limit(limit);
-        });
-        
-        console.log(`[Storage] Found ${trendingPosts.length} trending posts for user ${userId}`);
-        return trendingPosts.map(post => ({
-          ...post,
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-        }));
+        try {
+          const trendingPosts = await safeDbOperation(async () => {
+            return await query.limit(limit);
+          });
+          
+          console.log(`[Storage] Found ${trendingPosts.length} trending posts for user ${userId}`);
+          
+          // Log performance metrics
+          const duration = Date.now() - startTime;
+          await this.logRecommendationPerformance(userId, 'trending_fallback', trendingPosts.length, duration);
+          
+          return trendingPosts.map(post => ({
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          }));
+        } catch (error) {
+          console.error(`[Storage] Error getting trending posts:`, error);
+          // Fallback to most recent posts if there's an error
+          const recentPosts = await safeDbOperation(async () => {
+            return await db.select()
+              .from(postsTable)
+              .orderBy(desc(postsTable.createdAt))
+              .limit(limit);
+          });
+          return recentPosts.map(post => ({
+            ...post,
+            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+          }));
+        }
       }
       
       // Step 4: Get content-based recommendations
@@ -4350,29 +4371,103 @@ export class MemStorage implements IStorage {
         return await db.select()
           .from(postsTable)
           .where(sql`${postsTable.id} IN (${Array.from(historyPostIds).join(',')})`)
-          .limit(20);
+          .limit(25); // Increased from 20 to capture more preferences
       });
       
-      // Extract themes from historical posts
-      const userThemes = new Set<string>();
+      // Extract themes from historical posts with weights
+      const userThemes = new Map<string, number>();
       historicalPosts.forEach(post => {
+        // Basic weight
+        let weight = 1;
+        
+        // Give more weight to posts that were recently read
+        const isRecentlyRead = readingHistory.some(item => 
+          item.postId === post.id && 
+          new Date(item.lastReadAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000 // 7 days
+        );
+        if (isRecentlyRead) weight += 1;
+        
+        // Give more weight to posts that were liked
+        const isLiked = likedPosts.some(item => item.postId === post.id);
+        if (isLiked) weight += 2;
+        
+        // Give more weight to bookmarked posts
+        const isBookmarked = userBookmarks.some(item => item.postId === post.id);
+        if (isBookmarked) weight += 1.5;
+        
+        // Add theme with weight
         if (post.themeCategory) {
-          userThemes.add(post.themeCategory);
+          const currentWeight = userThemes.get(post.themeCategory) || 0;
+          userThemes.set(post.themeCategory, currentWeight + weight);
         }
+        
         // Also check metadata for themeCategory
         if (post.metadata && typeof post.metadata === 'object') {
           const metadata = post.metadata as any;
           if (metadata?.themeCategory) {
-            userThemes.add(metadata.themeCategory);
+            const currentWeight = userThemes.get(metadata.themeCategory) || 0;
+            userThemes.set(metadata.themeCategory, currentWeight + weight);
           }
         }
       });
       
-      // Combine user preferences with derived themes
-      const allThemes = [...Array.from(userThemes), ...preferredThemes];
+      // Sort themes by weight (descending) and take top 5
+      const sortedThemes = Array.from(userThemes.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([theme]) => theme);
       
-      // Get recommendations based on themes
-      const contentBasedRecommendations = await safeDbOperation(async () => {
+      // Add user preferred themes with high priority
+      const allThemes = [...preferredThemes, ...sortedThemes];
+      
+      // Step 5: Get collaborative filtering recommendations
+      // Find users with similar interests and get their liked posts
+      const similarUsersPostIds = new Set<number>();
+      try {
+        // Get users who liked similar posts to this user
+        const similarUsers = await safeDbOperation(async () => {
+          return await db.select({
+            userId: postLikes.userId
+          })
+            .from(postLikes)
+            .where(and(
+              inArray(postLikes.postId, Array.from(historyPostIds)),
+              eq(postLikes.isLike, true),
+              not(eq(postLikes.userId, userId)) // Exclude the current user
+            ))
+            .groupBy(postLikes.userId)
+            .having({ count: count() }, gte(count(), 2)) // Users who liked at least 2 posts
+            .limit(10);
+        });
+        
+        if (similarUsers.length > 0) {
+          // Get posts liked by similar users that the current user hasn't interacted with
+          const similarUsersPosts = await safeDbOperation(async () => {
+            return await db.select({
+              postId: postLikes.postId
+            })
+              .from(postLikes)
+              .where(and(
+                inArray(postLikes.userId, similarUsers.map(user => user.userId)),
+                eq(postLikes.isLike, true),
+                not(inArray(postLikes.postId, Array.from(historyPostIds)))
+              ))
+              .groupBy(postLikes.postId)
+              .limit(10);
+          });
+          
+          similarUsersPostIds = new Set(similarUsersPosts.map(item => item.postId));
+          console.log(`[Storage] Found ${similarUsersPostIds.size} collaborative filtering recommendations`);
+        }
+      } catch (error) {
+        console.warn(`[Storage] Error getting collaborative filtering recommendations:`, error);
+        // Continue with other recommendation methods if this one fails
+      }
+      
+      // Step 6: Get content-based recommendations with improved scoring
+      let contentBasedRecommendations: Post[] = [];
+      try {
+        // Query posts based on themes
         let query = db.select()
           .from(postsTable);
         
@@ -4394,45 +4489,142 @@ export class MemStorage implements IStorage {
           );
         }
         
-        return await query
-          .orderBy(desc(postsTable.createdAt))
-          .limit(limit);
-      });
+        // Get more posts than needed for scoring
+        const candidatePosts = await safeDbOperation(async () => {
+          return await query
+            .orderBy(desc(postsTable.createdAt))
+            .limit(limit * 3);
+        });
+        
+        // Score posts based on multiple factors
+        const scoredPosts = candidatePosts.map(post => {
+          let score = 0;
+          
+          // Collaborative filtering boost
+          if (similarUsersPostIds.has(post.id)) {
+            score += 25;
+          }
+          
+          // Theme matching score
+          const postThemes = [
+            post.themeCategory || '',
+            post.metadata && typeof post.metadata === 'object'
+              ? (post.metadata as any)?.themeCategory || ''
+              : ''
+          ].filter(Boolean);
+          
+          for (const theme of postThemes) {
+            // Higher score for user-selected preferred themes
+            for (const prefTheme of preferredThemes) {
+              if (theme.toLowerCase().includes(prefTheme.toLowerCase())) {
+                score += 20;
+                break;
+              }
+            }
+            
+            // Score for derived user themes (from their reading history)
+            for (const userTheme of sortedThemes) {
+              if (theme.toLowerCase().includes(userTheme.toLowerCase())) {
+                score += 15;
+                break;
+              }
+            }
+          }
+          
+          // Recency bias (newer posts get a boost)
+          const postDate = post.createdAt instanceof Date 
+            ? post.createdAt 
+            : new Date(post.createdAt);
+          
+          const daysSincePosted = (Date.now() - postDate.getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSincePosted < 7) { // Posts less than a week old
+            score += Math.max(0, 10 - daysSincePosted); // 10 points for today, decreasing to 3 for a week old
+          }
+          
+          // Popular posts get a small boost
+          score += Math.min(10, post.likesCount || 0);
+          
+          return { post, score };
+        });
+        
+        // Sort by score, descending
+        scoredPosts.sort((a, b) => b.score - a.score);
+        
+        // Take top posts
+        contentBasedRecommendations = scoredPosts
+          .slice(0, limit)
+          .map(({ post }) => post);
+          
+      } catch (error) {
+        console.error(`[Storage] Error getting content-based recommendations:`, error);
+        // Continue with fallback methods
+      }
       
-      // Step 5: If we don't have enough recommendations, supplement with popular posts
+      // Step 7: If we don't have enough recommendations, supplement with popular and recent posts
       if (contentBasedRecommendations.length < limit) {
-        console.log(`[Storage] Not enough content-based recommendations (${contentBasedRecommendations.length}), supplementing with popular posts`);
+        console.log(`[Storage] Not enough recommendations (${contentBasedRecommendations.length}), supplementing with additional posts`);
         const remainingCount = limit - contentBasedRecommendations.length;
         const existingIds = new Set([
           ...contentBasedRecommendations.map(post => post.id),
           ...Array.from(historyPostIds)
         ]);
         
-        const popularSupplements = await safeDbOperation(async () => {
-          return await db.select()
-            .from(postsTable)
-            .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
-            .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
-            .limit(remainingCount);
-        });
-        
-        console.log(`[Storage] Found ${popularSupplements.length} popular supplemental posts`);
-        
-        const result = [
-          ...contentBasedRecommendations.map(post => ({
+        try {
+          // Try to get a mix of popular and recent posts
+          const popularSupplements = await safeDbOperation(async () => {
+            // 60% popular posts
+            const popularCount = Math.ceil(remainingCount * 0.6);
+            const popularPosts = await db.select()
+              .from(postsTable)
+              .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
+              .orderBy(desc(postsTable.likesCount), desc(postsTable.createdAt))
+              .limit(popularCount);
+            
+            // 40% recent posts
+            const recentCount = remainingCount - popularCount;
+            const recentPosts = await db.select()
+              .from(postsTable)
+              .where(not(sql`${postsTable.id} IN (${Array.from(existingIds).join(',')})`))
+              .orderBy(desc(postsTable.createdAt))
+              .limit(recentCount);
+            
+            return [...popularPosts, ...recentPosts];
+          });
+          
+          console.log(`[Storage] Found ${popularSupplements.length} supplemental posts`);
+          
+          const result = [
+            ...contentBasedRecommendations.map(post => ({
+              ...post,
+              createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            })),
+            ...popularSupplements.map(post => ({
+              ...post,
+              createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
+            }))
+          ];
+          
+          // Log performance metrics
+          const duration = Date.now() - startTime;
+          await this.logRecommendationPerformance(userId, 'mixed_recommendations', result.length, duration);
+          
+          return result;
+        } catch (error) {
+          console.error(`[Storage] Error getting supplemental posts:`, error);
+          // Return what we have so far if this fails
+          return contentBasedRecommendations.map(post => ({
             ...post,
             createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-          })),
-          ...popularSupplements.map(post => ({
-            ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-          }))
-        ];
-        
-        return result;
+          }));
+        }
       }
       
-      console.log(`[Storage] Found ${contentBasedRecommendations.length} personalized recommendations for user ${userId}`);
+      console.log(`[Storage] Found ${contentBasedRecommendations.length} enhanced personalized recommendations for user ${userId}`);
+      
+      // Log performance metrics
+      const duration = Date.now() - startTime;
+      await this.logRecommendationPerformance(userId, 'content_based', contentBasedRecommendations.length, duration);
+      
       return contentBasedRecommendations.map(post => ({
         ...post,
         createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
@@ -4441,6 +4633,28 @@ export class MemStorage implements IStorage {
       console.error(`[Storage] Error getting personalized recommendations:`, error);
       // Return empty array instead of throwing to provide graceful degradation
       return [];
+    }
+  }
+  
+  // Helper method to log recommendation performance
+  private async logRecommendationPerformance(userId: number, method: string, count: number, durationMs: number): Promise<void> {
+    try {
+      const metric: InsertPerformanceMetric = {
+        label: `recommendations_${method}`,
+        value: durationMs,
+        metadata: {
+          userId: userId.toString(),
+          method,
+          count: count.toString(),
+          timestamp: new Date().toISOString()
+        },
+        createdAt: new Date()
+      };
+      
+      await db.insert(performanceMetrics).values(metric);
+    } catch (error) {
+      // Don't let metrics logging failure affect recommendations
+      console.warn(`[Storage] Failed to log recommendation performance:`, error);
     }
   }
   
