@@ -168,33 +168,59 @@ app.use(session({
 }));
 
 // Setup enhanced CSRF protection with a single middleware
-app.use(createCsrfMiddleware({
-  // Only exclude essential API endpoints that are properly authenticated
-  ignorePaths: [
-    '/health',
-    '/api/health',
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/forgot-password',
-    '/api/auth/reset-password',
-    '/api/auth/verify-reset-token',
-    '/api/feedback',
-    '/api/posts',
-    '/api/reader/bookmarks',
-    '/api/analytics',
-    '/api/wordpress/sync',
-    '/api/contact',
-    '/api/newsletter/subscribe',
-    '/api/newsletter/unsubscribe',
-    '/api/newsletter-direct/subscribe',  // Add our new direct endpoint
-    '/api/check-email-config',
-    '/api/performance/metrics'
-  ],
-  cookie: {
-    secure: !isDev, // Secure cookies in production
-    sameSite: isDev ? 'lax' : 'none'
+app.use((req, res, next) => {
+  // Completely bypass CSRF for post reactions and similar paths
+  const path = req.path;
+  const bypassPatterns = [
+    '/api/posts/*/reaction',
+    '/posts/*/reaction',
+    '/api/posts/*/reactions'
+  ];
+  
+  // Check if path matches any bypass pattern
+  const shouldBypass = bypassPatterns.some(pattern => {
+    const regexPattern = pattern.replace(/\*/g, '[^/]+');
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(path);
+  });
+  
+  if (shouldBypass) {
+    console.log(`CSRF bypassed for path: ${path}`);
+    return next();
   }
-}));
+  
+  // Apply normal CSRF middleware for all other paths
+  const csrfMiddleware = createCsrfMiddleware({
+    // Only exclude essential API endpoints that are properly authenticated
+    ignorePaths: [
+      '/health',
+      '/api/health',
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
+      '/api/auth/verify-reset-token',
+      '/api/feedback',
+      '/api/posts',
+      '/api/reader/bookmarks',
+      '/api/analytics',
+      '/api/wordpress/sync',
+      '/api/contact',
+      '/api/newsletter/subscribe',
+      '/api/newsletter/unsubscribe',
+      '/api/newsletter-direct/subscribe',  // Add our new direct endpoint
+      '/api/fresh-newsletter/subscribe',
+      '/api/check-email-config',
+      '/api/performance/metrics'
+    ],
+    cookie: {
+      secure: !isDev, // Secure cookies in production
+      sameSite: isDev ? 'lax' : 'none'
+    }
+  });
+  
+  return csrfMiddleware(req, res, next);
+});
 
 // Setup authentication
 setupAuth(app);

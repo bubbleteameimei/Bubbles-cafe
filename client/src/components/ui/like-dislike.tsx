@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { createCSRFRequest } from "@/lib/csrf-token";
 
 interface LikeDislikeProps {
   postId: number;
@@ -85,11 +86,15 @@ export function LikeDislike({
         
         // Add timestamp to prevent caching
         const timestamp = new Date().getTime();
+        
+        // Get request with proper headers - no need for CSRF token for GET requests
+        const headers = new Headers();
+        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        headers.set('Pragma', 'no-cache');
+        
         const response = await fetch(`/api/posts/${postId}/reactions?t=${timestamp}`, {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache'
-          }
+          headers,
+          credentials: 'include' // Include cookies for session identification
         });
         
         // Special handling for 404s - just return 0 counts without error
@@ -147,15 +152,48 @@ export function LikeDislike({
       
       // Add a timestamp parameter to prevent caching
       const timestamp = new Date().getTime();
-      const response = await fetch(`/api/posts/${postId}/reaction?t=${timestamp}`, {
+      
+      // Use CSRF request helper to ensure token is included
+      const requestOptions = createCSRFRequest('POST', { isLike });
+      
+      // Add cache control headers without overriding existing headers
+      const headers = new Headers(requestOptions.headers || {});
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      headers.set('Pragma', 'no-cache');
+      
+      console.log(`[LikeDislike] Request headers for post ${postId}:`, 
+        Array.from(headers.entries()));
+      
+      // Log the actual URL and request details before making the request
+      const apiUrl = `/api/posts/${postId}/reaction?t=${timestamp}`;
+      console.log(`[LikeDislike] Sending POST request to: ${apiUrl}`);
+      console.log(`[LikeDislike] Request body:`, { isLike });
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({ isLike })
       });
+      
+      // Log response status for debugging
+      console.log(`[LikeDislike] Response status: ${response.status}`);
+      
+      // If there's an error, try to log the response text
+      if (!response.ok) {
+        try {
+          const errorText = await response.text();
+          console.error(`[LikeDislike] Error response: ${errorText}`);
+          // Return a cloned response since we consumed the body
+          return new Response(errorText, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers
+          });
+        } catch (e) {
+          console.error(`[LikeDislike] Failed to read error response:`, e);
+        }
+      }
       
       // Special handling for 404s
       if (response.status === 404) {

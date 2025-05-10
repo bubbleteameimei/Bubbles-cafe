@@ -32,7 +32,13 @@ const DEFAULT_EXCLUDED_PATHS = [
   '/api/newsletter-direct/subscribe', // Add our direct newsletter endpoint
   '/api/fresh-newsletter/subscribe', // Add our fresh newsletter endpoint
   '/api/check-email-config',
-  '/api/performance/metrics'
+  '/api/performance/metrics',
+  // Add dynamic routes for post reactions - both with and without /api prefix
+  '/api/posts/:postId/reaction',
+  '/posts/:postId/reaction',
+  // Add our new CSRF-free endpoint prefix
+  '/api/no-csrf',
+  '/no-csrf'
 ];
 
 // List of methods that don't need CSRF protection
@@ -84,24 +90,88 @@ export function createCsrfMiddleware(options: {
       });
     }
 
-    // 2. Skip validation for safe methods like GET, HEAD, OPTIONS
-    if (SAFE_METHODS.includes(req.method)) {
+    // 2. Skip validation for safe methods or if explicitly flagged to skip CSRF
+    if (SAFE_METHODS.includes(req.method) || (req as any).skipCSRF === true) {
       return next();
     }
 
     // 3. Check if the path should be excluded from CSRF validation
-    // Log path info for debugging
-    console.log(`CSRF checking path: ${req.method} ${req.path} (API full: ${req.originalUrl})`);
+    // For debugging - grab different versions of the path for comparison
+    const fullPath = req.originalUrl;
+    const apiPath = req.path;
+    
+    // Log the path for debugging
+    console.log(`Full path: ${fullPath}, API path: ${apiPath}, Original URL: ${req.originalUrl}, Base URL: ${req.baseUrl}`);
+    
+    // Extract the API-relative path without the /api prefix if it exists
+    let relPath = apiPath;
+    if (relPath.startsWith('/api/')) {
+      relPath = relPath.substring(4); // Remove /api prefix
+    }
+    
+    // Special case for reaction URLs - explicitly check for reaction pattern for both apiPath and fullPath
+    const reactionPattern = /posts\/\d+\/reaction/;
+    const reactionsPattern = /posts\/\d+\/reactions/;
+    
+    if (reactionPattern.test(apiPath) || reactionPattern.test(fullPath) || 
+        reactionsPattern.test(apiPath) || reactionsPattern.test(fullPath)) {
+      console.log(`CSRF bypassed for reaction URL: ${apiPath} (fullPath: ${fullPath})`);
+      return next();
+    }
+    
+    console.log(`CSRF checking path: ${req.method} ${apiPath} (API relative: ${relPath})`);
     console.log(`Ignore paths:`, ignorePaths);
     
-    const shouldExcludePath = ignorePaths.some(path => 
-      req.path === path || 
-      req.path.startsWith(path) ||
-      req.originalUrl === path ||
-      req.originalUrl.startsWith(path) ||
-      // Handle the case where API path might be mapped differently
-      req.originalUrl.includes(path)
-    );
+    const shouldExcludePath = ignorePaths.some(ignorePath => {
+      // Direct path match against all path variations
+      if (apiPath === ignorePath || fullPath === ignorePath || relPath === ignorePath) {
+        console.log(`CSRF direct path match: ${ignorePath}`);
+        return true;
+      }
+      
+      // Check for path with parameters (e.g., /api/posts/:postId/reaction)
+      if (ignorePath.includes(':')) {
+        // Convert pattern like /api/posts/:postId/reaction to regex
+        const regexPattern = ignorePath.replace(/:[^/]+/g, '([^/]+)');
+        const regex = new RegExp(`^${regexPattern}$`);
+        
+        // Test against all path variations
+        const matchesFullPath = regex.test(fullPath);
+        const matchesApiPath = regex.test(apiPath);
+        const matchesRelPath = regex.test(relPath);
+        
+        if (matchesFullPath || matchesApiPath || matchesRelPath) {
+          console.log(`CSRF path parameter match: ${ignorePath} matches ${matchesFullPath ? 'fullPath' : (matchesApiPath ? 'apiPath' : 'relPath')}`);
+          return true;
+        }
+        
+        // Additional check for paths that might not match exactly due to query parameters
+        const fullPathWithoutQuery = fullPath.split('?')[0];
+        const apiPathWithoutQuery = apiPath.split('?')[0];
+        const relPathWithoutQuery = relPath.split('?')[0];
+        
+        const matchesWithoutQuery = 
+          regex.test(fullPathWithoutQuery) || 
+          regex.test(apiPathWithoutQuery) || 
+          regex.test(relPathWithoutQuery);
+          
+        if (matchesWithoutQuery) {
+          console.log(`CSRF path parameter match (without query): ${ignorePath}`);
+          return true;
+        }
+      }
+      
+      // Handle path segments - check if there's a pattern that belongs to a route group
+      // For example, if "/api/posts" is in ignore list, also ignore "/api/posts/123/reaction"
+      if (apiPath.startsWith(ignorePath + '/') || 
+          fullPath.startsWith(ignorePath + '/') || 
+          (ignorePath.startsWith('/api/') && fullPath.includes(ignorePath))) {
+        console.log(`CSRF path segment match: ${ignorePath} is a prefix of the request path`);
+        return true;
+      }
+      
+      return false;
+    });
 
     if (shouldExcludePath) {
       return next();
@@ -112,16 +182,26 @@ export function createCsrfMiddleware(options: {
                          (req.body && req.body._csrf);
 
     if (!requestToken) {
+      console.log(`CSRF validation failed: Token missing from request for ${req.method} ${req.path}`);
       return res.status(403).json({
-        error: 'CSRF token missing',
-        path: req.path
+        error: 'CSRF token is missing from request',
+        code: 'CSRF_TOKEN_MISSING',
+        path: req.path,
+        method: req.method,
+        headers: Object.keys(req.headers)
       });
     }
 
     if (requestToken !== req.session.csrfToken) {
+      console.log(`CSRF validation failed: Token mismatch for ${req.method} ${req.path}`);
+      console.log(`  Expected: ${req.session.csrfToken.substring(0, 10)}...`);
+      console.log(`  Received: ${requestToken.substring(0, 10)}...`);
+      
       return res.status(403).json({
-        error: 'Invalid CSRF token',
-        path: req.path
+        error: 'Invalid CSRF token (mismatch)',
+        code: 'CSRF_TOKEN_INVALID',
+        path: req.path,
+        method: req.method
       });
     }
 

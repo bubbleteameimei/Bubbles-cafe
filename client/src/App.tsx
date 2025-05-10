@@ -48,6 +48,8 @@ import { NotificationProvider } from './contexts/notification-context';
 import { NotificationIcon } from './components/ui/notification-icon';
 // Import Silent Ping feature
 import { SilentPingProvider } from './contexts/silent-ping-context';
+// Import our like/dislike test page
+const LikeDislikeTestPage = React.lazy(() => import('./pages/like-dislike-test'));
 // Import music provider for background music functionality
 import { MusicProvider } from './contexts/music-context';
 import SidebarHeader from './components/SidebarHeader';
@@ -263,6 +265,7 @@ const AppContent = () => {
               
               {/* Demo Routes */}
               <Route path="/error-demo" component={ErrorDemoPage} />
+              <Route path="/like-dislike-test" component={LikeDislikeTestPage} />
 
               {/* Legal Routes */}
               <Route path="/legal/copyright" component={CopyrightPage} />
