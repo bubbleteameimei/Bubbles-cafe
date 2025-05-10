@@ -167,6 +167,10 @@ export interface IStorage {
   updatePostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   createPostLike(postId: number, userId: number, isLike: boolean): Promise<void>;
   getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
+  
+  // Session-based reaction (for anonymous users)
+  updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
+  getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
 
   // Comment votes
   getCommentVote(commentId: number, userId: string): Promise<CommentVote | undefined>;

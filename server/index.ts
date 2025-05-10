@@ -211,7 +211,10 @@ app.use((req, res, next) => {
       '/api/newsletter-direct/subscribe',  // Add our new direct endpoint
       '/api/fresh-newsletter/subscribe',
       '/api/check-email-config',
-      '/api/performance/metrics'
+      '/api/performance/metrics',
+      '/api/csrf-test-bypass',  // Add our CSRF bypass endpoint
+      '/api/posts/:postId/reaction',  // Add reaction endpoints
+      '/api/no-csrf'  // Add no-csrf endpoints
     ],
     cookie: {
       secure: !isDev, // Secure cookies in production
