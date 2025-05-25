@@ -1282,14 +1282,33 @@ export function registerRoutes(app: Express): Server {
       
       console.log(`[Reaction] Processing for post ${postId}, isLike: ${isLike}`);
       
+      // Get the current post to update its metadata as well
+      const post = await storage.getPostById(postId);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found", likesCount: 0, dislikesCount: 0 });
+      }
+      
+      // Extract current metadata or initialize it
+      const metadata = post.metadata || {};
+      
       // Update counts based on reaction
       if (isLike === true) {
+        // Update both the dedicated column and the metadata field
         await db.update(posts).set({ 
-          likesCount: sql`COALESCE("likesCount", 0) + 1` 
+          likesCount: sql`COALESCE("likesCount", 0) + 1`,
+          metadata: {
+            ...metadata,
+            likes: (metadata.likes || 0) + 1
+          }
         }).where(eq(posts.id, postId));
       } else if (isLike === false) {
+        // Update both the dedicated column and the metadata field
         await db.update(posts).set({ 
-          dislikesCount: sql`COALESCE("dislikesCount", 0) + 1` 
+          dislikesCount: sql`COALESCE("dislikesCount", 0) + 1`,
+          metadata: {
+            ...metadata,
+            dislikes: (metadata.dislikes || 0) + 1
+          }
         }).where(eq(posts.id, postId));
       }
       
