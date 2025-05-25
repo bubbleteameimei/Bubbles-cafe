@@ -1128,56 +1128,36 @@ export class DatabaseStorage implements IStorage {
         try {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
           
-          // Use a direct SQL query to avoid any issues with column names or schema mismatches
+          // Simple, clean query for the simplified posts table
           const query = `
             SELECT 
-              id, title, content, slug, excerpt, author, 
-              is_secret, mature_content, theme_category, reading_time,
-              "isAdminPost", "likesCount", "dislikesCount", metadata, created_at
+              id, title, content, slug, excerpt, author, created_at, likes, views
             FROM posts 
-            WHERE is_secret = false
             ORDER BY created_at DESC 
             LIMIT ${limit + 1} OFFSET ${offset}
           `;
           
-          console.log("[Storage] Executing SQL query");
+          console.log("[Storage] Executing simplified SQL query");
           const result = await db.execute(sql.raw(query));
           const rawPosts = result.rows;
           
           console.log("[Storage] SQL query returned", rawPosts.length, "posts");
           
-          // Log the first post for debugging
-          if (rawPosts.length > 0) {
-            console.log("[Storage] First post:", {
-              id: rawPosts[0].id,
-              title: rawPosts[0].title?.substring(0, 20),
-              createdAt: rawPosts[0].created_at,
-              likesCount: rawPosts[0].likesCount || 0,
-              dislikesCount: rawPosts[0].dislikesCount || 0
-            });
-          }
-          
           // Check if there are more posts
           const hasMore = rawPosts.length > limit;
-          const paginatedPosts = rawPosts.slice(0, limit); // Remove the extra post we fetched
+          const paginatedPosts = rawPosts.slice(0, limit);
           
-          // Transform the raw database rows into the expected format
+          // Simple transformation for the clean database
           const posts = paginatedPosts.map(post => ({
             id: post.id,
             title: post.title,
             content: post.content,
             slug: post.slug,
             excerpt: post.excerpt,
-            authorId: post.author_id,
-            isSecret: post.is_secret,
-            isAdminPost: post.isAdminPost,
-            matureContent: post.mature_content,
-            themeCategory: post.theme_category,
-            readingTimeMinutes: post.reading_time_minutes,
-            likesCount: post.likesCount || 0,
-            dislikesCount: post.dislikesCount || 0,
-            metadata: post.metadata || {},
-            createdAt: new Date(post.created_at)
+            author: post.author,
+            createdAt: new Date(post.created_at),
+            likes: post.likes || 0,
+            views: post.views || 0
           }));
           
           console.log(`[Storage] Transformed ${posts.length} posts, hasMore: ${hasMore}`);
