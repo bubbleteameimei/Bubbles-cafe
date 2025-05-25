@@ -137,6 +137,11 @@ app.use('/public', express.static(path.join(process.cwd(), 'public'), {
 // Add cache control headers for better browser caching
 app.use(cacheControlMiddleware);
 
+// Apply our enhanced browser caching middleware for optimized performance
+import { browserCache, etagCache } from './middlewares/browser-cache';
+app.use(browserCache());
+app.use(etagCache());
+
 // Session already handles cookies for us
 // No additional cookie parser needed for CSRF protection
 

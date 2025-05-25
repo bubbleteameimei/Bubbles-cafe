@@ -34,7 +34,13 @@ export const posts = pgTable("posts", {
   dislikesCount: integer("dislikesCount").default(0),
   metadata: json("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  // Indexes for frequently accessed columns
+  authorIdIdx: index("post_author_idx").on(table.authorId),
+  createdAtIdx: index("post_created_at_idx").on(table.createdAt),
+  themeCategoryIdx: index("post_theme_category_idx").on(table.themeCategory),
+  titleIdx: index("post_title_idx").on(table.title)
+}));
 
 // Author Stats - removed fear rating
 export const authorStats = pgTable("author_stats", {
@@ -64,7 +70,13 @@ export const comments = pgTable("comments", {
     parentIdFk: foreignKey({
       columns: [table.parentId],
       foreignColumns: [table.id]
-    })
+    }),
+    // Add performance indexes for frequently queried fields
+    postIdIdx: index("comment_post_id_idx").on(table.postId),
+    userIdIdx: index("comment_user_id_idx").on(table.userId),
+    parentIdIdx: index("comment_parent_id_idx").on(table.parentId),
+    createdAtIdx: index("comment_created_at_idx").on(table.createdAt),
+    approvedIdx: index("comment_approved_idx").on(table.is_approved)
   };
 });
 
@@ -226,7 +238,11 @@ export const analytics = pgTable("analytics", {
   bounceRate: doublePrecision("bounce_rate").default(0).notNull(),
   deviceStats: json("device_stats").default({}).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
-});
+}, (table) => ({
+  // Add indexes for analytics queries
+  postIdIdx: index("analytics_post_id_idx").on(table.postId),
+  updatedAtIdx: index("analytics_updated_at_idx").on(table.updatedAt)
+}));
 
 // Add performance metrics table definition after the analytics table
 export const performanceMetrics = pgTable("performance_metrics", {
@@ -304,7 +320,11 @@ export const bookmarks = pgTable("bookmarks", {
   lastPosition: decimal("last_position").default("0").notNull(), // Reading position
   tags: text("tags").array(), // User-defined tags for organizing bookmarks
 }, (table) => ({
-  userPostUnique: unique().on(table.userId, table.postId) // A user can bookmark a post only once
+  userPostUnique: unique().on(table.userId, table.postId), // A user can bookmark a post only once
+  // Add indexes for better performance
+  userIdIdx: index("bookmark_user_id_idx").on(table.userId),
+  postIdIdx: index("bookmark_post_id_idx").on(table.postId),
+  createdAtIdx: index("bookmark_created_at_idx").on(table.createdAt)
 }));
 
 // User Feedback
