@@ -25,8 +25,8 @@ export function EnhancedPageTransition({
       // Start timing for minimum loading display
       startTimeRef.current = Date.now();
       
-      // Use the GlobalLoadingProvider instead of local state
-      showLoading();
+      // Disable loading screen during page transitions to prevent grey box
+      // showLoading();
       
       // Clear any existing timeouts
       if (timeoutRef.current) {
@@ -47,7 +47,7 @@ export function EnhancedPageTransition({
           // Give the DOM a moment to update before hiding loading screen
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              hideLoading();
+              // hideLoading(); // Disabled to prevent grey box during transitions
               prevLocationRef.current = location;
             });
           });
