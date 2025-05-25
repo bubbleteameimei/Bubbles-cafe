@@ -354,7 +354,6 @@ async function startServer() {
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // Register direct game API routes that bypass Vite middleware
-      registerDirectGameRoutes(app);
 
       // Legacy direct API endpoints - keeping for reference
       app.get('/direct-api/game/scenes', async (req, res) => {
@@ -522,7 +521,6 @@ async function startServer() {
       setupWordPressSyncSchedule(5 * 60 * 1000);
       
       // Register direct game API routes that bypass Vite middleware
-      registerDirectGameRoutes(app);
 
       // Legacy direct API endpoints - keeping for reference
       app.get('/direct-api/game/scenes', async (req, res) => {
