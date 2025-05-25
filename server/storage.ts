@@ -1131,17 +1131,17 @@ export class DatabaseStorage implements IStorage {
           // Use a direct SQL query to avoid any issues with column names or schema mismatches
           const query = `
             SELECT 
-              id, title, content, slug, excerpt, author_id, 
-              is_secret, mature_content, theme_category, reading_time_minutes,
+              id, title, content, slug, excerpt, author, 
+              is_secret, mature_content, theme_category, reading_time,
               "isAdminPost", "likesCount", "dislikesCount", metadata, created_at
             FROM posts 
             WHERE is_secret = false
             ORDER BY created_at DESC 
-            LIMIT $1 OFFSET $2
+            LIMIT ${limit + 1} OFFSET ${offset}
           `;
           
-          console.log("[Storage] Executing SQL query with params:", [limit + 1, offset]);
-          const result = await db.execute(sql.raw(query, [limit + 1, offset]));
+          console.log("[Storage] Executing SQL query");
+          const result = await db.execute(sql.raw(query));
           const rawPosts = result.rows;
           
           console.log("[Storage] SQL query returned", rawPosts.length, "posts");
