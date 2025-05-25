@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 
 /**
  * Enhanced browser caching middleware
@@ -56,7 +57,7 @@ export const etagCache = () => {
       }
       
       // Generate ETag from response body
-      const etag = require('crypto')
+      const etag = crypto
         .createHash('md5')
         .update(typeof body === 'string' ? body : JSON.stringify(body))
         .digest('hex');

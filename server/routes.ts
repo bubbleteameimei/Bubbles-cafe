@@ -840,9 +840,12 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Set up filter options with proper handling of the isAdminPost parameter
-      const filterOptions: any = {
-        isCommunityPost: false  // Only get non-community posts
-      };
+      const filterOptions: any = {};
+      
+      // Only add isCommunityPost filter if it was explicitly set in the query
+      if (req.query.isCommunityPost !== undefined) {
+        filterOptions.isCommunityPost = req.query.isCommunityPost === 'true';
+      }
       
       // Only add isAdminPost filter if it was explicitly set in the query
       if (isAdminPost !== undefined) {
@@ -862,11 +865,9 @@ export function registerRoutes(app: Express): Server {
         // For non-admin users, filter out hidden posts
         filteredPosts = result.posts.filter(post => {
           const metadata = post.metadata as PostMetadata;
-          // Show all posts except those explicitly hidden (checking both column and metadata)
+          // Show all posts except those explicitly hidden
           const isHidden = metadata?.isHidden;
-          // Double-check to ensure no community posts appear
-          const isCommunityPost = metadata?.isCommunityPost === true;
-          return !isHidden && !isCommunityPost;
+          return !isHidden;
         });
       }
 
