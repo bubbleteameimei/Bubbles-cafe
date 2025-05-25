@@ -165,7 +165,7 @@ export function LikeDislike({
         Array.from(headers.entries()));
       
       // Log the actual URL and request details before making the request
-      const apiUrl = `/api/posts/${postId}/reaction?t=${timestamp}`;
+      const apiUrl = `/api/no-csrf/posts/${postId}/reaction?t=${timestamp}`;
       console.log(`[LikeDislike] Sending POST request to: ${apiUrl}`);
       console.log(`[LikeDislike] Request body:`, { isLike });
       

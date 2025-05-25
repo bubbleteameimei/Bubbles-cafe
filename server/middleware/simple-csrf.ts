@@ -38,7 +38,8 @@ const DEFAULT_EXCLUDED_PATHS = [
   '/posts/:postId/reaction',
   // Add our new CSRF-free endpoint prefix
   '/api/no-csrf',
-  '/no-csrf'
+  '/no-csrf',
+  '/api/no-csrf/posts'
 ];
 
 // List of methods that don't need CSRF protection
@@ -113,10 +114,12 @@ export function createCsrfMiddleware(options: {
     const reactionPattern = /posts\/\d+\/reaction/;
     const reactionsPattern = /posts\/\d+\/reactions/;
     const bypassPattern = /csrf-test-bypass\/react\/\d+/;
+    const noCsrfPattern = /no-csrf/;
     
     if (reactionPattern.test(apiPath) || reactionPattern.test(fullPath) || 
         reactionsPattern.test(apiPath) || reactionsPattern.test(fullPath) ||
-        bypassPattern.test(apiPath) || bypassPattern.test(fullPath)) {
+        bypassPattern.test(apiPath) || bypassPattern.test(fullPath) ||
+        noCsrfPattern.test(apiPath) || noCsrfPattern.test(fullPath)) {
       console.log(`CSRF bypassed for special URL: ${apiPath} (fullPath: ${fullPath})`);
       return next();
     }

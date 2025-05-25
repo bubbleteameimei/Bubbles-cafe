@@ -1282,8 +1282,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Main reaction endpoint for likes/dislikes
-  app.post("/api/posts/:postId/reaction", async (req, res) => {
+  // CSRF-free reaction endpoint for likes/dislikes
+  app.post("/api/no-csrf/posts/:postId/reaction", async (req, res) => {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
