@@ -2096,17 +2096,64 @@ export class DatabaseStorage implements IStorage {
   private async updatePostCounts(postId: number): Promise<void> {
     try {
       const counts = await this.getPostLikeCounts(postId);
-      await db.update(postsTable)
-        .set({ 
-          likesCount: counts.likesCount, 
-          dislikesCount: counts.dislikesCount 
-        })
-        .where(eq(postsTable.id, postId));
+      
+      // Use raw SQL to avoid column name issues
+      await db.execute(sql`
+        UPDATE posts 
+        SET "likesCount" = ${counts.likesCount}, 
+            "dislikesCount" = ${counts.dislikesCount}
+        WHERE id = ${postId}
+      `);
 
       console.log(`[Storage] Updated post ${postId} counts:`, counts);
     } catch (error) {
       console.error(`[Storage] Error updating post counts for ${postId}:`, error);
       throw error;
+    }
+  }
+  
+  // Add missing methods needed by the IStorage interface
+  async getPostReactions(postId: number): Promise<{likesCount: number, dislikesCount: number}> {
+    return this.getPostLikeCounts(postId);
+  }
+  
+  async updatePostReaction(postId: number, userId: number, isLike: boolean | null): Promise<{likesCount: number, dislikesCount: number}> {
+    try {
+      if (isLike === null) {
+        // Remove reaction
+        await this.removePostLike(postId, userId);
+      } else {
+        // Check if user already reacted
+        const existingLike = await this.getPostLike(postId, userId);
+        if (existingLike) {
+          if (existingLike.isLike === isLike) {
+            // Remove if clicking the same button again
+            await this.removePostLike(postId, userId);
+          } else {
+            // Change reaction type
+            await this.updatePostLike(postId, userId, isLike);
+          }
+        } else {
+          // Create new reaction
+          await this.createPostLike(postId, userId, isLike);
+        }
+      }
+      
+      // Return updated counts
+      return await this.getPostLikeCounts(postId);
+    } catch (error) {
+      console.error(`[Storage] Error updating post reaction for post ${postId}:`, error);
+      throw error;
+    }
+  }
+  
+  async getPersonalizedRecommendations(userId: number): Promise<Post[]> {
+    try {
+      // Simple implementation - just return recent posts
+      return this.getRecentPosts();
+    } catch (error) {
+      console.error('[Storage] Error getting personalized recommendations:', error);
+      return [];
     }
   }
 
@@ -3864,7 +3911,7 @@ export class DatabaseStorage implements IStorage {
               id, title, content, slug, excerpt, author_id,
               metadata, created_at, is_secret, mature_content,
               theme_category, reading_time_minutes,
-              likes_count, dislikes_count
+              "likesCount", "dislikesCount", "isAdminPost"
             FROM posts 
             WHERE id = ${id}
             LIMIT 1
@@ -3892,8 +3939,9 @@ export class DatabaseStorage implements IStorage {
             metadata: post.metadata || {},
             createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
             readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
-            likesCount: post.likes_count || 0,
-            dislikesCount: post.dislikes_count || 0
+            likesCount: post.likesCount || 0,
+            dislikesCount: post.dislikesCount || 0,
+            isAdminPost: post.isAdminPost || false
           };
         } else {
           // If it's another type of error, rethrow it
