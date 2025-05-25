@@ -656,8 +656,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   // Add error handling for date parsing to prevent "Invalid time value" errors
   let formattedDate = '';
   try {
-    if (currentPost.date) {
+    // Try to use original WordPress date from metadata if available
+    if (currentPost.metadata && currentPost.metadata.originalDate) {
+      formattedDate = format(new Date(currentPost.metadata.originalDate), 'MMMM d, yyyy');
+    } else if (currentPost.date) {
       formattedDate = format(new Date(currentPost.date), 'MMMM d, yyyy');
+    } else if (currentPost.createdAt) {
+      formattedDate = format(new Date(currentPost.createdAt), 'MMMM d, yyyy');
     } else {
       formattedDate = 'Publication date unavailable';
     }
