@@ -71,10 +71,15 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     }, 300);
   }, []);
   
-  // Show loading screen
+  // Show loading screen with smart prevention of multiple triggers
   const showLoading = useCallback((newMessage?: string) => {
-    // Prevent rapid show/hide cycles
-    if (preventRapidShowRef.current) return;
+    // Check if we're already loading or recently prevented loading
+    if (isLoading || preventRapidShowRef.current) {
+      console.log('[LoadingProvider] Prevented duplicate loading screen trigger');
+      return;
+    }
+    
+    // Set prevention flag for longer duration to prevent multiple screens
     preventRapidShowRef.current = true;
     
     // Update message if provided
@@ -93,14 +98,12 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       // Ignore storage errors
     }
     
-    // Safety timer: force close after 2 seconds regardless of other state
+    // Safety timer: force close after 2.5 seconds regardless of other state
     if (loadingTimerRef.current) {
       clearTimeout(loadingTimerRef.current);
     }
     
     loadingTimerRef.current = setTimeout(() => {
-      // The loading screen component has its own 2-second timer
-      // This is a backup in case that fails for some reason
       console.log('Loading provider backup timer triggered after 2.5 seconds');
       setIsLoading(false);
       
@@ -110,10 +113,10 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
         // Ignore storage errors
       }
       
-      // Reset prevention flag
+      // Reset prevention flag after longer delay to prevent rapid multiple screens
       preventRapidShowRef.current = false;
-    }, 2500); // Slightly longer than component timer
-  }, []);
+    }, 2500);
+  }, [isLoading]);
   
   // Hide loading screen
   const hideLoading = useCallback(() => {
