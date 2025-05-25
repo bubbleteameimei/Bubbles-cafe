@@ -9,6 +9,8 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import express from 'express';
 import { apiRateLimiter, authRateLimiter } from './middlewares/rate-limiter';
+import { apiCache, clearCache } from './middlewares/api-cache';
+import { browserCache, etagCache } from './middlewares/browser-cache';
 import * as session from 'express-session';
 
 // Define session types for Express
@@ -485,7 +487,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Improved community posts API using database schema fields properly
-  app.get("/api/posts/community", cacheControl(300), async (req, res) => {
+  app.get("/api/posts/community", cacheControl(300), apiCache(5 * 60 * 1000), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
@@ -819,8 +821,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update the get posts route to support filtering
-  app.get("/api/posts", cacheControl(300), async (req, res) => {
+  // Update the get posts route to support filtering with enhanced caching
+  app.get("/api/posts", cacheControl(300), apiCache(5 * 60 * 1000), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
       // Set limit to 100 to ensure all 21 WordPress stories are returned in one request
@@ -1054,7 +1056,7 @@ export function registerRoutes(app: Express): Server {
 
 
 
-  app.get("/api/posts/:slugOrId", cacheControl(300), async (req, res) => {
+  app.get("/api/posts/:slugOrId", cacheControl(300), apiCache(10 * 60 * 1000), async (req, res) => {
     try {
       const slugOrId = req.params.slugOrId;
       let post;
@@ -2132,8 +2134,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Recent posts endpoint with mockable data for when DB is unavailable
-  app.get("/api/posts/recent", async (req, res) => {
+  // Recent posts endpoint with enhanced caching
+  app.get("/api/posts/recent", apiCache(10 * 60 * 1000), async (req, res) => {
     try {
       console.log("Recent posts endpoint called:", req.url);
       console.log("Request query params:", req.query);
