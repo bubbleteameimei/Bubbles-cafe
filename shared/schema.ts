@@ -30,8 +30,8 @@ export const posts = pgTable("posts", {
   matureContent: boolean("mature_content").default(false).notNull(),
   themeCategory: text("theme_category"),
   readingTimeMinutes: integer("reading_time_minutes"),
-  likesCount: integer("likes_count").default(0),
-  dislikesCount: integer("dislikes_count").default(0),
+  likesCount: integer("likesCount").default(0),
+  dislikesCount: integer("dislikesCount").default(0),
   metadata: json("metadata").default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });

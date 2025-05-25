@@ -1108,7 +1108,7 @@ export class DatabaseStorage implements IStorage {
   // Posts operations
   async getPosts(
     page: number = 1, 
-    limit: number = 16, 
+    limit: number = 100, // Increased limit to ensure all 21 WordPress stories are returned
     filters: {
       search?: string;
       authorId?: number;
@@ -1124,47 +1124,46 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
         const offset = (page - 1) * limit;
   
-        // Start building the query
-        let query = db.select()
-          .from(postsTable)
-          .where(eq(postsTable.isSecret, false));
+        // Use raw SQL to avoid column naming issues
+        const queryParams: any[] = [];
+        let queryString = `
+          SELECT 
+            id, title, content, slug, excerpt, author_id as "authorId", 
+            metadata, created_at as "createdAt", is_secret as "isSecret", 
+            "isAdminPost", mature_content as "matureContent", 
+            theme_category as "themeCategory", reading_time_minutes as "readingTimeMinutes",
+            "likesCount", "dislikesCount"
+          FROM posts
+          WHERE is_secret = false
+        `;
         
-        // Apply filtering based on metadata for community posts
+        // Add filters
         if (filters.authorId) {
-          query = query.where(eq(postsTable.authorId, filters.authorId));
+          queryString += ` AND author_id = $${queryParams.length + 1}`;
+          queryParams.push(filters.authorId);
         }
-  
+        
         // Apply isAdminPost filter if specified
         if (filters.isAdminPost !== undefined) {
-          try {
-            // Using SQL template for compatibility with column naming
-            query = query.where(sql`"isAdminPost" = ${filters.isAdminPost}`);
-          } catch (error) {
-            console.warn("Failed to apply isAdminPost filter via query builder, will apply later:", error);
-            // We'll handle this in the post-processing step
-          }
+          queryString += ` AND "isAdminPost" = $${queryParams.length + 1}`;
+          queryParams.push(filters.isAdminPost);
         }
         
         // Apply sorting
-        if (filters.sort && filters.order) {
-          if (filters.sort === 'date') {
-            query = query.orderBy(
-              filters.order === 'desc' ? desc(postsTable.createdAt) : postsTable.createdAt
-            );
-          } else {
-            // Default sort by creation date desc
-            query = query.orderBy(desc(postsTable.createdAt));
-          }
+        if (filters.sort === 'date' && filters.order) {
+          queryString += ` ORDER BY created_at ${filters.order === 'desc' ? 'DESC' : 'ASC'}`;
         } else {
           // Default sort by creation date desc
-          query = query.orderBy(desc(postsTable.createdAt));
+          queryString += ` ORDER BY created_at DESC`;
         }
         
-        // Execute the query with limit and offset
-        query = query.limit(limit + 1).offset(offset);
+        // Add limit and offset
+        queryString += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+        queryParams.push(limit + 1, offset);
         
         // Execute the query
-        let posts = await query;
+        const result = await db.execute(sql.raw(queryString, ...queryParams));
+        let posts = result.rows;
         
         // Post-query filtering for metadata fields like isCommunityPost
         // This avoids database schema issues when these fields are missing
@@ -2112,30 +2111,35 @@ export class DatabaseStorage implements IStorage {
     return this.getPostLikeCounts(postId);
   }
   
-  async updatePostReaction(postId: number, userId: number, isLike: boolean | null): Promise<{likesCount: number, dislikesCount: number}> {
+  async updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean> {
     try {
-      if (isLike === null) {
-        // Remove reaction
-        await this.removePostLike(postId, userId);
-      } else {
-        // Check if user already reacted
-        const existingLike = await this.getPostLike(postId, userId);
-        if (existingLike) {
-          if (existingLike.isLike === isLike) {
-            // Remove if clicking the same button again
-            await this.removePostLike(postId, userId);
-          } else {
-            // Change reaction type
-            await this.updatePostLike(postId, userId, isLike);
-          }
+      // Generate a consistent userId from sessionId for anonymous users
+      const userId = data.sessionId ? 
+        parseInt(crypto.createHash('md5').update(data.sessionId).digest('hex').substring(0, 8), 16) : 
+        -1; // Use -1 for anonymous reactions
+      
+      const isLike = data.isLike;
+      
+      // Check if user already reacted
+      const existingLike = await this.getPostLike(postId, userId);
+      
+      if (existingLike) {
+        if (existingLike.isLike === isLike) {
+          // Remove if clicking the same button again
+          await this.removePostLike(postId, userId);
         } else {
-          // Create new reaction
-          await this.createPostLike(postId, userId, isLike);
+          // Change reaction type
+          await this.updatePostLike(postId, userId, isLike);
         }
+      } else {
+        // Create new reaction
+        await this.createPostLike(postId, userId, isLike);
       }
       
-      // Return updated counts
-      return await this.getPostLikeCounts(postId);
+      // Update post counts in the database
+      await this.updatePostCounts(postId);
+      
+      return true;
     } catch (error) {
       console.error(`[Storage] Error updating post reaction for post ${postId}:`, error);
       throw error;
