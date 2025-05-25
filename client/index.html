@@ -14,10 +14,18 @@
     <!-- Cross-Origin Error Suppressor - Load before any other scripts -->
     <script src="/js/error-polyfill.js" crossorigin="anonymous"></script>
     
-    <!-- Preload fonts for application -->
+    <!-- Optimized font loading with display=swap for better performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;700&family=Megrim&display=swap" rel="stylesheet">
+    
+    <!-- Critical resource hints for performance -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <!-- Preload critical images -->
+    <link rel="preload" href="/images/background.jpeg" as="image" type="image/jpeg">
+    <link rel="preload" href="/loading-background.jpeg" as="image" type="image/jpeg">
     
     <!-- Enhanced SEO Meta Tags -->
     <meta name="keywords" content="horror stories, gothic fiction, dark academia, supernatural tales, immersive reading, bubble's cafe, psychological horror" />

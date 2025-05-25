@@ -1128,18 +1128,26 @@ export class DatabaseStorage implements IStorage {
         try {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
           
-          // Query to get all posts including WordPress stories
-          const query = `
-            SELECT 
-              id, title, content, slug, excerpt, author, created_at, likes, views
-            FROM posts 
-            ORDER BY id DESC 
-            LIMIT ${limit + 1} OFFSET ${offset}
-          `;
-          
-          console.log("[Storage] Executing simplified SQL query");
-          const result = await db.execute(sql.raw(query));
-          const rawPosts = result.rows;
+          // Query to get all posts including WordPress stories with optimized Drizzle query
+          console.log("[Storage] Executing optimized Drizzle query");
+          const rawPosts = await db.select({
+            id: postsTable.id,
+            title: postsTable.title,
+            content: postsTable.content,
+            slug: postsTable.slug,
+            excerpt: postsTable.excerpt,
+            author: postsTable.author,
+            authorId: postsTable.authorId,
+            createdAt: postsTable.createdAt,
+            likes: postsTable.likes,
+            views: postsTable.views,
+            metadata: postsTable.metadata,
+            isAdminPost: postsTable.isAdminPost
+          })
+          .from(postsTable)
+          .orderBy(desc(postsTable.createdAt))
+          .limit(limit + 1)
+          .offset(offset);
           
           console.log("[Storage] SQL query returned", rawPosts.length, "posts");
           
@@ -1148,21 +1156,30 @@ export class DatabaseStorage implements IStorage {
           const paginatedPosts = rawPosts.slice(0, limit);
           
           // Simple transformation for the clean database
-          const posts = paginatedPosts.map(post => ({
+          const transformedPosts = paginatedPosts.map(post => ({
             id: post.id,
             title: post.title,
             content: post.content,
             slug: post.slug,
             excerpt: post.excerpt,
-            author: post.author,
-            createdAt: new Date(post.created_at),
+            author: post.author || 'admin',
+            authorId: post.authorId,
+            createdAt: new Date(post.createdAt),
             likes: post.likes || 0,
-            views: post.views || 0
+            views: post.views || 0,
+            metadata: post.metadata || {},
+            isAdminPost: post.isAdminPost || false,
+            isSecret: false,
+            matureContent: false,
+            themeCategory: null,
+            readingTimeMinutes: null,
+            likesCount: post.likes || 0,
+            dislikesCount: 0
           }));
           
-          console.log(`[Storage] Transformed ${posts.length} posts, hasMore: ${hasMore}`);
+          console.log(`[Storage] Transformed ${transformedPosts.length} posts, hasMore: ${hasMore}`);
           
-          return { posts, hasMore };
+          return { posts: transformedPosts, hasMore };
         } catch (error) {
           console.error("[Storage] Error executing getPosts query:", error);
           return { posts: [], hasMore: false };
