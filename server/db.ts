@@ -8,6 +8,7 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
+import config from './config';  // Import our config module
 
 // Global connection state tracking
 let isConnected = false;
@@ -16,21 +17,17 @@ let connectionError: Error | null = null;
 let lastConnectionAttempt: Date | null = null;
 let lastSuccessfulConnection: Date | null = null;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?"
-  );
-}
+// Config module has already validated that DATABASE_URL exists
 
 // Create the database pool with enhanced connection settings
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: config.DATABASE_URL,
   max: 10, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 10000, // Connection timeout
   maxUses: 7500, // Close and replace a connection after it has been used 7500 times (prevents memory issues)
   allowExitOnIdle: false, // Better for production
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 
 // Add error handler to the pool
