@@ -273,7 +273,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   const { data: postsData, isLoading, error } = useQuery({
-    queryKey: ["wordpress", "posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
+    queryKey: ["posts", "reader", routeSlug, isCommunityContent ? "community" : "regular"],
     queryFn: async () => {
       console.log('[Reader] Fetching posts...', { routeSlug, isCommunityContent });
       try {
@@ -300,35 +300,36 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           
           return { posts: [normalizedPost], totalPages: 1, total: 1 };
         } else {
-          // Otherwise fetch all posts
-          try {
-            // Try to fetch from internal API first
-            const response = await fetch('/api/posts?limit=100');
-            if (response.ok) {
-              const data = await response.json();
-              const normalizedPosts = data.posts.map((post: any) => ({
-                ...post,
-                title: {
-                  rendered: post.title?.rendered || post.title || ''
-                },
-                content: {
-                  rendered: post.content?.rendered || post.content || ''
-                },
-                date: post.date || post.createdAt || new Date().toISOString()
-              }));
-              return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
-            }
-          } catch (err) {
-            console.log('[Reader] Error fetching from internal API, trying WordPress API');
+          // Fetch all posts from internal API (your WordPress stories are already synced here)
+          console.log('[Reader] Fetching posts...', { isCommunityContent });
+          const response = await fetch('/api/posts?limit=100');
+          if (!response.ok) {
+            throw new Error('Failed to fetch posts from database');
           }
           
-          // Fallback to WordPress API
-          const data = await fetchWordPressPosts({ page: 1, perPage: 100 });
-          console.log('[Reader] Posts fetched successfully:', {
+          const data = await response.json();
+          console.log('[Reader] Successfully fetched posts:', {
             totalPosts: data.posts?.length,
-            totalPages: data.totalPages
+            hasMore: data.hasMore
           });
-          return data;
+          
+          if (!data.posts || data.posts.length === 0) {
+            throw new Error('No stories available');
+          }
+          
+          // Normalize posts to ensure consistent format
+          const normalizedPosts = data.posts.map((post: any) => ({
+            ...post,
+            title: {
+              rendered: post.title?.rendered || post.title || ''
+            },
+            content: {
+              rendered: post.content?.rendered || post.content || ''
+            },
+            date: post.date || post.created_at || new Date().toISOString()
+          }));
+          
+          return { posts: normalizedPosts, totalPages: 1, total: normalizedPosts.length };
         }
       } catch (error) {
         console.error('[Reader] Error fetching posts:', error);
