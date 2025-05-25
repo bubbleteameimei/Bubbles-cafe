@@ -339,7 +339,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         // Try to fetch any posts to show something
         try {
           // Try to fetch community posts if that's what we're looking for
-          const endpoint = isCommunityContent ? '/api/posts/community?limit=1' : '/api/posts?limit=1';
+          const endpoint = isCommunityContent ? '/api/posts/community?limit=50' : '/api/posts?limit=50';
           const response = await fetch(endpoint);
           if (response.ok) {
             const data = await response.json();
@@ -364,9 +364,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   // Initialize the reader-specific gentle scroll memory

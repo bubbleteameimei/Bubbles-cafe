@@ -1128,12 +1128,12 @@ export class DatabaseStorage implements IStorage {
         try {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
           
-          // Simple, clean query for the simplified posts table
+          // Query to get all posts including WordPress stories
           const query = `
             SELECT 
               id, title, content, slug, excerpt, author, created_at, likes, views
             FROM posts 
-            ORDER BY created_at DESC 
+            ORDER BY id DESC 
             LIMIT ${limit + 1} OFFSET ${offset}
           `;
           
