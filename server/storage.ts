@@ -1618,26 +1618,21 @@ export class DatabaseStorage implements IStorage {
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
     try {
-      // Use a more explicit column selection to match actual database column names
-      const commentsResult = await db.select({
-        id: comments.id,
-        content: comments.content,
-        postId: comments.postId,
-        userId: comments.userId,
-        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
-        edited: comments.edited,
-        editedAt: comments.editedAt,
-        metadata: comments.metadata,
-        createdAt: comments.createdAt,
-        parentId: comments.parentId // Include parentId in the select
-      })
-      .from(comments)
-      .where(eq(comments.postId, postId))
-      .orderBy(desc(comments.createdAt));
+      // Use a raw SQL query to avoid column name issues
+      const result = await db.execute(sql`
+        SELECT 
+          id, content, post_id as "postId", user_id as "userId", 
+          approved, edited, edited_at as "editedAt", 
+          metadata, created_at as "createdAt", parent_id as "parentId"
+        FROM comments
+        WHERE post_id = ${postId}
+        ORDER BY created_at DESC
+      `);
 
-      return commentsResult.map(comment => ({
+      return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null
       }));
     } catch (error) {
       console.error("Error in getComments:", error);

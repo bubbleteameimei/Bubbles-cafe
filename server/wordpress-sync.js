@@ -375,8 +375,9 @@ export async function syncWordPressPosts() {
                 reading_time_minutes = $4,
                 theme_category = $5,
                 metadata = $6,
-                "isAdminPost" = $7
-              WHERE id = $8
+                "isAdminPost" = $7,
+                created_at = $8
+              WHERE id = $9
             `, [
               title, 
               content, 
@@ -388,6 +389,7 @@ export async function syncWordPressPosts() {
                 lastUpdated: new Date().toISOString()
               }),
               false, // WordPress posts are never admin posts
+              pubDate, // Use the original publication date
               postId
             ]);
             
