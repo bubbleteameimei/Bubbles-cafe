@@ -214,7 +214,8 @@ app.use((req, res, next) => {
       '/api/performance/metrics',
       '/api/csrf-test-bypass',  // Add our CSRF bypass endpoint
       '/api/posts/:postId/reaction',  // Add reaction endpoints
-      '/api/no-csrf'  // Add no-csrf endpoints
+      '/api/no-csrf',  // Add no-csrf endpoints
+      '/api/no-csrf/posts'  // Ensure no-csrf posts are fully excluded
     ],
     cookie: {
       secure: !isDev, // Secure cookies in production

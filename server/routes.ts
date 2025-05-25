@@ -1282,8 +1282,52 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // CSRF-free reaction endpoint for likes/dislikes
+  // Direct reaction endpoint (CSRF-free)
   app.post("/api/no-csrf/posts/:postId/reaction", async (req, res) => {
+    try {
+      const postId = Number(req.params.postId);
+      const { isLike } = req.body;
+      
+      if (!postId || isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID", likesCount: 0, dislikesCount: 0 });
+      }
+      
+      console.log(`[Reaction] Processing for post ${postId}, isLike: ${isLike}`);
+      
+      // Update counts based on reaction
+      if (isLike === true) {
+        await db.update(posts).set({ 
+          likesCount: sql`COALESCE("likesCount", 0) + 1` 
+        }).where(eq(posts.id, postId));
+      } else if (isLike === false) {
+        await db.update(posts).set({ 
+          dislikesCount: sql`COALESCE("dislikesCount", 0) + 1` 
+        }).where(eq(posts.id, postId));
+      }
+      
+      // Get updated counts
+      const [counts] = await db.select({
+        likesCount: posts.likesCount,
+        dislikesCount: posts.dislikesCount
+      }).from(posts).where(eq(posts.id, postId));
+      
+      const response = {
+        success: true,
+        likesCount: Number(counts.likesCount || 0),
+        dislikesCount: Number(counts.dislikesCount || 0)
+      };
+      
+      console.log(`[Reaction] Response for post ${postId}:`, response);
+      res.json(response);
+      
+    } catch (error) {
+      console.error('[Reaction] Error:', error);
+      res.status(500).json({ error: "Failed to process reaction", likesCount: 0, dislikesCount: 0 });
+    }
+  });
+
+  // Backup reaction endpoint for likes/dislikes
+  app.post("/api/posts/:postId/react", async (req, res) => {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
