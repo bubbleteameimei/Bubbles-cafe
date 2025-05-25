@@ -276,28 +276,7 @@ export interface IStorage {
   createUserPrivacySettings(userId: number, settings: InsertUserPrivacySettings): Promise<UserPrivacySettings>;
   updateUserPrivacySettings(userId: number, settings: Partial<InsertUserPrivacySettings>): Promise<UserPrivacySettings>;
   
-  // Game Save methods
-  getGameSaves(userId: number): Promise<GameSaveRecord[]>;
-  getGameSave(saveId: string, userId?: number): Promise<GameSaveRecord | undefined>;
-  createGameSave(save: InsertGameSave): Promise<string>;
-  updateGameSave(saveId: string, userId: number | null, data: Partial<InsertGameSave>): Promise<boolean>;
-  deleteGameSave(saveId: string, userId: number | null): Promise<boolean>;
-  
-  // Game Progress methods
-  getGameProgress(userId: number): Promise<GameProgressRecord | undefined>;
-  updateGameProgress(userId: number, progress: InsertGameProgress): Promise<number>;
-  
-  // Game Stats methods
-  getGameStats(userId: number): Promise<GameStatsRecord | undefined>;
-  updateGameStats(userId: number, stats: InsertGameStats): Promise<number>;
-  
-  // Game Scenes methods
-  getGameScenes(): Promise<GameSceneRecord[]>;
-  getGameScene(sceneId: string): Promise<GameSceneRecord | undefined>;
-  
-  // Game Items methods
-  getGameItems(): Promise<GameItemRecord[]>;
-  getGameItem(itemId: string): Promise<GameItemRecord | undefined>;
+
 }
 
 export class DatabaseStorage implements IStorage {

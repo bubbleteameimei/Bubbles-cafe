@@ -32,7 +32,7 @@ import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
-import gameRoutes from './routes/game';
+
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
 import { setCsrfToken, csrfTokenToLocals, validateCsrfToken } from './middleware/csrf-protection';
@@ -3033,46 +3033,9 @@ Message ID: ${savedMessage.id}
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
   
-  // Mount the game routes
-  app.use('/api/game', gameRoutes);
+
   
-  // Direct API endpoints for game scenes that bypass Vite middleware
-  app.get('/game-api/scenes', async (req, res) => {
-    try {
-      // Set correct Content-Type for JSON response
-      res.setHeader('Content-Type', 'application/json');
-      
-      // First, try to get scenes from the database
-      const dbScenes = await storage.getGameScenes();
-      
-      if (dbScenes && dbScenes.length > 0) {
-        return res.json({ scenes: dbScenes });
-      }
-      
-      // If no scenes in DB, use default game scenes
-      console.log('No database scenes found, using default scenes');
-      
-      // Default scene data
-      const defaultScenes = [
-        {
-          sceneId: 'village_entrance',
-          name: "Village Entrance",
-          description: "A dilapidated wooden sign reading 'Eden's Hollow' creaks in the wind.",
-          backgroundImage: "/assets/eden/scenes/village_entrance.jpg",
-          type: "exploration",
-          data: {
-            exits: [
-              { target: "village_square", label: "Enter the village" }
-            ],
-            items: [],
-            characters: []
-          }
-        },
-        {
-          sceneId: 'village_square',
-          name: "Village Square",
-          description: "A once-bustling village square now stands eerily empty.",
-          backgroundImage: "/assets/eden/scenes/village_square.jpg",
+
           type: "exploration",
           data: {
             exits: [

@@ -75,7 +75,7 @@ import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the decl
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
-import { registerDirectGameRoutes } from "./routes/direct-game-api"; // Direct game API routes
+
 import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { globalRateLimiter, apiRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
