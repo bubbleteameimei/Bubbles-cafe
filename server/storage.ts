@@ -161,6 +161,7 @@ export interface IStorage {
   // Session-based reaction (for anonymous users)
   updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean>;
   getPostReactions(postId: number): Promise<{ likes: number; dislikes: number }>;
+  getPostLikeCounts(postId: number): Promise<{ likesCount: number; dislikesCount: number }>;
 
   // Comment votes
   getCommentVote(commentId: number, userId: string): Promise<CommentVote | undefined>;
@@ -1124,52 +1125,64 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
         const offset = (page - 1) * limit;
   
-        // Use a simpler approach with raw SQL
         try {
+          console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
+          
+          // Use a direct SQL query to avoid any issues with column names or schema mismatches
           const query = `
-            SELECT * FROM posts 
+            SELECT 
+              id, title, content, slug, excerpt, author_id, 
+              is_secret, mature_content, theme_category, reading_time_minutes,
+              "isAdminPost", "likesCount", "dislikesCount", metadata, created_at
+            FROM posts 
             WHERE is_secret = false
             ORDER BY created_at DESC 
             LIMIT $1 OFFSET $2
           `;
           
-          console.log("[Storage] Executing raw SQL query with limit:", limit, "offset:", offset);
+          console.log("[Storage] Executing SQL query with params:", [limit + 1, offset]);
           const result = await db.execute(sql.raw(query, [limit + 1, offset]));
-          const posts = result.rows;
+          const rawPosts = result.rows;
           
-          console.log("[Storage] Raw SQL query returned", posts.length, "posts");
+          console.log("[Storage] SQL query returned", rawPosts.length, "posts");
           
-          // Log the first post to debug column names
-          if (posts.length > 0) {
-            console.log("[Storage] First post sample:", {
-              id: posts[0].id,
-              title: posts[0].title?.substring(0, 20),
-              createdAt: posts[0].created_at,
-              likesCount: posts[0].likesCount || 0,
-              dislikesCount: posts[0].dislikesCount || 0
+          // Log the first post for debugging
+          if (rawPosts.length > 0) {
+            console.log("[Storage] First post:", {
+              id: rawPosts[0].id,
+              title: rawPosts[0].title?.substring(0, 20),
+              createdAt: rawPosts[0].created_at,
+              likesCount: rawPosts[0].likesCount || 0,
+              dislikesCount: rawPosts[0].dislikesCount || 0
             });
           }
           
           // Check if there are more posts
-          const hasMore = posts.length > limit;
-          const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
+          const hasMore = rawPosts.length > limit;
+          const paginatedPosts = rawPosts.slice(0, limit); // Remove the extra post we fetched
           
-          console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
+          // Transform the raw database rows into the expected format
+          const posts = paginatedPosts.map(post => ({
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            authorId: post.author_id,
+            isSecret: post.is_secret,
+            isAdminPost: post.isAdminPost,
+            matureContent: post.mature_content,
+            themeCategory: post.theme_category,
+            readingTimeMinutes: post.reading_time_minutes,
+            likesCount: post.likesCount || 0,
+            dislikesCount: post.dislikesCount || 0,
+            metadata: post.metadata || {},
+            createdAt: new Date(post.created_at)
+          }));
           
-          return {
-            posts: paginatedPosts.map(post => ({
-              ...post,
-              createdAt: new Date(post.created_at),
-              authorId: post.author_id,
-              isSecret: post.is_secret,
-              matureContent: post.mature_content,
-              themeCategory: post.theme_category,
-              readingTimeMinutes: post.reading_time_minutes,
-              likesCount: post.likesCount || 0,
-              dislikesCount: post.dislikesCount || 0
-            })),
-            hasMore
-          };
+          console.log(`[Storage] Transformed ${posts.length} posts, hasMore: ${hasMore}`);
+          
+          return { posts, hasMore };
         } catch (error) {
           console.error("[Storage] Error executing getPosts query:", error);
           return { posts: [], hasMore: false };

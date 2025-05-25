@@ -35,7 +35,7 @@ import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
 
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
-import { setCsrfToken, csrfTokenToLocals, validateCsrfToken } from './middleware/csrf-protection';
+// CSRF protection completely removed as requested
 import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
 import { db } from "./db-connect";
 import { eq, sql, desc } from "drizzle-orm";

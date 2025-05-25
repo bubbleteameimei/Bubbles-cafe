@@ -76,7 +76,7 @@ import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpo
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
 
-import { createCsrfMiddleware, CSRF_COOKIE_NAME } from "./middleware/simple-csrf";
+// CSRF protection completely removed as per user request
 import { runMigrations } from "./migrations"; // Import our custom migrations
 import { globalRateLimiter, apiRateLimiter } from "./middlewares/rate-limiter"; // Rate limiters
 import { setupCors } from "./cors-setup";
@@ -167,21 +167,9 @@ app.use(session({
   store: storage.sessionStore
 }));
 
-// CSRF protection completely disabled as requested
+// CSRF protection has been completely removed as requested
 app.use((req, res, next) => {
-  // Set CSRF token in session for compatibility with existing code
-  if (!req.session.csrfToken) {
-    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
-  }
-  
-  // Set CSRF token as a cookie for client-side access
-  res.cookie('XSRF-TOKEN', req.session.csrfToken, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  });
-  
-  // Skip all CSRF validation
+  // No CSRF token generation or validation
   next();
 });
 
