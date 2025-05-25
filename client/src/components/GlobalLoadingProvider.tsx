@@ -65,10 +65,10 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     console.log('[LoadingProvider] Animation complete');
     console.log('[LoadingProvider] Scroll re-enabled after animation');
     
-    // Allow new loading actions after a short delay
+    // Allow new loading actions after a longer delay to prevent multiple screens
     setTimeout(() => {
       preventRapidShowRef.current = false;
-    }, 300);
+    }, 1000); // Increased from 300ms to 1000ms
   }, []);
   
   // Show loading screen with smart prevention of multiple triggers

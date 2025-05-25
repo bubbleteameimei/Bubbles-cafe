@@ -33,6 +33,16 @@
     opacity: 0.3 !important;
   }
   
+  /* Prevent black box flash during page transitions */
+  * {
+    transition: background-color 0.1s ease;
+  }
+  
+  /* Ensure smooth loading transitions */
+  .loading-active {
+    background-color: hsl(var(--background)) !important;
+  }
+  
   html, body, #root {
     margin: 0;
     padding: 0;
@@ -48,6 +58,7 @@
     position: relative;
     background-color: hsl(var(--background));
     box-sizing: border-box;
+    transition: opacity 0.2s ease-in-out;
     /* Improve scroll behavior */
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
