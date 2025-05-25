@@ -26,11 +26,6 @@ import {
   type UserFeedback, type InsertUserFeedback,
   type UserPrivacySettings, type InsertUserPrivacySettings,
   type NewsletterSubscription, type InsertNewsletterSubscription,
-  // Game types
-  type GameSaveRecord, type InsertGameSave,
-  type GameProgressRecord, type InsertGameProgress,
-  type GameStatsRecord, type InsertGameStats,
-  type GameSceneRecord, type GameItemRecord,
   // Tables
   posts as postsTable,
   comments,
@@ -58,11 +53,6 @@ import {
   userFeedback,
   resetTokens,
   userPrivacySettings,
-  gameSaves,
-  gameProgress,
-  gameStats,
-  gameScenes,
-  gameItems,
   type PerformanceMetric, type InsertPerformanceMetric,
   performanceMetrics
 } from "@shared/schema";
