@@ -1173,6 +1173,8 @@ export class DatabaseStorage implements IStorage {
               likes: metadata.likes || 0,
               views: metadata.views || 0,
               metadata: metadata,
+              // Ensure isCommunityPost is consistently handled
+              isCommunityPost: metadata.isCommunityPost || false,
               isAdminPost: metadata.isAdminPost || false,
               isSecret: post.isSecret || false,
               matureContent: post.matureContent || false,

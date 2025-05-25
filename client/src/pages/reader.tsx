@@ -302,6 +302,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
         } else {
           // Fetch all posts from internal API (your WordPress stories are already synced here)
           console.log('[Reader] Fetching posts...', { isCommunityContent });
+          
+          // Always use the core posts endpoint for maximum reliability
+          // We'll get both admin and community posts this way
           const response = await fetch('/api/posts?limit=100');
           if (!response.ok) {
             throw new Error('Failed to fetch posts from database');
@@ -310,7 +313,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           const data = await response.json();
           console.log('[Reader] Successfully fetched posts:', {
             totalPosts: data.posts?.length,
-            hasMore: data.hasMore
+            hasMore: data.hasMore,
+            firstPost: data.posts?.[0]?.title
           });
           
           if (!data.posts || data.posts.length === 0) {
