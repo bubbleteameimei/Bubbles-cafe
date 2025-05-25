@@ -1130,19 +1130,19 @@ export class DatabaseStorage implements IStorage {
           
           // Query to get all posts including WordPress stories with optimized Drizzle query
           console.log("[Storage] Executing optimized Drizzle query");
+          // Use a more robust query approach with only fields we know exist in the database
           const rawPosts = await db.select({
             id: postsTable.id,
             title: postsTable.title,
             content: postsTable.content,
             slug: postsTable.slug,
             excerpt: postsTable.excerpt,
-            author: postsTable.author,
             authorId: postsTable.authorId,
             createdAt: postsTable.createdAt,
-            likes: postsTable.likes,
-            views: postsTable.views,
             metadata: postsTable.metadata,
-            isAdminPost: postsTable.isAdminPost
+            isSecret: postsTable.isSecret,
+            matureContent: postsTable.matureContent,
+            themeCategory: postsTable.themeCategory
           })
           .from(postsTable)
           .orderBy(desc(postsTable.createdAt))
@@ -1155,27 +1155,33 @@ export class DatabaseStorage implements IStorage {
           const hasMore = rawPosts.length > limit;
           const paginatedPosts = rawPosts.slice(0, limit);
           
-          // Simple transformation for the clean database
-          const transformedPosts = paginatedPosts.map(post => ({
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            slug: post.slug,
-            excerpt: post.excerpt,
-            author: post.author || 'admin',
-            authorId: post.authorId,
-            createdAt: new Date(post.createdAt),
-            likes: post.likes || 0,
-            views: post.views || 0,
-            metadata: post.metadata || {},
-            isAdminPost: post.isAdminPost || false,
-            isSecret: false,
-            matureContent: false,
-            themeCategory: null,
-            readingTimeMinutes: null,
-            likesCount: post.likes || 0,
-            dislikesCount: 0
-          }));
+          // Transform posts with reliable field access
+          const transformedPosts = paginatedPosts.map(post => {
+            // Extract metadata for fields that might be stored there
+            const metadata = post.metadata || {};
+            
+            // Get values with fallbacks
+            return {
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              slug: post.slug,
+              excerpt: post.excerpt,
+              author: metadata.authorName || 'admin',
+              authorId: post.authorId,
+              createdAt: new Date(post.createdAt),
+              likes: metadata.likes || 0,
+              views: metadata.views || 0,
+              metadata: metadata,
+              isAdminPost: metadata.isAdminPost || false,
+              isSecret: post.isSecret || false,
+              matureContent: post.matureContent || false,
+              themeCategory: post.themeCategory || metadata.themeCategory || null,
+              readingTimeMinutes: metadata.readingTimeMinutes || null,
+              likesCount: metadata.likes || 0,
+              dislikesCount: metadata.dislikes || 0
+            };
+          });
           
           console.log(`[Storage] Transformed ${transformedPosts.length} posts, hasMore: ${hasMore}`);
           
