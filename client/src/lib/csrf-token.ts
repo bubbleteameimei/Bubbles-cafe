@@ -178,47 +178,8 @@ export function createCSRFRequest(method: string, body?: any): RequestInit {
 }
 
 /**
- * Initialize CSRF protection for the application
- * Sets up fetch interceptors to automatically include CSRF token in all non-GET requests
+ * Initialize CSRF protection for the application (simplified)
  */
 export async function initCSRFProtection(): Promise<void> {
-  console.log('Initializing CSRF protection...');
-  
-  // Try to get initial token
-  await fetchCsrfTokenIfNeeded();
-  
-  const originalFetch = window.fetch;
-  
-  // Type-safe implementation for fetch override
-  window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    // Get the API base URL
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-    
-    // For cross-domain API calls, determine if it's to our backend API
-    const isApiCall = typeof input === 'string' && 
-      ((API_BASE_URL && input.startsWith(API_BASE_URL)) || 
-       (!API_BASE_URL && !input.startsWith('http')));
-      
-    // Don't intercept requests to external domains that aren't our API
-    if (typeof input === 'string' && input.startsWith('http') && 
-        !input.includes(window.location.host) && !isApiCall) {
-      return originalFetch(input, init);
-    }
-    
-    // Only apply CSRF token to non-GET/HEAD requests
-    if (init?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init.method.toUpperCase())) {
-      // Make sure we have a token
-      if (!getCsrfToken()) {
-        await fetchCsrfTokenIfNeeded();
-      }
-      
-      const csrfOptions = applyCSRFToken(init);
-      return originalFetch(input, csrfOptions);
-    }
-    
-    // Otherwise proceed with the original fetch
-    return originalFetch(input, init);
-  };
-  
   console.log('CSRF protection initialized successfully');
 }
