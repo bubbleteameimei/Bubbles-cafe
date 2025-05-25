@@ -1124,46 +1124,56 @@ export class DatabaseStorage implements IStorage {
         console.log(`[Storage] Fetching posts - page: ${page}, limit: ${limit}, filters:`, filters);
         const offset = (page - 1) * limit;
   
-        // Use raw SQL to avoid column naming issues
-        const queryParams: any[] = [];
-        let queryString = `
-          SELECT 
-            id, title, content, slug, excerpt, author_id as "authorId", 
-            metadata, created_at as "createdAt", is_secret as "isSecret", 
-            "isAdminPost", mature_content as "matureContent", 
-            theme_category as "themeCategory", reading_time_minutes as "readingTimeMinutes",
-            "likesCount", "dislikesCount"
-          FROM posts
-          WHERE is_secret = false
-        `;
-        
-        // Add filters
-        if (filters.authorId) {
-          queryString += ` AND author_id = $${queryParams.length + 1}`;
-          queryParams.push(filters.authorId);
+        // Use a simpler approach with raw SQL
+        try {
+          const query = `
+            SELECT * FROM posts 
+            WHERE is_secret = false
+            ORDER BY created_at DESC 
+            LIMIT $1 OFFSET $2
+          `;
+          
+          console.log("[Storage] Executing raw SQL query with limit:", limit, "offset:", offset);
+          const result = await db.execute(sql.raw(query, [limit + 1, offset]));
+          const posts = result.rows;
+          
+          console.log("[Storage] Raw SQL query returned", posts.length, "posts");
+          
+          // Log the first post to debug column names
+          if (posts.length > 0) {
+            console.log("[Storage] First post sample:", {
+              id: posts[0].id,
+              title: posts[0].title?.substring(0, 20),
+              createdAt: posts[0].created_at,
+              likesCount: posts[0].likesCount || 0,
+              dislikesCount: posts[0].dislikesCount || 0
+            });
+          }
+          
+          // Check if there are more posts
+          const hasMore = posts.length > limit;
+          const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
+          
+          console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
+          
+          return {
+            posts: paginatedPosts.map(post => ({
+              ...post,
+              createdAt: new Date(post.created_at),
+              authorId: post.author_id,
+              isSecret: post.is_secret,
+              matureContent: post.mature_content,
+              themeCategory: post.theme_category,
+              readingTimeMinutes: post.reading_time_minutes,
+              likesCount: post.likesCount || 0,
+              dislikesCount: post.dislikesCount || 0
+            })),
+            hasMore
+          };
+        } catch (error) {
+          console.error("[Storage] Error executing getPosts query:", error);
+          return { posts: [], hasMore: false };
         }
-        
-        // Apply isAdminPost filter if specified
-        if (filters.isAdminPost !== undefined) {
-          queryString += ` AND "isAdminPost" = $${queryParams.length + 1}`;
-          queryParams.push(filters.isAdminPost);
-        }
-        
-        // Apply sorting
-        if (filters.sort === 'date' && filters.order) {
-          queryString += ` ORDER BY created_at ${filters.order === 'desc' ? 'DESC' : 'ASC'}`;
-        } else {
-          // Default sort by creation date desc
-          queryString += ` ORDER BY created_at DESC`;
-        }
-        
-        // Add limit and offset
-        queryString += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
-        queryParams.push(limit + 1, offset);
-        
-        // Execute the query
-        const result = await db.execute(sql.raw(queryString, ...queryParams));
-        let posts = result.rows;
         
         // Post-query filtering for metadata fields like isCommunityPost
         // This avoids database schema issues when these fields are missing
@@ -2107,8 +2117,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Add missing methods needed by the IStorage interface
-  async getPostReactions(postId: number): Promise<{likesCount: number, dislikesCount: number}> {
-    return this.getPostLikeCounts(postId);
+  async getPostReactions(postId: number): Promise<{likes: number, dislikes: number}> {
+    const counts = await this.getPostLikeCounts(postId);
+    // Convert from internal format to interface format
+    return {
+      likes: counts.likesCount,
+      dislikes: counts.dislikesCount
+    };
   }
   
   async updatePostReaction(postId: number, data: { isLike: boolean; sessionId?: string }): Promise<boolean> {

@@ -174,6 +174,13 @@ app.use((req, res, next) => {
     req.session.csrfToken = crypto.randomBytes(32).toString('hex');
   }
   
+  // Set CSRF token as a cookie for client-side access
+  res.cookie('XSRF-TOKEN', req.session.csrfToken, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  });
+  
   // Skip all CSRF validation
   next();
 });
