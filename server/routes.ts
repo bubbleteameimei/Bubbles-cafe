@@ -28,6 +28,7 @@ import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
 import * as bcrypt from 'bcryptjs';
+
 import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
@@ -367,26 +368,8 @@ export function registerRoutes(app: Express): Server {
   app.use(session.default(sessionSettings));
   app.use(compression());
   
-  // Setup CSRF protection after session middleware
-  app.use(setCsrfToken(app.get('env') === 'production'));
-  app.use(csrfTokenToLocals);
-  
-  // Apply CSRF validation to all POST/PUT/DELETE/PATCH requests
-  app.use('/api', validateCsrfToken({
-    // Exclude specific paths that don't need CSRF protection (such as webhooks or specific APIs)
-    ignorePaths: [
-      '/health', 
-      '/config/public', 
-      '/csrf-test-bypass',
-      '/newsletter/subscribe'
-    ],
-  }));
-
   // Set up auth BEFORE routes
   setupAuth(app);
-  
-  // Register CSRF test routes after CSRF middleware so bypass works
-  app.use('/api', csrfTestRoutes);
 
   // API Routes - Add these before Vite middleware
   app.post("/api/posts/community", async (req, res) => {
