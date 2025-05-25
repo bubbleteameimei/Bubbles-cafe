@@ -840,7 +840,8 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts", cacheControl(300), async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
+      // Set limit to 100 to ensure all 21 WordPress stories are returned in one request
+      const limit = Number(req.query.limit) || 100;
       const filter = req.query.filter as string | undefined;
       const isAdminPost = req.query.isAdminPost === 'true' ? true : 
                          req.query.isAdminPost === 'false' ? false : undefined;
@@ -865,7 +866,8 @@ export function registerRoutes(app: Express): Server {
       
       console.log('[GET /api/posts] Using filter options:', filterOptions);
       
-      // Pass the filter options to storage.getPosts
+      // Pass the filter options to storage.getPosts with increased limit
+      // This ensures all WordPress posts are retrieved
       const result = await storage.getPosts(page, limit, filterOptions);
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
