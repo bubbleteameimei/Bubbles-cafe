@@ -90,8 +90,7 @@ const CookieManagementPage = React.lazy(() => import('./pages/settings/cookie-ma
 const QuickSettingsPage = React.lazy(() => import('./pages/settings/quick-settings'));
 const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'));
 
-// Game pages - lazy loaded
-const GameTestPage = React.lazy(() => import('./pages/game-test'));
+
 
 // Demo pages - lazy loaded
 const ErrorDemoPage = React.lazy(() => import('./pages/error-demo'));
@@ -260,8 +259,7 @@ const AppContent = () => {
               <ProtectedRoute path="/profile" component={ProfilePage} />
               <Route path="/recommendations" component={RecommendationsPage} />
 
-              {/* Game Routes */}
-              <Route path="/game-test" component={GameTestPage} />
+
               
               {/* Demo Routes */}
               <Route path="/error-demo" component={ErrorDemoPage} />
