@@ -66,9 +66,33 @@ export function LikeDislike({
   // Initialize state from local storage or props
   const [liked, setLiked] = useState(userLikeStatus === 'like' || initialInteraction.liked);
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike' || initialInteraction.disliked);
-  const [stats, setStats] = useState<ReactionStats>({ likesCount: 0, dislikesCount: 0 });
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Initialize stats from localStorage if available for instant loading
+  const getStoredStats = () => {
+    try {
+      const stored = localStorage.getItem(`post-stats-${postId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { likesCount: parsed.likesCount || 0, dislikesCount: parsed.dislikesCount || 0 };
+      }
+    } catch (error) {
+      console.warn('Failed to parse stored stats:', error);
+    }
+    return { likesCount: 0, dislikesCount: 0 };
+  };
+  
+  const [stats, setStats] = useState<ReactionStats>(getStoredStats());
+  const [isLoading, setIsLoading] = useState(false); // Start with false for instant display
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Function to persist stats to localStorage
+  const persistStats = (newStats: ReactionStats) => {
+    try {
+      localStorage.setItem(`post-stats-${postId}`, JSON.stringify(newStats));
+    } catch (error) {
+      console.warn('Failed to persist stats:', error);
+    }
+  };
 
   // Fetch the current reaction counts from the server
   useEffect(() => {
@@ -116,14 +140,18 @@ export function LikeDislike({
         console.log(`[LikeDislike] Received counts for post ${postId}:`, data);
         
         if (typeof data.likesCount === 'number' && typeof data.dislikesCount === 'number') {
-          setStats({
+          const newStats = {
             likesCount: data.likesCount,
             dislikesCount: data.dislikesCount
-          });
+          };
+          setStats(newStats);
+          persistStats(newStats);
         } else {
           console.error(`[LikeDislike] Invalid data format from server:`, data);
           // Use default zero counts on invalid format
-          setStats({ likesCount: 0, dislikesCount: 0 });
+          const defaultStats = { likesCount: 0, dislikesCount: 0 };
+          setStats(defaultStats);
+          persistStats(defaultStats);
         }
       } catch (error) {
         // Don't log as error for 404s since we handle those separately
@@ -245,68 +273,71 @@ export function LikeDislike({
     // Prevent multiple rapid clicks
     if (isProcessing) return;
     
-    const currentLiked = liked;
-    const currentDisliked = disliked;
-    const newLiked = !currentLiked;
-    const originalStats = { ...stats };
-    
     try {
       setIsProcessing(true);
       
-      // Calculate expected count changes with strict mathematical reasoning
-      let expectedLikes = stats.likesCount;
-      let expectedDislikes = stats.dislikesCount;
+      // Capture current state for perfect toggle logic
+      const wasLiked = liked;
+      const wasDisliked = disliked;
+      const currentStats = { ...stats };
       
-      if (!currentLiked && newLiked) {
-        // Adding a like (was not liked before)
-        expectedLikes += 1;
-        if (currentDisliked) {
-          // Switching from dislike to like
-          expectedDislikes -= 1;
-          setDisliked(false);
+      // Calculate new state with absolute mathematical certainty
+      const willBeLiked = !wasLiked;
+      const willBeDisliked = wasDisliked && !willBeLiked ? false : wasDisliked;
+      
+      let newLikesCount = currentStats.likesCount;
+      let newDislikesCount = currentStats.dislikesCount;
+      
+      // Mathematical logic - only change counts when state actually changes
+      if (wasLiked && !willBeLiked) {
+        // Removing a like
+        newLikesCount = Math.max(0, newLikesCount - 1);
+      } else if (!wasLiked && willBeLiked) {
+        // Adding a like
+        newLikesCount = newLikesCount + 1;
+        
+        // If switching from dislike to like, also remove dislike
+        if (wasDisliked) {
+          newDislikesCount = Math.max(0, newDislikesCount - 1);
         }
-        setLiked(true);
-      } else if (currentLiked && !newLiked) {
-        // Removing a like (was liked before)
-        expectedLikes -= 1;
-        setLiked(false);
       }
       
-      // Update stats immediately with mathematical logic
-      setStats({
-        likesCount: Math.max(0, expectedLikes),
-        dislikesCount: Math.max(0, expectedDislikes)
-      });
+      // Update UI state instantly
+      setLiked(willBeLiked);
+      setDisliked(willBeDisliked);
       
-      // Save interaction to localStorage
-      saveUserInteraction(postId, newLiked, currentDisliked && !newLiked ? false : false);
+      const finalStats = {
+        likesCount: newLikesCount,
+        dislikesCount: newDislikesCount
+      };
       
-      // Send to server
-      const success = await sendReaction(newLiked ? true : null);
+      setStats(finalStats);
+      persistStats(finalStats);
       
-      if (success && newLiked) {
+      // Save to localStorage
+      saveUserInteraction(postId, willBeLiked, willBeDisliked);
+      
+      // Send to server (async, won't affect UI)
+      const success = await sendReaction(willBeLiked ? true : null);
+      
+      if (success && willBeLiked) {
         toast({
           description: "Thanks for liking! 🥰"
         });
       }
       
-      // Call onLike callback
-      onLike?.(newLiked);
+      // Call callback
+      onLike?.(willBeLiked);
+      
     } catch (error) {
-      console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
+      console.error(`[LikeDislike] Error handling like:`, error);
       toast({
         title: "Error updating like",
         description: "Please try again",
         variant: "destructive"
       });
-      
-      // Revert UI state on error
-      setLiked(currentLiked);
-      setDisliked(currentDisliked);
-      setStats(originalStats);
     } finally {
-      // Add a small delay to prevent rapid clicking
-      setTimeout(() => setIsProcessing(false), 500);
+      setTimeout(() => setIsProcessing(false), 300);
     }
   };
 
@@ -314,68 +345,71 @@ export function LikeDislike({
     // Prevent multiple rapid clicks
     if (isProcessing) return;
     
-    const currentLiked = liked;
-    const currentDisliked = disliked;
-    const newDisliked = !currentDisliked;
-    const originalStats = { ...stats };
-    
     try {
       setIsProcessing(true);
       
-      // Calculate expected count changes with strict mathematical reasoning
-      let expectedLikes = stats.likesCount;
-      let expectedDislikes = stats.dislikesCount;
+      // Capture current state for perfect toggle logic
+      const wasLiked = liked;
+      const wasDisliked = disliked;
+      const currentStats = { ...stats };
       
-      if (!currentDisliked && newDisliked) {
-        // Adding a dislike (was not disliked before)
-        expectedDislikes += 1;
-        if (currentLiked) {
-          // Switching from like to dislike
-          expectedLikes -= 1;
-          setLiked(false);
+      // Calculate new state with absolute mathematical certainty
+      const willBeDisliked = !wasDisliked;
+      const willBeLiked = wasLiked && !willBeDisliked ? false : wasLiked;
+      
+      let newLikesCount = currentStats.likesCount;
+      let newDislikesCount = currentStats.dislikesCount;
+      
+      // Mathematical logic - only change counts when state actually changes
+      if (wasDisliked && !willBeDisliked) {
+        // Removing a dislike
+        newDislikesCount = Math.max(0, newDislikesCount - 1);
+      } else if (!wasDisliked && willBeDisliked) {
+        // Adding a dislike
+        newDislikesCount = newDislikesCount + 1;
+        
+        // If switching from like to dislike, also remove like
+        if (wasLiked) {
+          newLikesCount = Math.max(0, newLikesCount - 1);
         }
-        setDisliked(true);
-      } else if (currentDisliked && !newDisliked) {
-        // Removing a dislike (was disliked before)
-        expectedDislikes -= 1;
-        setDisliked(false);
       }
       
-      // Update stats immediately with mathematical logic
-      setStats({
-        likesCount: Math.max(0, expectedLikes),
-        dislikesCount: Math.max(0, expectedDislikes)
-      });
+      // Update UI state instantly
+      setLiked(willBeLiked);
+      setDisliked(willBeDisliked);
       
-      // Save interaction to localStorage
-      saveUserInteraction(postId, currentLiked && !newDisliked ? false : false, newDisliked);
+      const finalStats = {
+        likesCount: newLikesCount,
+        dislikesCount: newDislikesCount
+      };
       
-      // Send to server
-      const success = await sendReaction(newDisliked ? false : null);
+      setStats(finalStats);
+      persistStats(finalStats);
       
-      if (success && newDisliked) {
+      // Save to localStorage
+      saveUserInteraction(postId, willBeLiked, willBeDisliked);
+      
+      // Send to server (async, won't affect UI)
+      const success = await sendReaction(willBeDisliked ? false : null);
+      
+      if (success && willBeDisliked) {
         toast({
           description: "Thanks for the feedback! 😔"
         });
       }
       
-      // Call onDislike callback
-      onDislike?.(newDisliked);
+      // Call callback
+      onDislike?.(willBeDisliked);
+      
     } catch (error) {
-      console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
+      console.error(`[LikeDislike] Error handling dislike:`, error);
       toast({
         title: "Error updating dislike",
         description: "Please try again",
         variant: "destructive"
       });
-      
-      // Revert UI state on error
-      setLiked(currentLiked);
-      setDisliked(currentDisliked);
-      setStats(originalStats);
     } finally {
-      // Add a small delay to prevent rapid clicking
-      setTimeout(() => setIsProcessing(false), 500);
+      setTimeout(() => setIsProcessing(false), 300);
     }
   };
 
