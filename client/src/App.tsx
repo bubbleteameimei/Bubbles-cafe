@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
-import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingOverlay';
+import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingProvider';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';

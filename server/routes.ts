@@ -857,7 +857,7 @@ export function registerRoutes(app: Express): Server {
       // Pass the filter options to storage.getPosts with increased limit
       // This ensures all WordPress posts are retrieved
       const result = await storage.getPosts(page, limit, filterOptions);
-```text
+
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
       // Simplified filtering logic to ensure proper visibility
@@ -1690,7 +1690,7 @@ export function registerRoutes(app: Express): Server {
           }))
         });
       }
-      res.status(500).json({ message: "Failed to create reply" });```text
+      res.status(500).json({ message: "Failed to create reply" });
     }
   });
 
@@ -2336,16 +2336,14 @@ export function registerRoutes(app: Express): Server {
       // Verify post exists if postId provided
       if (postId) {
         try {
-          const result = await db.query.posts.findFirst({
-            where: eq(posts.id, postId)
-          });
+          const [post] = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
 
-          if (!result) {
+          if (!post) {
             console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
             return res.status(404).json({ message: "Post not found" });
           }
 
-          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
+          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, post.title);
         } catch (dbError) {
           console.error("Database error verifying post:", dbError);
           console.log("Continuing with recommendations anyway");
@@ -2409,13 +2407,12 @@ export function registerRoutes(app: Express): Server {
             title: "The Last Customer",
             slug: "the-last-customer",
             excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
-            readingTime: 11,
-            authorName: 'Anonymous',
-            views: 95,
-            likes: 31
-          }
-        ]);
-      }
+          readingTime: 11,
+          authorName: 'Anonymous',
+          views: 95,
+          likes: 31
+        }
+      ]);
     } catch (error) {
       console.error("Error in recommendations endpoint:", error);
       // Return fallback recommendations
@@ -2576,8 +2573,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/admin/notifications", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });
-      }
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });      }
 
       const notifications = await storage.getUnreadAdminNotifications();
       res.json(notifications);
