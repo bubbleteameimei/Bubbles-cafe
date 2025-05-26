@@ -1,53 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { useLoading } from './GlobalLoadingProvider';
+import { useGlobalLoadingOverlay } from './GlobalLoadingOverlay';
 
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
   minLoadingTime?: number;
 }
 
-export function EnhancedPageTransition({
-  children,
-  minLoadingTime = 850, // Reduced minimum loading time for better user experience (850ms is enough for animation)
+export function EnhancedPageTransition({ 
+  children, 
+  minLoadingTime = 800 
 }: EnhancedPageTransitionProps) {
   const [location] = useLocation();
   const [currentChildren, setCurrentChildren] = useState(children);
-  const prevLocationRef = useRef<string>(location);
+  const prevLocationRef = useRef(location);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const { showLoading, hideLoading } = useLoading();
-  
+  const { showLoadingOverlay, hideLoadingOverlay, setLoadingMessage } = useGlobalLoadingOverlay();
+
   // Simple page transition using just React state
   useEffect(() => {
     // Only trigger transition on actual location changes
     if (location !== prevLocationRef.current) {
-      // Start timing for minimum loading display
-      startTimeRef.current = Date.now();
-      
-      // Disable loading screen during page transitions to prevent grey box
-      // showLoading();
-      
-      // Clear any existing timeouts
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      
-      // Set a timeout to switch content
-      timeoutRef.current = setTimeout(() => {
-        // Calculate how much longer we need to show the loading screen
-        const elapsed = Date.now() - startTimeRef.current;
-        const remaining = Math.max(0, minLoadingTime - elapsed);
-        
-        // After minimum loading time, swap in the new content 
+      console.log('[EnhancedPageTransition] Location changed, showing loading screen');
+      setLoadingMessage('Loading page...');
+      showLoadingOverlay();
+
+      // Set a minimum loading time
+      setTimeout(() => {
+        const startTime = Date.now();
+
+        // Simulate some loading time if needed
+        const remaining = Math.max(0, minLoadingTime - (Date.now() - startTime));
+
         setTimeout(() => {
-          // Update the child component to the new route's content
           setCurrentChildren(children);
-          
+
           // Give the DOM a moment to update before hiding loading screen
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              // hideLoading(); // Disabled to prevent grey box during transitions
+              hideLoadingOverlay();
               prevLocationRef.current = location;
             });
           });
@@ -57,15 +48,15 @@ export function EnhancedPageTransition({
       // If it's an initial render, just show the content
       setCurrentChildren(children);
     }
-    
+
     // Cleanup on unmount
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [location, children, minLoadingTime, showLoading, hideLoading]);
-  
+  }, [location, children, minLoadingTime, showLoadingOverlay, hideLoadingOverlay, setLoadingMessage]);
+
   return (
     <div className="page-transition-container">
       {/* Current page content */}

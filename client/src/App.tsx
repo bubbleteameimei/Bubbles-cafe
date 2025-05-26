@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
-import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingProvider';
+import GlobalLoadingProvider, { useLoading } from './components/GlobalLoadingOverlay';
 import { queryClient } from './lib/queryClient';
 import { Toaster } from './components/ui/toaster';
 import { Sonner } from './components/ui/sonner';
@@ -159,10 +159,10 @@ const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [location] = useLocation();
   const locationStr = location.toString();
-  
+
   // Get loading functions from context after provider is initialized
   const { showLoading, hideLoading } = useLoading();
-  
+
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
@@ -171,28 +171,28 @@ const AppContent = () => {
     locationStr.includes('/errors/500') || 
     locationStr.includes('/errors/503') || 
     locationStr.includes('/errors/504');
-  
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-  
+
   // Track page transitions and always show loading animation between pages
   useEffect(() => {
     // Store the current location to detect actual navigation
     const prevLocation = sessionStorage.getItem('current-location');
-    
+
     // Only show loading when actually changing pages (not on initial load)
     if (prevLocation && prevLocation !== location) {
       // Show loading animation for page transitions
       showLoading();
     }
-    
+
     // Update current location in session storage
     sessionStorage.setItem('current-location', location);
-    
+
     // The loading screen will automatically be hidden after the animation completes
   }, [location, showLoading]);
-  
+
   // If we're on an error page, render only the error page without layout
   if (isErrorPage) {
     return (
@@ -208,7 +208,7 @@ const AppContent = () => {
       </ErrorBoundary>
     );
   }
-  
+
   // For all other pages, render with normal layout
   return (
     <div className="relative min-h-screen flex flex-col w-full">
@@ -252,7 +252,7 @@ const AppContent = () => {
               <Route path="/privacy" component={PrivacyPage} />
               <Route path="/search" component={SearchResultsPage} />
               <Route path="/notifications" component={NotificationsPage} />
-              
+
               <Route path="/pixel-art" component={PixelArtPage} />
               {/* Export test route removed */}
               <Route path="/bookmarks" component={BookmarksPage} />
@@ -260,7 +260,7 @@ const AppContent = () => {
               <Route path="/recommendations" component={RecommendationsPage} />
 
 
-              
+
               {/* Demo Routes */}
               <Route path="/error-demo" component={ErrorDemoPage} />
               <Route path="/like-dislike-test" component={LikeDislikeTestPage} />
@@ -284,7 +284,7 @@ const AppContent = () => {
               <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
               <Route path="/support/guidelines" component={GuidelinesPage} />
               <Route path="/csrf-test" component={CsrfTestPage} />
-              
+
               {/* Settings Routes */}
               <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
               <ProtectedRoute path="/settings/connected-accounts" component={ConnectedAccountsPage} />
@@ -331,7 +331,7 @@ const AppContent = () => {
               <ProtectedRoute path="/admin/wordpress-sync" component={AdminWordPressSyncPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/content-management" component={AdminContentManagementPage} requireAdmin={true} />
               <ProtectedRoute path="/admin/themes" component={AdminThemesPage} requireAdmin={true} />
-                
+
               {/* 404 fallback */}
               <Route>
                 <NotFoundRouteHandler>
@@ -352,7 +352,7 @@ function App() {
   // Setup performance monitoring
   usePerformanceMonitoring();
   const [location] = useLocation();
-  
+
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
@@ -360,11 +360,11 @@ function App() {
   useEffect(() => {
     // Initialize the sync service first
     initWordPressSync();
-    
+
     // Defer preloading content until after the initial render
     preloadWordPressPostsDeferred();
   }, []);
-  
+
   // Create a FeedbackButton wrapper component to handle visibility logic
   const ConditionalFeedbackButton = () => {
     const [currentPath] = useLocation();
@@ -376,16 +376,16 @@ function App() {
       currentPath.startsWith("/community-story") || 
       currentPath === "/community" ||
       currentPath === "/game-test";
-      
+
     return !shouldHideButton ? <FeedbackButton /> : null;
   };
-  
+
   // Function to handle data refresh
   const handleDataRefresh = async () => {
     // Invalidate all queries to refresh data
     await queryClient.invalidateQueries();
   };
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -421,7 +421,7 @@ function App() {
                             )}
                             {/* Conditionally show FeedbackButton */}
                             <ConditionalFeedbackButton />
-                            
+
                             {/* Toast notifications */}
                             <Toaster />
                             <Sonner position="bottom-left" className="fixed-sonner" />
