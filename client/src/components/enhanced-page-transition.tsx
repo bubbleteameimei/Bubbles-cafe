@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { useGlobalLoadingOverlay } from './GlobalLoadingOverlay';
 
 interface EnhancedPageTransitionProps {
   children: React.ReactNode;
@@ -15,47 +14,26 @@ export function EnhancedPageTransition({
   const [currentChildren, setCurrentChildren] = useState(children);
   const prevLocationRef = useRef(location);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { showLoadingOverlay, hideLoadingOverlay, setLoadingMessage } = useGlobalLoadingOverlay();
 
   // Simple page transition using just React state
   useEffect(() => {
     // Only trigger transition on actual location changes
     if (location !== prevLocationRef.current) {
-      console.log('[EnhancedPageTransition] Location changed, showing loading screen');
-      setLoadingMessage('Loading page...');
-      showLoadingOverlay();
-
-      // Set a minimum loading time
-      setTimeout(() => {
-        const startTime = Date.now();
-
-        // Simulate some loading time if needed
-        const remaining = Math.max(0, minLoadingTime - (Date.now() - startTime));
-
-        setTimeout(() => {
-          setCurrentChildren(children);
-
-          // Give the DOM a moment to update before hiding loading screen
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              hideLoadingOverlay();
-              prevLocationRef.current = location;
-            });
-          });
-        }, remaining);
-      }, 50); // Small delay to ensure loading screen renders first
+      // Simple instant page transition without any loading delays
+      setCurrentChildren(children);
+      prevLocationRef.current = location;
     } else {
       // If it's an initial render, just show the content
       setCurrentChildren(children);
     }
-
+    
     // Cleanup on unmount
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [location, children, minLoadingTime, showLoadingOverlay, hideLoadingOverlay, setLoadingMessage]);
+  }, [location, children]);
 
   return (
     <div className="page-transition-container">
@@ -66,5 +44,3 @@ export function EnhancedPageTransition({
     </div>
   );
 }
-
-export default EnhancedPageTransition;
