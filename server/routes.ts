@@ -152,9 +152,9 @@ export function registerRoutes(app: Express): Server {
   // Apply rate limiting to specific routes
   app.use("/api/login", authLimiter);
   app.use("/api/register", authLimiter);
-
+  
   // Use more generous rate limits for analytics endpoints
-
+  
   // Health check endpoint for deployment testing
   app.get("/api/health", (req: Request, res: Response) => {
     res.status(200).json({
@@ -164,7 +164,7 @@ export function registerRoutes(app: Express): Server {
       csrfToken: req.session.csrfToken || null
     });
   });
-
+  
   // Add a special CSRF-free endpoint for direct API access
   app.post("/api/csrf-test-bypass/react/:postId", async (req: Request, res: Response) => {
     try {
@@ -172,18 +172,18 @@ export function registerRoutes(app: Express): Server {
       if (isNaN(postId) || postId <= 0) {
         return res.status(400).json({ error: "Invalid post ID" });
       }
-
+      
       const { isLike } = req.body;
       if (typeof isLike !== 'boolean') {
         return res.status(400).json({ error: "Invalid reaction data - isLike must be a boolean" });
       }
-
+      
       // Check if post exists
       const post = await storage.getPostById(postId);
       if (!post) {
         return res.status(404).json({ error: "Post not found" });
       }
-
+      
       // Update directly in the database for simplicity
       if (isLike) {
         await db.update(posts)
@@ -198,7 +198,7 @@ export function registerRoutes(app: Express): Server {
           })
           .where(eq(posts.id, postId));
       }
-
+      
       // Get updated counts
       const [updatedCounts] = await db.select({
         likes: posts.likesCount,
@@ -206,7 +206,7 @@ export function registerRoutes(app: Express): Server {
       })
       .from(posts)
       .where(eq(posts.id, postId));
-
+      
       // Return success with updated counts
       res.json({
         success: true,
@@ -221,7 +221,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to process reaction" });
     }
   });
-
+  
   // Add a special CSRF-free endpoint for getting reaction counts
   app.get("/api/csrf-test-bypass/reactions/:postId", async (req: Request, res: Response) => {
     try {
@@ -229,7 +229,7 @@ export function registerRoutes(app: Express): Server {
       if (isNaN(postId) || postId <= 0) {
         return res.status(400).json({ error: "Invalid post ID" });
       }
-
+      
       // Get current counts from database
       const [counts] = await db.select({
         likes: posts.likesCount,
@@ -237,11 +237,11 @@ export function registerRoutes(app: Express): Server {
       })
       .from(posts)
       .where(eq(posts.id, postId));
-
+      
       if (!counts) {
         return res.status(404).json({ error: "Post not found" });
       }
-
+      
       // Return current counts
       res.json({
         postId,
@@ -255,7 +255,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to get reaction counts" });
     }
   });
-
+  
   // Mock data endpoints for temporary use while database is being fixed
   app.get("/api/mock/recent-posts", (_req: Request, res: Response) => {
     console.log("[DEBUG] Using mock data for recent posts");
@@ -292,7 +292,7 @@ export function registerRoutes(app: Express): Server {
       }
     ]);
   });
-
+  
   app.get("/api/mock/recommendations", (_req: Request, res: Response) => {
     console.log("[DEBUG] Using mock data for recommendations");
     res.json([
@@ -328,7 +328,7 @@ export function registerRoutes(app: Express): Server {
       }
     ]);
   });
-
+  
   // Public config endpoint for environment testing (safe values only)
   app.get("/api/config/public", (_req: Request, res: Response) => {
     res.status(200).json({
@@ -342,7 +342,7 @@ export function registerRoutes(app: Express): Server {
     });
   });
   app.use("/api/analytics/vitals", analyticsLimiter);
-
+  
   // Apply general API rate limiting (except for paths with their own limiters)
   app.use("/api", (req, res, next) => {
     // Skip if the path already has a dedicated rate limiter
@@ -369,7 +369,7 @@ export function registerRoutes(app: Express): Server {
   };
   app.use(session.default(sessionSettings));
   app.use(compression());
-
+  
   // Set up auth BEFORE routes
   setupAuth(app);
 
@@ -419,16 +419,16 @@ export function registerRoutes(app: Express): Server {
         ipAddress: req.ip || 'unknown', // Store IP for moderation purposes (anonymized in logs)
         sanitized: sanitizedContent !== content // Flag if content was sanitized
       };
-
+      
       console.log('[POST /api/posts/community] Metadata prepared:', {
         ...metadata,
         ipAddress: 'REDACTED' // Don't log IP addresses
       });
-
+      
       // Generate an excerpt from the sanitized content
       const excerpt = stripHtml(sanitizedContent).substring(0, 150) + 
                       (sanitizedContent.length > 150 ? '...' : '');
-
+      
       const postData = {
         title: sanitizedTitle,
         content: sanitizedContent,
@@ -457,7 +457,7 @@ export function registerRoutes(app: Express): Server {
         slug: validatedData.slug,
         authorId: validatedData.authorId
       });
-
+      
       const post = await storage.createPost(validatedData);
 
       if (!post) {
@@ -469,7 +469,7 @@ export function registerRoutes(app: Express): Server {
         title: post.title,
         slug: post.slug
       });
-
+      
       res.status(201).json(post);
     } catch (error) {
       console.error("[POST /api/posts/community] Error:", error);
@@ -497,7 +497,7 @@ export function registerRoutes(app: Express): Server {
       const search = req.query.search as string;
       const userId = req.query.author ? Number(req.query.author) : undefined;
       const featured = req.query.featured === 'true';
-
+      
       console.log('[GET /api/posts/community] Request params:', { 
         page, limit, category, sort, order, search, userId, featured 
       });
@@ -520,7 +520,7 @@ export function registerRoutes(app: Express): Server {
         const processedPosts = await Promise.all(result.posts.map(async post => {
           // Extract metadata values or provide defaults
           const metadata = post.metadata || {};
-
+          
           // Get the actual author information from the database if we have authorId
           let author = null;
           if (post.authorId) {
@@ -531,14 +531,14 @@ export function registerRoutes(app: Express): Server {
               console.log(`[Community Posts] Author not found for post ${post.id}, using null`);
             }
           }
-
+          
           // Only include posts that are true community posts and not admin posts
           // Double-check in case the database query didn't filter properly
           if (metadata && (metadata as any).isAdminPost === true) {
             console.log(`[Community Posts] Filtering out admin post: ${post.id}`);
             return null; // This post will be filtered out below
           }
-
+          
           return {
             ...post,
             author: author ? {
@@ -569,7 +569,7 @@ export function registerRoutes(app: Express): Server {
 
         // Filter out any null entries (admin posts that might have slipped through)
         const filteredPosts = processedPosts.filter(post => post !== null);
-
+        
         return res.json({
           posts: filteredPosts,
           hasMore: result.hasMore,
@@ -578,7 +578,7 @@ export function registerRoutes(app: Express): Server {
         });
       } catch (dbError) {
         console.error("[GET /api/posts/community] Database error:", dbError);
-
+        
         // Fallback to empty response if database query fails
         return res.json({
           posts: [],
@@ -592,30 +592,30 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch community posts" });
     }
   });
-
+  
   // Add endpoint for fetching a specific community post by slug
   app.get("/api/posts/community/:slug", async (req, res) => {
     try {
       const { slug } = req.params;
       console.log(`[GET /api/posts/community/${slug}] Fetching community post by slug`);
-
+      
       // Fetch the post with the given slug
       const post = await storage.getPost(slug);
-
+      
       if (!post) {
         return res.status(404).json({ message: "Community post not found" });
       }
-
+      
       // Verify this is a community post (via metadata)
       const metadata = post.metadata || {};
       // Check if isCommunityPost flag is set in metadata
       const isCommunityPost = (metadata as any)?.isCommunityPost === true;
-
+      
       if (!isCommunityPost) {
         console.log(`[GET /api/posts/community/${slug}] Post found but is not a community post`);
         return res.status(404).json({ message: "Community post not found" });
       }
-
+      
       // Get the author information if available
       let author = null;
       if (post.authorId) {
@@ -625,7 +625,7 @@ export function registerRoutes(app: Express): Server {
           console.log(`[GET /api/posts/community/${slug}] Author not found, using default`);
         }
       }
-
+      
       // Return the post with additional fields
       const response = {
         ...post,
@@ -647,14 +647,14 @@ export function registerRoutes(app: Express): Server {
         isBookmarked: false, // Would be populated based on user in production
         readingTimeMinutes: post.readingTimeMinutes || Math.ceil(post.content.length / 1000)
       };
-
+      
       res.json(response);
     } catch (error) {
       console.error(`[GET /api/posts/community/:slug] Error:`, error);
       res.status(500).json({ message: "Failed to fetch community post" });
     }
   });
-
+  
   // Admin API for fetching all posts with theme data for theme management
   app.get('/api/posts/admin/themes', isAuthenticated, async (req, res) => {
     try {
@@ -663,16 +663,16 @@ export function registerRoutes(app: Express): Server {
         console.log('[GET /api/posts/admin/themes] No user ID in request:', req.user);
         return res.status(401).json({ error: 'Unauthorized' });
       }
-
+      
       // The isAuthenticated middleware already confirms authentication, just check admin status
       if (!req.user.isAdmin) {
         console.log('[GET /api/posts/admin/themes] User not admin:', req.user.id);
         return res.status(403).json({ error: 'Forbidden' });
       }
-
+      
       // Import from schema
       const { posts } = await import("@shared/schema");
-
+      
       // Fetch all posts with theme data
       const allPosts = await db.select({
         id: posts.id,
@@ -685,19 +685,19 @@ export function registerRoutes(app: Express): Server {
       })
       .from(posts)
       .orderBy(desc(posts.createdAt));
-
+      
       // Get full post data to extract themeIcon from metadata
       const fullPosts = await Promise.all(allPosts.map(async (post) => {
         const fullPost = await storage.getPostById(post.id);
         return fullPost;
       }));
-
+      
       // Transform the results to support both naming conventions
       const transformedPosts = fullPosts.map((post) => {
         // Extract themeIcon from metadata
         const metadata = post.metadata as any || {};
         const themeIcon = metadata.themeIcon || null;
-
+        
         return {
           id: post.id,
           title: post.title,
@@ -709,7 +709,7 @@ export function registerRoutes(app: Express): Server {
           createdAt: post.createdAt
         };
       });
-
+      
       console.log('[GET /api/posts/admin/themes] Retrieved posts for theme management:', transformedPosts.length);
       res.json(transformedPosts);
     } catch (error) {
@@ -724,35 +724,35 @@ export function registerRoutes(app: Express): Server {
       const postId = parseInt(req.params.id);
       // Allow both snake_case and camelCase property names for backward compatibility
       const { theme_category, themeCategory, icon, themeIcon } = req.body;
-
+      
       // Use the camelCase version if available, otherwise use snake_case
       const actualThemeCategory = themeCategory || theme_category;
       const actualIcon = themeIcon || icon;
-
+      
       // Validate input
       if (!actualThemeCategory) {
         return res.status(400).json({ error: 'Theme category is required' });
       }
-
+      
       // Check if user is admin
       if (!req.user?.id) {
         console.log('[PATCH /api/posts/:id/theme] No user ID in request:', req.user);
         return res.status(401).json({ error: 'Unauthorized' });
       }
-
+      
       // The isAuthenticated middleware already confirms authentication, just check admin status
       if (!req.user.isAdmin) {
         console.log('[PATCH /api/posts/:id/theme] User not admin:', req.user.id);
         return res.status(403).json({ error: 'Forbidden' });
       }
-
+      
       console.log(`[PATCH /api/posts/:id/theme] Updating post ${postId} theme to: ${actualThemeCategory}, icon: ${actualIcon || 'default'}`);
-
+      
       // Create update data with the new schema fields
       const updateData: any = { 
         themeCategory: actualThemeCategory
       };
-
+      
       // If icon is provided, update it in metadata
       if (actualIcon) {
         // First get the current post to access its metadata
@@ -760,20 +760,20 @@ export function registerRoutes(app: Express): Server {
         if (!currentPost) {
           return res.status(404).json({ error: 'Post not found' });
         }
-
+        
         // Update metadata with the new icon
         updateData.metadata = {
           ...(currentPost.metadata || {}),
           themeIcon: actualIcon
         };
       }
-
+      
       const updatedPost = await storage.updatePost(postId, updateData);
-
+      
       // Force cache invalidation for this post to ensure the theme is updated everywhere
       const cacheKey = `post_${postId}`;
       await storage.clearCache(cacheKey);
-
+      
       // Construct the response with properties that definitely exist
       // Support both snake_case and camelCase for backward compatibility
       const responseData = {
@@ -785,14 +785,14 @@ export function registerRoutes(app: Express): Server {
           themeCategory: updatedPost.themeCategory || null
         }
       };
-
+      
       // Extract themeIcon from metadata and add to response with both naming conventions
       const postMetadata = updatedPost.metadata as any;
       if (postMetadata && postMetadata.themeIcon) {
         (responseData.post as any).theme_icon = postMetadata.themeIcon;
         (responseData.post as any).themeIcon = postMetadata.themeIcon;
       }
-
+      
       res.json(responseData);
     } catch (error) {
       console.error('[PATCH /api/posts/:id/theme] Error updating post theme:', error);
@@ -841,23 +841,22 @@ export function registerRoutes(app: Express): Server {
 
       // Set up filter options with proper handling of the isAdminPost parameter
       const filterOptions: any = {};
-
+      
       // Only add isCommunityPost filter if it was explicitly set in the query
       if (req.query.isCommunityPost !== undefined) {
         filterOptions.isCommunityPost = req.query.isCommunityPost === 'true';
       }
-
+      
       // Only add isAdminPost filter if it was explicitly set in the query
       if (isAdminPost !== undefined) {
         filterOptions.isAdminPost = isAdminPost;
       }
-
+      
       console.log('[GET /api/posts] Using filter options:', filterOptions);
-
+      
       // Pass the filter options to storage.getPosts with increased limit
       // This ensures all WordPress posts are retrieved
       const result = await storage.getPosts(page, limit, filterOptions);
-
       console.log('[GET /api/posts] Retrieved posts count:', result.posts.length);
 
       // Simplified filtering logic to ensure proper visibility
@@ -900,12 +899,12 @@ export function registerRoutes(app: Express): Server {
     try {
       // For testing purposes - create posts without authentication
       // Note: In production, this would be protected by isAuthenticated middleware
-
+      
       // Extract community post flag, theme category and theme icon from request
       const isCommunityPost = req.body.metadata?.isCommunityPost || req.body.isCommunityPost || false;
       const themeCategory = req.body.metadata?.themeCategory || req.body.themeCategory || 'HORROR';
       const themeIcon = req.body.metadata?.themeIcon || req.body.themeIcon || null;
-
+      
       // Create post data object with all flags in metadata
       const postData = insertPostSchema.parse({
         ...req.body,
@@ -993,13 +992,13 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to delete post" });
     }
   });
-
+  
   // Create a special admin router that doesn't use CSRF protection
   const adminCleanupRouter = express.Router();
-
+  
   // Mount this router WITHOUT the CSRF middleware
   app.use("/admin-cleanup", adminCleanupRouter);
-
+  
   // Special endpoint to delete WordPress placeholder post with ID 272
   adminCleanupRouter.delete("/wordpress-post-272", async (_req: Request, res: Response) => {
     try {
@@ -1027,7 +1026,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to delete WordPress placeholder post" });
     }
   });
-
+  
   // Add a test endpoint to verify the admin cleanup router is working
   adminCleanupRouter.get("/test", (_req: Request, res: Response) => {
     res.json({ message: "Admin cleanup router is working" });
@@ -1062,7 +1061,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const slugOrId = req.params.slugOrId;
       let post;
-
+      
       // Check if the parameter is a numeric ID or a slug
       if (/^\d+$/.test(slugOrId)) {
         // It's a numeric ID
@@ -1074,7 +1073,7 @@ export function registerRoutes(app: Express): Server {
         console.log(`[GET /api/posts/:slugOrId] Looking up post by slug: ${slugOrId}`);
         post = await storage.getPost(slugOrId);
       }
-
+      
       if (!post) {
         console.log(`[GET /api/posts/:slugOrId] Post not found: ${slugOrId}`);
         return res.status(404).json({ message: "Post not found" });
@@ -1111,7 +1110,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
       const postId = req.params.postId;
-
+      
       // Check if postId is a number or a slug
       let post;
       if (isNaN(Number(postId))) {
@@ -1121,14 +1120,14 @@ export function registerRoutes(app: Express): Server {
         // If it's a number, use getPostById
         post = await storage.getPostById(Number(postId));
       }
-
+      
       if (!post) {
         console.log(`[GET /api/posts/:postId/comments] Post not found: ${postId}`);
         return res.status(404).json({ message: "Post not found" });
       }
-
+      
       console.log(`[GET /api/posts/:postId/comments] Found post: ${post.title} (ID: ${post.id})`);
-
+      
       // Use the numeric post ID from the post record
       const comments = await storage.getComments(post.id);
       console.log(`[GET /api/posts/:postId/comments] Retrieved ${comments.length} comments for post ID: ${post.id}`);
@@ -1211,11 +1210,11 @@ export function registerRoutes(app: Express): Server {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
-
+      
       // Check if postId is numeric or a slug
       if (/^\d+$/.test(postIdParam)) {
         postId = parseInt(postIdParam);
-
+        
         // Verify the post exists
         const post = await storage.getPostById(postId);
         if (!post) {
@@ -1276,22 +1275,22 @@ export function registerRoutes(app: Express): Server {
     try {
       const postId = Number(req.params.postId);
       const { isLike } = req.body;
-
+      
       if (!postId || isNaN(postId)) {
         return res.status(400).json({ error: "Invalid post ID", likesCount: 0, dislikesCount: 0 });
       }
-
+      
       console.log(`[Reaction] Processing for post ${postId}, isLike: ${isLike}`);
-
+      
       // Get the current post to update its metadata as well
       const post = await storage.getPostById(postId);
       if (!post) {
         return res.status(404).json({ error: "Post not found", likesCount: 0, dislikesCount: 0 });
       }
-
+      
       // Extract current metadata or initialize it
       const metadata = post.metadata || {};
-
+      
       // Update counts based on reaction
       if (isLike === true) {
         // Update both the dedicated column and the metadata field
@@ -1312,22 +1311,22 @@ export function registerRoutes(app: Express): Server {
           }
         }).where(eq(posts.id, postId));
       }
-
+      
       // Get updated counts
       const [counts] = await db.select({
         likesCount: posts.likesCount,
         dislikesCount: posts.dislikesCount
       }).from(posts).where(eq(posts.id, postId));
-
+      
       const response = {
         success: true,
         likesCount: Number(counts.likesCount || 0),
         dislikesCount: Number(counts.dislikesCount || 0)
       };
-
+      
       console.log(`[Reaction] Response for post ${postId}:`, response);
       res.json(response);
-
+      
     } catch (error) {
       console.error('[Reaction] Error:', error);
       res.status(500).json({ error: "Failed to process reaction", likesCount: 0, dislikesCount: 0 });
@@ -1339,7 +1338,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
-
+      
       // Verify the parameter is valid
       if (!postIdParam) {
         console.warn(`[POST /api/posts/:postId/reaction] Missing post ID parameter`);
@@ -1349,7 +1348,7 @@ export function registerRoutes(app: Express): Server {
           dislikesCount: 0 
         });
       }
-
+      
       // Check if isLike is properly provided
       if (req.body.isLike !== true && req.body.isLike !== false && req.body.isLike !== null) {
         console.warn(`[POST /api/posts/:postId/reaction] Invalid isLike value:`, req.body.isLike);
@@ -1359,11 +1358,11 @@ export function registerRoutes(app: Express): Server {
           dislikesCount: 0 
         });
       }
-
+      
       // Check if postId is numeric or a slug
       if (/^\d+$/.test(postIdParam)) {
         postId = parseInt(postIdParam);
-
+        
         // Verify the post exists
         try {
           const post = await storage.getPostById(postId);
@@ -1405,7 +1404,7 @@ export function registerRoutes(app: Express): Server {
           });
         }
       }
-
+      
       const { isLike } = req.body;
 
       console.log(`[POST /api/posts/${postId}/reaction] Received reaction:`, { isLike, userId: req.user?.id });
@@ -1458,7 +1457,7 @@ export function registerRoutes(app: Express): Server {
         // For consistency, we no longer add session likes to the count
         // This ensures index and reader pages show identical counts
         // The like/dislike data is still tracked in the session for UI state
-
+        
         console.log(`[Reaction] Updated counts for post ${postId}:`, counts);
         res.json({
           ...counts,
@@ -1495,7 +1494,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const postIdParam = req.params.postId;
       let postId: number;
-
+      
       // Verify the parameter is valid
       if (!postIdParam) {
         console.warn(`[GET /api/posts/:postId/reactions] Missing post ID parameter`);
@@ -1505,11 +1504,11 @@ export function registerRoutes(app: Express): Server {
           dislikesCount: 0 
         });
       }
-
+      
       // Check if postId is numeric or a slug
       if (/^\d+$/.test(postIdParam)) {
         postId = parseInt(postIdParam);
-
+        
         // Verify the post exists
         try {
           const post = await storage.getPostById(postId);
@@ -1551,7 +1550,7 @@ export function registerRoutes(app: Express): Server {
           });
         }
       }
-
+      
       console.log(`[GET /api/posts/${postId}/reactions] Fetching reaction counts`);
 
       try {
@@ -1564,7 +1563,7 @@ export function registerRoutes(app: Express): Server {
         // For consistency, we no longer add session likes to the count
         // This ensures index and reader pages show identical counts
         // The like/dislike data is still tracked in the session for UI state
-
+        
         console.log(`[Reaction] Current counts for post ${postId}:`, counts);
         res.json(counts);
       } catch (error) {
@@ -1641,7 +1640,7 @@ export function registerRoutes(app: Express): Server {
           message: "Reply content is required"
         });
       }
-
+      
       // Sanitize user input using the sanitizer imported at the top of the file
       const sanitizedContent = sanitizeHtml(content.trim());
       const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
@@ -1765,17 +1764,17 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch admin dashboard data" });
     }
   });
-
+  
   // Add missing admin stats endpoint
   app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Set Content-Type header to ensure JSON response
       res.setHeader('Content-Type', 'application/json');
-
+      
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Access denied: Admin privileges required" });
       }
-
+      
       // Get aggregated stats data from database via storage interface
       try {
         // Replace with more efficient queries that use specialized storage methods
@@ -1785,7 +1784,7 @@ export function registerRoutes(app: Express): Server {
         const bookmarkCount = await storage.getBookmarkCount();
         const trendingPosts = await storage.getTrendingPosts(5);
         const adminStats = await storage.getAdminStats();
-
+        
         // Return structured stats response with enhanced analytics data
         res.json({
           posts: {
@@ -1826,7 +1825,7 @@ export function registerRoutes(app: Express): Server {
         });
       } catch (dbError) {
         console.error("Error fetching stats data from database:", dbError);
-
+        
         // Return error as JSON with proper content type
         res.status(500).json({
           error: "Database error",
@@ -1837,7 +1836,7 @@ export function registerRoutes(app: Express): Server {
       }
     } catch (error) {
       console.error("Error fetching admin stats:", error);
-
+      
       // Return error as JSON with proper content type
       res.status(500).json({ 
         error: "Server error",
@@ -1859,33 +1858,33 @@ export function registerRoutes(app: Express): Server {
           details: "Request body must be a valid JSON object"
         });
       }
-
+      
       const { metricName, value, identifier, navigationType, url, userAgent } = req.body;
 
       // Comprehensive validation with detailed error messages
       const validationErrors = [];
-
+      
       if (!metricName || typeof metricName !== 'string') {
         validationErrors.push({
           field: 'metricName',
           message: 'Metric name is required and must be a string'
         });
       }
-
+      
       if (typeof value !== 'number' || isNaN(value)) {
         validationErrors.push({
           field: 'value',
           message: 'Value is required and must be a valid number'
         });
       }
-
+      
       if (!identifier) {
         validationErrors.push({
           field: 'identifier',
           message: 'Identifier is required'
         });
       }
-
+      
       // If we have validation errors, return them all at once
       if (validationErrors.length > 0) {
         console.warn('[Analytics] Validation errors in performance metric:', {
@@ -1898,7 +1897,7 @@ export function registerRoutes(app: Express): Server {
             url
           }
         });
-
+        
         return res.status(400).json({
           message: "Invalid metric data",
           details: "One or more required fields are invalid or missing",
@@ -1910,7 +1909,7 @@ export function registerRoutes(app: Express): Server {
       const sanitizedValue = Math.round(value * 100) / 100;
       const sanitizedUrl = url && typeof url === 'string' ? url : 'unknown';
       const sanitizedNav = navigationType && typeof navigationType === 'string' ? navigationType : 'navigation';
-
+      
       console.log('[Analytics] Received performance metric:', {
         name: metricName,
         value: sanitizedValue,
@@ -1967,12 +1966,12 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
-
+  
   // Public API for site analytics that doesn't require admin access
   app.get("/api/analytics/site", async (_req: Request, res: Response) => {
     try {
       const analyticsSummary = await storage.getAnalyticsSummary();
-
+      
       res.json({
         totalViews: analyticsSummary.totalViews,
         uniqueVisitors: analyticsSummary.uniqueVisitors,
@@ -1984,7 +1983,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch analytics data" });
     }
   });
-
+  
   // Device analytics endpoint for enhanced visualizations
   app.get("/api/analytics/devices", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -1994,13 +1993,13 @@ export function registerRoutes(app: Express): Server {
 
       // Get device distribution data from storage
       const deviceDistribution = await storage.getDeviceDistribution();
-
+      
       // Transform into time series data for charts
       const now = new Date();
       const dailyData = [];
       const weeklyData = [];
       const monthlyData = [];
-
+      
       // Calculate totals for display
       // Multiply by a factor to get absolute numbers rather than ratios
       const multiplier = 1000;
@@ -2009,7 +2008,7 @@ export function registerRoutes(app: Express): Server {
         mobile: Math.round(deviceDistribution.mobile * multiplier),
         tablet: Math.round(deviceDistribution.tablet * multiplier)
       };
-
+      
       // Get historical data for trends
       // Here we simulate previous period data based on current data
       // In production, this would come from actual historical data
@@ -2018,7 +2017,7 @@ export function registerRoutes(app: Express): Server {
         mobile: Math.round(totals.mobile * 1.1),
         tablet: Math.round(totals.tablet * 0.95)
       };
-
+      
       // Calculate percentage changes
       const percentageChange = {
         desktop: {
@@ -2040,17 +2039,17 @@ export function registerRoutes(app: Express): Server {
           trend: totals.tablet >= previousPeriodData.tablet ? 'up' : 'down'
         }
       };
-
+      
       // Generate time series data for visualization
       // In production, this would come from actual historical data
-
+      
       // Generate 30 days of data for daily view
       for (let i = 29; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
-
+        
         const dailyFactor = 0.7 + Math.random() * 0.6; // Random factor between 0.7 and 1.3
-
+        
         dailyData.push({
           date: date.toISOString().split('T')[0],
           desktop: Math.round(totals.desktop / 30 * dailyFactor),
@@ -2058,14 +2057,14 @@ export function registerRoutes(app: Express): Server {
           tablet: Math.round(totals.tablet / 30 * dailyFactor)
         });
       }
-
+      
       // Generate 12 weeks of data
       for (let i = 11; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - (i * 7));
-
+        
         const weeklyFactor = 0.8 + Math.random() * 0.4; // Random factor between 0.8 and 1.2
-
+        
         weeklyData.push({
           date: date.toISOString().split('T')[0],
           desktop: Math.round(totals.desktop / 12 * weeklyFactor),
@@ -2073,14 +2072,14 @@ export function registerRoutes(app: Express): Server {
           tablet: Math.round(totals.tablet / 12 * weeklyFactor)
         });
       }
-
+      
       // Generate 6 months of data
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now);
         date.setMonth(date.getMonth() - i);
-
+        
         const monthlyFactor = 0.85 + Math.random() * 0.3; // Random factor between 0.85 and 1.15
-
+        
         monthlyData.push({
           date: date.toISOString().split('T')[0],
           desktop: Math.round(totals.desktop / 6 * monthlyFactor),
@@ -2088,7 +2087,7 @@ export function registerRoutes(app: Express): Server {
           tablet: Math.round(totals.tablet / 6 * monthlyFactor)
         });
       }
-
+      
       res.json({
         dailyData,
         weeklyData,
@@ -2101,14 +2100,14 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to fetch device analytics" });
     }
   });
-
+  
   // Reading time analytics endpoint for enhanced visualizations
   // Direct recommendations endpoint in main routes file for reliability
   app.get("/api/recommendations/direct", async (req: Request, res: Response) => {
     console.log("Direct recommendations endpoint called");
     try {
       const limit = Number(req.query.limit) || 3;
-
+      
       // Direct SQL query for latest posts as recommendations
       try {
         const result = await db.execute(sql`
@@ -2117,14 +2116,14 @@ export function registerRoutes(app: Express): Server {
           ORDER BY created_at DESC
           LIMIT ${limit}
         `);
-
+        
         // Handle the result properly
         const resultArray = Array.isArray(result) ? result : (result as any).rows || [];
         console.log(`Direct recommendations found ${resultArray.length} posts`);
         return res.json(resultArray);
       } catch (error) {
         console.error("Direct recommendations database error:", error);
-
+        
         // Fallback to standard Drizzle query
         try {
           const simplePosts = await db.select({
@@ -2137,7 +2136,7 @@ export function registerRoutes(app: Express): Server {
           .from(posts)
           .orderBy(desc(posts.createdAt))
           .limit(limit);
-
+          
           console.log(`Fallback found ${simplePosts.length} posts`);
           return res.json(simplePosts);
         } catch (fallbackError) {
@@ -2160,9 +2159,9 @@ export function registerRoutes(app: Express): Server {
     try {
       console.log("Recent posts endpoint called:", req.url);
       console.log("Request query params:", req.query);
-
+      
       const limit = Number(req.query.limit) || 10;
-
+      
       try {
         // Attempt to get posts from database
         const recentPosts = await storage.getRecentPosts();
@@ -2204,7 +2203,7 @@ export function registerRoutes(app: Express): Server {
           }
         ]);
       }
-
+      
       try {
         // Otherwise try to get posts from the database
         const recentPosts = await db.select({
@@ -2216,9 +2215,9 @@ export function registerRoutes(app: Express): Server {
         .from(posts)
         .orderBy(desc(posts.createdAt))
         .limit(limit);
-
+        
         console.log(`Found ${recentPosts.length} recent posts`);
-
+        
         // Return simplified metadata for display
         const result = recentPosts.map((post: any) => ({
           ...post,
@@ -2227,12 +2226,12 @@ export function registerRoutes(app: Express): Server {
           views: 50,
           likes: 10
         }));
-
+        
         return res.json(result);
       } catch (dbError) {
         console.error("Database error fetching recent posts:", dbError);
         console.log("Falling back to mock data due to database error");
-
+        
         // If database fails, return sample posts
         return res.json([
           {
@@ -2283,13 +2282,13 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/posts/recommendations", async (req: Request, res: Response) => {
     console.log("DEBUG - Routes.ts: Posts recommendations endpoint called:", req.url);
     console.log("DEBUG - Routes.ts: Request query params:", req.query);
-
+    
     // Parse request parameters
     const postId = req.query.postId ? Number(req.query.postId) : null;
     const limit = Number(req.query.limit) || 3;
-
+    
     console.log(`DEBUG - Routes.ts: Fetching recommendations for postId: ${postId}, limit: ${limit}`);
-
+    
     try {
       // Attempt to get recommendations from database
       const recommendations = await storage.getRecommendedPosts(postId, limit);
@@ -2331,26 +2330,28 @@ export function registerRoutes(app: Express): Server {
         }
       ]);
     }
-
+    
     try {
       // Verify post exists if postId provided
       if (postId) {
         try {
-          const [post] = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-
-          if (!post) {
+          const result = await db.query.posts.findFirst({
+            where: eq(posts.id, postId)
+          });
+          
+          if (!result) {
             console.log(`DEBUG - Routes.ts: Post with id ${postId} not found`);
             return res.status(404).json({ message: "Post not found" });
           }
-
-          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, post.title);
+          
+          console.log(`DEBUG - Routes.ts: Post with id ${postId} found:`, result.title);
         } catch (dbError) {
           console.error("Database error verifying post:", dbError);
           console.log("Continuing with recommendations anyway");
           // Continue execution even if post verification fails
         }
       }
-
+      
       try {
         // If no postId provided or it's invalid, return recent posts
         console.log('DEBUG - Routes.ts: Returning recent posts');
@@ -2363,9 +2364,9 @@ export function registerRoutes(app: Express): Server {
         .from(posts)
         .orderBy(desc(posts.createdAt))
         .limit(limit);
-
+        
         console.log(`DEBUG - Routes.ts: Found ${recentPosts.length} recent posts`);
-
+        
         // Return simplified metadata for display
         const result = recentPosts.map((post: any) => ({
           ...post,
@@ -2374,12 +2375,12 @@ export function registerRoutes(app: Express): Server {
           views: 50,
           likes: 10
         }));
-
+        
         return res.json(result);
       } catch (dbError) {
         console.error("Database error fetching recommendations:", dbError);
         console.log("Falling back to mock data due to database error");
-
+        
         // If database fails, return mock recommendations
         return res.json([
           {
@@ -2407,12 +2408,13 @@ export function registerRoutes(app: Express): Server {
             title: "The Last Customer",
             slug: "the-last-customer",
             excerpt: "Bubble's Cafe always has room for one more soul before closing time.",
-          readingTime: 11,
-          authorName: 'Anonymous',
-          views: 95,
-          likes: 31
-        }
-      ]);
+            readingTime: 11,
+            authorName: 'Anonymous',
+            views: 95,
+            likes: 31
+          }
+        ]);
+      }
     } catch (error) {
       console.error("Error in recommendations endpoint:", error);
       // Return fallback recommendations
@@ -2456,15 +2458,15 @@ export function registerRoutes(app: Express): Server {
       if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Admin access required" });
       }
-
+      
       // Get analytics summary with reading time data
       const analyticsSummary = await storage.getAnalyticsSummary();
-
+      
       // Get top stories by reading time
       // In a production environment, this would be queried from the database
       // For demo purposes, we'll create a simple array of stories
       const topStories = await storage.getPosts(1, 5);
-
+      
       // Transform the stories data
       const formattedTopStories = topStories.posts.map(story => ({
         id: story.id,
@@ -2474,14 +2476,14 @@ export function registerRoutes(app: Express): Server {
         avgReadingTime: Math.max(60, analyticsSummary.avgReadTime || 180), // Minimum 1 minute
         views: story.id * 50 + Math.floor(Math.random() * 200) // Deterministic view count based on ID
       }));
-
+      
       // Generate time series data for charts
       // In production, this would come from actual historical data
       const now = new Date();
       const dailyData = [];
       const weeklyData = [];
       const monthlyData = [];
-
+      
       // Base statistics
       const baseStats = {
         avgReadingTime: analyticsSummary.avgReadTime || 180, // Default to 3 minutes if no data
@@ -2489,14 +2491,14 @@ export function registerRoutes(app: Express): Server {
         bounceRate: analyticsSummary.bounceRate || 30,
         averageScrollDepth: 65 // Default to 65%
       };
-
+      
       // Previous period stats (for trends)
       // In production, this would come from actual historical data
       const prevPeriodStats = {
         avgReadingTime: baseStats.avgReadingTime * 0.95,
         totalViews: baseStats.totalViews * 0.92
       };
-
+      
       // Calculate changes
       const changeFromLastPeriod = {
         readingTime: {
@@ -2508,14 +2510,14 @@ export function registerRoutes(app: Express): Server {
           trend: baseStats.totalViews >= prevPeriodStats.totalViews ? 'up' : 'down'
         }
       };
-
+      
       // Generate 30 days of data for daily view
       for (let i = 29; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
-
+        
         const fluctuation = 0.8 + Math.random() * 0.4; // Random factor between 0.8 and 1.2
-
+        
         dailyData.push({
           date: date.toISOString().split('T')[0],
           avgTime: Math.round(baseStats.avgReadingTime * fluctuation),
@@ -2523,14 +2525,14 @@ export function registerRoutes(app: Express): Server {
           storyViews: Math.round(baseStats.totalViews / 30 * fluctuation)
         });
       }
-
+      
       // Generate 12 weeks of data
       for (let i = 11; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - (i * 7));
-
+        
         const fluctuation = 0.85 + Math.random() * 0.3; // Random factor between 0.85 and 1.15
-
+        
         weeklyData.push({
           date: date.toISOString().split('T')[0],
           avgTime: Math.round(baseStats.avgReadingTime * fluctuation),
@@ -2538,14 +2540,14 @@ export function registerRoutes(app: Express): Server {
           storyViews: Math.round(baseStats.totalViews / 12 * fluctuation)
         });
       }
-
+      
       // Generate 6 months of data
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now);
         date.setMonth(date.getMonth() - i);
-
+        
         const fluctuation = 0.9 + Math.random() * 0.2; // Random factor between 0.9 and 1.1
-
+        
         monthlyData.push({
           date: date.toISOString().split('T')[0],
           avgTime: Math.round(baseStats.avgReadingTime * fluctuation),
@@ -2553,7 +2555,7 @@ export function registerRoutes(app: Express): Server {
           storyViews: Math.round(baseStats.totalViews / 6 * fluctuation)
         });
       }
-
+      
       res.json({
         dailyData,
         weeklyData,
@@ -2573,7 +2575,8 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/admin/notifications", isAuthenticated, async (req: Request, res: Response) => {
     try {
       if (!req.user?.isAdmin) {
-        return res.status(403).json({ message: "Access denied: Admin privileges required" });      }
+        return res.status(403).json({ message: "Access denied: Admin privileges required" });
+      }
 
       const notifications = await storage.getUnreadAdminNotifications();
       res.json(notifications);
@@ -2632,9 +2635,9 @@ export function registerRoutes(app: Express): Server {
         browser: req.body.browser,
         os: req.body.operatingSystem
       });
-
+      
       const { type, content, page, browser, operatingSystem, screenResolution, userAgent, category, metadata } = req.body;
-
+      
       // Basic validation
       if (!type || !content) {
         feedbackLogger.warn('Validation failed - missing required fields', { 
@@ -2643,15 +2646,15 @@ export function registerRoutes(app: Express): Server {
         });
         return res.status(400).json({ error: "Type and content are required fields" });
       }
-
+      
       // Check for authenticated user
       const user = req.user as any;
       const userId = user?.id || null;
-
+      
       if (userId) {
         feedbackLogger.info('Associating feedback with authenticated user', { userId });
       }
-
+      
       // Create feedback object
       const feedbackData: InsertUserFeedback = {
         type,
@@ -2667,14 +2670,14 @@ export function registerRoutes(app: Express): Server {
         category: category || "general",
         metadata: metadata || {}
       };
-
+      
       // Enhanced logging and performance tracking
       const startTime = Date.now();
       feedbackLogger.debug('Submitting feedback to database', { feedbackData: { type, page, category }});
-
+      
       // Submit feedback
       const feedback = await storage.submitFeedback(feedbackData);
-
+      
       // Log performance metrics
       const duration = Date.now() - startTime;
       feedbackLogger.info('Feedback submitted successfully', { 
@@ -2682,7 +2685,7 @@ export function registerRoutes(app: Express): Server {
         duration: `${duration}ms`,
         type: feedback.type
       });
-
+      
       res.status(201).json({ success: true, feedback });
     } catch (error) {
       feedbackLogger.error('Error submitting feedback', { 
@@ -2705,19 +2708,19 @@ export function registerRoutes(app: Express): Server {
         });
         return res.status(403).json({ error: "Unauthorized access" });
       }
-
+      
       // Get query parameters
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const status = req.query.status as string || "all";
-
+      
       feedbackLogger.info('Fetching feedback list', { limit, status });
-
+      
       // Performance tracking
       const startTime = Date.now();
-
+      
       // Get feedback
       const feedback = await storage.getAllFeedback(limit, status);
-
+      
       // Log performance metrics
       const duration = Date.now() - startTime;
       feedbackLogger.info('Feedback list retrieved', { 
@@ -2726,7 +2729,7 @@ export function registerRoutes(app: Express): Server {
         status: status,
         limit: limit
       });
-
+      
       res.status(200).json({ feedback });
     } catch (error) {
       feedbackLogger.error('Error fetching feedback list', {
@@ -2750,43 +2753,43 @@ export function registerRoutes(app: Express): Server {
         });
         return res.status(403).json({ error: "Unauthorized access" });
       }
-
+      
       // Get feedback ID
       const id = parseInt(req.params.id);
-
+      
       if (isNaN(id)) {
         feedbackLogger.warn('Invalid feedback ID provided', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
-
+      
       feedbackLogger.info('Fetching specific feedback', { id });
-
+      
       // Get feedback
       const feedback = await storage.getFeedback(id);
-
+      
       if (!feedback) {
         feedbackLogger.warn('Feedback not found', { id });
         return res.status(404).json({ error: "Feedback not found" });
       }
-
+      
       // Use the imported functions from the top of the file
-
+      
       // Generate enhanced response suggestion using new AI utility
       const enhancedSuggestion = generateEnhancedResponse(feedback);
-
+      
       // Generate alternative response suggestions
       const alternativeSuggestions = generateResponseAlternatives(feedback);
-
+      
       // Get response hints for admin
       const responseHints = getResponseHints(feedback);
-
+      
       feedbackLogger.info('Feedback retrieved successfully with enhanced AI suggestions', { 
         id, 
         type: feedback.type,
         enhancedConfidence: enhancedSuggestion.confidence,
         alternativesCount: alternativeSuggestions.length
       });
-
+      
       // Return enhanced feedback suggestions along with the original ones
       res.status(200).json({ 
         feedback,
@@ -2818,38 +2821,38 @@ export function registerRoutes(app: Express): Server {
         });
         return res.status(403).json({ error: "Unauthorized access" });
       }
-
+      
       // Get feedback ID
       const id = parseInt(req.params.id);
-
+      
       if (isNaN(id)) {
         feedbackLogger.warn('Invalid feedback ID provided for suggestions', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
-
+      
       feedbackLogger.info('Refreshing AI suggestions for feedback', { id });
-
+      
       // Get feedback
       const feedback = await storage.getFeedback(id);
-
+      
       if (!feedback) {
         feedbackLogger.warn('Feedback not found for suggestions', { id });
         return res.status(404).json({ error: "Feedback not found" });
       }
-
+      
       // Generate fresh suggestions
       const enhancedSuggestion = generateEnhancedResponse(feedback);
       const alternativeSuggestions = generateResponseAlternatives(feedback);
       const responseHints = getResponseHints(feedback);
       const legacySuggestion = generateResponseSuggestion(feedback);
-
+      
       feedbackLogger.info('AI suggestions refreshed successfully', { 
         id, 
         type: feedback.type,
         enhancedConfidence: enhancedSuggestion.confidence,
         alternativesCount: alternativeSuggestions.length
       });
-
+      
       res.status(200).json({
         responseSuggestion: enhancedSuggestion,
         alternativeSuggestions,
@@ -2879,29 +2882,29 @@ export function registerRoutes(app: Express): Server {
         });
         return res.status(403).json({ error: "Unauthorized access" });
       }
-
+      
       // Get feedback ID and status
       const id = parseInt(req.params.id);
       const { status } = req.body;
-
+      
       if (isNaN(id)) {
         feedbackLogger.warn('Invalid feedback ID for status update', { feedbackId: req.params.id });
         return res.status(400).json({ error: "Invalid feedback ID" });
       }
-
+      
       if (!status || !["pending", "reviewed", "resolved", "rejected"].includes(status)) {
         feedbackLogger.warn('Invalid status value provided', { status, feedbackId: id });
         return res.status(400).json({ error: "Invalid status value" });
       }
-
+      
       feedbackLogger.info('Updating feedback status', { id, status, adminId: user.id });
-
+      
       // Performance tracking
       const startTime = Date.now();
-
+      
       // Update feedback status
       const updatedFeedback = await storage.updateFeedbackStatus(id, status);
-
+      
       // Log performance metrics
       const duration = Date.now() - startTime;
       feedbackLogger.info('Feedback status updated successfully', { 
@@ -2911,7 +2914,7 @@ export function registerRoutes(app: Express): Server {
         duration: `${duration}ms`,
         adminId: user.id
       });
-
+      
       res.status(200).json({ success: true, feedback: updatedFeedback });
     } catch (error) {
       feedbackLogger.error('Error updating feedback status', {
@@ -2958,7 +2961,7 @@ export function registerRoutes(app: Express): Server {
       const userViewportSize = metadata.viewportSize || 'Unknown';
       const referrer = metadata.referrer || req.headers['referer'] || 'Direct';
       const hideEmail = metadata.hideEmail === true;
-
+      
       // Enhanced metadata for database
       const enhancedMetadata = {
         device: userDeviceInfo,
@@ -2985,10 +2988,10 @@ export function registerRoutes(app: Express): Server {
       let emailSent = false;
       try {
         console.log('Attempting to send email notification...');
-
+        
         // Format email differently based on whether to show email
         const displayEmail = hideEmail ? '[Email Hidden by User]' : email;
-
+        
         const emailBody = `
 New message received from Bubble's Cafe contact form:
 
@@ -3025,7 +3028,7 @@ Message ID: ${savedMessage.id}
           emailSent = true;
         } catch (primaryError) {
           console.error('Failed to send via Gmail, trying fallback:', primaryError);
-
+          
           // Try fallback transport if Gmail fails
           try {
             console.log('Attempting to send via fallback transport...');
@@ -3057,7 +3060,7 @@ Message ID: ${savedMessage.id}
 
   // Add error logger middleware
   app.use(errorLogger);
-
+  
   // Global error handler with enhanced logging
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     // Use the already imported feedbackLogger
@@ -3070,7 +3073,7 @@ Message ID: ${savedMessage.id}
       ip: req.ip,
       headers: req.headers
     });
-
+    
     // Send appropriate response to the client
     res.status(500).json({
       message: "An unexpected error occurred",
@@ -3080,4 +3083,4 @@ Message ID: ${savedMessage.id}
 
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
-}
+}  

@@ -1649,7 +1649,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(sql`
         SELECT 
           id, content, post_id as "postId", user_id as "userId", 
-          is_approved as "approved", edited, edited_at as "editedAt", 
+          approved, edited, edited_at as "editedAt", 
           metadata, created_at as "createdAt", parent_id as "parentId"
         FROM comments
         WHERE post_id = ${postId}
