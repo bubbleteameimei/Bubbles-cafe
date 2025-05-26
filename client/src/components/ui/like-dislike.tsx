@@ -242,13 +242,36 @@ export function LikeDislike({
 
   const handleLike = async () => {
     const newLiked = !liked;
+    const wasDisliked = disliked;
     
     try {
-      // Update UI state immediately for better UX
+      // Calculate expected count changes with mathematical reasoning
+      let expectedLikes = stats.likesCount;
+      let expectedDislikes = stats.dislikesCount;
+      
+      if (newLiked) {
+        // Adding a like
+        expectedLikes += 1;
+        if (wasDisliked) {
+          // Switching from dislike to like
+          expectedDislikes -= 1;
+        }
+      } else {
+        // Removing a like
+        expectedLikes -= 1;
+      }
+      
+      // Update UI state immediately with calculated values
       setLiked(newLiked);
       if (newLiked && disliked) {
         setDisliked(false);
       }
+      
+      // Update stats immediately with mathematical logic
+      setStats({
+        likesCount: Math.max(0, expectedLikes),
+        dislikesCount: Math.max(0, expectedDislikes)
+      });
       
       // Save interaction to localStorage
       saveUserInteraction(postId, newLiked, false);
@@ -274,21 +297,46 @@ export function LikeDislike({
       
       // Revert UI state on error
       setLiked(!newLiked);
-      if (disliked) {
+      if (wasDisliked) {
         setDisliked(true);
       }
+      // Revert stats to original values
+      setStats(stats);
     }
   };
 
   const handleDislike = async () => {
     const newDisliked = !disliked;
+    const wasLiked = liked;
     
     try {
-      // Update UI state immediately for better UX
+      // Calculate expected count changes with mathematical reasoning
+      let expectedLikes = stats.likesCount;
+      let expectedDislikes = stats.dislikesCount;
+      
+      if (newDisliked) {
+        // Adding a dislike
+        expectedDislikes += 1;
+        if (wasLiked) {
+          // Switching from like to dislike
+          expectedLikes -= 1;
+        }
+      } else {
+        // Removing a dislike
+        expectedDislikes -= 1;
+      }
+      
+      // Update UI state immediately with calculated values
       setDisliked(newDisliked);
       if (newDisliked && liked) {
         setLiked(false);
       }
+      
+      // Update stats immediately with mathematical logic
+      setStats({
+        likesCount: Math.max(0, expectedLikes),
+        dislikesCount: Math.max(0, expectedDislikes)
+      });
       
       // Save interaction to localStorage
       saveUserInteraction(postId, false, newDisliked);
@@ -314,9 +362,11 @@ export function LikeDislike({
       
       // Revert UI state on error
       setDisliked(!newDisliked);
-      if (liked) {
+      if (wasLiked) {
         setLiked(true);
       }
+      // Revert stats to original values
+      setStats(stats);
     }
   };
 
@@ -334,30 +384,46 @@ export function LikeDislike({
         "flex items-center",
         variant === 'reader' ? "justify-center gap-x-4" : "gap-x-2"
       )}>
-        {/* Like Button - Updated to match design */}
+        {/* Like Button - Enhanced design */}
         <button 
           type="button" 
           onClick={handleLike}
           className={cn(
-            "inline-flex items-center gap-x-1 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
-            size === 'sm' && "py-1 px-2 text-xs",
-            size === 'md' && "py-2 px-3 text-sm",
-            size === 'lg' && "py-2.5 px-3.5 text-base",
-            liked && "border-primary text-primary dark:border-primary-400 dark:text-primary-400",
-            variant !== 'reader' && "h-7 sm:h-8"
+            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
+            // Base styling with improved shadows and gradients
+            "bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 text-gray-700 shadow-lg hover:shadow-xl",
+            "dark:from-neutral-800 dark:to-neutral-900 dark:border-neutral-600 dark:text-white dark:hover:from-neutral-700 dark:hover:to-neutral-800",
+            // Size variants with better proportions
+            variant === 'reader' ? (
+              size === 'lg' ? "py-4 px-6 text-lg min-w-[120px]" : 
+              size === 'md' ? "py-3 px-5 text-base min-w-[100px]" : 
+              "py-2 px-4 text-sm min-w-[80px]"
+            ) : (
+              size === 'lg' ? "py-2.5 px-4 text-base h-10" :
+              size === 'md' ? "py-2 px-3 text-sm h-9" :
+              "py-1.5 px-2.5 text-xs h-8"
+            ),
+            // Active state styling
+            liked && "border-emerald-400 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 shadow-emerald-200/50",
+            liked && "dark:border-emerald-500 dark:from-emerald-900/30 dark:to-emerald-800/30 dark:text-emerald-400 dark:shadow-emerald-900/50",
+            // Hover effects
+            "hover:border-emerald-300 hover:from-emerald-50 hover:to-emerald-100",
+            "dark:hover:border-emerald-500 dark:hover:from-emerald-900/20 dark:hover:to-emerald-800/20"
           )}
         >
           <svg 
             className={cn(
-              "shrink-0",
-              size === 'sm' && "w-4 h-4",
-              size === 'md' && "w-5 h-5",
-              size === 'lg' && "w-6 h-6",
-              variant !== 'reader' && "w-3.5 h-3.5"
+              "shrink-0 transition-all duration-300",
+              variant === 'reader' ? (
+                size === 'lg' ? "w-6 h-6" : 
+                size === 'md' ? "w-5 h-5" : 
+                "w-4 h-4"
+              ) : "w-4 h-4",
+              liked && "scale-110"
             )}
             xmlns="http://www.w3.org/2000/svg" 
             viewBox="0 0 24 24" 
-            fill="none" 
+            fill={liked ? "currentColor" : "none"}
             stroke="currentColor" 
             strokeWidth="2" 
             strokeLinecap="round" 
@@ -366,33 +432,51 @@ export function LikeDislike({
             <path d="M7 10v12"></path>
             <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path>
           </svg>
-          {isLoading ? '...' : stats.likesCount}
+          <span className="font-bold tabular-nums">
+            {isLoading ? '...' : stats.likesCount}
+          </span>
         </button>
 
-        {/* Dislike Button - Updated to match design */}
+        {/* Dislike Button - Enhanced design */}
         <button 
           type="button" 
           onClick={handleDislike}
           className={cn(
-            "inline-flex items-center gap-x-1 font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700 dark:focus:bg-neutral-700",
-            size === 'sm' && "py-1 px-2 text-xs",
-            size === 'md' && "py-2 px-3 text-sm",
-            size === 'lg' && "py-2.5 px-3.5 text-base",
-            disliked && "border-destructive text-destructive dark:border-destructive dark:text-destructive",
-            variant !== 'reader' && "h-7 sm:h-8"
+            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
+            // Base styling with improved shadows and gradients
+            "bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 text-gray-700 shadow-lg hover:shadow-xl",
+            "dark:from-neutral-800 dark:to-neutral-900 dark:border-neutral-600 dark:text-white dark:hover:from-neutral-700 dark:hover:to-neutral-800",
+            // Size variants with better proportions
+            variant === 'reader' ? (
+              size === 'lg' ? "py-4 px-6 text-lg min-w-[120px]" : 
+              size === 'md' ? "py-3 px-5 text-base min-w-[100px]" : 
+              "py-2 px-4 text-sm min-w-[80px]"
+            ) : (
+              size === 'lg' ? "py-2.5 px-4 text-base h-10" :
+              size === 'md' ? "py-2 px-3 text-sm h-9" :
+              "py-1.5 px-2.5 text-xs h-8"
+            ),
+            // Active state styling
+            disliked && "border-red-400 bg-gradient-to-r from-red-50 to-red-100 text-red-700 shadow-red-200/50",
+            disliked && "dark:border-red-500 dark:from-red-900/30 dark:to-red-800/30 dark:text-red-400 dark:shadow-red-900/50",
+            // Hover effects
+            "hover:border-red-300 hover:from-red-50 hover:to-red-100",
+            "dark:hover:border-red-500 dark:hover:from-red-900/20 dark:hover:to-red-800/20"
           )}
         >
           <svg 
             className={cn(
-              "shrink-0",
-              size === 'sm' && "w-4 h-4",
-              size === 'md' && "w-5 h-5",
-              size === 'lg' && "w-6 h-6",
-              variant !== 'reader' && "w-3.5 h-3.5"
+              "shrink-0 transition-all duration-300",
+              variant === 'reader' ? (
+                size === 'lg' ? "w-6 h-6" : 
+                size === 'md' ? "w-5 h-5" : 
+                "w-4 h-4"
+              ) : "w-4 h-4",
+              disliked && "scale-110"
             )}
             xmlns="http://www.w3.org/2000/svg"  
             viewBox="0 0 24 24" 
-            fill="none" 
+            fill={disliked ? "currentColor" : "none"}
             stroke="currentColor" 
             strokeWidth="2" 
             strokeLinecap="round" 
@@ -401,7 +485,9 @@ export function LikeDislike({
             <path d="M17 14V2"></path>
             <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path>
           </svg>
-          {isLoading ? '...' : stats.dislikesCount}
+          <span className="font-bold tabular-nums">
+            {isLoading ? '...' : stats.dislikesCount}
+          </span>
         </button>
       </div>
     </div>
