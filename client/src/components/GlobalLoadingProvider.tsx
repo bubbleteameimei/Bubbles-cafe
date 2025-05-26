@@ -24,7 +24,7 @@ const LoadingContext = createContext<LoadingContextType>({
 /**
  * Custom hook to access loading context
  */
-export const useLoading = () => {
+const useLoading = () => {
   return useContext(LoadingContext);
 }
 
@@ -174,4 +174,5 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
   );
 };
 
+export { useLoading };
 export default GlobalLoadingProvider;
