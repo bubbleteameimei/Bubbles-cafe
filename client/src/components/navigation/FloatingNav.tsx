@@ -4,7 +4,7 @@ import { Search, X, Menu } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useLoading } from '@/components/GlobalLoadingProvider';
+// import { useLoading } from '@/components/GlobalLoadingProvider';
 import SearchResults from '../../components/SearchResults';
 
 interface FloatingNavProps {
