@@ -245,33 +245,31 @@ export function LikeDislike({
     // Prevent multiple rapid clicks
     if (isProcessing) return;
     
-    const newLiked = !liked;
-    const wasDisliked = disliked;
+    const currentLiked = liked;
+    const currentDisliked = disliked;
+    const newLiked = !currentLiked;
     const originalStats = { ...stats };
     
     try {
       setIsProcessing(true);
       
-      // Calculate expected count changes with mathematical reasoning
+      // Calculate expected count changes with strict mathematical reasoning
       let expectedLikes = stats.likesCount;
       let expectedDislikes = stats.dislikesCount;
       
-      if (newLiked) {
-        // Adding a like
+      if (!currentLiked && newLiked) {
+        // Adding a like (was not liked before)
         expectedLikes += 1;
-        if (wasDisliked) {
+        if (currentDisliked) {
           // Switching from dislike to like
           expectedDislikes -= 1;
+          setDisliked(false);
         }
-      } else {
-        // Removing a like
+        setLiked(true);
+      } else if (currentLiked && !newLiked) {
+        // Removing a like (was liked before)
         expectedLikes -= 1;
-      }
-      
-      // Update UI state immediately with calculated values
-      setLiked(newLiked);
-      if (newLiked && disliked) {
-        setDisliked(false);
+        setLiked(false);
       }
       
       // Update stats immediately with mathematical logic
@@ -281,7 +279,7 @@ export function LikeDislike({
       });
       
       // Save interaction to localStorage
-      saveUserInteraction(postId, newLiked, false);
+      saveUserInteraction(postId, newLiked, currentDisliked && !newLiked ? false : false);
       
       // Send to server
       const success = await sendReaction(newLiked ? true : null);
@@ -303,15 +301,12 @@ export function LikeDislike({
       });
       
       // Revert UI state on error
-      setLiked(!newLiked);
-      if (wasDisliked) {
-        setDisliked(true);
-      }
-      // Revert stats to original values
+      setLiked(currentLiked);
+      setDisliked(currentDisliked);
       setStats(originalStats);
     } finally {
       // Add a small delay to prevent rapid clicking
-      setTimeout(() => setIsProcessing(false), 300);
+      setTimeout(() => setIsProcessing(false), 500);
     }
   };
 
@@ -319,33 +314,31 @@ export function LikeDislike({
     // Prevent multiple rapid clicks
     if (isProcessing) return;
     
-    const newDisliked = !disliked;
-    const wasLiked = liked;
+    const currentLiked = liked;
+    const currentDisliked = disliked;
+    const newDisliked = !currentDisliked;
     const originalStats = { ...stats };
     
     try {
       setIsProcessing(true);
       
-      // Calculate expected count changes with mathematical reasoning
+      // Calculate expected count changes with strict mathematical reasoning
       let expectedLikes = stats.likesCount;
       let expectedDislikes = stats.dislikesCount;
       
-      if (newDisliked) {
-        // Adding a dislike
+      if (!currentDisliked && newDisliked) {
+        // Adding a dislike (was not disliked before)
         expectedDislikes += 1;
-        if (wasLiked) {
+        if (currentLiked) {
           // Switching from like to dislike
           expectedLikes -= 1;
+          setLiked(false);
         }
-      } else {
-        // Removing a dislike
+        setDisliked(true);
+      } else if (currentDisliked && !newDisliked) {
+        // Removing a dislike (was disliked before)
         expectedDislikes -= 1;
-      }
-      
-      // Update UI state immediately with calculated values
-      setDisliked(newDisliked);
-      if (newDisliked && liked) {
-        setLiked(false);
+        setDisliked(false);
       }
       
       // Update stats immediately with mathematical logic
@@ -355,7 +348,7 @@ export function LikeDislike({
       });
       
       // Save interaction to localStorage
-      saveUserInteraction(postId, false, newDisliked);
+      saveUserInteraction(postId, currentLiked && !newDisliked ? false : false, newDisliked);
       
       // Send to server
       const success = await sendReaction(newDisliked ? false : null);
@@ -377,15 +370,12 @@ export function LikeDislike({
       });
       
       // Revert UI state on error
-      setDisliked(!newDisliked);
-      if (wasLiked) {
-        setLiked(true);
-      }
-      // Revert stats to original values
+      setLiked(currentLiked);
+      setDisliked(currentDisliked);
       setStats(originalStats);
     } finally {
       // Add a small delay to prevent rapid clicking
-      setTimeout(() => setIsProcessing(false), 300);
+      setTimeout(() => setIsProcessing(false), 500);
     }
   };
 
