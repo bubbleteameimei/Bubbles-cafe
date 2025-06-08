@@ -64,6 +64,28 @@ import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
 
+// Database operation utility function with retry logic
+async function safeDbOperation<T>(
+  operation: () => Promise<T>, 
+  fallback: T, 
+  operationName: string,
+  maxRetries: number = 3
+): Promise<T> {
+  let lastError;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      console.warn(`${operationName} attempt ${attempt + 1} failed:`, error.message);
+      lastError = error;
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt)));
+    }
+  }
+  console.error(`${operationName} failed after ${maxRetries} attempts, using fallback`);
+  return fallback;
+}
+
 // Create a direct pool for use with session store and SQL queries with enhanced connection options
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
