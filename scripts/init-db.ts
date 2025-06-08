@@ -355,16 +355,14 @@ Start your storytelling journey today! 🚀`,
 }
 
 // Run initialization
-if (require.main === module) {
-  initializeDatabase()
-    .then(() => {
-      console.log('Database setup complete');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Setup failed:', error);
-      process.exit(1);
-    });
-}
+initializeDatabase()
+  .then(() => {
+    console.log('Database setup complete');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Setup failed:', error);
+    process.exit(1);
+  });
 
 export { initializeDatabase };
