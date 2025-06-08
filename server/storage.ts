@@ -307,8 +307,11 @@ export class DatabaseStorage implements IStorage {
   
   // Helper method to determine if the database is available
   isDbConnected(): boolean {
-    const status = getDatabaseStatus();
-    return status.isConnected;
+    try {
+      return !!db && process.env.DATABASE_URL !== undefined;
+    } catch (error) {
+      return false;
+    }
   }
   
   // Helper method for safely executing database operations with fallback options and retries

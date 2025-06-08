@@ -3084,4 +3084,7 @@ Message ID: ${savedMessage.id}
 
   // Mount the moderation router
   app.use('/api/moderation', moderationRouter);
+  
+  // Mount the admin router
+  app.use('/api/admin', adminRoutes);
 }  

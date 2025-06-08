@@ -82,3 +82,13 @@ export function isAdmin(req: Request, res: Response, next: NextFunction): void {
   });
   return;
 }
+
+/**
+ * Require authentication middleware
+ */
+export const requireAuth = isAuthenticated;
+
+/**
+ * Require admin privileges middleware
+ */
+export const requireAdmin = isAdmin;
