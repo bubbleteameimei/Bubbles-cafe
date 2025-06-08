@@ -60,7 +60,7 @@ import {
 // Removed: type FeaturedAuthor, type ReadingStreak, type WriterStreak, featuredAuthors, readingStreaks, writerStreaks
 
 import type { CommentMetadata } from "@shared/schema";
-import { db, getDatabaseStatus, safeDbOperation } from "./db";
+import { db } from "./db";
 import pkg from 'pg';
 const { Pool } = pkg;
 

@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, index, unique, json, jsonb, decimal, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -639,6 +640,205 @@ export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({
 });
 export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
 export type UserFeedback = typeof userFeedback.$inferSelect;
+
+// Define relations between tables
+export const usersRelations = relations(users, ({ many }) => ({
+  posts: many(posts),
+  comments: many(comments),
+  bookmarks: many(bookmarks),
+  sessions: many(sessions),
+  resetTokens: many(resetTokens),
+  postLikes: many(postLikes),
+  challengeEntries: many(challengeEntries),
+  authorTips: many(authorTips),
+  activityLogs: many(activityLogs),
+  userProgress: many(userProgress),
+  userFeedback: many(userFeedback),
+  authorStats: many(authorStats),
+  readingProgress: many(readingProgress),
+  secretProgress: many(secretProgress),
+  reportedContent: many(reportedContent),
+  userPrivacySettings: many(userPrivacySettings),
+}));
+
+export const postsRelations = relations(posts, ({ one, many }) => ({
+  author: one(users, {
+    fields: [posts.authorId],
+    references: [users.id],
+  }),
+  comments: many(comments),
+  bookmarks: many(bookmarks),
+  postLikes: many(postLikes),
+  analytics: many(analytics),
+  readingProgress: many(readingProgress),
+  secretProgress: many(secretProgress),
+  userProgress: many(userProgress),
+}));
+
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+  post: one(posts, {
+    fields: [comments.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id],
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id],
+  }),
+  replies: many(comments),
+  reactions: many(commentReactions),
+  votes: many(commentVotes),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+  user: one(users, {
+    fields: [bookmarks.userId],
+    references: [users.id],
+  }),
+  post: one(posts, {
+    fields: [bookmarks.postId],
+    references: [posts.id],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const resetTokensRelations = relations(resetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [resetTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const postLikesRelations = relations(postLikes, ({ one }) => ({
+  post: one(posts, {
+    fields: [postLikes.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [postLikes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const commentReactionsRelations = relations(commentReactions, ({ one }) => ({
+  comment: one(comments, {
+    fields: [commentReactions.commentId],
+    references: [comments.id],
+  }),
+}));
+
+export const commentVotesRelations = relations(commentVotes, ({ one }) => ({
+  comment: one(comments, {
+    fields: [commentVotes.commentId],
+    references: [comments.id],
+  }),
+}));
+
+export const readingProgressRelations = relations(readingProgress, ({ one }) => ({
+  post: one(posts, {
+    fields: [readingProgress.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [readingProgress.userId],
+    references: [users.id],
+  }),
+}));
+
+export const secretProgressRelations = relations(secretProgress, ({ one }) => ({
+  post: one(posts, {
+    fields: [secretProgress.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [secretProgress.userId],
+    references: [users.id],
+  }),
+}));
+
+export const analyticsRelations = relations(analytics, ({ one }) => ({
+  post: one(posts, {
+    fields: [analytics.postId],
+    references: [posts.id],
+  }),
+}));
+
+export const authorStatsRelations = relations(authorStats, ({ one }) => ({
+  author: one(users, {
+    fields: [authorStats.authorId],
+    references: [users.id],
+  }),
+}));
+
+export const writingChallengesRelations = relations(writingChallenges, ({ many }) => ({
+  entries: many(challengeEntries),
+}));
+
+export const challengeEntriesRelations = relations(challengeEntries, ({ one }) => ({
+  challenge: one(writingChallenges, {
+    fields: [challengeEntries.challengeId],
+    references: [writingChallenges.id],
+  }),
+  user: one(users, {
+    fields: [challengeEntries.userId],
+    references: [users.id],
+  }),
+}));
+
+export const reportedContentRelations = relations(reportedContent, ({ one }) => ({
+  reporter: one(users, {
+    fields: [reportedContent.reporterId],
+    references: [users.id],
+  }),
+}));
+
+export const authorTipsRelations = relations(authorTips, ({ one }) => ({
+  author: one(users, {
+    fields: [authorTips.authorId],
+    references: [users.id],
+  }),
+}));
+
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [activityLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userProgressRelations = relations(userProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [userProgress.userId],
+    references: [users.id],
+  }),
+  post: one(posts, {
+    fields: [userProgress.postId],
+    references: [posts.id],
+  }),
+}));
+
+export const userFeedbackRelations = relations(userFeedback, ({ one }) => ({
+  user: one(users, {
+    fields: [userFeedback.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userPrivacySettingsRelations = relations(userPrivacySettings, ({ one }) => ({
+  user: one(users, {
+    fields: [userPrivacySettings.userId],
+    references: [users.id],
+  }),
+}));
 
 // User Privacy Settings schema and types
 export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings).omit({ 
