@@ -4,6 +4,7 @@
  */
 import { Express, Request, Response } from 'express';
 import { syncWordPressPosts, syncSingleWordPressPost, SyncResult, getSyncStatus } from '../wordpress-sync';
+import { wordpressSync } from '../wordpress-api-sync';
 import { log } from '../vite.js';
 
 // Track sync status
@@ -107,12 +108,12 @@ export function registerWordPressSyncRoutes(app: Express): void {
       });
       
       // Now run the actual sync (the response has already been sent)
-      const result = await syncWordPressPosts();
+      const result = await wordpressSync.syncAllPosts();
       
       lastSyncStatus = result;
       lastSyncTime = new Date().toISOString();
       
-      log(`WordPress sync completed: ${result.created} created, ${result.updated} updated`, 'wordpress-sync');
+      log(`WordPress sync completed: ${result.synced} synced posts, ${result.errors.length} errors`, 'wordpress-sync');
     } catch (error) {
       log(`Error in WordPress sync: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-sync');
       

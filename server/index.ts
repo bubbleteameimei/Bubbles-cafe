@@ -24,7 +24,7 @@ import crypto from "crypto";
 import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
-import { storage } from "./storage";
+import { storage } from "./storage-db";
 import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
@@ -33,6 +33,7 @@ import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recomme
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
 import { setupWordPressSyncSchedule } from "./wordpress-sync"; // Using the declaration file
+import { wordpressScheduler } from "./wordpress-scheduler";
 import { registerAnalyticsRoutes } from "./routes/analytics"; // Analytics endpoints
 import { registerEmailServiceRoutes } from "./routes/email-service"; // Email service routes
 import { registerBookmarkRoutes } from "./routes/bookmark-routes"; // Bookmark routes
