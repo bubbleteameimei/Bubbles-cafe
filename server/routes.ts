@@ -35,6 +35,7 @@ import * as crypto from 'crypto';
 import moderationRouter from './routes/moderation';
 import { registerUserFeedbackRoutes } from './routes/user-feedback';
 import { registerPrivacySettingsRoutes } from './routes/privacy-settings';
+import { adminRoutes } from './routes/admin';
 
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
