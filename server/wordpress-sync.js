@@ -125,11 +125,11 @@ function determineThemeCategory(title, content) {
  */
 async function getOrCreateAdminUser(pool) {
   try {
-    // Check if admin user exists
+    // Always use vandalison@gmail.com as the primary admin
     const existingUser = await pool.query(`
       SELECT id, username, email, is_admin
       FROM users
-      WHERE is_admin = true
+      WHERE email = 'vandalison@gmail.com' AND is_admin = true
       LIMIT 1
     `);
 
@@ -138,15 +138,15 @@ async function getOrCreateAdminUser(pool) {
       return existingUser.rows[0];
     }
 
-    // Create new admin user if not exists
+    // Create vandalison@gmail.com admin user if it doesn't exist
     const hashedPassword = await bcrypt.hash("admin123", 12);
     const newUser = await pool.query(`
       INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('admin', 'admin@example.com', $1, true, NOW())
+      VALUES ('vandalison', 'vandalison@gmail.com', $1, true, NOW())
       RETURNING id, username, email, is_admin
     `, [hashedPassword]);
 
-    log(`Created new admin user with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
+    log(`Created admin user vandalison@gmail.com with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
     return newUser.rows[0];
   } catch (error) {
     log(`Error getting/creating admin user: ${error.message}`, 'wordpress-sync');
