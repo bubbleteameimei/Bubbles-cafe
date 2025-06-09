@@ -80,7 +80,7 @@ async function cleanContent(content: string): Promise<string> {
 async function getOrCreateAdminUser() {
   try {
     const hashedPassword = await bcrypt.hash("admin123", 12);
-    console.log("Getting admin user with email: vantalison@gmail.com");
+    console.log("Getting admin user with email: vandalison@gmail.com");
 
     // First try to directly query the database to check structure
     const checkTable = await db.execute(`
@@ -94,7 +94,7 @@ async function getOrCreateAdminUser() {
     
     const [existingAdmin] = await db.select()
       .from(users)
-      .where(eq(users.email, "vantalison@gmail.com"));
+      .where(eq(users.email, "vandalison@gmail.com"));
 
     if (existingAdmin) {
       console.log("Admin user found with ID:", existingAdmin.id);
@@ -103,8 +103,8 @@ async function getOrCreateAdminUser() {
 
     // Create a new admin user with only the fields that exist in the database
     const [newAdmin] = await db.insert(users).values({
-      username: "vantalison",
-      email: "vantalison@gmail.com",
+      username: "vandalison",
+      email: "vandalison@gmail.com",
       password_hash: hashedPassword,
       isAdmin: true
     }).returning();

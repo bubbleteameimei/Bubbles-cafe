@@ -43,17 +43,17 @@ async function initializeDatabase() {
     console.log('✅ Database connection successful');
 
     // Create admin user
-    console.log('Creating admin user...');
+    console.log('Setting up admin user...');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
-    // Check if admin user already exists
-    const existingAdmin = await db.select().from(users).where(sql`email = 'admin@storytelling.com'`).limit(1);
+    // Check if vandalison@gmail.com admin user already exists
+    const existingAdmin = await db.select().from(users).where(sql`email = 'vandalison@gmail.com'`).limit(1);
     
     let adminUserId: number;
     if (existingAdmin.length === 0) {
       const [adminUser] = await db.insert(users).values({
-        username: 'admin',
-        email: 'admin@storytelling.com',
+        username: 'vandalison',
+        email: 'vandalison@gmail.com',
         password_hash: hashedPassword,
         isAdmin: true,
         metadata: {
@@ -63,10 +63,10 @@ async function initializeDatabase() {
         }
       }).returning();
       adminUserId = adminUser.id;
-      console.log('✅ Admin user created');
+      console.log('✅ Admin user created: vandalison@gmail.com');
     } else {
       adminUserId = existingAdmin[0].id;
-      console.log('✅ Admin user already exists');
+      console.log('✅ Admin user exists: vandalison@gmail.com');
     }
 
     // Create sample author stats

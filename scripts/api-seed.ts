@@ -74,7 +74,7 @@ function cleanContent(content: string): string {
 async function getOrCreateAdminUser() {
   try {
     const hashedPassword = await bcrypt.hash("powerPUFF7", 12);
-    console.log("🔍 Checking for admin user with email: vantalison@gmail.com");
+    console.log("🔍 Checking for admin user with email: vandalison@gmail.com");
 
     // Check if admin user exists
     const existingAdmin = await db.select({
@@ -85,7 +85,7 @@ async function getOrCreateAdminUser() {
       createdAt: users.createdAt
     })
     .from(users)
-    .where(eq(users.email, "vantalison@gmail.com"));
+    .where(eq(users.email, "vandalison@gmail.com"));
 
     if (existingAdmin && existingAdmin.length > 0) {
       console.log("✅ Admin user already exists with ID:", existingAdmin[0].id);
@@ -99,7 +99,7 @@ async function getOrCreateAdminUser() {
       .insert(users)
       .values({
         username: "admin",
-        email: "vantalison@gmail.com",
+        email: "vandalison@gmail.com",
         password_hash: hashedPassword,
         isAdmin: true
       })
