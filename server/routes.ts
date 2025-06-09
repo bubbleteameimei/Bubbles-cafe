@@ -512,6 +512,7 @@ export function registerRoutes(app: Express): Server {
           authorId: userId,
           isCommunityPost: true,      // Only include community posts
           isAdminPost: false,         // Strictly exclude admin posts
+          excludeWordPressContent: true, // Exclude all WordPress imported content
           category: category !== 'all' ? category : undefined,
           sort,
           order

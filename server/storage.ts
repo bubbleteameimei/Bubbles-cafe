@@ -103,6 +103,17 @@ import bcrypt from 'bcryptjs';
 
 const PostgresSessionStore = connectPg(session);
 
+export interface PostFilters {
+  search?: string;
+  authorId?: number;
+  isCommunityPost?: boolean;
+  isAdminPost?: boolean;
+  excludeWordPressContent?: boolean;
+  category?: string;
+  sort?: string;
+  order?: string;
+}
+
 export interface IStorage {
   // System
   getDb(): any;
@@ -135,7 +146,7 @@ export interface IStorage {
   updateSessionAccess(token: string): Promise<void>;
 
   // Posts
-  getPosts(page?: number, limit?: number): Promise<{ posts: Post[], hasMore: boolean }>;
+  getPosts(page?: number, limit?: number, filters?: PostFilters): Promise<{ posts: Post[], hasMore: boolean }>;
   getPost(slug: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   deletePost(id: number): Promise<Post>;
@@ -1357,6 +1368,19 @@ export class DatabaseStorage implements IStorage {
             return isAdminPost === filters.isAdminPost;
           });
         }
+      }
+      
+      // Exclude WordPress content if requested (for community sections)
+      if (filters.excludeWordPressContent === true) {
+        filteredPosts = filteredPosts.filter(post => {
+          const metadata = post.metadata || {};
+          // Exclude posts that have WordPress source or are admin posts
+          const isWordPressImport = (metadata as any).wordpressId || (metadata as any).source === 'wordpress';
+          const isAdminPost = (metadata as any).isAdminPost === true;
+          
+          // Exclude if it's a WordPress import OR an admin post
+          return !isWordPressImport && !isAdminPost;
+        });
       }
       
       // Apply text search filter if specified

@@ -158,8 +158,8 @@ export class WordPressAPISync {
         modifiedDate: wpPost.modified,
         source: 'wordpress_api',
         status: 'publish',
-        isAdminPost: false,
-        isCommunityPost: true
+        isAdminPost: true,
+        isCommunityPost: false
       }
     };
 
