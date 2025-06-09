@@ -1,5 +1,6 @@
 // Database initialization script
-import { Client } from 'pg';
+import pkg from 'pg';
+const { Client } = pkg;
 import bcrypt from 'bcryptjs';
 
 async function initializeDatabase() {
