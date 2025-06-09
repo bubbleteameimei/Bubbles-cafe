@@ -347,7 +347,7 @@ export async function syncWordPressPosts() {
                 theme_category, metadata
               ) VALUES (
                 $1, $2, $3, $4, $5, 
-                false, false, $6, false, $7, 
+                false, true, $6, false, $7, 
                 $8, $9
               ) RETURNING id
             `, [
@@ -388,7 +388,7 @@ export async function syncWordPressPosts() {
                 ...metadataObj,
                 lastUpdated: new Date().toISOString()
               }),
-              false, // WordPress posts are never admin posts
+              true, // WordPress posts are always admin posts
               pubDate, // Use the original publication date
               postId
             ]);
