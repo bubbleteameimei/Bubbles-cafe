@@ -3968,7 +3968,7 @@ export class DatabaseStorage implements IStorage {
               id, title, content, slug, excerpt, author_id,
               metadata, created_at, is_secret, mature_content,
               theme_category, reading_time_minutes,
-              "likesCount", "dislikesCount", "isAdminPost"
+              likes_count, dislikes_count, "isAdminPost"
             FROM posts 
             WHERE id = ${id}
             LIMIT 1
@@ -3996,8 +3996,8 @@ export class DatabaseStorage implements IStorage {
             metadata: post.metadata || {},
             createdAt: post.created_at instanceof Date ? post.created_at : new Date(post.created_at),
             readingTimeMinutes: post.reading_time_minutes || Math.ceil(post.content.length / 1000),
-            likesCount: post.likesCount || 0,
-            dislikesCount: post.dislikesCount || 0,
+            likesCount: post.likes_count || 0,
+            dislikesCount: post.dislikes_count || 0,
             isAdminPost: post.isAdminPost || false
           };
         } else {
