@@ -1164,10 +1164,37 @@ export class DatabaseStorage implements IStorage {
         try {
           console.log("[Storage] Fetching posts with page:", page, "limit:", limit, "filters:", JSON.stringify(filters));
           
-          // Query to get all posts including WordPress stories with optimized Drizzle query
-          console.log("[Storage] Executing optimized Drizzle query");
-          // Use a more robust query approach with only fields we know exist in the database
-          const rawPosts = await db.select({
+          // Build WHERE conditions based on filters
+          const whereConditions = [];
+          
+          // Filter for community posts - exclude admin posts
+          if (filters.isCommunityPost === true) {
+            // For community posts, explicitly exclude admin posts
+            whereConditions.push(or(
+              eq(postsTable.isAdminPost, false),
+              sql`"isAdminPost" IS NULL`
+            ));
+          }
+          
+          // Filter for admin posts specifically
+          if (filters.isAdminPost === true) {
+            whereConditions.push(eq(postsTable.isAdminPost, true));
+          } else if (filters.isAdminPost === false) {
+            whereConditions.push(or(
+              eq(postsTable.isAdminPost, false),
+              sql`"isAdminPost" IS NULL`
+            ));
+          }
+          
+          // Author filter
+          if (filters.authorId) {
+            whereConditions.push(eq(postsTable.authorId, filters.authorId));
+          }
+
+          // Query to get posts with proper filtering
+          console.log("[Storage] Executing optimized Drizzle query with filters:", filters);
+          
+          let query = db.select({
             id: postsTable.id,
             title: postsTable.title,
             content: postsTable.content,
@@ -1178,12 +1205,20 @@ export class DatabaseStorage implements IStorage {
             metadata: postsTable.metadata,
             isSecret: postsTable.isSecret,
             matureContent: postsTable.matureContent,
-            themeCategory: postsTable.themeCategory
+            themeCategory: postsTable.themeCategory,
+            isAdminPost: postsTable.isAdminPost
           })
-          .from(postsTable)
-          .orderBy(desc(postsTable.createdAt))
-          .limit(limit + 1)
-          .offset(offset);
+          .from(postsTable);
+          
+          // Apply WHERE conditions if any
+          if (whereConditions.length > 0) {
+            query = query.where(and(...whereConditions));
+          }
+          
+          const rawPosts = await query
+            .orderBy(desc(postsTable.createdAt))
+            .limit(limit + 1)
+            .offset(offset);
           
           console.log("[Storage] SQL query returned", rawPosts.length, "posts");
           
@@ -1194,9 +1229,9 @@ export class DatabaseStorage implements IStorage {
           // Transform posts with reliable field access
           const transformedPosts = paginatedPosts.map(post => {
             // Extract metadata for fields that might be stored there
-            const metadata = post.metadata || {};
+            const metadata = (post.metadata as any) || {};
             
-            // Get values with fallbacks
+            // Get values with fallbacks - prioritize database columns over metadata
             return {
               id: post.id,
               title: post.title,
@@ -1209,9 +1244,10 @@ export class DatabaseStorage implements IStorage {
               likes: metadata.likes || 0,
               views: metadata.views || 0,
               metadata: metadata,
-              // Ensure isCommunityPost is consistently handled
-              isCommunityPost: metadata.isCommunityPost || false,
-              isAdminPost: metadata.isAdminPost || false,
+              // Use database column for isAdminPost, fallback to metadata
+              isAdminPost: post.isAdminPost !== undefined ? post.isAdminPost : (metadata.isAdminPost || false),
+              // Community posts are non-admin posts
+              isCommunityPost: post.isAdminPost === false || (post.isAdminPost === null && metadata.isCommunityPost === true),
               isSecret: post.isSecret || false,
               matureContent: post.matureContent || false,
               themeCategory: post.themeCategory || metadata.themeCategory || null,
@@ -1221,59 +1257,31 @@ export class DatabaseStorage implements IStorage {
             };
           });
           
-          console.log(`[Storage] Transformed ${transformedPosts.length} posts, hasMore: ${hasMore}`);
+          // Apply text search filter if specified (post-transform filtering)
+          let filteredPosts = transformedPosts;
+          if (filters.search) {
+            const searchTerm = filters.search.toLowerCase();
+            filteredPosts = filteredPosts.filter(post => 
+              post.title.toLowerCase().includes(searchTerm) || 
+              post.content.toLowerCase().includes(searchTerm) ||
+              (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
+            );
+          }
           
-          return { posts: transformedPosts, hasMore };
+          // Apply category filter if specified
+          if (filters.category) {
+            filteredPosts = filteredPosts.filter(post => 
+              post.themeCategory === filters.category
+            );
+          }
+          
+          console.log(`[Storage] Transformed ${filteredPosts.length} posts, hasMore: ${hasMore}`);
+          
+          return { posts: filteredPosts, hasMore };
         } catch (error) {
           console.error("[Storage] Error executing getPosts query:", error);
           return { posts: [], hasMore: false };
         }
-        
-        // Post-query filtering for metadata fields like isCommunityPost
-        // This avoids database schema issues when these fields are missing
-        if (filters.isCommunityPost !== undefined || filters.category) {
-          posts = posts.filter(post => {
-            const metadata = post.metadata || {};
-            
-            // Check for community post flag in metadata
-            if (filters.isCommunityPost !== undefined) {
-              const isCommunityPost = metadata.isCommunityPost === true;
-              if (isCommunityPost !== filters.isCommunityPost) return false;
-            }
-            
-            // Filter by category if specified
-            if (filters.category) {
-              const themeCategory = metadata.themeCategory;
-              if (themeCategory !== filters.category) return false;
-            }
-            
-            return true;
-          });
-        }
-        
-        // Apply text search filter if specified
-        if (filters.search) {
-          const searchTerm = filters.search.toLowerCase();
-          posts = posts.filter(post => 
-            post.title.toLowerCase().includes(searchTerm) || 
-            post.content.toLowerCase().includes(searchTerm) ||
-            (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm))
-          );
-        }
-  
-        // Check if there are more posts
-        const hasMore = posts.length > limit;
-        const paginatedPosts = posts.slice(0, limit); // Remove the extra post we fetched
-  
-        console.log(`[Storage] Found ${paginatedPosts.length} posts, hasMore: ${hasMore}`);
-  
-        return {
-          posts: paginatedPosts.map(post => ({
-            ...post,
-            createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt)
-          })),
-          hasMore
-        };
       },
       { posts: [], hasMore: false },
       'getPosts'

@@ -121,32 +121,46 @@ function determineThemeCategory(title, content) {
 }
 
 /**
- * Get or create an admin user in the database
+ * Get or create the single admin user in the database
+ * Always ensures vantalison@gmail.com is the only admin account
  */
 async function getOrCreateAdminUser(pool) {
   try {
-    // Always use vandalison@gmail.com as the primary admin
+    // First, remove admin privileges from any other users except vantalison@gmail.com
+    await pool.query(`
+      UPDATE users SET is_admin = false 
+      WHERE email != 'vantalison@gmail.com' AND is_admin = true
+    `);
+
+    // Always use vantalison@gmail.com as the primary admin
     const existingUser = await pool.query(`
       SELECT id, username, email, is_admin
       FROM users
-      WHERE email = 'vandalison@gmail.com' AND is_admin = true
+      WHERE email = 'vantalison@gmail.com'
       LIMIT 1
     `);
 
     if (existingUser.rows.length > 0) {
-      log(`Found admin user with ID: ${existingUser.rows[0].id}`, 'wordpress-sync');
-      return existingUser.rows[0];
+      // Ensure this user is admin and update password
+      const hashedPassword = await bcrypt.hash("admin124", 12);
+      await pool.query(`
+        UPDATE users SET is_admin = true, username = 'vantalison', password_hash = $1
+        WHERE email = 'vantalison@gmail.com'
+      `, [hashedPassword]);
+      
+      log(`Found and updated admin user with ID: ${existingUser.rows[0].id}`, 'wordpress-sync');
+      return { ...existingUser.rows[0], is_admin: true };
     }
 
-    // Create vandalison@gmail.com admin user if it doesn't exist
-    const hashedPassword = await bcrypt.hash("admin123", 12);
+    // Create vantalison@gmail.com admin user if it doesn't exist
+    const hashedPassword = await bcrypt.hash("admin124", 12);
     const newUser = await pool.query(`
       INSERT INTO users (username, email, password_hash, is_admin, created_at)
-      VALUES ('vandalison', 'vandalison@gmail.com', $1, true, NOW())
+      VALUES ('vantalison', 'vantalison@gmail.com', $1, true, NOW())
       RETURNING id, username, email, is_admin
     `, [hashedPassword]);
 
-    log(`Created admin user vandalison@gmail.com with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
+    log(`Created admin user vantalison@gmail.com with ID: ${newUser.rows[0].id}`, 'wordpress-sync');
     return newUser.rows[0];
   } catch (error) {
     log(`Error getting/creating admin user: ${error.message}`, 'wordpress-sync');
@@ -339,7 +353,7 @@ export async function syncWordPressPosts() {
           `, [slug]);
           
           if (existingPost.rows.length === 0) {
-            // Create new post
+            // Create new post - all WordPress posts are admin posts and should not appear in community
             const result = await pool.query(`
               INSERT INTO posts (
                 title, content, excerpt, slug, author_id, 
@@ -358,14 +372,18 @@ export async function syncWordPressPosts() {
               admin.id, 
               pubDate, 
               readingTimeMinutes,
-              themeCategory || categoryNames[0] || 'General', // Use detected theme if available
-              JSON.stringify(metadataObj)
+              themeCategory || categoryNames[0] || 'General',
+              JSON.stringify({
+                ...metadataObj,
+                isWordPressPost: true,
+                excludeFromCommunity: true // Explicitly mark to exclude from community feeds
+              })
             ]);
             
             created++;
             log(`Created post: "${title}" (ID: ${result.rows[0].id})`, 'wordpress-sync');
           } else {
-            // Update existing post
+            // Update existing post - ensure it's marked as admin post and excluded from community
             const postId = existingPost.rows[0].id;
             await pool.query(`
               UPDATE posts SET
@@ -376,8 +394,9 @@ export async function syncWordPressPosts() {
                 theme_category = $5,
                 metadata = $6,
                 "isAdminPost" = $7,
-                created_at = $8
-              WHERE id = $9
+                author_id = $8,
+                created_at = $9
+              WHERE id = $10
             `, [
               title, 
               content, 
@@ -386,9 +405,12 @@ export async function syncWordPressPosts() {
               themeCategory || categoryNames[0] || 'General',
               JSON.stringify({
                 ...metadataObj,
-                lastUpdated: new Date().toISOString()
+                lastUpdated: new Date().toISOString(),
+                isWordPressPost: true,
+                excludeFromCommunity: true // Explicitly mark to exclude from community feeds
               }),
               true, // WordPress posts are always admin posts
+              admin.id, // Ensure author is the admin user
               pubDate, // Use the original publication date
               postId
             ]);
