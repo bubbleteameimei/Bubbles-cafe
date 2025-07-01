@@ -1477,7 +1477,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     className={`h-8 px-2 w-24 transition-all duration-200 ${
                       isFirstStory 
                         ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
-                        : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg'
+                        : 'bg-slate-600 hover:bg-slate-700 text-white border-slate-600 hover:border-slate-700 shadow-md hover:shadow-lg'
                     }`}
                     disabled={posts.length <= 1 || isFirstStory}
                     title={isFirstStory ? "This is the first story" : "Go to previous story"}
@@ -1509,7 +1509,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     className={`h-8 px-2 w-24 transition-all duration-200 ${
                       isLastStory 
                         ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
-                        : 'bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600 shadow-md hover:shadow-lg'
+                        : 'bg-slate-700 hover:bg-slate-800 text-white border-slate-700 hover:border-slate-800 shadow-md hover:shadow-lg'
                     }`}
                     disabled={posts.length <= 1 || isLastStory}
                     title={isLastStory ? "This is the last story" : "Go to next story"}
@@ -1563,7 +1563,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
                     isFirstStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
                   }`}
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
@@ -1589,7 +1589,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
                     isLastStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-300'
                   }`}
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
