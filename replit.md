@@ -132,10 +132,25 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 - `db-setup.js` - Node.js fallback script with multiple Drizzle command attempts
 - `DATABASE_SETUP.md` - Complete documentation for database setup process
 
+## Content Management
+
+### Sample Story Removal
+- **Clean WordPress Content**: Removed all sample/demo stories from reader and database
+- **WordPress API Only**: Reader now displays only authentic content from WordPress API
+- **Database Cleanup**: Removed 3 sample stories ("Welcome to Our Digital Storytelling Platform", "The Art of Interactive Storytelling", "Building Your First Interactive Story")
+- **Current Content**: 21 WordPress stories with titles like "BLOOD", "WORD", "HUNGER", etc.
+- **Automated Script**: Created `scripts/remove-sample-stories.ts` for future cleanup if needed
+
+### Content Sources
+- **Primary**: WordPress API (bubbleteameimei.wordpress.com) - automatically synced every 5 minutes
+- **Secondary**: Community posts from authenticated users
+- **Removed**: All sample/demo/placeholder content
+
 ## Changelog
 
 ```
 Changelog:
+- July 01, 2025. Removed all sample stories from reader - only WordPress API content remains
 - July 01, 2025. Database setup automated with modern commands and permanent startup process
 - July 01, 2025. Initial setup
 ```
