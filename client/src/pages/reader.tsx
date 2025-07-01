@@ -1474,10 +1474,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant={isFirstStory ? "outline" : "default"}
                     size="sm"
                     onClick={goToPreviousStory}
-                    className={`h-8 px-2 w-24 transition-all duration-300 transform hover:scale-105 ${
+                    className={`h-8 px-2 w-24 transition-all duration-200 ${
                       isFirstStory 
                         ? 'bg-muted/40 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-40' 
-                        : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-none shadow-lg hover:shadow-xl rounded-full'
+                        : 'bg-stone-600 hover:bg-stone-700 text-white border-stone-600 hover:border-stone-700 shadow-md hover:shadow-lg'
                     }`}
                     disabled={posts.length <= 1 || isFirstStory}
                     title={isFirstStory ? "This is the first story" : "Go to previous story"}
@@ -1506,10 +1506,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant={isLastStory ? "outline" : "default"}
                     size="sm"
                     onClick={goToNextStory}
-                    className={`h-8 px-2 w-24 transition-all duration-300 transform hover:scale-105 ${
+                    className={`h-8 px-2 w-24 transition-all duration-200 ${
                       isLastStory 
                         ? 'bg-muted/40 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-40' 
-                        : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white border-none shadow-lg hover:shadow-xl rounded-full'
+                        : 'bg-stone-700 hover:bg-stone-800 text-white border-stone-700 hover:border-stone-800 shadow-md hover:shadow-lg'
                     }`}
                     disabled={posts.length <= 1 || isLastStory}
                     title={isLastStory ? "This is the last story" : "Go to next story"}
@@ -1560,10 +1560,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-300 transform hover:scale-110 ${
+                  className={`h-8 w-8 group relative transition-all duration-200 ${
                     isFirstStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:shadow-md dark:text-purple-400 dark:hover:bg-purple-950 dark:hover:text-purple-300'
+                      : 'text-stone-600 hover:bg-stone-50 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-stone-900 dark:hover:text-stone-300'
                   }`}
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
@@ -1586,10 +1586,10 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className={`h-8 w-8 rounded-full group relative transition-all duration-300 transform hover:scale-110 ${
+                  className={`h-8 w-8 group relative transition-all duration-200 ${
                     isLastStory 
                       ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
-                      : 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-md dark:text-emerald-400 dark:hover:bg-emerald-950 dark:hover:text-emerald-300'
+                      : 'text-stone-700 hover:bg-stone-50 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-stone-900 dark:hover:text-stone-300'
                   }`}
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
