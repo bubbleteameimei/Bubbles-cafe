@@ -1,0 +1,130 @@
+# Interactive Storytelling Platform
+
+## Overview
+
+This is a modern interactive storytelling platform built with React, TypeScript, Express.js, and PostgreSQL. The application provides a comprehensive platform for reading, writing, and sharing interactive stories with user authentication, content management, and administrative features.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite for fast development and optimized production builds
+- **Styling**: Tailwind CSS with shadcn/ui components and Radix UI primitives
+- **State Management**: Zustand for global state, React Query for server state
+- **Routing**: Wouter for lightweight client-side routing
+- **UI Components**: Custom components built on Radix UI with accessibility features
+
+### Backend Architecture
+- **Framework**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Session-based authentication with bcryptjs password hashing
+- **Security**: CSRF protection, rate limiting, CORS configuration, Helmet security headers
+- **API Design**: RESTful API with JSON responses
+
+### Database Schema
+- **Users**: Authentication, profiles, admin roles
+- **Posts**: Stories with categories, tags, metadata, reading time
+- **Comments**: Threaded comments system
+- **Bookmarks**: User bookmarking functionality
+- **Categories & Tags**: Content organization
+- **Site Settings**: Application configuration
+
+## Key Components
+
+### Content Management
+- WordPress API integration for automatic content synchronization
+- Admin content creation and editing interface
+- Community post submission system
+- Content categorization (Horror, Supernatural, etc.)
+- Reading time calculation and progress tracking
+
+### User Management
+- User registration and authentication
+- Profile management with customizable settings
+- Admin user management interface
+- Role-based access control
+
+### Reader Experience
+- Responsive reading interface with font size controls
+- Dark/light theme support
+- Progress tracking and bookmarking
+- Interactive elements and animations
+- Mobile-optimized navigation
+
+### Administrative Features
+- Consolidated admin menu with 4 main sections:
+  - Dashboard
+  - Content Management (Stories, Content, WordPress Sync)
+  - User Management (Users, Moderation)
+  - Insights & Reports (Analytics, Statistics, Feedback, Bug Reports)
+
+## Data Flow
+
+### Content Synchronization
+1. WordPress API automatically syncs content every 5 minutes
+2. Local storage fallback for offline functionality
+3. Server-side API as secondary fallback
+4. Real-time content updates through proper cache invalidation
+
+### Authentication Flow
+1. Session-based authentication with secure cookies
+2. CSRF protection on all state-changing operations
+3. Rate limiting for authentication endpoints
+4. Automatic session renewal and cleanup
+
+### API Request Flow
+1. Client requests include CSRF tokens automatically
+2. Rate limiting applied based on user authentication status
+3. Error handling with proper user feedback
+4. Automatic retry logic for failed requests
+
+## External Dependencies
+
+### Core Libraries
+- **React Ecosystem**: React, React DOM, React Query
+- **UI Framework**: Radix UI, shadcn/ui, Tailwind CSS
+- **State Management**: Zustand, React Hook Form
+- **Database**: Drizzle ORM, PostgreSQL driver
+- **Authentication**: bcryptjs, express-session
+- **Security**: helmet, express-rate-limit, CORS
+- **Validation**: Zod for schema validation
+
+### Enhanced Features
+- **Animations**: Framer Motion, React Confetti
+- **Typography**: React Simple Typewriter, React Scramble
+- **Icons**: Lucide React, React Icons
+- **Analytics**: PostHog for user behavior tracking
+- **Performance**: Web Vitals monitoring
+
+## Deployment Strategy
+
+### Split Deployment Architecture
+- **Frontend**: Deployed on Vercel for optimal React/Vite performance
+- **Backend**: Deployed on Render for Node.js/Express API
+- **Database**: PostgreSQL hosted on Neon for serverless scaling
+- **Assets**: Static assets served through Vercel's CDN
+
+### Environment Configuration
+- Cross-domain CORS setup for frontend-backend communication
+- Secure cookie configuration for cross-domain authentication
+- Environment-specific rate limiting and security settings
+- Database connection pooling for production scalability
+
+### Security Considerations
+- HTTPS enforcement for all cross-domain communications
+- SameSite=None cookies for cross-domain session management
+- IP whitelisting for development environments
+- Comprehensive rate limiting strategy
+
+## Changelog
+
+```
+Changelog:
+- July 01, 2025. Initial setup
+```
+
+## User Preferences
+
+```
+Preferred communication style: Simple, everyday language.
+```
