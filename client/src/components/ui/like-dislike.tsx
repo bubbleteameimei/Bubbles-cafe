@@ -279,51 +279,27 @@ export function LikeDislike({
       // Capture current state for perfect toggle logic
       const wasLiked = liked;
       const wasDisliked = disliked;
-      const currentStats = { ...stats };
       
       // Calculate new state with absolute mathematical certainty
       const willBeLiked = !wasLiked;
-      const willBeDisliked = wasDisliked && !willBeLiked ? false : wasDisliked;
+      const willBeDisliked = wasDisliked && willBeLiked ? false : wasDisliked;
       
-      let newLikesCount = currentStats.likesCount;
-      let newDislikesCount = currentStats.dislikesCount;
-      
-      // Mathematical logic - only change counts when state actually changes
-      if (wasLiked && !willBeLiked) {
-        // Removing a like
-        newLikesCount = Math.max(0, newLikesCount - 1);
-      } else if (!wasLiked && willBeLiked) {
-        // Adding a like
-        newLikesCount = newLikesCount + 1;
-        
-        // If switching from dislike to like, also remove dislike
-        if (wasDisliked) {
-          newDislikesCount = Math.max(0, newDislikesCount - 1);
-        }
-      }
-      
-      // Update UI state instantly
+      // Update UI state instantly for immediate feedback
       setLiked(willBeLiked);
       setDisliked(willBeDisliked);
       
-      const finalStats = {
-        likesCount: newLikesCount,
-        dislikesCount: newDislikesCount
-      };
-      
-      setStats(finalStats);
-      persistStats(finalStats);
-      
-      // Save to localStorage
+      // Save to localStorage immediately
       saveUserInteraction(postId, willBeLiked, willBeDisliked);
       
-      // Send to server (async, won't affect UI)
-      const success = await sendReaction(willBeLiked ? true : null);
-      
-      if (success && willBeLiked) {
-        toast({
-          description: "Thanks for liking! 🥰"
-        });
+      // Only send to server if state actually changed
+      if (wasLiked !== willBeLiked) {
+        await sendReaction(willBeLiked ? true : null);
+        
+        if (willBeLiked) {
+          toast({
+            description: "Thanks for liking!"
+          });
+        }
       }
       
       // Call callback
@@ -331,13 +307,16 @@ export function LikeDislike({
       
     } catch (error) {
       console.error(`[LikeDislike] Error handling like:`, error);
+      // Revert UI state on error
+      setLiked(liked);
+      setDisliked(disliked);
       toast({
         title: "Error updating like",
         description: "Please try again",
         variant: "destructive"
       });
     } finally {
-      setTimeout(() => setIsProcessing(false), 300);
+      setIsProcessing(false);
     }
   };
 
@@ -351,51 +330,27 @@ export function LikeDislike({
       // Capture current state for perfect toggle logic
       const wasLiked = liked;
       const wasDisliked = disliked;
-      const currentStats = { ...stats };
       
       // Calculate new state with absolute mathematical certainty
       const willBeDisliked = !wasDisliked;
-      const willBeLiked = wasLiked && !willBeDisliked ? false : wasLiked;
+      const willBeLiked = wasLiked && willBeDisliked ? false : wasLiked;
       
-      let newLikesCount = currentStats.likesCount;
-      let newDislikesCount = currentStats.dislikesCount;
-      
-      // Mathematical logic - only change counts when state actually changes
-      if (wasDisliked && !willBeDisliked) {
-        // Removing a dislike
-        newDislikesCount = Math.max(0, newDislikesCount - 1);
-      } else if (!wasDisliked && willBeDisliked) {
-        // Adding a dislike
-        newDislikesCount = newDislikesCount + 1;
-        
-        // If switching from like to dislike, also remove like
-        if (wasLiked) {
-          newLikesCount = Math.max(0, newLikesCount - 1);
-        }
-      }
-      
-      // Update UI state instantly
+      // Update UI state instantly for immediate feedback
       setLiked(willBeLiked);
       setDisliked(willBeDisliked);
       
-      const finalStats = {
-        likesCount: newLikesCount,
-        dislikesCount: newDislikesCount
-      };
-      
-      setStats(finalStats);
-      persistStats(finalStats);
-      
-      // Save to localStorage
+      // Save to localStorage immediately
       saveUserInteraction(postId, willBeLiked, willBeDisliked);
       
-      // Send to server (async, won't affect UI)
-      const success = await sendReaction(willBeDisliked ? false : null);
-      
-      if (success && willBeDisliked) {
-        toast({
-          description: "Thanks for the feedback! 😔"
-        });
+      // Only send to server if state actually changed
+      if (wasDisliked !== willBeDisliked) {
+        await sendReaction(willBeDisliked ? false : null);
+        
+        if (willBeDisliked) {
+          toast({
+            description: "Thanks for the feedback!"
+          });
+        }
       }
       
       // Call callback
@@ -403,13 +358,16 @@ export function LikeDislike({
       
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike:`, error);
+      // Revert UI state on error
+      setLiked(liked);
+      setDisliked(disliked);
       toast({
         title: "Error updating dislike",
         description: "Please try again",
         variant: "destructive"
       });
     } finally {
-      setTimeout(() => setIsProcessing(false), 300);
+      setIsProcessing(false);
     }
   };
 
@@ -433,28 +391,28 @@ export function LikeDislike({
           onClick={handleLike}
           disabled={isProcessing}
           className={cn(
-            "inline-flex items-center justify-center gap-x-2 font-medium rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:pointer-events-none",
+            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-lg transition-all duration-150 transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
             // Base styling
             "bg-white border border-slate-200 text-slate-700 shadow-sm hover:shadow-md",
             "dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300",
-            // Size variants
+            // Size variants - made larger
             variant === 'reader' ? (
-              size === 'lg' ? "py-3 px-5 text-base min-w-[100px]" : 
-              size === 'md' ? "py-2.5 px-4 text-sm min-w-[90px]" : 
-              "py-2 px-3 text-sm min-w-[80px]"
+              size === 'lg' ? "py-4 px-6 text-lg min-w-[130px]" : 
+              size === 'md' ? "py-3 px-5 text-base min-w-[110px]" : 
+              "py-3 px-4 text-base min-w-[100px]"
             ) : (
-              size === 'lg' ? "py-2 px-3 text-sm h-9" :
-              size === 'md' ? "py-1.5 px-2.5 text-xs h-8" :
-              "py-1 px-2 text-xs h-7"
+              size === 'lg' ? "py-2.5 px-4 text-sm h-10" :
+              size === 'md' ? "py-2 px-3 text-sm h-9" :
+              "py-1.5 px-2.5 text-xs h-8"
             ),
             // Active state styling
-            liked && "border-green-300 bg-green-50 text-green-700 shadow-green-100",
-            liked && "dark:border-green-600 dark:bg-green-900/20 dark:text-green-400",
+            liked && "border-green-400 bg-green-50 text-green-700 shadow-green-200",
+            liked && "dark:border-green-500 dark:bg-green-900/30 dark:text-green-400",
             // Hover effects
-            !liked && "hover:border-green-200 hover:bg-green-50/50 hover:text-green-600",
-            !liked && "dark:hover:border-green-700 dark:hover:bg-green-900/10 dark:hover:text-green-400",
+            !liked && "hover:border-green-300 hover:bg-green-50/70 hover:text-green-600",
+            !liked && "dark:hover:border-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400",
             // Processing state
-            isProcessing && "animate-pulse"
+            isProcessing && "cursor-wait"
           )}
         >
           <svg 
@@ -477,7 +435,7 @@ export function LikeDislike({
             <path d="M7 10v12"></path>
             <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path>
           </svg>
-          <span className="font-medium text-sm">
+          <span className="font-bold text-base">
             {isLoading ? '...' : stats.likesCount}
           </span>
         </button>
@@ -488,28 +446,28 @@ export function LikeDislike({
           onClick={handleDislike}
           disabled={isProcessing}
           className={cn(
-            "inline-flex items-center justify-center gap-x-2 font-medium rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:pointer-events-none",
+            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-lg transition-all duration-150 transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
             // Base styling
             "bg-white border border-slate-200 text-slate-700 shadow-sm hover:shadow-md",
             "dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300",
-            // Size variants
+            // Size variants - made larger
             variant === 'reader' ? (
-              size === 'lg' ? "py-3 px-5 text-base min-w-[100px]" : 
-              size === 'md' ? "py-2.5 px-4 text-sm min-w-[90px]" : 
-              "py-2 px-3 text-sm min-w-[80px]"
+              size === 'lg' ? "py-4 px-6 text-lg min-w-[130px]" : 
+              size === 'md' ? "py-3 px-5 text-base min-w-[110px]" : 
+              "py-3 px-4 text-base min-w-[100px]"
             ) : (
-              size === 'lg' ? "py-2 px-3 text-sm h-9" :
-              size === 'md' ? "py-1.5 px-2.5 text-xs h-8" :
-              "py-1 px-2 text-xs h-7"
+              size === 'lg' ? "py-2.5 px-4 text-sm h-10" :
+              size === 'md' ? "py-2 px-3 text-sm h-9" :
+              "py-1.5 px-2.5 text-xs h-8"
             ),
             // Active state styling
-            disliked && "border-red-300 bg-red-50 text-red-700 shadow-red-100",
-            disliked && "dark:border-red-600 dark:bg-red-900/20 dark:text-red-400",
+            disliked && "border-red-400 bg-red-50 text-red-700 shadow-red-200",
+            disliked && "dark:border-red-500 dark:bg-red-900/30 dark:text-red-400",
             // Hover effects
-            !disliked && "hover:border-red-200 hover:bg-red-50/50 hover:text-red-600",
-            !disliked && "dark:hover:border-red-700 dark:hover:bg-red-900/10 dark:hover:text-red-400",
+            !disliked && "hover:border-red-300 hover:bg-red-50/70 hover:text-red-600",
+            !disliked && "dark:hover:border-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400",
             // Processing state
-            isProcessing && "animate-pulse"
+            isProcessing && "cursor-wait"
           )}
         >
           <svg 
@@ -532,7 +490,7 @@ export function LikeDislike({
             <path d="M17 14V2"></path>
             <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path>
           </svg>
-          <span className="font-medium text-sm">
+          <span className="font-bold text-base">
             {isLoading ? '...' : stats.dislikesCount}
           </span>
         </button>
