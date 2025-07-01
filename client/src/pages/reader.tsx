@@ -1471,10 +1471,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 <div className={`flex items-center justify-center mt-0.5 sm:mt-2 gap-2 w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
                   {/* Previous Button */}
                   <Button
-                    variant="outline"
+                    variant={isFirstStory ? "outline" : "default"}
                     size="sm"
                     onClick={goToPreviousStory}
-                    className={`h-8 px-2 bg-background hover:bg-background/80 w-24 disabled:opacity-70 disabled:bg-gray-100/50 disabled:border-gray-200/50`}
+                    className={`h-8 px-2 w-24 transition-all duration-200 ${
+                      isFirstStory 
+                        ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
+                        : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg'
+                    }`}
                     disabled={posts.length <= 1 || isFirstStory}
                     title={isFirstStory ? "This is the first story" : "Go to previous story"}
                   >
@@ -1489,7 +1493,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                     variant="secondary"
                     size="sm"
                     onClick={goToRandomStory}
-                    className={`h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none disabled:opacity-70 disabled:bg-gray-100/50`}
+                    className={`h-8 w-8 px-0 rounded-full bg-primary/10 hover:bg-primary/20 border-none disabled:opacity-70 disabled:bg-gray-100/50 transition-all duration-200 hover:scale-105`}
                     disabled={posts.length <= 1}
                     aria-label="Random Story"
                     title={posts.length <= 1 ? "Need more stories to use random" : "Go to a random story"}
@@ -1499,10 +1503,14 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   
                   {/* Next Button */}
                   <Button
-                    variant="outline"
+                    variant={isLastStory ? "outline" : "default"}
                     size="sm"
                     onClick={goToNextStory}
-                    className={`h-8 px-2 bg-background hover:bg-background/80 w-24 disabled:opacity-70 disabled:bg-gray-100/50 disabled:border-gray-200/50`}
+                    className={`h-8 px-2 w-24 transition-all duration-200 ${
+                      isLastStory 
+                        ? 'bg-muted/50 border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-50' 
+                        : 'bg-green-500 hover:bg-green-600 text-white border-green-500 hover:border-green-600 shadow-md hover:shadow-lg'
+                    }`}
                     disabled={posts.length <= 1 || isLastStory}
                     title={isLastStory ? "This is the last story" : "Go to next story"}
                   >
@@ -1552,7 +1560,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToPreviousStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                    isFirstStory 
+                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300'
+                  }`}
                   aria-label="Previous story"
                   disabled={posts.length <= 1 || isFirstStory}
                 >
@@ -1574,7 +1586,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                   variant="ghost" 
                   size="icon" 
                   onClick={goToNextStory}
-                  className="h-8 w-8 rounded-full hover:bg-background/80 group relative disabled:opacity-70 disabled:bg-gray-100/50"
+                  className={`h-8 w-8 rounded-full group relative transition-all duration-200 ${
+                    isLastStory 
+                      ? 'opacity-30 cursor-not-allowed text-muted-foreground' 
+                      : 'text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300'
+                  }`}
                   aria-label="Next story"
                   disabled={posts.length <= 1 || isLastStory}
                 >
