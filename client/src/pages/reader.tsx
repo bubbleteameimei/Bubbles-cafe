@@ -247,6 +247,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   });
 
   console.log('[Reader] Component mounted with slug:', routeSlug); // Debug log
+  
+  // Clear any cached data to ensure fresh fetch after sample story removal
+  useEffect(() => {
+    console.log('[Reader] Clearing query cache to ensure fresh data');
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+    queryClient.removeQueries({ queryKey: ["posts"] });
+  }, [queryClient]);
 
   // Initialize currentIndex with validation
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -303,9 +310,8 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
           // Fetch all posts from internal API (your WordPress stories are already synced here)
           console.log('[Reader] Fetching posts...', { isCommunityContent });
           
-          // Always use the core posts endpoint for maximum reliability
-          // We'll get both admin and community posts this way
-          const response = await fetch('/api/posts?limit=100');
+          // Always use the core posts endpoint for maximum reliability with cache busting
+          const response = await fetch(`/api/posts?limit=100&_t=${Date.now()}`);
           if (!response.ok) {
             throw new Error('Failed to fetch posts from database');
           }
