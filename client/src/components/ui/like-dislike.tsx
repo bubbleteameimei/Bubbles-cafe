@@ -117,7 +117,7 @@ export function LikeDislike({
         headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         headers.set('Pragma', 'no-cache');
         
-        const response = await fetch(`/api/posts/${postId}/reactions?t=${timestamp}`, {
+        const response = await fetch(`/api/no-csrf/reactions/${postId}?t=${timestamp}`, {
           headers,
           credentials: 'include' // Include cookies for session identification
         });
@@ -431,38 +431,40 @@ export function LikeDislike({
         <button 
           type="button" 
           onClick={handleLike}
+          disabled={isProcessing}
           className={cn(
-            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
-            // Base styling with improved shadows and gradients
-            "bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 text-gray-700 shadow-lg hover:shadow-xl",
-            "dark:from-neutral-800 dark:to-neutral-900 dark:border-neutral-600 dark:text-white dark:hover:from-neutral-700 dark:hover:to-neutral-800",
-            // Size variants with better proportions
+            "inline-flex items-center justify-center gap-x-2 font-medium rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:pointer-events-none",
+            // Base styling
+            "bg-white border border-slate-200 text-slate-700 shadow-sm hover:shadow-md",
+            "dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300",
+            // Size variants
             variant === 'reader' ? (
-              size === 'lg' ? "py-4 px-6 text-lg min-w-[120px]" : 
-              size === 'md' ? "py-3 px-5 text-base min-w-[100px]" : 
-              "py-2 px-4 text-sm min-w-[80px]"
+              size === 'lg' ? "py-3 px-5 text-base min-w-[100px]" : 
+              size === 'md' ? "py-2.5 px-4 text-sm min-w-[90px]" : 
+              "py-2 px-3 text-sm min-w-[80px]"
             ) : (
-              size === 'lg' ? "py-2.5 px-4 text-base h-10" :
-              size === 'md' ? "py-2 px-3 text-sm h-9" :
-              "py-1.5 px-2.5 text-xs h-8"
+              size === 'lg' ? "py-2 px-3 text-sm h-9" :
+              size === 'md' ? "py-1.5 px-2.5 text-xs h-8" :
+              "py-1 px-2 text-xs h-7"
             ),
             // Active state styling
-            liked && "border-emerald-400 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 shadow-emerald-200/50",
-            liked && "dark:border-emerald-500 dark:from-emerald-900/30 dark:to-emerald-800/30 dark:text-emerald-400 dark:shadow-emerald-900/50",
+            liked && "border-green-300 bg-green-50 text-green-700 shadow-green-100",
+            liked && "dark:border-green-600 dark:bg-green-900/20 dark:text-green-400",
             // Hover effects
-            "hover:border-emerald-300 hover:from-emerald-50 hover:to-emerald-100",
-            "dark:hover:border-emerald-500 dark:hover:from-emerald-900/20 dark:hover:to-emerald-800/20"
+            !liked && "hover:border-green-200 hover:bg-green-50/50 hover:text-green-600",
+            !liked && "dark:hover:border-green-700 dark:hover:bg-green-900/10 dark:hover:text-green-400",
+            // Processing state
+            isProcessing && "animate-pulse"
           )}
         >
           <svg 
             className={cn(
-              "shrink-0 transition-all duration-300",
+              "shrink-0 transition-all duration-200",
               variant === 'reader' ? (
-                size === 'lg' ? "w-6 h-6" : 
-                size === 'md' ? "w-5 h-5" : 
+                size === 'lg' ? "w-5 h-5" : 
+                size === 'md' ? "w-4 h-4" : 
                 "w-4 h-4"
-              ) : "w-4 h-4",
-              liked && "scale-110"
+              ) : "w-4 h-4"
             )}
             xmlns="http://www.w3.org/2000/svg" 
             viewBox="0 0 24 24" 
@@ -475,7 +477,7 @@ export function LikeDislike({
             <path d="M7 10v12"></path>
             <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path>
           </svg>
-          <span className="font-mono text-sm font-semibold tracking-wide">
+          <span className="font-medium text-sm">
             {isLoading ? '...' : stats.likesCount}
           </span>
         </button>
@@ -484,38 +486,40 @@ export function LikeDislike({
         <button 
           type="button" 
           onClick={handleDislike}
+          disabled={isProcessing}
           className={cn(
-            "inline-flex items-center justify-center gap-x-2 font-semibold rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:pointer-events-none",
-            // Base styling with improved shadows and gradients
-            "bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 text-gray-700 shadow-lg hover:shadow-xl",
-            "dark:from-neutral-800 dark:to-neutral-900 dark:border-neutral-600 dark:text-white dark:hover:from-neutral-700 dark:hover:to-neutral-800",
-            // Size variants with better proportions
+            "inline-flex items-center justify-center gap-x-2 font-medium rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:pointer-events-none",
+            // Base styling
+            "bg-white border border-slate-200 text-slate-700 shadow-sm hover:shadow-md",
+            "dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300",
+            // Size variants
             variant === 'reader' ? (
-              size === 'lg' ? "py-4 px-6 text-lg min-w-[120px]" : 
-              size === 'md' ? "py-3 px-5 text-base min-w-[100px]" : 
-              "py-2 px-4 text-sm min-w-[80px]"
+              size === 'lg' ? "py-3 px-5 text-base min-w-[100px]" : 
+              size === 'md' ? "py-2.5 px-4 text-sm min-w-[90px]" : 
+              "py-2 px-3 text-sm min-w-[80px]"
             ) : (
-              size === 'lg' ? "py-2.5 px-4 text-base h-10" :
-              size === 'md' ? "py-2 px-3 text-sm h-9" :
-              "py-1.5 px-2.5 text-xs h-8"
+              size === 'lg' ? "py-2 px-3 text-sm h-9" :
+              size === 'md' ? "py-1.5 px-2.5 text-xs h-8" :
+              "py-1 px-2 text-xs h-7"
             ),
             // Active state styling
-            disliked && "border-red-400 bg-gradient-to-r from-red-50 to-red-100 text-red-700 shadow-red-200/50",
-            disliked && "dark:border-red-500 dark:from-red-900/30 dark:to-red-800/30 dark:text-red-400 dark:shadow-red-900/50",
+            disliked && "border-red-300 bg-red-50 text-red-700 shadow-red-100",
+            disliked && "dark:border-red-600 dark:bg-red-900/20 dark:text-red-400",
             // Hover effects
-            "hover:border-red-300 hover:from-red-50 hover:to-red-100",
-            "dark:hover:border-red-500 dark:hover:from-red-900/20 dark:hover:to-red-800/20"
+            !disliked && "hover:border-red-200 hover:bg-red-50/50 hover:text-red-600",
+            !disliked && "dark:hover:border-red-700 dark:hover:bg-red-900/10 dark:hover:text-red-400",
+            // Processing state
+            isProcessing && "animate-pulse"
           )}
         >
           <svg 
             className={cn(
-              "shrink-0 transition-all duration-300",
+              "shrink-0 transition-all duration-200",
               variant === 'reader' ? (
-                size === 'lg' ? "w-6 h-6" : 
-                size === 'md' ? "w-5 h-5" : 
+                size === 'lg' ? "w-5 h-5" : 
+                size === 'md' ? "w-4 h-4" : 
                 "w-4 h-4"
-              ) : "w-4 h-4",
-              disliked && "scale-110"
+              ) : "w-4 h-4"
             )}
             xmlns="http://www.w3.org/2000/svg"  
             viewBox="0 0 24 24" 
@@ -528,7 +532,7 @@ export function LikeDislike({
             <path d="M17 14V2"></path>
             <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path>
           </svg>
-          <span className="font-mono text-sm font-semibold tracking-wide">
+          <span className="font-medium text-sm">
             {isLoading ? '...' : stats.dislikesCount}
           </span>
         </button>
