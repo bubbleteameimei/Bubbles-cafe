@@ -116,10 +116,27 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 - IP whitelisting for development environments
 - Comprehensive rate limiting strategy
 
+## Database Setup
+
+### Automatic Database Initialization
+- **Modern Commands**: Updated to use current Drizzle Kit commands with fallback compatibility
+- **Startup Integration**: Database setup runs automatically on every application start
+- **Direct Connection**: Bypasses command-line tool issues with direct database connection verification
+- **Admin User Creation**: Automatically creates default admin user (username: admin, password: admin123)
+- **Environment Detection**: Adapts to Replit and other deployment environments
+- **Graceful Degradation**: Application starts even if database setup encounters issues
+
+### Database Scripts Available
+- `scripts/direct-db-setup.ts` - Direct database connection and table verification
+- `scripts/permanent-startup.ts` - Comprehensive startup routine for all environments
+- `db-setup.js` - Node.js fallback script with multiple Drizzle command attempts
+- `DATABASE_SETUP.md` - Complete documentation for database setup process
+
 ## Changelog
 
 ```
 Changelog:
+- July 01, 2025. Database setup automated with modern commands and permanent startup process
 - July 01, 2025. Initial setup
 ```
 

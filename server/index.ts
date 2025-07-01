@@ -200,10 +200,8 @@ app.use(helmet({
 // Create a server logger
 const serverLogger = createLogger('Server');
 
-// Import our database setup utilities
-import setupDatabase from '../scripts/setup-db';
-import pushSchema from '../scripts/db-push';
-import seedFromWordPressAPI from '../scripts/api-seed';
+// Import our permanent startup utilities
+import { permanentStartup } from '../scripts/permanent-startup';
 
 async function startServer() {
   try {
@@ -213,19 +211,17 @@ async function startServer() {
       port: PORT
     });
 
-    // Set up database connection
+    // Run permanent startup setup (includes database initialization)
     try {
-      // Simplified database setup
-      serverLogger.info('Setting up database connection...');
-      // Only setup the connection without attempting to seed or run migrations
-      await setupDatabase();
-      serverLogger.info('Database connection established');
-    } catch (dbError) {
-      serverLogger.error('Database connection failed, continuing in partial mode', { 
-        error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+      serverLogger.info('Running permanent startup setup...');
+      await permanentStartup();
+      serverLogger.info('Permanent startup setup completed successfully');
+    } catch (startupError) {
+      serverLogger.error('Startup setup failed, continuing in partial mode', { 
+        error: startupError instanceof Error ? startupError.message : 'Unknown error' 
       });
-      // We'll continue with the application even if the database setup fails
-      // But will attempt to reconnect periodically
+      // Continue with application startup even if setup fails
+      // This ensures the app starts for debugging purposes
     }
     
     // Create server instance
