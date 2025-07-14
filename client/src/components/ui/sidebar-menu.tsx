@@ -45,6 +45,35 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [adminOpen, setAdminOpen] = React.useState(false);
   const [touchStartX, setTouchStartX] = React.useState<number | null>(null);
   const sidebar = useSidebar();
+  const menuContainerRef = React.useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll when submenus expand
+  React.useEffect(() => {
+    if (supportOpen && menuContainerRef.current) {
+      const supportElement = menuContainerRef.current.querySelector('[data-submenu="support"]');
+      if (supportElement) {
+        supportElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [supportOpen]);
+  
+  React.useEffect(() => {
+    if (accountOpen && menuContainerRef.current) {
+      const accountElement = menuContainerRef.current.querySelector('[data-submenu="account"]');
+      if (accountElement) {
+        accountElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [accountOpen]);
+  
+  React.useEffect(() => {
+    if (adminOpen && menuContainerRef.current) {
+      const adminElement = menuContainerRef.current.querySelector('[data-submenu="admin"]');
+      if (adminElement) {
+        adminElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [adminOpen]);
   
   // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
@@ -197,7 +226,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full max-h-screen overflow-y-auto scrollbar-hide sidebar-menu-container">
+    <div ref={menuContainerRef} className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide sidebar-menu-container">
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
@@ -306,7 +335,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </SidebarGroupLabel>
           <SidebarGroupContent className="-mt-1">
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem data-submenu="admin">
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
@@ -498,7 +527,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem data-submenu="account">
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
@@ -584,7 +613,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem data-submenu="support">
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
@@ -598,7 +627,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent className="space-y-1 px-2 py-1 overflow-visible">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
