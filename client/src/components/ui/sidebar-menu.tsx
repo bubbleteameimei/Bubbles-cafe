@@ -239,10 +239,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div 
       ref={menuContainerRef}
-      className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full sidebar-menu-container"
+      className="flex flex-col h-full sidebar-menu-container"
       role="navigation"
       aria-label="Main navigation"
     >
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 pt-0 space-y-0">
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
@@ -737,8 +739,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Footer Buttons */}
-      <div className="mt-auto mb-0 border-t border-[hsl(var(--sidebar-border))] pt-3">
+      </div>
+      
+      {/* Footer Buttons - Fixed at bottom */}
+      <div className="flex-none border-t border-[hsl(var(--sidebar-border))] pt-3 pb-1 px-1">
         {!user ? (
           <Button
             variant="default"
