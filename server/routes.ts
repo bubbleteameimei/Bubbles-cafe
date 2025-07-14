@@ -17,6 +17,7 @@ import * as session from 'express-session';
 declare module 'express-session' {
   interface SessionData {
     likes: { [postId: string]: boolean };
+    userReactions: { [postId: string]: 'like' | 'dislike' | null };
     // Session types for bookmarks defined in shared/types/session.d.ts
   }
 }
@@ -26,6 +27,8 @@ import { sanitizeHtml, stripHtml } from './utils/sanitizer';
 import { sendNewsletterWelcomeEmail } from './utils/send-email';
 import { z } from "zod";
 import { insertPostSchema, insertCommentSchema, insertCommentReplySchema, insertNewsletterSubscriptionSchema, type Post, type PostMetadata, type InsertBookmark, type InsertUserFeedback, posts } from "@shared/schema";
+import { db } from "./db";
+import { sql, eq } from "drizzle-orm";
 import { moderateComment } from "./utils/comment-moderation";
 import { log } from "./vite";
 import { createTransport } from "nodemailer";
@@ -165,6 +168,8 @@ export function registerRoutes(app: Express): Server {
       csrfToken: req.session.csrfToken || null
     });
   });
+
+
   
   // Add a special CSRF-free endpoint for direct API access
   app.post("/api/csrf-test-bypass/react/:postId", async (req: Request, res: Response) => {
