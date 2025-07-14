@@ -7,12 +7,68 @@
 
 .sidebar-content {
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 
 /* Enable scrolling for long sidebar menus */
+.sidebar-menu-container {
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sidebar-accent)) transparent;
+}
+
+.sidebar-menu-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-menu-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--sidebar-accent));
+  border-radius: 2px;
+}
+
+.sidebar-menu-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sidebar-accent) / 0.8);
+}
+
+/* Hide scrollbar while keeping functionality */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scrolling for sidebar menu */
+.sidebar-menu-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure sidebar content stretches full height */
+.sidebar-full-height {
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 768px) {
+  .sidebar-menu-container {
+    max-height: calc(100vh - 64px); /* Account for mobile header */
+  }
+}
 .scroll-area {
   height: calc(100vh - 70px); /* Adjust the offset as needed */
   overflow-y: auto;

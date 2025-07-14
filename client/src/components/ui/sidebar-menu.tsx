@@ -197,7 +197,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full overflow-y-auto scrollbar-hide">
+    <div className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full max-h-screen overflow-y-auto scrollbar-hide sidebar-menu-container">
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
