@@ -101,41 +101,26 @@
   }
 }
 
-/* Sidebar menu container layout - Updated for proper scroll handling */
+/* Hide scrollbar while maintaining smooth scroll behavior */
 .sidebar-menu-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-height: calc(100vh - 60px);
-  overflow: hidden; /* Parent container doesn't scroll */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Scrollable content area within sidebar */
-.sidebar-menu-container > div:first-child {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+.sidebar-menu-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Enhanced smooth scrolling for sidebar content */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Enhanced scrollbar for better visibility - Apply to scrollable content */
-.sidebar-menu-container > div:first-child::-webkit-scrollbar {
-  width: 8px;
-}
-
-.sidebar-menu-container > div:first-child::-webkit-scrollbar-track {
-  background: hsl(var(--sidebar-background));
-}
-
-.sidebar-menu-container > div:first-child::-webkit-scrollbar-thumb {
-  background: hsl(var(--sidebar-accent));
-  border-radius: 4px;
-  border: 1px solid hsl(var(--sidebar-background));
-}
-
-.sidebar-menu-container > div:first-child::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--sidebar-accent-foreground));
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Smooth transitions for all collapsible elements */
@@ -148,9 +133,6 @@
 @media (max-width: 768px) {
   .sidebar-menu-container {
     max-height: calc(100vh - 80px); /* Account for mobile header */
-  }
-  
-  .sidebar-menu-container > div:first-child {
     /* Ensure proper touch scrolling */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
