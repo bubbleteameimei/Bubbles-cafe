@@ -114,8 +114,8 @@ export function AppSidebar() {
         </div>
 
         {/* Scrollable content area with improved padding for different device sizes */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
-          <div className="p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6 min-h-0">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
+          <div className="p-2 sm:p-3 md:p-4 lg:p-5 xl:p-6">
             <SidebarNavigation onNavigate={handleToggle} />
           </div>
         </div>
