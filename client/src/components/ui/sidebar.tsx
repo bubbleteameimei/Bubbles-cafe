@@ -99,7 +99,7 @@ export const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-3",
+        "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-3 sidebar-content",
         className
       )}
       {...props}
@@ -145,7 +145,7 @@ export const Sidebar = React.forwardRef<
             <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-md" />
           </button>
 
-          <div className="flex h-full w-full flex-col overflow-y-auto overflow-x-hidden">{children}</div>
+          <div className="flex h-full w-full flex-col overflow-y-auto overflow-x-hidden sidebar-full-height">{children}</div>
         </SheetContent>
       </Sheet>
     )
@@ -184,7 +184,7 @@ export const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col overflow-hidden bg-sidebar after:hidden group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow"
+          className="flex h-full w-full flex-col overflow-hidden bg-sidebar after:hidden group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow sidebar-full-height"
         >
           {children}
         </div>

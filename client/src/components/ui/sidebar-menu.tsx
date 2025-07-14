@@ -46,6 +46,29 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [touchStartX, setTouchStartX] = React.useState<number | null>(null);
   const sidebar = useSidebar();
   
+  // Reference to the menu container for better scroll management
+  const menuContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Function to scroll to top of menu when necessary
+  const scrollToTop = React.useCallback(() => {
+    if (menuContainerRef.current) {
+      menuContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Function to ensure dropdown is visible when opened
+  const ensureDropdownVisible = React.useCallback((element: HTMLElement) => {
+    if (menuContainerRef.current) {
+      const container = menuContainerRef.current;
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      if (elementRect.bottom > containerRect.bottom) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, []);
+  
   // Add swipe to close functionality with improved reliability
   React.useEffect(() => {
     // Only add touch events if mobile and sidebar is open
@@ -56,16 +79,28 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     let startY = 0;
     let moveX = 0;
     let moveY = 0;
+    let isScrolling = false;
     
     const handleTouchStart = (e: TouchEvent) => {
+      // Check if the touch started on a scrollable element
+      const target = e.target as HTMLElement;
+      const scrollContainer = target.closest('.sidebar-menu-container');
+      
+      if (scrollContainer) {
+        // Allow normal scrolling if touching a scrollable area
+        isScrolling = true;
+        return;
+      }
+      
       // Store both X and Y coordinates to detect diagonal swipes
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       setTouchStartX(startX);
+      isScrolling = false;
     };
     
     const handleTouchMove = (e: TouchEvent) => {
-      if (!touchStartX) return;
+      if (!touchStartX || isScrolling) return;
       
       // Get current position
       moveX = e.touches[0].clientX;
@@ -77,7 +112,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       
       // Only trigger close if swipe is primarily horizontal (not diagonal)
       // This prevents accidental closes when scrolling the menu
-      if (touchDiffX > 40 && touchDiffY < 30) {
+      if (touchDiffX > 50 && touchDiffY < 40) {
         // Close the sidebar both ways to ensure it properly closes
         sidebar.setOpenMobile(false);
         
@@ -97,13 +132,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       startY = 0;
       moveX = 0;
       moveY = 0;
+      isScrolling = false;
       setTouchStartX(null);
     };
     
-    // Add event listeners with passive: false to allow preventDefault if needed
-    document.addEventListener("touchstart", handleTouchStart, { passive: false });
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
-    document.addEventListener("touchend", handleTouchEnd);
+    // Add event listeners with passive: true for better performance
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
     
     // Cleanup function
     return () => {
@@ -123,6 +159,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       // Just close sidebar if already on this page
       if (sidebar && sidebar.isMobile && path === location) {
         sidebar.setOpenMobile(false);
+      }
+      // Scroll to top if on same page
+      if (path === location) {
+        scrollToTop();
       }
       return;
     }
@@ -197,7 +237,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
   return (
-    <div className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full max-h-screen overflow-y-auto scrollbar-hide sidebar-menu-container">
+    <div 
+      ref={menuContainerRef}
+      className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full sidebar-menu-container"
+      role="navigation"
+      aria-label="Main navigation"
+    >
 
       {/* Main Navigation */}
       <SidebarGroup className="mt-0">
@@ -411,10 +456,24 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         <SidebarGroupContent className="-mt-1">
           <SidebarMenu>
             <SidebarMenuItem>
-              <Collapsible open={displayOpen} onOpenChange={setDisplayOpen}>
+              <Collapsible 
+                open={displayOpen} 
+                onOpenChange={(open) => {
+                  setDisplayOpen(open);
+                  if (open) {
+                    // Ensure dropdown is visible when opened
+                    setTimeout(() => {
+                      const trigger = document.querySelector('.sidebar-collapsible-trigger[data-state="open"]') as HTMLElement;
+                      if (trigger) {
+                        ensureDropdownVisible(trigger);
+                      }
+                    }, 150);
+                  }
+                }}
+              >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
                   >
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
@@ -426,7 +485,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent className="sidebar-collapsible-content space-y-1 px-2 py-1">
                   <SidebarMenuSub>
 
                     <SidebarMenuSubItem>

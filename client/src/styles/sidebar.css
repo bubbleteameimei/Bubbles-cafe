@@ -3,10 +3,13 @@
 .sidebar {
   position: relative;
   z-index: 50;
+  height: 100vh;
+  max-height: 100vh;
 }
 
 .sidebar-content {
   height: 100%;
+  max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -15,15 +18,19 @@
 
 /* Enable scrolling for long sidebar menus */
 .sidebar-menu-container {
-  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100vh - 60px);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--sidebar-accent)) transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-menu-container::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-track {
@@ -32,7 +39,7 @@
 
 .sidebar-menu-container::-webkit-scrollbar-thumb {
   background: hsl(var(--sidebar-accent));
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .sidebar-menu-container::-webkit-scrollbar-thumb:hover {
@@ -49,12 +56,6 @@
   display: none;
 }
 
-/* Smooth scrolling for sidebar menu */
-.sidebar-menu-container {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Ensure sidebar content stretches full height */
 .sidebar-full-height {
   height: 100vh;
@@ -66,13 +67,117 @@
 /* Mobile specific adjustments */
 @media (max-width: 768px) {
   .sidebar-menu-container {
-    max-height: calc(100vh - 64px); /* Account for mobile header */
+    max-height: calc(100vh - 80px); /* Account for mobile header */
+  }
+  
+  .sidebar {
+    height: 100vh;
+    max-height: 100vh;
   }
 }
+
+/* Improved scroll area for better mobile experience */
 .scroll-area {
-  height: calc(100vh - 70px); /* Adjust the offset as needed */
+  height: calc(100vh - 70px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Fix dropdown/collapsible behavior */
+.sidebar-collapsible-content {
+  overflow: visible;
+  max-height: none;
+}
+
+/* Prevent layout shift during dropdown animations */
+.sidebar-collapsible-trigger {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Better touch handling for mobile dropdowns */
+@media (max-width: 768px) {
+  .sidebar-collapsible-content {
+    animation-duration: 0.2s;
+  }
+}
+
+/* Enhanced scrollbar for better visibility */
+.sidebar-menu-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-menu-container::-webkit-scrollbar-track {
+  background: hsl(var(--sidebar-background));
+}
+
+.sidebar-menu-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--sidebar-accent));
+  border-radius: 4px;
+  border: 1px solid hsl(var(--sidebar-background));
+}
+
+.sidebar-menu-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--sidebar-accent-foreground));
+}
+
+/* Smooth transitions for all collapsible elements */
+.sidebar-collapsible-trigger[data-state="open"] {
+  background-color: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  .sidebar-menu-container {
+    /* Ensure proper touch scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Prevent zoom on double tap */
+  .sidebar-collapsible-trigger {
+    touch-action: manipulation;
+  }
+  
+  /* Improve scroll performance on mobile */
+  .sidebar-menu-container {
+    transform: translateZ(0);
+    will-change: scroll-position;
+  }
+}
+
+/* Focus states for keyboard navigation */
+.sidebar-collapsible-trigger:focus-visible {
+  outline: 2px solid hsl(var(--sidebar-accent));
+  outline-offset: 2px;
+}
+
+/* Smooth expand/collapse animations */
+.sidebar-collapsible-content[data-state="closed"] {
+  animation: slideUp 0.2s ease-out;
+}
+
+.sidebar-collapsible-content[data-state="open"] {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
 }
 
 /* Ensure content is scrollable on mobile */
