@@ -32,10 +32,7 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
     
     // Preload other critical assets needed for the loading screen
     preloadAssets([
-      // Try different background paths based on what's available
-      '/loading-background.jpeg',
-      '/images/background.jpeg',
-      '/images/horror-background.jpg'
+      // Background images removed
     ]);
     
     // Reset callback fired state
@@ -81,8 +78,6 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       aria-live="polite"
       role="status"
     >
-      <div className="eden-loading-background"></div>
-      
       {/* Main loading text with Megrim font */}
       <div className="eden-loading-content">
         <span>L</span>

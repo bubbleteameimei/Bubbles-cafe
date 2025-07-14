@@ -15,55 +15,17 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [imageLoaded, setImageLoaded] = useState(false);
   
-  // Add/remove body-home class for background image when component mounts/unmounts
+  // Basic setup for homepage without background images
   useEffect(() => {
-    // Set body to black immediately to prevent white flash
-    document.body.style.backgroundColor = "#000";
+    // Set body to default background
+    document.body.style.backgroundColor = "hsl(var(--background))";
     
-    // Preload the background image
-    const img = new Image();
-    img.src = "/images/IMG_5890.jpeg";
-    img.onload = () => {
-      console.log("[Homepage] Background image loaded successfully");
-      setImageLoaded(true);
-    };
-    
-    // Add the body-home class to enable background styling
-    document.body.classList.add('body-home');
-    
-    // Add an additional class to the main tag to ensure transparency
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mainElement.classList.add('transparent-bg');
-      // Ensure the main element is transparent
-      (mainElement as HTMLElement).style.backgroundColor = "transparent";
-    }
-    
-    // Clear any bg-background classes that might override our image
-    const bgElements = document.querySelectorAll('.bg-background');
-    bgElements.forEach(el => {
-      el.classList.add('transparent-bg');
-      (el as HTMLElement).style.backgroundColor = "transparent";
-    });
-    
-    // Log to console for debugging
-    console.log("[Homepage] Background image path: /images/IMG_5890.jpeg");
-    console.log("[Homepage] Background setup complete");
+    // Mark as loaded for consistency
+    setImageLoaded(true);
     
     return () => {
-      // Clean up by removing classes when component unmounts
-      document.body.classList.remove('body-home');
+      // Clean up styling
       document.body.style.backgroundColor = "";
-      
-      if (mainElement) {
-        mainElement.classList.remove('transparent-bg');
-        (mainElement as HTMLElement).style.backgroundColor = "";
-      }
-      
-      bgElements.forEach(el => {
-        el.classList.remove('transparent-bg');
-        (el as HTMLElement).style.backgroundColor = "";
-      });
     };
   }, []);
   

@@ -150,6 +150,9 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 
 ```
 Changelog:
+- July 14, 2025. Completed comprehensive background image removal from entire website
+- July 14, 2025. Cleaned up all background image references from components, CSS, and preloaders
+- July 14, 2025. Maintained clean dark theme without background images while preserving about page profile pictures
 - July 14, 2025. Database fully configured with PostgreSQL connection and WordPress content sync
 - July 14, 2025. Updated database commands to work with current Drizzle Kit version
 - July 14, 2025. All required tables created and seeded with 23 posts from WordPress API

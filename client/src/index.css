@@ -187,26 +187,7 @@ body.body-home div[class*="container"] {
   padding-right: initial !important;
 }
 
-/* Explicit homepage background element */
-.bg-homepage {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: url('/images/homepage-bg.jpeg');
-  background-size: cover; /* Show full image coverage */
-  background-position: center center; /* Center the image */
-  background-repeat: no-repeat;
-  background-attachment: fixed !important; /* Force fixed positioning */
-  z-index: var(--z-background); /* Use our z-index system to place below content */
-  pointer-events: none; /* Allow clicks to pass through */
-  transform: translateZ(0); /* Hardware acceleration to fix jittering */
-  will-change: transform; /* Optimize for animations */
-  animation: subtleZoom 30s infinite alternate ease-in-out;
-}
+/* Background images removed */
 
 /* Gradient overlay is now handled by a separate div in home.tsx */
 .home-page::after {
@@ -270,26 +251,7 @@ body.body-home {
   -webkit-font-smoothing: antialiased; /* Smoother text rendering */
 }
 
-/* Special background container that applies to body-home pages */
-body.body-home::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #000;
-  background-image: url('/images/IMG_5890.jpeg');
-  background-position: center top;
-  transform: none;
-  background-size: cover;
-  background-repeat: no-repeat;
-  z-index: -2;
-  /* Add subtle zoom animation for a more dynamic feel */
-  animation: subtleZoom 30s infinite alternate ease-in-out;
-}
+/* Background images removed */
 
 /* Override any theme background on containers when body-home is active */
 body.body-home .app-content,
@@ -404,21 +366,11 @@ html.disable-scroll {
   z-index: 2147483647; /* Maximum possible z-index */
   isolation: isolate;
   
+  /* Pure black background instead of image */
+  background-color: #000000;
+  
   /* Prevent pointer events below */
   pointer-events: all;
-}
-
-/* Loading background - pure black */
-.eden-loading-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #000000;
-  z-index: -1;
 }
 
 /* Loading text container */

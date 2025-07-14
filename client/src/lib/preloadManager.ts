@@ -241,43 +241,39 @@ export function preloadFont(url: string, options: PreloadOptions = {}): Promise<
 export async function preloadRoute(route: string, assets: string[] = []): Promise<void> {
   console.log(`[Preloader] Preloading assets for route: ${route}`);
   
-  // Common assets for all routes
+  // Common assets for all routes (background images removed)
   const commonAssets = [
-    '/images/loading-background.jpg',
     '/fonts/horror-type.woff2',
   ];
   
-  // Route-specific assets
+  // Route-specific assets (background images removed)
   let routeAssets: string[] = [];
   
   switch (route) {
     case '/':
     case '/home':
       routeAssets = [
-        '/images/homepage-bg.jpeg',
-        '/images/featured-story-bg.jpg',
+        // Background images removed
       ];
       break;
       
     case '/story':
     case '/stories':
       routeAssets = [
-        '/images/story-bg.jpg',
-        '/images/story-thumbnail.jpg',
+        // Background images removed
       ];
       break;
       
     case '/author':
     case '/profile':
       routeAssets = [
-        '/images/profile-bg.jpg',
         '/images/default-avatar.png',
       ];
       break;
       
     case '/settings':
       routeAssets = [
-        '/images/settings-bg.jpg',
+        // Background images removed
       ];
       break;
       

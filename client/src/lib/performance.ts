@@ -23,9 +23,7 @@ export class AssetPreloader {
 
   async preloadCriticalAssets() {
     const criticalAssets = [
-      '/images/background.jpeg',
-      '/loading-background.jpeg',
-      '/images/horror-background.jpg'
+      // Background images removed - only profile images remain
     ];
 
     console.log('[Performance] Preloading critical assets...');
