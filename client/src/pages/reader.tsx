@@ -35,6 +35,7 @@ import CreepyTextGlitch from "@/components/errors/CreepyTextGlitch";
 import { useToast } from "@/hooks/use-toast";
 // Import our reader-specific gentle scroll memory hook
 import useReaderGentleScroll from "@/hooks/useReaderGentleScroll";
+import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 
 import {
   Dialog,
@@ -1658,6 +1659,11 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                       </div>
                     </ErrorBoundary>
                   </div>
+                </div>
+                
+                {/* Support My Writing Section */}
+                <div className={`mt-8 flex justify-center ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+                  <BuyMeCoffeeButton variant="full" className="w-full max-w-sm" />
                 </div>
               </div>
 
