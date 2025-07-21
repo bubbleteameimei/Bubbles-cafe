@@ -52,7 +52,13 @@ export const SupportWritingCard = ({ className = "" }: SupportWritingCardProps) 
             onClick={() => setIsOpen(true)}
             className="w-full bg-primary/80 hover:bg-primary text-primary-foreground font-medium py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
           >
-            <Coffee className="w-4 h-4 mr-2" />
+            <motion.div 
+              animate={{ y: [0, -3, 0] }} 
+              transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+              className="inline-flex items-center"
+            >
+              <Coffee className="w-4 h-4 mr-2" />
+            </motion.div>
             Buy me a coffee ☕
           </Button>
         </motion.div>
