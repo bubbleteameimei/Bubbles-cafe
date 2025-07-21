@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Coffee, Heart } from "lucide-react";
+import { Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
@@ -11,12 +11,7 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 
-interface SupportWritingProps {
-  className?: string;
-  variant?: 'full' | 'button' | 'minimal';
-}
-
-export const BuyMeCoffeeButton = ({ className = "", variant = 'full' }: SupportWritingProps) => {
+export const BuyMeCoffeeButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   
   const handleTip = () => {
@@ -24,107 +19,60 @@ export const BuyMeCoffeeButton = ({ className = "", variant = 'full' }: SupportW
     setIsOpen(false);
   };
 
-  // Minimal variant - just an icon button
-  if (variant === 'minimal') {
-    return (
-      <Button
-        onClick={handleTip}
-        variant="outline"
-        size="icon"
-        className={`h-9 w-9 rounded-full hover:bg-primary/10 hover:border-primary/30 transition-all duration-200 ${className}`}
-        aria-label="Buy me a coffee"
-      >
-        <Coffee className="h-4 w-4" />
-      </Button>
-    );
-  }
-
-  // Button variant - just the button without card
-  if (variant === 'button') {
-    return (
+  return (
+    <>
+      {/* Main Button */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className={className}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 500, damping: 18 }}
       >
         <Button
           onClick={() => setIsOpen(true)}
           aria-label="Buy me a coffee"
-          className="relative px-4 py-2 bg-background/50 hover:bg-background/80 text-foreground rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-200 backdrop-blur-sm"
+          className="relative px-6 py-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-2xl transition-all duration-300"
+          size="lg"
         >
-          <span className="flex items-center gap-2 text-sm font-medium">
-            <Coffee className="w-4 h-4" />
+          <motion.div
+            initial={{ opacity: 0.5, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, repeat: Infinity, repeatType: "reverse" }}
+            className="absolute inset-0 bg-primary-foreground/15 rounded-full"
+          />
+          <span className="relative flex items-center gap-2 text-base font-medium">
+            <motion.div 
+              animate={{ y: [0, -3, 0] }} 
+              transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }}
+            >
+              <Coffee className="w-5 h-5" />
+            </motion.div>
             Buy me a coffee
           </span>
         </Button>
       </motion.div>
-    );
-  }
 
-  // Full variant - card layout for reader page
-  return (
-    <div className={`w-full max-w-sm mx-auto ${className}`}>
-      {/* Support My Writing Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-background/30 backdrop-blur-md rounded-xl border border-border/30 p-6 text-center shadow-lg"
-      >
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <Heart className="w-5 h-5 text-primary/80" />
-          <h3 className="text-lg font-medium text-foreground tracking-tight">
-            Support My Writing
-          </h3>
-          <Heart className="w-5 h-5 text-primary/80" />
-        </div>
-        
-        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-          If you're enjoying these stories, consider buying me a coffee! Your support helps me create more engaging content.
-        </p>
-        
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Button
-            onClick={() => setIsOpen(true)}
-            className="w-full bg-primary/80 hover:bg-primary text-primary-foreground font-medium py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-          >
-            <Coffee className="w-4 h-4 mr-2" />
-            Buy me a coffee ☕
-          </Button>
-        </motion.div>
-        
-        <p className="text-xs text-muted-foreground/70 mt-3">
-          Powered by Paystack • Secure Payment
-        </p>
-      </motion.div>
-
-      {/* Donation Modal */}
+      {/* Donation Modal - Using the Dialog component */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md text-center bg-background/95 backdrop-blur-md border border-border/50">
+        <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-center flex items-center justify-center gap-2">
-              <Coffee className="w-5 h-5 text-primary" />
-              Support My Writing
-              <Coffee className="w-5 h-5 text-primary" />
+            <DialogTitle id="donation-title" className="text-xl font-semibold text-center">
+              Would you like to support me? ☕💖
             </DialogTitle>
             
-            <DialogDescription className="text-center text-muted-foreground">
-              Your support means the world! Every coffee keeps my creativity brewing and helps me share more stories.
+            <DialogDescription id="donation-description" className="text-center">
+              Your support means the world! Every coffee keeps my creativity brewing. ✨
             </DialogDescription>
           </DialogHeader>
           
-          <div className="mt-6 space-y-4">
+          <div className="mt-5">
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-full text-center"
             >
               <Button
                 onClick={handleTip}
-                className="w-full px-6 py-3 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="px-6 py-3 text-lg font-medium w-full sm:w-auto"
                 size="lg"
                 aria-label="Support with a donation"
               >
@@ -136,6 +84,6 @@ export const BuyMeCoffeeButton = ({ className = "", variant = 'full' }: SupportW
           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none" />
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
