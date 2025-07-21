@@ -166,4 +166,6 @@ Changelog:
 
 ```
 Preferred communication style: Simple, everyday language.
+GitHub repository: https://github.com/corpse777/interactive-storytelling-platform
+Personal access token configured for Git authentication
 ```
