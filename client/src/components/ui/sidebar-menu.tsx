@@ -6,15 +6,16 @@ import {
   Mail, MessageSquare, Database, Palette, Moon, Sun, Type,
   User, Link2 as Link, CircleUserRound as UserCircle, LogIn, Bookmark as BookmarkIcon,
   LineChart, BarChart, AlertTriangle, Ban, ServerCrash, MoveLeft, Clock, WifiOff,
-  Search, Sparkles, GanttChart, GamepadIcon, Rss, Grid, Eye
+  Search, Sparkles, GanttChart, GamepadIcon, Rss, Grid, Eye, Coffee, Heart,
+  Zap, Star, Compass, Map, Globe, Crown, Gem, Target, TrendingUp, Activity
 } from "lucide-react"
-
 
 import { cn } from "@/lib/utils"
 import { useLocation } from "wouter"
 import { useAuth } from "@/hooks/use-auth"
 import { useLoading } from "@/components/GlobalLoadingProvider"
 import { Button } from "@/components/ui/button"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   Collapsible,
   CollapsibleContent,
@@ -226,99 +227,213 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   };
 
-  // Enhanced menu item class with hover effects and prevent text wrapping
-  const menuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap py-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 text-sm font-medium";
+  // Enhanced menu item class with beautiful hover effects and smooth animations
+  const menuItemClass = cn(
+    "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+    "text-sidebar-foreground/80 hover:text-sidebar-foreground",
+    "transition-all duration-300 ease-out",
+    "hover:bg-sidebar-accent hover:shadow-md hover:scale-[1.02]",
+    "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
+    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
+    "data-[active=true]:text-primary data-[active=true]:shadow-sm",
+    "whitespace-nowrap overflow-hidden"
+  );
   
-  // Enhanced submenu item class with hover effects and prevent text wrapping
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent)/90] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:translate-x-1 transition-all duration-200 relative pl-6 whitespace-nowrap focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0 text-sm font-medium";
+  // Enhanced submenu item class with elegant styling
+  const submenuItemClass = cn(
+    "group relative flex items-center gap-3 px-6 py-2 rounded-md text-sm font-medium ml-4",
+    "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+    "transition-all duration-300 ease-out",
+    "hover:bg-sidebar-accent hover:translate-x-1 hover:shadow-sm",
+    "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
+    "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold",
+    "whitespace-nowrap overflow-hidden border-l-2 border-transparent",
+    "hover:border-primary/20 data-[active=true]:border-primary/40"
+  );
 
 
 
 
 
   return (
-    <div 
+    <motion.div 
       ref={menuContainerRef}
-      className="flex flex-col space-y-0 p-1 pt-0 pb-0 h-full sidebar-menu-container"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
       role="navigation"
       aria-label="Main navigation"
+      style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
+      }}
     >
+      {/* Gradient overlay for visual depth */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background to-transparent z-10" />
+      </div>
 
-      {/* Main Navigation */}
-      <SidebarGroup className="mt-0">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
-          NAVIGATION
-        </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-1">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/'}
-                onClick={() => handleNavigation('/')}
-                tooltip="Home"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/')}
-                <Home className="h-4 w-4" />
-                <span>Home</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 p-2 scroll-smooth"
+           style={{
+             scrollBehavior: 'smooth',
+             scrollbarWidth: 'thin',
+             scrollbarColor: 'rgba(156, 163, 175, 0.2) transparent'
+           }}>
 
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/stories'}
-                onClick={() => handleNavigation('/stories')}
-                tooltip="Index"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/stories')}
-                <Scroll className="h-4 w-4" />
-                <span>Index</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+        {/* Main Navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <SidebarGroup className="space-y-1">
+            <SidebarGroupLabel className="px-3 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Compass className="h-3.5 w-3.5" />
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                <SidebarMenuItem>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <SidebarMenuButton
+                      isActive={location === '/'}
+                      onClick={() => handleNavigation('/')}
+                      tooltip="Home"
+                      className={menuItemClass}
+                    >
+                      {renderActiveIndicator('/')}
+                      <Home className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span>Home</span>
+                      {location === '/' && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-auto"
+                        >
+                          <Star className="h-3 w-3 text-primary fill-current" />
+                        </motion.div>
+                      )}
+                    </SidebarMenuButton>
+                  </motion.div>
+                </SidebarMenuItem>
 
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/reader'}
-                onClick={() => handleNavigation('/reader')}
-                tooltip="Reader"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/reader')}
-                <Book className="h-4 w-4" />
-                <span>Reader</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <SidebarMenuButton
+                      isActive={location === '/stories'}
+                      onClick={() => handleNavigation('/stories')}
+                      tooltip="Story Index"
+                      className={menuItemClass}
+                    >
+                      {renderActiveIndicator('/stories')}
+                      <Scroll className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span>Story Index</span>
+                      {location === '/stories' && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-auto"
+                        >
+                          <Star className="h-3 w-3 text-primary fill-current" />
+                        </motion.div>
+                      )}
+                    </SidebarMenuButton>
+                  </motion.div>
+                </SidebarMenuItem>
 
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/community'}
-                onClick={() => handleNavigation('/community')}
-                tooltip="Community"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/community')}
-                <Users className="h-4 w-4" />
-                <span>Community</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <SidebarMenuButton
+                      isActive={location === '/reader'}
+                      onClick={() => handleNavigation('/reader')}
+                      tooltip="Interactive Reader"
+                      className={menuItemClass}
+                    >
+                      {renderActiveIndicator('/reader')}
+                      <Book className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span>Reader</span>
+                      {location === '/reader' && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-auto"
+                        >
+                          <Star className="h-3 w-3 text-primary fill-current" />
+                        </motion.div>
+                      )}
+                    </SidebarMenuButton>
+                  </motion.div>
+                </SidebarMenuItem>
 
-            {/* Bookmarks - Always display the item */}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location === '/bookmarks'}
-                onClick={() => handleNavigation('/bookmarks')}
-                tooltip="Bookmarks"
-                className={menuItemClass}
-              >
-                {renderActiveIndicator('/bookmarks')}
-                <BookmarkIcon className="h-4 w-4" />
-                <span>Bookmarks</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+                <SidebarMenuItem>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <SidebarMenuButton
+                      isActive={location === '/community'}
+                      onClick={() => handleNavigation('/community')}
+                      tooltip="Community Hub"
+                      className={menuItemClass}
+                    >
+                      {renderActiveIndicator('/community')}
+                      <Users className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span>Community</span>
+                      {location === '/community' && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-auto"
+                        >
+                          <Star className="h-3 w-3 text-primary fill-current" />
+                        </motion.div>
+                      )}
+                    </SidebarMenuButton>
+                  </motion.div>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <SidebarMenuButton
+                      isActive={location === '/bookmarks'}
+                      onClick={() => handleNavigation('/bookmarks')}
+                      tooltip="Saved Stories"
+                      className={menuItemClass}
+                    >
+                      {renderActiveIndicator('/bookmarks')}
+                      <BookmarkIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span>Bookmarks</span>
+                      {location === '/bookmarks' && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="ml-auto"
+                        >
+                          <Star className="h-3 w-3 text-primary fill-current" />
+                        </motion.div>
+                      )}
+                    </SidebarMenuButton>
+                  </motion.div>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </motion.div>
 
       {/* Games & Interactive Experiences */}
       <SidebarGroup className="mt-1">
@@ -765,8 +880,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           </Button>
         )}
 
-        <button
+        <motion.button
           onClick={() => handleNavigation('/report-bug')}
+          whileHover={{ scale: 1.02, translateX: 2 }}
+          whileTap={{ scale: 0.98 }}
           className={cn(
             "mt-2 mb-0 text-sm flex items-center justify-center gap-2 w-full px-2 py-1.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
             location === '/report-bug'
@@ -778,8 +895,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         >
           <Bug className="h-4 w-4" aria-hidden="true" />
           <span className="uppercase tracking-wider font-medium">Report Bug</span>
-        </button>
+        </motion.button>
       </div>
-    </div>
+      </div>
+    </motion.div>
   );
 }
