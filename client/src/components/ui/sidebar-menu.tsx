@@ -227,12 +227,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   };
 
-  // Enhanced menu item class with beautiful hover effects, smooth animations, and sans-serif font
+  // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
+    "sidebar-menu-button-enhanced",
     "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
-    "transition-all duration-300 ease-out",
-    "hover:bg-sidebar-accent hover:shadow-md hover:scale-[1.02]",
+    "transition-all duration-200 ease-out",
+    "hover:bg-sidebar-accent hover:shadow-md",
     "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
     "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
     "data-[active=true]:text-primary data-[active=true]:shadow-sm",
@@ -240,11 +241,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Enhanced submenu item class with elegant styling and sans-serif font
+  // Enhanced submenu item class with modern UX hierarchy
   const submenuItemClass = cn(
+    "sidebar-submenu-button-enhanced",
     "group relative flex items-center gap-3 px-6 py-2 rounded-md text-sm font-medium ml-4",
     "text-sidebar-foreground/70 hover:text-sidebar-foreground",
-    "transition-all duration-300 ease-out",
+    "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:translate-x-1 hover:shadow-sm",
     "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
     "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold",
@@ -293,8 +295,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <SidebarGroup className="space-y-1">
-            <SidebarGroupLabel className="px-3 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-2 font-sans">
-              <Compass className="h-3.5 w-3.5" />
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-3 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-2 font-sans">
+              <Compass className="h-3.5 w-3.5 sidebar-icon-enhanced" />
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -311,8 +313,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/')}
-                      <Home className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                      <span>Home</span>
+                      <Home className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="font-medium">Home</span>
                       {location === '/' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -338,8 +340,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/stories')}
-                      <Scroll className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                      <span>Story Index</span>
+                      <Scroll className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="font-medium">Story Index</span>
                       {location === '/stories' && (
                         <motion.div
                           initial={{ scale: 0 }}
