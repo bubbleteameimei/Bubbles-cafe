@@ -1,0 +1,1 @@
+// The StoryRating component has been removed as the rating system has been replaced by like/dislike functionality

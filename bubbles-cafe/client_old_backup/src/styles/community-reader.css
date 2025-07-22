@@ -1,0 +1,85 @@
+/* Community Reader Card Styles */
+.community-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.reader-card {
+  border-radius: 0.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.reader-card:hover {
+  border-color: hsl(var(--primary) / 0.2);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.reader-card .card-title {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.reader-card .card-description {
+  font-family: 'Georgia', serif;
+  line-height: 1.6;
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+}
+
+.reader-card .badge {
+  font-size: 0.75rem;
+  font-weight: normal;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+}
+
+/* Style improvements for card content */
+.reader-card .card-content {
+  padding-top: 0.5rem;
+}
+
+/* Improve avatar styling */
+.reader-card .avatar {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Custom hover styles for card title */
+.reader-card .card-title:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* Improved dropdown menu styles */
+.reader-card .dropdown-menu-item {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .reader-card .card-title {
+    font-size: 1.5rem;
+  }
+  
+  .reader-card .card-description {
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark mode adjustments */
+.dark .reader-card {
+  border-color: hsl(var(--border) / 0.2);
+}
+
+.dark .reader-card:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.dark .reader-card .card-description {
+  color: hsl(var(--muted-foreground));
+}

@@ -1,0 +1,23 @@
+/**
+ * Scroll Effects Styles
+ * 
+ * This file previously contained styles for:
+ * 1. Multi-Speed Scroll indicators
+ * 2. Global Gentle Return paragraph highlighting
+ * 
+ * All visual indicators have been removed for a cleaner user experience.
+ * This file is kept for backward compatibility but contains no active styles.
+ */
+
+/* Maintaining empty selectors for backward compatibility */
+.gentle-highlight { }
+.gentle-highlight-target { }
+html.fast-scrolling { }
+html.slow-scrolling { }
+.position-indicator { display: none; }
+.position-indicator.visible { display: none; }
+.scroll-indicator { display: none; }
+.scroll-indicator.visible { display: none; }
+.scroll-indicator.fast { display: none; }
+.scroll-indicator.normal { display: none; }
+.scroll-indicator.slow { display: none; }

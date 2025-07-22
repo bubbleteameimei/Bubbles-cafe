@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Eden's Hollow Pixel Art Coin -->
+  <!-- Base coin shape -->
+  <circle cx="16" cy="16" r="12" fill="#FFD700"/>
+  
+  <!-- Edge detail -->
+  <circle cx="16" cy="16" r="12" fill="none" stroke="#E6B800" stroke-width="1.5"/>
+  
+  <!-- Inner detail -->
+  <circle cx="16" cy="16" r="9" fill="#FFED8A" opacity="0.7"/>
+  
+  <!-- Face detail -->
+  <path d="M16,8 L20,16 L16,24 L12,16 Z" fill="#FFC400" opacity="0.8"/>
+  
+  <!-- Pixel art highlights - 2x2 pixel blocks -->
+  <rect x="14" y="10" width="2" height="2" fill="#FFFFFF" opacity="0.8"/>
+  <rect x="18" y="16" width="2" height="2" fill="#FFFFFF" opacity="0.6"/>
+  
+  <!-- Pixel art shadows - 2x2 pixel blocks -->
+  <rect x="12" y="18" width="2" height="2" fill="#E6B800" opacity="0.8"/>
+  <rect x="16" y="20" width="2" height="2" fill="#E6B800" opacity="0.8"/>
+</svg>

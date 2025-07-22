@@ -1,0 +1,17 @@
+/*
+ * Additional Toggle Switch Styles
+ * These styles complement the Tailwind classes used in the component
+ * Most styling is now handled directly in the component using Tailwind
+ */
+
+/* Custom focus state if needed */
+.peer:focus-visible + span {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Use size-5 Tailwind class already applies these; kept for reference */
+/* .toggle-thumb {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+} */

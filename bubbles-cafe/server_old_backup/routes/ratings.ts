@@ -1,0 +1,1 @@
+// This file can be deleted as the rating system has been removed

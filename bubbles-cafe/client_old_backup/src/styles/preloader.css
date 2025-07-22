@@ -1,0 +1,63 @@
+/* Simplified Preloader CSS - Applied immediately before any other styles 
+   to prevent flash of unstyled content (FOUC) */
+
+/* Initial loading overlay */
+.initial-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000; /* Solid black background */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+
+.initial-loading-overlay.fade-out {
+  opacity: 0;
+}
+
+.initial-loading-overlay.hidden {
+  display: none;
+}
+
+/* Simple loading text */
+.loading-text {
+  font-family: monospace; /* Simple monospace font */
+  font-size: 1.5rem;
+  color: #FFFFFF; /* White text */
+  margin-top: 1.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: #FFFFFF;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Styles to hide content until loaded */
+.content-hidden {
+  opacity: 0;
+}
+
+.content-visible {
+  opacity: 1;
+  transition: opacity 0.3s ease-in;
+}
