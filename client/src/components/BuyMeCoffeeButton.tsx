@@ -112,7 +112,7 @@ export const BuyMeCoffeeButton = () => {
         <Button
           onClick={() => setIsOpen(true)}
           aria-label="Buy me a coffee"
-          className="relative px-8 py-5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
+          className="relative px-8 py-5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
           size="lg"
         >
           {/* Animated gradient background */}
