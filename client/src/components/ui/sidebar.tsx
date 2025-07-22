@@ -99,9 +99,16 @@ export const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-3 sidebar-content",
+        "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden sidebar-content smooth-scroll",
+        "scrollbar-hide px-0 sm:px-1 md:px-2",
         className
       )}
+      style={{
+        scrollBehavior: 'smooth',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
       {...props}
     />
   )
