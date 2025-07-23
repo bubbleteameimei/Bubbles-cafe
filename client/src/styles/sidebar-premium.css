@@ -1,0 +1,180 @@
+/* Premium Sidebar Dropdown Enhancements */
+
+/* Enhanced backdrop blur effects for better visual depth */
+.sidebar-collapsible-content-premium .bg-gradient-to-br {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Custom scrollbar for dropdown content */
+.sidebar-collapsible-content-premium::-webkit-scrollbar {
+  width: 2px;
+}
+
+.sidebar-collapsible-content-premium::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-collapsible-content-premium::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 1px;
+}
+
+.sidebar-collapsible-content-premium::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Enhanced submenu item hover animations */
+.sidebar-submenu-button-premium {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-submenu-button-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.1),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.sidebar-submenu-button-premium:hover::before {
+  left: 100%;
+}
+
+/* Subtle glow effect for active items */
+.sidebar-submenu-button-premium[data-active="true"] {
+  box-shadow: 
+    0 0 20px hsl(var(--primary) / 0.3),
+    inset 0 1px 0 hsl(var(--primary) / 0.2);
+}
+
+/* Enhanced icon animations */
+.sidebar-submenu-button-premium .h-4 {
+  transition: all 0.3s ease;
+}
+
+.sidebar-submenu-button-premium:hover .h-4 {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px hsl(var(--primary) / 0.3));
+}
+
+/* Professional typography enhancements */
+.sidebar-submenu-button-premium span {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.01em;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Enhanced focus states for accessibility */
+.sidebar-submenu-button-premium:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+/* Smooth enter/exit animations for dropdown containers */
+.sidebar-dropdown-container {
+  transform-origin: top;
+  will-change: transform, opacity;
+}
+
+/* Enhanced glass morphism effect */
+.sidebar-premium-glass {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.7),
+    hsl(var(--background) / 0.3)
+  );
+  border: 1px solid hsl(var(--border) / 0.3);
+  box-shadow: 
+    0 8px 32px hsl(var(--foreground) / 0.1),
+    0 2px 8px hsl(var(--foreground) / 0.05),
+    inset 0 1px 0 hsl(var(--background) / 0.8);
+}
+
+/* Enhanced motion reduce support */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-submenu-button-premium,
+  .sidebar-submenu-button-premium::before,
+  .sidebar-submenu-button-premium .h-4 {
+    transition: none;
+  }
+  
+  .sidebar-submenu-button-premium:hover::before {
+    display: none;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .sidebar-premium-glass {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--background) / 0.8),
+      hsl(var(--background) / 0.4)
+    );
+    border-color: hsl(var(--primary) / 0.2);
+  }
+  
+  .sidebar-submenu-button-premium[data-active="true"] {
+    box-shadow: 
+      0 0 20px hsl(var(--primary) / 0.4),
+      inset 0 1px 0 hsl(var(--primary) / 0.3);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .sidebar-submenu-button-premium {
+    border: 1px solid hsl(var(--foreground) / 0.3);
+  }
+  
+  .sidebar-submenu-button-premium:hover {
+    border-color: hsl(var(--primary));
+  }
+  
+  .sidebar-submenu-button-premium[data-active="true"] {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.2);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .sidebar-submenu-button-premium {
+    min-height: 48px; /* Larger touch targets */
+  }
+  
+  .sidebar-submenu-button-premium:hover::before {
+    display: none; /* Remove hover effects on touch */
+  }
+}
+
+/* Advanced animation keyframes for future use */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Export animations for future enhancement */
+.sidebar-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.sidebar-pulse {
+  animation: subtle-pulse 2s infinite;
+}
