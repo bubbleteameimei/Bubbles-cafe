@@ -441,11 +441,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
       {/* Games & Interactive Experiences */}
-      <SidebarGroup className="-mt-8">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-3 uppercase tracking-wider">
+      <SidebarGroup className="-mt-4">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -465,11 +465,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
-        <SidebarGroup className="-mt-8">
-          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-3 uppercase tracking-wider">
+        <SidebarGroup className="-mt-4">
+          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
             ADMINISTRATION
           </SidebarGroupLabel>
-          <SidebarGroupContent className="-mt-3">
+          <SidebarGroupContent className="-mt-1">
             <SidebarMenu className="space-y-0">
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
@@ -569,11 +569,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       {/* Accessibility */}
-      <SidebarGroup className="-mt-8">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-3 uppercase tracking-wider">
+      <SidebarGroup className="-mt-4">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible 
@@ -671,11 +671,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup className="-mt-8">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-3 uppercase tracking-wider">
+      <SidebarGroup className="-mt-4">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
@@ -757,11 +757,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
       {/* Support & Legal */}
-      <SidebarGroup className="-mt-8">
-        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-3 uppercase tracking-wider">
+      <SidebarGroup className="-mt-4">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
-        <SidebarGroupContent className="-mt-3">
+        <SidebarGroupContent className="-mt-1">
           <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
