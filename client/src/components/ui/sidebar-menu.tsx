@@ -275,12 +275,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     >
       {/* Gradient overlay for visual depth */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-background to-transparent z-10" />
         <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background to-transparent z-10" />
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 p-1 scroll-smooth scrollbar-hide"
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 pt-0 px-1 pb-1 scroll-smooth scrollbar-hide"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'none',
@@ -294,8 +293,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <SidebarGroup className="space-y-0">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-2 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-0 flex items-center gap-2 font-sans">
+          <SidebarGroup className="space-y-0 -mt-6">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
               <Compass className="h-4 w-4 sidebar-icon-enhanced" />
               Navigation
             </SidebarGroupLabel>
