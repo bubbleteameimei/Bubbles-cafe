@@ -160,6 +160,9 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 
 ```
 Changelog:
+- July 23, 2025. ✅ **SIDEBAR CLOSE BUTTON REMOVED** - Removed X close button from sidebar sheet menu per user request
+- July 23, 2025. ✅ Fixed swipe-to-close functionality to work without close button using escape key events
+- July 23, 2025. ✅ Updated swipe gesture mechanism for better touch interaction on mobile devices
 - July 23, 2025. ✅ **DATABASE SETUP COMPLETE** - PostgreSQL database created and all tables initialized
 - July 23, 2025. ✅ Database connection verified and environment variables configured
 - July 23, 2025. ✅ Core tables created: users, posts, comments, bookmarks, author_stats  

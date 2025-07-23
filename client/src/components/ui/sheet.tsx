@@ -64,10 +64,25 @@ const SheetContent = React.forwardRef<
   
   // Get the SheetClose context to access the close function
   const close = () => {
-    // Find and trigger the close button programmatically
-    const closeButton = document.querySelector('[aria-label="Close"]') as HTMLButtonElement | null;
+    // Try to find any remaining close button first
+    const closeButton = document.querySelector('[data-state="open"] [role="dialog"] button[aria-label="Close"]') as HTMLButtonElement | null;
     if (closeButton) {
       closeButton.click();
+      return;
+    }
+    
+    // Fallback: trigger close via Radix primitive's data-state attribute
+    const dialogElement = document.querySelector('[data-state="open"][role="dialog"]') as HTMLElement | null;
+    if (dialogElement) {
+      // Create and dispatch escape key event to close the dialog
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        keyCode: 27,
+        which: 27,
+        bubbles: true,
+        cancelable: true
+      });
+      dialogElement.dispatchEvent(escapeEvent);
     }
   };
   
