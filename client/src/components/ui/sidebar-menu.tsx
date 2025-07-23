@@ -241,18 +241,20 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Enhanced submenu item class with modern UX hierarchy
+  // Enhanced submenu item class with premium design
   const submenuItemClass = cn(
-    "sidebar-submenu-button-enhanced",
-    "group relative flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium",
-    "text-sidebar-foreground/75 hover:text-sidebar-foreground",
-    "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent/70 hover:shadow-sm hover:border-l-2 hover:border-primary/30",
-    "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
-    "data-[active=true]:bg-primary/8 data-[active=true]:text-primary data-[active=true]:font-semibold",
-    "data-[active=true]:border-l-2 data-[active=true]:border-primary/50",
-    "whitespace-nowrap overflow-hidden border-l-2 border-transparent",
-    "font-sans ml-1"
+    "sidebar-submenu-button-premium",
+    "group relative flex items-center gap-3 mx-1 my-0.5 px-4 py-3 rounded-xl text-sm font-medium",
+    "text-sidebar-foreground/80 hover:text-white",
+    "transition-all duration-300 ease-out",
+    "hover:bg-gradient-to-r hover:from-primary/20 hover:via-primary/15 hover:to-primary/10",
+    "hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] hover:translate-x-1",
+    "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-primary/10",
+    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/25 data-[active=true]:via-primary/20 data-[active=true]:to-primary/15",
+    "data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-lg data-[active=true]:shadow-primary/20",
+    "backdrop-blur-sm border border-transparent hover:border-primary/20",
+    "whitespace-nowrap overflow-hidden",
+    "font-sans"
   );
 
 
@@ -484,8 +486,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       )} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-0 px-2 py-0">
-                    <SidebarMenuSub>
+                  <CollapsibleContent className="sidebar-collapsible-content-premium overflow-hidden">
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-md rounded-xl border border-primary/10 mx-2 my-3 p-3 shadow-lg"
+                    >
+                      <SidebarMenuSub className="space-y-1">
                       {/* Dashboard - Keep as main admin page */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
@@ -559,8 +568,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
-                  </CollapsibleContent>
-                </Collapsible>
+                  </motion.div>
+                </CollapsibleContent>
+              </Collapsible>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -604,8 +614,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="sidebar-collapsible-content space-y-0 px-2 py-0">
-                  <SidebarMenuSub>
+                <CollapsibleContent className="sidebar-collapsible-content-premium overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-md rounded-xl border border-primary/10 mx-2 my-3 p-3 shadow-lg"
+                  >
+                    <SidebarMenuSub className="space-y-1">
 
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
@@ -661,7 +678,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Preview</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                  </SidebarMenuSub>
+                    </SidebarMenuSub>
+                  </motion.div>
                 </CollapsibleContent>
               </Collapsible>
             </SidebarMenuItem>
@@ -690,18 +708,25 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-0 px-2 py-0">
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/profile'}
-                        onClick={() => handleNavigation('/profile')}
-                        className={submenuItemClass}
-                      >
-                        <UserCircle className="h-4 w-4 mr-2" />
-                        <span>My Profile</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                <CollapsibleContent className="sidebar-collapsible-content-premium overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-md rounded-xl border border-primary/10 mx-2 my-3 p-3 shadow-lg"
+                  >
+                    <SidebarMenuSub className="space-y-1">
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          isActive={location === '/profile'}
+                          onClick={() => handleNavigation('/profile')}
+                          className={submenuItemClass}
+                        >
+                          <UserCircle className="h-4 w-4 mr-2" />
+                          <span>My Profile</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/profile'}
@@ -745,15 +770,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
 
-                  </SidebarMenuSub>
+                    </SidebarMenuSub>
+                  </motion.div>
                 </CollapsibleContent>
               </Collapsible>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-
-
 
       {/* Support & Legal */}
       <SidebarGroup className="-mt-4">
@@ -776,8 +800,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-0 px-2 py-0">
-                  <SidebarMenuSub>
+                <CollapsibleContent className="sidebar-collapsible-content-premium overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-md rounded-xl border border-primary/10 mx-2 my-3 p-3 shadow-lg"
+                  >
+                    <SidebarMenuSub className="space-y-1">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
@@ -848,7 +879,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                  </SidebarMenuSub>
+                    </SidebarMenuSub>
+                  </motion.div>
                 </CollapsibleContent>
               </Collapsible>
             </SidebarMenuItem>
