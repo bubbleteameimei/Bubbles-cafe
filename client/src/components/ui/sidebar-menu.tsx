@@ -230,10 +230,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium",
+    "group relative flex items-center gap-2 px-2 py-1 rounded-md text-sm font-medium",
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent hover:shadow-md",
+    "hover:bg-sidebar-accent hover:shadow-sm",
     "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
     "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5",
     "data-[active=true]:text-primary data-[active=true]:shadow-sm",
@@ -244,15 +244,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced submenu item class with modern UX hierarchy
   const submenuItemClass = cn(
     "sidebar-submenu-button-enhanced",
-    "group relative flex items-center gap-3 px-6 py-1 rounded-md text-sm font-medium ml-4",
-    "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+    "group relative flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium",
+    "text-sidebar-foreground/75 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
-    "hover:bg-sidebar-accent hover:translate-x-1 hover:shadow-sm",
+    "hover:bg-sidebar-accent/70 hover:shadow-sm hover:border-l-2 hover:border-primary/30",
     "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-sidebar-accent",
-    "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold",
+    "data-[active=true]:bg-primary/8 data-[active=true]:text-primary data-[active=true]:font-semibold",
+    "data-[active=true]:border-l-2 data-[active=true]:border-primary/50",
     "whitespace-nowrap overflow-hidden border-l-2 border-transparent",
-    "hover:border-primary/20 data-[active=true]:border-primary/40",
-    "font-sans"
+    "font-sans ml-1"
   );
 
 
@@ -280,7 +280,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 p-2 scroll-smooth scrollbar-hide"
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 p-1 scroll-smooth scrollbar-hide"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'none',
@@ -295,8 +295,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <SidebarGroup className="space-y-0">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-3 text-sm font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-1 flex items-center gap-2 font-sans">
-              <Compass className="h-3.5 w-3.5 sidebar-icon-enhanced" />
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-2 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-0 flex items-center gap-2 font-sans">
+              <Compass className="h-4 w-4 sidebar-icon-enhanced" />
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -313,7 +313,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/')}
-                      <Home className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span className="font-medium">Home</span>
                       {location === '/' && (
                         <motion.div
@@ -340,7 +340,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/stories')}
-                      <Scroll className="sidebar-icon-enhanced h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span className="font-medium">Story Index</span>
                       {location === '/stories' && (
                         <motion.div
@@ -367,7 +367,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/reader')}
-                      <Book className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span>Reader</span>
                       {location === '/reader' && (
                         <motion.div
@@ -394,7 +394,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/community')}
-                      <Users className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span>Community</span>
                       {location === '/community' && (
                         <motion.div
@@ -421,7 +421,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       {renderActiveIndicator('/bookmarks')}
-                      <BookmarkIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                      <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span>Bookmarks</span>
                       {location === '/bookmarks' && (
                         <motion.div
@@ -442,7 +442,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Games & Interactive Experiences */}
       <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
@@ -455,7 +455,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 className={menuItemClass}
               >
                 {renderActiveIndicator('/game-test')}
-                <GamepadIcon className="h-4 w-4" />
+                <GamepadIcon className="h-5 w-5" />
                 <span>Eden's Hollow - Experimental</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -466,7 +466,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
         <SidebarGroup className="-mt-2">
-          <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+          <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
             ADMINISTRATION
           </SidebarGroupLabel>
           <SidebarGroupContent className="-mt-1">
@@ -476,7 +476,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                       <div className="flex items-center">
-                        <Shield className="h-4 w-4 mr-2" />
+                        <Shield className="h-5 w-5 mr-2" />
                         <span>Admin Controls</span>
                       </div>
                       <ChevronDown className={cn(
@@ -494,7 +494,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/dashboard')}
                           className={submenuItemClass}
                         >
-                          <Monitor className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <Monitor className="h-4 w-4 mr-2" />
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -511,7 +511,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/content-management')}
                           className={submenuItemClass}
                         >
-                          <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <FileText className="h-4 w-4 mr-2" />
                           <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -523,7 +523,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/themes')}
                           className={submenuItemClass}
                         >
-                          <Palette className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <Palette className="h-4 w-4 mr-2" />
                           <span>Theme Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -538,7 +538,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/users')}
                           className={submenuItemClass}
                         >
-                          <Users className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <Users className="h-4 w-4 mr-2" />
                           <span>User Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -555,7 +555,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/analytics')}
                           className={submenuItemClass}
                         >
-                          <LineChart className="h-3.5 w-3.5 mr-2 opacity-70" />
+                          <LineChart className="h-4 w-4 mr-2" />
                           <span>Insights & Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -570,7 +570,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Accessibility */}
       <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
@@ -596,7 +596,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
                   >
                     <div className="flex items-center">
-                      <Palette className="h-4 w-4 mr-2" />
+                      <Palette className="h-5 w-5 mr-2" />
                       <span>Accessibility Settings</span>
                     </div>
                     <ChevronDown className={cn(
@@ -614,7 +614,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/fonts')}
                         className={submenuItemClass}
                       >
-                        <Type className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Type className="h-4 w-4 mr-2" />
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -625,7 +625,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/accessibility')}
                         className={submenuItemClass}
                       >
-                        <HelpCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <HelpCircle className="h-4 w-4 mr-2" />
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -647,7 +647,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/quick-settings')}
                         className={submenuItemClass}
                       >
-                        <Settings className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Settings className="h-4 w-4 mr-2" />
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -658,7 +658,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/preview')}
                         className={submenuItemClass}
                       >
-                        <Eye className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Eye className="h-4 w-4 mr-2" />
                         <span>Preview</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -672,7 +672,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Account Settings */}
       <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
@@ -682,7 +682,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                     <div className="flex items-center">
-                      <UserCircle className="h-4 w-4 mr-2" />
+                      <UserCircle className="h-5 w-5 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
@@ -699,7 +699,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/profile')}
                         className={submenuItemClass}
                       >
-                        <UserCircle className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <UserCircle className="h-4 w-4 mr-2" />
                         <span>My Profile</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -709,7 +709,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/profile')}
                         className={submenuItemClass}
                       >
-                        <User className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <User className="h-4 w-4 mr-2" />
                         <span>Profile Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -719,7 +719,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/notifications')}
                         className={submenuItemClass}
                       >
-                        <Bell className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Bell className="h-4 w-4 mr-2" />
                         <span>Notifications</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -729,7 +729,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/privacy')}
                         className={submenuItemClass}
                       >
-                        <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Lock className="h-4 w-4 mr-2" />
                         <span>Privacy & Security</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -741,7 +741,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/connected')}
                         className={submenuItemClass}
                       >
-                        <Link className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Link className="h-4 w-4 mr-2" />
                         <span>Connected Accounts</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -758,7 +758,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Support & Legal */}
       <SidebarGroup className="-mt-2">
-        <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
+        <SidebarGroupLabel className="px-1 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
@@ -768,7 +768,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
                     <div className="flex items-center">
-                      <HelpCircle className="h-4 w-4 mr-2" />
+                      <HelpCircle className="h-5 w-5 mr-2" />
                       <span>Support & Legal</span>
                     </div>
                     <ChevronDown className={cn(
@@ -785,7 +785,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/about')}
                         className={submenuItemClass}
                       >
-                        <Building className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Building className="h-4 w-4 mr-2" />
                         <span>About Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -795,7 +795,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/feedback')}
                         className={submenuItemClass}
                       >
-                        <MessageSquare className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <MessageSquare className="h-4 w-4 mr-2" />
                         <span>Feedback & Suggestions</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -805,7 +805,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/contact')}
                         className={submenuItemClass}
                       >
-                        <Mail className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Mail className="h-4 w-4 mr-2" />
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -815,7 +815,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/report-bug')}
                         className={submenuItemClass}
                       >
-                        <Bug className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Bug className="h-4 w-4 mr-2" />
                         <span>Report a Bug</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -825,7 +825,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/legal/terms')}
                         className={submenuItemClass}
                       >
-                        <FileText className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <FileText className="h-4 w-4 mr-2" />
                         <span>Terms of Service</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -835,7 +835,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/privacy')}
                         className={submenuItemClass}
                       >
-                        <Lock className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Lock className="h-4 w-4 mr-2" />
                         <span>Privacy Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -845,7 +845,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/legal/copyright')}
                         className={submenuItemClass}
                       >
-                        <Shield className="h-3.5 w-3.5 mr-2 opacity-70" />
+                        <Shield className="h-4 w-4 mr-2" />
                         <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
