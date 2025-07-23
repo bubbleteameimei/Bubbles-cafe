@@ -280,7 +280,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2 p-2 scroll-smooth scrollbar-hide"
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0 p-2 scroll-smooth scrollbar-hide"
            style={{
              scrollBehavior: 'smooth',
              scrollbarWidth: 'none',
@@ -441,7 +441,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         </motion.div>
 
       {/* Games & Interactive Experiences */}
-      <SidebarGroup className="mt-1">
+      <SidebarGroup className="-mt-2">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
@@ -465,7 +465,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Admin Navigation - Only show if user is admin */}
       {user?.isAdmin && (
-        <SidebarGroup className="mt-1">
+        <SidebarGroup className="-mt-2">
           <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
             ADMINISTRATION
           </SidebarGroupLabel>
@@ -569,7 +569,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       {/* Accessibility */}
-      <SidebarGroup className="mt-1">
+      <SidebarGroup className="-mt-2">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
@@ -671,7 +671,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
       </SidebarGroup>
 
       {/* Account Settings */}
-      <SidebarGroup className="mt-1">
+      <SidebarGroup className="-mt-2">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
@@ -757,7 +757,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
 
       {/* Support & Legal */}
-      <SidebarGroup className="mt-1">
+      <SidebarGroup className="-mt-2">
         <SidebarGroupLabel className="px-2 text-xs font-medium text-[hsl(var(--sidebar-foreground))] -mb-1 uppercase tracking-wider">
           SUPPORT & LEGAL
         </SidebarGroupLabel>
