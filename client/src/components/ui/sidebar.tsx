@@ -144,12 +144,12 @@ export const Sidebar = React.forwardRef<
           {/* Close Button */}
           <button
             onClick={() => setOpenMobile(false)}
-            className="absolute right-2 top-2 h-6 w-6 rounded-md opacity-70 touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 active:opacity-100 focus:outline-none disabled:pointer-events-none"
+            className="absolute right-2 top-2 h-5 w-5 rounded-full opacity-70 touch-manipulation transition-all duration-150 ease-out hover:opacity-100 active:scale-95 active:opacity-100 focus:outline-none disabled:pointer-events-none"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
             <span className="sr-only">Close</span>
-            <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-md" />
+            <span className="absolute inset-0 bg-current opacity-0 hover:opacity-10 active:opacity-20 transition-opacity duration-150 rounded-full" />
           </button>
 
           <div className="flex h-full w-full flex-col overflow-y-auto overflow-x-hidden sidebar-full-height">{children}</div>
