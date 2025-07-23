@@ -212,15 +212,7 @@ const PixelArtDemo: React.FC = () => {
                     onChange={(e) => updateColor(index, e.target.value)}
                     className="flex-grow"
                   />
-                  <Button 
-                    size="icon" 
-                    variant="destructive"
-                    onClick={() => removeColor(index)}
-                    disabled={customColors.length <= 1}
-                  >
-                    <span className="sr-only">Remove color</span>
-                    <span aria-hidden>×</span>
-                  </Button>
+
                 </div>
               ))}
               
