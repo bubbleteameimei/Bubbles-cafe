@@ -230,7 +230,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced menu item class with modern UX principles
   const menuItemClass = cn(
     "sidebar-menu-button-enhanced",
-    "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+    "group relative flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium",
     "text-sidebar-foreground/80 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:shadow-md",
@@ -244,7 +244,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   // Enhanced submenu item class with modern UX hierarchy
   const submenuItemClass = cn(
     "sidebar-submenu-button-enhanced",
-    "group relative flex items-center gap-3 px-6 py-2 rounded-md text-sm font-medium ml-4",
+    "group relative flex items-center gap-3 px-6 py-1 rounded-md text-sm font-medium ml-4",
     "text-sidebar-foreground/70 hover:text-sidebar-foreground",
     "transition-all duration-200 ease-out",
     "hover:bg-sidebar-accent hover:translate-x-1 hover:shadow-sm",
@@ -294,13 +294,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <SidebarGroup className="space-y-1">
-            <SidebarGroupLabel className="sidebar-group-label-enhanced px-3 text-sm font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-2 font-sans">
+          <SidebarGroup className="space-y-0">
+            <SidebarGroupLabel className="sidebar-group-label-enhanced px-3 text-sm font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-1 flex items-center gap-2 font-sans">
               <Compass className="h-3.5 w-3.5 sidebar-icon-enhanced" />
               Navigation
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
                   <motion.div
                     whileHover={{ x: 2 }}
@@ -446,7 +446,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           GAMES & INTERACTIVE
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
-          <SidebarMenu>
+          <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location === '/game-test'}
@@ -470,7 +470,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             ADMINISTRATION
           </SidebarGroupLabel>
           <SidebarGroupContent className="-mt-1">
-            <SidebarMenu>
+            <SidebarMenu className="space-y-0">
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
@@ -485,7 +485,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       )} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-1 px-2 py-1">
+                  <CollapsibleContent className="space-y-0 px-2 py-0">
                     <SidebarMenuSub>
                       {/* Dashboard - Keep as main admin page */}
                       <SidebarMenuSubItem>
@@ -574,7 +574,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           READING & ACCESSIBILITY
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
-          <SidebarMenu>
+          <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible 
                 open={displayOpen} 
@@ -605,7 +605,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="sidebar-collapsible-content space-y-1 px-2 py-1">
+                <CollapsibleContent className="sidebar-collapsible-content space-y-0 px-2 py-0">
                   <SidebarMenuSub>
 
                     <SidebarMenuSubItem>
@@ -676,7 +676,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           ACCOUNT SETTINGS
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
-          <SidebarMenu>
+          <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
@@ -691,7 +691,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent className="space-y-0 px-2 py-0">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
@@ -762,7 +762,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           SUPPORT & LEGAL
         </SidebarGroupLabel>
         <SidebarGroupContent className="-mt-1">
-          <SidebarMenu>
+          <SidebarMenu className="space-y-0">
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
@@ -777,7 +777,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 px-2 py-1">
+                <CollapsibleContent className="space-y-0 px-2 py-0">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
