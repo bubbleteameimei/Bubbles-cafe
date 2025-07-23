@@ -81,13 +81,7 @@ export function useSwipeClose({
       
       if (shouldClose) {
         setHasTriggeredClose(true);
-        // Also find and click the close button to ensure the sheet closes properly
-        const closeButton = document.querySelector('[data-close-button="true"]') as HTMLButtonElement;
-        if (closeButton) {
-          closeButton.click();
-        } else {
-          onClose(); // Fallback to onClose if button not found
-        }
+        onClose(); // Use the onClose callback directly
       }
     };
     
@@ -119,12 +113,19 @@ export function useSwipeClose({
 
 /**
  * Helper function to close a sheet component programmatically
- * This can be used outside the hook to close any sheet with the data-close-button attribute
+ * This triggers the sheet to close via escape key event
  */
 export function closeSheet() {
-  const closeButton = document.querySelector('[data-close-button="true"]') as HTMLButtonElement;
-  if (closeButton) {
-    closeButton.click();
+  const dialogElement = document.querySelector('[data-state="open"][role="dialog"]') as HTMLElement | null;
+  if (dialogElement) {
+    const escapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      keyCode: 27,
+      which: 27,
+      bubbles: true,
+      cancelable: true
+    });
+    dialogElement.dispatchEvent(escapeEvent);
     return true;
   }
   return false;
