@@ -241,8 +241,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Enhanced submenu styling with bigger font and padding
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-2.5 px-3";
+  // Enhanced submenu styling with much bigger font and padding
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-base font-semibold py-3.5 px-2 whitespace-nowrap overflow-hidden min-h-[48px] flex items-center";
 
 
 
@@ -489,7 +489,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/dashboard')}
                           className={submenuItemClass}
                         >
-                          <Monitor className="h-4 w-4 mr-2" />
+                          <Monitor className="h-4 w-4 mr-1.5" />
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -616,7 +616,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/fonts')}
                         className={submenuItemClass}
                       >
-                        <Type className="h-4 w-4 mr-2" />
+                        <Type className="h-4 w-4 mr-1.5" />
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -627,7 +627,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/accessibility')}
                         className={submenuItemClass}
                       >
-                        <HelpCircle className="h-4 w-4 mr-2" />
+                        <HelpCircle className="h-4 w-4 mr-1.5" />
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -700,7 +700,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                    className="px-2 py-1"
+                    className="px-0 py-1"
                   >
                     <SidebarMenuSub className="space-y-0">
                       <SidebarMenuSubItem>
@@ -709,7 +709,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/profile')}
                           className={submenuItemClass}
                         >
-                          <UserCircle className="h-4 w-4 mr-2" />
+                          <UserCircle className="h-4 w-4 mr-1.5" />
                           <span>My Profile</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -719,7 +719,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/profile')}
                         className={submenuItemClass}
                       >
-                        <User className="h-4 w-4 mr-2" />
+                        <User className="h-4 w-4 mr-1.5" />
                         <span>Profile Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
