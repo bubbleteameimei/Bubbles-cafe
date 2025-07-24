@@ -241,8 +241,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Clean submenu styling
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out";
+  // Enhanced submenu styling with bigger font and padding
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-2.5 px-3";
 
 
 
