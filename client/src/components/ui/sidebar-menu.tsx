@@ -489,7 +489,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/dashboard')}
                           className={submenuItemClass}
                         >
-                          <Monitor className="h-5 w-5 mr-1.5" />
+                          <Monitor className="h-4 w-4 mr-1.5" />
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -506,7 +506,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/content-management')}
                           className={submenuItemClass}
                         >
-                          <FileText className="h-5 w-5 mr-2" />
+                          <FileText className="h-4 w-4 mr-2" />
                           <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -518,7 +518,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/themes')}
                           className={submenuItemClass}
                         >
-                          <Palette className="h-5 w-5 mr-2" />
+                          <Palette className="h-4 w-4 mr-2" />
                           <span>Theme Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -533,7 +533,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/users')}
                           className={submenuItemClass}
                         >
-                          <Users className="h-5 w-5 mr-2" />
+                          <Users className="h-4 w-4 mr-2" />
                           <span>User Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -550,7 +550,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/admin/analytics')}
                           className={submenuItemClass}
                         >
-                          <LineChart className="h-5 w-5 mr-2" />
+                          <LineChart className="h-4 w-4 mr-2" />
                           <span>Insights & Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -616,7 +616,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/fonts')}
                         className={submenuItemClass}
                       >
-                        <Type className="h-5 w-5 mr-1.5" />
+                        <Type className="h-4 w-4 mr-1.5" />
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -627,7 +627,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/accessibility')}
                         className={submenuItemClass}
                       >
-                        <HelpCircle className="h-5 w-5 mr-1.5" />
+                        <HelpCircle className="h-4 w-4 mr-1.5" />
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -638,7 +638,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/pixel-art')}
                         className={submenuItemClass}
                       >
-                        <Grid className="h-5 w-5 mr-2 opacity-70" />
+                        <Grid className="h-3.5 w-3.5 mr-2 opacity-70" />
                         <span>Pixel Art</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -649,7 +649,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/quick-settings')}
                         className={submenuItemClass}
                       >
-                        <Settings className="h-5 w-5 mr-2" />
+                        <Settings className="h-4 w-4 mr-2" />
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -660,7 +660,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/preview')}
                         className={submenuItemClass}
                       >
-                        <Eye className="h-5 w-5 mr-2" />
+                        <Eye className="h-4 w-4 mr-2" />
                         <span>Preview</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -709,7 +709,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           onClick={() => handleNavigation('/profile')}
                           className={submenuItemClass}
                         >
-                          <UserCircle className="h-5 w-5 mr-1.5" />
+                          <UserCircle className="h-4 w-4 mr-1.5" />
                           <span>My Profile</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -719,7 +719,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/profile')}
                         className={submenuItemClass}
                       >
-                        <User className="h-5 w-5 mr-1.5" />
+                        <User className="h-4 w-4 mr-1.5" />
                         <span>Profile Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -729,7 +729,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/notifications')}
                         className={submenuItemClass}
                       >
-                        <Bell className="h-5 w-5 mr-1.5" />
+                        <Bell className="h-4 w-4 mr-1.5" />
                         <span>Notifications</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -739,7 +739,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/privacy')}
                         className={submenuItemClass}
                       >
-                        <Lock className="h-5 w-5 mr-2" />
+                        <Lock className="h-4 w-4 mr-2" />
                         <span>Privacy & Security</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -751,7 +751,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/connected')}
                         className={submenuItemClass}
                       >
-                        <Link className="h-5 w-5 mr-2" />
+                        <Link className="h-4 w-4 mr-2" />
                         <span>Connected Accounts</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -801,7 +801,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/about')}
                         className={submenuItemClass}
                       >
-                        <Building className="h-5 w-5 mr-2" />
+                        <Building className="h-4 w-4 mr-2" />
                         <span>About Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -811,7 +811,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/feedback')}
                         className={submenuItemClass}
                       >
-                        <MessageSquare className="h-5 w-5 mr-2" />
+                        <MessageSquare className="h-4 w-4 mr-2" />
                         <span>Feedback & Suggestions</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -821,7 +821,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/contact')}
                         className={submenuItemClass}
                       >
-                        <Mail className="h-5 w-5 mr-2" />
+                        <Mail className="h-4 w-4 mr-2" />
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -831,7 +831,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/report-bug')}
                         className={submenuItemClass}
                       >
-                        <Bug className="h-5 w-5 mr-2" />
+                        <Bug className="h-4 w-4 mr-2" />
                         <span>Report a Bug</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -841,7 +841,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/legal/terms')}
                         className={submenuItemClass}
                       >
-                        <FileText className="h-5 w-5 mr-2" />
+                        <FileText className="h-4 w-4 mr-2" />
                         <span>Terms of Service</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -851,7 +851,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/privacy')}
                         className={submenuItemClass}
                       >
-                        <Lock className="h-5 w-5 mr-2" />
+                        <Lock className="h-4 w-4 mr-2" />
                         <span>Privacy Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -861,7 +861,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/legal/copyright')}
                         className={submenuItemClass}
                       >
-                        <Shield className="h-5 w-5 mr-2" />
+                        <Shield className="h-4 w-4 mr-2" />
                         <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
