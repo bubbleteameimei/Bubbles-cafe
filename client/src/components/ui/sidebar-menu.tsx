@@ -241,8 +241,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Compact submenu styling 
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-1.5 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center";
+  // Compact submenu styling with reduced spacing
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1 px-1.5 whitespace-nowrap overflow-hidden min-h-[32px] flex items-center mb-0.5";
 
 
 
@@ -589,14 +589,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
+                    className="w-full justify-between text-slate-600 dark:text-slate-300 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-slate-700 data-[state=open]:text-slate-800 dark:data-[state=open]:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 whitespace-nowrap sidebar-collapsible-trigger"
                   >
                     <div className="flex items-center">
                       <Palette className="h-5 w-5 mr-2" />
                       <span>Accessibility Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-200",
                       displayOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
@@ -683,13 +683,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
+                  <SidebarMenuButton className="w-full justify-between text-slate-600 dark:text-slate-300 data-[state=open]:bg-slate-100 dark:data-[state=open]:bg-slate-700 data-[state=open]:text-slate-800 dark:data-[state=open]:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 whitespace-nowrap">
                     <div className="flex items-center">
                       <UserCircle className="h-5 w-5 mr-2" />
                       <span>Account Settings</span>
                     </div>
                     <ChevronDown className={cn(
-                      "h-4 w-4 shrink-0 text-[hsl(var(--sidebar-foreground))] opacity-50 transition-transform duration-200",
+                      "h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-200",
                       accountOpen && "rotate-180"
                     )} />
                   </SidebarMenuButton>
@@ -700,7 +700,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                    className="px-0 py-1"
+                    className="px-0 py-0.5"
                   >
                     <SidebarMenuSub className="space-y-0">
                       <SidebarMenuSubItem>
@@ -729,7 +729,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         onClick={() => handleNavigation('/settings/notifications')}
                         className={submenuItemClass}
                       >
-                        <Bell className="h-4 w-4 mr-2" />
+                        <Bell className="h-4 w-4 mr-1.5" />
                         <span>Notifications</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
