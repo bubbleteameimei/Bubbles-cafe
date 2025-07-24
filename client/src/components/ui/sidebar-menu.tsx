@@ -241,8 +241,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Enhanced submenu styling with much bigger font and padding
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-base font-semibold py-3.5 px-2 whitespace-nowrap overflow-hidden min-h-[48px] flex items-center";
+  // Compact submenu styling 
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:bg-[hsl(var(--sidebar-accent))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:bg-[hsl(var(--sidebar-accent))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-1.5 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center";
 
 
 
