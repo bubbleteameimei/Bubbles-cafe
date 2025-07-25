@@ -54,12 +54,29 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
-import DOMPurify from 'dompurify';
-
-// Replace sanitizeHtmlContent implementation with DOMPurify
+// Simple HTML sanitization function without external dependencies
 const sanitizeHtmlContent = (html: string): string => {
   try {
-    return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    // Create a temporary div to parse HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Remove script tags and dangerous attributes
+    const scripts = temp.querySelectorAll('script');
+    scripts.forEach(script => script.remove());
+    
+    // Remove dangerous attributes
+    const allElements = temp.querySelectorAll('*');
+    allElements.forEach(element => {
+      const dangerousAttrs = ['onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur'];
+      dangerousAttrs.forEach(attr => {
+        if (element.hasAttribute(attr)) {
+          element.removeAttribute(attr);
+        }
+      });
+    });
+    
+    return temp.innerHTML;
   } catch (error) {
     console.error('[Reader] Error sanitizing HTML:', error);
     return html;
