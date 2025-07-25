@@ -12,13 +12,52 @@ let syncInProgress = false;
 let lastSyncStatus: any = null;
 let lastSyncTime: string | null = null;
 
-// TODO: Require authentication/authorization for all POST sync endpoints below.
-// Placeholder middleware for authentication (implement as needed)
+// BACKEND IMPROVEMENTS:
+// - Require authentication/authorization for all sensitive endpoints
+// - Add CSRF protection for all POST/PUT/DELETE endpoints
+// - Add rate limiting for sensitive endpoints
+// - Use Zod for input validation
+// - Standardize error handling and logging
+// - Document and version API
+// - Use environment variables for secrets
+// - Use parameterized queries/ORM for DB access
+// - Backup DB regularly
+// - Add unit/integration tests for backend logic
+
+import { z } from 'zod';
+
+// Placeholder middleware for authentication/authorization
 function requireAuth(req, res, next) {
   // Implement authentication/authorization logic here
   // e.g., check req.user or session
   // If not authenticated, return res.status(401).json({ error: 'Unauthorized' });
+  // Example: if (!req.user || !req.user.isAdmin) return res.status(403).json({ error: 'Forbidden' });
   next();
+}
+
+// Placeholder middleware for CSRF protection
+function csrfProtection(req, res, next) {
+  // Implement CSRF token validation here
+  // If invalid, return res.status(403).json({ error: 'Invalid CSRF token' });
+  next();
+}
+
+// Placeholder middleware for rate limiting
+function rateLimit(req, res, next) {
+  // Implement rate limiting logic here (e.g., express-rate-limit)
+  // If rate limit exceeded, return res.status(429).json({ error: 'Too many requests' });
+  next();
+}
+
+// Example Zod schema for POST body validation
+const syncPostSchema = z.object({
+  postId: z.string().regex(/^\d+$/),
+});
+
+// Example logging utility
+function logEvent(message, meta) {
+  // Replace with a real logger (e.g., Winston, Pino, Sentry)
+  console.log(`[LOG] ${message}`, meta || '');
 }
 
 // TODO: Implement CSRF protection and rate limiting for all POST endpoints below.
@@ -96,7 +135,11 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync
    * Trigger a WordPress sync manually
    */
-  app.post('/api/wordpress/sync', requireAuth, async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, csrfProtection, rateLimit, async (_req: Request, res: Response) => {
+    // Example: log event
+    logEvent('Manual WordPress sync triggered via API', { user: _req.user });
+    // TODO: Add input validation if accepting body data
+    // Standardize error handling below
     if (syncInProgress) {
       return res.status(409).json({
         success: false,
@@ -108,24 +151,15 @@ export function registerWordPressSyncRoutes(app: Express): void {
     syncInProgress = true;
     
     try {
-      log('Manual WordPress sync triggered via API', 'wordpress-sync');
-      
-      // Run the sync in the background so we can return immediately
-      res.status(202).json({
-        success: true,
-        message: 'WordPress sync initiated',
-        syncStartTime: new Date().toISOString()
-      });
-      
       // Now run the actual sync (the response has already been sent)
       const result = await wordpressSync.syncAllPosts();
       
       lastSyncStatus = result;
       lastSyncTime = new Date().toISOString();
       
-      log(`WordPress sync completed: ${result.synced} synced posts, ${result.errors.length} errors`, 'wordpress-sync');
+      logEvent(`WordPress sync completed: ${result.synced} synced posts, ${result.errors.length} errors`, { synced: result.synced, errors: result.errors.length });
     } catch (error) {
-      log(`Error in WordPress sync: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-sync');
+      logEvent('Error in WordPress sync', { error });
       
       lastSyncStatus = {
         success: false,
@@ -141,10 +175,17 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync/:postId
    * Trigger a WordPress sync for a single post
    */
-  app.post('/api/wordpress/sync/:postId', requireAuth, async (req: Request, res: Response) => {
-    const postId = req.params.postId;
+  app.post('/api/wordpress/sync/:postId', requireAuth, csrfProtection, rateLimit, async (req: Request, res: Response) => {
+    // Validate input
+    const parseResult = syncPostSchema.safeParse({ postId: req.params.postId });
+    if (!parseResult.success) {
+      return res.status(400).json({ error: 'Invalid post ID' });
+    }
+    logEvent('Manual sync triggered for WordPress post ID', { user: req.user, postId: req.params.postId });
     
-    if (!postId || isNaN(parseInt(postId))) {
+    const postId = parseInt(req.params.postId);
+    
+    if (!postId || isNaN(postId)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid post ID'
@@ -152,9 +193,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
     }
     
     try {
-      log(`Manual sync triggered for WordPress post ID: ${postId}`, 'wordpress-sync');
-      
-      const result = await syncSingleWordPressPost(parseInt(postId));
+      const result = await syncSingleWordPressPost(postId);
       
       res.json({
         success: true,
@@ -162,7 +201,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
         post: result
       });
     } catch (error) {
-      log(`Error syncing WordPress post ${postId}: ${error instanceof Error ? error.message : String(error)}`, 'wordpress-sync');
+      logEvent('Error syncing WordPress post', { error });
       
       res.status(500).json({
         success: false,
