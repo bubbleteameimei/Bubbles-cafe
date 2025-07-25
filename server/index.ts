@@ -50,6 +50,7 @@ import {
   queryPerformanceMiddleware,
   wrapDbWithProfiler
 } from "./middleware";
+import { validateSession } from "./middleware/security-validation";
 
 const app = express();
 const isDev = process.env.NODE_ENV !== "production";
@@ -139,6 +140,10 @@ app.use((req, res, next) => {
   // No CSRF token generation or validation
   next();
 });
+
+// Apply security validation middleware (but skip for public routes)
+// This is commented out temporarily to allow reader access
+// app.use(validateSession);
 
 // Setup authentication
 setupAuth(app);
