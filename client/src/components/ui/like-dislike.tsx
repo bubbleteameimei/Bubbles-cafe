@@ -153,22 +153,19 @@ export function LikeDislike({
     };
   }, [postId, onUpdate]);
 
-  // Force complete reset on every page load for debugging
+  // Load existing stats or create new ones consistently
   useEffect(() => {
-    // Clear ALL localStorage items that start with 'post-stats-'
-    const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
-    keys.forEach(key => {
-      console.log(`Clearing old stats: ${key}`);
-      localStorage.removeItem(key);
-    });
+    const currentStats = getOrCreateStats(postId);
+    console.log(`Loading stats for post ${postId}:`, currentStats);
+    setStats(currentStats);
     
-    // Force regenerate stats for current post
-    const freshStats = getOrCreateStats(postId);
-    console.log(`Fresh stats for post ${postId}:`, freshStats);
-    setStats(freshStats);
-    setLiked(false);
-    setDisliked(false);
-    onUpdate?.(freshStats.likes, freshStats.dislikes);
+    // Determine user state from current stats vs base stats
+    const userLiked = currentStats.likes > currentStats.baseStats.likes;
+    const userDisliked = currentStats.dislikes > currentStats.baseStats.dislikes;
+    
+    setLiked(userLiked);
+    setDisliked(userDisliked);
+    onUpdate?.(currentStats.likes, currentStats.dislikes);
   }, [postId, onUpdate]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
