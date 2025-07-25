@@ -40,7 +40,7 @@ export const securitySchemas = {
 };
 
 // Session security validation
-export function validateSession(req: Request, res: Response, next: NextFunction) {
+export async function validateSession(req: Request, res: Response, next: NextFunction) {
   if (!req.session) {
     securityLogger.warn('Request without session', { 
       ip: req.ip, 
@@ -51,7 +51,7 @@ export function validateSession(req: Request, res: Response, next: NextFunction)
   }
 
   // Check for session hijacking attempts
-  const currentFingerprint = generateFingerprint(req);
+  const currentFingerprint = await generateFingerprint(req);
   if (req.session.fingerprint && req.session.fingerprint !== currentFingerprint) {
     securityLogger.error('Potential session hijacking detected', {
       sessionId: req.sessionID,
@@ -89,7 +89,7 @@ export function validateSession(req: Request, res: Response, next: NextFunction)
 }
 
 // Generate browser fingerprint for session validation
-function generateFingerprint(req: Request): string {
+async function generateFingerprint(req: Request): Promise<string> {
   const components = [
     req.get('User-Agent') || '',
     req.get('Accept-Language') || '',
@@ -97,8 +97,8 @@ function generateFingerprint(req: Request): string {
     req.ip
   ];
   
-  return require('crypto')
-    .createHash('sha256')
+  const crypto = await import('crypto');
+  return crypto.createHash('sha256')
     .update(components.join('|'))
     .digest('hex');
 }

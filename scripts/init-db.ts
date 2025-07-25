@@ -29,7 +29,7 @@ import {
   adminNotifications,
   siteSettings,
   performanceMetrics
-} from '@shared/schema';
+} from '../shared/schema';
 import bcrypt from 'bcryptjs';
 import { sql } from 'drizzle-orm';
 
