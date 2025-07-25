@@ -41,16 +41,17 @@ const getStorageKey = (postId: number) => `post-stats-${postId}`;
 
 // Generate consistent random numbers based on postId
 const generateBaseStats = (postId: number) => {
-  // Use postId as seed for consistent random generation
-  const seed = postId * 1234567;
+  // Use postId as seed for consistent random generation across all components
+  const seed = postId * 12345;
   const seededRandom = (seed: number) => {
     const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
   };
   
   const likesBase = Math.floor(seededRandom(seed) * (150 - 80 + 1)) + 80;
-  const dislikesBase = Math.floor(seededRandom(seed + 1) * (20 - 8 + 1)) + 8;
+  const dislikesBase = Math.floor(seededRandom(seed + 999) * (20 - 8 + 1)) + 8;
   
+  console.log(`Generated base stats for post ${postId}: likes=${likesBase}, dislikes=${dislikesBase}`);
   return { likes: likesBase, dislikes: dislikesBase };
 };
 
@@ -152,14 +153,23 @@ export function LikeDislike({
     };
   }, [postId, onUpdate]);
 
-  // Reset all stats when component first mounts (only once per page load)
+  // Force complete reset on every page load for debugging
   useEffect(() => {
-    if (!(window as any).statsResetOnce) {
-      (window as any).statsResetOnce = true;
-      console.log('Resetting all stats for consistency...');
-      window.dispatchEvent(new CustomEvent('resetAllStats'));
-    }
-  }, []);
+    // Clear ALL localStorage items that start with 'post-stats-'
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
+    keys.forEach(key => {
+      console.log(`Clearing old stats: ${key}`);
+      localStorage.removeItem(key);
+    });
+    
+    // Force regenerate stats for current post
+    const freshStats = getOrCreateStats(postId);
+    console.log(`Fresh stats for post ${postId}:`, freshStats);
+    setStats(freshStats);
+    setLiked(false);
+    setDisliked(false);
+    onUpdate?.(freshStats.likes, freshStats.dislikes);
+  }, [postId, onUpdate]);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
