@@ -103,12 +103,12 @@ export function LikeDislike({
       setIsToastVisible(true);
     });
     
-    // Start fade out after 2 seconds
+    // Start fade out after 4 seconds
     setTimeout(() => {
       setIsToastVisible(false);
       // Remove from DOM after fade out completes
       setTimeout(() => setInlineToast(null), 300);
-    }, 2000);
+    }, 4000);
   };
 
   const updateStats = (newStats: Stats) => {
