@@ -208,3 +208,26 @@ For questions and support, please contact the development team.
 ---
 
 **Built with ❤️ using modern web technologies**#interactive-storytelling-platform
+
+## Testing
+
+- Add unit tests for critical business logic and utility functions (recommend Jest or Vitest).
+- Add integration tests for key user flows (recommend Cypress or Playwright).
+- Add accessibility tests using axe or Lighthouse CI.
+- See `test-*` files for some existing test scripts.
+
+## DevOps & Deployment
+
+- Use environment variables for all secrets and configuration. Never expose secrets to the frontend.
+- Add server-side logging and error monitoring (e.g., Sentry) for production.
+- Use CI/CD pipelines to automate tests, builds, and deployments.
+
+## SEO & Content
+
+- Ensure all pages have unique, descriptive meta titles and descriptions.
+- Use dynamic Open Graph (OG) tags for better social sharing.
+- Generate and serve a sitemap.xml and robots.txt for search engines.
+
+## Internationalization (i18n)
+
+- If you plan to support multiple languages, set up i18n early using libraries like react-i18next or next-i18next.
