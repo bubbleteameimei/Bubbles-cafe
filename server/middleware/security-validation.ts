@@ -51,7 +51,8 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     '/auth/logout',
     '/api/health',
     '/api/posts',
-    '/api/posts/public'
+    '/api/posts/public',
+    '/api/errors'
   ];
   
   // Check if this is a public route
