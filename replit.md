@@ -175,6 +175,7 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 
 ```
 Changelog:
+- July 25, 2025. ✅ **LIKE/DISLIKE BUTTONS ENHANCED** - Redesigned with modern styling, sans-serif fonts, hover effects, and improved accessibility
 - July 25, 2025. ✅ **COMPLETE APPLICATION SETUP** - Database created, application started, and WordPress sync running successfully
 - July 25, 2025. ✅ PostgreSQL database provisioned with DATABASE_URL environment variable
 - July 25, 2025. ✅ All core database tables created via SQL (users, posts, author_stats, sessions, site_settings)

@@ -184,34 +184,52 @@ export function LikeDislike({
   return (
     <div className={`relative ${className}`} data-toast-container>
       {variant === 'reader' && (
-        <p className="text-center text-sm font-medium mb-3 text-white/80 uppercase tracking-wide">
-          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
+        <p className="text-center text-sm font-medium mb-4 text-muted-foreground font-sans">
+          How did you like this story?
         </p>
       )}
-      <div className="flex items-center justify-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className={`flex items-center gap-3 ${variant === 'reader' ? 'justify-center' : 'justify-start'}`}>
+        <button
+          type="button"
           onClick={handleLike}
-          className={`flex items-center gap-2 rounded-md px-3 py-2 ${
-            liked ? 'text-white bg-[#2D281F]' : 'text-white/70 hover:text-white hover:bg-[#161912]'
-          }`}
+          className={`
+            inline-flex items-center gap-2 font-sans font-medium text-sm
+            px-4 py-2 rounded-lg border transition-all duration-200
+            hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1
+            ${variant === 'reader' 
+              ? 'min-w-[100px] justify-center' 
+              : 'h-8 px-3 py-1 text-xs min-w-[70px]'
+            }
+            ${liked 
+              ? 'bg-green-100 border-green-300 text-green-700 shadow-sm focus:ring-green-300 dark:bg-green-900/30 dark:border-green-600 dark:text-green-400 dark:focus:ring-green-600' 
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm focus:ring-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-500'
+            }
+          `}
         >
-          <ThumbsUp className="h-5 w-5" />
-          <span>{stats.likes}</span>
-        </Button>
+          <ThumbsUp className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
+          <span className="font-sans tabular-nums">{stats.likes}</span>
+        </button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           onClick={handleDislike}
-          className={`flex items-center gap-2 rounded-md px-3 py-2 ${
-            disliked ? 'text-white bg-[#070C0E]' : 'text-white/70 hover:text-white hover:bg-[#161912]'
-          }`}
+          className={`
+            inline-flex items-center gap-2 font-sans font-medium text-sm
+            px-4 py-2 rounded-lg border transition-all duration-200
+            hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1
+            ${variant === 'reader' 
+              ? 'min-w-[100px] justify-center' 
+              : 'h-8 px-3 py-1 text-xs min-w-[70px]'
+            }
+            ${disliked 
+              ? 'bg-red-100 border-red-300 text-red-700 shadow-sm focus:ring-red-300 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400 dark:focus:ring-red-600' 
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm focus:ring-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-500'
+            }
+          `}
         >
-          <ThumbsDown className="h-5 w-5" />
-          <span>{stats.dislikes}</span>
-        </Button>
+          <ThumbsDown className={`${variant === 'reader' ? 'h-4 w-4' : 'h-3 w-3'}`} />
+          <span className="font-sans tabular-nums">{stats.dislikes}</span>
+        </button>
       </div>
     </div>
   );
