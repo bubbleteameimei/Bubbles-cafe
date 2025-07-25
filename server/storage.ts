@@ -90,18 +90,66 @@ async function safeDbOperation<T>(
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 20, // Maximum number of clients in the pool
+  min: 2, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 10000, // Attempt to connect for up to 10 seconds
   maxUses: 7500, // Close and replace a connection after it has been used 7500 times (prevents memory issues)
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  keepAlive: true, // Enable TCP keep-alive
+  keepAliveInitialDelayMillis: 0,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+  // Enhanced error handling
+  application_name: 'bubbles-cafe-api',
+  statement_timeout: 30000, // 30 second query timeout
+  query_timeout: 30000,
+  // Connection validation
+  idleInTransactionSessionTimeout: 60000 // 1 minute timeout for idle transactions
 });
+
+// Add pool error handling
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
+
+pool.on('connect', (client) => {
+  console.log('New client connected to database');
+});
+
+pool.on('remove', (client) => {
+  console.log('Client removed from pool');
+});
+
+// Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('Gracefully shutting down database pool...');
+  await pool.end();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Gracefully shutting down database pool...');
+  await pool.end();
+  process.exit(0);
+});
+
 import { eq, desc, asc, and, or, not, like, lt, gt, gte, sql, avg, count, inArray } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import bcrypt from 'bcryptjs';
+import connectPgSimple from "connect-pg-simple";
+import { createLogger } from "./utils/debug-logger";
 
-const PostgresSessionStore = connectPg(session);
+const storageLogger = createLogger('Storage');
+
+// Create session store
+const PgSession = connectPgSimple(session);
+export const sessionStore = new PgSession({
+  pool: pool,
+  tableName: 'sessions',
+  createTableIfMissing: true,
+  ttl: 24 * 60 * 60, // 24 hours
+  pruneSessionInterval: 60 * 60, // Prune expired sessions every hour
+  schemaName: 'public'
+});
 
 export interface PostFilters {
   search?: string;
@@ -417,7 +465,7 @@ export class DatabaseStorage implements IStorage {
 
       // Initialize session store with compatible pool and enhanced options
       // Cast to any to avoid TypeScript errors with the PgPool interface
-      this.sessionStore = new PostgresSessionStore({
+      this.sessionStore = new PgSession({
         pool: compatiblePool as any,
         createTableIfMissing: true,
         tableName: 'session',
