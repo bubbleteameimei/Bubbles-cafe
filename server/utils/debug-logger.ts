@@ -26,11 +26,13 @@ interface Logger {
 
 // Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
-try {
-  await fs.access(logsDir);
-} catch {
-  await fs.mkdir(logsDir, { recursive: true });
-}
+export const initLogs = async () => {
+  try {
+    await fs.access(logsDir);
+  } catch {
+    await fs.mkdir(logsDir, { recursive: true });
+  }
+};
 
 const debugLogPath = path.join(logsDir, 'debug.log');
 const errorLogPath = path.join(logsDir, 'error.log');
@@ -189,3 +191,6 @@ export function errorLogger(err: Error, req: Express.Request, res: Express.Respo
   
   next(err);
 }
+
+// Export feedback logger for feedback-ai module
+export const feedbackLogger = createLogger('Feedback');

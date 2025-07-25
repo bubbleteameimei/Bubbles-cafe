@@ -454,23 +454,7 @@ export const registrationSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ 
-  id: true, 
-  createdAt: true,
-  password_hash: true
-}).extend({
-  password: z.string(),
-  // Still keep email in the schema for backward compatibility
-  email: z.string().email().optional(),
-  // Profile data to be stored in metadata
-  fullName: z.string().optional(),
-  avatar: z.string().optional(),
-  bio: z.string().optional(),
-  metadata: z.record(z.unknown()).optional()
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Use the insertUserSchema from above (already defined at line 30)
 
 // Update PostMetadata type to include WordPress fields
 export type PostMetadata = {
@@ -492,49 +476,11 @@ export type PostMetadata = {
   [key: string]: any; // Allow for any additional properties
 };
 
-// Update insertPostSchema to accept WordPress fields and add validation
-export const insertPostSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255, "Title cannot exceed 255 characters"),
-  content: z.string().min(1, "Content is required").max(65535, "Content is too long"),
-  slug: z.string().min(1, "Slug is required").max(255, "Slug cannot exceed 255 characters")
-    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
-  authorId: z.number(),
-  excerpt: z.string().max(500, "Excerpt cannot exceed 500 characters").optional(),
-  isSecret: z.boolean().optional(),
-  isAdminPost: z.boolean().optional(),
-  matureContent: z.boolean().optional(),
-  themeCategory: z.string().max(50, "Theme category cannot exceed 50 characters").optional(),
-  readingTimeMinutes: z.number().int("Reading time must be a whole number").optional(),
-  metadata: z.object({
-    isCommunityPost: z.boolean().optional(),
-    isApproved: z.boolean().optional(),
-    isAdminPost: z.boolean().optional(),
-    isHidden: z.boolean().optional(),
-    status: z.enum(['pending', 'approved', 'publish']).optional(),
-    triggerWarnings: z.array(z.string()).optional(),
-    themeCategory: z.string().optional(),
-    themeIcon: z.string().optional(),
-    // WordPress specific fields
-    wordpressId: z.number().optional(),
-    modified: z.string().optional(),
-    type: z.string().optional(),
-    originalAuthor: z.number().optional(),
-    featuredMedia: z.number().optional(),
-    categories: z.array(z.number()).optional(),
-  }).optional(),
-});
+// Use the insertPostSchema from above (already defined at line 82)
 
-export type InsertPost = z.infer<typeof insertPostSchema>;
-export type Post = typeof posts.$inferSelect;
-
-export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true, edited: true, editedAt: true }).extend({
-  approved: z.boolean().optional()
-});
+// Use the insertCommentSchema from above (already defined at line 142)
 export const insertCommentReactionSchema = createInsertSchema(commentReactions).omit({ id: true, createdAt: true });
 export const insertCommentVoteSchema = createInsertSchema(commentVotes).omit({ id: true, createdAt: true });
-
-export type InsertComment = z.infer<typeof insertCommentSchema>;
-export type Comment = typeof comments.$inferSelect;
 export type CommentReaction = typeof commentReactions.$inferSelect;
 export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
 export type CommentVote = typeof commentVotes.$inferSelect;
