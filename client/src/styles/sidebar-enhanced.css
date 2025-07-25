@@ -200,16 +200,7 @@
   opacity: 0.8;
 }
 
-/* UX: Add subtle divider line for better section separation */
-.sidebar-group-label-enhanced::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 16px;
-  right: 16px;
-  height: 1px;
-  background: linear-gradient(90deg, hsl(var(--border)) 0%, transparent 100%);
-}
+/* UX: Removed divider line to fix visual glitch */
 
 /* UX: Optimal spacing for scanability and touch targets */
 .sidebar-menu-enhanced {
