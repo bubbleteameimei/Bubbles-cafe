@@ -1,59 +1,50 @@
 import { storage } from "./storage";
-import { pool } from "./db-connect";
 import bcrypt from "bcryptjs"; // Using bcryptjs to match auth.ts
 
-async function createVantalisonAdminUser() {
+// Use the same bcrypt library and salt rounds as in auth.ts
+const SALT_ROUNDS = 10;
+
+async function createVantalisonAdmin() {
+  const adminEmail = "vantalison@gmail.com";
+  
+  // Get password from environment variable or fail
+  const adminPassword = process.env.VANTALISON_ADMIN_PASSWORD;
+  if (!adminPassword) {
+    throw new Error("VANTALISON_ADMIN_PASSWORD environment variable is required");
+  }
+  
+  const hashedPassword = await bcrypt.hash(adminPassword, SALT_ROUNDS);
+
   try {
-    // Use the same bcrypt library and salt rounds as in auth.ts
-    const SALT_ROUNDS = 10;
-    const adminEmail = "vantalison@gmail.com";
-    const adminPassword = "powerPUFF7";
-    const hashedPassword = await bcrypt.hash(adminPassword, SALT_ROUNDS);
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(adminEmail);
     
-    console.log(`Creating/updating admin user with email: ${adminEmail}`);
-    
-    // Check if this admin already exists
-    const checkResult = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [adminEmail]
-    );
-    
-    if (checkResult.rows.length > 0) {
+    if (existingUser) {
       console.log("Vantalison admin user already exists, updating password and ensuring admin status...");
       // Update the password and make sure is_admin is true
-      await pool.query(
+      await storage.pool.query(
         "UPDATE users SET password_hash = $1, is_admin = true WHERE email = $2",
         [hashedPassword, adminEmail]
       );
       console.log("Vantalison admin password updated successfully");
-      return { id: checkResult.rows[0].id, updated: true };
+    } else {
+      // Create new admin user
+      await storage.pool.query(
+        `INSERT INTO users (username, email, password_hash, is_admin, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        ["vantalison", adminEmail, hashedPassword, true]
+      );
+      console.log("Vantalison admin user created successfully");
     }
-    
-    // Create new admin user
-    const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, is_admin, created_at) 
-       VALUES ($1, $2, $3, $4, NOW()) 
-       RETURNING id, username, email, is_admin as "isAdmin", created_at as "createdAt"`,
-      ["vantalison", adminEmail, hashedPassword, true]
-    );
-    
-    console.log("New vantalison admin user created successfully:", result.rows[0]);
-    return { id: result.rows[0].id, created: true };
-    
   } catch (error) {
-    console.error("Error creating/updating vantalison admin user:", error);
+    console.error("Error creating/updating vantalison admin:", error);
     throw error;
   }
 }
 
-// Self-executing function to run immediately
-(async () => {
-  try {
-    const result = await createVantalisonAdminUser();
-    console.log("Operation completed:", result);
-    process.exit(0);
-  } catch (error) {
-    console.error("Failed to create/update vantalison admin user:", error);
-    process.exit(1);
-  }
-})();
+// Only run if called directly
+if (require.main === module) {
+  createVantalisonAdmin().catch(console.error);
+}
+
+export { createVantalisonAdmin };

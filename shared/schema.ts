@@ -3,6 +3,14 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Enhanced validation schemas for security
+const emailSchema = z.string().email().min(1).max(255).transform(s => s.toLowerCase().trim());
+const usernameSchema = z.string().min(2).max(50).regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens");
+const passwordSchema = z.string().min(8).max(128).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one lowercase letter, one uppercase letter, and one number");
+const titleSchema = z.string().min(1).max(200).trim();
+const contentSchema = z.string().min(1).max(50000).trim();
+const slugSchema = z.string().min(1).max(255).regex(/^[a-zA-Z0-9-_]+$/, "Slug can only contain letters, numbers, hyphens, and underscores");
+
 // Users table with social auth fields
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -17,6 +25,33 @@ export const users = pgTable("users", {
   emailIdx: index("email_idx").on(table.email),
   usernameIdx: index("username_idx").on(table.username)
 }));
+
+// Enhanced validation for user operations
+export const insertUserSchema = createInsertSchema(users, {
+  email: emailSchema,
+  username: usernameSchema,
+  password_hash: z.string().min(1), // Already hashed
+  metadata: z.record(z.unknown()).optional().default({})
+}).omit({
+  id: true,
+  createdAt: true
+});
+
+export const updateUserSchema = insertUserSchema.partial().omit({
+  password_hash: true // Separate endpoint for password changes
+});
+
+export const userRegistrationSchema = z.object({
+  email: emailSchema,
+  username: usernameSchema,
+  password: passwordSchema
+});
+
+export const userLoginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1).max(128),
+  rememberMe: z.boolean().optional()
+});
 
 // Posts table - removed fear rating system
 export const posts = pgTable("posts", {
@@ -42,6 +77,28 @@ export const posts = pgTable("posts", {
   themeCategoryIdx: index("post_theme_category_idx").on(table.themeCategory),
   titleIdx: index("post_title_idx").on(table.title)
 }));
+
+// Enhanced validation for post operations
+export const insertPostSchema = createInsertSchema(posts, {
+  title: titleSchema,
+  content: contentSchema,
+  excerpt: z.string().max(500).trim().optional(),
+  slug: slugSchema,
+  authorId: z.number().int().positive(),
+  themeCategory: z.string().max(50).optional(),
+  readingTimeMinutes: z.number().int().min(1).max(999).optional(),
+  metadata: z.record(z.unknown()).optional().default({})
+}).omit({
+  id: true,
+  createdAt: true,
+  likesCount: true,
+  dislikesCount: true
+});
+
+export const updatePostSchema = insertPostSchema.partial().omit({
+  authorId: true, // Cannot change author
+  slug: true // Cannot change slug after creation
+});
 
 // Author Stats - removed fear rating
 export const authorStats = pgTable("author_stats", {
@@ -79,6 +136,25 @@ export const comments = pgTable("comments", {
     createdAtIdx: index("comment_created_at_idx").on(table.createdAt),
     approvedIdx: index("comment_approved_idx").on(table.is_approved)
   };
+});
+
+// Enhanced validation for comment operations
+export const insertCommentSchema = createInsertSchema(comments, {
+  content: z.string().min(1).max(2000).trim(),
+  postId: z.number().int().positive(),
+  parentId: z.number().int().positive().optional(),
+  userId: z.number().int().positive().optional(),
+  metadata: z.record(z.unknown()).optional().default({})
+}).omit({
+  id: true,
+  createdAt: true,
+  is_approved: true,
+  edited: true,
+  editedAt: true
+});
+
+export const updateCommentSchema = z.object({
+  content: z.string().min(1).max(2000).trim()
 });
 
 // Keeping this for backwards compatibility, will be deprecated
