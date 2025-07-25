@@ -52,12 +52,16 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     '/api/health',
     '/api/posts',
     '/api/posts/public',
-    '/api/errors'
+    '/api/errors',
+    '/reader'
   ];
   
   // Check if this is a public route
   const isPublicRoute = publicRoutes.includes(req.path) || 
                        req.path.startsWith('/api/posts/') ||
+                       req.path.startsWith('/reader/') ||
+                       req.path.startsWith('/reader') ||
+                       req.path.startsWith('/stories') ||
                        req.path.startsWith('/public/') ||
                        req.path.startsWith('/attached_assets/') ||
                        req.path.startsWith('/assets/') ||
@@ -89,9 +93,9 @@ export async function validateSession(req: Request, res: Response, next: NextFun
     }
     
     // Set fingerprint for new sessions on public routes
-    if (!req.session.fingerprint) {
+    if (!(req.session as any).fingerprint) {
       const currentFingerprint = await generateFingerprint(req);
-      req.session.fingerprint = currentFingerprint;
+      (req.session as any).fingerprint = currentFingerprint;
     }
     
     return next();
@@ -108,7 +112,7 @@ export async function validateSession(req: Request, res: Response, next: NextFun
 
   // Check for session hijacking attempts
   const currentFingerprint = await generateFingerprint(req);
-  if (req.session.fingerprint && req.session.fingerprint !== currentFingerprint) {
+  if ((req.session as any).fingerprint && (req.session as any).fingerprint !== currentFingerprint) {
     securityLogger.error('Potential session hijacking detected', {
       sessionId: req.sessionID,
       ip: req.ip,
@@ -126,11 +130,11 @@ export async function validateSession(req: Request, res: Response, next: NextFun
 
   // Set fingerprint for new sessions
   if (!req.session.fingerprint) {
-    req.session.fingerprint = currentFingerprint;
+    (req.session as any).fingerprint = currentFingerprint;
   }
 
   // Check session age
-  const sessionAge = Date.now() - (req.session.createdAt || 0);
+  const sessionAge = Date.now() - ((req.session as any).createdAt || Date.now());
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
   
   if (sessionAge > maxAge) {
