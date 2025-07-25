@@ -123,6 +123,13 @@ const checkModeration = (text: string): { isFlagged: boolean, moderated: string,
   return { isFlagged, moderated, isUnderReview };
 };
 
+// Get CSRF token from cookies
+const getCSRFToken = (): string => {
+  const cookies = document.cookie.split('; ');
+  const csrfCookie = cookies.find(cookie => cookie.startsWith('csrf-token='));
+  return csrfCookie ? csrfCookie.split('=')[1] : '';
+};
+
 // Simple reply form component
 function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormProps) {
   const [content, setContent] = useState(authorToMention ? `@${authorToMention} ` : "");
@@ -154,38 +161,29 @@ function ReplyForm({ commentId, postId, onCancel, authorToMention }: ReplyFormPr
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const replyAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      // Get CSRF token
+      const csrfToken = getCSRFToken();
       
-      // Using the endpoint that matches server routes for replies
-      const response = await fetch(`/api/comments/${commentId}/replies`, {
+      // Create a new comment with parentId set to the comment we're replying to
+      const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        credentials: "include", // Important for CSRF token
+        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author: replyAuthor,
-          userId: user?.id || null,
-          commentId: commentId,
-          parentId: commentId, // Ensure we set the parentId properly
-          metadata: {
-            author: replyAuthor,
-            isAnonymous: !isAuthenticated,
-            moderated: false,
-            originalContent: content.trim(),
-            replyCount: 0
-          }
+          parentId: commentId, // This makes it a reply
+          needsModeration: isFlagged || isUnderReview,
+          moderationStatus: isFlagged ? 'flagged' : (isUnderReview ? 'under_review' : 'none'),
         })
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Error response:', errorData);
+        console.error('Reply error response:', errorData);
         throw new Error('Failed to post reply: ' + errorData);
       }
 
@@ -348,8 +346,6 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
   // Smart moderation preview with review flag
   const { isFlagged, moderated, isUnderReview } = checkModeration(content);
   
-  // Upvote functionality has been removed
-  
   // Load previously saved draft from localStorage
   useEffect(() => {
     const savedDraft = localStorage.getItem(`comment_draft_${postId}`);
@@ -423,16 +419,26 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     }
   }, [postId]);
 
-  // Fetch comments
-  const { data: comments = [], isLoading } = useQuery<Comment[]>({
+  // Fetch comments with improved error handling
+  const { data: comments = [], isLoading, error } = useQuery<Comment[]>({
     queryKey: [`/api/posts/${postId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
+      try {
+        console.log(`[Comments] Fetching comments for post ${postId}`);
+        const response = await fetch(`/api/posts/${postId}/comments`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch comments: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(`[Comments] Fetched ${data.length} comments`);
+        return data;
+      } catch (error) {
+        console.error(`[Comments] Error fetching comments:`, error);
+        throw error;
       }
-      return response.json();
-    }
+    },
+    retry: 2,
+    staleTime: 30000, // 30 seconds
   });
 
   // Post new comment
@@ -441,22 +447,20 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       // Use authenticated user's username if available, otherwise use "Anonymous"
       const commentAuthor = isAuthenticated && user ? user.username : "Anonymous";
       
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      // Get CSRF token
+      const csrfToken = getCSRFToken();
       
       // Check if the content needs moderation
       const { isFlagged, isUnderReview } = checkModeration(content);
       
-      // Using the correct endpoint format that matches server routes
+      console.log(`[Comments] Creating comment for post ${postId}`);
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken
         },
-        credentials: "include", // Important for CSRF token
+        credentials: "include",
         body: JSON.stringify({
           content: content.trim(),
           author: commentAuthor,
@@ -467,7 +471,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Error response:', errorData);
+        console.error('Comment error response:', errorData);
         throw new Error('Failed to post comment: ' + errorData);
       }
 
@@ -500,16 +504,15 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
         });
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Comment mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to post comment. Please try again.",
+        description: error.message || "Failed to post comment. Please try again.",
         variant: "destructive"
       });
     }
   });
-
-
   
   // Handle opening the flag dialog
   const openFlagDialog = (commentId: number) => {
@@ -532,10 +535,8 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     if (!commentToFlag) return;
     
     try {
-      // Get CSRF token from cookie
-      const cookies = document.cookie.split('; ');
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('XSRF-TOKEN='));
-      const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : '';
+      // Get CSRF token
+      const csrfToken = getCSRFToken();
       
       const response = await fetch(`/api/comments/${commentToFlag}/flag`, {
         method: "POST",
@@ -693,9 +694,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     const monthsAgo = Math.floor(Math.random() * 11);
     return subYears(subMonths(new Date(), monthsAgo), yearsAgo);
   };
-  
 
-  
   // Handle toggling comment collapse
   const toggleCollapse = (commentId: number) => {
     setCollapsedComments(prev => 
@@ -741,6 +740,44 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
     return parts.length > 0 ? <>{parts}</> : text;
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="antialiased mx-auto">
+        <div className="border-t border-border/30 pt-4 pb-1.5">
+          <h3 className="text-base font-medium mb-4">Comments</h3>
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="antialiased mx-auto">
+        <div className="border-t border-border/30 pt-4 pb-1.5">
+          <h3 className="text-base font-medium mb-4">Comments</h3>
+          <div className="text-center py-8">
+            <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Failed to load comments. Please try refreshing the page.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}/comments`] })}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="antialiased mx-auto" ref={mainSectionRef}>
       <div className="border-t border-border/30 pt-4 pb-1.5">
@@ -785,6 +822,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
             </Button>
           </div>
         </div>
+        
         {/* Comment form - ultra sleek design */}
         <Card className="mb-2 p-2 shadow-sm bg-gradient-to-b from-card/80 to-card/50 border-border/30 overflow-hidden hover:shadow-md transition-shadow">
           <form onSubmit={handleSubmit} className="space-y-1">
@@ -909,11 +947,7 @@ export default function SimpleCommentSection({ postId, title }: CommentSectionPr
       
       {/* Comments list */}
       <div className="space-y-1">
-        {isLoading ? (
-          <div className="flex justify-center py-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          </div>
-        ) : sortedRootComments.length > 0 ? (
+        {sortedRootComments.length > 0 ? (
           sortedRootComments.map(comment => (
             <motion.div 
               key={comment.id} 
