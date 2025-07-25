@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from 'sonner';
 
 interface LikeDislikeProps {
   postId: number;
@@ -94,6 +93,12 @@ export function LikeDislike({
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
+  const [inlineToast, setInlineToast] = useState<{ message: string; type: 'success' | 'error' | null } | null>(null);
+
+  const showInlineToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setInlineToast({ message, type });
+    setTimeout(() => setInlineToast(null), 3000); // Hide after 3 seconds
+  };
 
   const updateStats = (newStats: Stats) => {
     try {
@@ -102,7 +107,7 @@ export function LikeDislike({
       onUpdate?.(newStats.likes, newStats.dislikes);
     } catch (error) {
       console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
-      sonnerToast.error("Error updating reaction - please try again later");
+      showInlineToast("Error updating reaction - please try again later", 'error');
     }
   };
 
@@ -119,7 +124,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        sonnerToast.success("Thanks for liking! 🥰");
+        showInlineToast("Thanks for liking! 🥰", 'success');
       } else {
         setLiked(false);
         updateStats({
@@ -132,7 +137,7 @@ export function LikeDislike({
       onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      sonnerToast.error("Error updating like - please try again");
+      showInlineToast("Error updating like - please try again", 'error');
     }
   };
 
@@ -149,7 +154,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        sonnerToast("Thanks for the feedback! 😔");
+        showInlineToast("Thanks for the feedback! 😔", 'success');
       } else {
         setDisliked(false);
         updateStats({
@@ -162,7 +167,7 @@ export function LikeDislike({
       onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      sonnerToast.error("Error updating dislike - please try again");
+      showInlineToast("Error updating dislike - please try again", 'error');
     }
   };
 
@@ -216,6 +221,20 @@ export function LikeDislike({
           <span className="font-sans tabular-nums">{stats.dislikes}</span>
         </button>
       </div>
+      
+      {/* Inline Toast Notification */}
+      {inlineToast && (
+        <div className={`
+          mt-3 px-4 py-2 rounded-lg text-center font-sans text-sm font-medium transition-all duration-300 ease-in-out
+          ${inlineToast.type === 'success' 
+            ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-600' 
+            : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600'
+          }
+          animate-in slide-in-from-top-2 fade-in-0
+        `}>
+          {inlineToast.message}
+        </div>
+      )}
     </div>
   );
 }
