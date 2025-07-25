@@ -382,10 +382,8 @@ export function setupAuth(app: Express) {
       
       console.log('[Auth] Password reset email sent:', emailSent);
       
-      // For development purposes, also log the token
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Auth] Password reset token (for testing):', token);
-      }
+      // Security: Never log password reset tokens, even in development
+      // Tokens should only be sent via secure email channels
       
       const response: any = { 
         success: true, 
