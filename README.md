@@ -1,4 +1,5 @@
 Bubble’s Cafe
+
 🖤 Welcome to Bubble’s Cafe — a private digital sanctuary for immersive storytelling and original fiction. This is a personal, closed-source project. The code, design, and content here are the intellectual property of the creator and are not intended for reuse, redistribution, or contribution.
 
 ⚠️ Important
