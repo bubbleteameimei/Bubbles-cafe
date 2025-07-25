@@ -5,15 +5,22 @@
   "license": "MIT",
   "scripts": {
     "dev": "REPLIT_EDITING=true tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "npm run check && vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
+    "check:watch": "tsc --watch",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx scripts/init-db.ts",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
     "run": "tsx server/index.ts",
-    "audit": "npm audit"
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "security:check": "npm audit --audit-level moderate",
+    "clean": "rimraf dist logs/*.log",
+    "test": "echo 'Add your test command here'",
+    "lint": "echo 'Add ESLint configuration'",
+    "format": "echo 'Add Prettier configuration'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
