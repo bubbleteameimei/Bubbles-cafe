@@ -245,11 +245,11 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <motion.div 
       ref={menuContainerRef}
-      initial={{ opacity: 0, x: -15 }}
+      initial={{ opacity: 0, x: -25 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ 
-        duration: 0.2, 
-        ease: "easeOut"
+        duration: 0.3, 
+        ease: [0.25, 0.46, 0.45, 0.94]
       }}
       className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
       role="navigation"
@@ -275,11 +275,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Main Navigation */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ 
-            duration: 0.15,
-            delay: 0.05
+            duration: 0.4,
+            delay: 0.1,
+            ease: [0.25, 0.46, 0.45, 0.94]
           }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
@@ -291,13 +292,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ 
-                      duration: 0.1, 
-                      delay: 0.1
+                      duration: 0.3, 
+                      delay: 0.2,
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 2 }}
+                    whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -323,13 +325,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ 
-                      duration: 0.1, 
-                      delay: 0.12
+                      duration: 0.3, 
+                      delay: 0.25,
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 2 }}
+                    whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -356,13 +359,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ 
-                      duration: 0.1, 
-                      delay: 0.14
+                      duration: 0.3, 
+                      delay: 0.3,
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 2 }}
+                    whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -389,13 +393,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ 
-                      duration: 0.1, 
-                      delay: 0.16
+                      duration: 0.3, 
+                      delay: 0.35,
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 2 }}
+                    whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -422,13 +427,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ 
-                      duration: 0.1, 
-                      delay: 0.18
+                      duration: 0.3, 
+                      delay: 0.4,
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
-                    whileHover={{ x: 2 }}
+                    whileHover={{ x: 3 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
