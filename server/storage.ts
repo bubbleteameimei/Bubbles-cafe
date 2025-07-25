@@ -1750,11 +1750,11 @@ export class DatabaseStorage implements IStorage {
   // Comments operations
   async getComments(postId: number): Promise<Comment[]> {
     try {
-      // Use a raw SQL query to avoid column name issues
+      // Use a raw SQL query to avoid column name issues and ensure proper field mapping
       const result = await db.execute(sql`
         SELECT 
           id, content, post_id as "postId", user_id as "userId", 
-          approved, edited, edited_at as "editedAt", 
+          is_approved as "approved", edited, edited_at as "editedAt", 
           metadata, created_at as "createdAt", parent_id as "parentId"
         FROM comments
         WHERE post_id = ${postId}
@@ -1764,7 +1764,8 @@ export class DatabaseStorage implements IStorage {
       return result.rows.map(comment => ({
         ...comment,
         createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
-        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        is_approved: comment.approved // Map to both field names for compatibility
       }));
     } catch (error) {
       console.error("Error in getComments:", error);
@@ -1775,25 +1776,21 @@ export class DatabaseStorage implements IStorage {
 
   async getRecentComments(): Promise<Comment[]> {
     try {
-      const commentsResult = await db.select({
-        id: comments.id,
-        content: comments.content,
-        postId: comments.postId,
-        userId: comments.userId,
-        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
-        edited: comments.edited,
-        editedAt: comments.editedAt,
-        metadata: comments.metadata,
-        createdAt: comments.createdAt,
-        parentId: comments.parentId // Include parentId in the select
-      })
-      .from(comments)
-      .orderBy(desc(comments.createdAt))
-      .limit(10);
+      const result = await db.execute(sql`
+        SELECT 
+          id, content, post_id as "postId", user_id as "userId", 
+          is_approved as "approved", edited, edited_at as "editedAt", 
+          metadata, created_at as "createdAt", parent_id as "parentId"
+        FROM comments
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
 
-      return commentsResult.map(comment => ({
+      return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        is_approved: comment.approved
       }));
     } catch (error) {
       console.error("Error in getRecentComments:", error);
@@ -1803,25 +1800,21 @@ export class DatabaseStorage implements IStorage {
 
   async getPendingComments(): Promise<Comment[]> {
     try {
-      const commentsResult = await db.select({
-        id: comments.id,
-        content: comments.content,
-        postId: comments.postId,
-        userId: comments.userId,
-        approved: sql`comments.is_approved`, // Fix: use is_approved instead of approved
-        edited: comments.edited,
-        editedAt: comments.editedAt,
-        metadata: comments.metadata,
-        createdAt: comments.createdAt,
-        parentId: comments.parentId // Include parentId in the select
-      })
-      .from(comments)
-      .where(sql`comments.is_approved = false`) // Fix: use is_approved in the where clause
-      .orderBy(desc(comments.createdAt));
+      const result = await db.execute(sql`
+        SELECT 
+          id, content, post_id as "postId", user_id as "userId", 
+          is_approved as "approved", edited, edited_at as "editedAt", 
+          metadata, created_at as "createdAt", parent_id as "parentId"
+        FROM comments
+        WHERE is_approved = false
+        ORDER BY created_at DESC
+      `);
 
-      return commentsResult.map(comment => ({
+      return result.rows.map(comment => ({
         ...comment,
-        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt)
+        createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
+        editedAt: comment.editedAt ? (comment.editedAt instanceof Date ? comment.editedAt : new Date(comment.editedAt)) : null,
+        is_approved: comment.approved
       }));
     } catch (error) {
       console.error("Error in getPendingComments:", error);
@@ -1867,7 +1860,8 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Creating new comment:', {
         postId: comment.postId,
-        isAnonymous: !comment.userId
+        isAnonymous: !comment.userId,
+        hasParentId: !!comment.parentId
       });
       
       // Ensure the post exists before creating a comment on it
@@ -1881,36 +1875,62 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Cannot create comment: Post with ID ${postId} does not exist and could not be created`);
       }
 
+      // Create comprehensive metadata for the comment
       const commentMetadata: CommentMetadata = {
         moderated: false,
         originalContent: comment.content,
         isAnonymous: !comment.userId,
-        author: typeof comment.metadata?.author === 'string' ? comment.metadata.author : 'Anonymous',
+        author: (comment.metadata && typeof comment.metadata.author === 'string') 
+          ? comment.metadata.author 
+          : (comment.userId ? 'User' : 'Anonymous'),
         upvotes: 0,
         downvotes: 0,
-        replyCount: 0
+        replyCount: 0,
+        // Merge any additional metadata from the request
+        ...(comment.metadata || {})
       };
 
-      // Create a direct SQL query to ensure proper column mapping
+      // Create a direct SQL query to ensure proper column mapping and return data
       const result = await db.execute(sql`
         INSERT INTO comments (content, post_id, parent_id, user_id, is_approved, metadata, created_at)
         VALUES (
           ${comment.content},
           ${comment.postId},
           ${comment.parentId ?? null},
-          ${comment.userId},
+          ${comment.userId ?? null},
           ${comment.is_approved !== undefined ? comment.is_approved : true},
           ${JSON.stringify(commentMetadata)},
           ${new Date()}
         )
-        RETURNING *;
+        RETURNING id, content, post_id as "postId", user_id as "userId", 
+                  is_approved as "approved", parent_id as "parentId", 
+                  metadata, created_at as "createdAt", edited, edited_at as "editedAt";
       `);
+      
       const newComment = result.rows[0];
+      if (!newComment) {
+        throw new Error('Failed to create comment: No data returned');
+      }
 
-      console.log('[Storage] Comment created successfully:', newComment.id);
+      console.log('[Storage] Comment created successfully:', {
+        id: newComment.id,
+        parentId: newComment.parentId,
+        approved: newComment.approved
+      });
+
+      // Return properly formatted comment
       return {
         ...newComment,
-        createdAt: newComment.createdAt instanceof Date ? newComment.createdAt : new Date(newComment.createdAt)
+        createdAt: newComment.createdAt instanceof Date 
+          ? newComment.createdAt 
+          : new Date(newComment.createdAt),
+        editedAt: newComment.editedAt 
+          ? (newComment.editedAt instanceof Date ? newComment.editedAt : new Date(newComment.editedAt))
+          : null,
+        is_approved: newComment.approved,
+        metadata: typeof newComment.metadata === 'string' 
+          ? JSON.parse(newComment.metadata) 
+          : newComment.metadata
       };
     } catch (error) {
       console.error('[Storage] Error creating comment:', error);

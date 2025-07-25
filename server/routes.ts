@@ -1248,8 +1248,8 @@ export function registerRoutes(app: Express): Server {
         postId = post.id;
       }
 
-      // Simplified validation for required fields
-      const { content, author } = req.body;
+      // Extract and validate request data
+      const { content, author, parentId, needsModeration, moderationStatus } = req.body;
       if (!content?.trim()) {
         return res.status(400).json({
           message: "Comment content is required"
@@ -1260,26 +1260,41 @@ export function registerRoutes(app: Express): Server {
       const sanitizedContent = sanitizeHtml(content.trim());
       const sanitizedAuthor = author ? stripHtml(author.trim()) : 'Anonymous';
 
-      console.log(`[POST /api/posts/:postId/comments] Creating comment for post ID: ${postId}`);
+      console.log(`[POST /api/posts/:postId/comments] Creating comment for post ID: ${postId}`, {
+        isReply: !!parentId,
+        parentId: parentId || null,
+        needsModeration,
+        moderationStatus
+      });
+
+      // Determine approval status based on moderation
+      const isApproved = !needsModeration || moderationStatus === 'none';
 
       // Create the comment with properly typed metadata and sanitized content
       const comment = await storage.createComment({
         postId,
         content: sanitizedContent,
+        parentId: parentId ? parseInt(parentId) : null, // Handle replies properly
         userId: req.user?.id || null, // Allow null for anonymous users
-        is_approved: true, // Auto-approve comments - using is_approved instead of approved
+        is_approved: isApproved, // Auto-approve unless moderation is needed
         metadata: {
           author: sanitizedAuthor,
-          moderated: false,
+          moderated: needsModeration === true,
           isAnonymous: !req.user?.id,
           upvotes: 0,
           downvotes: 0,
           replyCount: 0,
+          moderationStatus: moderationStatus || 'none',
           sanitized: sanitizedContent !== content.trim() || sanitizedAuthor !== (author?.trim() || 'Anonymous')
         }
       });
 
-      console.log('[Comments] Successfully created comment:', comment);
+      console.log('[Comments] Successfully created comment:', {
+        id: comment.id,
+        parentId: comment.parentId,
+        approved: comment.is_approved || comment.approved
+      });
+      
       return res.status(201).json(comment);
     } catch (error) {
       console.error("[Comments] Error creating comment:", error);
