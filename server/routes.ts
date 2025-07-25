@@ -729,6 +729,12 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/posts/:id/theme', isAuthenticated, async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
+      
+      // Validate that postId is a valid number
+      if (isNaN(postId) || postId <= 0) {
+        return res.status(400).json({ error: 'Invalid post ID parameter' });
+      }
+      
       // Allow both snake_case and camelCase property names for backward compatibility
       const { theme_category, themeCategory, icon, themeIcon } = req.body;
       

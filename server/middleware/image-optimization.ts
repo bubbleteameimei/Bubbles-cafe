@@ -42,15 +42,27 @@ function getOptimizedParams(req: Request): {
   quality?: number;
   format?: string;
 } {
-  const width = req.query.width ? parseInt(req.query.width as string, 10) : undefined;
-  const quality = req.query.quality ? parseInt(req.query.quality as string, 10) : DEFAULT_QUALITY;
+  // Parse width parameter with proper validation
+  let width: number | undefined = undefined;
+  if (req.query.width) {
+    const parsedWidth = parseInt(req.query.width as string, 10);
+    if (!isNaN(parsedWidth) && parsedWidth > 0 && parsedWidth <= MAX_WIDTH) {
+      width = parsedWidth;
+    }
+  }
+  
+  // Parse quality parameter with proper validation
+  let quality: number = DEFAULT_QUALITY;
+  if (req.query.quality) {
+    const parsedQuality = parseInt(req.query.quality as string, 10);
+    if (!isNaN(parsedQuality) && parsedQuality > 0 && parsedQuality <= 100) {
+      quality = parsedQuality;
+    }
+  }
+  
   const format = clientSupportsWebP(req) ? 'webp' : undefined;
   
-  return { 
-    width: width && !isNaN(width) && width <= MAX_WIDTH ? width : undefined,
-    quality: quality && !isNaN(quality) && quality > 0 && quality <= 100 ? quality : DEFAULT_QUALITY,
-    format
-  };
+  return { width, quality, format };
 }
 
 // Get cache path for an image
