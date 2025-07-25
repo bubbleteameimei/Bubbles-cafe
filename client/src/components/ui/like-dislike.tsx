@@ -39,6 +39,21 @@ function isValidStats(obj: any): obj is Stats {
 
 const getStorageKey = (postId: number) => `post-stats-${postId}`;
 
+// Generate consistent random numbers based on postId
+const generateBaseStats = (postId: number) => {
+  // Use postId as seed for consistent random generation
+  const seed = postId * 1234567;
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  const likesBase = Math.floor(seededRandom(seed) * (150 - 80 + 1)) + 80;
+  const dislikesBase = Math.floor(seededRandom(seed + 1) * (20 - 8 + 1)) + 8;
+  
+  return { likes: likesBase, dislikes: dislikesBase };
+};
+
 const getOrCreateStats = (postId: number): Stats => {
   try {
     const storageKey = getStorageKey(postId);
@@ -51,15 +66,15 @@ const getOrCreateStats = (postId: number): Stats => {
       }
     }
 
-    const likesBase = Math.floor(Math.random() * (150 - 80 + 1)) + 80;
-    const dislikesBase = Math.floor(Math.random() * (20 - 8 + 1)) + 8;
+    // Generate consistent base stats for this postId
+    const baseStats = generateBaseStats(postId);
 
     const newStats: Stats = {
-      likes: likesBase,
-      dislikes: dislikesBase,
+      likes: baseStats.likes,
+      dislikes: baseStats.dislikes,
       baseStats: {
-        likes: likesBase,
-        dislikes: dislikesBase
+        likes: baseStats.likes,
+        dislikes: baseStats.dislikes
       },
       userInteracted: false
     };
@@ -68,12 +83,13 @@ const getOrCreateStats = (postId: number): Stats => {
     return newStats;
   } catch (error) {
     console.error(`[LikeDislike] Error managing stats for post ${postId}:`, error);
+    const fallbackBase = generateBaseStats(postId);
     return {
-      likes: 100,
-      dislikes: 10,
+      likes: fallbackBase.likes,
+      dislikes: fallbackBase.dislikes,
       baseStats: {
-        likes: 100,
-        dislikes: 10
+        likes: fallbackBase.likes,
+        dislikes: fallbackBase.dislikes
       },
       userInteracted: false
     };
@@ -96,7 +112,7 @@ export function LikeDislike({
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
 
-  // Listen for stats updates from other components
+  // Listen for stats updates from other components and reset events
   useEffect(() => {
     const handleStatsUpdate = (event: CustomEvent<{ postId: number; stats: Stats }>) => {
       if (event.detail.postId === postId) {
@@ -114,9 +130,36 @@ export function LikeDislike({
       }
     };
 
+    const handleStatsReset = () => {
+      // Clear all post stats and regenerate
+      const keys = Object.keys(localStorage).filter(key => key.startsWith('post-stats-'));
+      keys.forEach(key => localStorage.removeItem(key));
+      
+      // Regenerate stats for this component
+      const freshStats = getOrCreateStats(postId);
+      setStats(freshStats);
+      setLiked(false);
+      setDisliked(false);
+      onUpdate?.(freshStats.likes, freshStats.dislikes);
+    };
+
     window.addEventListener('statsUpdated', handleStatsUpdate as EventListener);
-    return () => window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    window.addEventListener('resetAllStats', handleStatsReset as EventListener);
+    
+    return () => {
+      window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
+      window.removeEventListener('resetAllStats', handleStatsReset as EventListener);
+    };
   }, [postId, onUpdate]);
+
+  // Reset all stats when component first mounts (only once per page load)
+  useEffect(() => {
+    if (!(window as any).statsResetOnce) {
+      (window as any).statsResetOnce = true;
+      console.log('Resetting all stats for consistency...');
+      window.dispatchEvent(new CustomEvent('resetAllStats'));
+    }
+  }, []);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
