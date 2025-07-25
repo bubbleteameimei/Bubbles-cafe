@@ -159,9 +159,44 @@ const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [location] = useLocation();
   const locationStr = location.toString();
-  
-  // Get loading functions from context after provider is initialized
   const { showLoading, hideLoading } = useLoading();
+  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [shouldShowLoading, setShouldShowLoading] = useState(false);
+
+  // Example: Use React Query's isLoading for main data (customize as needed)
+  // You may need to aggregate isLoading from multiple sources
+  // For demonstration, let's assume HomePage and ReaderPage expose isLoading via context or props
+  // Replace with your actual data loading logic
+  const isDataLoading = false; // TODO: Replace with actual isLoading from data hooks
+
+  useEffect(() => {
+    // If data is loading, set a delay before showing the loading screen
+    if (isDataLoading) {
+      if (!shouldShowLoading) {
+        const timer = setTimeout(() => {
+          setShouldShowLoading(true);
+          showLoading();
+        }, 150); // 150ms delay
+        setLoadingTimer(timer);
+      }
+    } else {
+      // Data is ready, hide loading screen and clear timer
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+        setLoadingTimer(null);
+      }
+      if (shouldShowLoading) {
+        hideLoading();
+        setShouldShowLoading(false);
+      }
+    }
+    // Cleanup on unmount
+    return () => {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+      }
+    };
+  }, [isDataLoading, showLoading, hideLoading, shouldShowLoading, loadingTimer]);
   
   // Check if current route is an error page
   const isErrorPage = 
