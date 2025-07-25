@@ -1,106 +1,272 @@
-import { useState, useEffect, memo } from "react";
-import { cn } from "@/lib/utils";
+import React, { useState, useRef, useEffect, forwardRef, ImgHTMLAttributes } from 'react';
+import { cn } from '@/lib/utils';
 
-interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'onError'> {
+interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
   src: string;
   alt: string;
-  className?: string;
-  sizes?: string;
+  width?: number;
+  height?: number;
   priority?: boolean;
+  placeholder?: 'blur' | 'empty';
+  blurDataURL?: string;
+  sizes?: string;
+  quality?: number;
+  className?: string;
   onLoad?: () => void;
-  onError?: (error: Error) => void;
+  onError?: () => void;
+  loading?: 'lazy' | 'eager';
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+  aspectRatio?: string;
 }
 
-export const OptimizedImage = memo(({
+export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(({
   src,
   alt,
-  className,
-  sizes = "100vw",
+  width,
+  height,
   priority = false,
+  placeholder = 'empty',
+  blurDataURL,
+  sizes = '100vw',
+  quality = 85,
+  className,
   onLoad,
   onError,
+  loading = 'lazy',
+  objectFit = 'cover',
+  aspectRatio,
   ...props
-}: OptimizedImageProps) => {
-  const [isLoading, setIsLoading] = useState(!priority);
-  const [error, setError] = useState<Error | null>(null);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+}, ref) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isInView, setIsInView] = useState(priority);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const placeholderRef = useRef<HTMLDivElement>(null);
 
+  // Intersection Observer for lazy loading
   useEffect(() => {
-    if (!src) return;
-
-    const img = new Image();
-    img.src = src;
-
-    if (!priority) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setImageSrc(src);
-            observer.disconnect();
-          }
-        });
-      }, {
-        rootMargin: "50px",
-      });
-
-      observer.observe(img);
-      return () => observer.disconnect();
-    } else {
-      setImageSrc(src);
+    if (priority || typeof window === 'undefined') {
+      setIsInView(true);
+      return;
     }
-  }, [src, priority]);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: '50px',
+        threshold: 0.1
+      }
+    );
+
+    const currentRef = imgRef.current || placeholderRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => observer.disconnect();
+  }, [priority]);
+
+  // Generate responsive image URLs
+  const generateSrcSet = (baseSrc: string, widths: number[] = [320, 640, 768, 1024, 1280, 1920]) => {
+    return widths
+      .map(width => {
+        const url = new URL(baseSrc, window.location.origin);
+        url.searchParams.set('w', width.toString());
+        url.searchParams.set('q', quality.toString());
+        url.searchParams.set('f', 'webp');
+        return `${url.toString()} ${width}w`;
+      })
+      .join(', ');
+  };
+
+  // Generate optimized src URL
+  const getOptimizedSrc = (baseSrc: string, format = 'webp') => {
+    const url = new URL(baseSrc, window.location.origin);
+    if (width) url.searchParams.set('w', width.toString());
+    if (height) url.searchParams.set('h', height.toString());
+    url.searchParams.set('q', quality.toString());
+    url.searchParams.set('f', format);
+    return url.toString();
+  };
 
   const handleLoad = () => {
-    setIsLoading(false);
+    setIsLoaded(true);
     onLoad?.();
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    setIsLoading(false);
-    const error = new Error(`Failed to load image: ${src}`);
-    setError(error);
-    onError?.(error);
+  const handleError = () => {
+    setHasError(true);
+    onError?.();
   };
 
-  if (error) {
+  // Placeholder component
+  const renderPlaceholder = () => {
+    if (placeholder === 'empty') {
+      return (
+        <div
+          ref={placeholderRef}
+          className={cn(
+            'bg-gray-200 dark:bg-gray-800 animate-pulse',
+            className
+          )}
+          style={{
+            width,
+            height,
+            aspectRatio
+          }}
+          aria-hidden="true"
+        />
+      );
+    }
+
+    if (placeholder === 'blur' && blurDataURL) {
+      return (
+        <div
+          ref={placeholderRef}
+          className={cn('relative overflow-hidden', className)}
+          style={{
+            width,
+            height,
+            aspectRatio
+          }}
+        >
+          <img
+            src={blurDataURL}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover filter blur-sm scale-105"
+            style={{ objectFit }}
+            aria-hidden="true"
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Error fallback
+  if (hasError) {
     return (
-      <div 
+      <div
         className={cn(
-          "bg-muted flex items-center justify-center",
+          'flex items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
           className
         )}
+        style={{
+          width,
+          height,
+          aspectRatio
+        }}
         role="img"
-        aria-label={alt}
-        {...props}
+        aria-label={`Failed to load image: ${alt}`}
       >
-        <span className="text-sm text-muted-foreground">
-          Failed to load image
-        </span>
+        <svg
+          className="w-8 h-8"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+            clipRule="evenodd"
+          />
+        </svg>
       </div>
     );
   }
 
+  // Don't render image until it's in view (unless priority)
+  if (!isInView) {
+    return renderPlaceholder();
+  }
+
   return (
-    <div className={cn("relative overflow-hidden", className)}>
-      {isLoading && (
-        <div className="absolute inset-0 bg-muted animate-pulse" />
-      )}
-      {imageSrc && (
+    <div className={cn('relative', className)} style={{ aspectRatio }}>
+      {/* Placeholder shown while loading */}
+      {!isLoaded && renderPlaceholder()}
+      
+      {/* Main image with WebP support */}
+      <picture>
+        {/* WebP format for supported browsers */}
+        <source
+          srcSet={generateSrcSet(src)}
+          sizes={sizes}
+          type="image/webp"
+        />
+        
+        {/* Fallback for browsers that don't support WebP */}
         <img
-          src={imageSrc}
+          ref={(node) => {
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref) {
+              ref.current = node;
+            }
+            imgRef.current = node;
+          }}
+          src={getOptimizedSrc(src, 'jpg')}
+          srcSet={generateSrcSet(src).replace(/f=webp/g, 'f=jpg')}
           alt={alt}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            isLoading ? "opacity-0" : "opacity-100"
-          )}
-          loading={priority ? "eager" : "lazy"}
+          width={width}
+          height={height}
+          sizes={sizes}
+          loading={priority ? 'eager' : loading}
+          decoding="async"
           onLoad={handleLoad}
-          onError={handleImageError}
+          onError={handleError}
+          className={cn(
+            'transition-opacity duration-300',
+            isLoaded ? 'opacity-100' : 'opacity-0',
+            objectFit === 'contain' && 'object-contain',
+            objectFit === 'cover' && 'object-cover',
+            objectFit === 'fill' && 'object-fill',
+            objectFit === 'none' && 'object-none',
+            objectFit === 'scale-down' && 'object-scale-down'
+          )}
+          style={{
+            width: width || '100%',
+            height: height || 'auto',
+            aspectRatio
+          }}
           {...props}
         />
-      )}
+      </picture>
     </div>
   );
 });
 
-OptimizedImage.displayName = "OptimizedImage";
+OptimizedImage.displayName = 'OptimizedImage';
+
+// Hook for generating blur placeholder
+export const useImageBlurPlaceholder = (src: string): string | undefined => {
+  const [blurDataURL, setBlurDataURL] = useState<string>();
+
+  useEffect(() => {
+    if (!src) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      canvas.width = 10;
+      canvas.height = 10;
+      ctx?.drawImage(img, 0, 0, 10, 10);
+      const dataURL = canvas.toDataURL('image/jpeg', 0.1);
+      setBlurDataURL(dataURL);
+    };
+
+    img.src = src;
+  }, [src]);
+
+  return blurDataURL;
+};
+
+export default OptimizedImage;
