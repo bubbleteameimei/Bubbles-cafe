@@ -174,6 +174,17 @@ The application will be available at `http://localhost:3003`
 - **Input validation** with Zod schemas
 - **SQL injection protection** with Drizzle ORM
 
+## Security Checklist
+
+- [x] Content Security Policy (CSP) and other security headers set in `vercel.json`.
+- [x] DOMPurify used for all HTML rendering from user/external sources.
+- [x] Subresource Integrity (SRI) attributes added to external scripts (add hashes after deployment).
+- [x] Reminder to run `npm run audit` regularly for dependency security.
+- [ ] **Backend:** Enforce authentication/authorization on the server for all sensitive endpoints.
+- [ ] **Backend:** Implement CSRF protection for all state-changing requests.
+- [ ] **Backend:** Implement rate limiting for login and sensitive endpoints.
+- [ ] **Backend:** Never trust client-side checks for security.
+
 ## 🤝 Contributing
 
 1. Fork the repository
