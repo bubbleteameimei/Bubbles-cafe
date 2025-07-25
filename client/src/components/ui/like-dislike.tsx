@@ -96,6 +96,28 @@ export function LikeDislike({
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
   const [isToastVisible, setIsToastVisible] = useState(false);
 
+  // Listen for stats updates from other components
+  useEffect(() => {
+    const handleStatsUpdate = (event: CustomEvent<{ postId: number; stats: Stats }>) => {
+      if (event.detail.postId === postId) {
+        const newStats = event.detail.stats;
+        setStats(newStats);
+        
+        // Update UI states based on current stats vs base stats
+        const userLiked = newStats.likes > newStats.baseStats.likes;
+        const userDisliked = newStats.dislikes > newStats.baseStats.dislikes;
+        
+        setLiked(userLiked);
+        setDisliked(userDisliked);
+        
+        onUpdate?.(newStats.likes, newStats.dislikes);
+      }
+    };
+
+    window.addEventListener('statsUpdated', handleStatsUpdate as EventListener);
+    return () => window.removeEventListener('statsUpdated', handleStatsUpdate as EventListener);
+  }, [postId, onUpdate]);
+
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
     // Small delay for smooth entrance animation
@@ -116,6 +138,13 @@ export function LikeDislike({
       localStorage.setItem(getStorageKey(postId), JSON.stringify(newStats));
       setStats(newStats);
       onUpdate?.(newStats.likes, newStats.dislikes);
+      
+      // Dispatch custom event to sync across all components
+      window.dispatchEvent(new CustomEvent('statsUpdated', {
+        detail: { postId, stats: newStats }
+      }));
+      
+      console.log('Stats updated:', newStats);
     } catch (error) {
       console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
       showInlineToast("Error updating reaction - please try again later", 'error');
