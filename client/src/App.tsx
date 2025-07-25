@@ -161,7 +161,7 @@ const AppContent = () => {
   const locationStr = location.toString();
   const { showLoading, hideLoading } = useLoading();
   const loadingRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isTransitioningRef = useRef(false);
 
   // Check if current route is an error page
   const isErrorPage = 
@@ -174,14 +174,22 @@ const AppContent = () => {
 
   useEffect(() => {
     if (isErrorPage) return;
-    // Prevent multiple triggers
-    if (isTransitioning) return;
-    setIsTransitioning(true);
+    // Always clear any previous timer
+    if (loadingRef.current) {
+      clearTimeout(loadingRef.current);
+      loadingRef.current = null;
+    }
+    // Prevent overlapping transitions
+    if (isTransitioningRef.current) {
+      hideLoading();
+      isTransitioningRef.current = false;
+    }
+    isTransitioningRef.current = true;
     showLoading();
-    // Always show for a full animation cycle (2.5s)
     loadingRef.current = setTimeout(() => {
       hideLoading();
-      setIsTransitioning(false);
+      isTransitioningRef.current = false;
+      loadingRef.current = null;
     }, 2500);
     // Cleanup on unmount or route change
     return () => {
@@ -189,7 +197,8 @@ const AppContent = () => {
         clearTimeout(loadingRef.current);
         loadingRef.current = null;
       }
-      setIsTransitioning(false);
+      hideLoading();
+      isTransitioningRef.current = false;
     };
   }, [locationStr]);
   
