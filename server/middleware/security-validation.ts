@@ -41,6 +41,54 @@ export const securitySchemas = {
 
 // Session security validation
 export async function validateSession(req: Request, res: Response, next: NextFunction) {
+  // Allow public access to certain routes
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/register', 
+    '/auth/login',
+    '/auth/register',
+    '/auth/logout',
+    '/api/health',
+    '/api/posts',
+    '/api/posts/public'
+  ];
+  
+  // Check if this is a public route
+  const isPublicRoute = publicRoutes.includes(req.path) || 
+                       req.path.startsWith('/api/posts/') ||
+                       req.path.startsWith('/public/') ||
+                       req.path.startsWith('/attached_assets/') ||
+                       req.path.startsWith('/assets/') ||
+                       req.path.startsWith('/js/') ||
+                       req.path.startsWith('/css/') ||
+                       req.path.startsWith('/src/') ||
+                       req.path.endsWith('.js') ||
+                       req.path.endsWith('.css') ||
+                       req.path.endsWith('.png') ||
+                       req.path.endsWith('.jpg') ||
+                       req.path.endsWith('.ico');
+  
+  if (isPublicRoute) {
+    // For public routes, just ensure session exists but don't validate age/fingerprint
+    if (!req.session) {
+      securityLogger.warn('Request without session on public route', { 
+        ip: req.ip, 
+        userAgent: req.get('User-Agent'),
+        path: req.path 
+      });
+      return res.status(500).json({ error: 'Session configuration error' });
+    }
+    
+    // Set fingerprint for new sessions on public routes
+    if (!req.session.fingerprint) {
+      const currentFingerprint = await generateFingerprint(req);
+      req.session.fingerprint = currentFingerprint;
+    }
+    
+    return next();
+  }
+
   if (!req.session) {
     securityLogger.warn('Request without session', { 
       ip: req.ip, 
