@@ -63,11 +63,18 @@ export async function validateSession(req: Request, res: Response, next: NextFun
                        req.path.startsWith('/js/') ||
                        req.path.startsWith('/css/') ||
                        req.path.startsWith('/src/') ||
+                       req.path.startsWith('/@vite/') ||
+                       req.path.startsWith('/@react-refresh') ||
+                       req.path.startsWith('/@fs/') ||
                        req.path.endsWith('.js') ||
+                       req.path.endsWith('.jsx') ||
+                       req.path.endsWith('.ts') ||
+                       req.path.endsWith('.tsx') ||
                        req.path.endsWith('.css') ||
                        req.path.endsWith('.png') ||
                        req.path.endsWith('.jpg') ||
-                       req.path.endsWith('.ico');
+                       req.path.endsWith('.ico') ||
+                       req.path.endsWith('.svg');
   
   if (isPublicRoute) {
     // For public routes, just ensure session exists but don't validate age/fingerprint
