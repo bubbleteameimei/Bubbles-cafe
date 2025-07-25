@@ -93,9 +93,9 @@ export function LikeDislike({
   const [liked, setLiked] = useState(userLikeStatus === 'like');
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
-  const [inlineToast, setInlineToast] = useState<{ message: string; type: 'success' | 'error' | null } | null>(null);
+  const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
 
-  const showInlineToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
     setTimeout(() => setInlineToast(null), 3000); // Hide after 3 seconds
   };
@@ -124,7 +124,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        showInlineToast("Thanks for liking! 🥰", 'success');
+        showInlineToast("Thanks for liking! 🥰", 'like');
       } else {
         setLiked(false);
         updateStats({
@@ -154,7 +154,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        showInlineToast("Thanks for the feedback! 😔", 'success');
+        showInlineToast("Thanks for the feedback! 😔", 'dislike');
       } else {
         setDisliked(false);
         updateStats({
@@ -225,9 +225,11 @@ export function LikeDislike({
       {/* Inline Toast Notification */}
       {inlineToast && (
         <div className={`
-          mt-3 px-4 py-2 rounded-lg text-center font-sans text-sm font-medium transition-all duration-300 ease-in-out
-          ${inlineToast.type === 'success' 
-            ? 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-600' 
+          mt-6 px-4 py-3 rounded-lg text-center font-sans text-sm font-medium transition-all duration-300 ease-in-out shadow-sm
+          ${inlineToast.type === 'like' 
+            ? 'bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-600' 
+            : inlineToast.type === 'dislike'
+            ? 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600'
             : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600'
           }
           animate-in slide-in-from-top-2 fade-in-0
