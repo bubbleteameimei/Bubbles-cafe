@@ -36,6 +36,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar"
 
+// Context: SidebarNavigation provides accessible navigation for the app, using ARIA attributes and keyboard navigation for accessibility.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
@@ -307,6 +308,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/')}
                       tooltip="Home"
                       className={menuItemClass}
+                      aria-current={location === '/' ? 'page' : undefined}
                     >
                       <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span className="sidebar-menu-text-enhanced">HOME</span>
@@ -340,6 +342,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/stories')}
                       tooltip="Story Index"
                       className={menuItemClass}
+                      aria-current={location === '/stories' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/stories')}
                       <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -374,6 +377,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/reader')}
                       tooltip="Interactive Reader"
                       className={menuItemClass}
+                      aria-current={location === '/reader' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/reader')}
                       <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -408,6 +412,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/community')}
                       tooltip="Community Hub"
                       className={menuItemClass}
+                      aria-current={location === '/community' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/community')}
                       <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -442,6 +447,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={() => handleNavigation('/bookmarks')}
                       tooltip="Saved Stories"
                       className={menuItemClass}
+                      aria-current={location === '/bookmarks' ? 'page' : undefined}
                     >
                       {renderActiveIndicator('/bookmarks')}
                       <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -476,6 +482,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => handleNavigation('/game-test')}
                 tooltip="Eden's Hollow - Experimental Horror Game"
                 className={menuItemClass}
+                aria-current={location === '/game-test' ? 'page' : undefined}
               >
                 {renderActiveIndicator('/game-test')}
                 <GamepadIcon className="h-5 w-5" />
@@ -497,7 +504,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenuItem>
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
+                    <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                      aria-expanded={adminOpen}
+                      aria-controls="admin-controls-content"
+                    >
                       <div className="flex items-center">
                         <Shield className="h-5 w-5 mr-2" />
                         <span>Admin Controls</span>
@@ -508,7 +518,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       )} />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="overflow-hidden">
+                  <CollapsibleContent id="admin-controls-content" className="overflow-hidden">
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -523,6 +533,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           isActive={location === '/admin/dashboard'}
                           onClick={() => handleNavigation('/admin/dashboard')}
                           className={submenuItemClass}
+                          aria-current={location === '/admin/dashboard' ? 'page' : undefined}
                         >
                           <Monitor className="h-6 w-6 mr-1.5" />
                           <span>Dashboard</span>
@@ -540,6 +551,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           }
                           onClick={() => handleNavigation('/admin/content-management')}
                           className={submenuItemClass}
+                          aria-current={
+                            location === '/admin/content-management' ||
+                            location === '/admin/stories' ||
+                            location === '/admin/content' ||
+                            location === '/admin/wordpress-sync'
+                          }
                         >
                           <FileText className="h-6 w-6 mr-2" />
                           <span>Content Management</span>
@@ -552,6 +569,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           isActive={location === '/admin/themes'}
                           onClick={() => handleNavigation('/admin/themes')}
                           className={submenuItemClass}
+                          aria-current={location === '/admin/themes' ? 'page' : undefined}
                         >
                           <Palette className="h-6 w-6 mr-2" />
                           <span>Theme Management</span>
@@ -567,6 +585,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           }
                           onClick={() => handleNavigation('/admin/users')}
                           className={submenuItemClass}
+                          aria-current={
+                            location === '/admin/users' ||
+                            location === '/admin/content-moderation'
+                          }
                         >
                           <Users className="h-6 w-6 mr-2" />
                           <span>User Management</span>
@@ -584,6 +606,12 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           }
                           onClick={() => handleNavigation('/admin/analytics')}
                           className={submenuItemClass}
+                          aria-current={
+                            location === '/admin/analytics' ||
+                            location === '/admin/site-statistics' ||
+                            location === '/admin/feedback' ||
+                            location === '/admin/bug-reports'
+                          }
                         >
                           <LineChart className="h-6 w-6 mr-2" />
                           <span>Insights & Reports</span>
@@ -625,6 +653,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
                     className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap sidebar-collapsible-trigger"
+                    aria-expanded={displayOpen}
+                    aria-controls="accessibility-settings-content"
                   >
                     <div className="flex items-center">
                       <Palette className="h-4 w-4 mr-2" />
@@ -636,7 +666,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="overflow-hidden">
+                <CollapsibleContent id="accessibility-settings-content" className="overflow-hidden">
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -650,6 +680,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/fonts'}
                         onClick={() => handleNavigation('/settings/fonts')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/fonts' ? 'page' : undefined}
                       >
                         <Type className="h-6 w-6 mr-1.5" />
                         <span>Font Settings</span>
@@ -661,6 +692,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/accessibility'}
                         onClick={() => handleNavigation('/settings/accessibility')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/accessibility' ? 'page' : undefined}
                       >
                         <HelpCircle className="h-6 w-6 mr-1.5" />
                         <span>Reading Preferences</span>
@@ -672,6 +704,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/pixel-art'}
                         onClick={() => handleNavigation('/pixel-art')}
                         className={submenuItemClass}
+                        aria-current={location === '/pixel-art' ? 'page' : undefined}
                       >
                         <Grid className="h-6 w-6 mr-2 opacity-70" />
                         <span>Pixel Art</span>
@@ -683,6 +716,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/quick-settings'}
                         onClick={() => handleNavigation('/settings/quick-settings')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/quick-settings' ? 'page' : undefined}
                       >
                         <Settings className="h-6 w-6 mr-2" />
                         <span>Quick Settings</span>
@@ -694,6 +728,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/preview'}
                         onClick={() => handleNavigation('/settings/preview')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/preview' ? 'page' : undefined}
                       >
                         <Eye className="h-6 w-6 mr-2" />
                         <span>Preview</span>
@@ -718,7 +753,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={accountOpen} onOpenChange={setAccountOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                  aria-expanded={accountOpen}
+                  aria-controls="account-settings-content"
+                >
                     <div className="flex items-center">
                       <UserCircle className="h-4 w-4 mr-2" />
                       <span>Account Settings</span>
@@ -729,7 +767,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="overflow-hidden">
+                <CollapsibleContent id="account-settings-content" className="overflow-hidden">
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -743,6 +781,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           isActive={location === '/profile'}
                           onClick={() => handleNavigation('/profile')}
                           className={submenuItemClass}
+                          aria-current={location === '/profile' ? 'page' : undefined}
                         >
                           <UserCircle className="h-6 w-6 mr-1.5" />
                           <span>My Profile</span>
@@ -753,6 +792,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/profile'}
                         onClick={() => handleNavigation('/settings/profile')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/profile' ? 'page' : undefined}
                       >
                         <User className="h-6 w-6 mr-1.5" />
                         <span>Profile Settings</span>
@@ -763,6 +803,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/notifications'}
                         onClick={() => handleNavigation('/settings/notifications')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/notifications' ? 'page' : undefined}
                       >
                         <Bell className="h-6 w-6 mr-1.5" />
                         <span>Notifications</span>
@@ -773,6 +814,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/privacy'}
                         onClick={() => handleNavigation('/settings/privacy')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/privacy' ? 'page' : undefined}
                       >
                         <Lock className="h-6 w-6 mr-2" />
                         <span>Privacy & Security</span>
@@ -785,6 +827,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/settings/connected'}
                         onClick={() => handleNavigation('/settings/connected')}
                         className={submenuItemClass}
+                        aria-current={location === '/settings/connected' ? 'page' : undefined}
                       >
                         <Link className="h-6 w-6 mr-2" />
                         <span>Connected Accounts</span>
@@ -810,7 +853,10 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
             <SidebarMenuItem>
               <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap">
+                  <SidebarMenuButton className="w-full justify-between text-[hsl(var(--sidebar-foreground))] data-[state=open]:bg-[hsl(var(--sidebar-accent))] data-[state=open]:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))] whitespace-nowrap"
+                  aria-expanded={supportOpen}
+                  aria-controls="support-legal-content"
+                >
                     <div className="flex items-center">
                       <HelpCircle className="h-4 w-4 mr-2" />
                       <span>Support & Legal</span>
@@ -821,7 +867,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     )} />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="overflow-hidden">
+                <CollapsibleContent id="support-legal-content" className="overflow-hidden">
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -835,6 +881,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/about'}
                         onClick={() => handleNavigation('/about')}
                         className={submenuItemClass}
+                        aria-current={location === '/about' ? 'page' : undefined}
                       >
                         <Building className="h-6 w-6 mr-2" />
                         <span>About Me</span>
@@ -845,6 +892,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/feedback'}
                         onClick={() => handleNavigation('/feedback')}
                         className={submenuItemClass}
+                        aria-current={location === '/feedback' ? 'page' : undefined}
                       >
                         <MessageSquare className="h-6 w-6 mr-2" />
                         <span>Feedback & Suggestions</span>
@@ -855,6 +903,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/contact'}
                         onClick={() => handleNavigation('/contact')}
                         className={submenuItemClass}
+                        aria-current={location === '/contact' ? 'page' : undefined}
                       >
                         <Mail className="h-6 w-6 mr-2" />
                         <span>Contact Me</span>
@@ -865,6 +914,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/report-bug'}
                         onClick={() => handleNavigation('/report-bug')}
                         className={submenuItemClass}
+                        aria-current={location === '/report-bug' ? 'page' : undefined}
                       >
                         <Bug className="h-6 w-6 mr-2" />
                         <span>Report a Bug</span>
@@ -875,6 +925,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/legal/terms'}
                         onClick={() => handleNavigation('/legal/terms')}
                         className={submenuItemClass}
+                        aria-current={location === '/legal/terms' ? 'page' : undefined}
                       >
                         <FileText className="h-6 w-6 mr-2" />
                         <span>Terms of Service</span>
@@ -885,6 +936,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/privacy'}
                         onClick={() => handleNavigation('/privacy')}
                         className={submenuItemClass}
+                        aria-current={location === '/privacy' ? 'page' : undefined}
                       >
                         <Lock className="h-6 w-6 mr-2" />
                         <span>Privacy Policy</span>
@@ -895,6 +947,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         isActive={location === '/legal/copyright'}
                         onClick={() => handleNavigation('/legal/copyright')}
                         className={submenuItemClass}
+                        aria-current={location === '/legal/copyright' ? 'page' : undefined}
                       >
                         <Shield className="h-6 w-6 mr-2" />
                         <span>Copyright Policy</span>

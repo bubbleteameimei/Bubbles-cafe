@@ -54,35 +54,14 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
-// Create a utility function to sanitize HTML content 
+import DOMPurify from 'dompurify';
+
+// Replace sanitizeHtmlContent implementation with DOMPurify
 const sanitizeHtmlContent = (html: string): string => {
   try {
-    // Convert markdown-style italics (_text_) to HTML <em> tags
-    // Look for text surrounded by underscores that doesn't have spaces immediately after/before the underscores
-    // This avoids replacing underscores in URLs or other non-italic contexts
-    html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '<em>$1</em>');
-    
-    // Ensure proper paragraph spacing by adding an additional class to paragraphs
-    // This helps preserve spacing even when content is sanitized
-    html = html.replace(/<p>/g, '<p class="story-paragraph">');
-    
-    // Fix specific spacing issues by ensuring paragraphs are properly separated
-    // Replace multiple consecutive line breaks with proper paragraph tags
-    html = html.replace(/(\r?\n){2,}/g, '</p><p class="story-paragraph">');
-    
-    // Create a simple HTML sanitization function
-    // This removes potentially harmful scripts and keeps only safe content
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    
-    // Remove script tags
-    const scripts = doc.querySelectorAll('script');
-    scripts.forEach(script => script.remove());
-    
-    // Get the sanitized content
-    return doc.body.innerHTML;
+    return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
   } catch (error) {
     console.error('[Reader] Error sanitizing HTML:', error);
-    // Return the original HTML if there's an error parsing it
     return html;
   }
 };
