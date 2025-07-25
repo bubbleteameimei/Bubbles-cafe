@@ -12,6 +12,16 @@ let syncInProgress = false;
 let lastSyncStatus: any = null;
 let lastSyncTime: string | null = null;
 
+// TODO: Require authentication/authorization for all POST sync endpoints below.
+// Placeholder middleware for authentication (implement as needed)
+function requireAuth(req, res, next) {
+  // Implement authentication/authorization logic here
+  // e.g., check req.user or session
+  // If not authenticated, return res.status(401).json({ error: 'Unauthorized' });
+  next();
+}
+
+// TODO: Implement CSRF protection and rate limiting for all POST endpoints below.
 export function registerWordPressSyncRoutes(app: Express): void {
   /**
    * GET /api/wordpress/status
@@ -86,7 +96,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync
    * Trigger a WordPress sync manually
    */
-  app.post('/api/wordpress/sync', async (_req: Request, res: Response) => {
+  app.post('/api/wordpress/sync', requireAuth, async (_req: Request, res: Response) => {
     if (syncInProgress) {
       return res.status(409).json({
         success: false,
@@ -131,7 +141,7 @@ export function registerWordPressSyncRoutes(app: Express): void {
    * POST /api/wordpress/sync/:postId
    * Trigger a WordPress sync for a single post
    */
-  app.post('/api/wordpress/sync/:postId', async (req: Request, res: Response) => {
+  app.post('/api/wordpress/sync/:postId', requireAuth, async (req: Request, res: Response) => {
     const postId = req.params.postId;
     
     if (!postId || isNaN(parseInt(postId))) {
