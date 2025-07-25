@@ -245,9 +245,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <motion.div 
       ref={menuContainerRef}
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      initial={{ opacity: 0, x: -30, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.5, 
+        ease: [0.23, 1, 0.32, 1],
+        staggerChildren: 0.1 
+      }}
       className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
       role="navigation"
       aria-label="Main navigation"
@@ -272,9 +276,13 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Main Navigation */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            duration: 0.4, 
+            delay: 0.15,
+            ease: [0.23, 1, 0.32, 1] 
+          }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
             <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
@@ -285,9 +293,15 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 1 }}
-                    whileTap={{ scale: 0.99 }}
-                    transition={{ duration: 0.15 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: 0.25,
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    whileHover={{ x: 2, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/'}
@@ -296,7 +310,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       className={menuItemClass}
                     >
                       <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span className="font-medium">Home</span>
+                      <span className="sidebar-menu-text-enhanced">Home</span>
                       {location === '/' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -312,7 +326,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 2 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: 0.35,
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    whileHover={{ x: 2, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -323,7 +344,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     >
                       {renderActiveIndicator('/stories')}
                       <Scroll className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span className="font-medium">Story Index</span>
+                      <span className="sidebar-menu-text-enhanced">Story Index</span>
                       {location === '/stories' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -339,7 +360,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 2 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: 0.45,
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    whileHover={{ x: 2, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -350,7 +378,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     >
                       {renderActiveIndicator('/reader')}
                       <Book className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span>Reader</span>
+                      <span className="sidebar-menu-text-enhanced">Reader</span>
                       {location === '/reader' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -366,7 +394,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 2 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: 0.55,
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    whileHover={{ x: 2, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -377,7 +412,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     >
                       {renderActiveIndicator('/community')}
                       <Users className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span>Community</span>
+                      <span className="sidebar-menu-text-enhanced">Community</span>
                       {location === '/community' && (
                         <motion.div
                           initial={{ scale: 0 }}
@@ -393,7 +428,14 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 2 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ 
+                      duration: 0.3, 
+                      delay: 0.65,
+                      ease: [0.23, 1, 0.32, 1] 
+                    }}
+                    whileHover={{ x: 2, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <SidebarMenuButton
@@ -404,7 +446,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     >
                       {renderActiveIndicator('/bookmarks')}
                       <BookmarkIcon className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                      <span>Bookmarks</span>
+                      <span className="sidebar-menu-text-enhanced">Bookmarks</span>
                       {location === '/bookmarks' && (
                         <motion.div
                           initial={{ scale: 0 }}

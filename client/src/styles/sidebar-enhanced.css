@@ -200,6 +200,16 @@
   opacity: 0.8;
 }
 
+/* Enhanced menu item text styling to match dropdown headers */
+.sidebar-menu-text-enhanced {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  color: hsl(var(--sidebar-foreground));
+}
+
 /* UX: Removed divider line to fix visual glitch */
 
 /* UX: Optimal spacing for scanability and touch targets */
