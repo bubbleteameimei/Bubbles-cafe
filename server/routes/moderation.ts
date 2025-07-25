@@ -25,6 +25,11 @@ router.patch('/reported-content/:id', async (req, res) => {
 
     const { status } = schema.parse(req.body);
     const id = parseInt(req.params.id);
+    
+    // Validate that id is a valid number
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID parameter' });
+    }
 
     // Update the content status
     const updatedContent = await storage.updateReportedContent(id, status);
@@ -64,6 +69,11 @@ router.post('/comments/:commentId/replies', async (req, res) => {
 
     const { content, author } = schema.parse(req.body);
     const commentId = parseInt(req.params.commentId);
+    
+    // Validate that commentId is a valid number
+    if (isNaN(commentId) || commentId <= 0) {
+      return res.status(400).json({ error: 'Invalid comment ID parameter' });
+    }
 
     const reply = await storage.createCommentReply({
       content,
