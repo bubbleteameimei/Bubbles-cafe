@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
@@ -160,44 +160,9 @@ const AppContent = () => {
   const [location] = useLocation();
   const locationStr = location.toString();
   const { showLoading, hideLoading } = useLoading();
-  const [loadingTimer, setLoadingTimer] = useState<NodeJS.Timeout | null>(null);
-  const [shouldShowLoading, setShouldShowLoading] = useState(false);
+  const loadingRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Example: Use React Query's isLoading for main data (customize as needed)
-  // You may need to aggregate isLoading from multiple sources
-  // For demonstration, let's assume HomePage and ReaderPage expose isLoading via context or props
-  // Replace with your actual data loading logic
-  const isDataLoading = false; // TODO: Replace with actual isLoading from data hooks
-
-  useEffect(() => {
-    // If data is loading, set a delay before showing the loading screen
-    if (isDataLoading) {
-      if (!shouldShowLoading) {
-        const timer = setTimeout(() => {
-          setShouldShowLoading(true);
-          showLoading();
-        }, 150); // 150ms delay
-        setLoadingTimer(timer);
-      }
-    } else {
-      // Data is ready, hide loading screen and clear timer
-      if (loadingTimer) {
-        clearTimeout(loadingTimer);
-        setLoadingTimer(null);
-      }
-      if (shouldShowLoading) {
-        hideLoading();
-        setShouldShowLoading(false);
-      }
-    }
-    // Cleanup on unmount
-    return () => {
-      if (loadingTimer) {
-        clearTimeout(loadingTimer);
-      }
-    };
-  }, [isDataLoading, showLoading, hideLoading, shouldShowLoading, loadingTimer]);
-  
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
@@ -206,10 +171,27 @@ const AppContent = () => {
     locationStr.includes('/errors/500') || 
     locationStr.includes('/errors/503') || 
     locationStr.includes('/errors/504');
-  
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+
+  useEffect(() => {
+    if (isErrorPage) return;
+    // Prevent multiple triggers
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    showLoading();
+    // Always show for a full animation cycle (2.5s)
+    loadingRef.current = setTimeout(() => {
+      hideLoading();
+      setIsTransitioning(false);
+    }, 2500);
+    // Cleanup on unmount or route change
+    return () => {
+      if (loadingRef.current) {
+        clearTimeout(loadingRef.current);
+        loadingRef.current = null;
+      }
+      setIsTransitioning(false);
+    };
+  }, [locationStr]);
   
   // Track page transitions and always show loading animation between pages
   useEffect(() => {
