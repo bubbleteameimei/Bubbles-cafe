@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
@@ -94,10 +94,21 @@ export function LikeDislike({
   const [disliked, setDisliked] = useState(userLikeStatus === 'dislike');
   const [stats, setStats] = useState<Stats>(() => getOrCreateStats(postId));
   const [inlineToast, setInlineToast] = useState<{ message: string; type: 'like' | 'dislike' | 'error' | null } | null>(null);
+  const [isToastVisible, setIsToastVisible] = useState(false);
 
   const showInlineToast = (message: string, type: 'like' | 'dislike' | 'error' = 'like') => {
     setInlineToast({ message, type });
-    setTimeout(() => setInlineToast(null), 3000); // Hide after 3 seconds
+    // Small delay for smooth entrance animation
+    requestAnimationFrame(() => {
+      setIsToastVisible(true);
+    });
+    
+    // Start fade out after 2 seconds
+    setTimeout(() => {
+      setIsToastVisible(false);
+      // Remove from DOM after fade out completes
+      setTimeout(() => setInlineToast(null), 300);
+    }, 2000);
   };
 
   const updateStats = (newStats: Stats) => {
@@ -225,14 +236,18 @@ export function LikeDislike({
       {/* Inline Toast Notification */}
       {inlineToast && (
         <div className={`
-          mt-6 px-4 py-3 rounded-lg text-center font-sans text-sm font-medium transition-all duration-300 ease-in-out shadow-sm
-          ${inlineToast.type === 'like' 
-            ? 'bg-green-100 text-green-700 border border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-600' 
-            : inlineToast.type === 'dislike'
-            ? 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600'
-            : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600'
+          mt-4 px-4 py-2.5 rounded-lg text-center font-sans text-sm font-medium 
+          transform transition-all duration-300 ease-out shadow-sm
+          ${isToastVisible 
+            ? 'translate-y-0 opacity-100 scale-100' 
+            : 'translate-y-2 opacity-0 scale-95'
           }
-          animate-in slide-in-from-top-2 fade-in-0
+          ${inlineToast.type === 'like' 
+            ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700' 
+            : inlineToast.type === 'dislike'
+            ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
+            : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700'
+          }
         `}>
           {inlineToast.message}
         </div>
