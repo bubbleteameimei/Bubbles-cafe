@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "./button";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from 'sonner';
 
 interface LikeDislikeProps {
   postId: number;
@@ -101,11 +102,7 @@ export function LikeDislike({
       onUpdate?.(newStats.likes, newStats.dislikes);
     } catch (error) {
       console.error(`[LikeDislike] Error updating stats for post ${postId}:`, error);
-      toast({
-        title: "Error updating reaction",
-        description: "Please try again later",
-        variant: "destructive"
-      });
+      sonnerToast.error("Error updating reaction - please try again later");
     }
   };
 
@@ -122,9 +119,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        toast({
-          description: "Thanks for liking! 🥰"
-        });
+        sonnerToast.success("Thanks for liking! 🥰");
       } else {
         setLiked(false);
         updateStats({
@@ -137,11 +132,7 @@ export function LikeDislike({
       onLike?.(newLiked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling like for post ${postId}:`, error);
-      toast({
-        title: "Error updating like",
-        description: "Please try again",
-        variant: "destructive"
-      });
+      sonnerToast.error("Error updating like - please try again");
     }
   };
 
@@ -158,9 +149,7 @@ export function LikeDislike({
           baseStats: stats.baseStats,
           userInteracted: true
         });
-        toast({
-          description: "Thanks for the feedback! 😔"
-        });
+        sonnerToast("Thanks for the feedback! 😔");
       } else {
         setDisliked(false);
         updateStats({
@@ -173,19 +162,15 @@ export function LikeDislike({
       onDislike?.(newDisliked);
     } catch (error) {
       console.error(`[LikeDislike] Error handling dislike for post ${postId}:`, error);
-      toast({
-        title: "Error updating dislike",
-        description: "Please try again",
-        variant: "destructive"
-      });
+      sonnerToast.error("Error updating dislike - please try again");
     }
   };
 
   return (
     <div className={`relative ${className}`} data-toast-container>
       {variant === 'reader' && (
-        <p className="text-center text-sm font-medium mb-4 text-muted-foreground font-sans">
-          How did you like this story?
+        <p className="text-center text-sm font-medium mb-4 text-white/80 uppercase tracking-wide font-sans">
+          Loved this story? Let me know with a like🥹—or a dislike if you must 😔
         </p>
       )}
       <div className={`flex items-center gap-3 ${variant === 'reader' ? 'justify-center' : 'justify-start'}`}>
