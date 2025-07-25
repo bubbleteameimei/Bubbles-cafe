@@ -262,9 +262,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
         scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
       }}
     >
-      {/* Gradient overlay for visual depth */}
+      {/* Gradient overlay for visual depth - Fixed positioning */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-background to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-t from-background to-transparent z-2 opacity-60" />
       </div>
 
       {/* Scrollable content area */}
@@ -282,7 +282,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <SidebarGroup className="space-y-0 -mt-6">
+          <SidebarGroup className="space-y-0 -mt-4">
             <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
               <Compass className="h-4 w-4 sidebar-icon-enhanced" />
               Navigation
