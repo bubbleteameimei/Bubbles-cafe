@@ -516,7 +516,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                       className="px-2 py-1"
                     >
-                      <SidebarMenuSub className="space-y-0 border-l border-slate-300 dark:border-slate-600 ml-2 pl-3">
+                      <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
                       {/* Dashboard - Keep as main admin page */}
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
@@ -644,7 +644,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                     className="px-2 py-1"
                   >
-                    <SidebarMenuSub className="space-y-0 border-l border-slate-300 dark:border-slate-600 ml-2 pl-3">
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/fonts'}
@@ -737,7 +737,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                     className="px-0 py-0.5"
                   >
-                    <SidebarMenuSub className="space-y-0 border-l border-slate-300 dark:border-slate-600 ml-2 pl-3">
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton
                           isActive={location === '/profile'}
@@ -829,7 +829,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                     className="px-2 py-1"
                   >
-                    <SidebarMenuSub className="space-y-0 border-l border-slate-300 dark:border-slate-600 ml-2 pl-3">
+                    <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/about'}
