@@ -54,32 +54,47 @@ import SimpleCommentSection from "@/components/blog/SimpleCommentSection";
 // Import the WordPress API functions with error handling
 import { fetchWordPressPosts } from "@/lib/wordpress-api";
 
-// Simple HTML sanitization function without external dependencies
+// Native HTML sanitization function (avoiding DOMPurify dependency conflicts)
 const sanitizeHtmlContent = (html: string): string => {
   try {
-    // Create a temporary div to parse HTML
+    // Create a temporary div to parse HTML safely
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    // Remove script tags and dangerous attributes
-    const scripts = temp.querySelectorAll('script');
-    scripts.forEach(script => script.remove());
+    // Remove script tags and other dangerous elements
+    const dangerousElements = temp.querySelectorAll('script, object, embed, iframe, form, input, button');
+    dangerousElements.forEach(element => element.remove());
     
-    // Remove dangerous attributes
+    // Remove dangerous attributes from all elements
     const allElements = temp.querySelectorAll('*');
     allElements.forEach(element => {
-      const dangerousAttrs = ['onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur'];
+      const dangerousAttrs = [
+        'onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur',
+        'onchange', 'onsubmit', 'onreset', 'onselect', 'onkeydown', 'onkeyup',
+        'onkeypress', 'onmousedown', 'onmouseup', 'onmousemove', 'onmouseout',
+        'onmousein', 'ondblclick', 'oncontextmenu', 'javascript:', 'vbscript:'
+      ];
       dangerousAttrs.forEach(attr => {
         if (element.hasAttribute(attr)) {
           element.removeAttribute(attr);
         }
       });
+      
+      // Also check href and src attributes for dangerous protocols
+      const href = element.getAttribute('href');
+      const src = element.getAttribute('src');
+      if (href && (href.startsWith('javascript:') || href.startsWith('vbscript:'))) {
+        element.removeAttribute('href');
+      }
+      if (src && (src.startsWith('javascript:') || src.startsWith('vbscript:'))) {
+        element.removeAttribute('src');
+      }
     });
     
     return temp.innerHTML;
   } catch (error) {
     console.error('[Reader] Error sanitizing HTML:', error);
-    return html;
+    return html; // Return original if sanitization fails
   }
 };
 
@@ -147,7 +162,36 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   };
   
-  // Reading progress is now only tracked visually, without saving position
+  // Reading progress tracking with scroll-based calculation
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setReadingProgress(Math.min(100, Math.max(0, scrollPercent)));
+    };
+
+    // Throttle scroll events for better performance
+    let ticking = false;
+    const throttledHandleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', throttledHandleScroll);
+    
+    // Initial calculation
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener('scroll', throttledHandleScroll);
+    };
+  }, []);
   
   // Horror easter egg - track rapid navigation
   const [showHorrorMessage, setShowHorrorMessage] = useState(false);
@@ -517,25 +561,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     }
   }, [fontFamily, fontSize, availableFonts, theme]);
   
-  // Handle reading progress with visual progress bar only (no position saving)
-  // Using the older, simpler implementation for smoother scrolling
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight = document.body.scrollHeight - window.innerHeight;
-      // Avoid division by zero
-      if (totalHeight > 0) {
-        const progress = Math.min(Math.max((window.scrollY / totalHeight) * 100, 0), 100);
-        setReadingProgress(progress);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    
-    // Initial calculation
-    handleScroll();
-    
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // This duplicate has been removed - reading progress tracking is handled above
 
 
   
@@ -988,6 +1014,17 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       data-distraction-free={isUIHidden ? "true" : "false"}>
       
       {/* Reader page has no background image, just clean default background */}
+      
+      {/* Reading Progress Bar - Fixed at top of screen */}
+      <div className={`fixed top-0 left-0 right-0 z-50 h-1 bg-muted/20 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+        <div 
+          className="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ease-out"
+          style={{ 
+            width: `${readingProgress}%`,
+            boxShadow: readingProgress > 5 ? '0 0 8px rgba(var(--primary), 0.4)' : 'none'
+          }}
+        />
+      </div>
       
       {/* Reader tooltip for distraction-free mode instructions */}
       <ReaderTooltip show={showTooltip} />
