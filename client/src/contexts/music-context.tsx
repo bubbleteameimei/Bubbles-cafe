@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback, useMemo } from 'react';
 
 // Define types for music context
-type PlaybackContext = 'general' | 'story-reading' | 'gallery' | 'admin' | 'settings';
+export type PlaybackContext = 'general' | 'story-reading' | 'gallery' | 'admin' | 'settings' | 'reader' | 'game' | 'homepage';
 
 interface AudioTrack {
   name: string;
@@ -22,6 +22,9 @@ interface MusicContextState {
   setVolume: (vol: number) => void;
   setContext: (context: PlaybackContext) => void;
   togglePlayPause: () => void;
+  toggleMusic: () => void;
+  setPlaybackContext: (context: PlaybackContext) => void;
+  storePlaybackPosition: () => void;
   isContextActive: (context: PlaybackContext) => boolean;
 }
 
@@ -53,6 +56,21 @@ const DEFAULT_TRACKS: Record<PlaybackContext, AudioTrack> = {
     name: 'Settings Theme', 
     src: '/sounds/settings-theme.mp3',
     volume: 0.2
+  },
+  reader: { 
+    name: 'Reading Ambience', 
+    src: '/sounds/reading-ambience.mp3',
+    volume: 0.25
+  },
+  game: { 
+    name: 'Game Background', 
+    src: '/sounds/game-background.mp3',
+    volume: 0.3
+  },
+  homepage: { 
+    name: 'Homepage Theme', 
+    src: '/sounds/homepage-theme.mp3',
+    volume: 0.3
   }
 };
 
@@ -72,7 +90,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     'story-reading': DEFAULT_TRACKS['story-reading'],
     gallery: DEFAULT_TRACKS.gallery,
     admin: DEFAULT_TRACKS.admin,
-    settings: DEFAULT_TRACKS.settings
+    settings: DEFAULT_TRACKS.settings,
+    reader: DEFAULT_TRACKS.reader,
+    game: DEFAULT_TRACKS.game,
+    homepage: DEFAULT_TRACKS.homepage
   });
 
   // Refs for persistence and timers
@@ -299,6 +320,19 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   }, [isPlaying, play]);
 
+  // Alias functions to match MusicButton expectations
+  const toggleMusic = togglePlayPause;
+  const setPlaybackContext = setContext;
+  const storePlaybackPosition = useCallback(() => {
+    if (currentTrack) {
+      const currentActiveAudio = activeAudio === 'primary' ? primaryAudio : secondaryAudio;
+      if (currentActiveAudio) {
+        savedPositions.current[currentTrack] = currentActiveAudio.currentTime;
+        persistState();
+      }
+    }
+  }, [currentTrack, activeAudio, primaryAudio, secondaryAudio, persistState]);
+
   // Memoized context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     isPlaying,
@@ -313,6 +347,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setVolume,
     setContext,
     togglePlayPause,
+    toggleMusic,
+    setPlaybackContext,
+    storePlaybackPosition,
     isContextActive
   }), [
     isPlaying,
@@ -327,6 +364,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setVolume,
     setContext,
     togglePlayPause,
+    toggleMusic,
+    setPlaybackContext,
+    storePlaybackPosition,
     isContextActive
   ]);
 
