@@ -217,13 +217,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   
   // Function to render the active indicator for menu items
   const renderActiveIndicator = (path: string) => {
-    if (location === path) {
-      return (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
-          <div className="h-3 w-0.5 rounded-r-md bg-primary/80 animate-pulse-subtle" />
-        </div>
-      );
-    }
+    // Removed the line indicator to fix visual glitch
     return null;
   };
 
@@ -251,9 +245,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <motion.div 
       ref={menuContainerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="flex flex-col h-full sidebar-menu-container relative overflow-hidden"
       role="navigation"
       aria-label="Main navigation"
@@ -278,9 +272,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Main Navigation */}
         <motion.div
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
             <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
@@ -301,7 +295,6 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       tooltip="Home"
                       className={menuItemClass}
                     >
-                      {renderActiveIndicator('/')}
                       <Home className="sidebar-icon-enhanced h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                       <span className="font-medium">Home</span>
                       {location === '/' && (
