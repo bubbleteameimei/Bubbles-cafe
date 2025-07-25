@@ -12,7 +12,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider, useAuth } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
-import { ErrorBoundary } from './components/ui/error-boundary';
+import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
 import { usePerformanceMonitoring } from './hooks/use-performance-monitoring';
 import { SidebarProvider } from './components/ui/sidebar';
 import { ProtectedRoute } from './lib/protected-route';
@@ -379,6 +379,11 @@ function App() {
   usePerformanceMonitoring();
   const [location] = useLocation();
   
+  // Set up global error handlers
+  useEffect(() => {
+    setupGlobalErrorHandlers();
+  }, []);
+  
   // The page transition loading will be handled by AppContent component
   // where useLoading will be called after LoadingProvider is mounted
 
@@ -413,18 +418,19 @@ function App() {
   };
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CookieConsentProvider>
-          <ThemeProvider>
-            <SidebarProvider>
-              <NotificationProvider>
-                <SilentPingProvider>
-                  <MusicProvider>
-                    <ScrollEffectsProvider>
-                      <ErrorToastProvider>
-                        <GlobalLoadingProvider>
-                          <RefreshProvider>
+    <GlobalErrorBoundary level="critical">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CookieConsentProvider>
+            <ThemeProvider>
+              <SidebarProvider>
+                <NotificationProvider>
+                  <SilentPingProvider>
+                    <MusicProvider>
+                      <ScrollEffectsProvider>
+                        <ErrorToastProvider>
+                          <GlobalLoadingProvider>
+                            <RefreshProvider>
                             {/* Wrap AppContent with PullToRefresh */}
                             <PullToRefresh onRefresh={handleDataRefresh}>
                               {/* Add PerformanceMonitor for metrics collection */}
@@ -451,18 +457,19 @@ function App() {
                             {/* Toast notifications */}
                             <Toaster />
                             <Sonner position="bottom-left" className="fixed-sonner" />
-                          </RefreshProvider>
-                        </GlobalLoadingProvider>
-                      </ErrorToastProvider>
-                    </ScrollEffectsProvider>
-                  </MusicProvider>
-                </SilentPingProvider>
-              </NotificationProvider>
-            </SidebarProvider>
-          </ThemeProvider>
-        </CookieConsentProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                            </RefreshProvider>
+                          </GlobalLoadingProvider>
+                        </ErrorToastProvider>
+                      </ScrollEffectsProvider>
+                    </MusicProvider>
+                  </SilentPingProvider>
+                </NotificationProvider>
+              </SidebarProvider>
+            </ThemeProvider>
+          </CookieConsentProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </GlobalErrorBoundary>
   );
 }
 
