@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <style data-vite-theme="" data-inject-first="">:root {
     --background: 0 0% 100%;
@@ -93,56 +93,21 @@
 --radius: 0.5rem;
 }</style>
 
-    <script type="module">
-import { createHotContext } from "/@vite/client";
-const hot = createHotContext("/__dummy__runtime-error-plugin");
-
-function sendError(error) {
-  if (!(error instanceof Error)) {
-    error = new Error("(unknown runtime error)");
-  }
-  const serialized = {
-    message: error.message,
-    stack: error.stack,
-  };
-  hot.send("runtime-error-plugin:error", serialized);
-}
-
-window.addEventListener("error", (evt) => {
-  sendError(evt.error);
-});
-
-window.addEventListener("unhandledrejection", (evt) => {
-  sendError(evt.reason);
-});
-</script>
-
-    <script type="module">
-import RefreshRuntime from "/@react-refresh"
-RefreshRuntime.injectIntoGlobalHook(window)
-window.$RefreshReg$ = () => {}
-window.$RefreshSig$ = () => (type) => type
-window.__vite_plugin_react_preamble_installed__ = true
-</script>
-
-    <script type="module" src="/@vite/client"></script>
-
     <meta charset="UTF-8" />
     <meta 
       name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
+      content="width=device-width, initial-scale=1.0" 
     />
     <title>Bubble's Cafe</title>
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="A horror-themed blog platform with advanced customization capabilities" />
-    <!-- Phaser Game Library - Local Copy -->
-    <script src="/assets/js/phaser.min.js"></script>
-    <!-- Phaser Loader Helper -->
-    <script src="/assets/js/phaser-loader.js"></script>
+    <!-- If Phaser is not used on this page, remove these scripts -->
+    <!-- <script src="/assets/js/phaser.min.js"></script> -->
+    <!-- <script src="/assets/js/phaser-loader.js"></script> -->
   </head>
-  <body class="min-h-screen w-full m-0 p-0 bg-black">
-    <div id="root" class="min-h-screen w-full min-w-full max-w-full overflow-x-hidden mx-0 p-0"></div>
-    <script type="module" src="/src/main.tsx?v=uUoUlcL8NbTGPUwZPEU_-"></script>
+  <body>
+    <main id="root"></main>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
