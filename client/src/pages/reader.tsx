@@ -1015,8 +1015,15 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       {/* Reader page has no background image, just clean default background */}
       
-      {/* Reading Progress Bar - Fixed at top of screen with high z-index */}
-      <div className={`fixed top-0 left-0 right-0 z-[9999] h-1 bg-muted/20 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
+      {/* Reading Progress Bar - Position above the header navigation */}
+      <div 
+        className={`fixed left-0 right-0 h-1 bg-muted/20 pointer-events-none ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} 
+        style={{ 
+          top: '0px',
+          zIndex: 50000,
+          position: 'fixed'
+        }}
+      >
         <div 
           className="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ease-out"
           style={{ 
