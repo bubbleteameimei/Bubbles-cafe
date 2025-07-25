@@ -11,6 +11,7 @@ import express from 'express';
 import { apiRateLimiter, authRateLimiter } from './middlewares/rate-limiter';
 import { apiCache, clearCache } from './middlewares/api-cache';
 import { browserCache, etagCache } from './middlewares/browser-cache';
+import { applySecurityMiddleware, sanitizeInput, securitySchemas } from './middleware/security-validation';
 import * as session from 'express-session';
 
 // Define session types for Express
@@ -148,6 +149,9 @@ export function registerRoutes(app: Express): Server {
 
   // Enable compression for all routes
   app.use(compression());
+
+  // Apply security middleware
+  app.use(applySecurityMiddleware());
 
   // Body parsing middleware
   app.use(express.json());
