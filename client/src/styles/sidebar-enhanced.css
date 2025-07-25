@@ -124,14 +124,12 @@
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.5, 1);
+  transition: all 0.15s ease-out;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(8px);
   
-  /* UX: Visual hierarchy and depth */
+  /* UX: Visual hierarchy and depth - Minimal initial state */
   border: 1px solid transparent;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   
   /* UX: Clear interactive states */
   cursor: pointer;
@@ -143,9 +141,9 @@
   justify-content: flex-start;
   gap: 10px;
   
-  /* UX: Color contrast for readability */
+  /* UX: Color contrast for readability - No initial background flash */
   color: hsl(var(--foreground) / 0.85);
-  background-color: hsl(var(--background) / 0.8);
+  background-color: transparent;
 }
 
 /* UX: Hover state with clear affordances - Reduced transform */

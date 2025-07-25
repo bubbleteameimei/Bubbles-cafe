@@ -278,9 +278,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Main Navigation */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
         >
           <SidebarGroup className="space-y-0 -mt-4">
             <SidebarGroupLabel className="sidebar-group-label-enhanced px-1 text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider -mb-1 flex items-center gap-2 font-sans">
@@ -291,8 +291,9 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
               <SidebarMenu className="space-y-0">
                 <SidebarMenuItem>
                   <motion.div
-                    whileHover={{ x: 2 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ x: 1 }}
+                    whileTap={{ scale: 0.99 }}
+                    transition={{ duration: 0.15 }}
                   >
                     <SidebarMenuButton
                       isActive={location === '/'}
