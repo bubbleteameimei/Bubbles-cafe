@@ -28,6 +28,10 @@ export const useLoading = () => {
   return useContext(LoadingContext);
 }
 
+// Add comments and centralize magic numbers
+const MIN_LOADING_DURATION = 2500; // Minimum duration for loading screen to show (ms)
+const PREVENT_RAPID_SHOW_DURATION = 1000; // Duration to prevent rapid multiple loading screen triggers (ms)
+
 /**
  * GlobalLoadingProvider - Completely rewritten to work with the new loading screen
  * This provider manages the loading state in a simpler, more robust way
@@ -68,7 +72,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     // Allow new loading actions after a longer delay to prevent multiple screens
     setTimeout(() => {
       preventRapidShowRef.current = false;
-    }, 1000); // Increased from 300ms to 1000ms
+    }, PREVENT_RAPID_SHOW_DURATION); // Increased from 300ms to 1000ms
   }, []);
   
   // Show loading screen with smart prevention of multiple triggers
@@ -115,7 +119,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
       
       // Reset prevention flag after longer delay to prevent rapid multiple screens
       preventRapidShowRef.current = false;
-    }, 2500);
+    }, MIN_LOADING_DURATION);
   }, [isLoading]);
   
   // Hide loading screen
