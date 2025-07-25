@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
@@ -159,10 +159,10 @@ const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [location] = useLocation();
   const locationStr = location.toString();
-  
-  // Get loading functions from context after provider is initialized
   const { showLoading, hideLoading } = useLoading();
-  
+  const loadingRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   // Check if current route is an error page
   const isErrorPage = 
     locationStr.includes('/errors/403') || 
@@ -171,10 +171,27 @@ const AppContent = () => {
     locationStr.includes('/errors/500') || 
     locationStr.includes('/errors/503') || 
     locationStr.includes('/errors/504');
-  
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+
+  useEffect(() => {
+    if (isErrorPage) return;
+    // Prevent multiple triggers
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    showLoading();
+    // Always show for a full animation cycle (2.5s)
+    loadingRef.current = setTimeout(() => {
+      hideLoading();
+      setIsTransitioning(false);
+    }, 2500);
+    // Cleanup on unmount or route change
+    return () => {
+      if (loadingRef.current) {
+        clearTimeout(loadingRef.current);
+        loadingRef.current = null;
+      }
+      setIsTransitioning(false);
+    };
+  }, [locationStr]);
   
   // Track page transitions and always show loading animation between pages
   useEffect(() => {
