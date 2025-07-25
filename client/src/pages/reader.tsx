@@ -164,6 +164,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   
   // Reading progress tracking with scroll-based calculation
   useEffect(() => {
+    let ticking = false;
+    let animationFrameId: number | null = null;
+    
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -174,24 +177,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
     };
 
     // Throttle scroll events for better performance
-    let ticking = false;
     const throttledHandleScroll = () => {
       if (!ticking) {
-        requestAnimationFrame(() => {
+        animationFrameId = requestAnimationFrame(() => {
           handleScroll();
           ticking = false;
+          animationFrameId = null;
         });
         ticking = true;
       }
     };
 
-    window.addEventListener('scroll', throttledHandleScroll);
+    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
     
     // Initial calculation
     handleScroll();
     
     return () => {
       window.removeEventListener('scroll', throttledHandleScroll);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, []);
   
@@ -530,37 +536,52 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
   }`;
   };
 
-  // Apply styles effect
+  // Apply styles effect with debouncing and proper cleanup
   useEffect(() => {
-    try {
-      console.log('[Reader] Injecting content styles with font family:', fontFamily);
-      const styleTag = document.createElement('style');
-      styleTag.id = 'reader-dynamic-styles';
-      
-      // Get fresh styles every time by calling the function
-      const currentStyles = generateStoryContentStyles();
-      styleTag.textContent = currentStyles || '';
-      
-      // Remove any existing style tag with the same ID to prevent duplicates
+    let timeoutId: number | null = null;
+    
+    const applyStyles = () => {
+      try {
+        console.log('[Reader] Injecting content styles with font family:', fontFamily);
+        
+        // Remove any existing style tag first
+        const existingTag = document.getElementById('reader-dynamic-styles');
+        if (existingTag) {
+          existingTag.remove();
+        }
+        
+        // Create new style tag
+        const styleTag = document.createElement('style');
+        styleTag.id = 'reader-dynamic-styles';
+        
+        // Get fresh styles every time by calling the function
+        const currentStyles = generateStoryContentStyles();
+        styleTag.textContent = currentStyles || '';
+        
+        document.head.appendChild(styleTag);
+      } catch (error) {
+        console.error('[Reader] Error injecting styles:', error);
+        // Add fallback inline styles to the content container if style injection fails
+        const contentContainer = document.querySelector('.story-content');
+        if (contentContainer) {
+          contentContainer.setAttribute('style', `font-family: ${availableFonts[fontFamily].family}; font-size: ${fontSize}px;`);
+        }
+      }
+    };
+
+    // Debounce style updates to prevent rapid re-renders
+    timeoutId = window.setTimeout(applyStyles, 100);
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Clean up styles when component unmounts
       const existingTag = document.getElementById('reader-dynamic-styles');
       if (existingTag) {
         existingTag.remove();
       }
-      
-      document.head.appendChild(styleTag);
-      return () => {
-        if (styleTag && styleTag.parentNode) {
-          styleTag.remove();
-        }
-      };
-    } catch (error) {
-      console.error('[Reader] Error injecting styles:', error);
-      // Add fallback inline styles to the content container if style injection fails
-      const contentContainer = document.querySelector('.story-content');
-      if (contentContainer) {
-        contentContainer.setAttribute('style', `font-family: ${availableFonts[fontFamily].family}; font-size: ${fontSize}px;`);
-      }
-    }
+    };
   }, [fontFamily, fontSize, availableFonts, theme]);
   
   // This duplicate has been removed - reading progress tracking is handled above
@@ -644,8 +665,31 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       totalPosts: posts.length,
       savedIndex: sessionStorage.getItem('selectedStoryIndex')
     });
-    setCurrentIndex(0);
-    return null; // ApiLoader will handle the loading state
+    
+    // Use useEffect to prevent infinite re-renders
+    useEffect(() => {
+      setCurrentIndex(0);
+      sessionStorage.setItem('selectedStoryIndex', '0');
+    }, []);
+    
+    // Return loading state instead of null to prevent flash
+    return (
+      <div className="relative min-h-[200px]">
+        <ApiLoader 
+          isLoading={true}
+          message="Adjusting story position..."
+          minimumLoadTime={300}
+          debug={true}
+          overlayZIndex={100}
+        >
+          <div className="invisible">
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <span className="sr-only">Loading story content...</span>
+            </div>
+          </div>
+        </ApiLoader>
+      </div>
+    );
   }
 
   const currentPost = posts[currentIndex];
@@ -1366,7 +1410,7 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
                 )}
                 <h1
                   className="text-4xl md:text-5xl font-bold text-center mb-1 tracking-tight leading-tight"
-                  dangerouslySetInnerHTML={{ __html: currentPost.title?.rendered || currentPost.title || 'Story' }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(currentPost.title?.rendered || currentPost.title || 'Story') }}
                 />
               </div>
               

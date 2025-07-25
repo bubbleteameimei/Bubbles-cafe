@@ -41,6 +41,9 @@ export function SwipeNavigation({
       
       // Only trigger if swipe distance is significant enough
       if (Math.abs(swipeDistance) >= minSwipeDistance) {
+        // Prevent default browser behavior for our custom swipe
+        e.preventDefault();
+        
         if (swipeDistance > 0) {
           // Swiped left-to-right (going back, previous chapter)
           onPrevious();
@@ -57,7 +60,7 @@ export function SwipeNavigation({
     
     // Add event listeners
     element.addEventListener('touchstart', handleTouchStart, { passive: true });
-    element.addEventListener('touchend', handleTouchEnd, { passive: true });
+    element.addEventListener('touchend', handleTouchEnd, { passive: false }); // Not passive to allow preventDefault
     
     // Clean up
     return () => {
