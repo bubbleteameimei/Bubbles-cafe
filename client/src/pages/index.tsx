@@ -1,5 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { type Post } from "@shared/schema";
+import { type posts } from "@shared/schema";
+
+type Post = typeof posts.$inferSelect;
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { useMemo } from "react";
@@ -445,7 +447,7 @@ export default function IndexView() {
                     
                     <div className="mt-auto">
                       <div className="flex items-center justify-between">
-                        {featuredStory && <LikeDislike postId={featuredStory.id} size="lg" />}
+                        {featuredStory && <LikeDislike postId={featuredStory.id} variant="index" className="mt-4" />}
                         <TrendingUp className="h-5 w-5 text-primary/60" />
                       </div>
                     </div>
@@ -587,7 +589,7 @@ export default function IndexView() {
                     <CardFooter className="p-1.5 sm:p-2 mt-auto border-t">
                       <div className="w-full flex items-center justify-between">
                         {/* Make sure the LikeDislike component is always mounted in same order */}
-                        {post && post.id && <LikeDislike key={`like-${post.id}`} postId={post.id} />}
+                        {post && post.id && <LikeDislike key={`like-${post.id}`} postId={post.id} variant="index" />}
                         <Button
                           variant="secondary"
                           size="sm"

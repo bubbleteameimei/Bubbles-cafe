@@ -73,7 +73,6 @@ export default function LikeDislikeTest() {
             postId={postId} 
             onUpdate={handleUpdate}
             variant="reader"
-            size="lg"
           />
         </div>
         

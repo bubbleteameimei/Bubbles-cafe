@@ -1686,7 +1686,13 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
               <div className="flex flex-col items-center justify-center gap-6">
                 {/* Centered Like/Dislike buttons */}
                 <div className={`flex justify-center w-full ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
-                  <LikeDislike postId={currentPost.id} />
+                  <LikeDislike 
+                    postId={currentPost.id} 
+                    variant="reader" 
+                    className="mt-6" 
+                    onLike={(liked) => console.log('Story liked:', liked)}
+                    onUpdate={(likes, dislikes) => console.log('Stats updated:', { likes, dislikes })}
+                  />
                 </div>
 
                 <div className={`flex flex-col items-center gap-3 ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`}>
