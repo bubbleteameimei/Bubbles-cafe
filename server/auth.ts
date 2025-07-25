@@ -7,6 +7,9 @@ import * as crypto from "crypto";
 import { User, InsertResetToken } from "@shared/schema";
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
+import { createLogger } from "./utils/debug-logger";
+
+const authLogger = createLogger('Auth');
 
 // Extend Express.User with our User type but avoid password_hash
 declare global {
@@ -28,23 +31,23 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.serializeUser((user: Express.User, done) => {
-    console.log('[Auth] Serializing user:', user.id);
+    authLogger.debug('Serializing user', { userId: user.id });
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log('[Auth] Deserializing user:', id);
+      authLogger.debug('Deserializing user', { userId: id });
       const user = await storage.getUser(id);
       if (!user) {
-        console.log('[Auth] User not found during deserialization:', id);
+        authLogger.warn('User not found during deserialization', { userId: id });
         return done(new Error('User not found'));
       }
       // Omit password_hash from user object before passing to client
       const { password_hash, ...safeUser } = user;
       done(null, safeUser);
     } catch (error) {
-      console.error('[Auth] Error during deserialization:', error);
+      authLogger.error('Error during deserialization', { userId: id, error: error instanceof Error ? error.message : 'Unknown error' });
       done(error);
     }
   });
@@ -55,19 +58,19 @@ export function setupAuth(app: Express) {
     passwordField: 'password'
   }, async (email: string, password: string, done) => {
     try {
-      console.log('[Auth] Attempting login with email:', email);
+      authLogger.debug('Login attempt', { email: email.trim().toLowerCase() });
       // Use a trimmed lowercase email to ensure consistency
       const normalizedEmail = email.trim().toLowerCase();
       const user = await storage.getUserByEmail(normalizedEmail);
 
       if (!user) {
-        console.log('[Auth] User not found with email:', normalizedEmail);
+        authLogger.warn('User not found during login', { email: normalizedEmail });
         return done(null, false, { message: 'Invalid email or password' });
       }
 
       // Add safety check for undefined password_hash
       if (!user.password_hash) {
-        console.log('[Auth] User found but password_hash is undefined');
+        authLogger.warn('User found but password_hash is undefined', { email: normalizedEmail });
         return done(null, false, { message: 'Invalid email or password' });
       }
       
@@ -76,37 +79,39 @@ export function setupAuth(app: Express) {
       try {
         isValid = await bcryptjs.compare(password, user.password_hash);
       } catch (compareError) {
-        console.error('[Auth] Error comparing passwords:', compareError);
+        authLogger.error('Error comparing passwords', { 
+          email: normalizedEmail, 
+          error: compareError instanceof Error ? compareError.message : 'Unknown error' 
+        });
         // If bcrypt fails, we consider it an invalid password
         // No fallback to plaintext comparison - that creates a security risk
         isValid = false;
       }
       
-      console.log('[Auth] Password validation result:', isValid);
-      console.log('[Auth] Login attempt details:', {
-        email: normalizedEmail,
-        hashedPasswordExists: !!user.password_hash,
-        isValid
+      authLogger.debug('Password validation completed', { 
+        email: normalizedEmail, 
+        isValid, 
+        hashedPasswordExists: !!user.password_hash 
       });
 
       if (!isValid) {
-        console.log('[Auth] Invalid password for user:', normalizedEmail);
+        authLogger.warn('Invalid password attempt', { email: normalizedEmail });
         return done(null, false, { message: 'Invalid email or password' });
       }
 
       // Omit password_hash from user object before passing to client
       const { password_hash, ...safeUser } = user;
-      console.log('[Auth] Login successful for user:', normalizedEmail);
+      authLogger.info('Login successful', { email: normalizedEmail, userId: safeUser.id });
       return done(null, safeUser);
     } catch (error) {
-      console.error('[Auth] Login error:', error);
+      authLogger.error('Login error', { error: error instanceof Error ? error.message : 'Unknown error' });
       done(error);
     }
   }));
 
   // Add login endpoint with enhanced logging, remember me feature, and rate limiting
   app.post("/api/auth/login", authRateLimiter, (req, res, next) => {
-    console.log('[Auth] Login request received:', { 
+    authLogger.debug('Login request received', { 
       email: req.body.email,
       hasPassword: !!req.body.password,
       rememberMe: !!req.body.rememberMe,
@@ -115,11 +120,11 @@ export function setupAuth(app: Express) {
 
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
       if (err) {
-        console.error('[Auth] Login error:', err);
+        authLogger.error('Login error', { err: err instanceof Error ? err.message : 'Unknown error' });
         return next(err);
       }
       if (!user) {
-        console.log('[Auth] Login failed:', info?.message);
+        authLogger.warn('Login failed', { message: info?.message });
         return res.status(401).json({ message: info?.message || "Invalid credentials" });
       }
       
@@ -128,15 +133,15 @@ export function setupAuth(app: Express) {
       // If rememberMe is true, set a longer session expiration (30 days)
       if (req.body.rememberMe) {
         loginOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-        console.log('[Auth] Remember me enabled, setting long session expiration');
+        authLogger.debug('Remember me enabled, setting long session expiration');
       }
       
       req.login(user, loginOptions, (err) => {
         if (err) {
-          console.error('[Auth] Session creation error:', err);
+          authLogger.error('Session creation error', { err: err instanceof Error ? err.message : 'Unknown error' });
           return next(err);
         }
-        console.log('[Auth] Login successful:', { id: user.id, email: user.email, rememberMe: !!req.body.rememberMe });
+        authLogger.info('Login successful', { id: user.id, email: user.email, rememberMe: !!req.body.rememberMe });
         return res.json(user);
       });
     })(req, res, next);
@@ -145,12 +150,12 @@ export function setupAuth(app: Express) {
   // Add other routes...
   app.post("/api/auth/register", authRateLimiter, async (req, res) => {
     try {
-      console.log('[Auth] Registration attempt:', { email: req.body.email, username: req.body.username });
+      authLogger.debug('Registration attempt', { email: req.body.email, username: req.body.username });
       let { email, password, username } = req.body;
 
       // Validate input
       if (!email || !password || !username) {
-        console.log('[Auth] Missing registration fields:', { email: !!email, password: !!password, username: !!username });
+        authLogger.warn('Missing registration fields', { email: !!email, password: !!password, username: !!username });
         return res.status(400).json({ 
           message: "Email, password, and username are required" 
         });
@@ -174,12 +179,12 @@ export function setupAuth(app: Express) {
       // Check if user already exists with normalized email
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        console.log('[Auth] Registration failed - email already exists:', email);
+        authLogger.warn('Registration failed - email already exists', { email });
         return res.status(400).json({ message: "Email already registered" });
       }
 
       // Create user - storage will handle password hashing
-      console.log('[Auth] Creating user with registration data');
+      authLogger.debug('Creating user with registration data');
       const user = await storage.createUser({
         username,
         password,
@@ -198,44 +203,44 @@ export function setupAuth(app: Express) {
       // Log user in after registration
       req.login(safeUser, (err) => {
         if (err) {
-          console.error('[Auth] Error logging in after registration:', err);
+          authLogger.error('Error logging in after registration', { err: err instanceof Error ? err.message : 'Unknown error' });
           return res.status(500).json({ message: "Error logging in after registration" });
         }
-        console.log('[Auth] Registration successful:', { id: user.id, email });
+        authLogger.info('Registration successful', { id: user.id, email });
         return res.status(201).json(safeUser);
       });
     } catch (error) {
-      console.error("[Auth] Registration error:", error);
+      authLogger.error('Registration error', { error: error instanceof Error ? error.message : 'Unknown error' });
       res.status(500).json({ message: "Error creating user" });
     }
   });
 
   app.post("/api/auth/logout", (req, res) => {
     const userId = req.user?.id;
-    console.log('[Auth] Logout request received:', { userId });
+    authLogger.debug('Logout request received', { userId });
     req.logout((err) => {
       if (err) {
-        console.error('[Auth] Logout error:', err);
+        authLogger.error('Logout error', { err: err instanceof Error ? err.message : 'Unknown error' });
         return res.status(500).json({ message: "Error logging out" });
       }
-      console.log('[Auth] Logout successful:', { userId });
+      authLogger.info('Logout successful', { userId });
       res.json({ message: "Logged out successfully" });
     });
   });
 
   app.get("/api/auth/user", (req, res) => {
     if (!req.isAuthenticated()) {
-      console.log('[Auth] Unauthenticated user info request');
+      authLogger.debug('Unauthenticated user info request');
       return res.status(401).json({ message: "Not authenticated" });
     }
-    console.log('[Auth] User info request:', { id: req.user?.id });
+    authLogger.debug('User info request', { id: req.user?.id });
     res.json(req.user);
   });
   
   // Add social login endpoint with rate limiting
   app.post("/api/auth/social-login", authRateLimiter, async (req, res) => {
     try {
-      console.log('[Auth] Social login request received:', { 
+      authLogger.debug('Social login request received', { 
         provider: req.body.provider,
         email: req.body.email,
         socialId: req.body.socialId
@@ -244,7 +249,7 @@ export function setupAuth(app: Express) {
       let { socialId, email, username, provider, photoURL, token } = req.body;
       
       if (!socialId || !email) {
-        console.log('[Auth] Missing social login fields:', { socialId: !!socialId, email: !!email });
+        authLogger.warn('Missing social login fields', { socialId: !!socialId, email: !!email });
         return res.status(400).json({ message: "Social ID and email are required" });
       }
       
@@ -259,7 +264,7 @@ export function setupAuth(app: Express) {
         // Create a new user if they don't exist
         const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
         
-        console.log('[Auth] Creating new user for social login:', { email, provider });
+        authLogger.debug('Creating new user for social login', { email, provider });
         
         try {
           // Create new user with social metadata
@@ -278,14 +283,14 @@ export function setupAuth(app: Express) {
             }
           });
           
-          console.log('[Auth] New user created via social login:', { id: user.id, provider });
+          authLogger.info('New user created via social login', { id: user.id, provider });
         } catch (createError) {
-          console.error('[Auth] Error creating user for social login:', createError);
+          authLogger.error('Error creating user for social login', { error: createError instanceof Error ? createError.message : 'Unknown error' });
           return res.status(500).json({ message: "Error creating user account" });
         }
       } else {
         // Update existing user's social login metadata
-        console.log('[Auth] Existing user found for social login:', { id: user.id, email });
+        authLogger.debug('Existing user found for social login', { id: user.id, email });
         
         try {
           // Update user metadata with latest social login info
@@ -304,7 +309,7 @@ export function setupAuth(app: Express) {
             metadata: updatedMetadata
           });
         } catch (updateError) {
-          console.error('[Auth] Error updating user for social login:', updateError);
+          authLogger.error('Error updating user for social login', { error: updateError instanceof Error ? updateError.message : 'Unknown error' });
           // Continue with login even if update fails - don't block login
         }
       }
@@ -315,15 +320,15 @@ export function setupAuth(app: Express) {
       // Log the user in using the session
       req.login(safeUser, (err) => {
         if (err) {
-          console.error('[Auth] Session creation error during social login:', err);
+          authLogger.error('Session creation error during social login', { err: err instanceof Error ? err.message : 'Unknown error' });
           return res.status(500).json({ message: "Error logging in with social account" });
         }
         
-        console.log('[Auth] Social login successful:', { id: user.id, provider });
+        authLogger.info('Social login successful', { id: user.id, provider });
         return res.json(safeUser);
       });
     } catch (error) {
-      console.error("[Auth] Social login error:", error);
+      authLogger.error('Social login error', { error: error instanceof Error ? error.message : 'Unknown error' });
       res.status(500).json({ message: "Error processing social login" });
     }
   });
@@ -340,14 +345,14 @@ export function setupAuth(app: Express) {
       // Normalize email to prevent case-sensitivity issues
       email = email.trim().toLowerCase();
       
-      console.log('[Auth] Password reset requested for email:', email);
+      authLogger.debug('Password reset requested for email', { email });
       
       // Find the user by email (using normalized email)
       const user = await storage.getUserByEmail(email);
       if (!user) {
         // Don't reveal that the user doesn't exist for security reasons
         // Instead, pretend success but don't actually do anything
-        console.log('[Auth] Password reset requested for non-existent email:', email);
+        authLogger.debug('Password reset requested for non-existent email', { email });
         return res.json({ 
           success: true, 
           message: "If your email exists in our system, you'll receive a password reset link shortly" 
@@ -371,7 +376,7 @@ export function setupAuth(app: Express) {
       
       await storage.createResetToken(resetTokenData);
       
-      console.log('[Auth] Password reset token created for user:', user.id);
+      authLogger.debug('Password reset token created for user', { userId: user.id });
       
       // Send password reset email using our email service
       const emailSent = await emailService.sendPasswordResetEmail(
@@ -380,7 +385,7 @@ export function setupAuth(app: Express) {
         user.username
       );
       
-      console.log('[Auth] Password reset email sent:', emailSent);
+      authLogger.debug('Password reset email sent', { emailSent });
       
       // Security: Never log password reset tokens, even in development
       // Tokens should only be sent via secure email channels
@@ -398,7 +403,7 @@ export function setupAuth(app: Express) {
       
       return res.json(response);
     } catch (error) {
-      console.error('[Auth] Password reset request error:', error);
+      authLogger.error('Password reset request error', { error: error instanceof Error ? error.message : 'Unknown error' });
       return res.status(500).json({ message: "Error processing password reset request" });
     }
   });
@@ -452,7 +457,7 @@ export function setupAuth(app: Express) {
         }
       });
     } catch (error) {
-      console.error('[Auth] Metadata test error:', error);
+      authLogger.error('Metadata test error', { error: error instanceof Error ? error.message : 'Unknown error' });
       res.status(500).json({ 
         success: false,
         message: "Error testing metadata",
@@ -470,36 +475,36 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Token is required" });
       }
       
-      console.log('[Auth] Verifying password reset token:', token);
+      authLogger.debug('Verifying password reset token', { token });
       
       // Check if token exists and is valid
       const resetToken = await storage.getResetTokenByToken(token);
       
       if (!resetToken) {
-        console.log('[Auth] Invalid password reset token:', token);
+        authLogger.warn('Invalid password reset token', { token });
         return res.status(400).json({ message: "Invalid or expired token" });
       }
       
       // Check if token is expired
       if (new Date() > resetToken.expiresAt) {
-        console.log('[Auth] Expired password reset token:', token);
+        authLogger.warn('Expired password reset token', { token });
         return res.status(400).json({ message: "Token has expired" });
       }
       
       // Check if token is already used
       if (resetToken.used) {
-        console.log('[Auth] Already used password reset token:', token);
+        authLogger.warn('Already used password reset token', { token });
         return res.status(400).json({ message: "Token has already been used" });
       }
       
-      console.log('[Auth] Valid password reset token for user:', resetToken.userId);
+      authLogger.debug('Valid password reset token for user', { userId: resetToken.userId });
       
       return res.json({ 
         success: true, 
         userId: resetToken.userId 
       });
     } catch (error) {
-      console.error('[Auth] Verify reset token error:', error);
+      authLogger.error('Verify reset token error', { error: error instanceof Error ? error.message : 'Unknown error' });
       return res.status(500).json({ message: "Error verifying token" });
     }
   });
@@ -517,25 +522,25 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Password must be at least 6 characters long" });
       }
       
-      console.log('[Auth] Processing password reset with token');
+      authLogger.debug('Processing password reset with token');
       
       // Check if token exists and is valid
       const resetToken = await storage.getResetTokenByToken(token);
       
       if (!resetToken) {
-        console.log('[Auth] Invalid reset token for password reset');
+        authLogger.warn('Invalid reset token for password reset', { token });
         return res.status(400).json({ message: "Invalid or expired token" });
       }
       
       // Check if token is expired
       if (new Date() > resetToken.expiresAt) {
-        console.log('[Auth] Expired reset token for password reset');
+        authLogger.warn('Expired reset token for password reset', { token });
         return res.status(400).json({ message: "Token has expired" });
       }
       
       // Check if token is already used
       if (resetToken.used) {
-        console.log('[Auth] Already used reset token for password reset');
+        authLogger.warn('Already used reset token for password reset', { token });
         return res.status(400).json({ message: "Token has already been used" });
       }
       
@@ -543,7 +548,7 @@ export function setupAuth(app: Express) {
       const user = await storage.getUser(resetToken.userId);
       
       if (!user) {
-        console.log('[Auth] User not found for reset token:', resetToken.userId);
+        authLogger.warn('User not found for reset token', { userId: resetToken.userId });
         return res.status(400).json({ message: "User not found" });
       }
       
@@ -557,14 +562,14 @@ export function setupAuth(app: Express) {
       // Mark token as used
       await storage.markResetTokenAsUsed(token);
       
-      console.log('[Auth] Password reset successful for user:', user.id);
+      authLogger.debug('Password reset successful for user', { userId: user.id });
       
       return res.json({ 
         success: true, 
         message: "Password has been reset successfully" 
       });
     } catch (error) {
-      console.error('[Auth] Reset password error:', error);
+      authLogger.error('Reset password error', { error: error instanceof Error ? error.message : 'Unknown error' });
       return res.status(500).json({ message: "Error resetting password" });
     }
   });

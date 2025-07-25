@@ -3,140 +3,123 @@
  * Provides consistent logging, error tracking, and debugging capabilities
  */
 
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
-import { promises as fsPromises } from 'fs';
-import { config } from '../../shared/config';
 
-// Log levels
+// Define proper types instead of using 'any'
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-// Log message structure
 interface LogMessage {
   timestamp: string;
   level: LogLevel;
   module: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
+}
+
+interface Logger {
+  debug: (message: string, details?: Record<string, unknown>) => void;
+  info: (message: string, details?: Record<string, unknown>) => void;
+  warn: (message: string, details?: Record<string, unknown>) => void;
+  error: (message: string, details?: Record<string, unknown>) => void;
 }
 
 // Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
+try {
+  await fs.access(logsDir);
+} catch {
+  await fs.mkdir(logsDir, { recursive: true });
 }
 
-// File paths
-const errorLogPath = path.join(logsDir, 'error.log');
 const debugLogPath = path.join(logsDir, 'debug.log');
-const feedbackLogPath = path.join(logsDir, 'feedback.log');
+const errorLogPath = path.join(logsDir, 'error.log');
 
-/**
- * Formats a log message with timestamp and details
- */
-function formatLogMessage(level: LogLevel, module: string, message: string, details?: any): LogMessage {
+// Console colors for different log levels
+const colors = {
+  debug: '\x1b[36m', // Cyan
+  info: '\x1b[32m',  // Green
+  warn: '\x1b[33m',  // Yellow
+  error: '\x1b[31m', // Red
+  reset: '\x1b[0m'   // Reset
+};
+
+function formatLogMessage(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): LogMessage {
   return {
     timestamp: new Date().toISOString(),
     level,
     module,
     message,
-    details
+    details: details ? redactSensitiveInfo(details) : undefined
   };
 }
 
-/**
- * Writes a log message to the console with appropriate formatting
- */
-function writeToConsole(logMessage: LogMessage): void {
-  const { timestamp, level, module, message, details } = logMessage;
-  let consoleMethod: 'log' | 'info' | 'warn' | 'error' = 'log';
-  let prefix = '\x1b[0m'; // Default (reset)
-  
+function getConsolePrefix(level: LogLevel): string {
   switch (level) {
     case 'debug':
-      prefix = '\x1b[36m[DEBUG]\x1b[0m'; // Cyan
-      consoleMethod = 'log';
-      break;
+      return '\x1b[36m[DEBUG]\x1b[0m'; // Cyan
     case 'info':
-      prefix = '\x1b[32m[INFO]\x1b[0m'; // Green
-      consoleMethod = 'info';
-      break;
+      return '\x1b[32m[INFO]\x1b[0m';  // Green
     case 'warn':
-      prefix = '\x1b[33m[WARN]\x1b[0m'; // Yellow
-      consoleMethod = 'warn';
-      break;
+      return '\x1b[33m[WARN]\x1b[0m';  // Yellow
     case 'error':
-      prefix = '\x1b[31m[ERROR]\x1b[0m'; // Red
-      consoleMethod = 'error';
-      break;
-  }
-  
-  console[consoleMethod](`${prefix} [${timestamp}] [${module}] ${message}`);
-  if (details) {
-    console[consoleMethod](details);
+      return '\x1b[31m[ERROR]\x1b[0m'; // Red
+    default:
+      return '[LOG]';
   }
 }
 
-/**
- * Writes a log message to a file
- */
-async function writeToFile(logPath: string, logMessage: LogMessage): Promise<void> {
-  const { timestamp, level, module, message, details } = logMessage;
-  const formattedDetails = details ? `\n${JSON.stringify(details, null, 2)}` : '';
-  const logEntry = `[${timestamp}] [${level.toUpperCase()}] [${module}] ${message}${formattedDetails}\n\n`;
-  
+async function writeToFile(filePath: string, content: string): Promise<void> {
   try {
-    await fsPromises.appendFile(logPath, logEntry, 'utf8');
-  } catch (err) {
-    console.error(`Failed to write to log file ${logPath}:`, err);
+    await fs.appendFile(filePath, content + '\n');
+  } catch (error) {
+    // Fallback to console if file writing fails
+    console.error('Failed to write to log file:', error);
   }
 }
 
-/**
- * Logs a message at the specified level
- */
-async function log(level: LogLevel, module: string, message: string, details?: any): Promise<void> {
+async function log(level: LogLevel, module: string, message: string, details?: Record<string, unknown>): Promise<void> {
   const logMessage = formatLogMessage(level, module, message, details);
+  const timestamp = logMessage.timestamp;
+  const prefix = getConsolePrefix(level);
   
-  // Always log to console in development mode
-  if (config.NODE_ENV === 'development') {
-    writeToConsole(logMessage);
-  }
+  // Format for console output
+  const consoleMessage = `${prefix} [${module}] ${message}`;
+  const consoleDetails = details ? ` ${JSON.stringify(redactSensitiveInfo(details), null, 2)}` : '';
   
-  // Log errors to the error log file
-  if (level === 'error') {
-    await writeToFile(errorLogPath, logMessage);
-  }
+  // Output to console with colors
+  console.log(`${timestamp} ${consoleMessage}${consoleDetails}`);
+  
+  // Format for file output
+  const fileMessage = JSON.stringify(logMessage);
   
   // Log everything to debug log in development mode
-  if (config.NODE_ENV === 'development') {
-    await writeToFile(debugLogPath, logMessage);
+  if (process.env.NODE_ENV !== 'production') {
+    await writeToFile(debugLogPath, fileMessage);
   }
   
-  // Log feedback-related messages to the feedback log
-  if (module.toLowerCase().includes('feedback')) {
-    await writeToFile(feedbackLogPath, logMessage);
+  // Log errors to separate error log
+  if (level === 'error') {
+    await writeToFile(errorLogPath, fileMessage);
   }
 }
 
 /**
- * Creates a logger instance for a specific module
+ * Create a logger instance for a specific module
  */
-export function createLogger(moduleName: string) {
+export function createLogger(moduleName: string): Logger {
   return {
-    debug: (message: string, details?: any) => log('debug', moduleName, message, details),
-    info: (message: string, details?: any) => log('info', moduleName, message, details),
-    warn: (message: string, details?: any) => log('warn', moduleName, message, details),
-    error: (message: string, details?: any) => log('error', moduleName, message, details)
+    debug: (message: string, details?: Record<string, unknown>) => log('debug', moduleName, message, details),
+    info: (message: string, details?: Record<string, unknown>) => log('info', moduleName, message, details),
+    warn: (message: string, details?: Record<string, unknown>) => log('warn', moduleName, message, details),
+    error: (message: string, details?: Record<string, unknown>) => log('error', moduleName, message, details)
   };
 }
 
 /**
- * Helper function to redact sensitive information from logs
+ * Redact sensitive information from log objects
  */
-export function redactSensitiveInfo(obj: any): any {
-  if (!obj) return obj;
-  
+export function redactSensitiveInfo(obj: Record<string, unknown>): Record<string, unknown> {
   const sensitiveKeys = ['password', 'token', 'secret', 'key', 'credentials', 'auth', 'email'];
   const redactedObj = { ...obj };
   
@@ -144,7 +127,7 @@ export function redactSensitiveInfo(obj: any): any {
     if (sensitiveKeys.some(sensKey => key.toLowerCase().includes(sensKey))) {
       redactedObj[key] = '[REDACTED]';
     } else if (typeof redactedObj[key] === 'object' && redactedObj[key] !== null) {
-      redactedObj[key] = redactSensitiveInfo(redactedObj[key]);
+      redactedObj[key] = redactSensitiveInfo(redactedObj[key] as Record<string, unknown>);
     }
   });
   
@@ -152,71 +135,57 @@ export function redactSensitiveInfo(obj: any): any {
 }
 
 /**
- * Function to capture and log errors with stack traces
+ * Capture and log errors with context
  */
-export function captureError(error: Error, module: string, context?: any): void {
-  const logger = createLogger(module);
-  logger.error(error.message, {
+export function captureError(error: Error, module: string, context?: Record<string, unknown>): void {
+  const errorLogger = createLogger(module);
+  errorLogger.error(error.message, {
     stack: error.stack,
-    context: redactSensitiveInfo(context)
+    context: context ? redactSensitiveInfo(context) : undefined
   });
 }
 
 /**
- * Express middleware to log requests
+ * Express middleware for request logging
  */
-export function requestLogger(req: any, res: any, next: any) {
-  const startTime = Date.now();
-  const requestId = Math.random().toString(36).substring(2, 15);
+export function requestLogger(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+  const start = Date.now();
+  const logger = createLogger('Request');
   
-  const logData = {
-    requestId,
-    method: req.method,
-    url: req.url,
-    ip: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-  };
+  // Log incoming request
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    contentType: req.get('Content-Type')
+  });
   
-  const logger = createLogger('HTTP');
-  logger.info(`Request started: ${req.method} ${req.url}`, logData);
-  
+  // Log response when finished
   res.on('finish', () => {
-    const duration = Date.now() - startTime;
-    const responseData = {
-      ...logData,
-      statusCode: res.statusCode,
-      duration: `${duration}ms`
-    };
+    const duration = Date.now() - start;
+    const level = res.statusCode >= 400 ? 'warn' : 'info';
     
-    const logLevel = res.statusCode >= 400 ? 'error' : 'info';
-    logger[logLevel as LogLevel](`Request completed: ${req.method} ${req.url} ${res.statusCode} (${duration}ms)`, responseData);
+    logger[level](`${req.method} ${req.path} - ${res.statusCode}`, {
+      duration: `${duration}ms`,
+      contentLength: res.get('Content-Length')
+    });
   });
   
   next();
 }
 
 /**
- * Express middleware to handle and log errors
+ * Express middleware for error logging
  */
-export function errorLogger(err: any, req: any, res: any, next: any) {
-  const logger = createLogger('HTTP-Error');
+export function errorLogger(err: Error, req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+  const logger = createLogger('Error');
   
-  logger.error(`${req.method} ${req.url} - ${err.message}`, {
-    error: {
-      message: err.message,
-      stack: err.stack,
-      name: err.name
-    },
-    request: {
-      method: req.method,
-      url: req.url,
-      params: redactSensitiveInfo(req.params),
-      query: redactSensitiveInfo(req.query),
-      body: redactSensitiveInfo(req.body)
-    }
+  logger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    ip: req.ip
   });
   
   next(err);
 }
-
-// Export a default feedback logger
-export const feedbackLogger = createLogger('Feedback');
