@@ -168,7 +168,9 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-      setReadingProgress(Math.min(100, Math.max(0, scrollPercent)));
+      const progress = Math.min(100, Math.max(0, scrollPercent));
+      setReadingProgress(progress);
+      console.log('[Reader] Progress updated:', { scrollTop, docHeight, progress });
     };
 
     // Throttle scroll events for better performance
@@ -1015,20 +1017,27 @@ export default function ReaderPage({ slug, params, isCommunityContent = false }:
       
       {/* Reader page has no background image, just clean default background */}
       
-      {/* Reading Progress Bar - Position above the header navigation */}
+      {/* Reading Progress Bar - Always visible at the very top */}
       <div 
-        className={`fixed left-0 right-0 h-1 bg-muted/20 pointer-events-none ui-fade-element ${isUIHidden ? 'ui-hidden' : ''}`} 
         style={{ 
+          position: 'fixed',
           top: '0px',
-          zIndex: 50000,
-          position: 'fixed'
+          left: '0px',
+          right: '0px',
+          width: '100%',
+          height: '3px',
+          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          zIndex: 999999,
+          pointerEvents: 'none'
         }}
       >
         <div 
-          className="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ease-out"
           style={{ 
+            height: '100%',
             width: `${readingProgress}%`,
-            boxShadow: readingProgress > 5 ? '0 0 8px rgba(var(--primary), 0.4)' : 'none'
+            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+            transition: 'width 0.1s ease-out',
+            boxShadow: readingProgress > 5 ? '0 0 10px rgba(59, 130, 246, 0.7)' : 'none'
           }}
         />
       </div>
