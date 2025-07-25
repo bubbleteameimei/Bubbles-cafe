@@ -36,7 +36,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar"
 
-// Context: SidebarNavigation provides accessible navigation for the app, using ARIA attributes and keyboard navigation for accessibility.
+// Code Quality: Break up large components into smaller ones for maintainability.
 export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
