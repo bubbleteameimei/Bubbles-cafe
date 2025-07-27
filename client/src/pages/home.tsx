@@ -154,9 +154,9 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-3/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-between px-4"
+                      className="group relative w-4/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
-                      <span className="text-left">Browse Stories</span>
+                      <span className="text-center">Browse Stories</span>
                       <motion.div
                         animate={{ 
                           x: [0, 2, 0]
@@ -166,10 +166,9 @@ export default function Home() {
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
+                        className="absolute right-4"
                       >
-                        <div className="w-5 h-5 border border-white/50 rounded-sm flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white/70 rounded-sm"></div>
-                        </div>
+                        <Book className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
@@ -186,7 +185,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative w-4/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4"
+                      className="group relative w-4/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
                       <span className="text-center">Start Reading</span>
                       <motion.div
@@ -200,7 +199,7 @@ export default function Home() {
                         }}
                         className="absolute right-4"
                       >
-                        <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
