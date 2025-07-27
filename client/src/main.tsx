@@ -15,20 +15,21 @@ import { optimizeImagesForConnection } from "./utils/image-optimization";
 // We're now using only the standard loading-screen.tsx component directly
 // Import CSRF protection
 import { initCSRFProtection } from "@/lib/csrf-token";
+import logger from "./utils/secure-client-logger";
 
-console.log("[Client] Starting application...");
+logger.info("Starting application...");
 
 const root = document.getElementById("root");
 if (!root) {
-  console.error("[Client] Root element not found");
+  logger.error("Root element not found");
   throw new Error("Root element not found");
 }
 
 // Log CSS loading status
-console.log("[Client] Loading CSS styles...");
+logger.debug("Loading CSS styles...");
 const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
 linkElements.forEach(link => {
-  console.log("[Client] Found stylesheet:", link.getAttribute('href'));
+  logger.debug("Found stylesheet:", { href: link.getAttribute('href') });
 });
 
 // Add initial loading indicator to prevent FOUC
@@ -41,15 +42,15 @@ optimizeImagesForConnection();
 setupStylePreloader();
 
 // Initialize CSRF protection - async but we don't block rendering on it
-console.log("[Client] Initializing CSRF protection...");
+logger.debug("Initializing CSRF protection...");
 initCSRFProtection().then(() => {
-  console.log("[Client] CSRF protection initialized successfully");
+  logger.debug("CSRF protection initialized successfully");
 }).catch(error => {
-  console.error("[Client] Error initializing CSRF protection:", error);
+  logger.error("Error initializing CSRF protection:", error);
 });
 
-console.log("[Client] CSS styles loaded");
-console.log("[Client] Mounting React application...");
+logger.debug("CSS styles loaded");
+logger.info("Mounting React application...");
 
 // Add performance markers for debugging
 performance.mark('react-init-start');
@@ -66,15 +67,15 @@ const renderApp = () => {
     );
     performance.mark('react-render-end');
     performance.measure('React Render Time', 'react-render-start', 'react-render-end');
-    console.log("[Client] React application mounted successfully");
+    logger.info("React application mounted successfully");
 
     // Log performance metrics
     const measurements = performance.getEntriesByType('measure');
     measurements.forEach(measurement => {
-      console.log(`[Performance] ${measurement.name}: ${measurement.duration.toFixed(2)}ms`);
+      logger.debug(`Performance: ${measurement.name}: ${measurement.duration.toFixed(2)}ms`);
     });
   } catch (error) {
-    console.error("[Client] Error mounting React application:", error);
+    logger.error("Error mounting React application:", error);
   }
 };
 
