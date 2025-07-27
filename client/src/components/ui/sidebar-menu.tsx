@@ -236,8 +236,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Compact submenu styling with completely seamless appearance - no backgrounds or borders
-  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-2 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center";
+  // Compact submenu styling with seamless appearance - maintains spacing without backgrounds
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-150 ease-out text-sm font-medium py-1.5 px-2 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm";
 
 
 
