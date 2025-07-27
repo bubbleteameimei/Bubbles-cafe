@@ -7,9 +7,9 @@ import * as crypto from "crypto";
 import { User, InsertResetToken } from "@shared/schema";
 import { emailService } from "./utils/email-service";
 import { authRateLimiter, sensitiveOperationsRateLimiter } from "./middlewares/rate-limiter";
-import { createLogger } from "./utils/debug-logger";
+import { createSecureLogger } from "./utils/secure-logger";
 
-const authLogger = createLogger('Auth');
+const authLogger = createSecureLogger('Auth');
 
 // Extend Express.User with our User type but avoid password_hash
 declare global {
@@ -64,13 +64,13 @@ export function setupAuth(app: Express) {
       const user = await storage.getUserByEmail(normalizedEmail);
 
       if (!user) {
-        authLogger.warn('User not found during login', { email: normalizedEmail });
+        authLogger.warn('User not found during login');
         return done(null, false, { message: 'Invalid email or password' });
       }
 
       // Add safety check for undefined password_hash
       if (!user.password_hash) {
-        authLogger.warn('User found but password_hash is undefined', { email: normalizedEmail });
+        authLogger.warn('User found but password_hash is undefined');
         return done(null, false, { message: 'Invalid email or password' });
       }
       

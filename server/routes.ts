@@ -44,10 +44,14 @@ import { adminRoutes } from './routes/admin';
 import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
 // CSRF protection completely removed as requested
-import { feedbackLogger, requestLogger, errorLogger } from './utils/debug-logger';
+import { createSecureLogger } from './utils/secure-logger';
+import { validateBody, validateQuery, validateParams, commonSchemas } from './middleware/input-validation';
+import { asyncHandler, createError } from './utils/error-handler';
 import { db } from "./db-connect";
 import { eq, sql, desc } from "drizzle-orm";
 import { getPostsRecommendations } from "./test-recommendations";
+
+const routesLogger = createSecureLogger('Routes');
 
 // Add interfaces for analytics data
 interface UserAgent {
