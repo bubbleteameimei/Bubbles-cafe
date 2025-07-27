@@ -136,7 +136,7 @@ export default function Home() {
             {/* Reduced spacing */}
             <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-16"></div>
           
-            <div className="space-y-3 sm:space-y-4 md:space-y-5 mb-4 sm:mb-6 md:mb-8 lg:mb-10">
+            <div className="space-y-3 sm:space-y-4 md:space-y-5 mb-2 sm:mb-3 md:mb-4 lg:mb-6 flex-grow flex flex-col justify-between">
               <div>
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
                   Every story here is a portal to the unexpected,
@@ -145,7 +145,7 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4">
+                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -209,7 +209,7 @@ export default function Home() {
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 text-center space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-12 text-center space-y-2 sm:space-y-3 md:space-y-4">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
