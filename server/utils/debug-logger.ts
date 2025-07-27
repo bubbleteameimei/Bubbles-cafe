@@ -5,6 +5,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import type { Request, Response, NextFunction } from 'express';
 
 // Define proper types instead of using 'any'
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -150,7 +151,7 @@ export function captureError(error: Error, module: string, context?: Record<stri
 /**
  * Express middleware for request logging
  */
-export function requestLogger(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
   const logger = createLogger('Request');
   
@@ -178,7 +179,7 @@ export function requestLogger(req: Express.Request, res: Express.Response, next:
 /**
  * Express middleware for error logging
  */
-export function errorLogger(err: Error, req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+export function errorLogger(err: Error, req: Request, res: Response, next: NextFunction) {
   const logger = createLogger('Error');
   
   logger.error('Unhandled error', {

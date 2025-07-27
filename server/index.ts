@@ -27,6 +27,7 @@ import { setupOAuth } from "./oauth";
 import { storage } from "./storage-db";
 import { createSecureLogger } from "./utils/secure-logger";
 import { globalErrorHandler } from "./utils/error-handler";
+import { requestLogger } from "./utils/debug-logger";
 import { registerModularRoutes } from "./routes/index";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
