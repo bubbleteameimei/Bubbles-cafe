@@ -140,7 +140,7 @@ export default function Home() {
               <div>
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,0.9)' }}>
                   Every story here is a portal to the unexpected,
-                  the unexplained, and the <span className="italic text-red-700">unsettling</span>.
+                  the unexplained, and <span className="italic text-red-700">the unsettling<span className="text-red-700 font-bold">.</span></span>
                 </p>
               </div>
 
@@ -154,9 +154,9 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-4/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-4/5 h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
-                      <span className="text-center">Browse Stories</span>
+                      <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
                         animate={{ 
                           x: [0, 2, 0]
@@ -166,7 +166,6 @@ export default function Home() {
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
-                        className="absolute right-4"
                       >
                         <Book className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                       </motion.div>
@@ -185,9 +184,9 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative w-4/5 h-12 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-4/5 h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
-                      <span className="text-center">Start Reading</span>
+                      <span className="text-center mr-2">Start Reading</span>
                       <motion.div
                         animate={{ 
                           x: [0, 2, 0]
@@ -197,9 +196,8 @@ export default function Home() {
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
-                        className="absolute right-4"
                       >
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
