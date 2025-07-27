@@ -174,7 +174,7 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 
 ```
 Changelog:
-- July 27, 2025. ✅ **BUBBLES CAFE TITLE POSITIONING** - Moved "BUBBLES CAFE" text further upward by reducing header barrier height to 4-8px and removing top padding from content container. Title now appears closer to the navigation bar.
+- July 27, 2025. ✅ **BUBBLES CAFE TITLE ENHANCEMENT** - Moved title even higher (barrier height now 2-4px) and increased font sizes significantly across all breakpoints (text-7xl to text-11xl). Title now has maximum visual impact and optimal positioning near navigation.
 - July 27, 2025. ✅ **HOMEPAGE LAYOUT OPTIMIZATION** - Moved all homepage elements upward by reducing spacing throughout. Reduced header barrier height, content padding, and spacing between elements. Minimized the large spacing gap after title. Removed text shadow from "Latest Story" text for consistency.
 - July 27, 2025. ✅ **HEADER AND FOOTER STYLING UPDATES** - Centralized footer elements for better alignment. Removed text shadow from "BUBBLES CAFE" header text. Changed header font from font-bodoni to font-serif for better readability. Updated "BUBBLE'S" to "BUBBLES" and ensured only "CAFE" has blood red color.
 - July 27, 2025. ✅ **BUY ME A COFFEE BUTTON FIX** - Fixed Paystack popup issue where multiple payment windows could open repeatedly. Added processing state with visual feedback (loading spinner, disabled state, "Opening payment..." text). Applied fix to both BuyMeCoffeeButton and SupportWritingCard components. Fixed TypeScript animation errors. Application running on port 3004.
