@@ -145,7 +145,7 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="flex flex-col gap-3 w-full max-w-md mx-auto px-4">
+                <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -159,10 +159,10 @@ export default function Home() {
                       <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
                         animate={{ 
-                          x: [0, 2, 0]
+                          rotate: [0, 10, -5, 0]
                         }}
                         transition={{ 
-                          duration: 2,
+                          duration: 3,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
@@ -189,15 +189,15 @@ export default function Home() {
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
                         animate={{ 
-                          x: [0, 2, 0]
+                          x: [0, 6, 0]
                         }}
                         transition={{ 
-                          duration: 2,
+                          duration: 1.2,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
                       >
-                        <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        <ChevronRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
                       </motion.div>
                     </Button>
                   </motion.div>
