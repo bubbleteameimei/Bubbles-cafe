@@ -64,21 +64,59 @@ export default function Home() {
         <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
           <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
           <p className="mb-4">The database connection is currently unavailable, but you can still explore the site.</p>
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 max-w-md mx-auto">
-            <Button 
-              onClick={() => setLocation('/reader')}
-              className="bg-[#444444] hover:bg-[#505050] text-white"
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-lg mx-auto">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              Browse Stories
-              <Book className="ml-2 h-5 w-5" />
-            </Button>
-            <Button 
-              onClick={() => window.location.reload()}
-              className="bg-[#121212] hover:bg-[#1a1a1a] text-white"
+              <Button 
+                onClick={() => setLocation('/reader')}
+                className="group px-6 py-3 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:via-purple-600 hover:to-indigo-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+              >
+                Browse Stories
+                <motion.div
+                  animate={{ 
+                    x: [0, 3, 0],
+                    rotate: [0, 5, 0]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="ml-2"
+                >
+                  <Book className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                </motion.div>
+              </Button>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              Try Again
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="group px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-700 hover:from-emerald-500 hover:via-teal-600 hover:to-cyan-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+              >
+                Try Again
+                <motion.div
+                  animate={{ 
+                    x: [0, 6, 0],
+                    rotate: [0, 15, 0]
+                  }}
+                  transition={{ 
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="ml-2"
+                >
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+                </motion.div>
+              </Button>
+            </motion.div>
           </div>
         </div>
       ) : (
@@ -109,27 +147,66 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="grid gap-2 sm:gap-3 md:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 w-full">
-                  <Button
-                    size="lg"
-                    onClick={() => setLocation('/stories')}
-                    className="text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 bg-[#121212] dark:bg-[#121212] hover:bg-[#1a1a1a] dark:hover:bg-[#1a1a1a] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-8 justify-center items-center w-full">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    Browse Stories
-                    <Book className="ml-2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    onClick={() => posts && posts.length > 0 
-                      ? setLocation('/reader')  // Always navigate to the reader page
-                      : setLocation('/reader')  // Fallback to /reader if no posts
-                    }
-                    className="text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white dark:text-white shadow-lg backdrop-blur-sm font-medium"
+                    <Button
+                      size="lg"
+                      onClick={() => setLocation('/stories')}
+                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 px-8 sm:px-10 md:px-12 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:via-purple-600 hover:to-indigo-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/25 active:scale-95"
+                    >
+                      Browse Stories
+                      <motion.div
+                        animate={{ 
+                          x: [0, 3, 0],
+                          rotate: [0, 5, 0]
+                        }}
+                        transition={{ 
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="ml-3"
+                      >
+                        <Book className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:rotate-12 transition-transform duration-300" />
+                      </motion.div>
+                    </Button>
+                  </motion.div>
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    Start Reading
-                    <ArrowRight className="ml-2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
-                  </Button>
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      onClick={() => posts && posts.length > 0 
+                        ? setLocation('/reader')  // Always navigate to the reader page
+                        : setLocation('/reader')  // Fallback to /reader if no posts
+                      }
+                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 px-8 sm:px-10 md:px-12 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-700 hover:from-emerald-500 hover:via-teal-600 hover:to-cyan-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/25 active:scale-95"
+                    >
+                      Start Reading
+                      <motion.div
+                        animate={{ 
+                          x: [0, 6, 0],
+                          rotate: [0, 15, 0]
+                        }}
+                        transition={{ 
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="ml-3"
+                      >
+                        <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 group-hover:translate-x-2 transition-transform duration-300" />
+                      </motion.div>
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
               
