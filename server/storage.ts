@@ -86,14 +86,15 @@ async function safeDbOperation<T>(
   return fallback;
 }
 
-// Create a direct pool for use with session store and SQL queries with enhanced connection options
+// Create a direct pool for use with session store and SQL queries with optimized connection options
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Maximum number of clients in the pool
-  min: 2, // Minimum number of clients in the pool
+  max: 10, // Optimized maximum number of clients in the pool
+  min: 1, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Attempt to connect for up to 10 seconds
-  maxUses: 7500, // Close and replace a connection after it has been used 7500 times (prevents memory issues)
+  connectionTimeoutMillis: 3000, // Reduced timeout for faster failures
+  acquireTimeoutMillis: 2000, // Add acquire timeout
+  maxUses: 3000, // Reduced max uses to prevent memory issues
   allowExitOnIdle: false, // Don't exit when the pool is empty - better for production
   keepAlive: true, // Enable TCP keep-alive
   keepAliveInitialDelayMillis: 0,

@@ -25,7 +25,8 @@ import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage-db";
-import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
+import { createSecureLogger } from "./utils/secure-logger";
+import { globalErrorHandler } from "./utils/error-handler";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
 import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
@@ -203,7 +204,7 @@ app.use(helmet({
 }));
 
 // Create a server logger
-const serverLogger = createLogger('Server');
+const serverLogger = createSecureLogger('Server');
 
 // Import our permanent startup utilities
 import { permanentStartup } from '../scripts/permanent-startup';
@@ -265,6 +266,9 @@ async function startServer() {
       
       // Register bookmark routes - only once to avoid duplicates
       registerBookmarkRoutes(app);
+      
+      // Add global error handler (must be after all routes)
+      app.use(globalErrorHandler);
       
       // Setup WordPress sync schedule (run every 5 minutes)
       setupWordPressSyncSchedule(5 * 60 * 1000);

@@ -6,7 +6,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
-  SESSION_SECRET: z.string().default('development_secret'),
+  SESSION_SECRET: z.string().min(32, "Session secret must be at least 32 characters for security")
+    .default(process.env.NODE_ENV === 'production' ? '' : 'development_secret_min_32_chars_long'),
   CACHE_ENABLED: z.boolean().default(false),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   RATE_LIMIT_WINDOW_MS: z.number().default(15 * 60 * 1000), // 15 minutes
