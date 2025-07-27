@@ -236,8 +236,8 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
     "font-sans"
   );
   
-  // Enhanced submenu styling with bigger icons, better clickable area, and smoother interactions
-  const submenuItemClass = "enhanced-submenu-item text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium text-sm font-medium py-2.5 px-1 pr-4 whitespace-nowrap overflow-hidden min-h-[44px] flex items-center rounded-md hover:bg-[hsl(var(--sidebar-accent))] focus:bg-[hsl(var(--sidebar-accent))]";
+  // Enhanced submenu styling - increased clickable area to the RIGHT and faster animations
+  const submenuItemClass = "text-[hsl(var(--sidebar-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] focus:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:text-[hsl(var(--sidebar-accent-foreground))] data-[active=true]:font-medium transition-all duration-100 ease-out text-sm font-medium py-1.5 px-2 pr-12 whitespace-nowrap overflow-hidden min-h-[36px] flex items-center -mb-1 rounded-sm hover:bg-[hsl(var(--sidebar-accent))] focus:bg-[hsl(var(--sidebar-accent))]";
 
 
 
@@ -523,7 +523,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                      transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                       className="px-2 py-1"
                     >
                       <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
@@ -535,7 +535,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           className={submenuItemClass}
                           aria-current={location === '/admin/dashboard' ? 'page' : undefined}
                         >
-                          <Monitor className="h-7 w-7 mr-2 opacity-90" />
+                          <Monitor className="h-6 w-6 mr-2" />
                           <span>Dashboard</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -558,7 +558,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                             location === '/admin/wordpress-sync'
                           }
                         >
-                          <FileText className="h-7 w-7 mr-2 opacity-90" />
+                          <FileText className="h-6 w-6 mr-2" />
                           <span>Content Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -571,7 +571,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           className={submenuItemClass}
                           aria-current={location === '/admin/themes' ? 'page' : undefined}
                         >
-                          <Palette className="h-7 w-7 mr-2 opacity-90" />
+                          <Palette className="h-6 w-6 mr-2" />
                           <span>Theme Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -590,7 +590,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                             location === '/admin/content-moderation'
                           }
                         >
-                          <Users className="h-7 w-7 mr-2 opacity-90" />
+                          <Users className="h-5 w-5 mr-2" />
                           <span>User Management</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -613,7 +613,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                             location === '/admin/bug-reports'
                           }
                         >
-                          <LineChart className="h-7 w-7 mr-2 opacity-90" />
+                          <LineChart className="h-6 w-6 mr-2" />
                           <span>Insights & Reports</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -672,7 +672,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                     className="px-2 py-1"
                   >
                     <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
@@ -683,7 +683,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/fonts' ? 'page' : undefined}
                       >
-                        <Type className="h-7 w-7 mr-2 opacity-90" />
+                        <Type className="h-6 w-6 mr-2" />
                         <span>Font Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -695,7 +695,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/accessibility' ? 'page' : undefined}
                       >
-                        <HelpCircle className="h-7 w-7 mr-2 opacity-90" />
+                        <HelpCircle className="h-6 w-6 mr-2" />
                         <span>Reading Preferences</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -707,7 +707,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/pixel-art' ? 'page' : undefined}
                       >
-                        <Grid className="h-7 w-7 mr-2 opacity-80" />
+                        <Grid className="h-6 w-6 mr-2" />
                         <span>Pixel Art</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -719,7 +719,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/quick-settings' ? 'page' : undefined}
                       >
-                        <Settings className="h-7 w-7 mr-2 opacity-90" />
+                        <Settings className="h-5 w-5 mr-2" />
                         <span>Quick Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -731,7 +731,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/preview' ? 'page' : undefined}
                       >
-                        <Eye className="h-7 w-7 mr-2 opacity-90" />
+                        <Eye className="h-6 w-6 mr-2" />
                         <span>Preview</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -773,7 +773,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                     className="px-0 py-0.5"
                   >
                     <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
@@ -784,7 +784,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                           className={submenuItemClass}
                           aria-current={location === '/profile' ? 'page' : undefined}
                         >
-                          <UserCircle className="h-7 w-7 mr-2 opacity-90" />
+                          <UserCircle className="h-6 w-6 mr-2" />
                           <span>My Profile</span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -795,7 +795,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/profile' ? 'page' : undefined}
                       >
-                        <User className="h-7 w-7 mr-2 opacity-90" />
+                        <User className="h-6 w-6 mr-2" />
                         <span>Profile Settings</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -806,7 +806,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/notifications' ? 'page' : undefined}
                       >
-                        <Bell className="h-7 w-7 mr-2 opacity-90" />
+                        <Bell className="h-6 w-6 mr-2" />
                         <span>Notifications</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -817,7 +817,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/privacy' ? 'page' : undefined}
                       >
-                        <Lock className="h-7 w-7 mr-2 opacity-90" />
+                        <Lock className="h-6 w-6 mr-2" />
                         <span>Privacy & Security</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -830,7 +830,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/settings/connected' ? 'page' : undefined}
                       >
-                        <Link className="h-7 w-7 mr-2 opacity-90" />
+                        <Link className="h-6 w-6 mr-2" />
                         <span>Connected Accounts</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -873,7 +873,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 0.08, ease: [0.4, 0, 0.2, 1] }}
                     className="px-2 py-1"
                   >
                     <SidebarMenuSub className="space-y-0 border-l border-sidebar-border/30 ml-2 pl-3">
@@ -884,7 +884,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/about' ? 'page' : undefined}
                       >
-                        <Building className="h-7 w-7 mr-2 opacity-90" />
+                        <Building className="h-6 w-6 mr-2" />
                         <span>About Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -895,7 +895,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/feedback' ? 'page' : undefined}
                       >
-                        <MessageSquare className="h-7 w-7 mr-2 opacity-90" />
+                        <MessageSquare className="h-6 w-6 mr-2" />
                         <span>Feedback & Suggestions</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -906,7 +906,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/contact' ? 'page' : undefined}
                       >
-                        <Mail className="h-7 w-7 mr-2 opacity-90" />
+                        <Mail className="h-6 w-6 mr-2" />
                         <span>Contact Me</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -917,7 +917,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/report-bug' ? 'page' : undefined}
                       >
-                        <Bug className="h-7 w-7 mr-2 opacity-90" />
+                        <Bug className="h-6 w-6 mr-2" />
                         <span>Report a Bug</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -928,7 +928,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/legal/terms' ? 'page' : undefined}
                       >
-                        <FileText className="h-7 w-7 mr-2 opacity-90" />
+                        <FileText className="h-6 w-6 mr-2" />
                         <span>Terms of Service</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -939,7 +939,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/privacy' ? 'page' : undefined}
                       >
-                        <Lock className="h-7 w-7 mr-2 opacity-90" />
+                        <Lock className="h-6 w-6 mr-2" />
                         <span>Privacy Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -950,7 +950,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                         className={submenuItemClass}
                         aria-current={location === '/legal/copyright' ? 'page' : undefined}
                       >
-                        <Shield className="h-7 w-7 mr-2 opacity-90" />
+                        <Shield className="h-6 w-6 mr-2" />
                         <span>Copyright Policy</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
