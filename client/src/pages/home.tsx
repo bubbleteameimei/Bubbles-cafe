@@ -72,7 +72,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => setLocation('/reader')}
-                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-sans font-semibold text-lg"
               >
                 Browse Stories
                 <motion.div
@@ -97,7 +97,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => window.location.reload()}
-                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl font-sans font-semibold text-lg"
               >
                 Try Again
                 <motion.div
@@ -129,7 +129,7 @@ export default function Home() {
             <div>
               <h1 className="font-bodoni text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center" style={{ textShadow: '0 4px 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.9)' }}>
                 <span>BUBBLE'S</span>
-                <span className="mt-1 md:mt-2">CAFE</span>
+                <span className="mt-1 md:mt-2 text-red-700">CAFE</span>
               </h1>
             </div>
           
@@ -139,8 +139,8 @@ export default function Home() {
             <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
               <div>
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,0.9)' }}>
-                  Each story here is a portal to the unexpected,
-                  the unsettling, and the unexplained.
+                  Every story here is a portal to the unexpected,
+                  the unexplained, and the <span className="italic text-red-700">unsettling</span>.
                 </p>
               </div>
 
@@ -154,7 +154,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-slate-500/25 active:scale-95"
+                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-xl backdrop-blur-sm font-sans font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-slate-500/25 active:scale-95"
                     >
                       Browse Stories
                       <motion.div
@@ -185,7 +185,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-gray-500/25 active:scale-95"
+                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white shadow-xl backdrop-blur-sm font-sans font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-gray-500/25 active:scale-95"
                     >
                       Start Reading
                       <motion.div
