@@ -29,30 +29,33 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Enhanced submenu styles for improved UX */
-.enhanced-submenu-item {
-  transform: translateX(0);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-.enhanced-submenu-item:hover {
-  transform: translateX(4px);
-}
-
-.enhanced-submenu-item:active {
-  transform: translateX(4px) scale(0.98);
-}
-
 /* Prevent layout shifts during dropdown animations */
 .sidebar-dropdown-container {
   contain: layout style;
+  transform: translateZ(0);
 }
 
-/* Stable dropdown positioning */
+/* Stable dropdown positioning and faster animations */
 .sidebar-collapsible-content {
   transform-origin: top;
   backface-visibility: hidden;
+}
+
+/* Prevent icon jiggling with stable positioning */
+.sidebar-icon-stable {
+  transform: translateZ(0);
+  will-change: transform;
+  position: relative;
+}
+
+/* Faster transitions for all sidebar elements */
+.sidebar-menu-button {
+  transition: all 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced clickable area styles */
+.submenu-enhanced-area {
+  position: relative;
 }
 
 .sidebar-menu-container::-webkit-scrollbar {
