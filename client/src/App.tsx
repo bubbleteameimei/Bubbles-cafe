@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 // Import our new GlobalLoadingProvider component that handles loading state
@@ -9,7 +9,7 @@ import { Sonner } from './components/ui/sonner';
 import { toast } from 'sonner';
 import Footer from './components/layout/footer';
 import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider, useAuth } from './hooks/use-auth';
+import { AuthProvider } from './hooks/use-auth';
 import { CookieConsent } from './components/ui/cookie-consent';
 import { CookieConsentProvider } from './hooks/use-cookie-consent';
 import { GlobalErrorBoundary, setupGlobalErrorHandlers } from './components/error-boundary/global-error-boundary';
@@ -24,8 +24,7 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import './styles/fullwidth-fix.css';
 // Scroll-to-top now uses inline styles
 // Using EnhancedPageTransition for smooth page transitions
-import { Button } from './components/ui/button';
-import { Menu } from 'lucide-react';
+// Removed unused imports: Button, Menu
 // Import SidebarNavigation directly from sidebar-menu
 import { SidebarNavigation } from './components/ui/sidebar-menu';
 // Import WordPress API preload function for enhanced reliability
@@ -42,18 +41,16 @@ import ScrollEffectsProvider from './components/ScrollEffectsProvider';
 import PerformanceMonitor from './components/performance-monitor';
 
 import AutoHideNavbar from './components/layout/AutoHideNavbar';
-import FullscreenButton from './components/FullscreenButton';
-import SearchBar from './components/SearchBar';
+// Removed unused imports: FullscreenButton, SearchBar
 // Import our notification system components
 import { NotificationProvider } from './contexts/notification-context';
-import { NotificationIcon } from './components/ui/notification-icon';
+// Removed unused import: NotificationIcon
 // Import Silent Ping feature
 import { SilentPingProvider } from './contexts/silent-ping-context';
 // Import our like/dislike test page
 // Import music provider for background music functionality
 import { MusicProvider } from './contexts/music-context';
-import SidebarHeader from './components/SidebarHeader';
-import { PrimaryNav } from './components/primary-nav';
+// Removed unused imports: SidebarHeader, PrimaryNav
 import ErrorToastProvider from './components/providers/error-toast-provider';
 import NotFoundRouteHandler from './components/NotFoundRouteHandler';
 // Import our new refresh components
@@ -152,8 +149,7 @@ const preloadWordPressPostsDeferred = () => {
 };
 
 const AppContent = () => {
-  const { user } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Removed unused variables: user, isSidebarOpen, setIsSidebarOpen
   const [location] = useLocation();
   const locationStr = location.toString();
   const { showLoading, hideLoading } = useLoading();
