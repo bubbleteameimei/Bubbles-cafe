@@ -700,18 +700,7 @@ export function SidebarNavigation({ onNavigate }: { onNavigate?: () => void }) {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        isActive={location === '/pixel-art'}
-                        onClick={() => handleNavigation('/pixel-art')}
-                        className={submenuItemClass}
-                        aria-current={location === '/pixel-art' ? 'page' : undefined}
-                      >
-                        <Grid className="h-7 w-7 mr-2" />
-                        <span>Pixel Art</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    
+
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton
                         isActive={location === '/settings/quick-settings'}
