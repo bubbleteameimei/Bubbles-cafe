@@ -45,6 +45,7 @@ import searchRouter from './routes/search';
 import newsletterRouter from './routes/newsletter';
 // CSRF protection completely removed as requested
 import { createSecureLogger } from './utils/secure-logger';
+import { requestLogger, errorLogger } from './utils/debug-logger';
 import { validateBody, validateQuery, validateParams, commonSchemas } from './middleware/input-validation';
 import { asyncHandler, createError } from './utils/error-handler';
 import { db } from "./db-connect";
