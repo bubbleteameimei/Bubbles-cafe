@@ -50,7 +50,6 @@ import { NotificationIcon } from './components/ui/notification-icon';
 // Import Silent Ping feature
 import { SilentPingProvider } from './contexts/silent-ping-context';
 // Import our like/dislike test page
-const LikeDislikeTestPage = React.lazy(() => import('./pages/like-dislike-test'));
 // Import music provider for background music functionality
 import { MusicProvider } from './contexts/music-context';
 import SidebarHeader from './components/SidebarHeader';
@@ -94,8 +93,6 @@ const PreviewSettingsPage = React.lazy(() => import('./pages/settings/preview'))
 
 
 // Demo pages - lazy loaded
-const ErrorDemoPage = React.lazy(() => import('./pages/error-demo'));
-
 // Admin pages - lazy loaded
 const AdminPage = React.lazy(() => import('./pages/admin'));
 const AdminAnalyticsPage = React.lazy(() => import('./pages/admin/analytics'));
@@ -137,7 +134,6 @@ const EditStoryPage = React.lazy(() => import('./pages/edit-story'));
 const FeedbackPage = React.lazy(() => import('./pages/feedback'));
 const UserFeedbackDashboardPage = React.lazy(() => import('./pages/user/feedback-dashboard'));
 const GuidelinesPage = React.lazy(() => import('./pages/support/guidelines'));
-const CsrfTestPage = React.lazy(() => import('./pages/csrf-test'));
 
 // Defer WordPress posts preloading until after initial page render
 // This improves initial load time significantly
@@ -288,10 +284,6 @@ const AppContent = () => {
 
 
               
-              {/* Demo Routes */}
-              <Route path="/error-demo" component={ErrorDemoPage} />
-              <Route path="/like-dislike-test" component={LikeDislikeTestPage} />
-
               {/* Legal Routes */}
               <Route path="/legal/copyright" component={CopyrightPage} />
               <Route path="/legal/terms" component={TermsPage} />
@@ -310,7 +302,6 @@ const AppContent = () => {
               <Route path="/feedback" component={FeedbackPage} />
               <ProtectedRoute path="/feedback/dashboard" component={UserFeedbackDashboardPage} />
               <Route path="/support/guidelines" component={GuidelinesPage} />
-              <Route path="/csrf-test" component={CsrfTestPage} />
               
               {/* Settings Routes */}
               <ProtectedRoute path="/settings/profile" component={ProfileSettingsPage} />
