@@ -23,14 +23,14 @@ export default function Footer() {
         marginLeft: 'calc(-50vw + 50%)'
       }}
     >
-      <div className="w-full flex flex-col sm:flex-row justify-between items-center py-2">
-        {/* Copyright text - responsive alignment */}
-        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-1 sm:mb-0 ml-4 sm:ml-8">
+      <div className="w-full flex flex-col items-center justify-center py-4 px-4">
+        {/* Copyright text - centered */}
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap mb-2">
           © Bubble's Cafe 2025.&nbsp;All rights reserved.
         </div>
         
-        {/* Navigation links - responsive alignment */}
-        <div className="flex items-center mr-4 sm:mr-8">
+        {/* Navigation links - centered */}
+        <div className="flex items-center justify-center">
           <Link 
             href="/privacy" 
             className="text-sm font-medium text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary transition-colors px-3 whitespace-nowrap"
