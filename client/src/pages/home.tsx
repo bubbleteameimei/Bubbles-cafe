@@ -122,21 +122,21 @@ export default function Home() {
           {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}
             
           {/* Invisible barrier to prevent scrolling under header */}
-          <div className="relative w-full h-14 sm:h-16 md:h-20 lg:h-16" aria-hidden="true"></div>
+          <div className="relative w-full h-8 sm:h-10 md:h-12 lg:h-10" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-2 sm:pt-4 md:pt-6 lg:pt-8 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-1 sm:pt-2 md:pt-3 lg:pt-4 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
             <div>
-              <h1 className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-4 sm:mb-5 md:mb-7 tracking-wider text-white flex flex-col items-center">
+              <h1 className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
                 <span className="mt-1 md:mt-2 text-red-700">CAFE</span>
               </h1>
             </div>
           
-            {/* Extra spacing for moving content down */}
-            <div className="h-20 sm:h-24 md:h-32 lg:h-40 xl:h-48"></div>
+            {/* Reduced spacing */}
+            <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-16"></div>
           
-            <div className="space-y-5 sm:space-y-6 md:space-y-8 mb-8 sm:mb-10 md:mb-12 lg:mb-16">
+            <div className="space-y-3 sm:space-y-4 md:space-y-5 mb-4 sm:mb-6 md:mb-8 lg:mb-10">
               <div>
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
                   Every story here is a portal to the unexpected,
@@ -204,13 +204,13 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-4 sm:mt-5 md:mt-6 lg:mt-8 mb-4 sm:mb-5 md:mb-6 lg:mb-8">
+              <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 mb-2 sm:mb-3 md:mb-4 lg:mb-5">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 text-center space-y-2 sm:space-y-3 md:space-y-4">
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}>Latest Story</p>
+                <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 text-center space-y-2 sm:space-y-3 md:space-y-4">
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
                     className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
