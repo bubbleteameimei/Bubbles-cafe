@@ -72,7 +72,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => setLocation('/reader')}
-                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-sans font-semibold text-lg"
+                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl font-inter font-semibold text-lg"
               >
                 Browse Stories
                 <motion.div
@@ -97,7 +97,7 @@ export default function Home() {
             >
               <Button 
                 onClick={() => window.location.reload()}
-                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl font-sans font-semibold text-lg"
+                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl font-inter font-semibold text-lg"
               >
                 Try Again
                 <motion.div
@@ -145,7 +145,7 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-4xl mx-auto">
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-3xl mx-auto">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -154,7 +154,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-xl backdrop-blur-sm font-sans font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-slate-500/25 active:scale-95"
+                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-xl backdrop-blur-sm font-inter font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-slate-500/25 active:scale-95"
                     >
                       Browse Stories
                       <motion.div
@@ -185,7 +185,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white shadow-xl backdrop-blur-sm font-sans font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-gray-500/25 active:scale-95"
+                      className="group relative text-xl sm:text-2xl md:text-3xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white shadow-xl backdrop-blur-sm font-inter font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-gray-500/25 active:scale-95"
                     >
                       Start Reading
                       <motion.div
@@ -212,7 +212,7 @@ export default function Home() {
               
               {posts.length > 0 && (
                 <div className="mt-4 sm:mt-6 md:mt-8 lg:mt-10 text-center space-y-2 sm:space-y-3 md:space-y-4">
-                  <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-white uppercase tracking-wider" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}>Latest Story</p>
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-white uppercase tracking-wider font-inter" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}>Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
                     className="group cursor-pointer hover:scale-[1.01] transition-transform duration-200 w-full p-2 md:p-4 lg:p-6 rounded-lg hover:bg-foreground/5 dark:hover:bg-foreground/10 bg-black/40 backdrop-blur-sm"
