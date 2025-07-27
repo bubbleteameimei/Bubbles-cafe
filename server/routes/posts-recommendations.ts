@@ -1,7 +1,7 @@
 import { Request, Response, Express } from "express";
 import { db } from "../db-connect";
 import { posts } from "@shared/schema";
-import { desc, eq, and, ne, or, sql } from "drizzle-orm";
+import { desc, eq, and, ne, or, sql, inArray } from "drizzle-orm";
 
 /**
  * Register routes specifically for post recommendations
@@ -157,22 +157,10 @@ export function registerPostRecommendationsRoutes(app: Express) {
           // Only try to supplement if we have existing posts and there are at least 2 ids
           if (existingIds.length > 0) {
             try {
-              const additionalPosts = await db.select({
-                id: posts.id,
-                title: posts.title,
-                slug: posts.slug,
-                excerpt: posts.excerpt,
-                createdAt: posts.createdAt
-              })
-              .from(posts)
-              .where(
-                and(
-                  ne(posts.id, postId),
-                  sql`${posts.id} NOT IN (${existingIds.join(',')})` 
-                )
-              )
-              .orderBy(desc(posts.createdAt))
-              .limit(limit - recommendedPosts.length);
+              const existingIdsArray = existingIds.map(id => parseInt(id));
+              const existingPosts = await db.select({ id: posts.id })
+                .from(posts)
+                .where(inArray(posts.id, existingIdsArray));
               
               recommendedPosts = [...recommendedPosts, ...additionalPosts];
             } catch (err) {

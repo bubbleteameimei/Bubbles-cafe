@@ -10,7 +10,7 @@ import { sql } from 'drizzle-orm';
 
 // Simple in-memory cache implementation using Map
 class SimpleCache {
-  private cache: Map<string, { value: any; expires: number }> = new Map();
+  private cache: Map<string, { value: unknown; expires: number }> = new Map();
   private defaultTTL: number;
   
   constructor(defaultTTL: number = 300) { // 5 minutes default
@@ -20,7 +20,7 @@ class SimpleCache {
     setInterval(() => this.cleanExpired(), 60000); // Clean every minute
   }
   
-  set(key: string, value: any, ttl: number = this.defaultTTL): void {
+  set(key: string, value: unknown, ttl: number = this.defaultTTL): void {
     const expires = Date.now() + (ttl * 1000);
     this.cache.set(key, { value, expires });
   }

@@ -3,12 +3,12 @@ import path from 'path';
 import fs from 'fs';
 import config from './config';
 
-// Log environment variables being loaded
+// Log environment variables being loaded (redacted for security)
 console.log('[Server] Starting with environment configuration:');
 console.log('[Server] NODE_ENV:', config.NODE_ENV);
 console.log('[Server] DATABASE_URL:', config.DATABASE_URL ? 'Set' : 'Not set');
 console.log('[Server] GMAIL_USER:', process.env.GMAIL_USER ? 'Set' : 'Not set');
-console.log('[Server] GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'Set' : 'Not set');
+console.log('[Server] GMAIL_APP_PASSWORD:', '[REDACTED]');
 
 import express from "express";
 import { createServer } from "http";
