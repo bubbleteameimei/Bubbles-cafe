@@ -133,10 +133,10 @@ export default function Home() {
               </h1>
             </div>
           
-            {/* Reduced spacing */}
-            <div className="h-6 sm:h-8 md:h-10 lg:h-12 xl:h-16"></div>
+            {/* Minimal spacing */}
+            <div className="h-2 sm:h-3 md:h-4 lg:h-5 xl:h-6"></div>
           
-            <div className="space-y-3 sm:space-y-4 md:space-y-5 mb-2 sm:mb-3 md:mb-4 lg:mb-6 flex-grow flex flex-col justify-between">
+            <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4 flex-grow flex flex-col justify-between">
               <div>
                 <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white w-full leading-relaxed md:leading-relaxed lg:leading-relaxed px-2 md:px-4 font-medium">
                   Every story here is a portal to the unexpected,
@@ -204,12 +204,12 @@ export default function Home() {
                 </div>
               </div>
               
-              <div className="mt-2 sm:mt-3 md:mt-4 lg:mt-5 mb-2 sm:mb-3 md:mb-4 lg:mb-5">
+              <div className="mt-1 sm:mt-2 md:mt-3 lg:mt-4 mb-1 sm:mb-2 md:mb-3 lg:mb-4">
                 <BuyMeCoffeeButton />
               </div>
               
               {posts.length > 0 && (
-                <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-12 text-center space-y-2 sm:space-y-3 md:space-y-4">
+                <div className="mt-3 sm:mt-4 md:mt-5 lg:mt-6 text-center space-y-2 sm:space-y-3 md:space-y-4">
                   <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-normal text-white uppercase tracking-wider font-sans">Latest Story</p>
                   <div 
                     onClick={() => setLocation('/reader')} 
