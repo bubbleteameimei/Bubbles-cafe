@@ -122,10 +122,10 @@ export default function Home() {
           {/* We are using the CSS-based background image instead of this div (see index.css body.body-home::before) */}
             
           {/* Invisible barrier to prevent scrolling under header */}
-          <div className="relative w-full h-8 sm:h-10 md:h-12 lg:h-10" aria-hidden="true"></div>
+          <div className="relative w-full h-4 sm:h-6 md:h-8 lg:h-6" aria-hidden="true"></div>
           
           {/* Content container with proper z-index to appear above background - full width */}
-          <div className="relative z-10 flex flex-col items-center justify-start pt-1 sm:pt-2 md:pt-3 lg:pt-4 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
+          <div className="relative z-10 flex flex-col items-center justify-start pt-0 sm:pt-1 md:pt-2 lg:pt-2 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
             <div>
               <h1 className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
