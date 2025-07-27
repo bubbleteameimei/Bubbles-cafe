@@ -64,20 +64,20 @@ export function AppSidebar() {
     toggleSidebar();
   };
 
-  // Determine sidebar width based on device type
-  const getSidebarWidth = () => {
-    if (isMobile) {
-      return SIDEBAR_WIDTHS.mobile;
-    } else if (deviceType === 'desktop' && window.innerWidth >= 1536) {
-      return SIDEBAR_WIDTHS.xxl;
-    } else if (deviceType === 'desktop') {
-      return SIDEBAR_WIDTHS.xl;
-    } else if (deviceType === 'laptop') {
-      return SIDEBAR_WIDTHS.laptop;
-    } else {
-      return SIDEBAR_WIDTHS.tablet;
-    }
-  };
+  // Determine sidebar width based on device type (unused)
+  // const getSidebarWidth = () => {
+  //   if (isMobile) {
+  //     return SIDEBAR_WIDTHS.mobile;
+  //   } else if (deviceType === 'desktop' && window.innerWidth >= 1536) {
+  //     return SIDEBAR_WIDTHS.xxl;
+  //   } else if (deviceType === 'desktop') {
+  //     return SIDEBAR_WIDTHS.xl;
+  //   } else if (deviceType === 'laptop') {
+  //     return SIDEBAR_WIDTHS.laptop;
+  //   } else {
+  //     return SIDEBAR_WIDTHS.tablet;
+  //   }
+  // };
 
   return (
     <Sidebar
