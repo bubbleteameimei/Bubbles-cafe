@@ -5,7 +5,7 @@ import { Textarea } from './ui/textarea';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Card } from './ui/card';
 import { MessageSquare, ThumbsUp, ThumbsDown, Reply } from 'lucide-react';
-import CommentWithMarkdown from './CommentWithMarkdown';
+import { CommentWithMarkdown } from './CommentWithMarkdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 interface Comment {
@@ -173,7 +173,19 @@ const CommentPlugin: React.FC<CommentPluginProps> = ({
             </div>
           </div>
           <div className="mt-2">
-            <CommentWithMarkdown content={comment.content} />
+            <CommentWithMarkdown 
+              author={comment.author}
+              content={comment.content}
+              createdAt={comment.createdAt instanceof Date 
+                ? comment.createdAt.toLocaleString() 
+                : new Date(comment.createdAt).toLocaleString()}
+              upvotes={comment.votes?.upvotes || 0}
+              downvotes={comment.votes?.downvotes || 0}
+              onReply={() => {}} // Add proper handler
+              onUpvote={() => handleVote(comment.id, true)}
+              onDownvote={() => handleVote(comment.id, false)}
+              onReport={() => {}} // Add proper handler
+            />
           </div>
           <div className="mt-3 flex items-center gap-4">
             <TooltipProvider>
