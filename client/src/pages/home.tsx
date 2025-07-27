@@ -154,7 +154,7 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative w-4/5 h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-[90%] h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
                       <span className="text-center mr-2">Browse Stories</span>
                       <motion.div
@@ -184,7 +184,7 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative w-4/5 h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-base transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
+                      className="group relative w-[90%] h-14 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white shadow-lg backdrop-blur-sm font-sans font-medium text-lg transition-all duration-300 hover:shadow-xl active:scale-95 rounded-lg flex items-center justify-center px-4 mx-auto"
                     >
                       <span className="text-center mr-2">Start Reading</span>
                       <motion.div
