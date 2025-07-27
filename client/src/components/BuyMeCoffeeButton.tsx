@@ -14,10 +14,20 @@ import {
 export const BuyMeCoffeeButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const handleTip = () => {
+    // Prevent multiple clicks
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
     window.open("https://paystack.com/pay/z7fmj9rge1", "_blank", "noopener,noreferrer");
     setIsOpen(false);
+    
+    // Reset processing state after a short delay
+    setTimeout(() => {
+      setIsProcessing(false);
+    }, 2000);
   };
 
   // Steam particles animation
@@ -36,7 +46,7 @@ export const BuyMeCoffeeButton = () => {
       transition: { 
         duration: 2, 
         repeat: Infinity, 
-        repeatType: "loop",
+        repeatType: "loop" as const,
         ease: "easeOut" 
       } 
     }
@@ -288,7 +298,8 @@ export const BuyMeCoffeeButton = () => {
             >
               <Button
                 onClick={handleTip}
-                className="px-8 py-4 text-lg font-medium w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg relative overflow-hidden"
+                disabled={isProcessing}
+                className="px-8 py-4 text-lg font-medium w-full sm:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white rounded-full shadow-lg relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
                 size="lg"
                 aria-label="Support with a donation"
               >
@@ -307,19 +318,33 @@ export const BuyMeCoffeeButton = () => {
                 />
                 
                 <span className="relative flex items-center gap-2">
-                  <motion.span
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
-                  >
-                    🥰
-                  </motion.span>
-                  Yes, I'd love to!
-                  <motion.span
-                    animate={{ y: [0, -2, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
-                  >
-                    💝
-                  </motion.span>
+                  {isProcessing ? (
+                    <>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        ⏳
+                      </motion.span>
+                      Opening payment...
+                    </>
+                  ) : (
+                    <>
+                      <motion.span
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        🥰
+                      </motion.span>
+                      Yes, I'd love to!
+                      <motion.span
+                        animate={{ y: [0, -2, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        💝
+                      </motion.span>
+                    </>
+                  )}
                 </span>
               </Button>
             </motion.div>
