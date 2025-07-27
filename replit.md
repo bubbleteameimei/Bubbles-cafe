@@ -174,6 +174,7 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 
 ```
 Changelog:
+- July 27, 2025. ✅ **HEADER AND FOOTER STYLING UPDATES** - Centralized footer elements for better alignment. Removed text shadow from "BUBBLES CAFE" header text. Changed header font from font-bodoni to font-serif for better readability. Updated "BUBBLE'S" to "BUBBLES" and ensured only "CAFE" has blood red color.
 - July 27, 2025. ✅ **BUY ME A COFFEE BUTTON FIX** - Fixed Paystack popup issue where multiple payment windows could open repeatedly. Added processing state with visual feedback (loading spinner, disabled state, "Opening payment..." text). Applied fix to both BuyMeCoffeeButton and SupportWritingCard components. Fixed TypeScript animation errors. Application running on port 3004.
 - July 27, 2025. ✅ **DATABASE AND APPLICATION SETUP COMPLETE (Current Session)** - Fresh PostgreSQL database created and fully configured. All essential tables created via SQL (users, posts, comments, sessions, site_settings, author_stats, bookmarks, analytics). Admin user created (vandalison@gmail.com/admin123). Application successfully running on port 3003 with WordPress sync active and importing stories. All API endpoints functional with 9 posts imported.
 - July 27, 2025. ✅ **COMPLETE DATABASE AND APPLICATION SETUP** - Created fresh PostgreSQL database, manually created all essential tables (users, posts, comments, sessions, etc.), initialized admin user (vandalison@gmail.com), and successfully started application on port 3003 with WordPress sync importing 21 stories
