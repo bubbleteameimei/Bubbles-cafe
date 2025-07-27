@@ -64,7 +64,7 @@ export default function Home() {
         <div className="text-center p-8 text-white bg-black/70 rounded-lg max-w-2xl mx-auto mt-20">
           <h2 className="text-xl font-bold mb-4">Unable to load latest story</h2>
           <p className="mb-4">The database connection is currently unavailable, but you can still explore the site.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-lg mx-auto">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -72,13 +72,12 @@ export default function Home() {
             >
               <Button 
                 onClick={() => setLocation('/reader')}
-                className="group px-6 py-3 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:via-purple-600 hover:to-indigo-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                className="group w-full px-6 py-3 bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
               >
                 Browse Stories
                 <motion.div
                   animate={{ 
-                    x: [0, 3, 0],
-                    rotate: [0, 5, 0]
+                    x: [0, 3, 0]
                   }}
                   transition={{ 
                     duration: 2,
@@ -98,16 +97,15 @@ export default function Home() {
             >
               <Button 
                 onClick={() => window.location.reload()}
-                className="group px-6 py-3 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-700 hover:from-emerald-500 hover:via-teal-600 hover:to-cyan-600 text-white shadow-lg transition-all duration-300 hover:shadow-xl"
+                className="group w-full px-6 py-3 bg-[#444444] hover:bg-[#505050] text-white shadow-lg transition-all duration-300 hover:shadow-xl"
               >
                 Try Again
                 <motion.div
                   animate={{ 
-                    x: [0, 6, 0],
-                    rotate: [0, 15, 0]
+                    x: [0, 4, 0]
                   }}
                   transition={{ 
-                    duration: 1.5,
+                    duration: 1.8,
                     repeat: Infinity,
                     ease: "easeInOut"
                   }}
@@ -147,7 +145,7 @@ export default function Home() {
               </div>
 
               <div>
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-8 justify-center items-center w-full">
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 w-full max-w-4xl mx-auto">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -156,13 +154,12 @@ export default function Home() {
                     <Button
                       size="lg"
                       onClick={() => setLocation('/stories')}
-                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 px-8 sm:px-10 md:px-12 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:via-purple-600 hover:to-indigo-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/25 active:scale-95"
+                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-gradient-to-r from-slate-600 via-slate-700 to-gray-700 hover:from-slate-500 hover:via-slate-600 hover:to-gray-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-slate-500/25 active:scale-95"
                     >
                       Browse Stories
                       <motion.div
                         animate={{ 
-                          x: [0, 3, 0],
-                          rotate: [0, 5, 0]
+                          x: [0, 3, 0]
                         }}
                         transition={{ 
                           duration: 2,
@@ -188,16 +185,15 @@ export default function Home() {
                         ? setLocation('/reader')  // Always navigate to the reader page
                         : setLocation('/reader')  // Fallback to /reader if no posts
                       }
-                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 px-8 sm:px-10 md:px-12 bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-700 hover:from-emerald-500 hover:via-teal-600 hover:to-cyan-600 text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-500/25 active:scale-95"
+                      className="group relative text-lg sm:text-xl md:text-2xl h-14 sm:h-16 md:h-18 lg:h-20 w-full bg-[#444444] dark:bg-[#333333] hover:bg-[#505050] dark:hover:bg-[#3f3f3f] text-white shadow-xl backdrop-blur-sm font-medium transition-all duration-300 hover:shadow-2xl hover:shadow-gray-500/25 active:scale-95"
                     >
                       Start Reading
                       <motion.div
                         animate={{ 
-                          x: [0, 6, 0],
-                          rotate: [0, 15, 0]
+                          x: [0, 4, 0]
                         }}
                         transition={{ 
-                          duration: 1.5,
+                          duration: 1.8,
                           repeat: Infinity,
                           ease: "easeInOut"
                         }}
