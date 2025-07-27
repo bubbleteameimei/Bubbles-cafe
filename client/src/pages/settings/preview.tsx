@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { SettingsLayout } from '@/components/layouts/SettingsLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Book, Monitor, Phone, Tablet, Laptop, Eye as EyeIcon, Palette, Monitor as Desktop } from 'lucide-react';
+import { Book, Monitor, Phone, Tablet, Laptop, Eye as EyeIcon, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { useToast } from '@/hooks/use-toast';

@@ -71,7 +71,7 @@ const AboutPage = React.lazy(() => import('./pages/about'));
 const ContactPage = React.lazy(() => import('./pages/contact'));
 const PrivacyPage = React.lazy(() => import('./pages/privacy'));
 const ReportBugPage = React.lazy(() => import('./pages/report-bug'));
-const PixelArtPage = React.lazy(() => import('./pages/PixelArtPage'));
+
 const AuthPage = React.lazy(() => import('./pages/auth'));
 const AuthSuccessPage = React.lazy(() => import('./pages/auth-success'));
 const ProfilePage = React.lazy(() => import('./pages/profile'));
@@ -280,7 +280,7 @@ const AppContent = () => {
               <Route path="/search" component={SearchResultsPage} />
               <Route path="/notifications" component={NotificationsPage} />
               
-              <Route path="/pixel-art" component={PixelArtPage} />
+
               {/* Export test route removed */}
               <Route path="/bookmarks" component={BookmarksPage} />
               <ProtectedRoute path="/profile" component={ProfilePage} />
