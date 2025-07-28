@@ -204,14 +204,14 @@ export default function Navigation() {
             )}
           </Button>
           
-          {/* User/Auth button - smaller blue styling */}
+          {/* User/Auth button - subtle styling to match other buttons */}
           {!user ? (
             <Button
-              variant="default"
+              variant="ghost"
               size="sm"
               onClick={() => setLocation("/auth")}
-              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider 
-                        transition-all duration-150 ease-out active:scale-95 active:opacity-90 shadow-sm mt-2 text-xs"
+              className="h-8 px-3 rounded-md border border-border/30 text-foreground/80 hover:text-foreground hover:bg-accent/50
+                        transition-all duration-150 active:scale-95 mt-2 text-xs font-medium"
               aria-label="Sign in"
             >
               Sign In
