@@ -9,6 +9,7 @@ import { fetchWordPressPosts } from "@/lib/wordpress-api";
 import { BuyMeCoffeeButton } from "@/components/BuyMeCoffeeButton";
 import { getExcerpt } from "@/lib/content-analysis";
 import ApiLoader from "@/components/api-loader";
+import BloodDrippingText from "@/components/BloodDrippingText";
 
 
 export default function Home() {
@@ -129,17 +130,10 @@ export default function Home() {
             <div className="relative">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
-                <span className="mt-1 md:mt-2 text-red-700 relative">
-                  CAFE
-                  {/* Blood drops falling from CAFE */}
-                  <div className="blood-drops-container absolute inset-0 pointer-events-none">
-                    <div className="blood-drop blood-drop-1"></div>
-                    <div className="blood-drop blood-drop-2"></div>
-                    <div className="blood-drop blood-drop-3"></div>
-                    <div className="blood-drop blood-drop-4"></div>
-                    <div className="blood-drop blood-drop-5"></div>
-                  </div>
-                </span>
+                <BloodDrippingText 
+                  text="CAFE" 
+                  className="mt-1 md:mt-2 text-red-700 relative"
+                />
               </h1>
             </div>
           
