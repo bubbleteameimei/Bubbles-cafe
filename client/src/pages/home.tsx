@@ -126,10 +126,20 @@ export default function Home() {
           
           {/* Content container with proper z-index to appear above background - full width */}
           <div className="relative z-10 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-8 md:pb-10 lg:pb-12 text-center w-full min-h-screen">
-            <div>
+            <div className="relative">
               <h1 className="font-serif text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl mb-2 sm:mb-3 md:mb-4 tracking-wider text-white flex flex-col items-center">
                 <span>BUBBLES</span>
-                <span className="mt-1 md:mt-2 text-red-700">CAFE</span>
+                <span className="mt-1 md:mt-2 text-red-700 relative">
+                  CAFE
+                  {/* Blood drops falling from CAFE */}
+                  <div className="blood-drops-container absolute inset-0 pointer-events-none">
+                    <div className="blood-drop blood-drop-1"></div>
+                    <div className="blood-drop blood-drop-2"></div>
+                    <div className="blood-drop blood-drop-3"></div>
+                    <div className="blood-drop blood-drop-4"></div>
+                    <div className="blood-drop blood-drop-5"></div>
+                  </div>
+                </span>
               </h1>
             </div>
           
