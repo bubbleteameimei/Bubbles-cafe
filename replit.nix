@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.nano
     pkgs.pango
     pkgs.gdk-pixbuf
     pkgs.expat
