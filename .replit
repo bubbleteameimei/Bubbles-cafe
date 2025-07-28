@@ -1,5 +1,5 @@
 modules = ["nodejs-20", "web", "postgresql-16", "python-3.11"]
-run = "npm run dev"
+run = "bash -c 'npm install && npm run dev'"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npm run build"]
+build = ["sh", "-c", "npm install && npm run build"]
 run = ["sh", "-c", "npm start"]
 
 [[ports]]
@@ -35,55 +35,34 @@ localPort = 8000
 externalPort = 8000
 
 [workflows]
-runButton = "Start Dev Server"
+runButton = "Start Web Feedback App"
 
 [[workflows.workflow]]
-name = "Start Dev Server"
+name = "Start Web Feedback App"
 author = 40492995
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "bash -c 'npm install && npm run dev'"
 waitForPort = 3002
 
 [[workflows.workflow]]
-name = "Security Check"
-author = 41305767
+name = "Build & Start App"
+author = 40492995
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node scripts/check-vulnerabilities.js"
+args = "bash -c 'npm install && npm run build && npm start'"
+waitForPort = 3002
 
 [[workflows.workflow]]
-name = "WordPress Sync"
-author = 40059171
+name = "Initialize DB and Launch"
+author = 40492995
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node scripts/run-wp-sync.js"
-
-[[workflows.workflow]]
-name = "WordPress Scheduler"
-author = 40059171
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx tsx scripts/sync-scheduler.ts"
-
-[[workflows.workflow]]
-name = "Run Application"
-author = 40099974
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx tsx scripts/init-db.ts && npm run dev"
-
-[[workflows.workflow]]
-name = "Run"
-author = 40164664
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx tsx scripts/init-db.ts && npm run dev"
+args = "bash -c 'npm install && npx tsx scripts/init-db.ts && npm run dev'"
+waitForPort = 3002
