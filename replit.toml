@@ -1,0 +1,7 @@
+[deployment]
+run = ["npm", "run", "dev"]
+wait_for_port = true
+
+[[ports]]
+localPort = 3002
+externalPort = 80
