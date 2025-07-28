@@ -78,7 +78,7 @@
     transition: opacity 0.2s ease-in-out;
     /* Improve scroll behavior */
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    /* Removed scroll-behavior: smooth to prevent unwanted auto-scrolling */
   }
   
   /* Fix for bottom page scrolling issues */

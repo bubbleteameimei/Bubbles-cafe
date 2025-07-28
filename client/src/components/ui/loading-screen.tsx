@@ -63,8 +63,10 @@ export const LoadingScreen = memo(({ onAnimationComplete }: { onAnimationComplet
       document.documentElement.classList.remove('disable-scroll');
       document.body.classList.remove('loading-active');
       
-      // Restore scroll position if needed
-      window.scrollTo(0, scrollY.current);
+      // Only restore scroll position if it's not the homepage to prevent unwanted scrolling
+      if (window.location.pathname !== '/') {
+        window.scrollTo(0, scrollY.current);
+      }
       
       console.log("[LoadingScreen] Cleanup complete, scroll restored");
     };

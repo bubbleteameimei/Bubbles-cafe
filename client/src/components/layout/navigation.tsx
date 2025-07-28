@@ -11,7 +11,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { MusicButton } from "@/components/ui/music-button";
+
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
@@ -116,9 +116,9 @@ export default function Navigation() {
       }}
     >
       <div className="w-full flex h-16 md:h-18 items-center justify-between px-0">
-        {/* Left section with menu toggle only */}
+        {/* Left section with menu toggle for all screen sizes */}
         <div className="flex items-center -mt-1 pl-2">
-          {/* Mobile menu toggle */}
+          {/* Menu toggle for all devices */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
@@ -131,8 +131,8 @@ export default function Navigation() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] max-w-[85vw]">
-              {/* Removed menu header as requested */}
+            <SheetContent side="left" className="p-0 w-[280px] sm:w-[320px] md:w-[350px] lg:w-[400px] max-w-[85vw]">
+              {/* Sidebar navigation for all screen sizes */}
               <div className="border-b border-border/30"></div>
               <SidebarNavigation onNavigate={() => setIsOpen(false)} />
             </SheetContent>
@@ -180,9 +180,6 @@ export default function Navigation() {
           >
             <Search className="h-4 w-4" />
           </Button>
-          
-          {/* Music button - new addition */}
-          <MusicButton />
           
           {/* Notifications */}
           <NotificationIcon 
