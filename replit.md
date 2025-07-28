@@ -131,11 +131,12 @@ This is a modern interactive storytelling platform built with React, TypeScript,
 ### Database Successfully Initialized (July 28, 2025 - Current Session)
 - ✅ **PostgreSQL Database**: Fresh Neon PostgreSQL database created and connected successfully (DATABASE_URL configured)
 - ✅ **Environment Variables**: All database connection variables properly configured (DATABASE_URL, PGPORT, PGUSER, PGPASSWORD, PGDATABASE, PGHOST)
-- ✅ **Database Schema**: Modern Drizzle schema pushed successfully with all tables created
-- ✅ **Database Tables**: All core tables operational (users, posts, comments, sessions, bookmarks, author_stats, site_settings, analytics, etc.)
-- ✅ **Admin User**: Admin user created (vantalison@gmail.com / admin123)
-- ✅ **Sample Content**: 3 initial sample posts created for testing
-- ✅ **Application Running**: Server successfully started and responding on port 3002 with all security middleware active
+- ✅ **Database Schema**: Modern Drizzle schema pushed successfully with all tables created via `npx drizzle-kit push`
+- ✅ **Database Tables**: All core tables operational including new tables (reading_streaks, user_notifications, tag_relations, user_preferences)
+- ✅ **Admin Users**: Two admin users created (vandalison@gmail.com and vantalison@gmail.com)
+- ✅ **WordPress Content**: 21 authentic stories imported from WordPress API (BLOOD, WORD, HUNGER, SONG, JOURNAL, NOSTALGIA, etc.)
+- ✅ **Application Running**: Server successfully started and responding on http://0.0.0.0:3002 with all security middleware active
+- ✅ **WordPress Sync**: Automatic content sync active every 5 minutes, importing and updating WordPress stories
 - ✅ **Security Headers**: CSRF protection, CORS, Helmet security headers, and content security policy active
 - ✅ **Session Management**: Authentication system ready with secure session handling
 

@@ -1,23 +1,23 @@
 import express from "express";
 import { createServer } from "http";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
 import { registerRoutes } from "./routes";
 import { db } from "./db"; // Using the direct Neon database connection
 import { posts } from "@shared/schema";
 import { count } from "drizzle-orm";
 import { seedDatabase } from "./seed";
-import path from "path";
+
 import helmet from "helmet";
 import compression from "compression";
-import crypto from "crypto";
+
 import session from "express-session";
 import { setupAuth } from "./auth";
 import { setupOAuth } from "./oauth";
 import { storage } from "./storage";
-import { createLogger, requestLogger, errorLogger } from "./utils/debug-logger";
+import { createLogger, requestLogger } from "./utils/debug-logger";
 import { registerUserFeedbackRoutes } from "./routes/user-feedback";
 import { registerRecommendationsRoutes } from "./routes/recommendations";
-import { registerPostRecommendationsRoutes } from "./routes/simple-posts-recommendations";
+
 
 import { registerPrivacySettingsRoutes } from "./routes/privacy-settings";
 import { registerWordPressSyncRoutes } from "./routes/wordpress-sync";
