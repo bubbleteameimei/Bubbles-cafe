@@ -87,7 +87,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const animationRef = useRef<number>();
-  const particleSystemRef = useRef<ParticleSystem>();
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,7 +99,6 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
 
     // Get text position and size precisely
     const updateCanvasSize = () => {
-      const rect = textElement.getBoundingClientRect();
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
@@ -163,12 +162,6 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
       // Clear canvas completely - no trails
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the text on canvas to match exactly
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-      ctx.fillStyle = '#c8102e';
-      ctx.textAlign = 'center';
-      ctx.fillText(text, textRect.left + textRect.width / 2, textRect.top + textRect.height / 2);
-
       particleSystem.update();
       particleSystem.draw(ctx);
 
@@ -194,7 +187,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
 
   return (
     <div className="relative inline-block">
-      <span ref={textRef} className={className} style={{ opacity: 0 }}>
+      <span ref={textRef} className={className}>
         {text}
       </span>
       <canvas
@@ -205,6 +198,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
           left: 0,
           top: 0,
           zIndex: 10,
+          pointerEvents: 'none',
         }}
       />
     </div>
