@@ -134,12 +134,13 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
-    // Find ALL text pixels, not just bottom edge - connect to entire text
-    for (let y = 0; y < textCanvas.height; y++) {
-      for (let x = 0; x < textCanvas.width; x++) {
+    // Follow HTML code exactly - scan each column from bottom to top
+    for (let x = 0; x < textCanvas.width; x++) {
+      for (let y = textCanvas.height - 1; y >= 0; y--) {
         const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
         if (imageData.data[index] > 0) {
           dripPoints.push({ x, y });
+          break; // Found the bottom-most pixel for this column - exact HTML logic
         }
       }
     }
@@ -160,8 +161,9 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
         particleTimer = 0;
       }
 
-      // Remove trails completely - clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Keep the background fade trail like HTML code
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       particleSystem.update();
       particleSystem.draw(ctx);
