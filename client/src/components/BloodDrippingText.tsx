@@ -105,7 +105,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
 
     updateCanvasSize();
 
-    // Create text canvas for pixel analysis - exact same as HTML code
+    // Create text canvas for pixel analysis - exact HTML code approach
     const textCanvas = document.createElement('canvas');
     textCanvas.width = canvas.width;
     textCanvas.height = canvas.height;
@@ -122,23 +122,25 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
     const fontSize = parseInt(computedStyle.fontSize) || 100;
     const fontFamily = computedStyle.fontFamily;
     
+    // Use exact HTML code logic for text rendering
     textCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     textCtx.fillStyle = '#c8102e';
     textCtx.textAlign = 'center';
     
-    // Position text exactly where it appears on screen
+    // Position text exactly where it appears on screen using screen coordinates
     textCtx.fillText(text, textRect.left + textRect.width / 2, textRect.top + textRect.height / 2);
 
-    // Find drip points from bottom edge - exact HTML code logic
+    // Find drip points using exact HTML code logic - bottom-to-top scanning
     const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height);
     const dripPoints: Array<{ x: number; y: number }> = [];
     
+    // Scan each column from bottom to top to find the lowest text pixel
     for (let x = 0; x < textCanvas.width; x++) {
       for (let y = textCanvas.height - 1; y >= 0; y--) {
-        const index = (y * textCanvas.width + x) * 4 + 3;
+        const index = (y * textCanvas.width + x) * 4 + 3; // Alpha channel
         if (imageData.data[index] > 0) {
           dripPoints.push({ x, y });
-          break;
+          break; // Found the bottom-most pixel for this column
         }
       }
     }
@@ -159,7 +161,7 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
         particleTimer = 0;
       }
 
-      // Clear canvas completely - no trails
+      // Clear canvas completely - no trails (removing the trail effect from HTML)
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particleSystem.update();
