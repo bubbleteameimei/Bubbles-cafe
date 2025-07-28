@@ -113,6 +113,7 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+waitForPort = 3000   # ✅ This fixes the warning
 
 [[workflows.workflow]]
 name = "Security Check"
