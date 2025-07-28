@@ -161,9 +161,8 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
         particleTimer = 0;
       }
 
-      // Keep the background fade trail like HTML code
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Clean canvas completely - no residual effects
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particleSystem.update();
       particleSystem.draw(ctx);
@@ -189,13 +188,13 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
   }, [text, className]);
 
   return (
-    <div className="relative inline-block">
+    <>
       <span ref={textRef} className={className}>
         {text}
       </span>
       <canvas
         ref={canvasRef}
-        className="absolute pointer-events-none"
+        className="pointer-events-none"
         style={{
           position: 'fixed',
           left: 0,
@@ -204,6 +203,6 @@ export default function BloodDrippingText({ text, className }: BloodDrippingText
           pointerEvents: 'none',
         }}
       />
-    </div>
+    </>
   );
 }
