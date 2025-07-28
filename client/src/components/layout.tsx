@@ -45,16 +45,11 @@ export function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <div className="flex min-h-[100dvh]" data-device-type={deviceType}>
-        {/* Desktop Sidebar - Fixed position with scrolling */}
-        <aside className="fixed top-0 left-0 z-50 hidden h-screen w-72 md:w-72 lg:w-76 xl:w-80 2xl:w-84 border-r 
-                          bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 
-                          lg:block overflow-y-auto transition-all duration-300 ease-in-out
-                          dark:border-r-gray-800">
-          <AppSidebar />
-        </aside>
+        {/* Desktop Sidebar - Now hidden by default, only accessible via menu button */}
+        {/* Removing fixed sidebar to ensure menu button works on all screen sizes */}
 
-        {/* Main Content Area - Adaptive padding and container sizing */}
-        <div className="flex-1 flex flex-col min-w-0 bg-background lg:pl-72 xl:pl-80 2xl:pl-84 
+        {/* Main Content Area - Full width since we removed fixed sidebar */}
+        <div className="flex-1 flex flex-col min-w-0 bg-background 
                         transition-all duration-300 ease-in-out">
           <MainNav />
           <main className="flex-1 overflow-y-auto">
