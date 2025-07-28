@@ -1,8 +1,8 @@
 {
   "workflows": [
     {
-      "name": "Start application",
-      "run": ["npm", "run", "dev"],
+      "name": "Start Dev Server",
+      "command": "npm run dev",
       "wait_for_port": true
     }
   ]

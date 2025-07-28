@@ -38,40 +38,23 @@ externalPort = 8000
 runButton = "Start Dev Server"
 
 [[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
+name = "Start Dev Server"
+author = 40492995
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+waitForPort = 3000
 
 [[workflows.workflow]]
-name = "Dev"
-author = 39654983
+name = "Security Check"
+author = 41305767
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "dev"
-author = 39775130
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
+args = "node scripts/check-vulnerabilities.js"
 
 [[workflows.workflow]]
 name = "WordPress Sync"
@@ -104,22 +87,3 @@ author = 40164664
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx tsx scripts/init-db.ts && npm run dev"
-
-[[workflows.workflow]]
-name = "Start Dev Server"
-author = 40492995
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 3000   # ✅ This fixes the warning
-
-[[workflows.workflow]]
-name = "Security Check"
-author = 41305767
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node scripts/check-vulnerabilities.js"
