@@ -3,7 +3,7 @@
     {
       "name": "Start Dev Server",
       "command": "npm run dev",
-      "wait_for_port": true
+      "wait_for_port": 3002
     }
   ]
 }
